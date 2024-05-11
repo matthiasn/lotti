@@ -79,7 +79,6 @@ void main() {
           entry: testTextEntry,
           showMap: false,
           isFocused: false,
-          epoch: 0,
         ),
       );
 
@@ -164,7 +163,6 @@ void main() {
           entry: testTextEntry,
           showMap: false,
           isFocused: false,
-          epoch: 0,
         ),
       );
 
@@ -187,7 +185,6 @@ void main() {
           entry: testTextEntry,
           showMap: false,
           isFocused: false,
-          epoch: 0,
         ),
       );
 
@@ -218,7 +215,6 @@ void main() {
           entry: testTextEntry.copyWith(geolocation: null),
           showMap: false,
           isFocused: false,
-          epoch: 0,
         ),
       );
 
@@ -247,7 +243,6 @@ void main() {
           entry: testTextEntry,
           showMap: false,
           isFocused: false,
-          epoch: 0,
         ),
       );
 

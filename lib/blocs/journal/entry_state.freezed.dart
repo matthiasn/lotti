@@ -20,46 +20,35 @@ mixin _$EntryState {
   JournalEntity? get entry => throw _privateConstructorUsedError;
   bool get showMap => throw _privateConstructorUsedError;
   bool get isFocused => throw _privateConstructorUsedError;
-  int get epoch => throw _privateConstructorUsedError;
   GlobalKey<FormBuilderState>? get formKey =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            String entryId,
-            JournalEntity? entry,
-            bool showMap,
-            bool isFocused,
-            int epoch,
-            GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
         saved,
-    required TResult Function(
-            String entryId,
-            JournalEntity? entry,
-            bool showMap,
-            bool isFocused,
-            int epoch,
-            GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
         dirty,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         saved,
     TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         dirty,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         saved,
     TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         dirty,
     required TResult orElse(),
   }) =>
@@ -100,7 +89,6 @@ abstract class $EntryStateCopyWith<$Res> {
       JournalEntity? entry,
       bool showMap,
       bool isFocused,
-      int epoch,
       GlobalKey<FormBuilderState>? formKey});
 
   $JournalEntityCopyWith<$Res>? get entry;
@@ -123,7 +111,6 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
-    Object? epoch = null,
     Object? formKey = freezed,
   }) {
     return _then(_value.copyWith(
@@ -143,10 +130,6 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
-      epoch: null == epoch
-          ? _value.epoch
-          : epoch // ignore: cast_nullable_to_non_nullable
-              as int,
       formKey: freezed == formKey
           ? _value.formKey
           : formKey // ignore: cast_nullable_to_non_nullable
@@ -180,7 +163,6 @@ abstract class _$$EntryStateSavedImplCopyWith<$Res>
       JournalEntity? entry,
       bool showMap,
       bool isFocused,
-      int epoch,
       GlobalKey<FormBuilderState>? formKey});
 
   @override
@@ -202,7 +184,6 @@ class __$$EntryStateSavedImplCopyWithImpl<$Res>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
-    Object? epoch = null,
     Object? formKey = freezed,
   }) {
     return _then(_$EntryStateSavedImpl(
@@ -222,10 +203,6 @@ class __$$EntryStateSavedImplCopyWithImpl<$Res>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
-      epoch: null == epoch
-          ? _value.epoch
-          : epoch // ignore: cast_nullable_to_non_nullable
-              as int,
       formKey: freezed == formKey
           ? _value.formKey
           : formKey // ignore: cast_nullable_to_non_nullable
@@ -242,7 +219,6 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
       required this.entry,
       required this.showMap,
       required this.isFocused,
-      required this.epoch,
       this.formKey});
 
   @override
@@ -254,13 +230,11 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
   @override
   final bool isFocused;
   @override
-  final int epoch;
-  @override
   final GlobalKey<FormBuilderState>? formKey;
 
   @override
   String toString() {
-    return 'EntryState.saved(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, epoch: $epoch, formKey: $formKey)';
+    return 'EntryState.saved(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, formKey: $formKey)';
   }
 
   @override
@@ -273,13 +247,12 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
             (identical(other.isFocused, isFocused) ||
                 other.isFocused == isFocused) &&
-            (identical(other.epoch, epoch) || other.epoch == epoch) &&
             (identical(other.formKey, formKey) || other.formKey == formKey));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, entryId, entry, showMap, isFocused, epoch, formKey);
+  int get hashCode =>
+      Object.hash(runtimeType, entryId, entry, showMap, isFocused, formKey);
 
   @JsonKey(ignore: true)
   @override
@@ -291,52 +264,42 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            String entryId,
-            JournalEntity? entry,
-            bool showMap,
-            bool isFocused,
-            int epoch,
-            GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
         saved,
-    required TResult Function(
-            String entryId,
-            JournalEntity? entry,
-            bool showMap,
-            bool isFocused,
-            int epoch,
-            GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
         dirty,
   }) {
-    return saved(entryId, entry, showMap, isFocused, epoch, formKey);
+    return saved(entryId, entry, showMap, isFocused, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         saved,
     TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         dirty,
   }) {
-    return saved?.call(entryId, entry, showMap, isFocused, epoch, formKey);
+    return saved?.call(entryId, entry, showMap, isFocused, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         saved,
     TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         dirty,
     required TResult orElse(),
   }) {
     if (saved != null) {
-      return saved(entryId, entry, showMap, isFocused, epoch, formKey);
+      return saved(entryId, entry, showMap, isFocused, formKey);
     }
     return orElse();
   }
@@ -379,7 +342,6 @@ abstract class _EntryStateSaved implements EntryState {
       required final JournalEntity? entry,
       required final bool showMap,
       required final bool isFocused,
-      required final int epoch,
       final GlobalKey<FormBuilderState>? formKey}) = _$EntryStateSavedImpl;
 
   @override
@@ -390,8 +352,6 @@ abstract class _EntryStateSaved implements EntryState {
   bool get showMap;
   @override
   bool get isFocused;
-  @override
-  int get epoch;
   @override
   GlobalKey<FormBuilderState>? get formKey;
   @override
@@ -413,7 +373,6 @@ abstract class _$$EntryStateDirtyImplCopyWith<$Res>
       JournalEntity? entry,
       bool showMap,
       bool isFocused,
-      int epoch,
       GlobalKey<FormBuilderState>? formKey});
 
   @override
@@ -435,7 +394,6 @@ class __$$EntryStateDirtyImplCopyWithImpl<$Res>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
-    Object? epoch = null,
     Object? formKey = freezed,
   }) {
     return _then(_$EntryStateDirtyImpl(
@@ -455,10 +413,6 @@ class __$$EntryStateDirtyImplCopyWithImpl<$Res>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
-      epoch: null == epoch
-          ? _value.epoch
-          : epoch // ignore: cast_nullable_to_non_nullable
-              as int,
       formKey: freezed == formKey
           ? _value.formKey
           : formKey // ignore: cast_nullable_to_non_nullable
@@ -475,7 +429,6 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
       required this.entry,
       required this.showMap,
       required this.isFocused,
-      required this.epoch,
       this.formKey});
 
   @override
@@ -487,13 +440,11 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
   @override
   final bool isFocused;
   @override
-  final int epoch;
-  @override
   final GlobalKey<FormBuilderState>? formKey;
 
   @override
   String toString() {
-    return 'EntryState.dirty(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, epoch: $epoch, formKey: $formKey)';
+    return 'EntryState.dirty(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, formKey: $formKey)';
   }
 
   @override
@@ -506,13 +457,12 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
             (identical(other.isFocused, isFocused) ||
                 other.isFocused == isFocused) &&
-            (identical(other.epoch, epoch) || other.epoch == epoch) &&
             (identical(other.formKey, formKey) || other.formKey == formKey));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, entryId, entry, showMap, isFocused, epoch, formKey);
+  int get hashCode =>
+      Object.hash(runtimeType, entryId, entry, showMap, isFocused, formKey);
 
   @JsonKey(ignore: true)
   @override
@@ -524,52 +474,42 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            String entryId,
-            JournalEntity? entry,
-            bool showMap,
-            bool isFocused,
-            int epoch,
-            GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
         saved,
-    required TResult Function(
-            String entryId,
-            JournalEntity? entry,
-            bool showMap,
-            bool isFocused,
-            int epoch,
-            GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
         dirty,
   }) {
-    return dirty(entryId, entry, showMap, isFocused, epoch, formKey);
+    return dirty(entryId, entry, showMap, isFocused, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         saved,
     TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         dirty,
   }) {
-    return dirty?.call(entryId, entry, showMap, isFocused, epoch, formKey);
+    return dirty?.call(entryId, entry, showMap, isFocused, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         saved,
     TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, int epoch, GlobalKey<FormBuilderState>? formKey)?
+            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
         dirty,
     required TResult orElse(),
   }) {
     if (dirty != null) {
-      return dirty(entryId, entry, showMap, isFocused, epoch, formKey);
+      return dirty(entryId, entry, showMap, isFocused, formKey);
     }
     return orElse();
   }
@@ -612,7 +552,6 @@ abstract class EntryStateDirty implements EntryState {
       required final JournalEntity? entry,
       required final bool showMap,
       required final bool isFocused,
-      required final int epoch,
       final GlobalKey<FormBuilderState>? formKey}) = _$EntryStateDirtyImpl;
 
   @override
@@ -623,8 +562,6 @@ abstract class EntryStateDirty implements EntryState {
   bool get showMap;
   @override
   bool get isFocused;
-  @override
-  int get epoch;
   @override
   GlobalKey<FormBuilderState>? get formKey;
   @override

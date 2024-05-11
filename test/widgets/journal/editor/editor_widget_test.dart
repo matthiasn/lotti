@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -56,16 +54,10 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: EntryCubit(
-              entryId: testTextEntry.meta.id,
-              entry: testTextEntry,
-            ),
-            child: EditorWidget(
-              entryId: testTextEntry.meta.id,
-              autoFocus: true,
-              key: key,
-            ),
+          EditorWidget(
+            entryId: testTextEntry.meta.id,
+            autoFocus: true,
+            key: key,
           ),
         ),
       );
@@ -84,13 +76,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: EntryCubit(
-              entryId: testTextEntry.meta.id,
-              entry: testTextEntry,
-            ),
-            child: EditorWidget(entryId: testTextEntry.meta.id),
-          ),
+          EditorWidget(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();

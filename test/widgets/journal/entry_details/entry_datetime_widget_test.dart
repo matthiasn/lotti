@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -17,7 +16,6 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('EntryDetailFooter', () {
-    final entryCubit = MockEntryCubit();
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockJournalDb = MockJournalDb();
     final mockTagsService = mockTagsServiceWithTags([]);
@@ -42,34 +40,11 @@ void main() {
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
-
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
     });
 
     testWidgets('tap entry date', (WidgetTester tester) async {
-      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
-
       // ignore: unused_local_variable
       DateTime? modifiedDateTo;
-
-      when(
-        () => entryCubit.updateFromTo(
-          dateFrom: testTextEntry.meta.dateFrom,
-          dateTo: any(named: 'dateTo'),
-        ),
-      ).thenAnswer((Invocation i) async {
-        const dateTo = Symbol('dateTo');
-        modifiedDateTo = i.namedArguments[dateTo] as DateTime;
-        return true;
-      });
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

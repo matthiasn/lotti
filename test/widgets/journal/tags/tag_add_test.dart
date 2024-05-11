@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -18,7 +17,6 @@ void main() {
   group('TagAddIconWidget Tests -', () {
     final mockNavService = MockNavService();
     final mockTagsService = mockTagsServiceWithTags([testStoryTag1]);
-    final entryCubit = MockEntryCubit();
 
     when(() => mockTagsService.stream).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
@@ -39,18 +37,6 @@ void main() {
     });
 
     testWidgets('Icon tap opens modal', (tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
-
-      when(() => entryCubit.entry).thenAnswer((_) => testTextEntry);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TagAddIconWidget(entryId: testTextEntry.meta.id),
