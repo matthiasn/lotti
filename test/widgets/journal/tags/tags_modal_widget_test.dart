@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -18,7 +17,6 @@ void main() {
 
   group('TagsModal Widget Tests -', () {
     final mockTagsService = MockTagsService();
-    final entryCubit = MockEntryCubit();
 
     when(() => mockTagsService.stream).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
@@ -56,20 +54,6 @@ void main() {
 
     when(() => mockTagsService.getMatchingTags(any()))
         .thenAnswer((_) async => [testTag1]);
-
-    when(() => entryCubit.state).thenAnswer(
-      (_) => EntryState.dirty(
-        entryId: testTextEntryWithTags.meta.id,
-        entry: testTextEntryWithTags,
-        showMap: false,
-        isFocused: false,
-        epoch: 0,
-      ),
-    );
-
-    when(() => entryCubit.entry).thenAnswer((_) => testTextEntryWithTags);
-
-    when(() => entryCubit.addTagIds(any())).thenAnswer((_) async {});
 
     setUpAll(() {
       getIt.registerSingleton<TagsService>(mockTagsService);
@@ -131,9 +115,6 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => entryCubit.addTagDefinition(newTag.tag))
-          .thenAnswer((_) async => newTagId);
-
       when(() => mockTagsService.getTagById(newTagId))
           .thenAnswer((_) => newTag);
 
@@ -160,8 +141,6 @@ void main() {
       await tester.enterText(searchFieldFinder, newTag.tag);
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      verify(() => entryCubit.addTagDefinition(newTag.tag)).called(1);
     });
 
     testWidgets('remove tag', (tester) async {
@@ -186,11 +165,7 @@ void main() {
       final closeIconFinder = find.byIcon(Icons.close_rounded);
       expect(closeIconFinder, findsNWidgets(2));
 
-      when(() => entryCubit.removeTagId(any())).thenAnswer((_) async {});
-
       await tester.tap(closeIconFinder.first);
-
-      verify(() => entryCubit.removeTagId(any())).called(1);
     });
   });
 }

@@ -56,7 +56,6 @@ class EntryController extends _$EntryController {
     });
   }
   late final String entryId;
-  int _epoch = 0;
   QuillController controller = QuillController.basic();
   final _editorStateService = getIt<EditorStateService>();
   GlobalKey<FormBuilderState>? formKey;
@@ -118,7 +117,6 @@ class EntryController extends _$EntryController {
       entry: entry,
       showMap: false,
       isFocused: false,
-      epoch: _epoch,
       formKey: formKey,
     );
   }
@@ -186,6 +184,7 @@ class EntryController extends _$EntryController {
     if (beamBack) {
       getIt<NavService>().beamBack();
     }
+    state = const AsyncData(null);
     return res;
   }
 
@@ -194,7 +193,7 @@ class EntryController extends _$EntryController {
     if (current?.entry?.geolocation != null) {
       state = AsyncData(
         current?.copyWith(
-          showMap: current.showMap,
+          showMap: !current.showMap,
         ),
       );
     }
@@ -232,8 +231,6 @@ class EntryController extends _$EntryController {
   }
 
   void emitState() {
-    _epoch++;
-
     final entry = state.value?.entry;
     if (entry == null) {
       return;
@@ -246,7 +243,6 @@ class EntryController extends _$EntryController {
           entry: entry,
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
-          epoch: _epoch,
           formKey: formKey,
         ),
       );
@@ -257,7 +253,6 @@ class EntryController extends _$EntryController {
           entry: entry,
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
-          epoch: _epoch,
           formKey: formKey,
         ),
       );

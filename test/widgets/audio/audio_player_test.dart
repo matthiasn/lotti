@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,8 +14,6 @@ import '../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   registerFallbackValue(FakeJournalAudio());
-
-  final entryCubit = MockEntryCubit();
 
   group('AudioPlayerWidget Widget Tests - ', () {
     setUp(() {});
@@ -52,13 +49,10 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: BlocProvider<AudioPlayerCubit>(
-              create: (_) => mockAudioPlayerCubit,
-              lazy: false,
-              child: AudioPlayerWidget(pausedState.audioNote!),
-            ),
+          BlocProvider<AudioPlayerCubit>(
+            create: (_) => mockAudioPlayerCubit,
+            lazy: false,
+            child: AudioPlayerWidget(pausedState.audioNote!),
           ),
         ),
       );
@@ -107,13 +101,10 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: BlocProvider<AudioPlayerCubit>(
-              create: (_) => mockAudioPlayerCubit,
-              lazy: false,
-              child: AudioPlayerWidget(playingState.audioNote!),
-            ),
+          BlocProvider<AudioPlayerCubit>(
+            create: (_) => mockAudioPlayerCubit,
+            lazy: false,
+            child: AudioPlayerWidget(playingState.audioNote!),
           ),
         ),
       );
@@ -174,15 +165,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: BlocProvider<AudioPlayerCubit>(
-              create: (_) => mockAudioPlayerCubit,
-              lazy: false,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: AudioPlayerWidget(playingState.audioNote!),
-              ),
+          BlocProvider<AudioPlayerCubit>(
+            create: (_) => mockAudioPlayerCubit,
+            lazy: false,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: AudioPlayerWidget(playingState.audioNote!),
             ),
           ),
         ),

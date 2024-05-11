@@ -31,7 +31,6 @@ class EntryCubit extends Cubit<EntryState> {
             entry: entry,
             showMap: false,
             isFocused: false,
-            epoch: 0,
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
@@ -149,7 +148,6 @@ class EntryCubit extends Cubit<EntryState> {
   final EditorStateService _editorStateService = getIt<EditorStateService>();
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
-  int _epoch = 0;
 
   Future<void> save({Duration? estimate}) async {
     if (entry is Task) {
@@ -194,8 +192,6 @@ class EntryCubit extends Cubit<EntryState> {
   }
 
   void emitState() {
-    _epoch++;
-
     if (_dirty) {
       emit(
         EntryState.dirty(
@@ -203,7 +199,6 @@ class EntryCubit extends Cubit<EntryState> {
           entry: entry,
           showMap: showMap,
           isFocused: _isFocused,
-          epoch: _epoch,
         ),
       );
     } else {
@@ -213,7 +208,6 @@ class EntryCubit extends Cubit<EntryState> {
           entry: entry,
           showMap: showMap,
           isFocused: _isFocused,
-          epoch: _epoch,
         ),
       );
     }

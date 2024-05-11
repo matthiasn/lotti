@@ -12,7 +12,6 @@ class EntryState with _$EntryState {
     required JournalEntity? entry,
     required bool showMap,
     required bool isFocused,
-    required int epoch,
     GlobalKey<FormBuilderState>? formKey,
   }) = _EntryStateSaved;
 
@@ -21,7 +20,6 @@ class EntryState with _$EntryState {
     required JournalEntity? entry,
     required bool showMap,
     required bool isFocused,
-    required int epoch,
     GlobalKey<FormBuilderState>? formKey,
   }) = EntryStateDirty;
 }
