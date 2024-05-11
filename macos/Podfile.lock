@@ -202,7 +202,7 @@ SPEC CHECKSUMS:
   sqlite3: 02d1f07eaaa01f80a1c16b4b31dfcbb3345ee01a
   sqlite3_flutter_libs: 8d204ef443cf0d5c1c8b058044eab53f3943a9c5
   super_native_extensions: 85efee3a7495b46b04befcfc86ed12069264ebf3
-  url_launcher_macos: d2691c7dd33ed713bf3544850a623080ec693d95
+  url_launcher_macos: 5f437abeda8c85500ceb03f5c1938a8c5a705399
   video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
   window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
 
