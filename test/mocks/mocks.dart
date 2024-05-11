@@ -1,10 +1,7 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -121,9 +118,6 @@ class MockEditorStateService extends Mock implements EditorStateService {}
 class MockLinkService extends Mock implements LinkService {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
-    implements EntryCubit {}
 
 class MockHealthImport extends Mock implements HealthImport {}
 
