@@ -204,6 +204,19 @@ final testTextEntry = JournalEntry(
   ),
 );
 
+final testTextEntryNoGeo = JournalEntry(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb322',
+    createdAt: DateTime(2022, 7, 7, 13),
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    updatedAt: DateTime(2022, 7, 7, 13),
+    starred: true,
+    vectorClock: const VectorClock({'a': 11}),
+  ),
+  entryText: const EntryText(plainText: 'test entry text'),
+);
+
 final testTextEntryWithTags = testTextEntry.copyWith(
   meta: testTextEntry.meta.copyWith(
     tagIds: [

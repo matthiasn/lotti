@@ -29,6 +29,8 @@ class EntryController extends _$EntryController {
 
     focusNode.addListener(() {
       _isFocused = true;
+      emitState();
+
       if (isDesktop) {
         if (focusNode.hasFocus) {
           hotKeyManager.register(
@@ -39,7 +41,6 @@ class EntryController extends _$EntryController {
           hotKeyManager.unregister(saveHotKey);
         }
       }
-      emitState();
     });
 
     taskTitleFocusNode.addListener(() {
