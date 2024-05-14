@@ -26,10 +26,6 @@ class HabitsTabPage extends StatelessWidget {
       onVisibilityChanged: cubit.updateVisibility,
       child: BlocBuilder<HabitsCubit, HabitsState>(
         builder: (context, HabitsState state) {
-          if (!state.isVisible) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
           final timeSpanDays = state.timeSpanDays;
 
           final rangeStart = getStartOfDay(
