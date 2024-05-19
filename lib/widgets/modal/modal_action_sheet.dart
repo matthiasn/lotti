@@ -16,7 +16,6 @@ Future<T?> showModalActionSheet<T>({
   return showModalBottomSheet(
     constraints: const BoxConstraints(maxHeight: 150),
     context: context,
-    isScrollControlled: false,
     isDismissible: isDismissible,
     useRootNavigator: useRootNavigator,
     builder: (context) {
