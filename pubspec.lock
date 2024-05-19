@@ -5,23 +5,18 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: "5aaf60d96c4cd00fe7f21594b5ad6a1b699c80a27420f8a837f4d68473ef09e3"
+      sha256: "0b2f2bd91ba804e53a61d757b986f89f1f9eaed5b11e4b2f5a2468d86d6c9fc7"
       url: "https://pub.dev"
     source: hosted
-    version: "68.0.0"
-  _macros:
-    dependency: transitive
-    description: dart
-    source: sdk
-    version: "0.1.0"
+    version: "67.0.0"
   analyzer:
     dependency: "direct dev"
     description:
       name: analyzer
-      sha256: "21f1d3720fd1c70316399d5e2bccaebb415c434592d778cce8acb967b8578808"
+      sha256: "37577842a27e4338429a1cbc32679d508836510b056f1eedf0c8d20e39c1383d"
       url: "https://pub.dev"
     source: hosted
-    version: "6.5.0"
+    version: "6.4.1"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -442,10 +437,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "598b1636fb946422f79e63f2b03cced67d59dd2d408291a0441b7380d47a10c0"
+      sha256: "6ca843d1f5468182d593510cd497e1b4316ce338a489ea13cce5ed56eb373e35"
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.11"
+    version: "9.3.13"
   dart_style:
     dependency: "direct dev"
     description:
@@ -727,12 +722,11 @@ packages:
   flutter_colorpicker:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "786d04363f587b818ce585d25b9c2bb62de95aba"
-      resolved-ref: "786d04363f587b818ce585d25b9c2bb62de95aba"
-      url: "https://github.com/mchome/flutter_colorpicker"
-    source: git
-    version: "1.0.3"
+      name: flutter_colorpicker
+      sha256: "969de5f6f9e2a570ac660fb7b501551451ea2a1ab9e2097e89475f60e07816ea"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   flutter_dotenv:
     dependency: "direct main"
     description:
@@ -980,10 +974,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: f5c56ca799bc80fd30ff2a279f6990df2af3aef398083ec8676a04ac89c2eb05
+      sha256: "490e26fff6788c76e0bcbe7c2defa17dd4745f7d51da1e285c8a058800a89f75"
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.11"
+    version: "9.3.13"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -1094,10 +1088,10 @@ packages:
     dependency: "direct dev"
     description:
       name: freezed
-      sha256: "5606fb95d54f3bb241b3e12dcfb65ba7494c775c4cb458334eccceb07334a3d9"
+      sha256: a434911f643466d78462625df76fd9eb13e57348ff43fe1f77bbe909522c67a1
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.3"
+    version: "2.5.2"
   freezed_annotation:
     dependency: "direct main"
     description:
@@ -1204,10 +1198,10 @@ packages:
     dependency: "direct main"
     description:
       name: hotkey_manager
-      sha256: c3c497b784c7538eb67bb1c9df0446d9ba65af76e6758677dde5ecc730d44d21
+      sha256: "06f0655b76c8dd322fb7101dc615afbdbf39c3d3414df9e059c33892104479cd"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.2"
+    version: "0.2.3"
   hotkey_manager_linux:
     dependency: transitive
     description:
@@ -1305,7 +1299,7 @@ packages:
     source: hosted
     version: "4.0.2"
   image:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: image
       sha256: "4c68bfd5ae83e700b5204c1e74451e7bf3cf750e6843c6e158289cf56bda018e"
@@ -1433,26 +1427,26 @@ packages:
     dependency: transitive
     description:
       name: just_audio
-      sha256: b7cb6bbf3750caa924d03f432ba401ec300fd90936b3f73a9b33d58b1e96286b
+      sha256: "5abfab1d199e01ab5beffa61b3e782350df5dad036cb8c83b79fa45fc656614e"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.37"
+    version: "0.9.38"
   just_audio_platform_interface:
     dependency: transitive
     description:
       name: just_audio_platform_interface
-      sha256: c3dee0014248c97c91fe6299edb73dc4d6c6930a2f4f713579cd692d9e47f4a1
+      sha256: "0243828cce503c8366cc2090cefb2b3c871aa8ed2f520670d76fd47aa1ab2790"
       url: "https://pub.dev"
     source: hosted
-    version: "4.2.2"
+    version: "4.3.0"
   just_audio_web:
     dependency: transitive
     description:
       name: just_audio_web
-      sha256: "134356b0fe3d898293102b33b5fd618831ffdc72bb7a1b726140abdf22772b70"
+      sha256: "0edb481ad4aa1ff38f8c40f1a3576013c3420bf6669b686fe661627d49bc606c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.9"
+    version: "0.4.11"
   langchain:
     dependency: "direct main"
     description:
@@ -1473,10 +1467,10 @@ packages:
     dependency: "direct main"
     description:
       name: langchain_ollama
-      sha256: e98c1a9cffe72f16a345170c2fae78288892e46525833b5b9ef831a2ffbd7d35
+      sha256: "52cfd83605c2b88b0674ca94c21a7ba06566ad34ac7d7ac18e0c77b23b5cb6f7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.1"
   langchain_tiktoken:
     dependency: transitive
     description:
@@ -1585,18 +1579,10 @@ packages:
     dependency: "direct main"
     description:
       name: lottie
-      sha256: "46def1e76c4fbfd4643e823980112cfe94a2ba1d9152fe54701c0bf30be4f4cd"
+      sha256: "6a24ade5d3d918c306bb1c21a6b9a04aab0489d51a2582522eea820b4093b62b"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.1"
-  macros:
-    dependency: transitive
-    description:
-      name: macros
-      sha256: "12e8a9842b5a7390de7a781ec63d793527582398d16ea26c60fed58833c9ae79"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0-main.0"
+    version: "3.1.2"
   markdown:
     dependency: transitive
     description:
@@ -1697,10 +1683,10 @@ packages:
     dependency: "direct main"
     description:
       name: meta
-      sha256: bdb68674043280c3428e9ec998512fb681678676b3c54e773629ffe74419f8c7
+      sha256: "7687075e408b093f36e6bbf6c91878cc0d4cd10f409506f7bc996f68220b9136"
       url: "https://pub.dev"
     source: hosted
-    version: "1.15.0"
+    version: "1.12.0"
   mgrs_dart:
     dependency: transitive
     description:
@@ -1777,10 +1763,10 @@ packages:
     dependency: "direct main"
     description:
       name: ollama_dart
-      sha256: "0af52c17a6dda9f6a30d79b9529bf38128d9b01dabd9d5f625040a32035eec24"
+      sha256: dfdedc218ecf9a7e55a7778f8ab4fe52529299aac83086aeb6c2da5e7f236391
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.3+1"
+    version: "0.1.0"
   olm:
     dependency: transitive
     description:
@@ -2225,10 +2211,10 @@ packages:
     dependency: transitive
     description:
       name: riverpod_analyzer_utils
-      sha256: ee72770090078e6841d51355292335f1bc254907c6694283389dcb8156d99a4d
+      sha256: "8b71f03fc47ae27d13769496a1746332df4cec43918aeba9aff1e232783a780f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.3"
+    version: "0.5.1"
   riverpod_annotation:
     dependency: "direct main"
     description:
@@ -2241,18 +2227,18 @@ packages:
     dependency: "direct main"
     description:
       name: riverpod_generator
-      sha256: "1ad626afbd8b01d168870b13c0b036f8a5bdb57c14cd426dc5b4595466bd6e2f"
+      sha256: d451608bf17a372025fc36058863737636625dfdb7e3cbf6142e0dfeb366ab22
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.2"
+    version: "2.4.0"
   riverpod_lint:
     dependency: "direct main"
     description:
       name: riverpod_lint
-      sha256: b95a8cdc6102397f7d51037131c25ce7e51be900be021af4bf0c2d6f1b8f7aa7
+      sha256: "3c67c14ccd16f0c9d53e35ef70d06cd9d072e2fb14557326886bbde903b230a5"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.12"
+    version: "2.3.10"
   rxdart:
     dependency: "direct main"
     description:
@@ -2416,12 +2402,11 @@ packages:
   simple_html_css:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "4ad903d8a1c3c13a12f55ba2678440de7720f95a"
-      url: "https://github.com/erickgon92/simple_html_css_flutter"
-    source: git
-    version: "4.0.0"
+      name: simple_html_css
+      sha256: "93bc59c0565e943abf6674e932f3f8b77bf87290a4f6f3f364c05fad26feb9d7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -3015,10 +3000,10 @@ packages:
     dependency: "direct main"
     description:
       name: window_manager
-      sha256: b3c895bdf936c77b83c5254bec2e6b3f066710c1f89c38b20b8acc382b525494
+      sha256: "8699323b30da4cdbe2aa2e7c9de567a6abd8a97d9a5c850a3c86dcd0b34bbfbf"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.8"
+    version: "0.3.9"
   wkt_parser:
     dependency: transitive
     description:

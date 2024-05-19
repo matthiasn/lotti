@@ -45,7 +45,6 @@ class AiLogic {
         prompt: doc.pageContent,
         options: const RequestOptions(
           numGpu: 24,
-          embeddingOnly: true,
           useMmap: true,
         ),
       ),
