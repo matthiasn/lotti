@@ -3,7 +3,6 @@ import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:research_package/research_package.dart';
 
 Future<void> runSurvey({
@@ -16,7 +15,7 @@ Future<void> runSurvey({
     context: context,
     useRootNavigator: true,
     builder: (BuildContext context) {
-      final textColor = themeData.textTheme.titleMedium?.color ?? Colors.grey;
+      // final textColor = themeData.textTheme.titleMedium?.color ?? Colors.grey;
 
       return Theme(
         data: themeData.copyWith(
@@ -26,11 +25,10 @@ Future<void> runSurvey({
               foregroundColor: themeData.colorScheme.onPrimary,
             ),
           ),
-          textTheme: themeData.textTheme
-              .apply(
-                fontFamily: 'PlusJakartaSans',
-              )
-              .copyWith(
+          textTheme: themeData.textTheme.apply(
+            fontFamily: 'PlusJakartaSans',
+          )
+          /*  .copyWith(
                 // TODO: remove deprecated usage
                 // ignore: deprecated_member_use
                 headline3: TextStyle(
@@ -52,7 +50,8 @@ Future<void> runSurvey({
                   fontSize: fontSizeMedium,
                   fontFamily: 'PlusJakartaSans',
                 ),
-              ),
+              )*/
+          ,
         ),
         child: SurveyWidget(task, resultCallback),
       );

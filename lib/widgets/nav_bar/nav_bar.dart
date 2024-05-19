@@ -371,16 +371,16 @@ class SpotifyStyleBottomNavigationBar extends StatefulWidget {
   /// items.
   ///
   /// If [mouseCursor] is a [MaterialStateProperty<MouseCursor>],
-  /// [MaterialStateProperty.resolve] is used for the following [MaterialState]s:
+  /// [WidgetStateProperty.resolve] is used for the following [WidgetState]s:
   ///
-  ///  * [MaterialState.selected].
+  ///  * [WidgetState.selected].
   ///
   /// If null, then the value of [BottomNavigationBarThemeData.mouseCursor] is used. If
-  /// that is also null, then [MaterialStateMouseCursor.clickable] is used.
+  /// that is also null, then [WidgetStateMouseCursor.clickable] is used.
   ///
   /// See also:
   ///
-  ///  * [MaterialStateMouseCursor], which can be used to create a [MouseCursor]
+  ///  * [WidgetStateMouseCursor], which can be used to create a [MouseCursor]
   ///    that is also a [MaterialStateProperty<MouseCursor>].
   final MouseCursor? mouseCursor;
 
@@ -1098,15 +1098,15 @@ class _SpotifyStyleBottomNavigationBarState
 
     final List<Widget> tiles = <Widget>[];
     for (int i = 0; i < widget.items.length; i++) {
-      final Set<MaterialState> states = <MaterialState>{
-        if (i == widget.currentIndex) MaterialState.selected,
+      final Set<WidgetState> states = <WidgetState>{
+        if (i == widget.currentIndex) WidgetState.selected,
       };
 
       final MouseCursor effectiveMouseCursor =
-          MaterialStateProperty.resolveAs<MouseCursor?>(
+          WidgetStateProperty.resolveAs<MouseCursor?>(
                   widget.mouseCursor, states) ??
               bottomTheme.mouseCursor?.resolve(states) ??
-              MaterialStateMouseCursor.clickable.resolve(states);
+              WidgetStateMouseCursor.clickable.resolve(states);
 
       tiles.add(_BottomNavigationTile(
         _effectiveType,

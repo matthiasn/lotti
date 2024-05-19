@@ -222,12 +222,12 @@ ThemeData withOverrides(ThemeData themeData) {
       style: ButtonStyle(
         alignment: Alignment.center,
         visualDensity: VisualDensity.compact,
-        side: MaterialStateProperty.resolveWith((states) {
+        side: WidgetStateProperty.resolveWith((states) {
           return BorderSide(
             color: themeData.colorScheme.tertiary,
           );
         }),
-        padding: MaterialStateProperty.resolveWith((states) {
+        padding: WidgetStateProperty.resolveWith((states) {
           return const EdgeInsets.symmetric(horizontal: 6);
         }),
         enableFeedback: true,
@@ -255,7 +255,7 @@ ThemeData withOverrides(ThemeData themeData) {
     ),
     textButtonTheme: TextButtonThemeData(
       style: ButtonStyle(
-        textStyle: MaterialStateProperty.resolveWith((states) {
+        textStyle: WidgetStateProperty.resolveWith((states) {
           return const TextStyle(
             fontSize: fontSizeMediumLarge,
             fontFamily: mainFont,
