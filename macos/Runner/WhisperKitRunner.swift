@@ -35,6 +35,7 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                     }
                 }
 
+
                 Task {
                     if (self.whisperKit == nil) {
                         self.whisperKit = try? await WhisperKit(model: self.model,
@@ -46,7 +47,8 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         audioPath: audioFilePath,
                         decodeOptions: DecodingOptions(
                             task: DecodingTask.transcribe,
-                            usePrefillPrompt: false
+                            usePrefillPrompt: false,
+                            detectLanguage: true
                         ),
                         callback: self.sendTranscriptionProgressEvent
                     )
