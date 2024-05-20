@@ -116,7 +116,7 @@ void listenToMatrixRoomInvites({
 }) {
   final client = service.client;
   client.onRoomState.stream.listen((event) async {
-    final roomIdFromEvent = event.room.id;
+    final roomIdFromEvent = event.roomId;
     if (service.syncRoom?.id == null) {
       await saveMatrixRoom(
         client: client,
