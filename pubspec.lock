@@ -437,10 +437,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "6ca843d1f5468182d593510cd497e1b4316ce338a489ea13cce5ed56eb373e35"
+      sha256: "4b32a3ca6efb7b849d016f52c7dc655b5af8f8058fbd35995fbad6dc0fa84e88"
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.13"
+    version: "9.3.16"
   dart_style:
     dependency: "direct dev"
     description:
@@ -974,10 +974,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "490e26fff6788c76e0bcbe7c2defa17dd4745f7d51da1e285c8a058800a89f75"
+      sha256: "04ea42c09ca64bb9f8798189ca650c07819431a03c3f6bbcf0f7c9cf201c8d15"
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.13"
+    version: "9.3.16"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -1923,10 +1923,10 @@ packages:
     dependency: "direct main"
     description:
       name: photo_manager
-      sha256: df594f989f0c31cdb3ed48f3d49cb9ffadf11cc3700d2c3460b1912c93432621
+      sha256: "1ddee48659025df5c80153a2e85c3fa0f5b5733ecffcda9769a9447da2c51352"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "3.1.1"
   photo_manager_image_provider:
     dependency: transitive
     description:
