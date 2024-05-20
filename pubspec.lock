@@ -1619,10 +1619,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "32c21a2ac2c221ce887b00a87f965bd8df1a3a4ba8794bbe86be8b56214051fb"
+      sha256: "8610e6d207d6b667e4fe9e769d5b479db27aa1f80570880d3f171a5d3ff49d1a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.28.1"
+    version: "0.29.2"
   media_kit:
     dependency: "direct main"
     description:
