@@ -22,7 +22,7 @@ Client createMatrixClient({
       KeyVerificationMethod.reciprocate,
     },
     shareKeysWithUnverifiedDevices: false,
-    sendMessageTimeoutSeconds: 120,
+    sendTimelineEventTimeout: const Duration(minutes: 2),
     databaseBuilder: (_) async {
       final docDir = getIt<Directory>();
       final name = dbName ?? 'lotti_sync';
