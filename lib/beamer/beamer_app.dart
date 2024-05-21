@@ -19,7 +19,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
-import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
@@ -171,7 +170,7 @@ class MyBeamerApp extends StatelessWidget {
             if (themingSnapshot.darkTheme == null) {
               return const EmptyScaffoldWithTitle(
                 '...',
-                body: LoadingWidget(),
+                body: CircularProgressIndicator(),
               );
             }
 

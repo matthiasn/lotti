@@ -7,7 +7,6 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/dashboards/dashboard_widget.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -87,7 +86,7 @@ class _DashboardPageState extends State<DashboardPage> {
           if (!snapshot.hasData) {
             return EmptyScaffoldWithTitle(
               context.messages.dashboardsLoadingHint,
-              body: const LoadingWidget(),
+              body: const CircularProgressIndicator(),
             );
           }
 
