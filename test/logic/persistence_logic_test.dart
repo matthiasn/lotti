@@ -610,9 +610,8 @@ void main() {
       await getIt<PersistenceLogic>()
           .upsertDashboardDefinition(testDashboardConfig);
 
-      final created = (await getIt<JournalDb>()
-              .watchDashboardById(testDashboardConfig.id)
-              .first)
+      final created = await getIt<JournalDb>()
+          .watchDashboardById(testDashboardConfig.id)
           .first;
 
       expect(created, testDashboardConfig);
@@ -623,12 +622,11 @@ void main() {
       await getIt<PersistenceLogic>()
           .deleteDashboardDefinition(testDashboardConfig);
 
-      final count = (await getIt<JournalDb>()
-              .watchDashboardById(testDashboardConfig.id)
-              .first)
-          .length;
+      final item = await getIt<JournalDb>()
+          .watchDashboardById(testDashboardConfig.id)
+          .first;
 
-      expect(count, 0);
+      expect(item, null);
     });
 
     test('create and retrieve habit definition', () async {

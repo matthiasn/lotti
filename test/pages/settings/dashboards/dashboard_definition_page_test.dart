@@ -479,9 +479,7 @@ void main() {
       when(
         () => mockJournalDb.watchDashboardById(testDashboardConfig.id),
       ).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          <DashboardDefinition>[testDashboardConfig],
-        ]),
+        (_) => Stream<DashboardDefinition>.fromIterable([testDashboardConfig]),
       );
 
       await tester.pumpWidget(
