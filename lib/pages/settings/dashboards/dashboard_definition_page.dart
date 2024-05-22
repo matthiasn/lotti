@@ -606,13 +606,9 @@ class EditDashboardPage extends StatelessWidget {
       stream: _db.watchDashboardById(dashboardId),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<DashboardDefinition>> snapshot,
+        AsyncSnapshot<DashboardDefinition?> snapshot,
       ) {
-        DashboardDefinition? dashboard;
-        final data = snapshot.data ?? [];
-        if (data.isNotEmpty) {
-          dashboard = data.first;
-        }
+        final dashboard = snapshot.data;
 
         if (dashboard == null) {
           return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);

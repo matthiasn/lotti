@@ -28,19 +28,13 @@ class DashboardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<DashboardDefinition>>(
+    return StreamBuilder<DashboardDefinition?>(
       stream: getIt<JournalDb>().watchDashboardById(dashboardId),
       builder: (context, snapshot) {
-        DashboardDefinition? dashboard;
-
         if (!snapshot.hasData) {
           return const SizedBox.shrink();
         }
-
-        final data = snapshot.data ?? [];
-        if (data.isNotEmpty) {
-          dashboard = data.first;
-        }
+        final dashboard = snapshot.data;
 
         final items = dashboard!.items.map((DashboardItem dashboardItem) {
           return dashboardItem.map(
