@@ -747,8 +747,11 @@ class JournalDb extends _$JournalDb {
     return allDashboards().watch().map(dashboardStreamMapper);
   }
 
-  Stream<List<DashboardDefinition>> watchDashboardById(String id) {
-    return dashboardById(id).watch().map(dashboardStreamMapper);
+  Stream<DashboardDefinition?> watchDashboardById(String id) {
+    return dashboardById(id)
+        .watch()
+        .map(dashboardStreamMapper)
+        .map((res) => res.firstOrNull);
   }
 
   Stream<List<HabitDefinition>> watchHabitDefinitions() {

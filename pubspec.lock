@@ -45,10 +45,10 @@ packages:
     dependency: "direct dev"
     description:
       name: archive
-      sha256: ecf4273855368121b1caed0d10d4513c7241dfc813f7d3c8933b36622ae9b265
+      sha256: "6bd38d335f0954f5fad9c79e614604fbf03a0e5b975923dd001b6ea965ef5b4b"
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.1"
+    version: "3.6.0"
   args:
     dependency: transitive
     description:
@@ -77,10 +77,10 @@ packages:
     dependency: "direct main"
     description:
       name: audio_video_progress_bar
-      sha256: ccc7d7b83d2a16c52d4a7fb332faabd1baa053fb0e4c16815aefd3945ab33b81
+      sha256: "552b1f73c56c4c88407999e0a8507176f60c56de3e6d63bc20a0eab48467d4c9"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.3"
   auto_size_text:
     dependency: "direct main"
     description:
@@ -445,10 +445,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: e2f0be62c733a1f2ba51f70a8b544acd5a19ea726e409dd341e5f4a35582cfe0
+      sha256: e302834747f0ce555d82d337f5a55dfd271231f03800ad8131fe9445c676c215
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.18"
+    version: "9.3.19"
   dart_style:
     dependency: "direct dev"
     description:
@@ -982,10 +982,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "94922fbb84f9ac4949f355bfb0337da1fb61f1110a0069d8b5d65746379a8dc0"
+      sha256: da6f19abda6662dd3a4da7e16f17492e3205b20d09f68ffd8c0b19ec0688a343
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.18"
+    version: "9.3.19"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -998,10 +998,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "8496a89eea74e23f92581885f876455d9d460e71201405dffe5f55dfe1155864"
+      sha256: "165164745e6afb5c0e3e3fcc72a012fb9e58496fb26ffb92cf22e16a821e85d0"
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.1"
+    version: "9.2.2"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
@@ -1014,10 +1014,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_secure_storage_macos
-      sha256: b768a7dab26d6186b68e2831b3104f8968154f0f4fdbf66e7c2dd7bdf299daaf
+      sha256: "1693ab11121a5f925bbea0be725abfcfbbcf36c1e29e571f84a0c0f436147a81"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.1"
+    version: "3.1.2"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
@@ -1310,10 +1310,10 @@ packages:
     dependency: transitive
     description:
       name: image
-      sha256: "4c68bfd5ae83e700b5204c1e74451e7bf3cf750e6843c6e158289cf56bda018e"
+      sha256: "2237616a36c0d69aef7549ab439b833fb7f9fb9fc861af2cc9ac3eedddd69ca8"
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.7"
+    version: "4.2.0"
   infinite_scroll_pagination:
     dependency: "direct main"
     description:
@@ -1619,10 +1619,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "8610e6d207d6b667e4fe9e769d5b479db27aa1f80570880d3f171a5d3ff49d1a"
+      sha256: b96f16ec227138a61d148f2812c4d558b2930edbb6cd05d03b3a41c4fffd2f47
       url: "https://pub.dev"
     source: hosted
-    version: "0.29.2"
+    version: "0.29.7"
   media_kit:
     dependency: "direct main"
     description:
@@ -2131,26 +2131,26 @@ packages:
     dependency: "direct main"
     description:
       name: record
-      sha256: "113b368168c49c78902ab37c2b354dea30a0aec5bdeca434073826b6ea73eca1"
+      sha256: "90dae13f3edb582c19e148a32dae9f643f03ab368d70ec7d0b872014018a94da"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.5"
+    version: "5.1.0"
   record_android:
     dependency: transitive
     description:
       name: record_android
-      sha256: "0df98e05873b22b443309e289bf1eb3b5b9a60e7779134334e2073eb0763a992"
+      sha256: bc36a2b33fd920a0f92d208500f879dd03c6db1aa91da72232d897f73b689033
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.2.0"
   record_darwin:
     dependency: transitive
     description:
       name: record_darwin
-      sha256: ee8cb1bb1712d7ce38140ecabe70e5c286c02f05296d66043bee865ace7eb1b9
+      sha256: "2210da0fde7c86b4048cccfe2cd19b25fc7adf1ada7d50ec4a5ab4af2a863739"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.1.0"
   record_linux:
     dependency: transitive
     description:
@@ -2163,18 +2163,18 @@ packages:
     dependency: transitive
     description:
       name: record_platform_interface
-      sha256: "3a4b56e94ecd2a0b2b43eb1fa6f94c5b8484334f5d38ef43959c4bf97fb374cf"
+      sha256: "11f8b03ea8a0e279b0e306571dbe0db0202c0b8e866495c9fa1ad2281d5e4c15"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.1.0"
   record_web:
     dependency: transitive
     description:
       name: record_web
-      sha256: "24847cdbcf999f7a5762170792f622ac844858766becd0f2370ec8ae22f7526e"
+      sha256: "0ef370d1e6553ad33c39dd03103b374e7861f3518b0533e64c94d73f988a5ffa"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.5"
+    version: "1.1.0"
   record_windows:
     dependency: transitive
     description:

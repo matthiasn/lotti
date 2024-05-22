@@ -81,7 +81,7 @@ class _DashboardPageState extends State<DashboardPage> {
         stream: _db.watchDashboardById(widget.dashboardId),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<DashboardDefinition>> snapshot,
+          AsyncSnapshot<DashboardDefinition?> snapshot,
         ) {
           if (!snapshot.hasData) {
             return EmptyScaffoldWithTitle(
@@ -90,11 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
             );
           }
 
-          DashboardDefinition? dashboard;
-          final data = snapshot.data ?? [];
-          if (data.isNotEmpty) {
-            dashboard = data.first;
-          }
+          final dashboard = snapshot.data;
 
           if (dashboard == null) {
             beamToNamed('/dashboards');
