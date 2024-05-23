@@ -445,10 +445,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: e302834747f0ce555d82d337f5a55dfd271231f03800ad8131fe9445c676c215
+      sha256: "70fd12b4a9d1716922603a42d07fda68730c12c25d9b7edef8aedbeeeff1688e"
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.19"
+    version: "9.3.20"
   dart_style:
     dependency: "direct dev"
     description:
@@ -982,10 +982,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: da6f19abda6662dd3a4da7e16f17492e3205b20d09f68ffd8c0b19ec0688a343
+      sha256: eb5c4ef32dddbff94babe05c1f39aae1c6d7234d6cc331b8a8e8d0e342658bf7
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.19"
+    version: "9.3.20"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -1619,10 +1619,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: b96f16ec227138a61d148f2812c4d558b2930edbb6cd05d03b3a41c4fffd2f47
+      sha256: "107ff0a3fd6351cad889ec7b94b8a19ba633c7d8c599a08889df21b43862d0f5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.29.7"
+    version: "0.29.8"
   media_kit:
     dependency: "direct main"
     description:
@@ -2139,10 +2139,10 @@ packages:
     dependency: transitive
     description:
       name: record_android
-      sha256: bc36a2b33fd920a0f92d208500f879dd03c6db1aa91da72232d897f73b689033
+      sha256: "533ce8afa4e47da5c97ea971cde0f0efec28c9bedfac6257a7a28491d34e07ea"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   record_darwin:
     dependency: transitive
     description:
@@ -2712,10 +2712,10 @@ packages:
     dependency: transitive
     description:
       name: universal_platform
-      sha256: d315be0f6641898b280ffa34e2ddb14f3d12b1a37882557869646e0cc363d0cc
+      sha256: "64e16458a0ea9b99260ceb5467a214c1f298d647c659af1bff6d3bf82536b1ec"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0+1"
+    version: "1.1.0"
   unorm_dart:
     dependency: transitive
     description:
