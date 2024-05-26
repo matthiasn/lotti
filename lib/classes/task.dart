@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/classes/check_list_item.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -88,7 +87,6 @@ class TaskData with _$TaskData {
     required String title,
     DateTime? due,
     Duration? estimate,
-    List<CheckListItem>? checklist,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>
