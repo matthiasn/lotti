@@ -52,9 +52,9 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         ),
                         callback: self.sendTranscriptionProgressEvent
                     )
-                    
-                    let text = transcription?.text
-                    let language = transcription?.language
+
+                    let text : String? = transcription?.first?.text
+                    let language = transcription?.first?.language
                     
                     let data = [language, self.model, text]
                     result(data)
