@@ -142,6 +142,7 @@ class JournalCardTitle extends StatelessWidget {
                 showChart: false,
               ),
               habitCompletion: HabitSummary.new,
+              checklistItem: (ChecklistItem value) => Text(value.data.title),
             ),
           ),
         ],

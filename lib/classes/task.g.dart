@@ -200,9 +200,6 @@ _$TaskDataImpl _$$TaskDataImplFromJson(Map<String, dynamic> json) =>
       estimate: json['estimate'] == null
           ? null
           : Duration(microseconds: (json['estimate'] as num).toInt()),
-      checklist: (json['checklist'] as List<dynamic>?)
-          ?.map((e) => CheckListItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
     );
 
 Map<String, dynamic> _$$TaskDataImplToJson(_$TaskDataImpl instance) =>
@@ -214,5 +211,4 @@ Map<String, dynamic> _$$TaskDataImplToJson(_$TaskDataImpl instance) =>
       'title': instance.title,
       'due': instance.due?.toIso8601String(),
       'estimate': instance.estimate?.inMicroseconds,
-      'checklist': instance.checklist,
     };
