@@ -109,6 +109,7 @@ class EntryDetailWidget extends StatelessWidget {
                   ),
                   journalEntry: (_) => const SizedBox.shrink(),
                   journalImage: (_) => const SizedBox.shrink(),
+                  checklistItem: (_) => const SizedBox.shrink(),
                 ),
                 EntryDetailFooter(entryId: itemId),
               ],
