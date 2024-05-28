@@ -1433,6 +1433,8 @@ JournalEntity _$JournalEntityFromJson(Map<String, dynamic> json) {
       return JournalAudio.fromJson(json);
     case 'task':
       return Task.fromJson(json);
+    case 'event':
+      return JournalEvent.fromJson(json);
     case 'checklistItem':
       return ChecklistItem.fromJson(json);
     case 'quantitative':
@@ -1471,6 +1473,9 @@ mixin _$JournalEntity {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -1505,6 +1510,9 @@ mixin _$JournalEntity {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -1539,6 +1547,9 @@ mixin _$JournalEntity {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -1566,6 +1577,7 @@ mixin _$JournalEntity {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -1580,6 +1592,7 @@ mixin _$JournalEntity {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -1594,6 +1607,7 @@ mixin _$JournalEntity {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -1803,6 +1817,9 @@ class _$JournalEntryImpl implements JournalEntry {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -1840,6 +1857,9 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -1877,6 +1897,9 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -1910,6 +1933,7 @@ class _$JournalEntryImpl implements JournalEntry {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -1927,6 +1951,7 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -1944,6 +1969,7 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -2125,6 +2151,9 @@ class _$JournalImageImpl implements JournalImage {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -2162,6 +2191,9 @@ class _$JournalImageImpl implements JournalImage {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -2199,6 +2231,9 @@ class _$JournalImageImpl implements JournalImage {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -2232,6 +2267,7 @@ class _$JournalImageImpl implements JournalImage {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -2249,6 +2285,7 @@ class _$JournalImageImpl implements JournalImage {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -2266,6 +2303,7 @@ class _$JournalImageImpl implements JournalImage {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -2449,6 +2487,9 @@ class _$JournalAudioImpl implements JournalAudio {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -2486,6 +2527,9 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -2523,6 +2567,9 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -2556,6 +2603,7 @@ class _$JournalAudioImpl implements JournalAudio {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -2573,6 +2621,7 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -2590,6 +2639,7 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -2772,6 +2822,9 @@ class _$TaskImpl implements Task {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -2809,6 +2862,9 @@ class _$TaskImpl implements Task {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -2846,6 +2902,9 @@ class _$TaskImpl implements Task {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -2879,6 +2938,7 @@ class _$TaskImpl implements Task {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -2896,6 +2956,7 @@ class _$TaskImpl implements Task {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -2913,6 +2974,7 @@ class _$TaskImpl implements Task {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -2954,6 +3016,342 @@ abstract class Task implements JournalEntity {
   @override
   @JsonKey(ignore: true)
   _$$TaskImplCopyWith<_$TaskImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$JournalEventImplCopyWith<$Res>
+    implements $JournalEntityCopyWith<$Res> {
+  factory _$$JournalEventImplCopyWith(
+          _$JournalEventImpl value, $Res Function(_$JournalEventImpl) then) =
+      __$$JournalEventImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {Metadata meta,
+      EventData data,
+      EntryText? entryText,
+      Geolocation? geolocation});
+
+  @override
+  $MetadataCopyWith<$Res> get meta;
+  $EventDataCopyWith<$Res> get data;
+  @override
+  $EntryTextCopyWith<$Res>? get entryText;
+  @override
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class __$$JournalEventImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$JournalEventImpl>
+    implements _$$JournalEventImplCopyWith<$Res> {
+  __$$JournalEventImplCopyWithImpl(
+      _$JournalEventImpl _value, $Res Function(_$JournalEventImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? meta = null,
+    Object? data = null,
+    Object? entryText = freezed,
+    Object? geolocation = freezed,
+  }) {
+    return _then(_$JournalEventImpl(
+      meta: null == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Metadata,
+      data: null == data
+          ? _value.data
+          : data // ignore: cast_nullable_to_non_nullable
+              as EventData,
+      entryText: freezed == entryText
+          ? _value.entryText
+          : entryText // ignore: cast_nullable_to_non_nullable
+              as EntryText?,
+      geolocation: freezed == geolocation
+          ? _value.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $EventDataCopyWith<$Res> get data {
+    return $EventDataCopyWith<$Res>(_value.data, (value) {
+      return _then(_value.copyWith(data: value));
+    });
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$JournalEventImpl implements JournalEvent {
+  const _$JournalEventImpl(
+      {required this.meta,
+      required this.data,
+      this.entryText,
+      this.geolocation,
+      final String? $type})
+      : $type = $type ?? 'event';
+
+  factory _$JournalEventImpl.fromJson(Map<String, dynamic> json) =>
+      _$$JournalEventImplFromJson(json);
+
+  @override
+  final Metadata meta;
+  @override
+  final EventData data;
+  @override
+  final EntryText? entryText;
+  @override
+  final Geolocation? geolocation;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'JournalEntity.event(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$JournalEventImpl &&
+            (identical(other.meta, meta) || other.meta == meta) &&
+            (identical(other.data, data) || other.data == data) &&
+            (identical(other.entryText, entryText) ||
+                other.entryText == entryText) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, meta, data, entryText, geolocation);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$JournalEventImplCopyWith<_$JournalEventImpl> get copyWith =>
+      __$$JournalEventImplCopyWithImpl<_$JournalEventImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
+        journalEntry,
+    required TResult Function(Metadata meta, ImageData data,
+            EntryText? entryText, Geolocation? geolocation)
+        journalImage,
+    required TResult Function(Metadata meta, AudioData data,
+            EntryText? entryText, Geolocation? geolocation)
+        journalAudio,
+    required TResult Function(Metadata meta, TaskData data,
+            EntryText? entryText, Geolocation? geolocation)
+        task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
+    required TResult Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)
+        checklistItem,
+    required TResult Function(Metadata meta, QuantitativeData data,
+            EntryText? entryText, Geolocation? geolocation)
+        quantitative,
+    required TResult Function(Metadata meta, MeasurementData data,
+            EntryText? entryText, Geolocation? geolocation)
+        measurement,
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
+        workout,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
+  }) {
+    return event(meta, data, entryText, geolocation);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+        journalEntry,
+    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalImage,
+    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalAudio,
+    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
+    TResult? Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        checklistItem,
+    TResult? Function(Metadata meta, QuantitativeData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        quantitative,
+    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        measurement,
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        workout,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
+  }) {
+    return event?.call(meta, data, entryText, geolocation);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+        journalEntry,
+    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalImage,
+    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalAudio,
+    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
+    TResult Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        checklistItem,
+    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        quantitative,
+    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        measurement,
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        workout,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
+    required TResult orElse(),
+  }) {
+    if (event != null) {
+      return event(meta, data, entryText, geolocation);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(JournalEntry value) journalEntry,
+    required TResult Function(JournalImage value) journalImage,
+    required TResult Function(JournalAudio value) journalAudio,
+    required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
+    required TResult Function(ChecklistItem value) checklistItem,
+    required TResult Function(QuantitativeEntry value) quantitative,
+    required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(WorkoutEntry value) workout,
+    required TResult Function(HabitCompletionEntry value) habitCompletion,
+    required TResult Function(SurveyEntry value) survey,
+  }) {
+    return event(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(JournalEntry value)? journalEntry,
+    TResult? Function(JournalImage value)? journalImage,
+    TResult? Function(JournalAudio value)? journalAudio,
+    TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
+    TResult? Function(ChecklistItem value)? checklistItem,
+    TResult? Function(QuantitativeEntry value)? quantitative,
+    TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(WorkoutEntry value)? workout,
+    TResult? Function(HabitCompletionEntry value)? habitCompletion,
+    TResult? Function(SurveyEntry value)? survey,
+  }) {
+    return event?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(JournalEntry value)? journalEntry,
+    TResult Function(JournalImage value)? journalImage,
+    TResult Function(JournalAudio value)? journalAudio,
+    TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
+    TResult Function(ChecklistItem value)? checklistItem,
+    TResult Function(QuantitativeEntry value)? quantitative,
+    TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(WorkoutEntry value)? workout,
+    TResult Function(HabitCompletionEntry value)? habitCompletion,
+    TResult Function(SurveyEntry value)? survey,
+    required TResult orElse(),
+  }) {
+    if (event != null) {
+      return event(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$JournalEventImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class JournalEvent implements JournalEntity {
+  const factory JournalEvent(
+      {required final Metadata meta,
+      required final EventData data,
+      final EntryText? entryText,
+      final Geolocation? geolocation}) = _$JournalEventImpl;
+
+  factory JournalEvent.fromJson(Map<String, dynamic> json) =
+      _$JournalEventImpl.fromJson;
+
+  @override
+  Metadata get meta;
+  EventData get data;
+  @override
+  EntryText? get entryText;
+  @override
+  Geolocation? get geolocation;
+  @override
+  @JsonKey(ignore: true)
+  _$$JournalEventImplCopyWith<_$JournalEventImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -3095,6 +3493,9 @@ class _$ChecklistItemImpl implements ChecklistItem {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -3132,6 +3533,9 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -3169,6 +3573,9 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -3202,6 +3609,7 @@ class _$ChecklistItemImpl implements ChecklistItem {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -3219,6 +3627,7 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -3236,6 +3645,7 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -3420,6 +3830,9 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -3457,6 +3870,9 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -3494,6 +3910,9 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -3527,6 +3946,7 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -3544,6 +3964,7 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -3561,6 +3982,7 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -3745,6 +4167,9 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -3782,6 +4207,9 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -3819,6 +4247,9 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -3852,6 +4283,7 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -3869,6 +4301,7 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -3886,6 +4319,7 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -4069,6 +4503,9 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -4106,6 +4543,9 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -4143,6 +4583,9 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -4176,6 +4619,7 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -4193,6 +4637,7 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -4210,6 +4655,7 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -4395,6 +4841,9 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -4432,6 +4881,9 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -4469,6 +4921,9 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -4502,6 +4957,7 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -4519,6 +4975,7 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -4536,6 +4993,7 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
@@ -4719,6 +5177,9 @@ class _$SurveyEntryImpl implements SurveyEntry {
     required TResult Function(Metadata meta, TaskData data,
             EntryText? entryText, Geolocation? geolocation)
         task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
     required TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)
         checklistItem,
@@ -4756,6 +5217,9 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult? Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -4793,6 +5257,9 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult Function(Metadata meta, TaskData data, EntryText? entryText,
             Geolocation? geolocation)?
         task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
     TResult Function(Metadata meta, ChecklistItemData data,
             EntryText? entryText, Geolocation? geolocation)?
         checklistItem,
@@ -4826,6 +5293,7 @@ class _$SurveyEntryImpl implements SurveyEntry {
     required TResult Function(JournalImage value) journalImage,
     required TResult Function(JournalAudio value) journalAudio,
     required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
     required TResult Function(ChecklistItem value) checklistItem,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
@@ -4843,6 +5311,7 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult? Function(JournalImage value)? journalImage,
     TResult? Function(JournalAudio value)? journalAudio,
     TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
     TResult? Function(ChecklistItem value)? checklistItem,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
@@ -4860,6 +5329,7 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult Function(JournalImage value)? journalImage,
     TResult Function(JournalAudio value)? journalAudio,
     TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
     TResult Function(ChecklistItem value)? checklistItem,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,

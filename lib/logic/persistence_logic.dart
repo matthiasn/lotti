@@ -7,6 +7,7 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
@@ -305,6 +306,51 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'createTaskEntry',
+        stackTrace: stackTrace,
+      );
+    }
+
+    return null;
+  }
+
+  Future<JournalEvent?> createEventEntry({
+    required EventData data,
+    required EntryText entryText,
+    String? linkedId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final id = uuid.v1();
+      final vc = await _vectorClockService.getNextVectorClock();
+
+      final journalEvent = JournalEvent(
+        data: data,
+        entryText: entryText,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          id: id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+          starred: true,
+        ),
+      );
+
+      await createDbEntity(
+        journalEvent,
+        enqueueSync: true,
+        linkedId: linkedId,
+      );
+      addGeolocation(journalEvent.meta.id);
+      return journalEvent;
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createEventEntry',
         stackTrace: stackTrace,
       );
     }
@@ -672,6 +718,56 @@ class PersistenceLogic {
           'not a task',
           domain: 'persistence_logic',
           subDomain: 'updateTask',
+        ),
+      );
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'updateTask',
+        stackTrace: stackTrace,
+      );
+    }
+    return true;
+  }
+
+  Future<bool> updateEvent({
+    required String journalEntityId,
+    required EventData data,
+    EntryText? entryText,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      await journalEntity.maybeMap(
+        event: (JournalEvent event) async {
+          final vc = await _vectorClockService.getNextVectorClock(
+            previous: journalEntity.meta.vectorClock,
+          );
+
+          final oldMeta = journalEntity.meta;
+          final newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          final newTask = event.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+            data: data,
+          );
+
+          await updateDbEntity(newTask, enqueueSync: true);
+        },
+        orElse: () async => _loggingDb.captureException(
+          'not an event',
+          domain: 'persistence_logic',
+          subDomain: 'updateEvent',
         ),
       );
     } catch (exception, stackTrace) {

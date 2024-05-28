@@ -152,6 +152,25 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             size: actionIconSize,
           ),
         ),
+      )
+      ..add(
+        FloatingActionButton(
+          heroTag: 'event',
+          tooltip: context.messages.addActionAddEvent,
+          onPressed: () async {
+            rebuild();
+            final linkedId = widget.linked?.meta.id;
+            final event = await createEvent(linkedId: linkedId);
+
+            if (event != null) {
+              beamToNamed('/journal/${event.meta.id}');
+            }
+          },
+          child: const Icon(
+            Icons.event_outlined,
+            size: actionIconSize,
+          ),
+        ),
       );
 
     return Padding(
