@@ -332,6 +332,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 final List<String> entryTypes = [
   'Task',
   'JournalEntry',
+  'JournalEvent',
   'JournalAudio',
   'JournalImage',
   'MeasurementEntry',

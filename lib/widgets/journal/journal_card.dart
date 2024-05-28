@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/events/event_status.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
@@ -55,6 +56,8 @@ class JournalCardTitle extends StatelessWidget {
                 style: monospaceTextStyle,
               ),
               if (item is Task) TaskStatusWidget(item as Task),
+              if (item is JournalEvent)
+                EventStatusWidget((item as JournalEvent).data.status),
               Row(
                 children: [
                   Visibility(
@@ -132,6 +135,24 @@ class JournalCardTitle extends StatelessWidget {
                     if (showLinkedDuration) LinkedDuration(task: task),
                     TextViewerWidget(
                       entryText: task.entryText,
+                      maxHeight: maxHeight,
+                    ),
+                  ],
+                );
+              },
+              event: (JournalEvent event) {
+                final data = event.data;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data.title,
+                      style: const TextStyle(
+                        fontSize: fontSizeLarge,
+                      ),
+                    ),
+                    TextViewerWidget(
+                      entryText: event.entryText,
                       maxHeight: maxHeight,
                     ),
                   ],

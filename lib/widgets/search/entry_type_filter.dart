@@ -100,6 +100,7 @@ class EntryTypeAllChip extends StatelessWidget {
 final entryTypeDisplayNames = {
   'Task': 'Task',
   'JournalEntry': 'Text',
+  'JournalEvent': 'Event',
   'JournalAudio': 'Audio',
   'JournalImage': 'Photo',
   'MeasurementEntry': 'Measured',

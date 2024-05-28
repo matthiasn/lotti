@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
+import 'package:lotti/widgets/events/event_form.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
@@ -78,6 +79,7 @@ class EntryDetailWidget extends StatelessWidget {
                 TagsListWidget(entryId: itemId, parentTags: parentTags),
                 item.maybeMap(
                   task: (_) => const SizedBox.shrink(),
+                  event: (_) => const SizedBox.shrink(),
                   quantitative: (_) => const SizedBox.shrink(),
                   workout: (_) => const SizedBox.shrink(),
                   orElse: () {
@@ -101,6 +103,7 @@ class EntryDetailWidget extends StatelessWidget {
                       task: task,
                     );
                   },
+                  event: EventForm.new,
                   habitCompletion: (habit) => HabitSummary(
                     habit,
                     paddingLeft: 10,

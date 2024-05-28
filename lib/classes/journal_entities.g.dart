@@ -226,6 +226,28 @@ Map<String, dynamic> _$$TaskImplToJson(_$TaskImpl instance) =>
       'runtimeType': instance.$type,
     };
 
+_$JournalEventImpl _$$JournalEventImplFromJson(Map<String, dynamic> json) =>
+    _$JournalEventImpl(
+      meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+      data: EventData.fromJson(json['data'] as Map<String, dynamic>),
+      entryText: json['entryText'] == null
+          ? null
+          : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$JournalEventImplToJson(_$JournalEventImpl instance) =>
+    <String, dynamic>{
+      'meta': instance.meta,
+      'data': instance.data,
+      'entryText': instance.entryText,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };
+
 _$ChecklistItemImpl _$$ChecklistItemImplFromJson(Map<String, dynamic> json) =>
     _$ChecklistItemImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
