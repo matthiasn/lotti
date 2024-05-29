@@ -44,6 +44,7 @@ bool fromNullableBool(bool? value) {
 
 DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 DateFormat dfShorter = DateFormat('yyyy-MM-dd HH:mm');
+DateFormat dfShort = DateFormat('yyyy-MM-dd');
 DateFormat dfYmd = DateFormat('yyyy-MM-dd');
 DateFormat hhMmFormat = DateFormat('HH:mm');
 

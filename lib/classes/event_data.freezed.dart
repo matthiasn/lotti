@@ -21,7 +21,7 @@ EventData _$EventDataFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$EventData {
   String get title => throw _privateConstructorUsedError;
-  int get stars => throw _privateConstructorUsedError;
+  double get stars => throw _privateConstructorUsedError;
   EventStatus get status => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -35,7 +35,7 @@ abstract class $EventDataCopyWith<$Res> {
   factory $EventDataCopyWith(EventData value, $Res Function(EventData) then) =
       _$EventDataCopyWithImpl<$Res, EventData>;
   @useResult
-  $Res call({String title, int stars, EventStatus status});
+  $Res call({String title, double stars, EventStatus status});
 }
 
 /// @nodoc
@@ -63,7 +63,7 @@ class _$EventDataCopyWithImpl<$Res, $Val extends EventData>
       stars: null == stars
           ? _value.stars
           : stars // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -80,7 +80,7 @@ abstract class _$$EventDataImplCopyWith<$Res>
       __$$EventDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String title, int stars, EventStatus status});
+  $Res call({String title, double stars, EventStatus status});
 }
 
 /// @nodoc
@@ -106,7 +106,7 @@ class __$$EventDataImplCopyWithImpl<$Res>
       stars: null == stars
           ? _value.stars
           : stars // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -127,7 +127,7 @@ class _$EventDataImpl implements _EventData {
   @override
   final String title;
   @override
-  final int stars;
+  final double stars;
   @override
   final EventStatus status;
 
@@ -167,7 +167,7 @@ class _$EventDataImpl implements _EventData {
 abstract class _EventData implements EventData {
   const factory _EventData(
       {required final String title,
-      required final int stars,
+      required final double stars,
       required final EventStatus status}) = _$EventDataImpl;
 
   factory _EventData.fromJson(Map<String, dynamic> json) =
@@ -176,7 +176,7 @@ abstract class _EventData implements EventData {
   @override
   String get title;
   @override
-  int get stars;
+  double get stars;
   @override
   EventStatus get status;
   @override

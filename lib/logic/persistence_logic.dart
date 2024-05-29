@@ -756,13 +756,13 @@ class PersistenceLogic {
             vectorClock: vc,
           );
 
-          final newTask = event.copyWith(
+          final newEvent = event.copyWith(
             meta: newMeta,
             entryText: entryText,
             data: data,
           );
 
-          await updateDbEntity(newTask, enqueueSync: true);
+          await updateDbEntity(newEvent, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an event',

@@ -8,7 +8,7 @@ part 'event_data.g.dart';
 class EventData with _$EventData {
   const factory EventData({
     required String title,
-    required int stars,
+    required double stars,
     required EventStatus status,
   }) = _EventData;
 
