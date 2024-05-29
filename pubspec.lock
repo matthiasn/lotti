@@ -994,6 +994,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.3.21"
+  flutter_rating:
+    dependency: "direct main"
+    description:
+      name: flutter_rating
+      sha256: "207bcd4a276585b8a0771a5ac03c0f3cdb27490e79a609f9a483d9794fe630b7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   flutter_riverpod:
     dependency: "direct main"
     description:

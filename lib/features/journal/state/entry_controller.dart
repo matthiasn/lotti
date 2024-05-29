@@ -196,6 +196,19 @@ class EntryController extends _$EntryController {
     await HapticFeedback.heavyImpact();
   }
 
+  Future<void> updateRating(double stars) async {
+    final event = state.value?.entry;
+    if (event != null && event is JournalEvent) {
+      await _persistenceLogic.updateEvent(
+        entryText: entryTextFromController(controller),
+        journalEntityId: entryId,
+        data: event.data.copyWith(
+          stars: stars,
+        ),
+      );
+    }
+  }
+
   Future<bool> delete({
     required bool beamBack,
   }) async {

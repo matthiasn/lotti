@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -24,6 +25,14 @@ class EventForm extends ConsumerStatefulWidget {
 }
 
 class _EventFormState extends ConsumerState<EventForm> {
+  double stars = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    stars = widget.event?.data.stars ?? stars;
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.event?.data;
@@ -67,8 +76,23 @@ class _EventFormState extends ConsumerState<EventForm> {
                 inputSpacer,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 190),
+                      child: StarRating(
+                        rating: stars,
+                        allowHalfRating: true,
+                        size: 32,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        onRatingChanged: (rating) {
+                          setState(() {
+                            stars = rating;
+                          });
+                          notifier.updateRating(rating);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     SizedBox(
                       width: 180,
                       child: FormBuilderDropdown<EventStatus>(

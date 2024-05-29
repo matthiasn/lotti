@@ -57,14 +57,15 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                SwitchIconWidget(
-                  tooltip: context.messages.journalFavoriteTooltip,
-                  onPressed: notifier.toggleStarred,
-                  value: entry?.meta.starred ?? false,
-                  icon: Icons.star_outline_rounded,
-                  activeIcon: Icons.star_rounded,
-                  activeColor: starredGold,
-                ),
+                if (entry is! JournalEvent)
+                  SwitchIconWidget(
+                    tooltip: context.messages.journalFavoriteTooltip,
+                    onPressed: notifier.toggleStarred,
+                    value: entry?.meta.starred ?? false,
+                    icon: Icons.star_outline_rounded,
+                    activeIcon: Icons.star_rounded,
+                    activeColor: starredGold,
+                  ),
                 SwitchIconWidget(
                   tooltip: context.messages.journalFlaggedTooltip,
                   onPressed: notifier.toggleFlagged,

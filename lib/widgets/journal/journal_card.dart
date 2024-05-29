@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_rating/flutter_rating.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -52,12 +53,12 @@ class JournalCardTitle extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                dfShorter.format(item.meta.dateFrom),
+                item is JournalEvent
+                    ? dfShort.format(item.meta.dateFrom)
+                    : dfShorter.format(item.meta.dateFrom),
                 style: monospaceTextStyle,
               ),
               if (item is Task) TaskStatusWidget(item as Task),
-              if (item is JournalEvent)
-                EventStatusWidget((item as JournalEvent).data.status),
               Row(
                 children: [
                   Visibility(
@@ -68,30 +69,44 @@ class JournalCardTitle extends StatelessWidget {
                       size: iconSize,
                     ),
                   ),
-                  Visibility(
-                    visible: fromNullableBool(item.meta.starred),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        MdiIcons.star,
-                        color: starredGold,
-                        size: iconSize,
+                  if (item is! JournalEvent)
+                    Visibility(
+                      visible: fromNullableBool(item.meta.starred),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          MdiIcons.star,
+                          color: starredGold,
+                          size: iconSize,
+                        ),
                       ),
                     ),
-                  ),
-                  Visibility(
-                    visible: item.meta.flag == EntryFlag.import,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        MdiIcons.flag,
-                        color: Theme.of(context).colorScheme.error,
-                        size: iconSize,
+                  if (item is! JournalEvent)
+                    Visibility(
+                      visible: item.meta.flag == EntryFlag.import,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          MdiIcons.flag,
+                          color: Theme.of(context).colorScheme.error,
+                          size: iconSize,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
+              if (item is JournalEvent) ...[
+                const SizedBox(width: 10),
+                EventStatusWidget(
+                  (item as JournalEvent).data.status,
+                ),
+                const SizedBox(width: 10),
+                StarRating(
+                  rating: (item as JournalEvent).data.stars,
+                  size: 18,
+                  allowHalfRating: true,
+                ),
+              ],
             ],
           ),
           TagsViewWidget(item: item),

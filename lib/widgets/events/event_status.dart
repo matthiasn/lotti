@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class EventStatusWidget extends StatelessWidget {
   const EventStatusWidget(
@@ -13,17 +12,12 @@ class EventStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = status.color;
-
     return Chip(
       label: Text(
         status.label,
-        style: TextStyle(
-          fontSize: fontSizeSmall,
-          color: backgroundColor.isLight ? Colors.black : Colors.white,
-        ),
+        style: const TextStyle(fontSize: fontSizeSmall),
       ),
-      backgroundColor: status.color,
+      backgroundColor: status.color.withOpacity(0.6),
       visualDensity: VisualDensity.compact,
     );
   }
