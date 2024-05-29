@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/checklist_item.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/task.dart';
@@ -125,6 +126,13 @@ class JournalEntity with _$JournalEntity {
     EntryText? entryText,
     Geolocation? geolocation,
   }) = Task;
+
+  const factory JournalEntity.event({
+    required Metadata meta,
+    required EventData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = JournalEvent;
 
   const factory JournalEntity.checklistItem({
     required Metadata meta,

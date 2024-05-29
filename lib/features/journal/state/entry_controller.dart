@@ -7,6 +7,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -63,6 +64,7 @@ class EntryController extends _$EntryController {
 
   final FocusNode focusNode = FocusNode();
   final FocusNode taskTitleFocusNode = FocusNode();
+  final FocusNode eventTitleFocusNode = FocusNode();
 
   bool _dirty = false;
   bool _isFocused = false;
@@ -107,7 +109,7 @@ class EntryController extends _$EntryController {
       });
     }
 
-    if (entry is Task) {
+    if (entry is Task || entry is JournalEvent) {
       formKey = GlobalKey<FormBuilderState>();
     }
 
@@ -159,6 +161,22 @@ class EntryController extends _$EntryController {
               status != null ? taskStatusFromString(status) : task.data.status,
         ),
       );
+    }
+    if (entry is JournalEvent) {
+      final event = entry;
+      formKey?.currentState?.save();
+      final formData = formKey?.currentState?.value ?? {};
+      final title = formData['title'] as String?;
+      final status = formData['status'] as EventStatus?;
+
+      await _persistenceLogic.updateEvent(
+        entryText: entryTextFromController(controller),
+        journalEntityId: entryId,
+        data: event.data.copyWith(
+          title: title ?? event.data.title,
+          status: status ?? event.data.status,
+        ),
+      );
     } else {
       final running = getIt<TimeService>().getCurrent();
 
@@ -176,6 +194,19 @@ class EntryController extends _$EntryController {
     );
     _dirty = false;
     await HapticFeedback.heavyImpact();
+  }
+
+  Future<void> updateRating(double stars) async {
+    final event = state.value?.entry;
+    if (event != null && event is JournalEvent) {
+      await _persistenceLogic.updateEvent(
+        entryText: entryTextFromController(controller),
+        journalEntityId: entryId,
+        data: event.data.copyWith(
+          stars: stars,
+        ),
+      );
+    }
   }
 
   Future<bool> delete({
