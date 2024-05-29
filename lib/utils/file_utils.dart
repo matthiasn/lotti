@@ -16,6 +16,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     habitCompletion: (_) => 'habit_completion',
     journalAudio: (_) => 'audio',
     journalEntry: (_) => 'text_entries',
+    event: (_) => 'events',
     journalImage: (_) => 'images',
     measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
@@ -37,6 +38,7 @@ String typeSuffix(JournalEntity journalEntity) {
     workout: (_) => 'workout',
     survey: (_) => 'survey',
     task: (_) => 'task',
+    event: (_) => 'event',
     checklistItem: (_) => 'checklist_item',
   );
 }

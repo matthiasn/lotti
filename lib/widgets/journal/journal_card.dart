@@ -1,12 +1,14 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_rating/flutter_rating.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/events/event_status.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
@@ -51,7 +53,9 @@ class JournalCardTitle extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                dfShorter.format(item.meta.dateFrom),
+                item is JournalEvent
+                    ? dfShort.format(item.meta.dateFrom)
+                    : dfShorter.format(item.meta.dateFrom),
                 style: monospaceTextStyle,
               ),
               if (item is Task) TaskStatusWidget(item as Task),
@@ -65,30 +69,44 @@ class JournalCardTitle extends StatelessWidget {
                       size: iconSize,
                     ),
                   ),
-                  Visibility(
-                    visible: fromNullableBool(item.meta.starred),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        MdiIcons.star,
-                        color: starredGold,
-                        size: iconSize,
+                  if (item is! JournalEvent)
+                    Visibility(
+                      visible: fromNullableBool(item.meta.starred),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          MdiIcons.star,
+                          color: starredGold,
+                          size: iconSize,
+                        ),
                       ),
                     ),
-                  ),
-                  Visibility(
-                    visible: item.meta.flag == EntryFlag.import,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        MdiIcons.flag,
-                        color: Theme.of(context).colorScheme.error,
-                        size: iconSize,
+                  if (item is! JournalEvent)
+                    Visibility(
+                      visible: item.meta.flag == EntryFlag.import,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          MdiIcons.flag,
+                          color: Theme.of(context).colorScheme.error,
+                          size: iconSize,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
+              if (item is JournalEvent) ...[
+                const SizedBox(width: 10),
+                EventStatusWidget(
+                  (item as JournalEvent).data.status,
+                ),
+                const SizedBox(width: 10),
+                StarRating(
+                  rating: (item as JournalEvent).data.stars,
+                  size: 18,
+                  allowHalfRating: true,
+                ),
+              ],
             ],
           ),
           TagsViewWidget(item: item),
@@ -132,6 +150,24 @@ class JournalCardTitle extends StatelessWidget {
                     if (showLinkedDuration) LinkedDuration(task: task),
                     TextViewerWidget(
                       entryText: task.entryText,
+                      maxHeight: maxHeight,
+                    ),
+                  ],
+                );
+              },
+              event: (JournalEvent event) {
+                final data = event.data;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data.title,
+                      style: const TextStyle(
+                        fontSize: fontSizeLarge,
+                      ),
+                    ),
+                    TextViewerWidget(
+                      entryText: event.entryText,
                       maxHeight: maxHeight,
                     ),
                   ],

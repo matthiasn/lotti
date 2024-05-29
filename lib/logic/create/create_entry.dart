@@ -1,4 +1,6 @@
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
@@ -50,6 +52,17 @@ Future<Task?> createTask({String? linkedId}) async {
 
   return task;
 }
+
+Future<JournalEvent?> createEvent({String? linkedId}) =>
+    getIt<PersistenceLogic>().createEventEntry(
+      data: const EventData(
+        status: EventStatus.tentative,
+        title: '',
+        stars: 0,
+      ),
+      entryText: const EntryText(plainText: ''),
+      linkedId: linkedId,
+    );
 
 Future<JournalEntity?> createScreenshot({String? linkedId}) async {
   final persistenceLogic = getIt<PersistenceLogic>();
