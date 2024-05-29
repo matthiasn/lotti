@@ -42,7 +42,6 @@ class OutboxService {
 
       if (enableMatrix) {
         await getIt<MatrixService>().sendMatrixMsg(syncMessage);
-        return;
       }
 
       final vectorClockService = getIt<VectorClockService>();
