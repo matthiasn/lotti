@@ -23,7 +23,7 @@ import 'package:matrix/matrix.dart';
 /// Also updates some stats on sent message counts on the [service].
 /// The send function will terminate early (and thus refuse to send anything)
 /// when there are users with unverified device in the room.
-Future<void> sendMessage(
+Future<bool> sendMessage(
   SyncMessage syncMessage, {
   required MatrixService service,
   required String? myRoomId,
@@ -51,7 +51,7 @@ Future<void> sendMessage(
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
-      return;
+      return false;
     }
 
     if (roomId == null) {
@@ -60,7 +60,7 @@ Future<void> sendMessage(
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
-      return;
+      return false;
     }
 
     loggingDb.captureEvent(
@@ -158,6 +158,7 @@ Future<void> sendMessage(
         orElse: () {},
       );
     }
+    return true;
   } catch (e, stackTrace) {
     debugPrint('MATRIX: Error sending message: $e');
     loggingDb.captureException(
@@ -167,4 +168,5 @@ Future<void> sendMessage(
       stackTrace: stackTrace,
     );
   }
+  return false;
 }

@@ -178,15 +178,16 @@ class MatrixService {
   Future<void> startKeyVerificationListener() =>
       listenForKeyVerificationRequests(service: this);
 
-  Future<void> sendMatrixMsg(
+  Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
-  }) =>
-      sendMessage(
-        syncMessage,
-        service: this,
-        myRoomId: myRoomId,
-      );
+  }) async {
+    return sendMessage(
+      syncMessage,
+      service: this,
+      myRoomId: myRoomId,
+    );
+  }
 
   Future<void> logout() async {
     if (_client.isLogged()) {

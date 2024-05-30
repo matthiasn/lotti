@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -50,7 +49,7 @@ class WindowService implements WindowListener {
 
   @override
   void onWindowFocus() {
-    getIt<OutboxService>().restartRunner();
+    //getIt<OutboxService>().restartRunner();
   }
 
   @override
