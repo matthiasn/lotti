@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -19,14 +19,19 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 class OutboxService {
+  OutboxService() {
+    _startRunner();
+  }
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
 
-  Future<void> restartRunner() async {
-    _loggingDb.captureEvent(
-      'Restarting',
-      domain: 'OUTBOX',
-      subDomain: 'restartRunner()',
+  late ClientRunner<int> _clientRunner;
+
+  void _startRunner() {
+    _clientRunner = ClientRunner<int>(
+      callback: (event) async {
+        await sendNext();
+      },
     );
   }
 
@@ -36,14 +41,6 @@ class OutboxService {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
-      final enableMatrix = await getIt<JournalDb>().getConfigFlag(
-        enableMatrixFlag,
-      );
-
-      if (enableMatrix) {
-        await getIt<MatrixService>().sendMatrixMsg(syncMessage);
-      }
-
       final vectorClockService = getIt<VectorClockService>();
       final hostHash = await vectorClockService.getHostHash();
       final host = await vectorClockService.getHost();
@@ -111,8 +108,8 @@ class OutboxService {
           ),
         );
       }
+      await enqueueNextSendRequest();
     } catch (exception, stackTrace) {
-      debugPrint('enqueueMessage $exception \n$stackTrace');
       _loggingDb.captureException(
         exception,
         domain: 'OUTBOX',
@@ -120,5 +117,93 @@ class OutboxService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  Future<void> sendNext() async {
+    try {
+      final enableMatrix = await getIt<JournalDb>().getConfigFlag(
+        enableMatrixFlag,
+      );
+
+      if (!enableMatrix) {
+        return;
+      }
+
+      final unprocessed = await getNextItems();
+      if (unprocessed.isNotEmpty) {
+        final nextPending = unprocessed.first;
+
+        _loggingDb.captureEvent(
+          'trying ${nextPending.subject} ',
+          domain: 'OUTBOX',
+          subDomain: 'sendNext()',
+        );
+
+        try {
+          final syncMessage = SyncMessage.fromJson(
+            json.decode(nextPending.message) as Map<String, dynamic>,
+          );
+
+          final success =
+              await getIt<MatrixService>().sendMatrixMsg(syncMessage);
+
+          if (success) {
+            await _syncDatabase.updateOutboxItem(
+              OutboxCompanion(
+                id: Value(nextPending.id),
+                status: Value(OutboxStatus.sent.index),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
+            if (unprocessed.length > 1) {
+              await enqueueNextSendRequest();
+            }
+          } else {
+            await enqueueNextSendRequest(
+              delay: const Duration(seconds: 15),
+            );
+          }
+
+          _loggingDb.captureEvent(
+            '${nextPending.subject} done',
+            domain: 'OUTBOX',
+            subDomain: 'sendNext()',
+          );
+        } catch (e) {
+          await _syncDatabase.updateOutboxItem(
+            OutboxCompanion(
+              id: Value(nextPending.id),
+              status: Value(
+                nextPending.retries < 10
+                    ? OutboxStatus.pending.index
+                    : OutboxStatus.error.index,
+              ),
+              retries: Value(nextPending.retries + 1),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+          await enqueueNextSendRequest(delay: const Duration(seconds: 15));
+        }
+      }
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'OUTBOX',
+        subDomain: 'sendNext',
+        stackTrace: stackTrace,
+      );
+      await enqueueNextSendRequest(delay: const Duration(seconds: 15));
+    }
+  }
+
+  Future<void> enqueueNextSendRequest({
+    Duration delay = const Duration(milliseconds: 1),
+  }) async {
+    unawaited(
+      Future<void>.delayed(delay).then((_) {
+        _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+        _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
+      }),
+    );
   }
 }
