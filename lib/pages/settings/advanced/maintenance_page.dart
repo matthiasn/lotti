@@ -41,6 +41,10 @@ class MaintenancePage extends StatelessWidget {
                 onTap: maintenance.deleteLoggingDb,
               ),
               SettingsCard(
+                title: context.messages.maintenanceDeleteSyncDb,
+                onTap: maintenance.deleteSyncDb,
+              ),
+              SettingsCard(
                 title: context.messages.maintenanceRecreateTagged,
                 onTap: maintenance.recreateTaggedLinks,
               ),

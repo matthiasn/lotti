@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/asr_service.dart';
@@ -147,6 +148,11 @@ class Maintenance {
 
   Future<void> deleteLoggingDb() async {
     final file = await getDatabaseFile(loggingDbFileName);
+    file.deleteSync();
+  }
+
+  Future<void> deleteSyncDb() async {
+    final file = await getDatabaseFile(syncDbFileName);
     file.deleteSync();
   }
 
