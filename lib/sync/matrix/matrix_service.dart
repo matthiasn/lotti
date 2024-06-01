@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/matrix/client.dart';
@@ -9,7 +8,6 @@ import 'package:lotti/sync/matrix/config.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/last_read.dart';
 import 'package:lotti/sync/matrix/room.dart';
-import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
 import 'package:lotti/sync/matrix/timeline.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -177,16 +175,6 @@ class MatrixService {
 
   Future<void> startKeyVerificationListener() =>
       listenForKeyVerificationRequests(service: this);
-
-  Future<bool> sendMatrixMsg(
-    SyncMessage syncMessage, {
-    String? myRoomId,
-  }) async {
-    return sendMessage(
-      syncMessage,
-      myRoomId: myRoomId,
-    );
-  }
 
   Future<void> logout() async {
     if (_client.isLogged()) {

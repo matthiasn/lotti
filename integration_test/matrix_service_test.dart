@@ -15,6 +15,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
