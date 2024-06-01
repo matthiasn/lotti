@@ -132,6 +132,7 @@
   "maintenanceCancelNotifications": "Cancel all notifications",
   "maintenanceDeleteEditorDb": "Delete editor drafts database",
   "maintenanceDeleteLoggingDb": "Delete logging database",
+  "maintenanceDeleteSyncDb": "Delete sync database",
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenanceRecreateFts5": "Recreate full-text index",
