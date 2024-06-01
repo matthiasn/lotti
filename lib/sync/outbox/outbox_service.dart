@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -140,28 +141,21 @@ class OutboxService {
         );
 
         try {
-          final syncMessage = SyncMessage.fromJson(
-            json.decode(nextPending.message) as Map<String, dynamic>,
+          await getIt<MatrixService>().sendMatrixMsg(
+            SyncMessage.fromJson(
+              json.decode(nextPending.message) as Map<String, dynamic>,
+            ),
           );
 
-          final success =
-              await getIt<MatrixService>().sendMatrixMsg(syncMessage);
-
-          if (success) {
-            await _syncDatabase.updateOutboxItem(
-              OutboxCompanion(
-                id: Value(nextPending.id),
-                status: Value(OutboxStatus.sent.index),
-                updatedAt: Value(DateTime.now()),
-              ),
-            );
-            if (unprocessed.length > 1) {
-              await enqueueNextSendRequest();
-            }
-          } else {
-            await enqueueNextSendRequest(
-              delay: const Duration(seconds: 15),
-            );
+          await _syncDatabase.updateOutboxItem(
+            OutboxCompanion(
+              id: Value(nextPending.id),
+              status: Value(OutboxStatus.sent.index),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+          if (unprocessed.length > 1) {
+            await enqueueNextSendRequest();
           }
 
           _loggingDb.captureEvent(
@@ -169,7 +163,14 @@ class OutboxService {
             domain: 'OUTBOX',
             subDomain: 'sendNext()',
           );
-        } catch (e) {
+        } catch (e, stackTrace) {
+          getIt<LoggingDb>().captureException(
+            e,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg',
+            stackTrace: stackTrace,
+          );
+
           await _syncDatabase.updateOutboxItem(
             OutboxCompanion(
               id: Value(nextPending.id),
