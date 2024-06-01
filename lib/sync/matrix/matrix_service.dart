@@ -184,7 +184,6 @@ class MatrixService {
   }) async {
     return sendMessage(
       syncMessage,
-      service: this,
       myRoomId: myRoomId,
     );
   }
