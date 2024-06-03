@@ -37,18 +37,18 @@ packages:
     dependency: "direct main"
     description:
       name: arb_utils
-      sha256: "0483278c1f550e210d77229ad1d97f83917a6198da677dace5748585910c05df"
+      sha256: "621a1ef30d902c19f0cdc655c32c967ef951ab45bbf96a9cc47258abfc1be110"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.1"
+    version: "0.8.2"
   archive:
     dependency: "direct dev"
     description:
       name: archive
-      sha256: "6bd38d335f0954f5fad9c79e614604fbf03a0e5b975923dd001b6ea965ef5b4b"
+      sha256: cb6a278ef2dbb298455e1a713bda08524a175630ec643a242c399c932a0a1f7d
       url: "https://pub.dev"
     source: hosted
-    version: "3.6.0"
+    version: "3.6.1"
   args:
     dependency: transitive
     description:
@@ -425,14 +425,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
-  dart_console2:
-    dependency: transitive
-    description:
-      name: dart_console2
-      sha256: f7636b74f19910a20e3d03262190ad78546a33dfc972dba7bb9fe1530826269e
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.1"
   dart_earcut:
     dependency: transitive
     description:
@@ -606,10 +598,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image
-      sha256: d7f091d068fcac7246c4b22a84b8dac59a62e04d29a5c172710c696e67a22f94
+      sha256: "9786aab821aac117763d6e4419cd49f5031fbaacfe3fd212c5b313d0334c37a9"
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.0"
+    version: "8.2.1"
   extended_image_library:
     dependency: transitive
     description:
@@ -1483,26 +1475,26 @@ packages:
     dependency: "direct main"
     description:
       name: langchain
-      sha256: "7773a0f113d729f0593879b5852b05c7a32d5fb3eddf3aabffa5e15d9baaf12e"
+      sha256: fb5ed87198a950cae12dc8efbb606cf96079e89df45df5596d54ea2b68acf766
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.1"
+    version: "0.7.2"
   langchain_core:
     dependency: transitive
     description:
       name: langchain_core
-      sha256: da71ddb5b392ac699d876e9b84d769b0e879809316b0269359deda884cffdc9b
+      sha256: ae65d1fb8039cddf21b462734735b8435d1fa7c63b6d392eefbfcd813b9a5f38
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.1"
+    version: "0.3.2"
   langchain_ollama:
     dependency: "direct main"
     description:
       name: langchain_ollama
-      sha256: "46afcd5cd95ec5f5e3e1b3c459c948c2789e99b5f821c8514e4c653917f2db66"
+      sha256: dee949ddd12d57ce4ffff1d82586a1fbdc6340eaae3056efed36ad76a7139e69
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1+1"
+    version: "0.2.2"
   langchain_tiktoken:
     dependency: transitive
     description:
@@ -1787,10 +1779,10 @@ packages:
     dependency: "direct main"
     description:
       name: ollama_dart
-      sha256: "5e83b6b77785e7dbc454ff70ab14883e6cc1e6157c8df4e84da77845bc074df9"
+      sha256: f951f01d299376706bc245c03710205a530c76a64a8458a282a6bbb2e30e2c63
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0+1"
+    version: "0.1.1"
   olm:
     dependency: transitive
     description:
@@ -2155,18 +2147,18 @@ packages:
     dependency: "direct main"
     description:
       name: record
-      sha256: "90dae13f3edb582c19e148a32dae9f643f03ab368d70ec7d0b872014018a94da"
+      sha256: "78353d3d55fa145ffe1db1f63232ad0a0cd4c773e9f7d161210ce796ba1c94f9"
       url: "https://pub.dev"
     source: hosted
-    version: "5.1.0"
+    version: "5.1.1"
   record_android:
     dependency: transitive
     description:
       name: record_android
-      sha256: "533ce8afa4e47da5c97ea971cde0f0efec28c9bedfac6257a7a28491d34e07ea"
+      sha256: fe83beefc8ac81b9dd02ca9365e8685755e3f12be1d442964082f1d5b618183d
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "1.2.2"
   record_darwin:
     dependency: transitive
     description:
@@ -2203,10 +2195,10 @@ packages:
     dependency: transitive
     description:
       name: record_windows
-      sha256: "39998b3ea7d8d28b04159d82220e6e5e32a7c357c6fb2794f5736beea272f6c3"
+      sha256: e653555aa3fda168aded7c34e11bd82baf0c6ac84e7624553def3c77ffefd36f
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   research_package:
     dependency: "direct main"
     description:
@@ -2536,10 +2528,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "1e62698dc1ab396152ccaf3b3990d826244e9f3c8c39b51805f209adcd6dbea3"
+      sha256: "9f89a7e7dc36eac2035808427eba1c3fbd79e59c3a22093d8dace6d36b1fe89e"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.22"
+    version: "0.5.23"
   sqlparser:
     dependency: transitive
     description:
