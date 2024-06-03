@@ -29,7 +29,7 @@ class EntryController extends _$EntryController {
     listen();
 
     focusNode.addListener(() {
-      _isFocused = true;
+      _isFocused = focusNode.hasFocus;
       emitState();
 
       if (isDesktop) {
