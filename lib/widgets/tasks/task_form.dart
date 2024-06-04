@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -13,15 +12,13 @@ import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class TaskForm extends ConsumerStatefulWidget {
-  const TaskForm({
+  const TaskForm(
+    this.task, {
     super.key,
-    this.task,
-    this.data,
     this.focusOnTitle = false,
   });
 
-  final TaskData? data;
-  final Task? task;
+  final Task task;
   final bool focusOnTitle;
 
   @override
@@ -31,7 +28,8 @@ class TaskForm extends ConsumerStatefulWidget {
 class _TaskFormState extends ConsumerState<TaskForm> {
   @override
   Widget build(BuildContext context) {
-    final entryId = widget.task!.meta.id;
+    final entryId = widget.task.meta.id;
+    final taskData = widget.task.data;
     final provider = entryControllerProvider(id: entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
@@ -53,9 +51,9 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                 FormBuilderTextField(
                   autofocus: widget.focusOnTitle,
                   focusNode: notifier.taskTitleFocusNode,
-                  initialValue: widget.data?.title ?? '',
+                  initialValue: taskData.title,
                   decoration: inputDecoration(
-                    labelText: '${widget.data?.title}'.isEmpty
+                    labelText: taskData.title.isEmpty
                         ? context.messages.taskNameLabel
                         : '',
                     themeData: Theme.of(context),
@@ -82,16 +80,14 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                         style: Theme.of(context).textTheme.titleMedium,
                         readOnly: true,
                         controller: TextEditingController(
-                          text: formatDuration(widget.data?.estimate)
-                              .substring(0, 5),
+                          text:
+                              formatDuration(taskData.estimate).substring(0, 5),
                         ),
                         onTap: () async {
                           final duration = await showModalBottomSheet<Duration>(
                             context: context,
                             builder: (context) {
-                              return DurationBottomSheet(
-                                widget.data?.estimate,
-                              );
+                              return DurationBottomSheet(taskData.estimate);
                             },
                           );
                           if (duration != null) {
@@ -111,7 +107,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                           labelText: 'Status:',
                           themeData: Theme.of(context),
                         ),
-                        initialValue: widget.data?.status.map(
+                        initialValue: taskData.status.map(
                               open: (_) => 'OPEN',
                               groomed: (_) => 'GROOMED',
                               started: (_) => 'STARTED',
