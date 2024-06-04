@@ -44,15 +44,11 @@ class ToolbarWidget extends StatelessWidget {
           curve: curve,
           begin: 0,
           end: 1,
-        )
-        .fadeIn(
-          duration: duration,
-          curve: curve,
+          alignment: Alignment.topCenter,
         )
         .custom(
           duration: duration,
           curve: curve,
-          delay: const Duration(milliseconds: 100),
           builder: (context, value, child) {
             return SizedBox(
               height: height * value,

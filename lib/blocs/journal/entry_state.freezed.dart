@@ -20,35 +20,66 @@ mixin _$EntryState {
   JournalEntity? get entry => throw _privateConstructorUsedError;
   bool get showMap => throw _privateConstructorUsedError;
   bool get isFocused => throw _privateConstructorUsedError;
+  bool get shouldShowEditorToolBar => throw _privateConstructorUsedError;
   GlobalKey<FormBuilderState>? get formKey =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String entryId, JournalEntity? entry,
-            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)
         saved,
-    required TResult Function(String entryId, JournalEntity? entry,
-            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)
         dirty,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult? Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         saved,
-    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult? Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         dirty,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         saved,
-    TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         dirty,
     required TResult orElse(),
   }) =>
@@ -89,6 +120,7 @@ abstract class $EntryStateCopyWith<$Res> {
       JournalEntity? entry,
       bool showMap,
       bool isFocused,
+      bool shouldShowEditorToolBar,
       GlobalKey<FormBuilderState>? formKey});
 
   $JournalEntityCopyWith<$Res>? get entry;
@@ -111,6 +143,7 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
+    Object? shouldShowEditorToolBar = null,
     Object? formKey = freezed,
   }) {
     return _then(_value.copyWith(
@@ -129,6 +162,10 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
       isFocused: null == isFocused
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
+              as bool,
+      shouldShowEditorToolBar: null == shouldShowEditorToolBar
+          ? _value.shouldShowEditorToolBar
+          : shouldShowEditorToolBar // ignore: cast_nullable_to_non_nullable
               as bool,
       formKey: freezed == formKey
           ? _value.formKey
@@ -163,6 +200,7 @@ abstract class _$$EntryStateSavedImplCopyWith<$Res>
       JournalEntity? entry,
       bool showMap,
       bool isFocused,
+      bool shouldShowEditorToolBar,
       GlobalKey<FormBuilderState>? formKey});
 
   @override
@@ -184,6 +222,7 @@ class __$$EntryStateSavedImplCopyWithImpl<$Res>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
+    Object? shouldShowEditorToolBar = null,
     Object? formKey = freezed,
   }) {
     return _then(_$EntryStateSavedImpl(
@@ -203,6 +242,10 @@ class __$$EntryStateSavedImplCopyWithImpl<$Res>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
+      shouldShowEditorToolBar: null == shouldShowEditorToolBar
+          ? _value.shouldShowEditorToolBar
+          : shouldShowEditorToolBar // ignore: cast_nullable_to_non_nullable
+              as bool,
       formKey: freezed == formKey
           ? _value.formKey
           : formKey // ignore: cast_nullable_to_non_nullable
@@ -219,6 +262,7 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
       required this.entry,
       required this.showMap,
       required this.isFocused,
+      required this.shouldShowEditorToolBar,
       this.formKey});
 
   @override
@@ -230,11 +274,13 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
   @override
   final bool isFocused;
   @override
+  final bool shouldShowEditorToolBar;
+  @override
   final GlobalKey<FormBuilderState>? formKey;
 
   @override
   String toString() {
-    return 'EntryState.saved(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, formKey: $formKey)';
+    return 'EntryState.saved(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, shouldShowEditorToolBar: $shouldShowEditorToolBar, formKey: $formKey)';
   }
 
   @override
@@ -247,12 +293,15 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
             (identical(other.isFocused, isFocused) ||
                 other.isFocused == isFocused) &&
+            (identical(
+                    other.shouldShowEditorToolBar, shouldShowEditorToolBar) ||
+                other.shouldShowEditorToolBar == shouldShowEditorToolBar) &&
             (identical(other.formKey, formKey) || other.formKey == formKey));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, entryId, entry, showMap, isFocused, formKey);
+  int get hashCode => Object.hash(runtimeType, entryId, entry, showMap,
+      isFocused, shouldShowEditorToolBar, formKey);
 
   @JsonKey(ignore: true)
   @override
@@ -264,42 +313,75 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String entryId, JournalEntity? entry,
-            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)
         saved,
-    required TResult Function(String entryId, JournalEntity? entry,
-            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)
         dirty,
   }) {
-    return saved(entryId, entry, showMap, isFocused, formKey);
+    return saved(
+        entryId, entry, showMap, isFocused, shouldShowEditorToolBar, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult? Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         saved,
-    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult? Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         dirty,
   }) {
-    return saved?.call(entryId, entry, showMap, isFocused, formKey);
+    return saved?.call(
+        entryId, entry, showMap, isFocused, shouldShowEditorToolBar, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         saved,
-    TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         dirty,
     required TResult orElse(),
   }) {
     if (saved != null) {
-      return saved(entryId, entry, showMap, isFocused, formKey);
+      return saved(
+          entryId, entry, showMap, isFocused, shouldShowEditorToolBar, formKey);
     }
     return orElse();
   }
@@ -342,6 +424,7 @@ abstract class _EntryStateSaved implements EntryState {
       required final JournalEntity? entry,
       required final bool showMap,
       required final bool isFocused,
+      required final bool shouldShowEditorToolBar,
       final GlobalKey<FormBuilderState>? formKey}) = _$EntryStateSavedImpl;
 
   @override
@@ -352,6 +435,8 @@ abstract class _EntryStateSaved implements EntryState {
   bool get showMap;
   @override
   bool get isFocused;
+  @override
+  bool get shouldShowEditorToolBar;
   @override
   GlobalKey<FormBuilderState>? get formKey;
   @override
@@ -373,6 +458,7 @@ abstract class _$$EntryStateDirtyImplCopyWith<$Res>
       JournalEntity? entry,
       bool showMap,
       bool isFocused,
+      bool shouldShowEditorToolBar,
       GlobalKey<FormBuilderState>? formKey});
 
   @override
@@ -394,6 +480,7 @@ class __$$EntryStateDirtyImplCopyWithImpl<$Res>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
+    Object? shouldShowEditorToolBar = null,
     Object? formKey = freezed,
   }) {
     return _then(_$EntryStateDirtyImpl(
@@ -413,6 +500,10 @@ class __$$EntryStateDirtyImplCopyWithImpl<$Res>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
+      shouldShowEditorToolBar: null == shouldShowEditorToolBar
+          ? _value.shouldShowEditorToolBar
+          : shouldShowEditorToolBar // ignore: cast_nullable_to_non_nullable
+              as bool,
       formKey: freezed == formKey
           ? _value.formKey
           : formKey // ignore: cast_nullable_to_non_nullable
@@ -429,6 +520,7 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
       required this.entry,
       required this.showMap,
       required this.isFocused,
+      required this.shouldShowEditorToolBar,
       this.formKey});
 
   @override
@@ -440,11 +532,13 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
   @override
   final bool isFocused;
   @override
+  final bool shouldShowEditorToolBar;
+  @override
   final GlobalKey<FormBuilderState>? formKey;
 
   @override
   String toString() {
-    return 'EntryState.dirty(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, formKey: $formKey)';
+    return 'EntryState.dirty(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, shouldShowEditorToolBar: $shouldShowEditorToolBar, formKey: $formKey)';
   }
 
   @override
@@ -457,12 +551,15 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
             (identical(other.isFocused, isFocused) ||
                 other.isFocused == isFocused) &&
+            (identical(
+                    other.shouldShowEditorToolBar, shouldShowEditorToolBar) ||
+                other.shouldShowEditorToolBar == shouldShowEditorToolBar) &&
             (identical(other.formKey, formKey) || other.formKey == formKey));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, entryId, entry, showMap, isFocused, formKey);
+  int get hashCode => Object.hash(runtimeType, entryId, entry, showMap,
+      isFocused, shouldShowEditorToolBar, formKey);
 
   @JsonKey(ignore: true)
   @override
@@ -474,42 +571,75 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String entryId, JournalEntity? entry,
-            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)
         saved,
-    required TResult Function(String entryId, JournalEntity? entry,
-            bool showMap, bool isFocused, GlobalKey<FormBuilderState>? formKey)
+    required TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)
         dirty,
   }) {
-    return dirty(entryId, entry, showMap, isFocused, formKey);
+    return dirty(
+        entryId, entry, showMap, isFocused, shouldShowEditorToolBar, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult? Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         saved,
-    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult? Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         dirty,
   }) {
-    return dirty?.call(entryId, entry, showMap, isFocused, formKey);
+    return dirty?.call(
+        entryId, entry, showMap, isFocused, shouldShowEditorToolBar, formKey);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         saved,
-    TResult Function(String entryId, JournalEntity? entry, bool showMap,
-            bool isFocused, GlobalKey<FormBuilderState>? formKey)?
+    TResult Function(
+            String entryId,
+            JournalEntity? entry,
+            bool showMap,
+            bool isFocused,
+            bool shouldShowEditorToolBar,
+            GlobalKey<FormBuilderState>? formKey)?
         dirty,
     required TResult orElse(),
   }) {
     if (dirty != null) {
-      return dirty(entryId, entry, showMap, isFocused, formKey);
+      return dirty(
+          entryId, entry, showMap, isFocused, shouldShowEditorToolBar, formKey);
     }
     return orElse();
   }
@@ -552,6 +682,7 @@ abstract class EntryStateDirty implements EntryState {
       required final JournalEntity? entry,
       required final bool showMap,
       required final bool isFocused,
+      required final bool shouldShowEditorToolBar,
       final GlobalKey<FormBuilderState>? formKey}) = _$EntryStateDirtyImpl;
 
   @override
@@ -562,6 +693,8 @@ abstract class EntryStateDirty implements EntryState {
   bool get showMap;
   @override
   bool get isFocused;
+  @override
+  bool get shouldShowEditorToolBar;
   @override
   GlobalKey<FormBuilderState>? get formKey;
   @override

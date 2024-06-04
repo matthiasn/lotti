@@ -18,9 +18,7 @@ class EntryImageWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: journalImage.meta.id);
     final notifier = ref.read(provider.notifier);
-
     final file = File(getFullImagePath(journalImage));
-
     final focusNode = notifier.focusNode;
 
     return GestureDetector(
@@ -30,7 +28,7 @@ class EntryImageWidget extends ConsumerWidget {
           MaterialPageRoute<HeroPhotoViewRouteWrapper>(
             builder: (_) => HeroPhotoViewRouteWrapper(
               focusNode: focusNode,
-              imageProvider: FileImage(file),
+              file: file,
             ),
           ),
         );
@@ -59,21 +57,19 @@ class EntryImageWidget extends ConsumerWidget {
 class HeroPhotoViewRouteWrapper extends StatelessWidget {
   const HeroPhotoViewRouteWrapper({
     required this.focusNode,
-    required this.imageProvider,
+    required this.file,
     super.key,
     this.backgroundDecoration,
-    this.minScale,
-    this.maxScale,
   });
 
-  final ImageProvider imageProvider;
+  final File file;
   final BoxDecoration? backgroundDecoration;
   final FocusNode focusNode;
-  final dynamic minScale;
-  final dynamic maxScale;
 
   @override
   Widget build(BuildContext context) {
+    final imageProvider = FileImage(file);
+
     return Scaffold(
       body: Stack(
         children: [
@@ -84,9 +80,8 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
             child: PhotoView(
               imageProvider: imageProvider,
               backgroundDecoration: backgroundDecoration,
-              minScale: minScale,
-              maxScale: maxScale,
               heroAttributes: const PhotoViewHeroAttributes(tag: 'entry_img'),
+              minScale: PhotoViewComputedScale.contained,
             ),
           ),
           Positioned(
