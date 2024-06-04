@@ -43,10 +43,11 @@ class EditorWidget extends ConsumerWidget {
     final isFocused = entryState.value?.isFocused ?? false;
 
     if (isFocused && isMobile) {
-      Timer(const Duration(milliseconds: 300), () {
+      Future.microtask(() {
         Scrollable.ensureVisible(
           context,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOutQuint,
         );
       });
     }
