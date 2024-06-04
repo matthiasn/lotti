@@ -124,6 +124,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -143,6 +144,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -157,6 +159,7 @@ void main() {
             entry: testTextEntry,
             showMap: true,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -171,6 +174,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -190,6 +194,7 @@ void main() {
             entry: testTextEntryNoGeo,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -204,6 +209,7 @@ void main() {
             entry: testTextEntryNoGeo,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -223,6 +229,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -237,6 +244,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -275,6 +283,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -355,6 +364,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -369,6 +379,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -397,6 +408,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -418,6 +430,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
@@ -450,6 +463,7 @@ void main() {
             entry: testTextEntry,
             showMap: false,
             isFocused: false,
+            shouldShowEditorToolBar: false,
           ),
         ),
       );
