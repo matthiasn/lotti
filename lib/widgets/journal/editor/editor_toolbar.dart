@@ -12,7 +12,7 @@ class ToolbarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const duration = Duration(milliseconds: 200);
+    const duration = Duration(milliseconds: 400);
     const curve = Curves.easeInOutQuint;
     const height = 60.0;
 
@@ -44,10 +44,7 @@ class ToolbarWidget extends StatelessWidget {
           curve: curve,
           begin: 0,
           end: 1,
-        )
-        .fadeIn(
-          duration: duration,
-          curve: curve,
+          alignment: Alignment.topCenter,
         )
         .custom(
           duration: duration,

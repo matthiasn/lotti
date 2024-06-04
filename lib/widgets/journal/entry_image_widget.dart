@@ -43,6 +43,7 @@ class EntryImageWidget extends ConsumerWidget {
             ),
             child: Image.file(
               file,
+              width: MediaQuery.of(context).size.width,
               fit: BoxFit.contain,
             ),
           ),
