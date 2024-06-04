@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -17,7 +17,7 @@ import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
 
-class EntryDetailWidget extends StatelessWidget {
+class EntryDetailWidget extends ConsumerWidget {
   const EntryDetailWidget({
     required this.itemId,
     required this.popOnDelete,
@@ -36,90 +36,81 @@ class EntryDetailWidget extends StatelessWidget {
   final Set<String>? parentTags;
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<JournalEntity?>(
-      stream: getIt<JournalDb>().watchEntityById(itemId),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        final item = snapshot.data;
-        if (item == null || item.meta.deletedAt != null) {
-          return const SizedBox.shrink();
-        }
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = entryControllerProvider(id: itemId);
+    final entryState = ref.watch(provider).value;
 
-        final isTask = item is Task;
-        final isAudio = item is JournalAudio;
+    final item = entryState?.entry;
+    if (item == null || item.meta.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
 
-        if (isTask && !showTaskDetails) {
-          return JournalCard(
-            item: item,
-            showLinkedDuration: true,
-          );
-        }
+    final isTask = item is Task;
+    final isAudio = item is JournalAudio;
 
-        return Card(
-          key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                item.maybeMap(
-                  journalImage: EntryImageWidget.new,
-                  orElse: () => const SizedBox.shrink(),
-                ),
-                EntryDetailHeader(
-                  entryId: itemId,
-                  inLinkedEntries: unlinkFn != null,
-                  linkedFromId: linkedFromId,
-                  unlinkFn: unlinkFn,
-                ),
-                TagsListWidget(entryId: itemId, parentTags: parentTags),
-                item.maybeMap(
-                  task: (_) => const SizedBox.shrink(),
-                  event: (_) => const SizedBox.shrink(),
-                  quantitative: (_) => const SizedBox.shrink(),
-                  workout: (_) => const SizedBox.shrink(),
-                  orElse: () {
-                    return EditorWidget(
-                      entryId: itemId,
-                      unlinkFn: unlinkFn,
-                    );
-                  },
-                ),
-                item.map(
-                  journalAudio: (JournalAudio audio) {
-                    return AudioPlayerWidget(audio);
-                  },
-                  workout: WorkoutSummary.new,
-                  survey: SurveySummary.new,
-                  quantitative: HealthSummary.new,
-                  measurement: MeasurementSummary.new,
-                  task: (Task task) {
-                    return TaskForm(
-                      data: task.data,
-                      task: task,
-                    );
-                  },
-                  event: EventForm.new,
-                  habitCompletion: (habit) => HabitSummary(
-                    habit,
-                    paddingLeft: 10,
-                    showIcon: true,
-                    showText: false,
-                  ),
-                  journalEntry: (_) => const SizedBox.shrink(),
-                  journalImage: (_) => const SizedBox.shrink(),
-                  checklistItem: (_) => const SizedBox.shrink(),
-                ),
-                EntryDetailFooter(entryId: itemId),
-              ],
+    if (isTask && !showTaskDetails) {
+      return JournalCard(
+        item: item,
+        showLinkedDuration: true,
+      );
+    }
+
+    return Card(
+      key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            item.maybeMap(
+              journalImage: EntryImageWidget.new,
+              orElse: () => const SizedBox.shrink(),
             ),
-          ),
-        );
-      },
+            EntryDetailHeader(
+              entryId: itemId,
+              inLinkedEntries: unlinkFn != null,
+              linkedFromId: linkedFromId,
+              unlinkFn: unlinkFn,
+            ),
+            TagsListWidget(entryId: itemId, parentTags: parentTags),
+            item.maybeMap(
+              task: (_) => const SizedBox.shrink(),
+              event: (_) => const SizedBox.shrink(),
+              quantitative: (_) => const SizedBox.shrink(),
+              workout: (_) => const SizedBox.shrink(),
+              orElse: () {
+                return EditorWidget(
+                  entryId: itemId,
+                  unlinkFn: unlinkFn,
+                );
+              },
+            ),
+            item.map(
+              journalAudio: AudioPlayerWidget.new,
+              workout: WorkoutSummary.new,
+              survey: SurveySummary.new,
+              quantitative: HealthSummary.new,
+              measurement: MeasurementSummary.new,
+              task: TaskForm.new,
+              event: EventForm.new,
+              habitCompletion: (habit) => HabitSummary(
+                habit,
+                paddingLeft: 10,
+                showIcon: true,
+                showText: false,
+              ),
+              journalEntry: (_) => const SizedBox.shrink(),
+              journalImage: (_) => const SizedBox.shrink(),
+              checklistItem: (_) => const SizedBox.shrink(),
+            ),
+            EntryDetailFooter(entryId: itemId),
+          ],
+        ),
+      ),
     );
   }
 }
