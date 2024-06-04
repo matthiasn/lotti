@@ -12,7 +12,7 @@ class ToolbarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const duration = Duration(milliseconds: 400);
+    const duration = Duration(milliseconds: 200);
     const curve = Curves.easeInOutQuint;
     const height = 60.0;
 
@@ -52,7 +52,6 @@ class ToolbarWidget extends StatelessWidget {
         .custom(
           duration: duration,
           curve: curve,
-          delay: const Duration(milliseconds: 100),
           builder: (context, value, child) {
             return SizedBox(
               height: height * value,
