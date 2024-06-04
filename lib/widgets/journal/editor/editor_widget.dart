@@ -41,12 +41,14 @@ class EditorWidget extends ConsumerWidget {
     final focusNode = notifier.focusNode;
 
     final isFocused = entryState.value?.isFocused ?? false;
+    final shouldShowEditorToolBar =
+        entryState.value?.shouldShowEditorToolBar ?? false;
 
     if (isFocused && isMobile) {
       Future.microtask(() {
         Scrollable.ensureVisible(
           context,
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOutQuint,
         );
       });
@@ -67,10 +69,7 @@ class EditorWidget extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isFocused)
-              ToolbarWidget(
-                controller: controller,
-              ),
+            if (shouldShowEditorToolBar) ToolbarWidget(controller: controller),
             Flexible(
               child: QuillEditor(
                 scrollController: ScrollController(),

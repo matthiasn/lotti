@@ -28,7 +28,6 @@ class SaveButton extends ConsumerWidget {
     }
     return TextButton(
       onPressed: () {
-        //context.read<EntryCubit>().save();
         ref.read(provider.notifier).save();
         FocusManager.instance.primaryFocus?.unfocus();
       },

@@ -30,6 +30,9 @@ class EntryController extends _$EntryController {
 
     focusNode.addListener(() {
       _isFocused = focusNode.hasFocus;
+      if (_isFocused) {
+        _shouldShowEditorToolBar = true;
+      }
       emitState();
 
       if (isDesktop) {
@@ -68,6 +71,7 @@ class EntryController extends _$EntryController {
 
   bool _dirty = false;
   bool _isFocused = false;
+  bool _shouldShowEditorToolBar = false;
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
 
@@ -120,6 +124,7 @@ class EntryController extends _$EntryController {
       entry: entry,
       showMap: false,
       isFocused: false,
+      shouldShowEditorToolBar: false,
       formKey: formKey,
     );
   }
@@ -275,6 +280,7 @@ class EntryController extends _$EntryController {
           entry: entry,
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
+          shouldShowEditorToolBar: _shouldShowEditorToolBar,
           formKey: formKey,
         ),
       );
@@ -285,6 +291,7 @@ class EntryController extends _$EntryController {
           entry: entry,
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
+          shouldShowEditorToolBar: _shouldShowEditorToolBar,
           formKey: formKey,
         ),
       );
