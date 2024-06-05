@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
@@ -40,8 +41,14 @@ void main() {
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+      );
+
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
@@ -58,11 +65,8 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('Render card for text entry', (tester) async {
-      when(
-        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
-      );
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -81,11 +85,8 @@ void main() {
     });
 
     testWidgets('Render card for image entry', (tester) async {
-      when(
-        () => mockJournalDb.watchEntityById(testImageEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testImageEntry]),
-      );
+      when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+          .thenAnswer((_) async => testImageEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -104,11 +105,8 @@ void main() {
     });
 
     testWidgets('Render card for audio entry', (tester) async {
-      when(
-        () => mockJournalDb.watchEntityById(testAudioEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testAudioEntry]),
-      );
+      when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
+          .thenAnswer((_) async => testAudioEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'entry_controller.dart';
+part of 'journal_card_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$entryControllerHash() => r'0351cbdbc5f6d55f59be5df11993d0e57e85aa01';
+String _$journalCardControllerHash() =>
+    r'9047001102dd6fafaa529c634ef7cc35339948a3';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,36 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$EntryController
-    extends BuildlessAutoDisposeAsyncNotifier<EntryState?> {
+abstract class _$JournalCardController
+    extends BuildlessAutoDisposeAsyncNotifier<JournalEntity?> {
   late final String id;
 
-  FutureOr<EntryState?> build({
+  FutureOr<JournalEntity?> build({
     required String id,
   });
 }
 
-/// See also [EntryController].
-@ProviderFor(EntryController)
-const entryControllerProvider = EntryControllerFamily();
+/// See also [JournalCardController].
+@ProviderFor(JournalCardController)
+const journalCardControllerProvider = JournalCardControllerFamily();
 
-/// See also [EntryController].
-class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
-  /// See also [EntryController].
-  const EntryControllerFamily();
+/// See also [JournalCardController].
+class JournalCardControllerFamily extends Family<AsyncValue<JournalEntity?>> {
+  /// See also [JournalCardController].
+  const JournalCardControllerFamily();
 
-  /// See also [EntryController].
-  EntryControllerProvider call({
+  /// See also [JournalCardController].
+  JournalCardControllerProvider call({
     required String id,
   }) {
-    return EntryControllerProvider(
+    return JournalCardControllerProvider(
       id: id,
     );
   }
 
   @override
-  EntryControllerProvider getProviderOverride(
-    covariant EntryControllerProvider provider,
+  JournalCardControllerProvider getProviderOverride(
+    covariant JournalCardControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -77,30 +78,31 @@ class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'entryControllerProvider';
+  String? get name => r'journalCardControllerProvider';
 }
 
-/// See also [EntryController].
-class EntryControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<EntryController, EntryState?> {
-  /// See also [EntryController].
-  EntryControllerProvider({
+/// See also [JournalCardController].
+class JournalCardControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<JournalCardController,
+        JournalEntity?> {
+  /// See also [JournalCardController].
+  JournalCardControllerProvider({
     required String id,
   }) : this._internal(
-          () => EntryController()..id = id,
-          from: entryControllerProvider,
-          name: r'entryControllerProvider',
+          () => JournalCardController()..id = id,
+          from: journalCardControllerProvider,
+          name: r'journalCardControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$entryControllerHash,
-          dependencies: EntryControllerFamily._dependencies,
+                  : _$journalCardControllerHash,
+          dependencies: JournalCardControllerFamily._dependencies,
           allTransitiveDependencies:
-              EntryControllerFamily._allTransitiveDependencies,
+              JournalCardControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  EntryControllerProvider._internal(
+  JournalCardControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -113,8 +115,8 @@ class EntryControllerProvider
   final String id;
 
   @override
-  FutureOr<EntryState?> runNotifierBuild(
-    covariant EntryController notifier,
+  FutureOr<JournalEntity?> runNotifierBuild(
+    covariant JournalCardController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -122,10 +124,10 @@ class EntryControllerProvider
   }
 
   @override
-  Override overrideWith(EntryController Function() create) {
+  Override overrideWith(JournalCardController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: EntryControllerProvider._internal(
+      override: JournalCardControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -138,14 +140,14 @@ class EntryControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<EntryController, EntryState?>
+  AutoDisposeAsyncNotifierProviderElement<JournalCardController, JournalEntity?>
       createElement() {
-    return _EntryControllerProviderElement(this);
+    return _JournalCardControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is EntryControllerProvider && other.id == id;
+    return other is JournalCardControllerProvider && other.id == id;
   }
 
   @override
@@ -157,18 +159,19 @@ class EntryControllerProvider
   }
 }
 
-mixin EntryControllerRef on AutoDisposeAsyncNotifierProviderRef<EntryState?> {
+mixin JournalCardControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<JournalEntity?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _EntryControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<EntryController,
-        EntryState?> with EntryControllerRef {
-  _EntryControllerProviderElement(super.provider);
+class _JournalCardControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<JournalCardController,
+        JournalEntity?> with JournalCardControllerRef {
+  _JournalCardControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as EntryControllerProvider).id;
+  String get id => (origin as JournalCardControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
