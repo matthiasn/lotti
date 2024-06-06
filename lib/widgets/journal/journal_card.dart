@@ -2,8 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/journal_card_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -187,7 +188,7 @@ class JournalCardTitle extends StatelessWidget {
   }
 }
 
-class JournalCard extends StatefulWidget {
+class JournalCard extends ConsumerStatefulWidget {
   const JournalCard({
     required this.item,
     super.key,
@@ -200,62 +201,57 @@ class JournalCard extends StatefulWidget {
   final bool showLinkedDuration;
 
   @override
-  State<JournalCard> createState() => _JournalCardState();
+  ConsumerState<JournalCard> createState() => _JournalCardState();
 }
 
-class _JournalCardState extends State<JournalCard> {
+class _JournalCardState extends ConsumerState<JournalCard> {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<JournalEntity?>(
-      stream: getIt<JournalDb>().watchEntityById(widget.item.meta.id),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        final updatedItem = snapshot.data ?? widget.item;
-        if (updatedItem.meta.deletedAt != null) {
-          return const SizedBox.shrink();
-        }
-        void onTap() {
-          if (getIt<NavService>().tasksTabActive()) {
-            beamToNamed('/tasks/${updatedItem.meta.id}');
-          } else {
-            beamToNamed('/journal/${updatedItem.meta.id}');
-          }
-        }
+    final provider = journalCardControllerProvider(id: widget.item.meta.id);
+    final entryState = ref.watch(provider).value;
+    final updatedItem = entryState ?? widget.item;
 
-        final errorColor = Theme.of(context).colorScheme.error;
+    if (updatedItem.meta.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
+    void onTap() {
+      if (getIt<NavService>().tasksTabActive()) {
+        beamToNamed('/tasks/${updatedItem.meta.id}');
+      } else {
+        beamToNamed('/journal/${updatedItem.meta.id}');
+      }
+    }
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          child: Card(
-            child: ListTile(
-              leading: updatedItem.maybeMap(
-                journalAudio: (item) {
-                  final transcripts = item.data.transcripts;
-                  return LeadingIcon(
-                    Icons.mic_rounded,
-                    color: transcripts != null && transcripts.isNotEmpty
-                        ? Theme.of(context).colorScheme.outline
-                        : errorColor.withOpacity(0.4),
-                  );
-                },
-                quantitative: (_) => LeadingIcon(MdiIcons.heart),
-                measurement: (_) => LeadingIcon(MdiIcons.numeric),
-                habitCompletion: (habitCompletion) =>
-                    HabitCompletionColorIcon(habitCompletion.data.habitId),
-                orElse: () => null,
-              ),
-              title: JournalCardTitle(
-                item: updatedItem,
-                maxHeight: widget.maxHeight,
-                showLinkedDuration: widget.showLinkedDuration,
-              ),
-              onTap: onTap,
-            ),
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Card(
+        child: ListTile(
+          leading: updatedItem.maybeMap(
+            journalAudio: (item) {
+              final transcripts = item.data.transcripts;
+              return LeadingIcon(
+                Icons.mic_rounded,
+                color: transcripts != null && transcripts.isNotEmpty
+                    ? Theme.of(context).colorScheme.outline
+                    : errorColor.withOpacity(0.4),
+              );
+            },
+            quantitative: (_) => LeadingIcon(MdiIcons.heart),
+            measurement: (_) => LeadingIcon(MdiIcons.numeric),
+            habitCompletion: (habitCompletion) =>
+                HabitCompletionColorIcon(habitCompletion.data.habitId),
+            orElse: () => null,
           ),
-        );
-      },
+          title: JournalCardTitle(
+            item: updatedItem,
+            maxHeight: widget.maxHeight,
+            showLinkedDuration: widget.showLinkedDuration,
+          ),
+          onTap: onTap,
+        ),
+      ),
     );
   }
 }
@@ -280,7 +276,7 @@ class LeadingIcon extends StatelessWidget {
   }
 }
 
-class JournalImageCard extends StatelessWidget {
+class JournalImageCard extends ConsumerWidget {
   const JournalImageCard({
     required this.item,
     super.key,
@@ -289,54 +285,50 @@ class JournalImageCard extends StatelessWidget {
   final JournalImage item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     void onTap() => beamToNamed('/journal/${item.meta.id}');
+    final provider = journalCardControllerProvider(id: item.meta.id);
+    final entryState = ref.watch(provider).value;
 
-    return StreamBuilder<JournalEntity?>(
-      stream: getIt<JournalDb>().watchEntityById(item.meta.id),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        final updatedItem = snapshot.data ?? item;
-        if (updatedItem.meta.deletedAt != null) {
-          return const SizedBox.shrink();
-        }
+    final updatedItem = entryState ?? item;
+    if (updatedItem.meta.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
 
-        return Card(
-          child: ListTile(
-            contentPadding: const EdgeInsets.only(right: 16),
-            onTap: onTap,
-            minLeadingWidth: 0,
-            minVerticalPadding: 0,
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LimitedBox(
-                  maxWidth:
-                      max(MediaQuery.of(context).size.width / 2, 300) - 40,
-                  maxHeight: 160,
-                  child: CardImageWidget(
-                    journalImage: updatedItem as JournalImage,
-                    height: 160,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: SizedBox(
-                    height: 160,
-                    child: JournalCardTitle(
-                      item: updatedItem,
-                      maxHeight: 200,
-                    ),
-                  ),
-                ),
-              ],
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.only(right: 16),
+        onTap: onTap,
+        minLeadingWidth: 0,
+        minVerticalPadding: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LimitedBox(
+              maxWidth: max(MediaQuery.of(context).size.width / 2, 300) - 40,
+              maxHeight: 160,
+              child: CardImageWidget(
+                journalImage: updatedItem as JournalImage,
+                height: 160,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 10),
+            Flexible(
+              child: SizedBox(
+                height: 160,
+                child: JournalCardTitle(
+                  item: updatedItem,
+                  maxHeight: 200,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
