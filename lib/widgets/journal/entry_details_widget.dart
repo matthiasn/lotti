@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -70,47 +71,99 @@ class EntryDetailWidget extends ConsumerWidget {
               journalImage: EntryImageWidget.new,
               orElse: () => const SizedBox.shrink(),
             ),
-            EntryDetailHeader(
-              entryId: itemId,
-              inLinkedEntries: unlinkFn != null,
-              linkedFromId: linkedFromId,
+            EntryDetailsContent(
+              itemId,
               unlinkFn: unlinkFn,
+              linkedFromId: linkedFromId,
+              parentTags: parentTags,
             ),
-            TagsListWidget(entryId: itemId, parentTags: parentTags),
-            item.maybeMap(
-              task: (_) => const SizedBox.shrink(),
-              event: (_) => const SizedBox.shrink(),
-              quantitative: (_) => const SizedBox.shrink(),
-              workout: (_) => const SizedBox.shrink(),
-              orElse: () {
-                return EditorWidget(
-                  entryId: itemId,
-                  unlinkFn: unlinkFn,
-                );
-              },
-            ),
-            item.map(
-              journalAudio: AudioPlayerWidget.new,
-              workout: WorkoutSummary.new,
-              survey: SurveySummary.new,
-              quantitative: HealthSummary.new,
-              measurement: MeasurementSummary.new,
-              task: TaskForm.new,
-              event: EventForm.new,
-              habitCompletion: (habit) => HabitSummary(
-                habit,
-                paddingLeft: 10,
-                showIcon: true,
-                showText: false,
-              ),
-              journalEntry: (_) => const SizedBox.shrink(),
-              journalImage: (_) => const SizedBox.shrink(),
-              checklistItem: (_) => const SizedBox.shrink(),
-            ),
-            EntryDetailFooter(entryId: itemId),
           ],
         ),
       ),
+    );
+  }
+}
+
+class EntryDetailsContent extends ConsumerWidget {
+  const EntryDetailsContent(
+    this.itemId, {
+    this.unlinkFn,
+    this.linkedFromId,
+    this.parentTags,
+    super.key,
+  });
+
+  final String itemId;
+  final Future<void> Function()? unlinkFn;
+  final String? linkedFromId;
+  final Set<String>? parentTags;
+
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = entryControllerProvider(id: itemId);
+    final entryState = ref.watch(provider).value;
+
+    final item = entryState?.entry;
+    if (item == null || item.meta.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
+
+    final isFocused = entryState?.isFocused ?? false;
+
+    if (isFocused && isMobile) {
+      Future.microtask(() {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutQuint,
+        );
+      });
+    }
+
+    return Column(
+      children: [
+        EntryDetailHeader(
+          entryId: itemId,
+          inLinkedEntries: unlinkFn != null,
+          linkedFromId: linkedFromId,
+          unlinkFn: unlinkFn,
+        ),
+        TagsListWidget(entryId: itemId, parentTags: parentTags),
+        item.maybeMap(
+          task: (_) => const SizedBox.shrink(),
+          event: (_) => const SizedBox.shrink(),
+          quantitative: (_) => const SizedBox.shrink(),
+          workout: (_) => const SizedBox.shrink(),
+          orElse: () {
+            return EditorWidget(
+              entryId: itemId,
+              unlinkFn: unlinkFn,
+            );
+          },
+        ),
+        item.map(
+          journalAudio: AudioPlayerWidget.new,
+          workout: WorkoutSummary.new,
+          survey: SurveySummary.new,
+          quantitative: HealthSummary.new,
+          measurement: MeasurementSummary.new,
+          task: TaskForm.new,
+          event: EventForm.new,
+          habitCompletion: (habit) => HabitSummary(
+            habit,
+            paddingLeft: 10,
+            showIcon: true,
+            showText: false,
+          ),
+          journalEntry: (_) => const SizedBox.shrink(),
+          journalImage: (_) => const SizedBox.shrink(),
+          checklistItem: (_) => const SizedBox.shrink(),
+        ),
+        EntryDetailFooter(entryId: itemId),
+      ],
     );
   }
 }

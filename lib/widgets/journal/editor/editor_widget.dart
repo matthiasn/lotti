@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_dynamic_calls
-
 import 'dart:async';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
@@ -9,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 
@@ -40,19 +37,8 @@ class EditorWidget extends ConsumerWidget {
     final controller = notifier.controller;
     final focusNode = notifier.focusNode;
 
-    final isFocused = entryState.value?.isFocused ?? false;
     final shouldShowEditorToolBar =
         entryState.value?.shouldShowEditorToolBar ?? false;
-
-    if (isFocused && isMobile) {
-      Future.microtask(() {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOutQuint,
-        );
-      });
-    }
 
     return Card(
       color: Theme.of(context).colorScheme.surface.brighten(),
