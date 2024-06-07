@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.477+2556
+version: 0.9.477+2557
 
 msix_config:
   display_name: LottiApp
@@ -148,6 +148,7 @@ dependencies:
   visibility_detector: ^0.4.0+2
   wechat_assets_picker: ^9.0.0
   week_of_year: ^2.0.0
+  widgetbook: ^3.7.1
   window_manager: ^0.3.0
   wolt_modal_sheet: ^0.6.0
 
