@@ -124,6 +124,7 @@ class EntryDetailsContent extends ConsumerWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EntryDetailHeader(
           entryId: itemId,
