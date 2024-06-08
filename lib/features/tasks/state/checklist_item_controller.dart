@@ -15,15 +15,11 @@ class ChecklistItemController extends _$ChecklistItemController {
     listen();
   }
   late final String entryId;
-
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   void listen() {
     _updateSubscription =
-        _updateNotifications.updateStream.listen((event) async {
+        getIt<UpdateNotifications>().updateStream.listen((event) async {
       if (event.id == entryId) {
         final latest = await _fetch();
         if (latest != state.value && latest is ChecklistItem) {
@@ -47,11 +43,11 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   Future<JournalEntity?> _fetch() async {
-    return _journalDb.journalEntityById(entryId);
+    return getIt<JournalDb>().journalEntityById(entryId);
   }
 
   Future<bool> delete() async {
-    final res = await _persistenceLogic.deleteJournalEntity(entryId);
+    final res = await getIt<PersistenceLogic>().deleteJournalEntity(entryId);
     state = const AsyncData(null);
     return res;
   }

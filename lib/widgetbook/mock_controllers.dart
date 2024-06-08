@@ -1,8 +1,8 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 
-class MockChecklistItemController extends ChecklistItemController {
-  MockChecklistItemController({
+class MockChecklistItemControllerProvider extends ChecklistItemController {
+  MockChecklistItemControllerProvider({
     required this.value,
   });
 

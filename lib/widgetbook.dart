@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/widgetbook/mock_controllers.dart';
+import 'package:lotti/widgetbook/mock_data.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 void main() {
+  getIt.registerSingleton<UpdateNotifications>(UpdateNotifications());
+
   runApp(const WidgetbookApp());
 }
 
@@ -50,6 +58,59 @@ class WidgetbookApp extends StatelessWidget {
                     title: 'Create PR',
                     isChecked: true,
                     onChanged: (checked) {},
+                  ),
+                ),
+                WidgetbookUseCase(
+                  name: 'With provider wrapper',
+                  builder: (context) => ProviderScope(
+                    overrides: [
+                      checklistItemControllerProvider
+                          .getProviderOverride(
+                            ChecklistItemControllerProvider(
+                              id: checklistItem1.meta.id,
+                            ),
+                          )
+                          .overrideWith(
+                            () => MockChecklistItemControllerProvider(
+                              value: Future.value(
+                                checklistItem1,
+                              ),
+                            ),
+                          ),
+                      checklistItemControllerProvider
+                          .getProviderOverride(
+                            ChecklistItemControllerProvider(
+                              id: checklistItem2.meta.id,
+                            ),
+                          )
+                          .overrideWith(
+                            () => MockChecklistItemControllerProvider(
+                              value: Future.value(
+                                checklistItem2,
+                              ),
+                            ),
+                          ),
+                      checklistItemControllerProvider
+                          .getProviderOverride(
+                            ChecklistItemControllerProvider(
+                              id: checklistItem3.meta.id,
+                            ),
+                          )
+                          .overrideWith(
+                            () => MockChecklistItemControllerProvider(
+                              value: Future.value(
+                                checklistItem3,
+                              ),
+                            ),
+                          ),
+                    ],
+                    child: CheckboxItemsList(
+                      itemIds: [
+                        checklistItem1.meta.id,
+                        checklistItem2.meta.id,
+                        checklistItem3.meta.id,
+                      ],
+                    ),
                   ),
                 ),
               ],
