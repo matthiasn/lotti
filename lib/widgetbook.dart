@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
-import 'package:lotti/features/tasks/ui/checkbox_widget.dart';
+import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checkbox_items_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/widgetbook/mock_controllers.dart';
@@ -41,6 +43,9 @@ class WidgetbookApp extends StatelessWidget {
       ],
       appBuilder: (context, child) => MaterialApp(
         themeMode: ThemeMode.dark,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+        ],
         home: Scaffold(
           body: child,
         ),

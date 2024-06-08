@@ -168,6 +168,7 @@
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsCategoriesDuplicateError": "Category exists already",
   "settingsCategoriesNameLabel": "Category name:",
+  "checklistAddItem": "Add a new item",
   "settingsCategoriesTitle": "Categories",
   "settingsConflictsResolutionTitle": "Sync Conflict Resolution",
   "settingsConflictsTitle": "Sync Conflicts",
