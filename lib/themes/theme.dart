@@ -41,7 +41,7 @@ InputDecoration inputDecoration({
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(inputBorderRadius),
       borderSide: BorderSide(
-        color: themeData.primaryColor,
+        color: themeData.colorScheme.outline,
         width: 2,
       ),
     ),
