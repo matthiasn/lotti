@@ -33,7 +33,12 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
   @override
   Widget build(BuildContext context) {
     return CheckboxListTile(
-      title: Text(widget.title),
+      title: GestureDetector(
+        onTap: () {
+          debugPrint('Tapped');
+        },
+        child: Text(widget.title),
+      ),
       value: _isChecked,
       controlAffinity: ListTileControlAffinity.leading,
       secondary: widget.onEdit != null
