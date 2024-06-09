@@ -63,6 +63,9 @@ class WidgetbookApp extends StatelessWidget {
                     title: 'Create PR',
                     isChecked: true,
                     onChanged: (checked) {},
+                    onEdit: () {
+                      debugPrint('Edit');
+                    },
                   ),
                 ),
                 WidgetbookUseCase(
