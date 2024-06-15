@@ -5,12 +5,10 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_linux
   hotkey_manager_linux
-  irondash_engine_context
   media_kit_libs_linux
   record_linux
   screen_retriever
   sqlite3_flutter_libs
-  super_native_extensions
   url_launcher_linux
   window_manager
 )
