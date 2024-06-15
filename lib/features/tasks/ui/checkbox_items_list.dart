@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-import '../../../themes/theme.dart';
+import 'package:lotti/themes/theme.dart';
 
 class CheckboxItemsList extends StatefulWidget {
   const CheckboxItemsList({

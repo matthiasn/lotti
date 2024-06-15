@@ -270,6 +270,28 @@ Map<String, dynamic> _$$ChecklistItemImplToJson(_$ChecklistItemImpl instance) =>
       'runtimeType': instance.$type,
     };
 
+_$ChecklistImpl _$$ChecklistImplFromJson(Map<String, dynamic> json) =>
+    _$ChecklistImpl(
+      meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+      data: ChecklistData.fromJson(json['data'] as Map<String, dynamic>),
+      entryText: json['entryText'] == null
+          ? null
+          : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$ChecklistImplToJson(_$ChecklistImpl instance) =>
+    <String, dynamic>{
+      'meta': instance.meta,
+      'data': instance.data,
+      'entryText': instance.entryText,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };
+
 _$QuantitativeEntryImpl _$$QuantitativeEntryImplFromJson(
         Map<String, dynamic> json) =>
     _$QuantitativeEntryImpl(

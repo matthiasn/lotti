@@ -23,6 +23,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     workout: (_) => 'workout',
     survey: (_) => 'surveys',
     task: (_) => 'tasks',
+    checklist: (_) => 'checklist',
     checklistItem: (_) => 'checklist_item',
   );
 }
@@ -39,6 +40,7 @@ String typeSuffix(JournalEntity journalEntity) {
     survey: (_) => 'survey',
     task: (_) => 'task',
     event: (_) => 'event',
+    checklist: (_) => 'checklist',
     checklistItem: (_) => 'checklist_item',
   );
 }
