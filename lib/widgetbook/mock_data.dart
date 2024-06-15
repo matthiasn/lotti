@@ -1,4 +1,4 @@
-import 'package:lotti/classes/checklist_item.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/file_utils.dart';
 
