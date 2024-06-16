@@ -51,6 +51,7 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
             )
           : null,
       onChanged: (bool? value) {
+        debugPrint('Checked $value');
         setState(() {
           _isChecked = value ?? false;
         });

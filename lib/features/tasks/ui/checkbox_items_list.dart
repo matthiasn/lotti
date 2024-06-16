@@ -55,13 +55,21 @@ class _CheckboxItemsListState extends State<CheckboxItemsList> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.check_circle, size: 30),
+                      icon: const Icon(
+                        Icons.check_circle,
+                        size: 30,
+                        semanticLabel: 'add item',
+                      ),
                       onPressed: () {
                         debugPrint('Add item to checklist');
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.cancel_outlined, size: 30),
+                      icon: const Icon(
+                        Icons.cancel_outlined,
+                        size: 30,
+                        semanticLabel: 'discard changes',
+                      ),
                       onPressed: () {
                         _controller.clear();
                         setState(() {
