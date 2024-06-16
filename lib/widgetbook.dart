@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
-import 'package:lotti/features/tasks/ui/checkbox_items_list.dart';
+import 'package:lotti/features/tasks/ui/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -78,7 +78,7 @@ class WidgetbookApp extends StatelessWidget {
                   ),
                 ),
                 WidgetbookUseCase(
-                  name: 'With provider wrapper',
+                  name: 'CheckboxItemsList',
                   builder: (context) => ProviderScope(
                     overrides: [
                       checklistItemControllerProvider
@@ -121,7 +121,7 @@ class WidgetbookApp extends StatelessWidget {
                             ),
                           ),
                     ],
-                    child: CheckboxItemsList(
+                    child: ChecklistWidget(
                       itemIds: [
                         checklistItem1.meta.id,
                         checklistItem2.meta.id,

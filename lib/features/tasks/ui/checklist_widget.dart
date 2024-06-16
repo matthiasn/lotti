@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
-class CheckboxItemsList extends StatefulWidget {
-  const CheckboxItemsList({
+class ChecklistWidget extends StatefulWidget {
+  const ChecklistWidget({
     required this.itemIds,
     super.key,
   });
@@ -11,10 +11,10 @@ class CheckboxItemsList extends StatefulWidget {
   final List<String> itemIds;
 
   @override
-  State<CheckboxItemsList> createState() => _CheckboxItemsListState();
+  State<ChecklistWidget> createState() => _ChecklistWidgetState();
 }
 
-class _CheckboxItemsListState extends State<CheckboxItemsList> {
+class _ChecklistWidgetState extends State<ChecklistWidget> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
