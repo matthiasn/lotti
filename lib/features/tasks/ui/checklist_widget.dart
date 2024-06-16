@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
+import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 class ChecklistWidget extends StatefulWidget {
@@ -21,7 +22,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   Widget build(BuildContext context) {
     return ExpansionTile(
       title: AnimatedCrossFade(
-        duration: const Duration(milliseconds: 200),
+        duration: checklistCrossFadeDuration,
         firstChild: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: TitleTextField(
