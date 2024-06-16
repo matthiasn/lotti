@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 // ignore: avoid_positional_boolean_parameters
 typedef BoolCallback = void Function(bool);
@@ -23,6 +24,7 @@ class CheckboxItemWidget extends StatefulWidget {
 
 class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
   late bool _isChecked;
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -36,8 +38,26 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
       title: GestureDetector(
         onTap: () {
           debugPrint('Tapped');
+          setState(() {
+            _isEditing = true;
+          });
         },
-        child: Text(widget.title),
+        child: _isEditing
+            ? TitleTextField(
+                initialValue: widget.title,
+                onSave: (title) {
+                  debugPrint('Saved: $title');
+                  setState(() {
+                    _isEditing = false;
+                  });
+                },
+                onClear: () {
+                  setState(() {
+                    _isEditing = false;
+                  });
+                },
+              )
+            : Text(widget.title),
       ),
       value: _isChecked,
       controlAffinity: ListTileControlAffinity.leading,
