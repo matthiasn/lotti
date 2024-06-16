@@ -24,11 +24,18 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         semanticsLabel: 'Checklist progress',
       ),
       children: [
-        TitleTextField(
-          onSave: (title) {
-            debugPrint('Saved: $title');
-          },
-          semanticsLabel: 'Add item to checklist',
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 10,
+          ),
+          child: TitleTextField(
+            onSave: (title) {
+              debugPrint('Saved: $title');
+            },
+            clearOnSave: true,
+            semanticsLabel: 'Add item to checklist',
+          ),
         ),
         ...widget.itemIds.map(CheckboxItemWrapper.new),
       ],
