@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 // ignore: avoid_positional_boolean_parameters
@@ -42,22 +43,30 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
             _isEditing = true;
           });
         },
-        child: _isEditing
-            ? TitleTextField(
-                initialValue: widget.title,
-                onSave: (title) {
-                  debugPrint('Saved: $title');
-                  setState(() {
-                    _isEditing = false;
-                  });
-                },
-                onClear: () {
-                  setState(() {
-                    _isEditing = false;
-                  });
-                },
-              )
-            : Text(widget.title),
+        child: AnimatedCrossFade(
+          duration: checklistCrossFadeDuration,
+          firstChild: TitleTextField(
+            initialValue: widget.title,
+            onSave: (title) {
+              debugPrint('Saved: $title');
+              setState(() {
+                _isEditing = false;
+              });
+            },
+            resetToInitialValue: true,
+            onClear: () {
+              setState(() {
+                _isEditing = false;
+              });
+            },
+          ),
+          secondChild: SizedBox(
+            width: double.infinity,
+            child: Text(widget.title),
+          ),
+          crossFadeState:
+              _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+        ),
       ),
       value: _isChecked,
       controlAffinity: ListTileControlAffinity.leading,

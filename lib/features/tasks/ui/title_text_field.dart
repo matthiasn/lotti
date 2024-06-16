@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -89,7 +90,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
             AnimatedOpacity(
               curve: Curves.easeInOutQuint,
               opacity: _dirty ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 400),
+              duration: checklistActionIconFadeDuration,
               child: IconButton(
                 icon: const Icon(
                   Icons.check_circle,
@@ -102,7 +103,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
             AnimatedOpacity(
               curve: Curves.easeInOutQuint,
               opacity: _showClearButton ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 400),
+              duration: checklistActionIconFadeDuration,
               child: IconButton(
                 icon: const Icon(
                   Icons.cancel_outlined,
