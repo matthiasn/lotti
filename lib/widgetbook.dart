@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
 import 'package:lotti/features/tasks/ui/checkbox_items_list.dart';
+import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/widgetbook/mock_controllers.dart';
@@ -58,13 +59,21 @@ class WidgetbookApp extends StatelessWidget {
               name: 'Checkbox widget',
               useCases: [
                 WidgetbookUseCase(
-                  name: 'UI implementation',
+                  name: 'CheckboxItemWidget',
                   builder: (context) => CheckboxItemWidget(
                     title: 'Create PR',
                     isChecked: true,
                     onChanged: (checked) {},
                     onEdit: () {
                       debugPrint('Edit');
+                    },
+                  ),
+                ),
+                WidgetbookUseCase(
+                  name: 'TitleTextField',
+                  builder: (context) => TitleTextField(
+                    onSave: (title) {
+                      debugPrint('Saved: $title');
                     },
                   ),
                 ),
