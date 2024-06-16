@@ -15,10 +15,50 @@ class ChecklistWidget extends StatefulWidget {
 }
 
 class _ChecklistWidgetState extends State<ChecklistWidget> {
+  bool _isEditing = false;
+
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
-      title: const Text('Checklist'),
+      title: AnimatedCrossFade(
+        duration: const Duration(milliseconds: 200),
+        firstChild: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: TitleTextField(
+            initialValue: 'Checklist',
+            onSave: (title) {
+              debugPrint('Saved: $title');
+              setState(() {
+                _isEditing = false;
+              });
+            },
+            resetToInitialValue: true,
+            onClear: () {
+              setState(() {
+                _isEditing = false;
+              });
+            },
+          ),
+        ),
+        secondChild: Row(
+          children: [
+            const Text('Checklist'),
+            IconButton(
+              icon: const Icon(
+                Icons.edit,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isEditing = !_isEditing;
+                });
+              },
+            ),
+          ],
+        ),
+        crossFadeState:
+            _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+      ),
       subtitle: const LinearProgressIndicator(
         value: 0.87,
         semanticsLabel: 'Checklist progress',

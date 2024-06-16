@@ -9,6 +9,7 @@ class TitleTextField extends StatefulWidget {
     required this.onSave,
     this.onClear,
     this.clearOnSave = false,
+    this.resetToInitialValue = false,
     this.initialValue,
     this.semanticsLabel,
     super.key,
@@ -19,6 +20,7 @@ class TitleTextField extends StatefulWidget {
   final VoidCallback? onClear;
   final String? semanticsLabel;
   final bool clearOnSave;
+  final bool resetToInitialValue;
 
   @override
   State<TitleTextField> createState() => _TitleTextFieldState();
@@ -40,13 +42,28 @@ class _TitleTextFieldState extends State<TitleTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final initialValue = widget.initialValue;
+
     void onSave(String? value) {
       widget.onSave(value ?? _controller.text);
       if (widget.clearOnSave) {
         _controller.clear();
       }
       setState(() {
-        _showClearButton = false;
+        _showClearButton = widget.resetToInitialValue;
+        _dirty = false;
+      });
+    }
+
+    void onClear() {
+      if (widget.resetToInitialValue && initialValue != null) {
+        _controller.text = initialValue;
+      } else {
+        _controller.clear();
+      }
+      widget.onClear?.call();
+      setState(() {
+        _showClearButton = widget.resetToInitialValue;
         _dirty = false;
       });
     }
@@ -92,11 +109,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
                   size: 30,
                   semanticLabel: 'discard changes',
                 ),
-                onPressed: () {
-                  _controller.clear();
-                  widget.onClear?.call();
-                  setState(() => _showClearButton = false);
-                },
+                onPressed: onClear,
               ),
             ),
           ],
