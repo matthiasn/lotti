@@ -453,10 +453,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: fdf40d60fa964b93908a4af38e9631d4ce56fce1c700cacda217c86e80ebdcfe
+      sha256: e36ec7dc7eccf7382f9bb1dd3a5f7b8cbba9c1fa5e9310cf394a4eb4d66e4c64
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.0"
+    version: "9.4.1"
   dart_style:
     dependency: "direct dev"
     description:
@@ -998,10 +998,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "2083a1fe2f560cff6013ed0faf3f69892cb275b867dc7735c16e107211c887f6"
+      sha256: c767b093900d5b60237fbf3ad2d744a5b94198164539eba4121226b4944258df
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.0"
+    version: "9.4.1"
   flutter_rating:
     dependency: "direct main"
     description:
@@ -1635,10 +1635,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "98599b2475da37284511f319aed47eae732d17659df12442218ef20fce84344f"
+      sha256: bb6de59d0f69e10bb6893130a967f1ffcbfa3d3ffed3864f0736ce3d968e669c
       url: "https://pub.dev"
     source: hosted
-    version: "0.29.11"
+    version: "0.29.12"
   media_kit:
     dependency: "direct main"
     description:
@@ -1843,10 +1843,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_android
-      sha256: "9c96da072b421e98183f9ea7464898428e764bc0ce5567f27ec8693442e72514"
+      sha256: bca87b0165ffd7cdb9cad8edd22d18d2201e886d9a9f19b4fb3452ea7df3a72a
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.5"
+    version: "2.2.6"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -1939,10 +1939,10 @@ packages:
     dependency: "direct main"
     description:
       name: photo_manager
-      sha256: "1ddee48659025df5c80153a2e85c3fa0f5b5733ecffcda9769a9447da2c51352"
+      sha256: "68d6099d07ce5033170f8368af8128a4555cf1d590a97242f83669552de989b1"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.1"
+    version: "3.2.0"
   photo_manager_image_provider:
     dependency: transitive
     description:
@@ -2259,10 +2259,10 @@ packages:
     dependency: "direct main"
     description:
       name: rxdart
-      sha256: "0c7c0cedd93788d996e33041ffecda924cc54389199cde4e6a34b440f50044cb"
+      sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
       url: "https://pub.dev"
     source: hosted
-    version: "0.27.7"
+    version: "0.28.0"
   safe_local_storage:
     dependency: transitive
     description:
@@ -2528,10 +2528,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "9f89a7e7dc36eac2035808427eba1c3fbd79e59c3a22093d8dace6d36b1fe89e"
+      sha256: "62bbb4073edbcdf53f40c80775f33eea01d301b7b81417e5b3fb7395416258c1"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.23"
+    version: "0.5.24"
   sqlparser:
     dependency: transitive
     description:
