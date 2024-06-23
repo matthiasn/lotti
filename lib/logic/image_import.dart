@@ -19,13 +19,10 @@ Future<void> importImageAssets(
 
   final assets = await AssetPicker.pickAssets(
     context,
-    pickerConfig: AssetPickerConfig(
-      maxAssets: 40,
+    pickerConfig: const AssetPickerConfig(
+      maxAssets: 50,
       requestType: RequestType.image,
-      filterOptions: FilterOptionGroup(
-        containsLivePhotos: true,
-      ),
-      textDelegate: const EnglishAssetPickerTextDelegate(),
+      textDelegate: EnglishAssetPickerTextDelegate(),
     ),
   );
 

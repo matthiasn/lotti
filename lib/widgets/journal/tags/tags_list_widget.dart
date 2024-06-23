@@ -58,7 +58,7 @@ class TagsListWidget extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(
             top: 10,
-            left: 14,
+            left: 5,
             right: 14,
             bottom: 5,
           ),

@@ -124,6 +124,7 @@ class EntryDetailsContent extends ConsumerWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EntryDetailHeader(
           entryId: itemId,
@@ -160,6 +161,7 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           journalEntry: (_) => const SizedBox.shrink(),
           journalImage: (_) => const SizedBox.shrink(),
+          checklist: (_) => const SizedBox.shrink(),
           checklistItem: (_) => const SizedBox.shrink(),
         ),
         EntryDetailFooter(entryId: itemId),
