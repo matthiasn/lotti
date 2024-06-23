@@ -130,6 +130,12 @@ Lotti is currently available for beta testing for these platforms:
 6. Run, either from the IDE or using e.g. `flutter run -d macos`
 
 
+## widgetbook
+
+Lotti uses [widgetbook](https://pub.dev/packages/widgetbook) for developing and documenting widgets, for now only 
+for select widgets. To run the widgetbook, run e.g. `fvm flutter run -d macos -t lib/widgetbook.dart`.
+
+
 ## Platform-specific setup
 
 ### Mac
