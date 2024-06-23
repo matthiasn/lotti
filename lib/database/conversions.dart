@@ -67,6 +67,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       journalAudio: (_) => 'JournalAudio',
       task: (_) => 'Task',
       event: (_) => 'JournalEvent',
+      checklist: (_) => 'Checklist',
       checklistItem: (_) => 'ChecklistItem',
       quantitative: (_) => 'QuantitativeEntry',
       measurement: (_) => 'MeasurementEntry',
