@@ -453,10 +453,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: e36ec7dc7eccf7382f9bb1dd3a5f7b8cbba9c1fa5e9310cf394a4eb4d66e4c64
+      sha256: "9374eded555be05e7ec99be4482dda0b72a8a5b291a84244a54f32692117d974"
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.1"
+    version: "9.4.6"
   dart_style:
     dependency: "direct dev"
     description:
@@ -485,26 +485,26 @@ packages:
     dependency: transitive
     description:
       name: dcli_common
-      sha256: c8af0ed248e67b7293cc7ca24a11cc6f3762009ce2a4d0d03c1368e6b0f15fb9
+      sha256: "77848b8440a9e6cdcb69b18131fd75cc0cf54e92208cbadabcf9242dc897fe81"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1-beta.4"
+    version: "4.0.2"
   dcli_core:
     dependency: transitive
     description:
       name: dcli_core
-      sha256: "915b6d7aa9cc039de4be263ecbdac0d372286059f5dba02a8b171748afb4883c"
+      sha256: "845adc302fb8e816e93b52cb24a3a49e8d857c87e9c8719b2de8ff370b4aa986"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1-beta.4"
+    version: "4.0.2"
   dcli_terminal:
     dependency: transitive
     description:
       name: dcli_terminal
-      sha256: "5449d06b49966796237c5953abc8763dfbc3c29d180ba41f8e182d76c8379840"
+      sha256: "4b92dcb7e5058a0b17f6a171f24f34954bf0edfbb058067080f070c2726cd7d8"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1-beta.4"
+    version: "4.0.2"
   delta_markdown:
     dependency: "direct main"
     description:
@@ -958,10 +958,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: ff76a9300a06ad1f2b394e54c0b4beaaf6a95f95c98540c918b870221499bb10
+      sha256: "85cc6f7daeae537844c92e2d56e2aff61b00095f8f77913b529ea4be12fc45ea"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.2"
+    version: "0.7.2+1"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -982,26 +982,26 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_olm
-      sha256: "9233fd8699e1dec0e4d5cfb9b0d0f7293db3308daf412c57093b69b461bb4a18"
+      sha256: "5e6211af8cba1abf7d1f92e543f6d573dfe6017fe4742e0d04ba84beab47f940"
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.2"
+    version: "2.0.0"
   flutter_openssl_crypto:
     dependency: "direct main"
     description:
       name: flutter_openssl_crypto
-      sha256: "6dcecf6f7c1804ae6f5d73ee05df8af72ea8133bf2447d25979d739503186c96"
+      sha256: "293b4fcda13ab0710645a16e82f3d5b7de19bfc0ab2d06bcdb87637222eda5e1"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.5.0"
   flutter_quill:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: c767b093900d5b60237fbf3ad2d744a5b94198164539eba4121226b4944258df
+      sha256: "8101c805242016c46671a1950887b3bda3c1c98d2078f99567c587c33b393343"
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.1"
+    version: "9.4.6"
   flutter_rating:
     dependency: "direct main"
     description:
@@ -2520,10 +2520,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: b384f598b813b347c5a7e5ffad82cbaff1bec3d1561af267041e66f6f0899295
+      sha256: "6d17989c0b06a5870b2190d391925186f944cb943e5262d0d3f778fcfca3bc6e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.4"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -2960,10 +2960,10 @@ packages:
     dependency: "direct main"
     description:
       name: wechat_assets_picker
-      sha256: "6a1193beb2ce170edcf4091d849d2bc811eb2a36a8007fa63e6bfbaf3ac99625"
+      sha256: f4b3eb0662f9a9f0453a591f056f5f63244586b772b62b79730a54e501b02671
       url: "https://pub.dev"
     source: hosted
-    version: "9.0.4"
+    version: "9.1.0"
   wechat_picker_library:
     dependency: transitive
     description:
