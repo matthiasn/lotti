@@ -5,11 +5,11 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -36,7 +36,6 @@ class HabitDialog extends StatefulWidget {
 }
 
 class _HabitDialogState extends State<HabitDialog> {
-  final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
 
@@ -54,7 +53,9 @@ class _HabitDialogState extends State<HabitDialog> {
 
     if (validate()) {
       final formData = _formKey.currentState?.value;
-      final habitDefinition = await _db.watchHabitById(widget.habitId).first;
+      final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
+        widget.habitId,
+      );
 
       final habitCompletion = HabitCompletionData(
         habitId: widget.habitId,
@@ -112,214 +113,204 @@ class _HabitDialogState extends State<HabitDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<HabitDefinition?>(
-      stream: _db.watchHabitById(widget.habitId),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<HabitDefinition?> snapshot,
-      ) {
-        final habitDefinition = snapshot.data;
+    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
+      widget.habitId,
+    );
 
-        if (habitDefinition == null) {
-          return const SizedBox.shrink();
-        }
-        final timeSpanDays = isDesktop ? 30 : 14;
+    if (habitDefinition == null) {
+      return const SizedBox.shrink();
+    }
+    final timeSpanDays = isDesktop ? 30 : 14;
 
-        final rangeStart = getStartOfDay(
-          DateTime.now().subtract(Duration(days: timeSpanDays)),
-        );
+    final rangeStart = getStartOfDay(
+      DateTime.now().subtract(Duration(days: timeSpanDays)),
+    );
 
-        final rangeEnd = getEndOfToday();
+    final rangeEnd = getEndOfToday();
 
-        return Theme(
-          data: widget.themeData,
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Stack(
-              children: [
-                if (habitDefinition.dashboardId != null)
-                  SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 280),
-                      child: DashboardWidget(
-                        rangeStart: rangeStart,
-                        rangeEnd: rangeEnd,
-                        dashboardId: habitDefinition.dashboardId!,
-                      ),
-                    ),
+    return Theme(
+      data: widget.themeData,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Stack(
+          children: [
+            if (habitDefinition.dashboardId != null)
+              SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 280),
+                  child: DashboardWidget(
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                    dashboardId: habitDefinition.dashboardId!,
                   ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  heightFactor: habitDefinition.dashboardId != null ? 10 : 1,
-                  child: Card(
-                    margin: EdgeInsets.zero,
-                    elevation: 10,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
-                      ),
-                      side: BorderSide(
-                        color: (Theme.of(context).textTheme.titleLarge?.color ??
-                                Colors.black)
-                            .withOpacity(0.5),
-                      ),
+                ),
+              ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: habitDefinition.dashboardId != null ? 10 : 1,
+              child: Card(
+                margin: EdgeInsets.zero,
+                elevation: 10,
+                shape: RoundedRectangleBorder(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                  side: BorderSide(
+                    color: (Theme.of(context).textTheme.titleLarge?.color ??
+                            Colors.black)
+                        .withOpacity(0.5),
+                  ),
+                ),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: 500,
+                    minWidth:
+                        isMobile ? MediaQuery.of(context).size.width : 250,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 30,
+                      top: 5,
+                      right: 10,
+                      bottom: 5,
                     ),
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: 500,
-                        minWidth:
-                            isMobile ? MediaQuery.of(context).size.width : 250,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          left: 30,
-                          top: 5,
-                          right: 10,
-                          bottom: 5,
-                        ),
-                        child: FormBuilder(
-                          key: _formKey,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    child: FormBuilder(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      habitDefinition.name,
-                                      style: habitCompletionHeaderStyle,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    padding: const EdgeInsets.all(10),
-                                    icon: Semantics(
-                                      label: 'close habit completion',
-                                      child: const Icon(Icons.close_rounded),
-                                    ),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ],
-                              ),
-                              if (habitDefinition.description.isNotEmpty)
-                                HabitDescription(habitDefinition),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    inputSpacerSmall,
-                                    DateTimeField(
-                                      dateTime: _started,
-                                      labelText:
-                                          context.messages.addHabitDateLabel,
-                                      setDateTime: (picked) {
-                                        setState(() {
-                                          _startReset = true;
-                                          _started = picked;
-                                        });
-                                      },
-                                    ),
-                                    inputSpacerSmall,
-                                    FormBuilderTextField(
-                                      initialValue: '',
-                                      key: const Key('habit_comment_field'),
-                                      decoration: createDialogInputDecoration(
-                                        labelText: context
-                                            .messages.addHabitCommentLabel,
-                                        themeData: Theme.of(context),
-                                      ),
-                                      minLines: 1,
-                                      maxLines: 10,
-                                      keyboardAppearance:
-                                          Theme.of(context).brightness,
-                                      name: 'comment',
-                                    ),
-                                  ],
+                              Expanded(
+                                child: Text(
+                                  habitDefinition.name,
+                                  style: habitCompletionHeaderStyle,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20,
-                                  right: 20,
-                                  top: 5,
+                              IconButton(
+                                padding: const EdgeInsets.all(10),
+                                icon: Semantics(
+                                  label: 'close habit completion',
+                                  child: const Icon(Icons.close_rounded),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton(
-                                      key: const Key('habit_fail'),
-                                      onPressed: () =>
-                                          saveHabit(HabitCompletionType.fail),
-                                      child: Text(
-                                        context
-                                            .messages.completeHabitFailButton,
-                                        style: failButtonStyle(),
-                                      ),
-                                    ),
-                                    TextButton(
-                                      key: const Key('habit_skip'),
-                                      onPressed: () =>
-                                          saveHabit(HabitCompletionType.skip),
-                                      child: Text(
-                                        context
-                                            .messages.completeHabitSkipButton,
-                                        style:
-                                            saveButtonStyle(Theme.of(context))
-                                                .copyWith(
-                                          color: habitSkipColor
-                                              .desaturate(40)
-                                              .withOpacity(0.8),
-                                        ),
-                                      ),
-                                    ),
-                                    TextButton(
-                                      key: const Key('habit_save'),
-                                      onPressed: () => saveHabit(
-                                        HabitCompletionType.success,
-                                      ),
-                                      child: Text(
-                                        context.messages
-                                            .completeHabitSuccessButton,
-                                        style:
-                                            saveButtonStyle(Theme.of(context))
-                                                .copyWith(
-                                          color: habitSuccessColor,
-                                        ),
-                                      ),
-                                    ).animate(autoPlay: true).shimmer(
-                                          delay: 1.seconds,
-                                          duration: .7.seconds,
-                                          color: Theme.of(context).cardColor,
-                                        ),
-                                  ],
-                                ),
+                                onPressed: () => Navigator.pop(context),
                               ),
                             ],
                           ),
-                        ),
+                          if (habitDefinition.description.isNotEmpty)
+                            HabitDescription(habitDefinition),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                inputSpacerSmall,
+                                DateTimeField(
+                                  dateTime: _started,
+                                  labelText: context.messages.addHabitDateLabel,
+                                  setDateTime: (picked) {
+                                    setState(() {
+                                      _startReset = true;
+                                      _started = picked;
+                                    });
+                                  },
+                                ),
+                                inputSpacerSmall,
+                                FormBuilderTextField(
+                                  initialValue: '',
+                                  key: const Key('habit_comment_field'),
+                                  decoration: createDialogInputDecoration(
+                                    labelText:
+                                        context.messages.addHabitCommentLabel,
+                                    themeData: Theme.of(context),
+                                  ),
+                                  minLines: 1,
+                                  maxLines: 10,
+                                  keyboardAppearance:
+                                      Theme.of(context).brightness,
+                                  name: 'comment',
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              top: 5,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                TextButton(
+                                  key: const Key('habit_fail'),
+                                  onPressed: () =>
+                                      saveHabit(HabitCompletionType.fail),
+                                  child: Text(
+                                    context.messages.completeHabitFailButton,
+                                    style: failButtonStyle(),
+                                  ),
+                                ),
+                                TextButton(
+                                  key: const Key('habit_skip'),
+                                  onPressed: () =>
+                                      saveHabit(HabitCompletionType.skip),
+                                  child: Text(
+                                    context.messages.completeHabitSkipButton,
+                                    style: saveButtonStyle(Theme.of(context))
+                                        .copyWith(
+                                      color: habitSkipColor
+                                          .desaturate(40)
+                                          .withOpacity(0.8),
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  key: const Key('habit_save'),
+                                  onPressed: () => saveHabit(
+                                    HabitCompletionType.success,
+                                  ),
+                                  child: Text(
+                                    context.messages.completeHabitSuccessButton,
+                                    style: saveButtonStyle(Theme.of(context))
+                                        .copyWith(
+                                      color: habitSuccessColor,
+                                    ),
+                                  ),
+                                ).animate(autoPlay: true).shimmer(
+                                      delay: 1.seconds,
+                                      duration: .7.seconds,
+                                      color: Theme.of(context).cardColor,
+                                    ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
 
 class HabitDescription extends StatelessWidget {
-  const HabitDescription(this.habitDefinition, {super.key});
+  const HabitDescription(
+    this.habitDefinition, {
+    super.key,
+  });
+
   final HabitDefinition? habitDefinition;
 
   @override
