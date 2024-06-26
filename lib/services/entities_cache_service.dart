@@ -30,11 +30,21 @@ class EntitiesCacheService {
         habitsById[habit.id] = habit;
       }
     });
+
+    getIt<JournalDb>().watchDashboards().listen((
+      List<DashboardDefinition> dashboards,
+    ) {
+      dashboardsById.clear();
+      for (final dashboard in dashboards) {
+        dashboardsById[dashboard.id] = dashboard;
+      }
+    });
   }
 
   Map<String, MeasurableDataType> dataTypesById = {};
   Map<String, CategoryDefinition> categoriesById = {};
   Map<String, HabitDefinition> habitsById = {};
+  Map<String, DashboardDefinition> dashboardsById = {};
 
   MeasurableDataType? getDataTypeById(String id) {
     return dataTypesById[id];
@@ -46,5 +56,9 @@ class EntitiesCacheService {
 
   HabitDefinition? getHabitById(String? id) {
     return habitsById[id];
+  }
+
+  DashboardDefinition? getDashboardById(String? id) {
+    return dashboardsById[id];
   }
 }

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -26,8 +25,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final JournalDb _db = getIt<JournalDb>();
-
   double zoomStartScale = 10;
   double scale = 10;
   double horizontalPan = 0;
@@ -36,6 +33,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final dashboard = getIt<EntitiesCacheService>().getDashboardById(
+      widget.dashboardId,
+    );
+
     // TODO: bring back or remove
     // final int shiftDays = max((horizontalPan / scale).floor(), 0);
     // final rangeStart = getRangeStart(
@@ -49,80 +50,34 @@ class _DashboardPageState extends State<DashboardPage> {
         getStartOfDay(DateTime.now().subtract(Duration(days: timeSpanDays)));
     final rangeEnd = getEndOfToday();
 
-    return GestureDetector(
-      // TODO: bring back or remove
-      // onScaleStart: (_) {
-      //   setState(() {
-      //     zoomStartScale = scale;
-      //     zoomInProgress = true;
-      //   });
-      // },
-      // onScaleEnd: (_) {
-      //   setState(() {
-      //     zoomInProgress = false;
-      //   });
-      // },
-      // onHorizontalDragUpdate: (DragUpdateDetails details) {
-      //   setState(() {
-      //     if (!zoomInProgress) {
-      //       horizontalPan += details.delta.dx;
-      //     }
-      //   });
-      // },
-      // onScaleUpdate: (ScaleUpdateDetails details) {
-      //   final horizontalScale = details.horizontalScale;
-      //   setState(() {
-      //     if (horizontalScale != 1) {
-      //       scale = zoomStartScale * horizontalScale;
-      //     }
-      //   });
-      // },
-      child: StreamBuilder(
-        stream: _db.watchDashboardById(widget.dashboardId),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<DashboardDefinition?> snapshot,
-        ) {
-          if (!snapshot.hasData) {
-            return EmptyScaffoldWithTitle(
-              context.messages.dashboardsLoadingHint,
-              body: const CircularProgressIndicator(),
-            );
-          }
+    if (dashboard == null) {
+      beamToNamed('/dashboards');
+      return EmptyScaffoldWithTitle(
+        context.messages.dashboardNotFound,
+      );
+    }
 
-          final dashboard = snapshot.data;
-
-          if (dashboard == null) {
-            beamToNamed('/dashboards');
-            return EmptyScaffoldWithTitle(
-              context.messages.dashboardNotFound,
-            );
-          }
-
-          return SliverBoxAdapterPage(
-            title: dashboard.name,
-            showBackButton: true,
-            child: Column(
-              children: [
-                const SizedBox(height: 15),
-                TimeSpanSegmentedControl(
-                  timeSpanDays: timeSpanDays,
-                  onValueChanged: (int value) {
-                    setState(() {
-                      timeSpanDays = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 15),
-                DashboardWidget(
-                  rangeStart: rangeStart,
-                  rangeEnd: rangeEnd,
-                  dashboardId: widget.dashboardId,
-                ),
-              ],
-            ),
-          );
-        },
+    return SliverBoxAdapterPage(
+      title: dashboard.name,
+      showBackButton: true,
+      child: Column(
+        children: [
+          const SizedBox(height: 15),
+          TimeSpanSegmentedControl(
+            timeSpanDays: timeSpanDays,
+            onValueChanged: (int value) {
+              setState(() {
+                timeSpanDays = value;
+              });
+            },
+          ),
+          const SizedBox(height: 15),
+          DashboardWidget(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+            dashboardId: widget.dashboardId,
+          ),
+        ],
       ),
     );
   }
