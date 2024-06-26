@@ -4,13 +4,13 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/platform.dart';
@@ -30,6 +30,7 @@ class HealthImport {
 
   late final String platform;
   String? deviceType;
+  Map<String, DateTime> lastFetched = {};
 
   Future<void> getPlatform() async {
     platform = Platform.isIOS
@@ -213,7 +214,11 @@ class HealthImport {
           }
         }
       } catch (e) {
-        debugPrint('Caught exception in fetchHealthData: $e');
+        getIt<LoggingDb>().captureException(
+          e,
+          domain: 'HEALTH_IMPORT',
+          subDomain: 'fetchHealthData',
+        );
       }
     }
   }
@@ -224,8 +229,6 @@ class HealthImport {
     }
 
     running = true;
-    debugPrint('_fetchHealthDataDelta $type');
-
     var actualTypes = [type];
 
     if (type == 'BLOOD_PRESSURE') {
@@ -287,8 +290,15 @@ class HealthImport {
   }
 
   Future<void> fetchHealthDataDelta(String type) async {
-    debugPrint('fetchHealthDataDelta $type');
+    final now = DateTime.now();
+    final lastFetch = lastFetched[type] ?? DateTime(0);
+
+    if (now.difference(lastFetch) < const Duration(minutes: 10)) {
+      return;
+    }
+
     queue.add(type);
+    lastFetched[type] = now;
     if (!running) {
       unawaited(_start());
     }
@@ -304,7 +314,6 @@ class HealthImport {
 
     final now = DateTime.now();
     final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-    debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
 
     await FlutterHealthFit().authorize();
 
