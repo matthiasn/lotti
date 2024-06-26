@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
@@ -21,6 +22,7 @@ void main() {
   var mockJournalDb = MockJournalDb();
   final mockSecureStorage = MockSecureStorage();
   final mockPersistenceLogic = MockPersistenceLogic();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('DashboardMeasurablesChart Widget Tests - ', () {
     setUp(() {
@@ -30,6 +32,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<NavService>(MockNavService())
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SecureStorage>(mockSecureStorage);
 
       when(() => mockJournalDb.getConfigFlag(any()))

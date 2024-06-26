@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -18,6 +19,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('MeasurementDialog Widget Tests - ', () {
     setUpAll(() {
@@ -33,12 +35,13 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
-      ).thenAnswer((_) async => measurableWater);
+        () => mockEntitiesCacheService
+            .getDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+      ).thenAnswer((_) => measurableWater);
 
       when(
         () => mockJournalDb.watchMeasurableDataTypeById(

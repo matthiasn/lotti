@@ -140,6 +140,7 @@ dependencies:
   visibility_detector: ^0.4.0+2
   wechat_assets_picker: ^9.0.0
   week_of_year: ^2.0.0
+  widgetbook: ^3.7.1
   window_manager: ^0.3.0
   wolt_modal_sheet: ^0.6.0
 
@@ -169,7 +170,6 @@ dev_dependencies:
   msix: ^3.7.0
   riverpod_generator: ^2.4.0
   very_good_analysis: ^6.0.0
-  widgetbook: ^3.7.1
 
 flutter_icons:
   android: true
