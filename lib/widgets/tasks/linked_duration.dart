@@ -16,7 +16,6 @@ class LinkedDuration extends StatelessWidget {
 
   final JournalDb db = getIt<JournalDb>();
   final TimeService _timeService = getIt<TimeService>();
-  late final Stream<JournalEntity?> stream = db.watchEntityById(task.meta.id);
   final Task task;
 
   @override
