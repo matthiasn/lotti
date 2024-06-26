@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
-import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -9,6 +9,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
+
+typedef CategoryCallback = void Function(CategoryDefinition?);
 
 class CategoryField extends StatelessWidget {
   const CategoryField({
@@ -18,7 +20,7 @@ class CategoryField extends StatelessWidget {
   });
 
   final String? categoryId;
-  final StringCallback onSave;
+  final CategoryCallback onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,7 @@ class CategoryField extends StatelessWidget {
                     ...categories.map(
                       (category) => SettingsCard(
                         onTap: () {
-                          onSave(category.id);
+                          onSave(category);
                           Navigator.pop(context);
                         },
                         title: category.name,
