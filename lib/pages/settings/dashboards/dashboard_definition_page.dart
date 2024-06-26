@@ -90,7 +90,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   }
 
   void onConfirmAddHealthType(List<HealthTypeConfig?> selection) {
-    dashboardItems = dashboardItems;
     for (final selected in selection) {
       if (selected != null) {
         setState(() {
@@ -394,7 +393,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         onReorder: (int oldIndex, int newIndex) {
                           setState(() {
                             dirty = true;
-                            dashboardItems = dashboardItems;
+
                             final movedItem = dashboardItems.removeAt(oldIndex);
                             final insertionIndex =
                                 newIndex > oldIndex ? newIndex - 1 : newIndex;
