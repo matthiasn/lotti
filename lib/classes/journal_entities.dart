@@ -27,6 +27,7 @@ class Metadata with _$Metadata {
     required DateTime updatedAt,
     required DateTime dateFrom,
     required DateTime dateTo,
+    String? categoryId,
     List<String>? tags,
     List<String>? tagIds,
     int? utcOffset,
