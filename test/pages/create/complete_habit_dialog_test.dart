@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -17,6 +18,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('HabitDialog Widget Tests - ', () {
     setUpAll(() {
@@ -29,8 +31,13 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
+      when(
+        () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
+      ).thenAnswer((_) => habitFlossing);
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
     tearDown(getIt.reset);
