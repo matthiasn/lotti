@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -45,6 +46,12 @@ class EntitiesCacheService {
   Map<String, CategoryDefinition> categoriesById = {};
   Map<String, HabitDefinition> habitsById = {};
   Map<String, DashboardDefinition> dashboardsById = {};
+
+  List<CategoryDefinition> get sortedCategories {
+    final res = categoriesById.values.toList()
+      ..sortBy((category) => category.name);
+    return res;
+  }
 
   MeasurableDataType? getDataTypeById(String id) {
     return dataTypesById[id];

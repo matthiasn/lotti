@@ -3,7 +3,7 @@ import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-typedef StringCallback = void Function(String);
+typedef StringCallback = void Function(String?);
 
 class TitleTextField extends StatefulWidget {
   const TitleTextField({
