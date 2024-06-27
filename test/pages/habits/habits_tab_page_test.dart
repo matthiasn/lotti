@@ -47,6 +47,10 @@ void main() {
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
+      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+        (_) => [categoryMindfulness],
+      );
+
       when(
         () => mockJournalDb.watchHabitCompletionsByHabitId(
           rangeStart: any(named: 'rangeStart'),
