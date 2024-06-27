@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -34,34 +32,32 @@ class CategoryField extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         builder: (BuildContext _) {
-          return BlocProvider.value(
-            value: BlocProvider.of<HabitSettingsCubit>(context),
-            child: Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.7,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 20,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...categories.map(
-                      (category) => SettingsCard(
-                        onTap: () {
-                          onSave(category);
-                          Navigator.pop(context);
-                        },
-                        title: category.name,
-                        leading: ColorIcon(
-                          colorFromCssHex(category.color),
-                        ),
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...categories.map(
+                    (category) => SettingsCard(
+                      onTap: () {
+                        onSave(category);
+                        Navigator.pop(context);
+                      },
+                      title: category.name,
+                      leading: ColorIcon(
+                        colorFromCssHex(category.color),
+                        size: 24,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -86,6 +82,7 @@ class CategoryField extends StatelessWidget {
           category != null
               ? colorFromCssHex(category.color)
               : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          size: 24,
         ),
         suffixIcon: categoryUndefined
             ? null

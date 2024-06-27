@@ -14,6 +14,7 @@ import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -32,6 +33,7 @@ void main() {
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockUpdateNotifications = MockUpdateNotifications();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('EntryDetailPage Widget Tests - ', () {
     setUpAll(() {
@@ -57,12 +59,17 @@ void main() {
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+        (_) => [categoryMindfulness],
+      );
 
       when(
         () => mockJournalDb

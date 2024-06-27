@@ -68,7 +68,7 @@ class ColorIcon extends StatelessWidget {
 class CategoryColorIcon extends StatelessWidget {
   const CategoryColorIcon(
     this.categoryId, {
-    this.size = 40.0,
+    this.size = 24.0,
     super.key,
   });
 
