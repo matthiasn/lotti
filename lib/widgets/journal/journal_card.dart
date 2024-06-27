@@ -59,6 +59,8 @@ class JournalCardTitle extends StatelessWidget {
                     : dfShorter.format(item.meta.dateFrom),
                 style: monospaceTextStyle,
               ),
+              if (item is Task)
+                CategoryColorIcon((item as Task).meta.categoryId),
               if (item is Task) TaskStatusWidget(item as Task),
               Row(
                 children: [
@@ -142,11 +144,15 @@ class JournalCardTitle extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      data.title,
-                      style: const TextStyle(
-                        fontSize: fontSizeLarge,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          data.title,
+                          style: const TextStyle(
+                            fontSize: fontSizeLarge,
+                          ),
+                        ),
+                      ],
                     ),
                     if (showLinkedDuration) LinkedDuration(task: task),
                     TextViewerWidget(
@@ -349,6 +355,7 @@ class TaskListCard extends StatelessWidget {
     return Card(
       child: ListTile(
         onTap: onTap,
+        leading: CategoryColorIcon(task.meta.categoryId),
         trailing: TaskStatusWidget(task),
         title: Text(
           task.data.title,

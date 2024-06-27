@@ -25,6 +25,7 @@ mixin _$Metadata {
   DateTime get updatedAt => throw _privateConstructorUsedError;
   DateTime get dateFrom => throw _privateConstructorUsedError;
   DateTime get dateTo => throw _privateConstructorUsedError;
+  String? get categoryId => throw _privateConstructorUsedError;
   List<String>? get tags => throw _privateConstructorUsedError;
   List<String>? get tagIds => throw _privateConstructorUsedError;
   int? get utcOffset => throw _privateConstructorUsedError;
@@ -52,6 +53,7 @@ abstract class $MetadataCopyWith<$Res> {
       DateTime updatedAt,
       DateTime dateFrom,
       DateTime dateTo,
+      String? categoryId,
       List<String>? tags,
       List<String>? tagIds,
       int? utcOffset,
@@ -81,6 +83,7 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
     Object? updatedAt = null,
     Object? dateFrom = null,
     Object? dateTo = null,
+    Object? categoryId = freezed,
     Object? tags = freezed,
     Object? tagIds = freezed,
     Object? utcOffset = freezed,
@@ -112,6 +115,10 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
           ? _value.dateTo
           : dateTo // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      categoryId: freezed == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
       tags: freezed == tags
           ? _value.tags
           : tags // ignore: cast_nullable_to_non_nullable
@@ -166,6 +173,7 @@ abstract class _$$MetadataImplCopyWith<$Res>
       DateTime updatedAt,
       DateTime dateFrom,
       DateTime dateTo,
+      String? categoryId,
       List<String>? tags,
       List<String>? tagIds,
       int? utcOffset,
@@ -193,6 +201,7 @@ class __$$MetadataImplCopyWithImpl<$Res>
     Object? updatedAt = null,
     Object? dateFrom = null,
     Object? dateTo = null,
+    Object? categoryId = freezed,
     Object? tags = freezed,
     Object? tagIds = freezed,
     Object? utcOffset = freezed,
@@ -224,6 +233,10 @@ class __$$MetadataImplCopyWithImpl<$Res>
           ? _value.dateTo
           : dateTo // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      categoryId: freezed == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
       tags: freezed == tags
           ? _value._tags
           : tags // ignore: cast_nullable_to_non_nullable
@@ -273,6 +286,7 @@ class _$MetadataImpl implements _Metadata {
       required this.updatedAt,
       required this.dateFrom,
       required this.dateTo,
+      this.categoryId,
       final List<String>? tags,
       final List<String>? tagIds,
       this.utcOffset,
@@ -298,6 +312,8 @@ class _$MetadataImpl implements _Metadata {
   final DateTime dateFrom;
   @override
   final DateTime dateTo;
+  @override
+  final String? categoryId;
   final List<String>? _tags;
   @override
   List<String>? get tags {
@@ -335,7 +351,7 @@ class _$MetadataImpl implements _Metadata {
 
   @override
   String toString() {
-    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
   }
 
   @override
@@ -351,6 +367,8 @@ class _$MetadataImpl implements _Metadata {
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId) &&
             const DeepCollectionEquality().equals(other._tags, _tags) &&
             const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
             (identical(other.utcOffset, utcOffset) ||
@@ -375,6 +393,7 @@ class _$MetadataImpl implements _Metadata {
       updatedAt,
       dateFrom,
       dateTo,
+      categoryId,
       const DeepCollectionEquality().hash(_tags),
       const DeepCollectionEquality().hash(_tagIds),
       utcOffset,
@@ -406,6 +425,7 @@ abstract class _Metadata implements Metadata {
       required final DateTime updatedAt,
       required final DateTime dateFrom,
       required final DateTime dateTo,
+      final String? categoryId,
       final List<String>? tags,
       final List<String>? tagIds,
       final int? utcOffset,
@@ -429,6 +449,8 @@ abstract class _Metadata implements Metadata {
   DateTime get dateFrom;
   @override
   DateTime get dateTo;
+  @override
+  String? get categoryId;
   @override
   List<String>? get tags;
   @override

@@ -684,6 +684,7 @@ class PersistenceLogic {
   Future<bool> updateTask({
     required String journalEntityId,
     required TaskData taskData,
+    String? categoryId,
     EntryText? entryText,
   }) async {
     try {
@@ -979,6 +980,44 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntityDate',
+        stackTrace: stackTrace,
+      );
+    }
+    return true;
+  }
+
+  Future<bool> updateCategoryId(
+    String journalEntityId, {
+    required String? categoryId,
+  }) async {
+    try {
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      final now = DateTime.now();
+      final vc = await _vectorClockService.getNextVectorClock(
+        previous: journalEntity.meta.vectorClock,
+      );
+
+      final newMeta = journalEntity.meta.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
+        categoryId: categoryId,
+      );
+
+      final newJournalEntity = journalEntity.copyWith(
+        meta: newMeta,
+      );
+
+      await updateDbEntity(newJournalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'updateCategoryId',
         stackTrace: stackTrace,
       );
     }
