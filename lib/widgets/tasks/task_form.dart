@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/categories/category_field.dart';
 import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -46,6 +47,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
             key: formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 const SizedBox(height: 10),
                 FormBuilderTextField(
@@ -162,6 +164,21 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 240),
+                      child: CategoryField(
+                        categoryId: widget.task.meta.categoryId,
+                        onSave: (category) {
+                          notifier.updateCategoryId(category?.id);
+                        },
                       ),
                     ),
                   ],

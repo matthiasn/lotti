@@ -140,6 +140,13 @@ class EntryController extends _$EntryController {
     );
   }
 
+  Future<bool> updateCategoryId(String? categoryId) async {
+    return _persistenceLogic.updateCategoryId(
+      entryId,
+      categoryId: categoryId,
+    );
+  }
+
   Future<JournalEntity?> _fetch() async {
     return _journalDb.journalEntityById(entryId);
   }

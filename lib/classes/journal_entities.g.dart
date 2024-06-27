@@ -13,6 +13,7 @@ _$MetadataImpl _$$MetadataImplFromJson(Map<String, dynamic> json) =>
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       dateFrom: DateTime.parse(json['dateFrom'] as String),
       dateTo: DateTime.parse(json['dateTo'] as String),
+      categoryId: json['categoryId'] as String?,
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
       tagIds:
           (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
@@ -36,6 +37,7 @@ Map<String, dynamic> _$$MetadataImplToJson(_$MetadataImpl instance) =>
       'updatedAt': instance.updatedAt.toIso8601String(),
       'dateFrom': instance.dateFrom.toIso8601String(),
       'dateTo': instance.dateTo.toIso8601String(),
+      'categoryId': instance.categoryId,
       'tags': instance.tags,
       'tagIds': instance.tagIds,
       'utcOffset': instance.utcOffset,

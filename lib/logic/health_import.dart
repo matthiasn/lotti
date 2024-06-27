@@ -293,7 +293,8 @@ class HealthImport {
     final now = DateTime.now();
     final lastFetch = lastFetched[type] ?? DateTime(0);
 
-    if (now.difference(lastFetch) < const Duration(minutes: 10)) {
+    if (now.difference(lastFetch) < const Duration(minutes: 10) &&
+        type.contains('cumulative')) {
       return;
     }
 
