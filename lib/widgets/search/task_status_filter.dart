@@ -1,9 +1,14 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
@@ -18,18 +23,89 @@ class TaskStatusFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return Wrap(
-          runSpacing: 10,
-          spacing: 5,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ...snapshot.taskStatuses.map(
-              (status) => TaskStatusChip(
-                status,
-                onlySelected: false,
-              ),
+            const Divider(),
+            Text(
+              'Status',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            const TaskStatusAllChip(),
-            const SizedBox(width: 5),
+            const SizedBox(height: 10),
+            Wrap(
+              runSpacing: 10,
+              spacing: 5,
+              children: [
+                ...snapshot.taskStatuses.map(
+                  (status) => TaskStatusChip(
+                    status,
+                    onlySelected: false,
+                  ),
+                ),
+                const TaskStatusAllChip(),
+                const SizedBox(width: 5),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class TaskCategoryFilter extends StatelessWidget {
+  const TaskCategoryFilter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = getIt<EntitiesCacheService>().sortedCategories;
+
+    if (categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return BlocBuilder<JournalPageCubit, JournalPageState>(
+      builder: (context, state) {
+        final cubit = context.read<JournalPageCubit>();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 10),
+            const Divider(),
+            Text(
+              'Category',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 5,
+              runSpacing: 10,
+              children: [
+                ...categories.map((category) {
+                  final color = colorFromCssHex(category.color);
+                  return Opacity(
+                    opacity: state.selectedCategoryIds.contains(category.id)
+                        ? 1
+                        : 0.4,
+                    child: ActionChip(
+                      onPressed: () => cubit.toggleSelectedCategoryIds(
+                        category.id,
+                      ),
+                      label: Text(
+                        category.name,
+                        style: TextStyle(
+                          color: color.isLight ? Colors.black : Colors.white,
+                          fontSize: fontSizeMedium,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      backgroundColor: color,
+                    ),
+                  );
+                }),
+              ],
+            ),
           ],
         );
       },
@@ -204,11 +280,12 @@ class TaskFilterIcon extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.only(
             bottom: 30,
-            left: 10,
+            left: 20,
             top: 10,
-            right: 10,
+            right: 20,
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -220,6 +297,7 @@ class TaskFilterIcon extends StatelessWidget {
               ),
               SizedBox(height: 10),
               TaskStatusFilter(),
+              TaskCategoryFilter(),
             ],
           ),
         ),

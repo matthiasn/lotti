@@ -28,6 +28,7 @@ mixin _$JournalPageState {
       throw _privateConstructorUsedError;
   List<String> get taskStatuses => throw _privateConstructorUsedError;
   Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
+  Set<String> get selectedCategoryIds => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $JournalPageStateCopyWith<JournalPageState> get copyWith =>
@@ -51,7 +52,8 @@ abstract class $JournalPageStateCopyWith<$Res> {
       Set<String> fullTextMatches,
       PagingController<int, JournalEntity> pagingController,
       List<String> taskStatuses,
-      Set<String> selectedTaskStatuses});
+      Set<String> selectedTaskStatuses,
+      Set<String> selectedCategoryIds});
 }
 
 /// @nodoc
@@ -78,6 +80,7 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
     Object? pagingController = null,
     Object? taskStatuses = null,
     Object? selectedTaskStatuses = null,
+    Object? selectedCategoryIds = null,
   }) {
     return _then(_value.copyWith(
       match: null == match
@@ -124,6 +127,10 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
           ? _value.selectedTaskStatuses
           : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _value.selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ) as $Val);
   }
 }
@@ -147,7 +154,8 @@ abstract class _$$JournalPageStateImplCopyWith<$Res>
       Set<String> fullTextMatches,
       PagingController<int, JournalEntity> pagingController,
       List<String> taskStatuses,
-      Set<String> selectedTaskStatuses});
+      Set<String> selectedTaskStatuses,
+      Set<String> selectedCategoryIds});
 }
 
 /// @nodoc
@@ -172,6 +180,7 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
     Object? pagingController = null,
     Object? taskStatuses = null,
     Object? selectedTaskStatuses = null,
+    Object? selectedCategoryIds = null,
   }) {
     return _then(_$JournalPageStateImpl(
       match: null == match
@@ -218,6 +227,10 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
           ? _value._selectedTaskStatuses
           : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _value._selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ));
   }
 }
@@ -236,13 +249,15 @@ class _$JournalPageStateImpl implements _JournalPageState {
       required final Set<String> fullTextMatches,
       required this.pagingController,
       required final List<String> taskStatuses,
-      required final Set<String> selectedTaskStatuses})
+      required final Set<String> selectedTaskStatuses,
+      required final Set<String> selectedCategoryIds})
       : _tagIds = tagIds,
         _filters = filters,
         _selectedEntryTypes = selectedEntryTypes,
         _fullTextMatches = fullTextMatches,
         _taskStatuses = taskStatuses,
-        _selectedTaskStatuses = selectedTaskStatuses;
+        _selectedTaskStatuses = selectedTaskStatuses,
+        _selectedCategoryIds = selectedCategoryIds;
 
   @override
   final String match;
@@ -304,9 +319,18 @@ class _$JournalPageStateImpl implements _JournalPageState {
     return EqualUnmodifiableSetView(_selectedTaskStatuses);
   }
 
+  final Set<String> _selectedCategoryIds;
+  @override
+  Set<String> get selectedCategoryIds {
+    if (_selectedCategoryIds is EqualUnmodifiableSetView)
+      return _selectedCategoryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_selectedCategoryIds);
+  }
+
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, taskAsListView: $taskAsListView, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, taskAsListView: $taskAsListView, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds)';
   }
 
   @override
@@ -332,7 +356,9 @@ class _$JournalPageStateImpl implements _JournalPageState {
             const DeepCollectionEquality()
                 .equals(other._taskStatuses, _taskStatuses) &&
             const DeepCollectionEquality()
-                .equals(other._selectedTaskStatuses, _selectedTaskStatuses));
+                .equals(other._selectedTaskStatuses, _selectedTaskStatuses) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedCategoryIds, _selectedCategoryIds));
   }
 
   @override
@@ -348,7 +374,8 @@ class _$JournalPageStateImpl implements _JournalPageState {
       const DeepCollectionEquality().hash(_fullTextMatches),
       pagingController,
       const DeepCollectionEquality().hash(_taskStatuses),
-      const DeepCollectionEquality().hash(_selectedTaskStatuses));
+      const DeepCollectionEquality().hash(_selectedTaskStatuses),
+      const DeepCollectionEquality().hash(_selectedCategoryIds));
 
   @JsonKey(ignore: true)
   @override
@@ -360,18 +387,18 @@ class _$JournalPageStateImpl implements _JournalPageState {
 
 abstract class _JournalPageState implements JournalPageState {
   factory _JournalPageState(
-          {required final String match,
-          required final Set<String> tagIds,
-          required final Set<DisplayFilter> filters,
-          required final bool showPrivateEntries,
-          required final bool showTasks,
-          required final bool taskAsListView,
-          required final List<String> selectedEntryTypes,
-          required final Set<String> fullTextMatches,
-          required final PagingController<int, JournalEntity> pagingController,
-          required final List<String> taskStatuses,
-          required final Set<String> selectedTaskStatuses}) =
-      _$JournalPageStateImpl;
+      {required final String match,
+      required final Set<String> tagIds,
+      required final Set<DisplayFilter> filters,
+      required final bool showPrivateEntries,
+      required final bool showTasks,
+      required final bool taskAsListView,
+      required final List<String> selectedEntryTypes,
+      required final Set<String> fullTextMatches,
+      required final PagingController<int, JournalEntity> pagingController,
+      required final List<String> taskStatuses,
+      required final Set<String> selectedTaskStatuses,
+      required final Set<String> selectedCategoryIds}) = _$JournalPageStateImpl;
 
   @override
   String get match;
@@ -395,6 +422,8 @@ abstract class _JournalPageState implements JournalPageState {
   List<String> get taskStatuses;
   @override
   Set<String> get selectedTaskStatuses;
+  @override
+  Set<String> get selectedCategoryIds;
   @override
   @JsonKey(ignore: true)
   _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>

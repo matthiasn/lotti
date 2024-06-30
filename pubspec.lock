@@ -437,10 +437,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "9374eded555be05e7ec99be4482dda0b72a8a5b291a84244a54f32692117d974"
+      sha256: b0d579542720c2d06a152ad3a1b6f4a54624bad217399f059064c4cfe38fba3b
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.6"
+    version: "9.5.2"
   dart_style:
     dependency: "direct dev"
     description:
@@ -905,10 +905,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_local_notifications
-      sha256: "40e6fbd2da7dcc7ed78432c5cdab1559674b4af035fddbfb2f9a8f9c2112fcef"
+      sha256: ced76d337f54de33d7d9f06092137b4ac2da5079e00cee8a11a1794ffc7c61c6
       url: "https://pub.dev"
     source: hosted
-    version: "17.1.2"
+    version: "17.2.1"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -921,10 +921,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_local_notifications_platform_interface
-      sha256: "340abf67df238f7f0ef58f4a26d2a83e1ab74c77ab03cd2b2d5018ac64db30b7"
+      sha256: "85f8d07fe708c1bdcf45037f2c0109753b26ae077e9d9e899d55971711a4ea66"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.0"
+    version: "7.2.0"
   flutter_localizations:
     dependency: "direct main"
     description: flutter
@@ -942,10 +942,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: "85cc6f7daeae537844c92e2d56e2aff61b00095f8f77913b529ea4be12fc45ea"
+      sha256: "2e8a801b1ded5ea001a4529c97b1f213dcb11c6b20668e081cafb23468593514"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.2+1"
+    version: "0.7.3"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -982,10 +982,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "8101c805242016c46671a1950887b3bda3c1c98d2078f99567c587c33b393343"
+      sha256: c15d625b737ab1d53e1d2209aea542daf03b2d8a592697ccac54b963dcc615ae
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.6"
+    version: "9.5.2"
   flutter_rating:
     dependency: "direct main"
     description:
@@ -1555,10 +1555,10 @@ packages:
     dependency: transitive
     description:
       name: location_web
-      sha256: "15ad7b4c8a9f55abee513373755e093a40c04d7e24fc1b4f89676fe99523d034"
+      sha256: "49dda13d415c4603c5775a33fb22f575e0aa3f0ec2916644ddcd722db31ee884"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.1"
+    version: "5.0.2"
   logger:
     dependency: transitive
     description:
@@ -2768,18 +2768,18 @@ packages:
     dependency: transitive
     description:
       name: video_player
-      sha256: aced48e701e24c02b0b7f881a8819e4937794e46b5a5821005e2bf3b40a324cc
+      sha256: e30df0d226c4ef82e2c150ebf6834b3522cf3f654d8e2f9419d376cdc071425d
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.7"
+    version: "2.9.1"
   video_player_android:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: "9529001630e42988f755772972d5014d30121610700e8e502278a245939f8fc8"
+      sha256: "3ff2da7e5a9274bef9b5deb9084f73a77920211c463e0e836361b14146e67339"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.5.1"
   video_player_avfoundation:
     dependency: transitive
     description:

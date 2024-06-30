@@ -47,6 +47,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
               'GROOMED',
               'IN PROGRESS',
             },
+            selectedCategoryIds: {},
           ),
         ) {
     getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
@@ -131,6 +132,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _showPrivateEntries = false;
   bool showTasks = false;
   bool taskAsListView = true;
+  Set<String> _selectedCategoryIds = {};
 
   Set<String> _fullTextMatches = {};
   Set<String> _lastIds = {};
@@ -154,6 +156,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         pagingController: state.pagingController,
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: _selectedTaskStatuses,
+        selectedCategoryIds: _selectedCategoryIds,
       ),
     );
   }
@@ -177,6 +180,17 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     }
 
     persistTaskStatuses();
+  }
+
+  void toggleSelectedCategoryIds(String categoryId) {
+    if (_selectedCategoryIds.contains(categoryId)) {
+      _selectedCategoryIds =
+          _selectedCategoryIds.difference(<String>{categoryId});
+    } else {
+      _selectedCategoryIds = _selectedCategoryIds.union({categoryId});
+    }
+    refreshQuery();
+    emitState();
   }
 
   void toggleTaskAsListView() {
@@ -303,23 +317,33 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     final flaggedEntriesOnly =
         _filters.contains(DisplayFilter.flaggedEntriesOnly);
 
-    return showTasks
-        ? await _db.getTasks(
-            ids: ids,
-            starredStatuses: starredEntriesOnly ? [true] : [true, false],
-            taskStatuses: _selectedTaskStatuses.toList(),
-            limit: _pageSize,
-            offset: pageKey,
-          )
-        : await _db.getJournalEntities(
-            types: types,
-            ids: ids,
-            starredStatuses: starredEntriesOnly ? [true] : [true, false],
-            privateStatuses: privateEntriesOnly ? [true] : [true, false],
-            flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
-            limit: _pageSize,
-            offset: pageKey,
-          );
+    if (showTasks) {
+      final res = await _db.getTasks(
+        ids: ids,
+        starredStatuses: starredEntriesOnly ? [true] : [true, false],
+        taskStatuses: _selectedTaskStatuses.toList(),
+        limit: _pageSize,
+        offset: pageKey,
+      );
+
+      return _selectedCategoryIds.isNotEmpty
+          ? res
+              .where(
+                (item) => _selectedCategoryIds.contains(item.meta.categoryId),
+              )
+              .toList()
+          : res;
+    } else {
+      return _db.getJournalEntities(
+        types: types,
+        ids: ids,
+        starredStatuses: starredEntriesOnly ? [true] : [true, false],
+        privateStatuses: privateEntriesOnly ? [true] : [true, false],
+        flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
+        limit: _pageSize,
+        offset: pageKey,
+      );
+    }
   }
 
   @override
