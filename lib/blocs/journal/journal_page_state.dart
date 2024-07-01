@@ -24,6 +24,6 @@ class JournalPageState with _$JournalPageState {
     required PagingController<int, JournalEntity> pagingController,
     required List<String> taskStatuses,
     required Set<String> selectedTaskStatuses,
-    required Set<String> selectedCategoryIds,
+    required Set<String?> selectedCategoryIds,
   }) = _JournalPageState;
 }
