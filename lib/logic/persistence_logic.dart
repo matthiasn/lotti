@@ -272,6 +272,7 @@ class PersistenceLogic {
     required TaskData data,
     required EntryText entryText,
     String? linkedId,
+    String? categoryId,
   }) async {
     try {
       final now = DateTime.now();
@@ -287,6 +288,7 @@ class PersistenceLogic {
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           id: id,
+          categoryId: categoryId,
           vectorClock: vc,
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,

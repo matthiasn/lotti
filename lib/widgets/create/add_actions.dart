@@ -141,7 +141,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            final task = await createTask(linkedId: linkedId);
+            final task = await createTask(
+              linkedId: linkedId,
+              categoryId: widget.linked?.meta.categoryId,
+            );
 
             if (task != null) {
               beamToNamed('/journal/${task.meta.id}');
