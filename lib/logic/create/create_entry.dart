@@ -34,7 +34,7 @@ Future<JournalEntity?> createTimerEntry({String? linkedId}) async {
   return timerItem;
 }
 
-Future<Task?> createTask({String? linkedId}) async {
+Future<Task?> createTask({String? linkedId, String? categoryId}) async {
   final now = DateTime.now();
 
   final task = await getIt<PersistenceLogic>().createTaskEntry(
@@ -48,6 +48,7 @@ Future<Task?> createTask({String? linkedId}) async {
     ),
     entryText: const EntryText(plainText: ''),
     linkedId: linkedId,
+    categoryId: categoryId,
   );
 
   return task;

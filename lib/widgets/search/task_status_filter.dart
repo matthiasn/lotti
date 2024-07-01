@@ -104,6 +104,21 @@ class TaskCategoryFilter extends StatelessWidget {
                     ),
                   );
                 }),
+                Opacity(
+                  opacity: state.selectedCategoryIds.contains(null) ? 1 : 0.4,
+                  child: ActionChip(
+                    onPressed: () => cubit.toggleSelectedCategoryIds(null),
+                    label: const Text(
+                      'unassigned',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSizeMedium,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                    backgroundColor: Colors.grey,
+                  ),
+                ),
               ],
             ),
           ],
