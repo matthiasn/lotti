@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -111,8 +110,7 @@ class EntryDetailsContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final isFocused = entryState?.isFocused ?? false;
-
+    /*  final isFocused = entryState?.isFocused ?? false;
     if (isFocused && isMobile) {
       Future.microtask(() {
         Scrollable.ensureVisible(
@@ -121,7 +119,7 @@ class EntryDetailsContent extends ConsumerWidget {
           curve: Curves.easeInOutQuint,
         );
       });
-    }
+    }*/
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
