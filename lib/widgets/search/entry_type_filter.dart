@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
@@ -58,6 +58,7 @@ class EntryTypeChip extends StatelessWidget {
           isSelected: isSelected,
           onTap: onTap,
           onLongPress: onLongPress,
+          selectedColor: Theme.of(context).colorScheme.secondary,
         );
       },
     );
@@ -91,6 +92,7 @@ class EntryTypeAllChip extends StatelessWidget {
           label: 'All',
           isSelected: isSelected,
           onTap: onTap,
+          selectedColor: Theme.of(context).colorScheme.secondary,
         );
       },
     );
