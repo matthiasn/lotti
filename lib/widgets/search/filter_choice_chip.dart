@@ -1,3 +1,4 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -8,14 +9,14 @@ class FilterChoiceChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
-    this.selectedColor,
+    required this.selectedColor,
     this.onLongPress,
     super.key,
   });
 
   final String label;
   final bool isSelected;
-  final Color? selectedColor;
+  final Color selectedColor;
   final void Function() onTap;
   final void Function()? onLongPress;
 
@@ -33,7 +34,7 @@ class FilterChoiceChip extends StatelessWidget {
           child: Chip(
             side: BorderSide(
               color: isSelected
-                  ? selectedColor ?? Colors.grey
+                  ? selectedColor
                   : Theme.of(context).colorScheme.secondary,
             ),
             label: Text(
@@ -41,12 +42,16 @@ class FilterChoiceChip extends StatelessWidget {
               style: choiceChipTextStyle(
                 themeData: Theme.of(context),
                 isSelected: isSelected,
+              ).copyWith(
+                color: isSelected
+                    ? selectedColor.isLight
+                        ? Colors.black
+                        : Colors.white
+                    : null,
               ),
             ),
             visualDensity: VisualDensity.compact,
-            backgroundColor: isSelected
-                ? selectedColor ?? Theme.of(context).colorScheme.secondary
-                : null,
+            backgroundColor: isSelected ? selectedColor : null,
           ),
         ),
       ),
