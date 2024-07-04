@@ -45,7 +45,7 @@ class JournalDb extends _$JournalDb {
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration {
@@ -59,13 +59,23 @@ class JournalDb extends _$JournalDb {
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('Migration from v$from to v$to');
 
-        await () async {
-          debugPrint('Creating category_definitions table and indices');
-          await m.createTable(categoryDefinitions);
-          await m.createIndex(idxCategoryDefinitionsName);
-          await m.createIndex(idxCategoryDefinitionsId);
-          await m.createIndex(idxCategoryDefinitionsPrivate);
-        }();
+        if (from < 19) {
+          await () async {
+            debugPrint('Creating category_definitions table and indices');
+            await m.createTable(categoryDefinitions);
+            await m.createIndex(idxCategoryDefinitionsName);
+            await m.createIndex(idxCategoryDefinitionsId);
+            await m.createIndex(idxCategoryDefinitionsPrivate);
+          }();
+        }
+
+        if (from < 20) {
+          await () async {
+            debugPrint('Add category_id in journal table, with index');
+            await m.addColumn(journal, journal.categoryId);
+            await m.createIndex(idxJournalCategoryId);
+          }();
+        }
       },
     );
   }
