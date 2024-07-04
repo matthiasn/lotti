@@ -63,18 +63,14 @@ class MatrixSettingsCard extends StatelessWidget {
           modalTypeBuilder: (context) {
             final size = MediaQuery.of(context).size.width;
             if (size < WoltModalConfig.pageBreakpoint) {
-              return WoltModalType.bottomSheet;
+              return WoltModalType.bottomSheet();
             } else {
-              return WoltModalType.dialog;
+              return WoltModalType.dialog();
             }
           },
           onModalDismissedWithBarrierTap: () {
             Navigator.of(context).pop();
           },
-          maxDialogWidth: WoltModalConfig.maxDialogWidth,
-          minDialogWidth: WoltModalConfig.minDialogWidth,
-          minPageHeight: WoltModalConfig.minPageHeight,
-          maxPageHeight: WoltModalConfig.maxPageHeight,
         );
       },
     );

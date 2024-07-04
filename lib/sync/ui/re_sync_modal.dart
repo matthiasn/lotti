@@ -100,17 +100,14 @@ class ReSyncModal {
       modalTypeBuilder: (context) {
         final size = MediaQuery.of(context).size.width;
         if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet;
+          return WoltModalType.bottomSheet();
         } else {
-          return WoltModalType.dialog;
+          return WoltModalType.dialog();
         }
       },
       onModalDismissedWithBarrierTap: () {
         Navigator.of(context).pop();
       },
-      maxDialogWidth: WoltModalConfig.maxDialogWidth,
-      minDialogWidth: WoltModalConfig.minDialogWidth,
-      maxPageHeight: WoltModalConfig.maxPageHeight,
     );
   }
 }
