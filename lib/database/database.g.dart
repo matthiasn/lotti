@@ -149,6 +149,13 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       $customConstraints: '');
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -170,7 +177,8 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
         latitude,
         longitude,
         geohashString,
-        geohashInt
+        geohashInt,
+        categoryId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -285,6 +293,12 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
           geohashInt.isAcceptableOrUnknown(
               data['geohash_int']!, _geohashIntMeta));
     }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
     return context;
   }
 
@@ -334,6 +348,8 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
           .read(DriftSqlType.string, data['${effectivePrefix}geohash_string']),
       geohashInt: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}geohash_int']),
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
     );
   }
 
@@ -369,6 +385,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
   final double? longitude;
   final String? geohashString;
   final int? geohashInt;
+  final String? categoryId;
   const JournalDbEntity(
       {required this.id,
       required this.createdAt,
@@ -389,7 +406,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       this.latitude,
       this.longitude,
       this.geohashString,
-      this.geohashInt});
+      this.geohashInt,
+      this.categoryId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -426,6 +444,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     }
     if (!nullToAbsent || geohashInt != null) {
       map['geohash_int'] = Variable<int>(geohashInt);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
     }
     return map;
   }
@@ -466,6 +487,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       geohashInt: geohashInt == null && nullToAbsent
           ? const Value.absent()
           : Value(geohashInt),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
     );
   }
 
@@ -493,6 +517,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       longitude: serializer.fromJson<double?>(json['longitude']),
       geohashString: serializer.fromJson<String?>(json['geohash_string']),
       geohashInt: serializer.fromJson<int?>(json['geohash_int']),
+      categoryId: serializer.fromJson<String?>(json['category_id']),
     );
   }
   @override
@@ -519,6 +544,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       'longitude': serializer.toJson<double?>(longitude),
       'geohash_string': serializer.toJson<String?>(geohashString),
       'geohash_int': serializer.toJson<int?>(geohashInt),
+      'category_id': serializer.toJson<String?>(categoryId),
     };
   }
 
@@ -542,7 +568,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           Value<double?> latitude = const Value.absent(),
           Value<double?> longitude = const Value.absent(),
           Value<String?> geohashString = const Value.absent(),
-          Value<int?> geohashInt = const Value.absent()}) =>
+          Value<int?> geohashInt = const Value.absent(),
+          Value<String?> categoryId = const Value.absent()}) =>
       JournalDbEntity(
         id: id ?? this.id,
         createdAt: createdAt ?? this.createdAt,
@@ -565,6 +592,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
         geohashString:
             geohashString.present ? geohashString.value : this.geohashString,
         geohashInt: geohashInt.present ? geohashInt.value : this.geohashInt,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
       );
   @override
   String toString() {
@@ -588,33 +616,36 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
           ..write('geohashString: $geohashString, ')
-          ..write('geohashInt: $geohashInt')
+          ..write('geohashInt: $geohashInt, ')
+          ..write('categoryId: $categoryId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      createdAt,
-      updatedAt,
-      dateFrom,
-      dateTo,
-      deleted,
-      starred,
-      private,
-      task,
-      taskStatus,
-      flag,
-      type,
-      subtype,
-      serialized,
-      schemaVersion,
-      plainText,
-      latitude,
-      longitude,
-      geohashString,
-      geohashInt);
+  int get hashCode => Object.hashAll([
+        id,
+        createdAt,
+        updatedAt,
+        dateFrom,
+        dateTo,
+        deleted,
+        starred,
+        private,
+        task,
+        taskStatus,
+        flag,
+        type,
+        subtype,
+        serialized,
+        schemaVersion,
+        plainText,
+        latitude,
+        longitude,
+        geohashString,
+        geohashInt,
+        categoryId
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -638,7 +669,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           other.latitude == this.latitude &&
           other.longitude == this.longitude &&
           other.geohashString == this.geohashString &&
-          other.geohashInt == this.geohashInt);
+          other.geohashInt == this.geohashInt &&
+          other.categoryId == this.categoryId);
 }
 
 class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
@@ -662,6 +694,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
   final Value<double?> longitude;
   final Value<String?> geohashString;
   final Value<int?> geohashInt;
+  final Value<String?> categoryId;
   final Value<int> rowid;
   const JournalCompanion({
     this.id = const Value.absent(),
@@ -684,6 +717,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.longitude = const Value.absent(),
     this.geohashString = const Value.absent(),
     this.geohashInt = const Value.absent(),
+    this.categoryId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   JournalCompanion.insert({
@@ -707,6 +741,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.longitude = const Value.absent(),
     this.geohashString = const Value.absent(),
     this.geohashInt = const Value.absent(),
+    this.categoryId = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         createdAt = Value(createdAt),
@@ -736,6 +771,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     Expression<double>? longitude,
     Expression<String>? geohashString,
     Expression<int>? geohashInt,
+    Expression<String>? categoryId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -759,6 +795,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       if (longitude != null) 'longitude': longitude,
       if (geohashString != null) 'geohash_string': geohashString,
       if (geohashInt != null) 'geohash_int': geohashInt,
+      if (categoryId != null) 'category_id': categoryId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -784,6 +821,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       Value<double?>? longitude,
       Value<String?>? geohashString,
       Value<int?>? geohashInt,
+      Value<String?>? categoryId,
       Value<int>? rowid}) {
     return JournalCompanion(
       id: id ?? this.id,
@@ -806,6 +844,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       longitude: longitude ?? this.longitude,
       geohashString: geohashString ?? this.geohashString,
       geohashInt: geohashInt ?? this.geohashInt,
+      categoryId: categoryId ?? this.categoryId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -873,6 +912,9 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     if (geohashInt.present) {
       map['geohash_int'] = Variable<int>(geohashInt.value);
     }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -902,6 +944,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
           ..write('longitude: $longitude, ')
           ..write('geohashString: $geohashString, ')
           ..write('geohashInt: $geohashInt, ')
+          ..write('categoryId: $categoryId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4315,6 +4358,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_journal_geohash_string ON journal (geohash_string)');
   late final Index idxJournalGeohashInt = Index('idx_journal_geohash_int',
       'CREATE INDEX idx_journal_geohash_int ON journal (geohash_int)');
+  late final Index idxJournalCategoryId = Index('idx_journal_category_id',
+      'CREATE INDEX idx_journal_category_id ON journal (category_id)');
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -5219,6 +5264,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         idxJournalSubtype,
         idxJournalGeohashString,
         idxJournalGeohashInt,
+        idxJournalCategoryId,
         conflicts,
         measurableTypes,
         habitDefinitions,
@@ -5290,6 +5336,7 @@ typedef $JournalInsertCompanionBuilder = JournalCompanion Function({
   Value<double?> longitude,
   Value<String?> geohashString,
   Value<int?> geohashInt,
+  Value<String?> categoryId,
   Value<int> rowid,
 });
 typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
@@ -5313,6 +5360,7 @@ typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
   Value<double?> longitude,
   Value<String?> geohashString,
   Value<int?> geohashInt,
+  Value<String?> categoryId,
   Value<int> rowid,
 });
 
@@ -5353,6 +5401,7 @@ class $JournalTableManager extends RootTableManager<
             Value<double?> longitude = const Value.absent(),
             Value<String?> geohashString = const Value.absent(),
             Value<int?> geohashInt = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               JournalCompanion(
@@ -5376,6 +5425,7 @@ class $JournalTableManager extends RootTableManager<
             longitude: longitude,
             geohashString: geohashString,
             geohashInt: geohashInt,
+            categoryId: categoryId,
             rowid: rowid,
           ),
           getInsertCompanionBuilder: ({
@@ -5399,6 +5449,7 @@ class $JournalTableManager extends RootTableManager<
             Value<double?> longitude = const Value.absent(),
             Value<String?> geohashString = const Value.absent(),
             Value<int?> geohashInt = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               JournalCompanion.insert(
@@ -5422,6 +5473,7 @@ class $JournalTableManager extends RootTableManager<
             longitude: longitude,
             geohashString: geohashString,
             geohashInt: geohashInt,
+            categoryId: categoryId,
             rowid: rowid,
           ),
         ));
@@ -5540,6 +5592,11 @@ class $JournalFilterComposer extends FilterComposer<_$JournalDb, Journal> {
       column: $state.table.geohashInt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get categoryId => $state.composableBuilder(
+      column: $state.table.categoryId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
 }
 
 class $JournalOrderingComposer extends OrderingComposer<_$JournalDb, Journal> {
@@ -5641,6 +5698,11 @@ class $JournalOrderingComposer extends OrderingComposer<_$JournalDb, Journal> {
 
   ColumnOrderings<int> get geohashInt => $state.composableBuilder(
       column: $state.table.geohashInt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get categoryId => $state.composableBuilder(
+      column: $state.table.categoryId,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }

@@ -19,6 +19,7 @@ CREATE TABLE journal (
   longitude REAL,
   geohash_string TEXT,
   geohash_int INTEGER,
+  category_id TEXT,
   PRIMARY KEY (id)
 ) as JournalDbEntity;
 
@@ -36,6 +37,7 @@ CREATE INDEX idx_journal_type ON journal (type);
 CREATE INDEX idx_journal_subtype ON journal (subtype);
 CREATE INDEX idx_journal_geohash_string ON journal (geohash_string);
 CREATE INDEX idx_journal_geohash_int ON journal (geohash_int);
+CREATE INDEX idx_journal_category_id ON journal (category_id);
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
