@@ -3,6 +3,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
 part 'journal_page_state.freezed.dart';
+part 'journal_page_state.g.dart';
 
 enum DisplayFilter {
   starredEntriesOnly,
@@ -26,4 +27,15 @@ class JournalPageState with _$JournalPageState {
     required Set<String> selectedTaskStatuses,
     required Set<String?> selectedCategoryIds,
   }) = _JournalPageState;
+}
+
+@freezed
+class TasksFilter with _$TasksFilter {
+  factory TasksFilter({
+    required Set<String?> selectedCategoryIds,
+    required Set<String> selectedTaskStatuses,
+  }) = _TasksFilter;
+
+  factory TasksFilter.fromJson(Map<String, dynamic> json) =>
+      _$TasksFilterFromJson(json);
 }

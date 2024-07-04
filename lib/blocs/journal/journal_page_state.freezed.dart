@@ -430,3 +430,181 @@ abstract class _JournalPageState implements JournalPageState {
   _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) {
+  return _TasksFilter.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TasksFilter {
+  Set<String?> get selectedCategoryIds => throw _privateConstructorUsedError;
+  Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TasksFilterCopyWith<TasksFilter> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TasksFilterCopyWith<$Res> {
+  factory $TasksFilterCopyWith(
+          TasksFilter value, $Res Function(TasksFilter) then) =
+      _$TasksFilterCopyWithImpl<$Res, TasksFilter>;
+  @useResult
+  $Res call(
+      {Set<String?> selectedCategoryIds, Set<String> selectedTaskStatuses});
+}
+
+/// @nodoc
+class _$TasksFilterCopyWithImpl<$Res, $Val extends TasksFilter>
+    implements $TasksFilterCopyWith<$Res> {
+  _$TasksFilterCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? selectedCategoryIds = null,
+    Object? selectedTaskStatuses = null,
+  }) {
+    return _then(_value.copyWith(
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _value.selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String?>,
+      selectedTaskStatuses: null == selectedTaskStatuses
+          ? _value.selectedTaskStatuses
+          : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TasksFilterImplCopyWith<$Res>
+    implements $TasksFilterCopyWith<$Res> {
+  factory _$$TasksFilterImplCopyWith(
+          _$TasksFilterImpl value, $Res Function(_$TasksFilterImpl) then) =
+      __$$TasksFilterImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {Set<String?> selectedCategoryIds, Set<String> selectedTaskStatuses});
+}
+
+/// @nodoc
+class __$$TasksFilterImplCopyWithImpl<$Res>
+    extends _$TasksFilterCopyWithImpl<$Res, _$TasksFilterImpl>
+    implements _$$TasksFilterImplCopyWith<$Res> {
+  __$$TasksFilterImplCopyWithImpl(
+      _$TasksFilterImpl _value, $Res Function(_$TasksFilterImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? selectedCategoryIds = null,
+    Object? selectedTaskStatuses = null,
+  }) {
+    return _then(_$TasksFilterImpl(
+      selectedCategoryIds: null == selectedCategoryIds
+          ? _value._selectedCategoryIds
+          : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String?>,
+      selectedTaskStatuses: null == selectedTaskStatuses
+          ? _value._selectedTaskStatuses
+          : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TasksFilterImpl implements _TasksFilter {
+  _$TasksFilterImpl(
+      {required final Set<String?> selectedCategoryIds,
+      required final Set<String> selectedTaskStatuses})
+      : _selectedCategoryIds = selectedCategoryIds,
+        _selectedTaskStatuses = selectedTaskStatuses;
+
+  factory _$TasksFilterImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TasksFilterImplFromJson(json);
+
+  final Set<String?> _selectedCategoryIds;
+  @override
+  Set<String?> get selectedCategoryIds {
+    if (_selectedCategoryIds is EqualUnmodifiableSetView)
+      return _selectedCategoryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_selectedCategoryIds);
+  }
+
+  final Set<String> _selectedTaskStatuses;
+  @override
+  Set<String> get selectedTaskStatuses {
+    if (_selectedTaskStatuses is EqualUnmodifiableSetView)
+      return _selectedTaskStatuses;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_selectedTaskStatuses);
+  }
+
+  @override
+  String toString() {
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TasksFilterImpl &&
+            const DeepCollectionEquality()
+                .equals(other._selectedCategoryIds, _selectedCategoryIds) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedTaskStatuses, _selectedTaskStatuses));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_selectedCategoryIds),
+      const DeepCollectionEquality().hash(_selectedTaskStatuses));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TasksFilterImplCopyWith<_$TasksFilterImpl> get copyWith =>
+      __$$TasksFilterImplCopyWithImpl<_$TasksFilterImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TasksFilterImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TasksFilter implements TasksFilter {
+  factory _TasksFilter(
+      {required final Set<String?> selectedCategoryIds,
+      required final Set<String> selectedTaskStatuses}) = _$TasksFilterImpl;
+
+  factory _TasksFilter.fromJson(Map<String, dynamic> json) =
+      _$TasksFilterImpl.fromJson;
+
+  @override
+  Set<String?> get selectedCategoryIds;
+  @override
+  Set<String> get selectedTaskStatuses;
+  @override
+  @JsonKey(ignore: true)
+  _$$TasksFilterImplCopyWith<_$TasksFilterImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
