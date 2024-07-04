@@ -55,12 +55,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       emitState();
     });
 
-    getIt<SettingsDb>().itemByKey(selectedTaskStatusesKey).then((value) {
+    getIt<SettingsDb>().itemByKey(taskFiltersKey).then((value) {
       if (value == null) {
         return;
       }
-      final json = jsonDecode(value) as List<dynamic>;
-      _selectedTaskStatuses = List<String>.from(json).toSet();
+      final json = jsonDecode(value) as Map<String, dynamic>;
+      final tasksFilter = TasksFilter.fromJson(json);
+      _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
+      _selectedCategoryIds = tasksFilter.selectedCategoryIds;
       emitState();
       refreshQuery();
     });
@@ -118,7 +120,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     });
   }
 
-  static const selectedTaskStatusesKey = 'SELECTED_TASK_STATUSES';
+  static const taskFiltersKey = 'TASK_FILTERS';
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
   final JournalDb _db = getIt<JournalDb>();
@@ -179,7 +181,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       _selectedTaskStatuses = _selectedTaskStatuses.union({status});
     }
 
-    persistTaskStatuses();
+    persistTasksFilter();
   }
 
   void toggleSelectedCategoryIds(String? categoryId) {
@@ -188,6 +190,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     } else {
       _selectedCategoryIds = _selectedCategoryIds.union({categoryId});
     }
+    persistTasksFilter();
     refreshQuery();
     emitState();
   }
@@ -224,25 +227,30 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   void selectSingleTaskStatus(String taskStatus) {
     _selectedTaskStatuses = {taskStatus};
-    persistTaskStatuses();
+    persistTasksFilter();
   }
 
   void selectAllTaskStatuses() {
     _selectedTaskStatuses = state.taskStatuses.toSet();
-    persistTaskStatuses();
+    persistTasksFilter();
   }
 
   void clearSelectedTaskStatuses() {
     _selectedTaskStatuses = {};
-    persistTaskStatuses();
+    persistTasksFilter();
   }
 
-  Future<void> persistTaskStatuses() async {
+  Future<void> persistTasksFilter() async {
     await refreshQuery();
 
     await getIt<SettingsDb>().saveSettingsItem(
-      selectedTaskStatusesKey,
-      jsonEncode(_selectedTaskStatuses.toList()),
+      taskFiltersKey,
+      jsonEncode(
+        TasksFilter(
+          selectedCategoryIds: _selectedCategoryIds,
+          selectedTaskStatuses: _selectedTaskStatuses,
+        ),
+      ),
     );
   }
 
