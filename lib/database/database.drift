@@ -19,7 +19,7 @@ CREATE TABLE journal (
   longitude REAL,
   geohash_string TEXT,
   geohash_int INTEGER,
-  category_id TEXT,
+  category TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (id)
 ) as JournalDbEntity;
 
@@ -37,7 +37,7 @@ CREATE INDEX idx_journal_type ON journal (type);
 CREATE INDEX idx_journal_subtype ON journal (subtype);
 CREATE INDEX idx_journal_geohash_string ON journal (geohash_string);
 CREATE INDEX idx_journal_geohash_int ON journal (geohash_int);
-CREATE INDEX idx_journal_category_id ON journal (category_id);
+CREATE INDEX idx_journal_category ON journal (category);
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -267,20 +267,7 @@ SELECT * FROM journal
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
-  AND category_id IN :categoryId
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
-filteredTasksWithNullableCategory:
-SELECT * FROM journal
-  WHERE type IN :types
-  AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  AND starred IN :starredStatuses
-  AND task = 1
-  AND task_status IN :taskStatuses
-  AND (category_id IN :categoryId) IS NOT FALSE
+  AND category IN :categories
   ORDER BY date_from DESC
   LIMIT :limit
   OFFSET :offset;
@@ -294,21 +281,7 @@ SELECT * FROM journal
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
-  AND category_id IN :categoryId
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
-filteredTasks2WithNullableCategory:
-SELECT * FROM journal
-  WHERE type IN :types
-  AND deleted = false
-  AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  AND starred IN :starredStatuses
-  AND task = 1
-  AND task_status IN :taskStatuses
-  AND (category_id IN :categoryId) IS NOT FALSE
+  AND category IN :categories
   ORDER BY date_from DESC
   LIMIT :limit
   OFFSET :offset;

@@ -437,7 +437,7 @@ TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TasksFilter {
-  Set<String?> get selectedCategoryIds => throw _privateConstructorUsedError;
+  Set<String> get selectedCategoryIds => throw _privateConstructorUsedError;
   Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -453,7 +453,7 @@ abstract class $TasksFilterCopyWith<$Res> {
       _$TasksFilterCopyWithImpl<$Res, TasksFilter>;
   @useResult
   $Res call(
-      {Set<String?> selectedCategoryIds, Set<String> selectedTaskStatuses});
+      {Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses});
 }
 
 /// @nodoc
@@ -476,7 +476,7 @@ class _$TasksFilterCopyWithImpl<$Res, $Val extends TasksFilter>
       selectedCategoryIds: null == selectedCategoryIds
           ? _value.selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String?>,
+              as Set<String>,
       selectedTaskStatuses: null == selectedTaskStatuses
           ? _value.selectedTaskStatuses
           : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
@@ -494,7 +494,7 @@ abstract class _$$TasksFilterImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {Set<String?> selectedCategoryIds, Set<String> selectedTaskStatuses});
+      {Set<String> selectedCategoryIds, Set<String> selectedTaskStatuses});
 }
 
 /// @nodoc
@@ -515,7 +515,7 @@ class __$$TasksFilterImplCopyWithImpl<$Res>
       selectedCategoryIds: null == selectedCategoryIds
           ? _value._selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String?>,
+              as Set<String>,
       selectedTaskStatuses: null == selectedTaskStatuses
           ? _value._selectedTaskStatuses
           : selectedTaskStatuses // ignore: cast_nullable_to_non_nullable
@@ -528,7 +528,7 @@ class __$$TasksFilterImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TasksFilterImpl implements _TasksFilter {
   _$TasksFilterImpl(
-      {required final Set<String?> selectedCategoryIds,
+      {required final Set<String> selectedCategoryIds,
       required final Set<String> selectedTaskStatuses})
       : _selectedCategoryIds = selectedCategoryIds,
         _selectedTaskStatuses = selectedTaskStatuses;
@@ -536,9 +536,9 @@ class _$TasksFilterImpl implements _TasksFilter {
   factory _$TasksFilterImpl.fromJson(Map<String, dynamic> json) =>
       _$$TasksFilterImplFromJson(json);
 
-  final Set<String?> _selectedCategoryIds;
+  final Set<String> _selectedCategoryIds;
   @override
-  Set<String?> get selectedCategoryIds {
+  Set<String> get selectedCategoryIds {
     if (_selectedCategoryIds is EqualUnmodifiableSetView)
       return _selectedCategoryIds;
     // ignore: implicit_dynamic_type
@@ -593,14 +593,14 @@ class _$TasksFilterImpl implements _TasksFilter {
 
 abstract class _TasksFilter implements TasksFilter {
   factory _TasksFilter(
-      {required final Set<String?> selectedCategoryIds,
+      {required final Set<String> selectedCategoryIds,
       required final Set<String> selectedTaskStatuses}) = _$TasksFilterImpl;
 
   factory _TasksFilter.fromJson(Map<String, dynamic> json) =
       _$TasksFilterImpl.fromJson;
 
   @override
-  Set<String?> get selectedCategoryIds;
+  Set<String> get selectedCategoryIds;
   @override
   Set<String> get selectedTaskStatuses;
   @override

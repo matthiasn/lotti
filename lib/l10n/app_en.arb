@@ -136,6 +136,7 @@
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenanceRecreateFts5": "Recreate full-text index",
+  "maintenancePersistTaskCategories": "Persist task categories",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceReprocessSync": "Reprocess sync messages",
   "maintenanceResetHostId": "Reset Host ID",
