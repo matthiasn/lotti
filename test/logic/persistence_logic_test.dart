@@ -211,7 +211,7 @@ void main() {
         (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
-          categoryIds: [null],
+          categoryIds: [''],
         ))
             .length,
         1,
@@ -221,7 +221,7 @@ void main() {
         (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
-          categoryIds: [null],
+          categoryIds: [''],
           ids: [task.meta.id],
         ))
             .length,

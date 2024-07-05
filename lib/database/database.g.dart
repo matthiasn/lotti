@@ -149,13 +149,14 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       $customConstraints: '');
-  static const VerificationMeta _categoryIdMeta =
-      const VerificationMeta('categoryId');
-  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
-      'category_id', aliasedName, true,
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      $customConstraints: '');
+      $customConstraints: 'NOT NULL DEFAULT \'\'',
+      defaultValue: const CustomExpression('\'\''));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -178,7 +179,7 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
         longitude,
         geohashString,
         geohashInt,
-        categoryId
+        category
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -293,11 +294,9 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
           geohashInt.isAcceptableOrUnknown(
               data['geohash_int']!, _geohashIntMeta));
     }
-    if (data.containsKey('category_id')) {
-      context.handle(
-          _categoryIdMeta,
-          categoryId.isAcceptableOrUnknown(
-              data['category_id']!, _categoryIdMeta));
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
     }
     return context;
   }
@@ -348,8 +347,8 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
           .read(DriftSqlType.string, data['${effectivePrefix}geohash_string']),
       geohashInt: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}geohash_int']),
-      categoryId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
     );
   }
 
@@ -385,7 +384,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
   final double? longitude;
   final String? geohashString;
   final int? geohashInt;
-  final String? categoryId;
+  final String category;
   const JournalDbEntity(
       {required this.id,
       required this.createdAt,
@@ -407,7 +406,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       this.longitude,
       this.geohashString,
       this.geohashInt,
-      this.categoryId});
+      required this.category});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -445,9 +444,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     if (!nullToAbsent || geohashInt != null) {
       map['geohash_int'] = Variable<int>(geohashInt);
     }
-    if (!nullToAbsent || categoryId != null) {
-      map['category_id'] = Variable<String>(categoryId);
-    }
+    map['category'] = Variable<String>(category);
     return map;
   }
 
@@ -487,9 +484,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       geohashInt: geohashInt == null && nullToAbsent
           ? const Value.absent()
           : Value(geohashInt),
-      categoryId: categoryId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(categoryId),
+      category: Value(category),
     );
   }
 
@@ -517,7 +512,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       longitude: serializer.fromJson<double?>(json['longitude']),
       geohashString: serializer.fromJson<String?>(json['geohash_string']),
       geohashInt: serializer.fromJson<int?>(json['geohash_int']),
-      categoryId: serializer.fromJson<String?>(json['category_id']),
+      category: serializer.fromJson<String>(json['category']),
     );
   }
   @override
@@ -544,7 +539,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       'longitude': serializer.toJson<double?>(longitude),
       'geohash_string': serializer.toJson<String?>(geohashString),
       'geohash_int': serializer.toJson<int?>(geohashInt),
-      'category_id': serializer.toJson<String?>(categoryId),
+      'category': serializer.toJson<String>(category),
     };
   }
 
@@ -569,7 +564,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           Value<double?> longitude = const Value.absent(),
           Value<String?> geohashString = const Value.absent(),
           Value<int?> geohashInt = const Value.absent(),
-          Value<String?> categoryId = const Value.absent()}) =>
+          String? category}) =>
       JournalDbEntity(
         id: id ?? this.id,
         createdAt: createdAt ?? this.createdAt,
@@ -592,7 +587,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
         geohashString:
             geohashString.present ? geohashString.value : this.geohashString,
         geohashInt: geohashInt.present ? geohashInt.value : this.geohashInt,
-        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        category: category ?? this.category,
       );
   @override
   String toString() {
@@ -617,7 +612,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           ..write('longitude: $longitude, ')
           ..write('geohashString: $geohashString, ')
           ..write('geohashInt: $geohashInt, ')
-          ..write('categoryId: $categoryId')
+          ..write('category: $category')
           ..write(')'))
         .toString();
   }
@@ -644,7 +639,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
         longitude,
         geohashString,
         geohashInt,
-        categoryId
+        category
       ]);
   @override
   bool operator ==(Object other) =>
@@ -670,7 +665,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           other.longitude == this.longitude &&
           other.geohashString == this.geohashString &&
           other.geohashInt == this.geohashInt &&
-          other.categoryId == this.categoryId);
+          other.category == this.category);
 }
 
 class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
@@ -694,7 +689,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
   final Value<double?> longitude;
   final Value<String?> geohashString;
   final Value<int?> geohashInt;
-  final Value<String?> categoryId;
+  final Value<String> category;
   final Value<int> rowid;
   const JournalCompanion({
     this.id = const Value.absent(),
@@ -717,7 +712,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.longitude = const Value.absent(),
     this.geohashString = const Value.absent(),
     this.geohashInt = const Value.absent(),
-    this.categoryId = const Value.absent(),
+    this.category = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   JournalCompanion.insert({
@@ -741,7 +736,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.longitude = const Value.absent(),
     this.geohashString = const Value.absent(),
     this.geohashInt = const Value.absent(),
-    this.categoryId = const Value.absent(),
+    this.category = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         createdAt = Value(createdAt),
@@ -771,7 +766,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     Expression<double>? longitude,
     Expression<String>? geohashString,
     Expression<int>? geohashInt,
-    Expression<String>? categoryId,
+    Expression<String>? category,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -795,7 +790,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       if (longitude != null) 'longitude': longitude,
       if (geohashString != null) 'geohash_string': geohashString,
       if (geohashInt != null) 'geohash_int': geohashInt,
-      if (categoryId != null) 'category_id': categoryId,
+      if (category != null) 'category': category,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -821,7 +816,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       Value<double?>? longitude,
       Value<String?>? geohashString,
       Value<int?>? geohashInt,
-      Value<String?>? categoryId,
+      Value<String>? category,
       Value<int>? rowid}) {
     return JournalCompanion(
       id: id ?? this.id,
@@ -844,7 +839,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       longitude: longitude ?? this.longitude,
       geohashString: geohashString ?? this.geohashString,
       geohashInt: geohashInt ?? this.geohashInt,
-      categoryId: categoryId ?? this.categoryId,
+      category: category ?? this.category,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -912,8 +907,8 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     if (geohashInt.present) {
       map['geohash_int'] = Variable<int>(geohashInt.value);
     }
-    if (categoryId.present) {
-      map['category_id'] = Variable<String>(categoryId.value);
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -944,7 +939,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
           ..write('longitude: $longitude, ')
           ..write('geohashString: $geohashString, ')
           ..write('geohashInt: $geohashInt, ')
-          ..write('categoryId: $categoryId, ')
+          ..write('category: $category, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4358,8 +4353,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_journal_geohash_string ON journal (geohash_string)');
   late final Index idxJournalGeohashInt = Index('idx_journal_geohash_int',
       'CREATE INDEX idx_journal_geohash_int ON journal (geohash_int)');
-  late final Index idxJournalCategoryId = Index('idx_journal_category_id',
-      'CREATE INDEX idx_journal_category_id ON journal (category_id)');
+  late final Index idxJournalCategory = Index('idx_journal_category',
+      'CREATE INDEX idx_journal_category ON journal (category)');
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -4640,7 +4635,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
       List<String> types,
       List<bool> starredStatuses,
       List<String?> taskStatuses,
-      List<String?> categoryId,
+      List<String> categories,
       int limit,
       int offset) {
     var $arrayStartIndex = 3;
@@ -4652,51 +4647,17 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedtaskStatuses =
         $expandVar($arrayStartIndex, taskStatuses.length);
     $arrayStartIndex += taskStatuses.length;
-    final expandedcategoryId = $expandVar($arrayStartIndex, categoryId.length);
-    $arrayStartIndex += categoryId.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category_id IN ($expandedcategoryId) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
         variables: [
           Variable<int>(limit),
           Variable<int>(offset),
           for (var $ in types) Variable<String>($),
           for (var $ in starredStatuses) Variable<bool>($),
           for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categoryId) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> filteredTasksWithNullableCategory(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      List<String?> categoryId,
-      int limit,
-      int offset) {
-    var $arrayStartIndex = 3;
-    final expandedtypes = $expandVar($arrayStartIndex, types.length);
-    $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
-    $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
-    $arrayStartIndex += taskStatuses.length;
-    final expandedcategoryId = $expandVar($arrayStartIndex, categoryId.length);
-    $arrayStartIndex += categoryId.length;
-    return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND(category_id IN ($expandedcategoryId))IS NOT FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categoryId) Variable<String>($)
+          for (var $ in categories) Variable<String>($)
         ],
         readsFrom: {
           journal,
@@ -4709,7 +4670,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
       List<String> ids,
       List<bool> starredStatuses,
       List<String?> taskStatuses,
-      List<String?> categoryId,
+      List<String> categories,
       int limit,
       int offset) {
     var $arrayStartIndex = 3;
@@ -4723,10 +4684,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedtaskStatuses =
         $expandVar($arrayStartIndex, taskStatuses.length);
     $arrayStartIndex += taskStatuses.length;
-    final expandedcategoryId = $expandVar($arrayStartIndex, categoryId.length);
-    $arrayStartIndex += categoryId.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category_id IN ($expandedcategoryId) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
         variables: [
           Variable<int>(limit),
           Variable<int>(offset),
@@ -4734,45 +4695,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
           for (var $ in ids) Variable<String>($),
           for (var $ in starredStatuses) Variable<bool>($),
           for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categoryId) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> filteredTasks2WithNullableCategory(
-      List<String> types,
-      List<String> ids,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      List<String?> categoryId,
-      int limit,
-      int offset) {
-    var $arrayStartIndex = 3;
-    final expandedtypes = $expandVar($arrayStartIndex, types.length);
-    $arrayStartIndex += types.length;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
-    $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
-    $arrayStartIndex += taskStatuses.length;
-    final expandedcategoryId = $expandVar($arrayStartIndex, categoryId.length);
-    $arrayStartIndex += categoryId.length;
-    return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND(category_id IN ($expandedcategoryId))IS NOT FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in ids) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categoryId) Variable<String>($)
+          for (var $ in categories) Variable<String>($)
         ],
         readsFrom: {
           journal,
@@ -5344,7 +5267,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         idxJournalSubtype,
         idxJournalGeohashString,
         idxJournalGeohashInt,
-        idxJournalCategoryId,
+        idxJournalCategory,
         conflicts,
         measurableTypes,
         habitDefinitions,
@@ -5416,7 +5339,7 @@ typedef $JournalInsertCompanionBuilder = JournalCompanion Function({
   Value<double?> longitude,
   Value<String?> geohashString,
   Value<int?> geohashInt,
-  Value<String?> categoryId,
+  Value<String> category,
   Value<int> rowid,
 });
 typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
@@ -5440,7 +5363,7 @@ typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
   Value<double?> longitude,
   Value<String?> geohashString,
   Value<int?> geohashInt,
-  Value<String?> categoryId,
+  Value<String> category,
   Value<int> rowid,
 });
 
@@ -5481,7 +5404,7 @@ class $JournalTableManager extends RootTableManager<
             Value<double?> longitude = const Value.absent(),
             Value<String?> geohashString = const Value.absent(),
             Value<int?> geohashInt = const Value.absent(),
-            Value<String?> categoryId = const Value.absent(),
+            Value<String> category = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               JournalCompanion(
@@ -5505,7 +5428,7 @@ class $JournalTableManager extends RootTableManager<
             longitude: longitude,
             geohashString: geohashString,
             geohashInt: geohashInt,
-            categoryId: categoryId,
+            category: category,
             rowid: rowid,
           ),
           getInsertCompanionBuilder: ({
@@ -5529,7 +5452,7 @@ class $JournalTableManager extends RootTableManager<
             Value<double?> longitude = const Value.absent(),
             Value<String?> geohashString = const Value.absent(),
             Value<int?> geohashInt = const Value.absent(),
-            Value<String?> categoryId = const Value.absent(),
+            Value<String> category = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               JournalCompanion.insert(
@@ -5553,7 +5476,7 @@ class $JournalTableManager extends RootTableManager<
             longitude: longitude,
             geohashString: geohashString,
             geohashInt: geohashInt,
-            categoryId: categoryId,
+            category: category,
             rowid: rowid,
           ),
         ));
@@ -5673,8 +5596,8 @@ class $JournalFilterComposer extends FilterComposer<_$JournalDb, Journal> {
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
-  ColumnFilters<String> get categoryId => $state.composableBuilder(
-      column: $state.table.categoryId,
+  ColumnFilters<String> get category => $state.composableBuilder(
+      column: $state.table.category,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 }
@@ -5781,8 +5704,8 @@ class $JournalOrderingComposer extends OrderingComposer<_$JournalDb, Journal> {
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
-  ColumnOrderings<String> get categoryId => $state.composableBuilder(
-      column: $state.table.categoryId,
+  ColumnOrderings<String> get category => $state.composableBuilder(
+      column: $state.table.category,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
