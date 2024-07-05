@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.484+2582
+version: 0.9.484+2583
 
 msix_config:
   display_name: LottiApp
@@ -99,9 +99,9 @@ dependencies:
   langchain: ^0.7.0
   langchain_ollama: ^0.2.0
   latlong2: ^0.9.0
-  location: ^6.0.1
+  location: ^7.0.0
   material_design_icons_flutter: ^7.0.7096
-  matrix: ^0.29.2
+  matrix: ^0.30.0
   media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
   media_kit_libs_ios_audio: ^1.0.4
