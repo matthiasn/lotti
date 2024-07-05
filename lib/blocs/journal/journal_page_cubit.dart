@@ -134,7 +134,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _showPrivateEntries = false;
   bool showTasks = false;
   bool taskAsListView = true;
-  Set<String?> _selectedCategoryIds = {};
+  Set<String> _selectedCategoryIds = {};
 
   Set<String> _fullTextMatches = {};
   Set<String> _lastIds = {};
@@ -184,7 +184,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     persistTasksFilter();
   }
 
-  void toggleSelectedCategoryIds(String? categoryId) {
+  void toggleSelectedCategoryIds(String categoryId) {
     if (_selectedCategoryIds.contains(categoryId)) {
       _selectedCategoryIds = _selectedCategoryIds.difference({categoryId});
     } else {

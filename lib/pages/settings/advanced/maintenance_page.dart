@@ -69,6 +69,10 @@ class MaintenancePage extends StatelessWidget {
                 onTap: () => getIt<Maintenance>().recreateFts5(),
               ),
               SettingsCard(
+                title: context.messages.maintenancePersistTaskCategories,
+                onTap: () => getIt<Maintenance>().persistTaskCategories(),
+              ),
+              SettingsCard(
                 title: context.messages.maintenanceReSync,
                 onTap: () => ReSyncModal.show(context),
               ),

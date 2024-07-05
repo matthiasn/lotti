@@ -45,7 +45,7 @@ class JournalDb extends _$JournalDb {
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration {
@@ -69,11 +69,11 @@ class JournalDb extends _$JournalDb {
           }();
         }
 
-        if (from < 20) {
+        if (from < 21) {
           await () async {
             debugPrint('Add category_id in journal table, with index');
-            await m.addColumn(journal, journal.categoryId);
-            await m.createIndex(idxJournalCategoryId);
+            await m.addColumn(journal, journal.category);
+            await m.createIndex(idxJournalCategory);
           }();
         }
       },
@@ -161,7 +161,10 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Future<int> updateJournalEntity(JournalEntity updated) async {
+  Future<int> updateJournalEntity(
+    JournalEntity updated, {
+    bool overrideComparison = false,
+  }) async {
     var rowsAffected = 0;
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: DateTime.now(),
@@ -172,7 +175,7 @@ class JournalDb extends _$JournalDb {
       final existing = fromDbEntity(existingDbEntity);
       final status = await detectConflict(existing, updated);
 
-      if (status == VclockStatus.b_gt_a) {
+      if (status == VclockStatus.b_gt_a || overrideComparison) {
         rowsAffected = await upsertJournalDbEntity(dbEntity);
 
         final existingConflict = await conflictById(dbEntity.id);
@@ -362,7 +365,7 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalEntity>> getTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
-    required List<String?> categoryIds,
+    required List<String> categoryIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
@@ -398,50 +401,31 @@ class JournalDb extends _$JournalDb {
   Selectable<JournalDbEntity> _selectTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
-    required List<String?> categoryIds,
+    required List<String> categoryIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
   }) {
     final types = <String>['Task'];
     if (ids != null) {
-      return categoryIds.contains(null)
-          ? filteredTasks2WithNullableCategory(
-              types,
-              ids,
-              starredStatuses,
-              taskStatuses,
-              categoryIds,
-              limit,
-              offset,
-            )
-          : filteredTasks2(
-              types,
-              ids,
-              starredStatuses,
-              taskStatuses,
-              categoryIds,
-              limit,
-              offset,
-            );
+      return filteredTasks2(
+        types,
+        ids,
+        starredStatuses,
+        taskStatuses,
+        categoryIds,
+        limit,
+        offset,
+      );
     } else {
-      return categoryIds.contains(null)
-          ? filteredTasksWithNullableCategory(
-              types,
-              starredStatuses,
-              taskStatuses,
-              categoryIds,
-              limit,
-              offset,
-            )
-          : filteredTasks(
-              types,
-              starredStatuses,
-              taskStatuses,
-              categoryIds,
-              limit,
-              offset,
-            );
+      return filteredTasks(
+        types,
+        starredStatuses,
+        taskStatuses,
+        categoryIds,
+        limit,
+        offset,
+      );
     }
   }
 
@@ -477,7 +461,7 @@ class JournalDb extends _$JournalDb {
     final res = await _selectTasks(
       starredStatuses: [true, false],
       taskStatuses: ['IN PROGRESS'],
-      categoryIds: [null],
+      categoryIds: [''],
       limit: 100000,
     ).get();
     return res.length;
@@ -548,7 +532,7 @@ class JournalDb extends _$JournalDb {
     return _selectTasks(
       starredStatuses: [true, false],
       taskStatuses: [status],
-      categoryIds: [null],
+      categoryIds: [''],
       limit: 100000,
     ).watch().map((res) => res.length);
   }
