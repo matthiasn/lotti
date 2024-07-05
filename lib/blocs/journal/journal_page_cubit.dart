@@ -329,17 +329,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         taskStatuses: _selectedTaskStatuses.toList(),
+        categoryIds: _selectedCategoryIds.toList(),
         limit: _pageSize,
         offset: pageKey,
       );
 
-      return _selectedCategoryIds.isNotEmpty
-          ? res
-              .where(
-                (item) => _selectedCategoryIds.contains(item.meta.categoryId),
-              )
-              .toList()
-          : res;
+      return res;
     } else {
       return _db.getJournalEntities(
         types: types,
