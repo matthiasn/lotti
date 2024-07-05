@@ -32,7 +32,7 @@ class JournalPageState with _$JournalPageState {
 @freezed
 class TasksFilter with _$TasksFilter {
   factory TasksFilter({
-    required Set<String?> selectedCategoryIds,
+    required Set<String> selectedCategoryIds,
     required Set<String> selectedTaskStatuses,
   }) = _TasksFilter;
 

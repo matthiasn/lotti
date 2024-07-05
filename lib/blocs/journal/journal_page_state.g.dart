@@ -9,7 +9,7 @@ part of 'journal_page_state.dart';
 _$TasksFilterImpl _$$TasksFilterImplFromJson(Map<String, dynamic> json) =>
     _$TasksFilterImpl(
       selectedCategoryIds: (json['selectedCategoryIds'] as List<dynamic>)
-          .map((e) => e as String?)
+          .map((e) => e as String)
           .toSet(),
       selectedTaskStatuses: (json['selectedTaskStatuses'] as List<dynamic>)
           .map((e) => e as String)
