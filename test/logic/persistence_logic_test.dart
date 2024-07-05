@@ -211,6 +211,7 @@ void main() {
         (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
+          categoryIds: [null],
         ))
             .length,
         1,
@@ -220,6 +221,7 @@ void main() {
         (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
+          categoryIds: [null],
           ids: [task.meta.id],
         ))
             .length,
@@ -230,6 +232,7 @@ void main() {
         (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
+          categoryIds: [],
         ))
             .length,
         0,
@@ -239,6 +242,7 @@ void main() {
         (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
+          categoryIds: [],
         ))
             .length,
         0,
