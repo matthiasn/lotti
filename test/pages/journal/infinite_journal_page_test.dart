@@ -247,6 +247,7 @@ void main() {
       when(
         () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
+          categoryIds: [],
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),

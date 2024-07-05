@@ -59,6 +59,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     flag: entity.meta.flag?.index ?? 0,
     task: task,
     taskStatus: taskStatus,
+    categoryId: entity.meta.categoryId,
     dateTo: entity.meta.dateTo,
     plainText: entity.entryText?.plainText,
     type: entity.map(

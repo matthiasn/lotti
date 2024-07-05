@@ -45,7 +45,7 @@ class JournalDb extends _$JournalDb {
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration {
@@ -59,13 +59,23 @@ class JournalDb extends _$JournalDb {
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('Migration from v$from to v$to');
 
-        await () async {
-          debugPrint('Creating category_definitions table and indices');
-          await m.createTable(categoryDefinitions);
-          await m.createIndex(idxCategoryDefinitionsName);
-          await m.createIndex(idxCategoryDefinitionsId);
-          await m.createIndex(idxCategoryDefinitionsPrivate);
-        }();
+        if (from < 19) {
+          await () async {
+            debugPrint('Creating category_definitions table and indices');
+            await m.createTable(categoryDefinitions);
+            await m.createIndex(idxCategoryDefinitionsName);
+            await m.createIndex(idxCategoryDefinitionsId);
+            await m.createIndex(idxCategoryDefinitionsPrivate);
+          }();
+        }
+
+        if (from < 20) {
+          await () async {
+            debugPrint('Add category_id in journal table, with index');
+            await m.addColumn(journal, journal.categoryId);
+            await m.createIndex(idxJournalCategoryId);
+          }();
+        }
       },
     );
   }
@@ -352,6 +362,7 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalEntity>> getTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
+    required List<String?> categoryIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
@@ -359,6 +370,7 @@ class JournalDb extends _$JournalDb {
     final res = await _selectTasks(
       starredStatuses: starredStatuses,
       taskStatuses: taskStatuses,
+      categoryIds: categoryIds,
       ids: ids,
       limit: limit,
       offset: offset,
@@ -386,28 +398,50 @@ class JournalDb extends _$JournalDb {
   Selectable<JournalDbEntity> _selectTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
+    required List<String?> categoryIds,
     List<String>? ids,
     int limit = 500,
     int offset = 0,
   }) {
     final types = <String>['Task'];
     if (ids != null) {
-      return filteredTasks2(
-        types,
-        ids,
-        starredStatuses,
-        taskStatuses,
-        limit,
-        offset,
-      );
+      return categoryIds.contains(null)
+          ? filteredTasks2WithNullableCategory(
+              types,
+              ids,
+              starredStatuses,
+              taskStatuses,
+              categoryIds,
+              limit,
+              offset,
+            )
+          : filteredTasks2(
+              types,
+              ids,
+              starredStatuses,
+              taskStatuses,
+              categoryIds,
+              limit,
+              offset,
+            );
     } else {
-      return filteredTasks(
-        types,
-        starredStatuses,
-        taskStatuses,
-        limit,
-        offset,
-      );
+      return categoryIds.contains(null)
+          ? filteredTasksWithNullableCategory(
+              types,
+              starredStatuses,
+              taskStatuses,
+              categoryIds,
+              limit,
+              offset,
+            )
+          : filteredTasks(
+              types,
+              starredStatuses,
+              taskStatuses,
+              categoryIds,
+              limit,
+              offset,
+            );
     }
   }
 
@@ -440,12 +474,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> getWipCount() async {
-    final res = await filteredTasks(
-      ['Task'],
-      [true, false],
-      ['IN PROGRESS'],
-      1000,
-      0,
+    final res = await _selectTasks(
+      starredStatuses: [true, false],
+      taskStatuses: ['IN PROGRESS'],
+      categoryIds: [null],
+      limit: 100000,
     ).get();
     return res.length;
   }
@@ -512,12 +545,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<int> watchTaskCount(String status) {
-    return filteredTasks(
-      ['Task'],
-      [true, false],
-      [status],
-      10000,
-      0,
+    return _selectTasks(
+      starredStatuses: [true, false],
+      taskStatuses: [status],
+      categoryIds: [null],
+      limit: 100000,
     ).watch().map((res) => res.length);
   }
 
