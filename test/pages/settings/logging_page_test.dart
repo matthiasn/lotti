@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/advanced/logging_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
@@ -20,6 +21,11 @@ void main() {
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<JournalDb>(mockJournalDb);
     });
+
+    setUpAll(() {
+      VisibilityDetectorController.instance.updateInterval = Duration.zero;
+    });
+
     tearDown(getIt.reset);
 
     testWidgets('empty logging page is displayed', (tester) async {

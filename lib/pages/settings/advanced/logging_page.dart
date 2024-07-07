@@ -9,44 +9,65 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
-class LoggingPage extends StatelessWidget {
+class LoggingPage extends StatefulWidget {
   const LoggingPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<LogEntry>>(
-      stream: getIt<LoggingDb>().watchLogEntries(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<LogEntry>> snapshot,
-      ) {
-        final logEntries = snapshot.data ?? [];
+  State<LoggingPage> createState() => _LoggingPageState();
+}
 
-        return CustomScrollView(
-          slivers: <Widget>[
-            SliverTitleBar(
-              context.messages.settingsLogsTitle,
-              pinned: true,
-              showBackButton: true,
-            ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (
-                  BuildContext context,
-                  int index,
-                ) {
-                  return LogLineCard(
-                    logEntry: logEntries.elementAt(index),
-                    index: index,
-                  );
-                },
-                childCount: logEntries.length,
-              ),
-            ),
-          ],
-        );
+class _LoggingPageState extends State<LoggingPage> {
+  bool _isVisible = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return VisibilityDetector(
+      onVisibilityChanged: (info) {
+        final isVisible = info.visibleBounds.size.width > 0;
+        if (_isVisible != isVisible && mounted) {
+          setState(() {
+            _isVisible = isVisible;
+          });
+        }
       },
+      key: const Key('logging_page'),
+      child: _isVisible
+          ? StreamBuilder<List<LogEntry>>(
+              stream: getIt<LoggingDb>().watchLogEntries(),
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<List<LogEntry>> snapshot,
+              ) {
+                final logEntries = snapshot.data ?? [];
+
+                return CustomScrollView(
+                  slivers: <Widget>[
+                    SliverTitleBar(
+                      context.messages.settingsLogsTitle,
+                      pinned: true,
+                      showBackButton: true,
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (
+                          BuildContext context,
+                          int index,
+                        ) {
+                          return LogLineCard(
+                            logEntry: logEntries.elementAt(index),
+                            index: index,
+                          );
+                        },
+                        childCount: logEntries.length,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
