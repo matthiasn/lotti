@@ -100,7 +100,7 @@ class HabitsTabPage extends StatelessWidget {
                                 style: chartTitleStyle,
                               ),
                             ),
-                          if (showOpenNow)
+                          if (showOpenNow && state.isVisible)
                             ...openNow.map((habitDefinition) {
                               return HabitCompletionCard(
                                 habitDefinition: habitDefinition,
@@ -118,7 +118,7 @@ class HabitsTabPage extends StatelessWidget {
                                 style: chartTitleStyle,
                               ),
                             ),
-                          if (showPendingLater)
+                          if (showPendingLater && state.isVisible)
                             ...pendingLater.map((habitDefinition) {
                               return HabitCompletionCard(
                                 habitDefinition: habitDefinition,
@@ -136,7 +136,7 @@ class HabitsTabPage extends StatelessWidget {
                                 style: chartTitleStyle,
                               ),
                             ),
-                          if (showCompleted)
+                          if (showCompleted && state.isVisible)
                             ...completed.map((habitDefinition) {
                               return HabitCompletionCard(
                                 habitDefinition: habitDefinition,
