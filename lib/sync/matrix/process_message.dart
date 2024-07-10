@@ -8,6 +8,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -25,6 +26,7 @@ Future<void> processMatrixMessage({
   final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
   final message = event.text;
+  final updateNotifications = getIt<UpdateNotifications>();
 
   try {
     final decoded = utf8.decode(base64.decode(message));
@@ -46,9 +48,11 @@ Future<void> processMatrixMessage({
       ) async {
         await saveJournalEntityJson(journalEntity);
         await journalDb.updateJournalEntity(journalEntity);
+        updateNotifications.notify({journalEntity.meta.id});
       },
       entryLink: (EntryLink entryLink, SyncEntryStatus _) {
         journalDb.upsertEntryLink(entryLink);
+        updateNotifications.notify({entryLink.fromId, entryLink.toId});
       },
       entityDefinition: (
         EntityDefinition entityDefinition,

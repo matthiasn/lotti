@@ -13,7 +13,6 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -42,7 +41,6 @@ class JournalDb extends _$JournalDb {
         );
 
   bool inMemoryDatabase = false;
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
   int get schemaVersion => 21;
@@ -82,26 +80,11 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     final res = into(journal).insertOnConflictUpdate(entry);
-
-    _updateNotifications.notify({entry.id});
-
     return res;
   }
 
   Future<int> addConflict(Conflict conflict) async {
     return into(conflicts).insertOnConflictUpdate(conflict);
-  }
-
-  Future<int?> addJournalEntity(JournalEntity journalEntity) async {
-    final dbEntity = toDbEntity(journalEntity);
-    await saveJournalEntityJson(journalEntity);
-
-    final exists = (await entityById(dbEntity.id)) != null;
-    if (!exists) {
-      return upsertJournalDbEntity(dbEntity);
-    } else {
-      return 0;
-    }
   }
 
   Future<VclockStatus> detectConflict(
@@ -190,7 +173,6 @@ class JournalDb extends _$JournalDb {
     } else {
       rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
-
     await saveJournalEntityJson(updated);
     await addTagged(updated);
 
@@ -857,7 +839,6 @@ class JournalDb extends _$JournalDb {
     if (link.fromId != link.toId) {
       final res =
           into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
-      _updateNotifications.notify({link.fromId, link.toId});
       return res;
     } else {
       return 0;
@@ -868,9 +849,7 @@ class JournalDb extends _$JournalDb {
     required String fromId,
     required String toId,
   }) async {
-    final res = deleteLink(fromId, toId);
-    _updateNotifications.notify({fromId, toId});
-    return res;
+    return deleteLink(fromId, toId);
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
@@ -882,7 +861,6 @@ class JournalDb extends _$JournalDb {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
     );
-    _updateNotifications.notify({entityDefinition.id});
     return linesAffected;
   }
 }
