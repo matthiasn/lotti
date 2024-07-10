@@ -73,7 +73,7 @@ class EntryController extends _$EntryController {
   bool _isFocused = false;
   bool _shouldShowEditorToolBar = false;
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
-  StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
+  StreamSubscription<Set<String>>? _updateSubscription;
 
   final JournalDb _journalDb = getIt<JournalDb>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
@@ -86,8 +86,8 @@ class EntryController extends _$EntryController {
 
   void listen() {
     _updateSubscription =
-        _updateNotifications.updateStream.listen((event) async {
-      if (event.id == entryId) {
+        _updateNotifications.updateStream.listen((affectedIds) async {
+      if (affectedIds.contains(entryId)) {
         final latest = await _fetch();
         if (latest != state.value?.entry) {
           state = AsyncData(state.value?.copyWith(entry: latest));

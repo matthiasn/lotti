@@ -83,10 +83,7 @@ class JournalDb extends _$JournalDb {
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     final res = into(journal).insertOnConflictUpdate(entry);
 
-    _updateNotifications.notifyUpdate(
-      DatabaseType.journal,
-      entry.id,
-    );
+    _updateNotifications.notify({entry.id});
 
     return res;
   }
@@ -858,7 +855,10 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertEntryLink(EntryLink link) async {
     if (link.fromId != link.toId) {
-      return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+      final res =
+          into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+      _updateNotifications.notify({link.fromId, link.toId});
+      return res;
     } else {
       return 0;
     }
@@ -868,7 +868,9 @@ class JournalDb extends _$JournalDb {
     required String fromId,
     required String toId,
   }) async {
-    return deleteLink(fromId, toId);
+    final res = deleteLink(fromId, toId);
+    _updateNotifications.notify({fromId, toId});
+    return res;
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
@@ -880,10 +882,7 @@ class JournalDb extends _$JournalDb {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
     );
-    _updateNotifications.notifyUpdate(
-      DatabaseType.entity,
-      entityDefinition.id,
-    );
+    _updateNotifications.notify({entityDefinition.id});
     return linesAffected;
   }
 }
