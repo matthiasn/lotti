@@ -575,7 +575,7 @@ class PersistenceLogic {
       );
 
       final res = await _journalDb.updateJournalEntity(withTags);
-      _updateNotifications.notify({withTags.meta.id});
+      _updateNotifications.notify(withTags.affectedIds);
 
       final saved = res != 0;
       await _journalDb.addTagged(withTags);
@@ -1233,7 +1233,7 @@ class PersistenceLogic {
 
       await _journalDb.updateJournalEntity(journalEntity);
 
-      _updateNotifications.notify({journalEntity.meta.id});
+      _updateNotifications.notify(journalEntity.affectedIds);
 
       await getIt<Fts5Db>().insertText(
         journalEntity,

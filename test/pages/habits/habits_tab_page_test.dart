@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -21,6 +22,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   final mockEntitiesCacheService = MockEntitiesCacheService();
+  final mockUpdateNotifications = MockUpdateNotifications();
 
   group('HabitsTabPage Widget Tests - ', () {
     setUp(() {
@@ -45,10 +47,15 @@ void main() {
 
       getIt
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
+      );
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
 
       when(
