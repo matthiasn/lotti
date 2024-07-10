@@ -98,7 +98,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       leading: false,
       trailing: true,
     )
-        .listen((event) async {
+        .listen((affectedIds) async {
       if (_isVisible) {
         final displayedIds =
             state.pagingController.itemList?.map(idMapper).toSet() ?? {};
@@ -108,11 +108,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           if (!setEquals(_lastIds, newIds)) {
             _lastIds = newIds;
             await refreshQuery();
-          } else if (displayedIds.contains(event.id)) {
+          } else if (displayedIds.intersection(affectedIds).isNotEmpty) {
             await refreshQuery();
           }
         } else {
-          if (displayedIds.contains(event.id)) {
+          if (displayedIds.intersection(affectedIds).isNotEmpty) {
             await refreshQuery();
           }
         }

@@ -15,12 +15,12 @@ class ChecklistItemController extends _$ChecklistItemController {
     listen();
   }
   late final String entryId;
-  StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
+  StreamSubscription<Set<String>>? _updateSubscription;
 
   void listen() {
     _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((event) async {
-      if (event.id == entryId) {
+        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+      if (affectedIds.contains(entryId)) {
         final latest = await _fetch();
         if (latest != state.value && latest is ChecklistItem) {
           state = AsyncData(latest);

@@ -34,7 +34,7 @@ void main() {
       registerFallbackValue(FakeQuillController());
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
 
       getIt
@@ -73,7 +73,7 @@ void main() {
       );
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
 
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))

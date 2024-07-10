@@ -30,7 +30,7 @@ void main() {
       setFakeDocumentsPath();
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
 
       getIt
