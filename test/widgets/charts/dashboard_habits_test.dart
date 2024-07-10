@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,9 +20,11 @@ void main() {
     setUp(() {
       mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
       final mockEntitiesCacheService = MockEntitiesCacheService();
+      final mockUpdateNotifications = MockUpdateNotifications();
 
       getIt
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(
@@ -33,6 +36,14 @@ void main() {
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
       );
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(
+        () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
+      ).thenAnswer((_) => habitFlossing);
     });
     tearDown(getIt.reset);
 

@@ -188,3 +188,19 @@ class JournalEntity with _$JournalEntity {
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
+
+extension JournalEntityExtension on JournalEntity {
+  String get id => meta.id;
+  bool get isDeleted => meta.deletedAt != null;
+
+  Set<String> get affectedIds {
+    final ids = <String>{meta.id};
+
+    if (this is HabitCompletionEntry) {
+      final habitCompletion = this as HabitCompletionEntry;
+      ids.add(habitCompletion.data.habitId);
+    }
+
+    return ids;
+  }
+}
