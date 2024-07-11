@@ -15,14 +15,14 @@ class JournalCardController extends _$JournalCardController {
   }
 
   late final String entryId;
-  StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
+  StreamSubscription<Set<String>>? _updateSubscription;
   final JournalDb _journalDb = getIt<JournalDb>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   void listen() {
     _updateSubscription =
-        _updateNotifications.updateStream.listen((event) async {
-      if (event.id == entryId) {
+        _updateNotifications.updateStream.listen((affectedIds) async {
+      if (affectedIds.contains(entryId)) {
         final latest = await _fetch();
         if (latest != state.value) {
           state = AsyncData(latest);

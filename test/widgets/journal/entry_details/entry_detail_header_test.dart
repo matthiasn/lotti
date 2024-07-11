@@ -34,7 +34,7 @@ void main() {
       final mockTagsService = mockTagsServiceWithTags([]);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
 
       getIt
@@ -47,7 +47,7 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
 
       when(

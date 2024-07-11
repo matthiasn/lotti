@@ -78,7 +78,7 @@ void main() {
       await initConfigFlags(db!, inMemoryDatabase: true);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
     });
     tearDown(() async {
