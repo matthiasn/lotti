@@ -19,6 +19,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -36,6 +37,7 @@ class PersistenceLogic {
 
   final JournalDb _journalDb = getIt<JournalDb>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
+  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final OutboxService _outboxService = getIt<OutboxService>();
   final uuid = const Uuid();
@@ -526,6 +528,8 @@ class PersistenceLogic {
     );
 
     final res = await _journalDb.upsertEntryLink(link);
+    _updateNotifications.notify({link.fromId, link.toId});
+
     await _outboxService.enqueueMessage(
       SyncMessage.entryLink(
         entryLink: link,
@@ -533,6 +537,15 @@ class PersistenceLogic {
       ),
     );
     return res != 0;
+  }
+
+  Future<int> removeLink({
+    required String fromId,
+    required String toId,
+  }) async {
+    final res = _journalDb.removeLink(fromId: fromId, toId: toId);
+    _updateNotifications.notify({fromId, toId});
+    return res;
   }
 
   Future<bool?> createDbEntity(
@@ -561,7 +574,9 @@ class PersistenceLogic {
         ),
       );
 
-      final res = await _journalDb.addJournalEntity(withTags);
+      final res = await _journalDb.updateJournalEntity(withTags);
+      _updateNotifications.notify(withTags.affectedIds);
+
       final saved = res != 0;
       await _journalDb.addTagged(withTags);
 
@@ -1218,6 +1233,8 @@ class PersistenceLogic {
 
       await _journalDb.updateJournalEntity(journalEntity);
 
+      _updateNotifications.notify(journalEntity.affectedIds);
+
       await getIt<Fts5Db>().insertText(
         journalEntity,
         removePrevious: true,
@@ -1250,6 +1267,7 @@ class PersistenceLogic {
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     final linesAffected =
         await _journalDb.upsertEntityDefinition(entityDefinition);
+    _updateNotifications.notify({entityDefinition.id});
     await _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: entityDefinition,

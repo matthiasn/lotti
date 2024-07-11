@@ -30,7 +30,7 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+        (_) => Stream<Set<String>>.fromIterable([]),
       );
       when(() => mockPersistenceLogic.deleteJournalEntity(any())).thenAnswer(
         (_) async => true,

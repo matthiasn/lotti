@@ -100,10 +100,11 @@ class HabitsTabPage extends StatelessWidget {
                                 style: chartTitleStyle,
                               ),
                             ),
-                          if (showOpenNow && state.isVisible)
+                          if (showOpenNow)
                             ...openNow.map((habitDefinition) {
                               return HabitCompletionCard(
-                                habitDefinition: habitDefinition,
+                                key: Key(habitDefinition.id),
+                                habitId: habitDefinition.id,
                                 rangeStart: rangeStart,
                                 rangeEnd: rangeEnd,
                                 showGaps: showGaps,
@@ -118,10 +119,11 @@ class HabitsTabPage extends StatelessWidget {
                                 style: chartTitleStyle,
                               ),
                             ),
-                          if (showPendingLater && state.isVisible)
+                          if (showPendingLater)
                             ...pendingLater.map((habitDefinition) {
                               return HabitCompletionCard(
-                                habitDefinition: habitDefinition,
+                                key: Key(habitDefinition.id),
+                                habitId: habitDefinition.id,
                                 rangeStart: rangeStart,
                                 rangeEnd: rangeEnd,
                                 showGaps: showGaps,
@@ -136,10 +138,11 @@ class HabitsTabPage extends StatelessWidget {
                                 style: chartTitleStyle,
                               ),
                             ),
-                          if (showCompleted && state.isVisible)
+                          if (showCompleted)
                             ...completed.map((habitDefinition) {
                               return HabitCompletionCard(
-                                habitDefinition: habitDefinition,
+                                key: Key(habitDefinition.id),
+                                habitId: habitDefinition.id,
                                 rangeStart: rangeStart,
                                 rangeEnd: rangeEnd,
                                 showGaps: showGaps,

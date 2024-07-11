@@ -13,7 +13,6 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -42,7 +41,6 @@ class JournalDb extends _$JournalDb {
         );
 
   bool inMemoryDatabase = false;
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
   int get schemaVersion => 21;
@@ -82,29 +80,11 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     final res = into(journal).insertOnConflictUpdate(entry);
-
-    _updateNotifications.notifyUpdate(
-      DatabaseType.journal,
-      entry.id,
-    );
-
     return res;
   }
 
   Future<int> addConflict(Conflict conflict) async {
     return into(conflicts).insertOnConflictUpdate(conflict);
-  }
-
-  Future<int?> addJournalEntity(JournalEntity journalEntity) async {
-    final dbEntity = toDbEntity(journalEntity);
-    await saveJournalEntityJson(journalEntity);
-
-    final exists = (await entityById(dbEntity.id)) != null;
-    if (!exists) {
-      return upsertJournalDbEntity(dbEntity);
-    } else {
-      return 0;
-    }
   }
 
   Future<VclockStatus> detectConflict(
@@ -193,7 +173,6 @@ class JournalDb extends _$JournalDb {
     } else {
       rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
-
     await saveJournalEntityJson(updated);
     await addTagged(updated);
 
@@ -858,7 +837,9 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertEntryLink(EntryLink link) async {
     if (link.fromId != link.toId) {
-      return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+      final res =
+          into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+      return res;
     } else {
       return 0;
     }
@@ -879,10 +860,6 @@ class JournalDb extends _$JournalDb {
       habit: upsertHabitDefinition,
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
-    );
-    _updateNotifications.notifyUpdate(
-      DatabaseType.entity,
-      entityDefinition.id,
     );
     return linesAffected;
   }
