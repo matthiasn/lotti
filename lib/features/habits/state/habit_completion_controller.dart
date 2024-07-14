@@ -51,13 +51,11 @@ class HabitCompletionController extends _$HabitCompletionController {
   }
 
   Future<List<HabitResult>> _fetch() async {
-    final entities = await _journalDb
-        .watchHabitCompletionsByHabitId(
-          habitId: _habitId,
-          rangeStart: _rangeStart,
-          rangeEnd: _rangeEnd,
-        )
-        .first;
+    final entities = await _journalDb.getHabitCompletionsByHabitId(
+      habitId: _habitId,
+      rangeStart: _rangeStart,
+      rangeEnd: _rangeEnd,
+    );
 
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
       _habitId,

@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -28,14 +27,12 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(
-        () => mockJournalDb.watchHabitCompletionsByHabitId(
+        () => mockJournalDb.getHabitCompletionsByHabitId(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           habitId: habitFlossing.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
-      );
+      ).thenAnswer((_) async => []);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
