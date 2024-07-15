@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 List<Observation> aggregateWorkoutDailySum(
@@ -24,7 +25,7 @@ List<Observation> aggregateWorkoutDailySum(
       workout: (WorkoutEntry workoutEntry) {
         final data = workoutEntry.data;
         if (data.workoutType == chartConfig.workoutType) {
-          final dayString = ymd(entity.meta.dateFrom);
+          final dayString = entity.meta.dateFrom.ymd;
           final n = sumsByDay[dayString] ?? 0;
 
           if (chartConfig.valueType == WorkoutValueType.distance &&
@@ -51,7 +52,7 @@ List<Observation> aggregateWorkoutDailySum(
   }
 
   for (final entity in entities) {
-    final dayString = ymd(entity.meta.dateFrom);
+    final dayString = entity.meta.dateFrom.ymd;
     final n = sumsByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       sumsByDay[dayString] = n + entity.data.value;

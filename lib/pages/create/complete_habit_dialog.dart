@@ -12,6 +12,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/dashboards/dashboard_widget.dart';
@@ -82,7 +83,7 @@ class _HabitDialogState extends State<HabitDialog> {
     }
 
     _started =
-        widget.dateString is String && ymd(DateTime.now()) != widget.dateString
+        widget.dateString is String && DateTime.now().ymd != widget.dateString
             ? endOfDay()
             : DateTime.now();
 

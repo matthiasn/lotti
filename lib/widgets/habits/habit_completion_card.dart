@@ -10,6 +10,7 @@ import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -157,9 +158,9 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                           child: GestureDetector(
                             onTap: () {
                               onTapAdd(
-                                dateString: ymd(DateTime.now()) != res.dayString
+                                dateString: DateTime.now().ymd != res.dayString
                                     ? res.dayString
-                                    : ymd(DateTime.now()),
+                                    : DateTime.now().ymd,
                               );
                             },
                             child: Semantics(
