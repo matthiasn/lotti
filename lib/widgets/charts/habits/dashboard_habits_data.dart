@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 
 class HabitResult extends Equatable {
   const HabitResult({
@@ -46,7 +46,7 @@ List<HabitResult> habitResultsByDay(
   final range = rangeEnd.difference(rangeStart);
   final dayStrings = List<String>.generate(range.inDays + 1, (days) {
     final day = rangeStart.add(Duration(days: days));
-    return ymd(day);
+    return day.ymd;
   });
 
   final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
@@ -66,7 +66,7 @@ List<HabitResult> habitResultsByDay(
   }
 
   for (final entity in entities.sortedBy((entity) => entity.meta.dateFrom)) {
-    final dayString = ymd(entity.meta.dateFrom);
+    final dayString = entity.meta.dateFrom.ymd;
 
     final completionType = entity.maybeMap(
       habitCompletion: (completion) {

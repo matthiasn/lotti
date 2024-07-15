@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -28,15 +30,15 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   }
 
   @override
-  Future<Map<String, Duration>> build() async {
+  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
     ref.onDispose(() => _updateSubscription?.cancel());
     final data = await _fetch();
     return data;
   }
 
-  Future<Map<String, Duration>> _fetch() async {
+  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> _fetch() async {
     final db = getIt<JournalDb>();
-    final data = <String, Duration>{};
+    final data = <DateTime, Map<CategoryDefinition?, Duration>>{};
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: 30));
     final dbEntities = await db.sortedInRange(start, now).get();
@@ -59,14 +61,63 @@ class TimeByCategoryController extends _$TimeByCategoryController {
         final category =
             getIt<EntitiesCacheService>().getCategoryById(categoryId);
 
-        final key = category?.name ?? 'unassigned';
-        final timeByCategory = data[key] ?? Duration.zero;
-        data[key] = timeByCategory + duration;
+        final noon = journalEntity.meta.dateFrom.noon;
+        final dataByDay = data[noon] ?? <CategoryDefinition?, Duration>{};
+        final timeByCategory = dataByDay[category] ?? Duration.zero;
+        dataByDay[category] = timeByCategory + duration;
+        data[noon] = dataByDay;
       }
     }
-
-    debugPrint('TimeByCategoryController: $data');
-
     return data;
   }
+}
+
+@riverpod
+Future<List<TimeByDayAndCategory>> timeByDayChart(TimeByDayChartRef ref) async {
+  final timeByCategoryAndDay = ref.watch(timeByCategoryControllerProvider);
+  return _convertTimeByCategory(timeByCategoryAndDay.value);
+}
+
+class TimeByDayAndCategory {
+  TimeByDayAndCategory({
+    required this.date,
+    required this.categoryId,
+    required this.categoryDefinition,
+    required this.duration,
+  });
+
+  final DateTime date;
+  final String categoryId;
+  final CategoryDefinition? categoryDefinition;
+  final Duration duration;
+}
+
+List<TimeByDayAndCategory> _convertTimeByCategory(
+  Map<DateTime, Map<CategoryDefinition?, Duration>>? timeByCategoryAndDay,
+) {
+  final data = <TimeByDayAndCategory>[];
+  timeByCategoryAndDay?.forEach((date, timeByCategory) {
+    final sortedCategories = getIt<EntitiesCacheService>().sortedCategories;
+    for (final categoryDefinition in sortedCategories) {
+      data.add(
+        TimeByDayAndCategory(
+          date: date,
+          categoryId: categoryDefinition.id,
+          categoryDefinition: categoryDefinition,
+          duration: timeByCategory[categoryDefinition] ?? Duration.zero,
+        ),
+      );
+    }
+
+    data.add(
+      TimeByDayAndCategory(
+        date: date,
+        categoryId: 'unassigned',
+        categoryDefinition: null,
+        duration: timeByCategory[null] ?? Duration.zero,
+      ),
+    );
+  });
+
+  return data.reversed.toList();
 }

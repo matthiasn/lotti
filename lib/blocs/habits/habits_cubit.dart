@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:rxdart/rxdart.dart';
@@ -103,7 +104,7 @@ class HabitsCubit extends Cubit<HabitsState> {
     _skippedByDay = <String, Set<String>>{};
     _failedByDay = <String, Set<String>>{};
 
-    final today = ymd(DateTime.now());
+    final today = DateTime.now().ymd;
 
     void addId(Map<String, Set<String>> byDay, String day, String habitId) {
       byDay[day] = byDay[day] ?? <String>{}
@@ -116,7 +117,7 @@ class HabitsCubit extends Cubit<HabitsState> {
     }
 
     for (final item in _habitCompletions) {
-      final day = ymd(item.meta.dateFrom);
+      final day = item.meta.dateFrom.ymd;
 
       if (item is HabitCompletionEntry &&
           _habitDefinitionsMap.containsKey(item.data.habitId)) {
@@ -188,7 +189,7 @@ class HabitsCubit extends Cubit<HabitsState> {
           (item.data.completionType == HabitCompletionType.success ||
               item.data.completionType == HabitCompletionType.skip ||
               item.data.completionType == null)) {
-        final day = ymd(item.meta.dateFrom);
+        final day = item.meta.dateFrom.ymd;
         final successDays = habitSuccessDays[item.data.habitId] ?? <String>{}
           ..add(day);
         habitSuccessDays[item.data.habitId] = successDays;

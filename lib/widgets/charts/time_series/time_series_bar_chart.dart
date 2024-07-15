@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -35,7 +36,7 @@ class TimeSeriesBarChart extends StatelessWidget {
 
     final byDay = <String, Observation>{};
     for (final observation in data) {
-      final day = ymd(observation.dateTime);
+      final day = observation.dateTime.ymd;
       byDay[day] = observation;
     }
 
