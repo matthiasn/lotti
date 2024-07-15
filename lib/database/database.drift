@@ -245,6 +245,13 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+sortedInRange:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  ORDER BY date_from DESC;
+
 filteredByTagMatch:
 SELECT * FROM journal
   WHERE deleted = false
