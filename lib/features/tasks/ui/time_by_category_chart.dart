@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphic/graphic.dart';
@@ -88,12 +89,32 @@ class TimeByCategoryChart extends ConsumerWidget {
               },
               tooltip: TooltipGuide(
                 followPointer: [false, true],
-                align: Alignment.topLeft,
-                offset: const Offset(-20, -20),
-                multiTuples: true,
-                variables: ['name', 'formattedValue'],
+                renderer: (size, offset, data) {
+                  return <MarkElement>[
+                    LabelElement(
+                      text: '${data.values.first['date']}',
+                      anchor: offset,
+                      style: LabelStyle(
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ...data.values
+                        .where((e) => e['value'] != 0)
+                        .mapIndexed((i, e) {
+                      return LabelElement(
+                        text: '${e['name']} - ${e['formattedValue']}',
+                        anchor: offset + Offset(0, (i + 1) * 16),
+                        style: LabelStyle(
+                            textStyle: const TextStyle(fontSize: 12)),
+                      );
+                    }),
+                  ];
+                },
               ),
-              crosshair: CrosshairGuide(followPointer: [false, true]),
+              crosshair: CrosshairGuide(followPointer: [true, true]),
             ),
           ),
       ],
