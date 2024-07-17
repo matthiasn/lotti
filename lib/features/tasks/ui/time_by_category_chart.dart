@@ -5,6 +5,7 @@ import 'package:graphic/graphic.dart';
 import 'package:lotti/features/tasks/state/time_by_category_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -16,6 +17,12 @@ class TimeByCategoryChart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(timeByDayChartProvider).value;
+
+    final textStyle = TextStyle(
+      color: secondaryTextColor,
+      fontSize: fontSizeMedium,
+      fontWeight: FontWeight.w300,
+    );
 
     return Column(
       children: [
@@ -95,9 +102,8 @@ class TimeByCategoryChart extends ConsumerWidget {
                       text: '${data.values.first['date']}',
                       anchor: offset,
                       style: LabelStyle(
-                        textStyle: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                        textStyle: textStyle.copyWith(
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
@@ -108,7 +114,8 @@ class TimeByCategoryChart extends ConsumerWidget {
                         text: '${e['name']} - ${e['formattedValue']}',
                         anchor: offset + Offset(0, (i + 1) * 16),
                         style: LabelStyle(
-                            textStyle: const TextStyle(fontSize: 12)),
+                          textStyle: textStyle,
+                        ),
                       );
                     }),
                   ];
