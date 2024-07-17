@@ -398,7 +398,7 @@
 					"-O3",
 					"-DNDEBUG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$PRODUCT_BUNDLE_IDENTIFIER";
+				PRODUCT_BUNDLE_IDENTIFIER = $PRODUCT_BUNDLE_IDENTIFIER;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -613,7 +613,7 @@
 			repositoryURL = "https://github.com/argmaxinc/whisperkit";
 			requirement = {
 				kind = exactVersion;
-				version = 0.7.2;
+				version = 0.8.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
