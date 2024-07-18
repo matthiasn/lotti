@@ -245,6 +245,19 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
         subject: subject ?? this.subject,
         filePath: filePath.present ? filePath.value : this.filePath,
       );
+  OutboxItem copyWithCompanion(OutboxCompanion data) {
+    return OutboxItem(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      status: data.status.present ? data.status.value : this.status,
+      retries: data.retries.present ? data.retries.value : this.retries,
+      message: data.message.present ? data.message.value : this.message,
+      subject: data.subject.present ? data.subject.value : this.subject,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('OutboxItem(')
@@ -399,7 +412,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
-  _$SyncDatabaseManager get managers => _$SyncDatabaseManager(this);
+  $SyncDatabaseManager get managers => $SyncDatabaseManager(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -408,7 +421,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [outbox];
 }
 
-typedef $$OutboxTableInsertCompanionBuilder = OutboxCompanion Function({
+typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   Value<int> id,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
@@ -435,8 +448,7 @@ class $$OutboxTableTableManager extends RootTableManager<
     OutboxItem,
     $$OutboxTableFilterComposer,
     $$OutboxTableOrderingComposer,
-    $$OutboxTableProcessedTableManager,
-    $$OutboxTableInsertCompanionBuilder,
+    $$OutboxTableCreateCompanionBuilder,
     $$OutboxTableUpdateCompanionBuilder> {
   $$OutboxTableTableManager(_$SyncDatabase db, $OutboxTable table)
       : super(TableManagerState(
@@ -446,8 +458,7 @@ class $$OutboxTableTableManager extends RootTableManager<
               $$OutboxTableFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $$OutboxTableOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $$OutboxTableProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -467,7 +478,7 @@ class $$OutboxTableTableManager extends RootTableManager<
             subject: subject,
             filePath: filePath,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -488,18 +499,6 @@ class $$OutboxTableTableManager extends RootTableManager<
             filePath: filePath,
           ),
         ));
-}
-
-class $$OutboxTableProcessedTableManager extends ProcessedTableManager<
-    _$SyncDatabase,
-    $OutboxTable,
-    OutboxItem,
-    $$OutboxTableFilterComposer,
-    $$OutboxTableOrderingComposer,
-    $$OutboxTableProcessedTableManager,
-    $$OutboxTableInsertCompanionBuilder,
-    $$OutboxTableUpdateCompanionBuilder> {
-  $$OutboxTableProcessedTableManager(super.$state);
 }
 
 class $$OutboxTableFilterComposer
@@ -590,9 +589,9 @@ class $$OutboxTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class _$SyncDatabaseManager {
+class $SyncDatabaseManager {
   final _$SyncDatabase _db;
-  _$SyncDatabaseManager(this._db);
+  $SyncDatabaseManager(this._db);
   $$OutboxTableTableManager get outbox =>
       $$OutboxTableTableManager(_db, _db.outbox);
 }
