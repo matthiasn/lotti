@@ -5367,6 +5367,33 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<LinkedDbEntry> linksForIds(List<String> fromIds) {
+    var $arrayStartIndex = 1;
+    final expandedfromIds = $expandVar($arrayStartIndex, fromIds.length);
+    $arrayStartIndex += fromIds.length;
+    return customSelect(
+        'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds)',
+        variables: [
+          for (var $ in fromIds) Variable<String>($)
+        ],
+        readsFrom: {
+          linkedEntries,
+        }).asyncMap(linkedEntries.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> entriesForIds(List<String> ids) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect('SELECT * FROM journal WHERE id IN ($expandedids)',
+        variables: [
+          for (var $ in ids) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> journalEntitiesByIds(List<String> ids) {
     var $arrayStartIndex = 1;
     final expandedids = $expandVar($arrayStartIndex, ids.length);

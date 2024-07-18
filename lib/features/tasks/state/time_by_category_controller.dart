@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -37,21 +35,49 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   }
 
   Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> _fetch() async {
+    final now = DateTime.now();
     final db = getIt<JournalDb>();
     final data = <DateTime, Map<CategoryDefinition?, Duration>>{};
-    final now = DateTime.now();
     final start = now.subtract(const Duration(days: 30));
-    final dbEntities = await db.sortedInRange(start, now).get();
-    final items = entityStreamMapper(dbEntities);
-    debugPrint('TimeByCategoryController length: ${items.length}');
+    final items = await db.sortedJournalEntities(
+      rangeStart: start,
+      rangeEnd: now,
+    );
+    final itemIds = items.map((item) => item.meta.id).toSet();
+    final links = await db.linksForEntryIds(itemIds);
+    final entryIdFromLinkedIds = <String, Set<String>>{};
+    final linkedIds = <String>{};
+
+    for (final link in links) {
+      final fromId = link.fromId;
+      final toId = link.toId;
+      final prev = entryIdFromLinkedIds[toId] ?? <String>{}
+        ..add(fromId);
+      entryIdFromLinkedIds[toId] = prev;
+    }
+
+    entryIdFromLinkedIds.forEach((fromId, toIds) {
+      linkedIds.addAll(toIds);
+    });
+
+    final entriesForIds = await db.getJournalEntitiesForIds(linkedIds);
+    final linkedEntries = <String, JournalEntity>{};
+
+    for (final item in entriesForIds) {
+      linkedEntries[item.meta.id] = item;
+    }
 
     for (final journalEntity in items) {
       final duration = entryDuration(journalEntity);
 
       if (journalEntity is JournalEntry || journalEntity is JournalAudio) {
         final linkedTo =
-            await db.linkedToJournalEntities(journalEntity.meta.id).get();
-        final categoryId = entityStreamMapper(linkedTo)
+            (entryIdFromLinkedIds[journalEntity.meta.id] ?? <String>{})
+                .map((id) {
+          return linkedEntries[id];
+        }).whereNotNull();
+
+        final categoryId = linkedTo
             .map((item) {
               return item.meta.categoryId;
             })
