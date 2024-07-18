@@ -209,6 +209,17 @@ class EditorDraftState extends DataClass
         lastSaved: lastSaved ?? this.lastSaved,
         delta: delta ?? this.delta,
       );
+  EditorDraftState copyWithCompanion(EditorDraftsCompanion data) {
+    return EditorDraftState(
+      id: data.id.present ? data.id.value : this.id,
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastSaved: data.lastSaved.present ? data.lastSaved.value : this.lastSaved,
+      delta: data.delta.present ? data.delta.value : this.delta,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('EditorDraftState(')
@@ -352,7 +363,7 @@ class EditorDraftsCompanion extends UpdateCompanion<EditorDraftState> {
 abstract class _$EditorDb extends GeneratedDatabase {
   _$EditorDb(QueryExecutor e) : super(e);
   _$EditorDb.connect(DatabaseConnection c) : super.connect(c);
-  _$EditorDbManager get managers => _$EditorDbManager(this);
+  $EditorDbManager get managers => $EditorDbManager(this);
   late final EditorDrafts editorDrafts = EditorDrafts(this);
   late final Index editorDraftsId = Index('editor_drafts_id',
       'CREATE INDEX editor_drafts_id ON editor_drafts (id)');
@@ -396,7 +407,7 @@ abstract class _$EditorDb extends GeneratedDatabase {
       ];
 }
 
-typedef $EditorDraftsInsertCompanionBuilder = EditorDraftsCompanion Function({
+typedef $EditorDraftsCreateCompanionBuilder = EditorDraftsCompanion Function({
   required String id,
   required String entryId,
   required String status,
@@ -421,8 +432,7 @@ class $EditorDraftsTableManager extends RootTableManager<
     EditorDraftState,
     $EditorDraftsFilterComposer,
     $EditorDraftsOrderingComposer,
-    $EditorDraftsProcessedTableManager,
-    $EditorDraftsInsertCompanionBuilder,
+    $EditorDraftsCreateCompanionBuilder,
     $EditorDraftsUpdateCompanionBuilder> {
   $EditorDraftsTableManager(_$EditorDb db, EditorDrafts table)
       : super(TableManagerState(
@@ -432,8 +442,7 @@ class $EditorDraftsTableManager extends RootTableManager<
               $EditorDraftsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $EditorDraftsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $EditorDraftsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> entryId = const Value.absent(),
             Value<String> status = const Value.absent(),
@@ -451,7 +460,7 @@ class $EditorDraftsTableManager extends RootTableManager<
             delta: delta,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String entryId,
             required String status,
@@ -470,18 +479,6 @@ class $EditorDraftsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $EditorDraftsProcessedTableManager extends ProcessedTableManager<
-    _$EditorDb,
-    EditorDrafts,
-    EditorDraftState,
-    $EditorDraftsFilterComposer,
-    $EditorDraftsOrderingComposer,
-    $EditorDraftsProcessedTableManager,
-    $EditorDraftsInsertCompanionBuilder,
-    $EditorDraftsUpdateCompanionBuilder> {
-  $EditorDraftsProcessedTableManager(super.$state);
 }
 
 class $EditorDraftsFilterComposer
@@ -552,9 +549,9 @@ class $EditorDraftsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class _$EditorDbManager {
+class $EditorDbManager {
   final _$EditorDb _db;
-  _$EditorDbManager(this._db);
+  $EditorDbManager(this._db);
   $EditorDraftsTableManager get editorDrafts =>
       $EditorDraftsTableManager(_db, _db.editorDrafts);
 }

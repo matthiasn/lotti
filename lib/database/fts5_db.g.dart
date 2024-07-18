@@ -187,6 +187,16 @@ class JournalFt extends DataClass implements Insertable<JournalFt> {
         tags: tags ?? this.tags,
         uuid: uuid ?? this.uuid,
       );
+  JournalFt copyWithCompanion(JournalFtsCompanion data) {
+    return JournalFt(
+      plainText: data.plainText.present ? data.plainText.value : this.plainText,
+      title: data.title.present ? data.title.value : this.title,
+      summary: data.summary.present ? data.summary.value : this.summary,
+      tags: data.tags.present ? data.tags.value : this.tags,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('JournalFt(')
@@ -315,7 +325,7 @@ class JournalFtsCompanion extends UpdateCompanion<JournalFt> {
 abstract class _$Fts5Db extends GeneratedDatabase {
   _$Fts5Db(QueryExecutor e) : super(e);
   _$Fts5Db.connect(DatabaseConnection c) : super.connect(c);
-  _$Fts5DbManager get managers => _$Fts5DbManager(this);
+  $Fts5DbManager get managers => $Fts5DbManager(this);
   late final JournalFts journalFts = JournalFts(this);
   Future<int> insertJournalEntry(String plainText, String title, String summary,
       String tags, String uuid) {
@@ -359,7 +369,7 @@ abstract class _$Fts5Db extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [journalFts];
 }
 
-typedef $JournalFtsInsertCompanionBuilder = JournalFtsCompanion Function({
+typedef $JournalFtsCreateCompanionBuilder = JournalFtsCompanion Function({
   required String plainText,
   required String title,
   required String summary,
@@ -382,8 +392,7 @@ class $JournalFtsTableManager extends RootTableManager<
     JournalFt,
     $JournalFtsFilterComposer,
     $JournalFtsOrderingComposer,
-    $JournalFtsProcessedTableManager,
-    $JournalFtsInsertCompanionBuilder,
+    $JournalFtsCreateCompanionBuilder,
     $JournalFtsUpdateCompanionBuilder> {
   $JournalFtsTableManager(_$Fts5Db db, JournalFts table)
       : super(TableManagerState(
@@ -393,8 +402,7 @@ class $JournalFtsTableManager extends RootTableManager<
               $JournalFtsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $JournalFtsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $JournalFtsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> plainText = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> summary = const Value.absent(),
@@ -410,7 +418,7 @@ class $JournalFtsTableManager extends RootTableManager<
             uuid: uuid,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String plainText,
             required String title,
             required String summary,
@@ -427,18 +435,6 @@ class $JournalFtsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $JournalFtsProcessedTableManager extends ProcessedTableManager<
-    _$Fts5Db,
-    JournalFts,
-    JournalFt,
-    $JournalFtsFilterComposer,
-    $JournalFtsOrderingComposer,
-    $JournalFtsProcessedTableManager,
-    $JournalFtsInsertCompanionBuilder,
-    $JournalFtsUpdateCompanionBuilder> {
-  $JournalFtsProcessedTableManager(super.$state);
 }
 
 class $JournalFtsFilterComposer extends FilterComposer<_$Fts5Db, JournalFts> {
@@ -498,9 +494,9 @@ class $JournalFtsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class _$Fts5DbManager {
+class $Fts5DbManager {
   final _$Fts5Db _db;
-  _$Fts5DbManager(this._db);
+  $Fts5DbManager(this._db);
   $JournalFtsTableManager get journalFts =>
       $JournalFtsTableManager(_db, _db.journalFts);
 }
