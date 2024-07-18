@@ -17,58 +17,58 @@ void main() {
   final mockJournalDb = MockJournalDb();
   final mockUpdateNotifications = MockUpdateNotifications();
 
-  group(
-    'SettingsPage Widget Tests - ',
-    () {
-      setUpAll(() {
-        when(mockJournalDb.watchJournalCount)
-            .thenAnswer((_) => Stream<int>.fromIterable([n]));
+  group('SettingsPage Widget Tests - ', () {
+    setUpAll(() {
+      when(mockJournalDb.watchJournalCount)
+          .thenAnswer((_) => Stream<int>.fromIterable([n]));
 
-        when(mockJournalDb.watchCountImportFlagEntries)
-            .thenAnswer((_) => Stream<int>.fromIterable([0]));
+      when(mockJournalDb.watchCountImportFlagEntries)
+          .thenAnswer((_) => Stream<int>.fromIterable([0]));
 
-        when(
-          () => mockJournalDb.sortedJournalEntities(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => <JournalEntity>[]);
+      when(
+        () => mockJournalDb.sortedJournalEntities(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => <JournalEntity>[]);
 
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
+      when(
+        () => mockJournalDb.linksForEntryIds(any()),
+      ).thenAnswer((_) async => <LinkedDbEntry>[]);
 
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(mockJournalDb);
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
 
-        when(
-          () => mockJournalDb.watchTaskCount(any()),
-        ).thenAnswer(
-          (_) => Stream<int>.fromIterable([10]),
-        );
-      });
-      tearDown(getIt.reset);
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(mockJournalDb);
 
-      testWidgets('main page is displayed', (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: const AboutPage(),
+      when(
+        () => mockJournalDb.watchTaskCount(any()),
+      ).thenAnswer(
+        (_) => Stream<int>.fromIterable([10]),
+      );
+    });
+    tearDown(getIt.reset);
+
+    testWidgets('main page is displayed', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
             ),
+            child: const AboutPage(),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        expect(find.text('About Lotti'), findsOneWidget);
-        expect(find.text('Entries: 111, '), findsOneWidget);
-      });
-    },
-    skip: true,
-  );
+      expect(find.text('About Lotti'), findsOneWidget);
+      expect(find.text('Entries: 111, '), findsOneWidget);
+    });
+  });
 }

@@ -5,7 +5,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
@@ -29,7 +28,6 @@ final getIt = GetIt.instance;
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
-    ..registerSingleton<LoggingDb>(LoggingDb())
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())
