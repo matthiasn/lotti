@@ -472,6 +472,14 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
+  Future<List<JournalEntity>> sortedJournalEntities({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final dbEntities = await sortedInRange(rangeStart, rangeEnd).get();
+    return dbEntities.map(fromDbEntity).toList();
+  }
+
   Stream<Map<String, Duration>> watchLinkedTotalDuration({
     required String linkedFrom,
   }) {
@@ -652,14 +660,14 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchHabitCompletionsByHabitId({
+  Future<List<JournalEntity>> getHabitCompletionsByHabitId({
     required String habitId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) {
-    return habitCompletionsByHabitId(habitId, rangeStart, rangeEnd)
-        .watch()
-        .map(entityStreamMapper);
+  }) async {
+    final res =
+        await habitCompletionsByHabitId(habitId, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
   }
 
   Stream<List<JournalEntity>> watchHabitCompletionsInRange({

@@ -59,26 +59,20 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchHabitCompletionsByHabitId(
+        () => mockJournalDb.getHabitCompletionsByHabitId(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           habitId: habitFlossing.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testHabitCompletionEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testHabitCompletionEntry]);
 
       when(
-        () => mockJournalDb.watchHabitCompletionsByHabitId(
+        () => mockJournalDb.getHabitCompletionsByHabitId(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           habitId: habitFlossingDueLater.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
-      );
+      ).thenAnswer((_) async => []);
 
       when(
         () => mockJournalDb.watchHabitCompletionsInRange(

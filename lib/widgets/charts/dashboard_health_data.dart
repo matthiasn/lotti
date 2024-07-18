@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -59,7 +60,7 @@ List<Observation> aggregateNone(
 List<Observation> aggregateDailyMax(List<JournalEntity> entities) {
   final maxByDay = <String, num>{};
   for (final entity in entities) {
-    final dayString = ymd(entity.meta.dateFrom);
+    final dayString = entity.meta.dateFrom.ymd;
     final n = maxByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       maxByDay[dayString] = max(n, entity.data.value);
@@ -79,7 +80,7 @@ List<Observation> aggregateDailySum(List<JournalEntity> entities) {
   final sumsByDay = <String, num>{};
 
   for (final entity in entities) {
-    final dayString = ymd(entity.meta.dateFrom);
+    final dayString = entity.meta.dateFrom.ymd;
     final n = sumsByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       sumsByDay[dayString] = n + entity.data.value;

@@ -4768,6 +4768,19 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> sortedInRange(
+      DateTime rangeStart, DateTime rangeEnd) {
+    return customSelect(
+        'SELECT * FROM journal WHERE deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
+        variables: [
+          Variable<DateTime>(rangeStart),
+          Variable<DateTime>(rangeEnd)
+        ],
+        readsFrom: {
+          journal,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> filteredByTagMatch(
       String match, DateTime rangeStart, DateTime rangeEnd) {
     return customSelect(
