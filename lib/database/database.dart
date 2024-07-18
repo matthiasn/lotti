@@ -472,6 +472,14 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
+  Future<List<JournalEntity>> sortedJournalEntities({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final dbEntities = await sortedInRange(rangeStart, rangeEnd).get();
+    return dbEntities.map(fromDbEntity).toList();
+  }
+
   Stream<Map<String, Duration>> watchLinkedTotalDuration({
     required String linkedFrom,
   }) {
