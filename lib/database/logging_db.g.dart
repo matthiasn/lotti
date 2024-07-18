@@ -289,6 +289,21 @@ class LogEntry extends DataClass implements Insertable<LogEntry> {
         stacktrace: stacktrace.present ? stacktrace.value : this.stacktrace,
         data: data.present ? data.value : this.data,
       );
+  LogEntry copyWithCompanion(LogEntriesCompanion data) {
+    return LogEntry(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      domain: data.domain.present ? data.domain.value : this.domain,
+      subDomain: data.subDomain.present ? data.subDomain.value : this.subDomain,
+      type: data.type.present ? data.type.value : this.type,
+      level: data.level.present ? data.level.value : this.level,
+      message: data.message.present ? data.message.value : this.message,
+      stacktrace:
+          data.stacktrace.present ? data.stacktrace.value : this.stacktrace,
+      data: data.data.present ? data.data.value : this.data,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('LogEntry(')
@@ -471,7 +486,7 @@ class LogEntriesCompanion extends UpdateCompanion<LogEntry> {
 abstract class _$LoggingDb extends GeneratedDatabase {
   _$LoggingDb(QueryExecutor e) : super(e);
   _$LoggingDb.connect(DatabaseConnection c) : super.connect(c);
-  _$LoggingDbManager get managers => _$LoggingDbManager(this);
+  $LoggingDbManager get managers => $LoggingDbManager(this);
   late final LogEntries logEntries = LogEntries(this);
   late final Index logEntriesCreatedAt = Index('log_entries_created_at',
       'CREATE INDEX log_entries_created_at ON log_entries (created_at)');
@@ -528,7 +543,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
       ];
 }
 
-typedef $LogEntriesInsertCompanionBuilder = LogEntriesCompanion Function({
+typedef $LogEntriesCreateCompanionBuilder = LogEntriesCompanion Function({
   required String id,
   required String createdAt,
   required String domain,
@@ -559,8 +574,7 @@ class $LogEntriesTableManager extends RootTableManager<
     LogEntry,
     $LogEntriesFilterComposer,
     $LogEntriesOrderingComposer,
-    $LogEntriesProcessedTableManager,
-    $LogEntriesInsertCompanionBuilder,
+    $LogEntriesCreateCompanionBuilder,
     $LogEntriesUpdateCompanionBuilder> {
   $LogEntriesTableManager(_$LoggingDb db, LogEntries table)
       : super(TableManagerState(
@@ -570,8 +584,7 @@ class $LogEntriesTableManager extends RootTableManager<
               $LogEntriesFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $LogEntriesOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $LogEntriesProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
             Value<String> domain = const Value.absent(),
@@ -595,7 +608,7 @@ class $LogEntriesTableManager extends RootTableManager<
             data: data,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String createdAt,
             required String domain,
@@ -620,18 +633,6 @@ class $LogEntriesTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $LogEntriesProcessedTableManager extends ProcessedTableManager<
-    _$LoggingDb,
-    LogEntries,
-    LogEntry,
-    $LogEntriesFilterComposer,
-    $LogEntriesOrderingComposer,
-    $LogEntriesProcessedTableManager,
-    $LogEntriesInsertCompanionBuilder,
-    $LogEntriesUpdateCompanionBuilder> {
-  $LogEntriesProcessedTableManager(super.$state);
 }
 
 class $LogEntriesFilterComposer
@@ -732,9 +733,9 @@ class $LogEntriesOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class _$LoggingDbManager {
+class $LoggingDbManager {
   final _$LoggingDb _db;
-  _$LoggingDbManager(this._db);
+  $LoggingDbManager(this._db);
   $LogEntriesTableManager get logEntries =>
       $LogEntriesTableManager(_db, _db.logEntries);
 }
