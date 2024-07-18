@@ -550,18 +550,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: "771b88c19c0b73fd5cc1368ab68f709bb0e8ad56d76c2568457d5d2a2096e701"
+      sha256: "4e0ffee40d23f0b809e6cff1ad202886f51d629649073ed42d9cd1d194ea943e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.19.1"
+    version: "2.19.1+1"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: "349b5d51d19117806a29a57af947d4da1d7f024f79dc0f4a0996852577f92e3b"
+      sha256: ac7647c6cedca99724ca300cff9181f6dd799428f8ed71f94159ed0528eaec26
       url: "https://pub.dev"
     source: hosted
-    version: "2.19.0"
+    version: "2.19.1"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -1193,14 +1193,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.2.1"
+  graphic:
+    dependency: "direct main"
+    description:
+      name: graphic
+      sha256: dafd3b218d83a98a71ed8fb7b08a8c1a978ef22f7580d836d6cd52454d446b78
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.0"
   graphs:
     dependency: transitive
     description:
       name: graphs
-      sha256: aedc5a15e78fc65a6e23bcd927f24c64dd995062bcd1ca6eda65a3cff92a4d19
+      sha256: "741bbf84165310a68ff28fe9e727332eef1407342fca52759cb21ad8177bb8d0"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   health:
     dependency: "direct main"
     description:
@@ -1807,6 +1815,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.0"
+  path_drawing:
+    dependency: transitive
+    description:
+      name: path_drawing
+      sha256: bbb1934c0cbb03091af082a6389ca2080345291ef07a5fa6d6e078ba8682f977
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   path_parsing:
     dependency: transitive
     description:
@@ -2275,10 +2291,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_platform_interface
-      sha256: "22e2ecac9419b4246d7c22bfbbda589e3acf5c0351137d87dd2939d984d37c3b"
+      sha256: "034650b71e73629ca08a0bd789fd1d83cc63c2d1e405946f7cef7bc37432f93a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.4.0"
   shared_preferences_web:
     dependency: transitive
     description:
@@ -2664,10 +2680,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: eac82dc8e5f48818054f46021e9e5f34c239f8d301e7e29165b977c8d1189fed
+      sha256: "95d8027db36a0e52caf55680f91e33ea6aa12a3ce608c90b06f4e429a21067ac"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.4"
+    version: "6.3.5"
   url_launcher_ios:
     dependency: transitive
     description:

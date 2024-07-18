@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 
 class Observation extends Equatable {
   const Observation(this.dateTime, this.value);
@@ -20,10 +21,6 @@ class Observation extends Equatable {
 
   @override
   List<Object?> get props => [dateTime, value];
-}
-
-String ymd(DateTime day) {
-  return day.toIso8601String().substring(0, 10);
 }
 
 String ymdh(DateTime dt) {
@@ -45,7 +42,7 @@ List<Observation> aggregateSumByDay(
   }
 
   for (final entity in entities) {
-    final dayString = ymd(entity.meta.dateFrom);
+    final dayString = entity.meta.dateFrom.ymd;
     final n = sumsByDay[dayString] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByDay[dayString] = n + entity.data.value;
@@ -122,7 +119,7 @@ List<Observation> aggregateSumByHour(
 List<String> getDayStrings(int rangeDays, DateTime rangeStart) {
   return List<String>.generate(rangeDays, (days) {
     final day = rangeStart.add(Duration(days: days));
-    return ymd(day);
+    return day.ymd;
   });
 }
 
@@ -149,7 +146,7 @@ List<Observation> aggregateMaxByDay(
   }
 
   for (final entity in entities) {
-    final dayString = ymd(entity.meta.dateFrom);
+    final dayString = entity.meta.dateFrom.ymd;
     final n = sumsByDay[dayString] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByDay[dayString] = max(n, entity.data.value);

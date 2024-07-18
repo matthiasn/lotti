@@ -209,6 +209,12 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
   );
 }
 
+EntryLink entryLinkFromLinkedDbEntry(LinkedDbEntry dbEntity) {
+  return EntryLink.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
+}
+
 TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
   return TagEntity.fromJson(
     json.decode(dbEntity.serialized) as Map<String, dynamic>,
