@@ -136,6 +136,14 @@ class SettingsItem extends DataClass implements Insertable<SettingsItem> {
         value: value ?? this.value,
         updatedAt: updatedAt ?? this.updatedAt,
       );
+  SettingsItem copyWithCompanion(SettingsCompanion data) {
+    return SettingsItem(
+      configKey: data.configKey.present ? data.configKey.value : this.configKey,
+      value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('SettingsItem(')
@@ -236,7 +244,7 @@ class SettingsCompanion extends UpdateCompanion<SettingsItem> {
 abstract class _$SettingsDb extends GeneratedDatabase {
   _$SettingsDb(QueryExecutor e) : super(e);
   _$SettingsDb.connect(DatabaseConnection c) : super.connect(c);
-  _$SettingsDbManager get managers => _$SettingsDbManager(this);
+  $SettingsDbManager get managers => $SettingsDbManager(this);
   late final Settings settings = Settings(this);
   Selectable<SettingsItem> settingsItemByKey(String configKey) {
     return customSelect('SELECT * FROM settings WHERE config_key = ?1',
@@ -255,7 +263,7 @@ abstract class _$SettingsDb extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [settings];
 }
 
-typedef $SettingsInsertCompanionBuilder = SettingsCompanion Function({
+typedef $SettingsCreateCompanionBuilder = SettingsCompanion Function({
   required String configKey,
   required String value,
   required DateTime updatedAt,
@@ -274,8 +282,7 @@ class $SettingsTableManager extends RootTableManager<
     SettingsItem,
     $SettingsFilterComposer,
     $SettingsOrderingComposer,
-    $SettingsProcessedTableManager,
-    $SettingsInsertCompanionBuilder,
+    $SettingsCreateCompanionBuilder,
     $SettingsUpdateCompanionBuilder> {
   $SettingsTableManager(_$SettingsDb db, Settings table)
       : super(TableManagerState(
@@ -283,8 +290,7 @@ class $SettingsTableManager extends RootTableManager<
           table: table,
           filteringComposer: $SettingsFilterComposer(ComposerState(db, table)),
           orderingComposer: $SettingsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $SettingsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> configKey = const Value.absent(),
             Value<String> value = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -296,7 +302,7 @@ class $SettingsTableManager extends RootTableManager<
             updatedAt: updatedAt,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String configKey,
             required String value,
             required DateTime updatedAt,
@@ -309,18 +315,6 @@ class $SettingsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $SettingsProcessedTableManager extends ProcessedTableManager<
-    _$SettingsDb,
-    Settings,
-    SettingsItem,
-    $SettingsFilterComposer,
-    $SettingsOrderingComposer,
-    $SettingsProcessedTableManager,
-    $SettingsInsertCompanionBuilder,
-    $SettingsUpdateCompanionBuilder> {
-  $SettingsProcessedTableManager(super.$state);
 }
 
 class $SettingsFilterComposer extends FilterComposer<_$SettingsDb, Settings> {
@@ -360,9 +354,9 @@ class $SettingsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class _$SettingsDbManager {
+class $SettingsDbManager {
   final _$SettingsDb _db;
-  _$SettingsDbManager(this._db);
+  $SettingsDbManager(this._db);
   $SettingsTableManager get settings =>
       $SettingsTableManager(_db, _db.settings);
 }

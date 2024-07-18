@@ -589,6 +589,39 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
         geohashInt: geohashInt.present ? geohashInt.value : this.geohashInt,
         category: category ?? this.category,
       );
+  JournalDbEntity copyWithCompanion(JournalCompanion data) {
+    return JournalDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      dateFrom: data.dateFrom.present ? data.dateFrom.value : this.dateFrom,
+      dateTo: data.dateTo.present ? data.dateTo.value : this.dateTo,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      starred: data.starred.present ? data.starred.value : this.starred,
+      private: data.private.present ? data.private.value : this.private,
+      task: data.task.present ? data.task.value : this.task,
+      taskStatus:
+          data.taskStatus.present ? data.taskStatus.value : this.taskStatus,
+      flag: data.flag.present ? data.flag.value : this.flag,
+      type: data.type.present ? data.type.value : this.type,
+      subtype: data.subtype.present ? data.subtype.value : this.subtype,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+      schemaVersion: data.schemaVersion.present
+          ? data.schemaVersion.value
+          : this.schemaVersion,
+      plainText: data.plainText.present ? data.plainText.value : this.plainText,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      geohashString: data.geohashString.present
+          ? data.geohashString.value
+          : this.geohashString,
+      geohashInt:
+          data.geohashInt.present ? data.geohashInt.value : this.geohashInt,
+      category: data.category.present ? data.category.value : this.category,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('JournalDbEntity(')
@@ -1154,6 +1187,20 @@ class Conflict extends DataClass implements Insertable<Conflict> {
         schemaVersion: schemaVersion ?? this.schemaVersion,
         status: status ?? this.status,
       );
+  Conflict copyWithCompanion(ConflictsCompanion data) {
+    return Conflict(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+      schemaVersion: data.schemaVersion.present
+          ? data.schemaVersion.value
+          : this.schemaVersion,
+      status: data.status.present ? data.status.value : this.status,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('Conflict(')
@@ -1579,6 +1626,22 @@ class MeasurableDbEntity extends DataClass
         version: version ?? this.version,
         status: status ?? this.status,
       );
+  MeasurableDbEntity copyWithCompanion(MeasurableTypesCompanion data) {
+    return MeasurableDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      uniqueName:
+          data.uniqueName.present ? data.uniqueName.value : this.uniqueName,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      private: data.private.present ? data.private.value : this.private,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+      version: data.version.present ? data.version.value : this.version,
+      status: data.status.present ? data.status.value : this.status,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('MeasurableDbEntity(')
@@ -2012,6 +2075,20 @@ class HabitDefinitionDbEntity extends DataClass
         serialized: serialized ?? this.serialized,
         active: active ?? this.active,
       );
+  HabitDefinitionDbEntity copyWithCompanion(HabitDefinitionsCompanion data) {
+    return HabitDefinitionDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      private: data.private.present ? data.private.value : this.private,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+      active: data.active.present ? data.active.value : this.active,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('HabitDefinitionDbEntity(')
@@ -2433,6 +2510,21 @@ class CategoryDefinitionDbEntity extends DataClass
         serialized: serialized ?? this.serialized,
         active: active ?? this.active,
       );
+  CategoryDefinitionDbEntity copyWithCompanion(
+      CategoryDefinitionsCompanion data) {
+    return CategoryDefinitionDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      private: data.private.present ? data.private.value : this.private,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+      active: data.active.present ? data.active.value : this.active,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('CategoryDefinitionDbEntity(')
@@ -2888,6 +2980,24 @@ class DashboardDefinitionDbEntity extends DataClass
         serialized: serialized ?? this.serialized,
         active: active ?? this.active,
       );
+  DashboardDefinitionDbEntity copyWithCompanion(
+      DashboardDefinitionsCompanion data) {
+    return DashboardDefinitionDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      lastReviewed: data.lastReviewed.present
+          ? data.lastReviewed.value
+          : this.lastReviewed,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      private: data.private.present ? data.private.value : this.private,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+      active: data.active.present ? data.active.value : this.active,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('DashboardDefinitionDbEntity(')
@@ -3201,6 +3311,15 @@ class ConfigFlag extends DataClass implements Insertable<ConfigFlag> {
         description: description ?? this.description,
         status: status ?? this.status,
       );
+  ConfigFlag copyWithCompanion(ConfigFlagsCompanion data) {
+    return ConfigFlag(
+      name: data.name.present ? data.name.value : this.name,
+      description:
+          data.description.present ? data.description.value : this.description,
+      status: data.status.present ? data.status.value : this.status,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('ConfigFlag(')
@@ -3591,6 +3710,21 @@ class TagDbEntity extends DataClass implements Insertable<TagDbEntity> {
         deleted: deleted.present ? deleted.value : this.deleted,
         serialized: serialized ?? this.serialized,
       );
+  TagDbEntity copyWithCompanion(TagEntitiesCompanion data) {
+    return TagDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      tag: data.tag.present ? data.tag.value : this.tag,
+      type: data.type.present ? data.type.value : this.type,
+      inactive: data.inactive.present ? data.inactive.value : this.inactive,
+      private: data.private.present ? data.private.value : this.private,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('TagDbEntity(')
@@ -3912,6 +4046,15 @@ class TaggedWith extends DataClass implements Insertable<TaggedWith> {
         journalId: journalId ?? this.journalId,
         tagEntityId: tagEntityId ?? this.tagEntityId,
       );
+  TaggedWith copyWithCompanion(TaggedCompanion data) {
+    return TaggedWith(
+      id: data.id.present ? data.id.value : this.id,
+      journalId: data.journalId.present ? data.journalId.value : this.journalId,
+      tagEntityId:
+          data.tagEntityId.present ? data.tagEntityId.value : this.tagEntityId,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('TaggedWith(')
@@ -4195,6 +4338,17 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
         type: type ?? this.type,
         serialized: serialized ?? this.serialized,
       );
+  LinkedDbEntry copyWithCompanion(LinkedEntriesCompanion data) {
+    return LinkedDbEntry(
+      id: data.id.present ? data.id.value : this.id,
+      fromId: data.fromId.present ? data.fromId.value : this.fromId,
+      toId: data.toId.present ? data.toId.value : this.toId,
+      type: data.type.present ? data.type.value : this.type,
+      serialized:
+          data.serialized.present ? data.serialized.value : this.serialized,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('LinkedDbEntry(')
@@ -4323,7 +4477,7 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
 abstract class _$JournalDb extends GeneratedDatabase {
   _$JournalDb(QueryExecutor e) : super(e);
   _$JournalDb.connect(DatabaseConnection c) : super.connect(c);
-  _$JournalDbManager get managers => _$JournalDbManager(this);
+  $JournalDbManager get managers => $JournalDbManager(this);
   late final Journal journal = Journal(this);
   late final Index idxJournalCreatedAt = Index('idx_journal_created_at',
       'CREATE INDEX idx_journal_created_at ON journal (created_at)');
@@ -5318,7 +5472,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
       );
 }
 
-typedef $JournalInsertCompanionBuilder = JournalCompanion Function({
+typedef $JournalCreateCompanionBuilder = JournalCompanion Function({
   required String id,
   required DateTime createdAt,
   required DateTime updatedAt,
@@ -5373,8 +5527,7 @@ class $JournalTableManager extends RootTableManager<
     JournalDbEntity,
     $JournalFilterComposer,
     $JournalOrderingComposer,
-    $JournalProcessedTableManager,
-    $JournalInsertCompanionBuilder,
+    $JournalCreateCompanionBuilder,
     $JournalUpdateCompanionBuilder> {
   $JournalTableManager(_$JournalDb db, Journal table)
       : super(TableManagerState(
@@ -5382,8 +5535,7 @@ class $JournalTableManager extends RootTableManager<
           table: table,
           filteringComposer: $JournalFilterComposer(ComposerState(db, table)),
           orderingComposer: $JournalOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $JournalProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -5431,7 +5583,7 @@ class $JournalTableManager extends RootTableManager<
             category: category,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required DateTime createdAt,
             required DateTime updatedAt,
@@ -5480,18 +5632,6 @@ class $JournalTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $JournalProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    Journal,
-    JournalDbEntity,
-    $JournalFilterComposer,
-    $JournalOrderingComposer,
-    $JournalProcessedTableManager,
-    $JournalInsertCompanionBuilder,
-    $JournalUpdateCompanionBuilder> {
-  $JournalProcessedTableManager(super.$state);
 }
 
 class $JournalFilterComposer extends FilterComposer<_$JournalDb, Journal> {
@@ -5710,7 +5850,7 @@ class $JournalOrderingComposer extends OrderingComposer<_$JournalDb, Journal> {
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $ConflictsInsertCompanionBuilder = ConflictsCompanion Function({
+typedef $ConflictsCreateCompanionBuilder = ConflictsCompanion Function({
   required String id,
   required DateTime createdAt,
   required DateTime updatedAt,
@@ -5735,8 +5875,7 @@ class $ConflictsTableManager extends RootTableManager<
     Conflict,
     $ConflictsFilterComposer,
     $ConflictsOrderingComposer,
-    $ConflictsProcessedTableManager,
-    $ConflictsInsertCompanionBuilder,
+    $ConflictsCreateCompanionBuilder,
     $ConflictsUpdateCompanionBuilder> {
   $ConflictsTableManager(_$JournalDb db, Conflicts table)
       : super(TableManagerState(
@@ -5745,8 +5884,7 @@ class $ConflictsTableManager extends RootTableManager<
           filteringComposer: $ConflictsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $ConflictsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $ConflictsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
@@ -5764,7 +5902,7 @@ class $ConflictsTableManager extends RootTableManager<
             status: status,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required DateTime createdAt,
             required DateTime updatedAt,
@@ -5783,18 +5921,6 @@ class $ConflictsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $ConflictsProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    Conflicts,
-    Conflict,
-    $ConflictsFilterComposer,
-    $ConflictsOrderingComposer,
-    $ConflictsProcessedTableManager,
-    $ConflictsInsertCompanionBuilder,
-    $ConflictsUpdateCompanionBuilder> {
-  $ConflictsProcessedTableManager(super.$state);
 }
 
 class $ConflictsFilterComposer extends FilterComposer<_$JournalDb, Conflicts> {
@@ -5864,7 +5990,7 @@ class $ConflictsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $MeasurableTypesInsertCompanionBuilder = MeasurableTypesCompanion
+typedef $MeasurableTypesCreateCompanionBuilder = MeasurableTypesCompanion
     Function({
   required String id,
   required String uniqueName,
@@ -5897,8 +6023,7 @@ class $MeasurableTypesTableManager extends RootTableManager<
     MeasurableDbEntity,
     $MeasurableTypesFilterComposer,
     $MeasurableTypesOrderingComposer,
-    $MeasurableTypesProcessedTableManager,
-    $MeasurableTypesInsertCompanionBuilder,
+    $MeasurableTypesCreateCompanionBuilder,
     $MeasurableTypesUpdateCompanionBuilder> {
   $MeasurableTypesTableManager(_$JournalDb db, MeasurableTypes table)
       : super(TableManagerState(
@@ -5908,9 +6033,7 @@ class $MeasurableTypesTableManager extends RootTableManager<
               $MeasurableTypesFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $MeasurableTypesOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) =>
-              $MeasurableTypesProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> uniqueName = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -5934,7 +6057,7 @@ class $MeasurableTypesTableManager extends RootTableManager<
             status: status,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String uniqueName,
             required DateTime createdAt,
@@ -5959,18 +6082,6 @@ class $MeasurableTypesTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $MeasurableTypesProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    MeasurableTypes,
-    MeasurableDbEntity,
-    $MeasurableTypesFilterComposer,
-    $MeasurableTypesOrderingComposer,
-    $MeasurableTypesProcessedTableManager,
-    $MeasurableTypesInsertCompanionBuilder,
-    $MeasurableTypesUpdateCompanionBuilder> {
-  $MeasurableTypesProcessedTableManager(super.$state);
 }
 
 class $MeasurableTypesFilterComposer
@@ -6071,7 +6182,7 @@ class $MeasurableTypesOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $HabitDefinitionsInsertCompanionBuilder = HabitDefinitionsCompanion
+typedef $HabitDefinitionsCreateCompanionBuilder = HabitDefinitionsCompanion
     Function({
   required String id,
   required String name,
@@ -6102,8 +6213,7 @@ class $HabitDefinitionsTableManager extends RootTableManager<
     HabitDefinitionDbEntity,
     $HabitDefinitionsFilterComposer,
     $HabitDefinitionsOrderingComposer,
-    $HabitDefinitionsProcessedTableManager,
-    $HabitDefinitionsInsertCompanionBuilder,
+    $HabitDefinitionsCreateCompanionBuilder,
     $HabitDefinitionsUpdateCompanionBuilder> {
   $HabitDefinitionsTableManager(_$JournalDb db, HabitDefinitions table)
       : super(TableManagerState(
@@ -6113,9 +6223,7 @@ class $HabitDefinitionsTableManager extends RootTableManager<
               $HabitDefinitionsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $HabitDefinitionsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) =>
-              $HabitDefinitionsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -6137,7 +6245,7 @@ class $HabitDefinitionsTableManager extends RootTableManager<
             active: active,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String name,
             required DateTime createdAt,
@@ -6160,18 +6268,6 @@ class $HabitDefinitionsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $HabitDefinitionsProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    HabitDefinitions,
-    HabitDefinitionDbEntity,
-    $HabitDefinitionsFilterComposer,
-    $HabitDefinitionsOrderingComposer,
-    $HabitDefinitionsProcessedTableManager,
-    $HabitDefinitionsInsertCompanionBuilder,
-    $HabitDefinitionsUpdateCompanionBuilder> {
-  $HabitDefinitionsProcessedTableManager(super.$state);
 }
 
 class $HabitDefinitionsFilterComposer
@@ -6262,7 +6358,7 @@ class $HabitDefinitionsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $CategoryDefinitionsInsertCompanionBuilder
+typedef $CategoryDefinitionsCreateCompanionBuilder
     = CategoryDefinitionsCompanion Function({
   required String id,
   required String name,
@@ -6293,8 +6389,7 @@ class $CategoryDefinitionsTableManager extends RootTableManager<
     CategoryDefinitionDbEntity,
     $CategoryDefinitionsFilterComposer,
     $CategoryDefinitionsOrderingComposer,
-    $CategoryDefinitionsProcessedTableManager,
-    $CategoryDefinitionsInsertCompanionBuilder,
+    $CategoryDefinitionsCreateCompanionBuilder,
     $CategoryDefinitionsUpdateCompanionBuilder> {
   $CategoryDefinitionsTableManager(_$JournalDb db, CategoryDefinitions table)
       : super(TableManagerState(
@@ -6304,9 +6399,7 @@ class $CategoryDefinitionsTableManager extends RootTableManager<
               $CategoryDefinitionsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $CategoryDefinitionsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) =>
-              $CategoryDefinitionsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -6328,7 +6421,7 @@ class $CategoryDefinitionsTableManager extends RootTableManager<
             active: active,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String name,
             required DateTime createdAt,
@@ -6351,18 +6444,6 @@ class $CategoryDefinitionsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $CategoryDefinitionsProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    CategoryDefinitions,
-    CategoryDefinitionDbEntity,
-    $CategoryDefinitionsFilterComposer,
-    $CategoryDefinitionsOrderingComposer,
-    $CategoryDefinitionsProcessedTableManager,
-    $CategoryDefinitionsInsertCompanionBuilder,
-    $CategoryDefinitionsUpdateCompanionBuilder> {
-  $CategoryDefinitionsProcessedTableManager(super.$state);
 }
 
 class $CategoryDefinitionsFilterComposer
@@ -6453,7 +6534,7 @@ class $CategoryDefinitionsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $DashboardDefinitionsInsertCompanionBuilder
+typedef $DashboardDefinitionsCreateCompanionBuilder
     = DashboardDefinitionsCompanion Function({
   required String id,
   required String name,
@@ -6486,8 +6567,7 @@ class $DashboardDefinitionsTableManager extends RootTableManager<
     DashboardDefinitionDbEntity,
     $DashboardDefinitionsFilterComposer,
     $DashboardDefinitionsOrderingComposer,
-    $DashboardDefinitionsProcessedTableManager,
-    $DashboardDefinitionsInsertCompanionBuilder,
+    $DashboardDefinitionsCreateCompanionBuilder,
     $DashboardDefinitionsUpdateCompanionBuilder> {
   $DashboardDefinitionsTableManager(_$JournalDb db, DashboardDefinitions table)
       : super(TableManagerState(
@@ -6497,9 +6577,7 @@ class $DashboardDefinitionsTableManager extends RootTableManager<
               $DashboardDefinitionsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $DashboardDefinitionsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) =>
-              $DashboardDefinitionsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -6523,7 +6601,7 @@ class $DashboardDefinitionsTableManager extends RootTableManager<
             active: active,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String name,
             required DateTime createdAt,
@@ -6548,18 +6626,6 @@ class $DashboardDefinitionsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $DashboardDefinitionsProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    DashboardDefinitions,
-    DashboardDefinitionDbEntity,
-    $DashboardDefinitionsFilterComposer,
-    $DashboardDefinitionsOrderingComposer,
-    $DashboardDefinitionsProcessedTableManager,
-    $DashboardDefinitionsInsertCompanionBuilder,
-    $DashboardDefinitionsUpdateCompanionBuilder> {
-  $DashboardDefinitionsProcessedTableManager(super.$state);
 }
 
 class $DashboardDefinitionsFilterComposer
@@ -6660,7 +6726,7 @@ class $DashboardDefinitionsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $ConfigFlagsInsertCompanionBuilder = ConfigFlagsCompanion Function({
+typedef $ConfigFlagsCreateCompanionBuilder = ConfigFlagsCompanion Function({
   required String name,
   required String description,
   Value<bool> status,
@@ -6679,8 +6745,7 @@ class $ConfigFlagsTableManager extends RootTableManager<
     ConfigFlag,
     $ConfigFlagsFilterComposer,
     $ConfigFlagsOrderingComposer,
-    $ConfigFlagsProcessedTableManager,
-    $ConfigFlagsInsertCompanionBuilder,
+    $ConfigFlagsCreateCompanionBuilder,
     $ConfigFlagsUpdateCompanionBuilder> {
   $ConfigFlagsTableManager(_$JournalDb db, ConfigFlags table)
       : super(TableManagerState(
@@ -6690,8 +6755,7 @@ class $ConfigFlagsTableManager extends RootTableManager<
               $ConfigFlagsFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $ConfigFlagsOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $ConfigFlagsProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> name = const Value.absent(),
             Value<String> description = const Value.absent(),
             Value<bool> status = const Value.absent(),
@@ -6703,7 +6767,7 @@ class $ConfigFlagsTableManager extends RootTableManager<
             status: status,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String name,
             required String description,
             Value<bool> status = const Value.absent(),
@@ -6716,18 +6780,6 @@ class $ConfigFlagsTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $ConfigFlagsProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    ConfigFlags,
-    ConfigFlag,
-    $ConfigFlagsFilterComposer,
-    $ConfigFlagsOrderingComposer,
-    $ConfigFlagsProcessedTableManager,
-    $ConfigFlagsInsertCompanionBuilder,
-    $ConfigFlagsUpdateCompanionBuilder> {
-  $ConfigFlagsProcessedTableManager(super.$state);
 }
 
 class $ConfigFlagsFilterComposer
@@ -6768,7 +6820,7 @@ class $ConfigFlagsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $TagEntitiesInsertCompanionBuilder = TagEntitiesCompanion Function({
+typedef $TagEntitiesCreateCompanionBuilder = TagEntitiesCompanion Function({
   required String id,
   required String tag,
   required String type,
@@ -6799,8 +6851,7 @@ class $TagEntitiesTableManager extends RootTableManager<
     TagDbEntity,
     $TagEntitiesFilterComposer,
     $TagEntitiesOrderingComposer,
-    $TagEntitiesProcessedTableManager,
-    $TagEntitiesInsertCompanionBuilder,
+    $TagEntitiesCreateCompanionBuilder,
     $TagEntitiesUpdateCompanionBuilder> {
   $TagEntitiesTableManager(_$JournalDb db, TagEntities table)
       : super(TableManagerState(
@@ -6810,8 +6861,7 @@ class $TagEntitiesTableManager extends RootTableManager<
               $TagEntitiesFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $TagEntitiesOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $TagEntitiesProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> tag = const Value.absent(),
             Value<String> type = const Value.absent(),
@@ -6835,7 +6885,7 @@ class $TagEntitiesTableManager extends RootTableManager<
             serialized: serialized,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String tag,
             required String type,
@@ -6860,18 +6910,6 @@ class $TagEntitiesTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $TagEntitiesProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    TagEntities,
-    TagDbEntity,
-    $TagEntitiesFilterComposer,
-    $TagEntitiesOrderingComposer,
-    $TagEntitiesProcessedTableManager,
-    $TagEntitiesInsertCompanionBuilder,
-    $TagEntitiesUpdateCompanionBuilder> {
-  $TagEntitiesProcessedTableManager(super.$state);
 }
 
 class $TagEntitiesFilterComposer
@@ -6972,7 +7010,7 @@ class $TagEntitiesOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $TaggedInsertCompanionBuilder = TaggedCompanion Function({
+typedef $TaggedCreateCompanionBuilder = TaggedCompanion Function({
   required String id,
   required String journalId,
   required String tagEntityId,
@@ -6991,8 +7029,7 @@ class $TaggedTableManager extends RootTableManager<
     TaggedWith,
     $TaggedFilterComposer,
     $TaggedOrderingComposer,
-    $TaggedProcessedTableManager,
-    $TaggedInsertCompanionBuilder,
+    $TaggedCreateCompanionBuilder,
     $TaggedUpdateCompanionBuilder> {
   $TaggedTableManager(_$JournalDb db, Tagged table)
       : super(TableManagerState(
@@ -7000,8 +7037,7 @@ class $TaggedTableManager extends RootTableManager<
           table: table,
           filteringComposer: $TaggedFilterComposer(ComposerState(db, table)),
           orderingComposer: $TaggedOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $TaggedProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> journalId = const Value.absent(),
             Value<String> tagEntityId = const Value.absent(),
@@ -7013,7 +7049,7 @@ class $TaggedTableManager extends RootTableManager<
             tagEntityId: tagEntityId,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String journalId,
             required String tagEntityId,
@@ -7026,18 +7062,6 @@ class $TaggedTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $TaggedProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    Tagged,
-    TaggedWith,
-    $TaggedFilterComposer,
-    $TaggedOrderingComposer,
-    $TaggedProcessedTableManager,
-    $TaggedInsertCompanionBuilder,
-    $TaggedUpdateCompanionBuilder> {
-  $TaggedProcessedTableManager(super.$state);
 }
 
 class $TaggedFilterComposer extends FilterComposer<_$JournalDb, Tagged> {
@@ -7076,7 +7100,7 @@ class $TaggedOrderingComposer extends OrderingComposer<_$JournalDb, Tagged> {
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-typedef $LinkedEntriesInsertCompanionBuilder = LinkedEntriesCompanion Function({
+typedef $LinkedEntriesCreateCompanionBuilder = LinkedEntriesCompanion Function({
   required String id,
   required String fromId,
   required String toId,
@@ -7099,8 +7123,7 @@ class $LinkedEntriesTableManager extends RootTableManager<
     LinkedDbEntry,
     $LinkedEntriesFilterComposer,
     $LinkedEntriesOrderingComposer,
-    $LinkedEntriesProcessedTableManager,
-    $LinkedEntriesInsertCompanionBuilder,
+    $LinkedEntriesCreateCompanionBuilder,
     $LinkedEntriesUpdateCompanionBuilder> {
   $LinkedEntriesTableManager(_$JournalDb db, LinkedEntries table)
       : super(TableManagerState(
@@ -7110,8 +7133,7 @@ class $LinkedEntriesTableManager extends RootTableManager<
               $LinkedEntriesFilterComposer(ComposerState(db, table)),
           orderingComposer:
               $LinkedEntriesOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) => $LinkedEntriesProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> fromId = const Value.absent(),
             Value<String> toId = const Value.absent(),
@@ -7127,7 +7149,7 @@ class $LinkedEntriesTableManager extends RootTableManager<
             serialized: serialized,
             rowid: rowid,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             required String id,
             required String fromId,
             required String toId,
@@ -7144,18 +7166,6 @@ class $LinkedEntriesTableManager extends RootTableManager<
             rowid: rowid,
           ),
         ));
-}
-
-class $LinkedEntriesProcessedTableManager extends ProcessedTableManager<
-    _$JournalDb,
-    LinkedEntries,
-    LinkedDbEntry,
-    $LinkedEntriesFilterComposer,
-    $LinkedEntriesOrderingComposer,
-    $LinkedEntriesProcessedTableManager,
-    $LinkedEntriesInsertCompanionBuilder,
-    $LinkedEntriesUpdateCompanionBuilder> {
-  $LinkedEntriesProcessedTableManager(super.$state);
 }
 
 class $LinkedEntriesFilterComposer
@@ -7216,9 +7226,9 @@ class $LinkedEntriesOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class _$JournalDbManager {
+class $JournalDbManager {
   final _$JournalDb _db;
-  _$JournalDbManager(this._db);
+  $JournalDbManager(this._db);
   $JournalTableManager get journal => $JournalTableManager(_db, _db.journal);
   $ConflictsTableManager get conflicts =>
       $ConflictsTableManager(_db, _db.conflicts);
