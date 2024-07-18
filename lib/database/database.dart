@@ -233,6 +233,13 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
+  Future<List<JournalEntity>> getJournalEntitiesForIds(
+    Set<String> ids,
+  ) async {
+    final res = await entriesForIds(ids.toList()).get();
+    return res.map(fromDbEntity).toList();
+  }
+
   Future<List<String>> getJournalEntityIds({
     required List<String> types,
     required List<bool> starredStatuses,
@@ -841,6 +848,10 @@ class JournalDb extends _$JournalDb {
 
   Future<List<String>> linksForEntryId(String entryId) {
     return linkedEntriesFor(entryId).get();
+  }
+
+  Future<List<LinkedDbEntry>> linksForEntryIds(Set<String> ids) async {
+    return linksForIds(ids.toList()).get();
   }
 
   Future<int> upsertEntryLink(EntryLink link) async {
