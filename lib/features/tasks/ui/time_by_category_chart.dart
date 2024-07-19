@@ -10,6 +10,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class TimeByCategoryChart extends ConsumerWidget {
   const TimeByCategoryChart({super.key});
@@ -17,6 +18,7 @@ class TimeByCategoryChart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(timeByDayChartProvider).value;
+    final provider = timeFrameControllerProvider;
 
     final textStyle = TextStyle(
       color: secondaryTextColor,
@@ -24,11 +26,20 @@ class TimeByCategoryChart extends ConsumerWidget {
       fontWeight: FontWeight.w300,
     );
 
+    final timeSpanDays = ref.watch(provider);
+    final onValueChanged = ref.read(provider.notifier).onValueChanged;
+
     return Column(
       children: [
         const SizedBox(height: 50),
         const Divider(),
         Text('Time by category:', style: searchLabelStyle()),
+        const SizedBox(height: 20),
+        TimeSpanSegmentedControl(
+          timeSpanDays: timeSpanDays,
+          onValueChanged: onValueChanged,
+          segments: const [14, 30, 90],
+        ),
         if (data != null && data.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 10),

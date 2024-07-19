@@ -24,7 +24,7 @@ final timeByDayChartProvider =
 typedef TimeByDayChartRef
     = AutoDisposeFutureProviderRef<List<TimeByDayAndCategory>>;
 String _$timeByCategoryControllerHash() =>
-    r'76b4fd2aaa6092f2143fb3c7cb49a1346ada169a';
+    r'ba912ec1782d9387e281e58f771ac1803f615e5d';
 
 /// See also [TimeByCategoryController].
 @ProviderFor(TimeByCategoryController)
@@ -42,5 +42,22 @@ final timeByCategoryControllerProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$TimeByCategoryController = AutoDisposeAsyncNotifier<
     Map<DateTime, Map<CategoryDefinition?, Duration>>>;
+String _$timeFrameControllerHash() =>
+    r'b80408b62af6b80fe8675e47d9ce95cb14d6a521';
+
+/// See also [TimeFrameController].
+@ProviderFor(TimeFrameController)
+final timeFrameControllerProvider =
+    AutoDisposeNotifierProvider<TimeFrameController, int>.internal(
+  TimeFrameController.new,
+  name: r'timeFrameControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$timeFrameControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$TimeFrameController = AutoDisposeNotifier<int>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
