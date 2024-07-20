@@ -43,14 +43,21 @@ class TimeByCategoryChart extends ConsumerWidget {
         if (data != null && data.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 10),
-            height: 160,
+            height: 200,
             child: Chart(
               data: data,
               key: Key('${data.hashCode}'),
               variables: {
                 'date': Variable(
-                  accessor: (TimeByDayAndCategory item) => item.date.ymd,
-                  scale: OrdinalScale(),
+                  accessor: (TimeByDayAndCategory item) => item.date,
+                  scale: TimeScale(
+                    tickCount: 5,
+                    min: DateTime.now()
+                        .subtract(Duration(days: timeSpanDays))
+                        .dayAtNoon,
+                    max: DateTime.now().dayAtNoon,
+                    formatter: (DateTime dt) => dt.md,
+                  ),
                 ),
                 'value': Variable(
                   accessor: (TimeByDayAndCategory item) =>
@@ -133,6 +140,9 @@ class TimeByCategoryChart extends ConsumerWidget {
                 },
               ),
               crosshair: CrosshairGuide(followPointer: [true, true]),
+              axes: [
+                Defaults.horizontalAxis,
+              ],
             ),
           ),
       ],
