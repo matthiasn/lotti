@@ -1,44 +1,55 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphic/graphic.dart';
 import 'package:lotti/features/tasks/state/time_by_category_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
-class TimeByCategoryChart extends ConsumerWidget {
+class TimeByCategoryChart extends ConsumerStatefulWidget {
   const TimeByCategoryChart({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimeByCategoryChart> createState() => _TimeByCategoryChart();
+}
+
+class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
+  Map<int, Map<String, dynamic>> selectedData = {};
+
+  void _onSelectedDataChanged(Map<int, Map<String, dynamic>> data) {
+    setState(() => selectedData = data);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final data = ref.watch(timeByDayChartProvider).value;
     final provider = timeFrameControllerProvider;
-
-    final textStyle = TextStyle(
-      color: secondaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w300,
-    );
 
     final timeSpanDays = ref.watch(provider);
     final onValueChanged = ref.read(provider.notifier).onValueChanged;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 50),
         const Divider(),
-        Text('Time by category:', style: searchLabelStyle()),
-        const SizedBox(height: 20),
-        TimeSpanSegmentedControl(
-          timeSpanDays: timeSpanDays,
-          onValueChanged: onValueChanged,
-          segments: const [14, 30, 90],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Time by category', style: chartTitleStyle),
+            const SizedBox(height: 20),
+            Center(
+              child: TimeSpanSegmentedControl(
+                timeSpanDays: timeSpanDays,
+                onValueChanged: onValueChanged,
+                segments: const [14, 30, 90],
+              ),
+            ),
+          ],
         ),
         if (data != null && data.isNotEmpty)
           Container(
@@ -115,36 +126,64 @@ class TimeByCategoryChart extends ConsumerWidget {
               tooltip: TooltipGuide(
                 followPointer: [false, true],
                 renderer: (size, offset, data) {
-                  return <MarkElement>[
-                    LabelElement(
-                      text: '${data.values.first['date']}',
-                      anchor: offset,
-                      style: LabelStyle(
-                        textStyle: textStyle.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    ...data.values
-                        .where((e) => e['value'] != 0)
-                        .mapIndexed((i, e) {
-                      return LabelElement(
-                        text: '${e['name']} - ${e['formattedValue']}',
-                        anchor: offset + Offset(0, (i + 1) * 16),
-                        style: LabelStyle(
-                          textStyle: textStyle,
-                        ),
-                      );
-                    }),
-                  ];
+                  _onSelectedDataChanged(data);
+                  return <MarkElement>[];
                 },
               ),
-              crosshair: CrosshairGuide(followPointer: [true, true]),
-              axes: [
-                Defaults.horizontalAxis,
-              ],
+              crosshair: CrosshairGuide(
+                followPointer: [true, true],
+                styles: [
+                  PaintStyle(
+                    strokeColor: Theme.of(context).textTheme.bodySmall?.color,
+                    strokeWidth: 2,
+                  ),
+                  PaintStyle(strokeColor: Colors.transparent),
+                ],
+              ),
+              axes: [Defaults.horizontalAxis],
             ),
           ),
+        const SizedBox(height: 20),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 100),
+          child: Legend(selectedData: selectedData),
+        ),
+      ],
+    );
+  }
+}
+
+class Legend extends StatelessWidget {
+  const Legend({
+    required this.selectedData,
+    super.key,
+  });
+
+  final Map<int, Map<String, dynamic>> selectedData;
+
+  @override
+  Widget build(BuildContext context) {
+    if (selectedData.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final date = selectedData.values.first['date'] as DateTime;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          date.ymwd,
+          style: chartTitleStyle.copyWith(fontWeight: FontWeight.w400),
+        ),
+        ...selectedData.values.where((e) => e['value'] != 0).map((e) {
+          final name = e['name'] as String;
+          final formattedValue = e['formattedValue'] as String;
+          return Text(
+            '$name - $formattedValue',
+            style: chartTitleStyle,
+          );
+        }),
       ],
     );
   }

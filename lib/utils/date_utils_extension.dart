@@ -10,4 +10,6 @@ extension DateUtils on DateTime {
   String get ymd => toIso8601String().substring(0, 10);
 
   String get md => DateFormat(DateFormat.ABBR_MONTH_DAY).format(this);
+
+  String get ymwd => DateFormat(DateFormat.YEAR_MONTH_WEEKDAY_DAY).format(this);
 }
