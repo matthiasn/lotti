@@ -34,14 +34,24 @@ class InfiniteJournalPage extends StatelessWidget {
       create: (BuildContext context) => JournalPageCubit(showTasks: showTasks),
       child: Scaffold(
         floatingActionButton: showTasks
-            ? FloatingAddIcon(
-                createFn: () async {
-                  final task = await createTask();
-                  if (task != null) {
-                    getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
-                  }
+            ? BlocBuilder<JournalPageCubit, JournalPageState>(
+                builder: (context, snapshot) {
+                  return FloatingAddIcon(
+                    createFn: () async {
+                      final selectedCategoryIds = snapshot.selectedCategoryIds;
+                      final task = await createTask(
+                        categoryId: selectedCategoryIds.length == 1
+                            ? selectedCategoryIds.first
+                            : null,
+                      );
+                      if (task != null) {
+                        getIt<NavService>()
+                            .beamToNamed('/tasks/${task.meta.id}');
+                      }
+                    },
+                    semanticLabel: context.messages.addActionAddTask,
+                  );
                 },
-                semanticLabel: context.messages.addActionAddTask,
               )
             : RadialAddActionButtons(
                 radius: isMobile ? 180 : 120,
