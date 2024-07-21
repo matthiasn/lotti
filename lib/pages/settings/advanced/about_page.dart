@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/tasks/ui/time_by_category_chart.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
@@ -72,7 +71,6 @@ class _AboutPageState extends State<AboutPage> {
                 ),
                 const SizedBox(height: 10),
                 const TaskCounts(),
-                const TimeByCategoryChart(),
               ],
             ),
           ),
