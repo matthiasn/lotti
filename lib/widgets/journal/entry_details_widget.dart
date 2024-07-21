@@ -149,7 +149,10 @@ class EntryDetailsContent extends ConsumerWidget {
           survey: SurveySummary.new,
           quantitative: HealthSummary.new,
           measurement: MeasurementSummary.new,
-          task: TaskForm.new,
+          task: (task) => TaskForm(
+            task,
+            key: Key(task.meta.id),
+          ),
           event: EventForm.new,
           habitCompletion: (habit) => HabitSummary(
             habit,

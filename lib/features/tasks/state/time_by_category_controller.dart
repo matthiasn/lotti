@@ -30,18 +30,26 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   @override
   Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
     ref.onDispose(() => _updateSubscription?.cancel());
-    final data = await _fetch();
+    final timeSpanDays = ref.watch(timeFrameControllerProvider);
+    final data = await _fetch(timeSpanDays);
     return data;
   }
 
-  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> _fetch() async {
+  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> _fetch(
+    int timeSpanDays,
+  ) async {
     final now = DateTime.now();
     final db = getIt<JournalDb>();
     final data = <DateTime, Map<CategoryDefinition?, Duration>>{};
-    final start = now.subtract(const Duration(days: 30));
+    final start = now.dayAtMidnight.subtract(Duration(days: timeSpanDays));
+
+    getDaysAtNoon(timeSpanDays, now).forEach((day) {
+      data[day] = <CategoryDefinition?, Duration>{};
+    });
+
     final items = await db.sortedJournalEntities(
       rangeStart: start,
-      rangeEnd: now,
+      rangeEnd: now.add(const Duration(days: 1)).dayAtMidnight,
     );
     final itemIds = items.map((item) => item.meta.id).toSet();
     final links = await db.linksForEntryIds(itemIds);
@@ -87,7 +95,7 @@ class TimeByCategoryController extends _$TimeByCategoryController {
         final category =
             getIt<EntitiesCacheService>().getCategoryById(categoryId);
 
-        final noon = journalEntity.meta.dateFrom.noon;
+        final noon = journalEntity.meta.dateFrom.dayAtNoon;
         final dataByDay = data[noon] ?? <CategoryDefinition?, Duration>{};
         final timeByCategory = dataByDay[category] ?? Duration.zero;
         dataByDay[category] = timeByCategory + duration;
@@ -95,6 +103,21 @@ class TimeByCategoryController extends _$TimeByCategoryController {
       }
     }
     return data;
+  }
+}
+
+@riverpod
+class TimeFrameController extends _$TimeFrameController {
+  int _timeSpanDays = 30;
+
+  @override
+  int build() {
+    return _timeSpanDays;
+  }
+
+  void onValueChanged(int days) {
+    _timeSpanDays = days;
+    state = days;
   }
 }
 
@@ -146,4 +169,11 @@ List<TimeByDayAndCategory> _convertTimeByCategory(
   });
 
   return data.reversed.toList();
+}
+
+List<DateTime> getDaysAtNoon(int rangeDays, DateTime rangeEnd) {
+  return List<DateTime>.generate(rangeDays, (days) {
+    final day = rangeEnd.subtract(Duration(days: days));
+    return day.dayAtNoon;
+  });
 }
