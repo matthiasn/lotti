@@ -158,6 +158,10 @@ const chartTitleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
+final chartTitleStyleMonospace = chartTitleStyle.copyWith(
+  fontFeatures: [const FontFeature.tabularFigures()],
+);
+
 const habitTitleStyle = TextStyle(
   fontSize: fontSizeMediumLarge,
   fontWeight: FontWeight.w300,
