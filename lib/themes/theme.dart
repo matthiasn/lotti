@@ -158,6 +158,10 @@ const chartTitleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
+final chartTitleStyleMonospace = chartTitleStyle.copyWith(
+  fontFeatures: [const FontFeature.tabularFigures()],
+);
+
 const habitTitleStyle = TextStyle(
   fontSize: fontSizeMediumLarge,
   fontWeight: FontWeight.w300,
@@ -222,13 +226,21 @@ ThemeData withOverrides(ThemeData themeData) {
       style: ButtonStyle(
         alignment: Alignment.center,
         visualDensity: VisualDensity.compact,
+        textStyle: WidgetStateProperty.resolveWith(
+          (states) => const TextStyle(fontSize: fontSizeSmall),
+        ),
         side: WidgetStateProperty.resolveWith((states) {
           return BorderSide(
             color: themeData.colorScheme.tertiary,
           );
         }),
+        shape: WidgetStateProperty.resolveWith((states) {
+          return RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(inputBorderRadius),
+          );
+        }),
         padding: WidgetStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(horizontal: 6);
+          return const EdgeInsets.symmetric(horizontal: 5);
         }),
         enableFeedback: true,
       ),
