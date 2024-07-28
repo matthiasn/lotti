@@ -24,7 +24,7 @@ final timeByDayChartProvider =
 typedef TimeByDayChartRef
     = AutoDisposeFutureProviderRef<List<TimeByDayAndCategory>>;
 String _$timeByCategoryControllerHash() =>
-    r'ba912ec1782d9387e281e58f771ac1803f615e5d';
+    r'6e8bc9cb8a52da2c2d793880f74b6296f25dd2aa';
 
 /// See also [TimeByCategoryController].
 @ProviderFor(TimeByCategoryController)

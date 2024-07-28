@@ -25,6 +25,7 @@ dependencies:
   bloc: ^8.0.1
   bloc_test: ^9.0.1
   cached_network_image: ^3.2.0
+  calendar_view: ^1.2.0
   collection: ^1.18.0
   crypto: ^3.0.1
   dart_geohash: ^2.0.1
