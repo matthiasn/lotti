@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.488+2607
+version: 0.9.489+2609
 
 msix_config:
   display_name: LottiApp
@@ -25,6 +25,7 @@ dependencies:
   bloc: ^8.0.1
   bloc_test: ^9.0.1
   cached_network_image: ^3.2.0
+  calendar_view: ^1.2.0
   collection: ^1.18.0
   crypto: ^3.0.1
   dart_geohash: ^2.0.1
@@ -98,7 +99,7 @@ dependencies:
   jiffy: ^6.1.0
   json_annotation: ^4.8.1
   langchain: ^0.7.0
-  langchain_ollama: ^0.2.0
+  langchain_ollama: ^0.3.0
   latlong2: ^0.9.0
   location: ^7.0.0
   material_design_icons_flutter: ^7.0.7096
@@ -112,7 +113,7 @@ dependencies:
   media_kit_native_event_loop: ^1.0.3
   meta: ^1.12.0
   multi_select_flutter: ^4.0.0
-  ollama_dart: ^0.1.0
+  ollama_dart: ^0.2.0
   package_info_plus: ^8.0.0
   path: ^1.8.1
   path_provider: ^2.0.12
@@ -143,7 +144,7 @@ dependencies:
   week_of_year: ^2.0.0
   widgetbook: ^3.7.1
   window_manager: ^0.3.0
-  wolt_modal_sheet: ^0.7.0
+  wolt_modal_sheet: ^0.8.0
 
 dependency_overrides:
   device_info_plus: ^10.0.1

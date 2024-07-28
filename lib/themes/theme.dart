@@ -212,6 +212,13 @@ ThemeData withOverrides(ThemeData themeData) {
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
+    sliderTheme: themeData.sliderTheme.copyWith(
+      activeTrackColor: themeData.colorScheme.secondary,
+      inactiveTrackColor: themeData.colorScheme.secondary.withOpacity(0.7),
+      thumbColor: themeData.colorScheme.secondary,
+      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+      overlayColor: themeData.colorScheme.secondary.withOpacity(0.5),
+    ),
     bottomSheetTheme: const BottomSheetThemeData(
       clipBehavior: Clip.hardEdge,
       elevation: 100,
