@@ -4,6 +4,7 @@ import 'package:graphic/graphic.dart';
 import 'package:lotti/features/tasks/state/time_by_category_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -51,116 +52,122 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
             ),
           ),
           if (data != null && data.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 10),
-              height: 220,
-              child: TapRegion(
-                onTapOutside: (_) => setState(() {
-                  selectedData = {};
-                }),
-                child: Chart(
-                  data: data,
-                  key: Key('${data.hashCode}'),
-                  variables: {
-                    'date': Variable(
-                      accessor: (TimeByDayAndCategory item) => item.date,
-                      scale: TimeScale(
-                        tickCount: 5,
-                        min: DateTime.now()
-                            .subtract(Duration(days: timeSpanDays))
-                            .dayAtNoon,
-                        max: DateTime.now().dayAtNoon,
-                        formatter: (DateTime dt) => dt.md,
-                      ),
-                    ),
-                    'value': Variable(
-                      accessor: (TimeByDayAndCategory item) =>
-                          item.duration.inMinutes,
-                      scale: LinearScale(
-                        min: -600,
-                        max: 600,
-                      ),
-                    ),
-                    'formattedValue': Variable(
-                      accessor: (TimeByDayAndCategory item) =>
-                          formatHhMm(item.duration),
-                    ),
-                    'categoryId': Variable(
-                      accessor: (TimeByDayAndCategory item) => item.categoryId,
-                    ),
-                    'name': Variable(
-                      accessor: (TimeByDayAndCategory item) =>
-                          item.categoryDefinition?.name ?? 'unassigned',
-                    ),
-                  },
-                  marks: [
-                    AreaMark(
-                      position: Varset('date') *
-                          Varset('value') /
-                          Varset('categoryId'),
-                      shape: ShapeEncode(value: BasicAreaShape(smooth: true)),
-                      color: ColorEncode(
-                        encoder: (data) {
-                          final categoryId = data['categoryId'] as String;
-                          final categoryDefinition =
-                              getIt<EntitiesCacheService>()
-                                  .getCategoryById(categoryId);
-                          return colorFromCssHex(
-                            categoryDefinition?.color,
-                            substitute: Colors.grey,
-                          );
+            TapRegion(
+              onTapOutside: (_) => setState(() {
+                selectedData = {};
+              }),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    height: 220,
+                    child: Chart(
+                      data: data,
+                      key: Key('${data.hashCode}'),
+                      variables: {
+                        'date': Variable(
+                          accessor: (TimeByDayAndCategory item) => item.date,
+                          scale: TimeScale(
+                            tickCount: 5,
+                            min: DateTime.now()
+                                .subtract(Duration(days: timeSpanDays))
+                                .dayAtNoon,
+                            max: DateTime.now().dayAtNoon,
+                            formatter: (DateTime dt) => dt.md,
+                          ),
+                        ),
+                        'value': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              item.duration.inMinutes,
+                          scale: LinearScale(
+                            min: -600,
+                            max: 600,
+                          ),
+                        ),
+                        'formattedValue': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              formatHhMm(item.duration),
+                        ),
+                        'categoryId': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              item.categoryId,
+                        ),
+                        'name': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              item.categoryDefinition?.name ?? 'unassigned',
+                        ),
+                      },
+                      marks: [
+                        AreaMark(
+                          position: Varset('date') *
+                              Varset('value') /
+                              Varset('categoryId'),
+                          shape:
+                              ShapeEncode(value: BasicAreaShape(smooth: true)),
+                          color: ColorEncode(
+                            encoder: (data) {
+                              final categoryId = data['categoryId'] as String;
+                              final categoryDefinition =
+                                  getIt<EntitiesCacheService>()
+                                      .getCategoryById(categoryId);
+                              return colorFromCssHex(
+                                categoryDefinition?.color,
+                                substitute: Colors.grey,
+                              );
+                            },
+                          ),
+                          modifiers: [
+                            StackModifier(),
+                            SymmetricModifier(),
+                          ],
+                        ),
+                      ],
+                      selections: {
+                        'touchMove': PointSelection(
+                          on: {
+                            GestureType.scaleUpdate,
+                            GestureType.tapDown,
+                            GestureType.longPressMoveUpdate,
+                          },
+                          dim: Dim.x,
+                          variable: 'date',
+                        ),
+                      },
+                      tooltip: TooltipGuide(
+                        followPointer: [false, true],
+                        renderer: (size, offset, data) {
+                          _onSelectedDataChanged(data);
+                          return <MarkElement>[];
                         },
                       ),
-                      modifiers: [
-                        StackModifier(),
-                        SymmetricModifier(),
-                      ],
-                    ),
-                  ],
-                  selections: {
-                    'touchMove': PointSelection(
-                      on: {
-                        GestureType.scaleUpdate,
-                        GestureType.tapDown,
-                        GestureType.longPressMoveUpdate,
-                      },
-                      dim: Dim.x,
-                      variable: 'date',
-                    ),
-                  },
-                  tooltip: TooltipGuide(
-                    followPointer: [false, true],
-                    renderer: (size, offset, data) {
-                      _onSelectedDataChanged(data);
-                      return <MarkElement>[];
-                    },
-                  ),
-                  crosshair: CrosshairGuide(
-                    followPointer: [true, true],
-                    styles: [
-                      PaintStyle(
-                        strokeColor:
-                            Theme.of(context).textTheme.bodySmall?.color,
-                        strokeWidth: 2,
+                      crosshair: CrosshairGuide(
+                        followPointer: [true, true],
+                        styles: [
+                          PaintStyle(
+                            strokeColor:
+                                Theme.of(context).textTheme.bodySmall?.color,
+                            strokeWidth: 2,
+                          ),
+                          PaintStyle(strokeColor: Colors.transparent),
+                        ],
                       ),
-                      PaintStyle(strokeColor: Colors.transparent),
-                    ],
+                      axes: [Defaults.horizontalAxis],
+                    ),
                   ),
-                  axes: [Defaults.horizontalAxis],
-                ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Legend(
+                        selectedData: selectedData,
+                        key: Key(selectedData.hashCode.toString()),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 25),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Legend(
-                selectedData: selectedData,
-                key: Key(selectedData.hashCode.toString()),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -182,6 +189,10 @@ class Legend extends StatelessWidget {
     }
 
     final date = selectedData.values.first['date'] as DateTime;
+    void onTap() => beamToNamed(
+          '/tasks/calendar?ymd=${date.ymd}',
+          data: date,
+        );
     final nonEmptyValues = selectedData.values.where((e) => e['value'] != 0);
     var totalMinutes = 0;
 
@@ -204,6 +215,10 @@ class Legend extends StatelessWidget {
                 style: chartTitleStyleMonospace.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
+              ),
+              IconButton(
+                onPressed: onTap,
+                icon: const Icon(Icons.calendar_today),
               ),
               const Spacer(),
               Text(

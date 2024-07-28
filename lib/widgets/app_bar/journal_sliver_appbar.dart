@@ -167,7 +167,7 @@ class JournalFilterIcon extends StatelessWidget {
                 page1(modalSheetContext, textTheme),
               ];
             },
-            decorator: (child) {
+            modalDecorator: (child) {
               return MultiBlocProvider(
                 providers: [
                   BlocProvider.value(
