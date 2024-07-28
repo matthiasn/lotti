@@ -9,10 +9,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/sync/matrix/timeline.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 part 'day_view_controller.g.dart';
 
@@ -43,7 +45,7 @@ class DayViewController extends _$DayViewController {
   }
 
   Future<List<CalendarEventData<JournalEntity>>> _fetch({
-    int timeSpanDays = 90,
+    int timeSpanDays = 30,
   }) async {
     final now = DateTime.now();
     final db = getIt<JournalDb>();
@@ -90,12 +92,8 @@ class DayViewController extends _$DayViewController {
           return linkedEntries[id];
         }).whereNotNull();
 
-        final categoryId = linkedTo
-            .map((item) {
-              return item.meta.categoryId;
-            })
-            .whereNotNull()
-            .firstOrNull;
+        final linkedEntry = linkedTo.firstOrNull;
+        final categoryId = linkedEntry?.meta.categoryId;
 
         final category =
             getIt<EntitiesCacheService>().getCategoryById(categoryId);
@@ -110,6 +108,16 @@ class DayViewController extends _$DayViewController {
         final endTime =
             dateTo.day != startTime.day ? startTime.endOfDay : dateTo;
 
+        final title = switch (linkedEntry) {
+          Task() => linkedEntry.data.title,
+          JournalEvent() => linkedEntry.data.title,
+          _ => '',
+        };
+
+        final categoryName = category?.name;
+        final categoryPrefix = categoryName != null ? '$categoryName - ' : '';
+        final titleWithCategory = '$categoryPrefix$title';
+
         data.add(
           CalendarEventData<JournalEntity>(
             event: journalEntity,
@@ -117,7 +125,15 @@ class DayViewController extends _$DayViewController {
             startTime: startTime,
             endTime: endTime,
             color: color,
-            title: category?.name ?? 'unassigned',
+            title: titleWithCategory,
+            titleStyle: TextStyle(
+              fontSize: fontSizeMedium,
+              color: color.isDark ? Colors.white : Colors.black,
+            ),
+            descriptionStyle: TextStyle(
+              fontSize: fontSizeSmall,
+              color: color.isDark ? Colors.white : Colors.black,
+            ),
             description: journalEntity.entryText?.plainText.truncate(100),
           ),
         );
