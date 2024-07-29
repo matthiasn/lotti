@@ -12,10 +12,12 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 class DayViewPage extends ConsumerStatefulWidget {
   const DayViewPage({
     required this.initialDayYmd,
+    required this.timeSpanDays,
     super.key,
   });
 
   final String initialDayYmd;
+  final int timeSpanDays;
 
   @override
   DayViewPageState createState() => DayViewPageState();
