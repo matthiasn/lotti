@@ -552,7 +552,7 @@ SELECT * FROM journal
 
 linksForIds:
 SELECT * FROM linked_entries
-  WHERE from_id IN :from_ids;
+  WHERE to_id IN :to_ids;
 
 entriesForIds:
 SELECT * FROM journal
