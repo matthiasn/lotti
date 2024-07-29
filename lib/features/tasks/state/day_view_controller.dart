@@ -86,7 +86,9 @@ class DayViewController extends _$DayViewController {
       final duration = entryDuration(journalEntity);
 
       if (duration.inSeconds > 60 &&
-          (journalEntity is JournalEntry || journalEntity is JournalAudio)) {
+          (journalEntity is JournalEntry ||
+              journalEntity is JournalAudio ||
+              journalEntity is WorkoutEntry)) {
         final linkedTo = entryIdFromLinkedIds[journalEntity.meta.id]
             ?.map((id) => linkedEntries[id])
             .whereNotNull();
@@ -98,7 +100,7 @@ class DayViewController extends _$DayViewController {
             getIt<EntitiesCacheService>().getCategoryById(categoryId);
 
         final color = colorFromCssHex(
-          category?.color,
+          journalEntity is WorkoutEntry ? '#A8CD66' : category?.color,
           substitute: Colors.grey,
         );
 
@@ -107,15 +109,24 @@ class DayViewController extends _$DayViewController {
         final endTime =
             dateTo.day != startTime.day ? startTime.endOfDay : dateTo;
 
-        final title = switch (linkedEntry) {
-          Task() => linkedEntry.data.title,
-          JournalEvent() => linkedEntry.data.title,
-          _ => '',
-        };
+        final title = journalEntity is WorkoutEntry
+            ? journalEntity.data.workoutType
+            : switch (linkedEntry) {
+                Task() => linkedEntry.data.title,
+                JournalEvent() => linkedEntry.data.title,
+                _ => '',
+              };
 
         final categoryName = category?.name;
         final categoryPrefix = categoryName != null ? '$categoryName - ' : '';
         final titleWithCategory = '$categoryPrefix$title';
+
+        final description = journalEntity is WorkoutEntry
+            ? entryTextForWorkout(
+                journalEntity.data,
+                includeTitle: false,
+              )
+            : journalEntity.entryText?.plainText.truncate(100);
 
         data.add(
           CalendarEventData<JournalEntity>(
@@ -133,7 +144,7 @@ class DayViewController extends _$DayViewController {
               fontSize: fontSizeSmall,
               color: color.isDark ? Colors.white : Colors.black,
             ),
-            description: journalEntity.entryText?.plainText.truncate(100),
+            description: description,
           ),
         );
       }
