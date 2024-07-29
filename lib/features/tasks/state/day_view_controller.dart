@@ -45,7 +45,7 @@ class DayViewController extends _$DayViewController {
   }
 
   Future<List<CalendarEventData<JournalEntity>>> _fetch({
-    int timeSpanDays = 30,
+    int timeSpanDays = 90,
   }) async {
     final now = DateTime.now();
     final db = getIt<JournalDb>();
@@ -65,13 +65,14 @@ class DayViewController extends _$DayViewController {
     for (final link in links) {
       final fromId = link.fromId;
       final toId = link.toId;
-      final prev = entryIdFromLinkedIds[toId] ?? <String>{}
-        ..add(fromId);
-      entryIdFromLinkedIds[toId] = prev;
+      entryIdFromLinkedIds[toId] = {
+        fromId,
+        ...?entryIdFromLinkedIds[toId],
+      };
     }
 
-    entryIdFromLinkedIds.forEach((fromId, toIds) {
-      linkedIds.addAll(toIds);
+    entryIdFromLinkedIds.forEach((toId, fromIds) {
+      linkedIds.addAll(fromIds);
     });
 
     final entriesForIds = await db.getJournalEntitiesForIds(linkedIds);
@@ -86,13 +87,11 @@ class DayViewController extends _$DayViewController {
 
       if (duration.inSeconds > 60 &&
           (journalEntity is JournalEntry || journalEntity is JournalAudio)) {
-        final linkedTo =
-            (entryIdFromLinkedIds[journalEntity.meta.id] ?? <String>{})
-                .map((id) {
-          return linkedEntries[id];
-        }).whereNotNull();
+        final linkedTo = entryIdFromLinkedIds[journalEntity.meta.id]
+            ?.map((id) => linkedEntries[id])
+            .whereNotNull();
 
-        final linkedEntry = linkedTo.firstOrNull;
+        final linkedEntry = linkedTo?.firstOrNull;
         final categoryId = linkedEntry?.meta.categoryId;
 
         final category =

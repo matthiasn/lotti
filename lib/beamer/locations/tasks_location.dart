@@ -24,6 +24,7 @@ class TasksLocation extends BeamLocation<BeamState> {
     final entryId = state.pathParameters['entryId'];
     final linkedId = state.pathParameters['linkedId'];
     final ymd = state.queryParameters['ymd'];
+    final timeSpanDays = state.queryParameters['timeSpanDays'];
 
     return [
       const BeamPage(
@@ -46,6 +47,7 @@ class TasksLocation extends BeamLocation<BeamState> {
           key: const ValueKey('calendar_page'),
           child: DayViewPage(
             initialDayYmd: '$ymd',
+            timeSpanDays: int.tryParse(timeSpanDays ?? '30') ?? 30,
           ),
         ),
     ];
