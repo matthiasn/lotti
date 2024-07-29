@@ -80,10 +80,13 @@ String entryTextForQuant(QuantitativeEntry qe) {
   );
 }
 
-String entryTextForWorkout(WorkoutData data) {
+String entryTextForWorkout(
+  WorkoutData data, {
+  bool includeTitle = true,
+}) {
   final duration = data.dateTo.difference(data.dateFrom);
-
-  return '${data.workoutType}\n'
+  final title = includeTitle ? '${data.workoutType}\n' : '';
+  return '$title'
       'energy: ${nf.format(data.energy)} kcal\n'
       'duration: ${duration.inMinutes} minutes';
 }
