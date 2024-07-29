@@ -5367,14 +5367,14 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<LinkedDbEntry> linksForIds(List<String> fromIds) {
+  Selectable<LinkedDbEntry> linksForIds(List<String> toIds) {
     var $arrayStartIndex = 1;
-    final expandedfromIds = $expandVar($arrayStartIndex, fromIds.length);
-    $arrayStartIndex += fromIds.length;
+    final expandedtoIds = $expandVar($arrayStartIndex, toIds.length);
+    $arrayStartIndex += toIds.length;
     return customSelect(
-        'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds)',
+        'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds)',
         variables: [
-          for (var $ in fromIds) Variable<String>($)
+          for (var $ in toIds) Variable<String>($)
         ],
         readsFrom: {
           linkedEntries,

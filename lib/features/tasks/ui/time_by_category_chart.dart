@@ -189,10 +189,7 @@ class Legend extends StatelessWidget {
     }
 
     final date = selectedData.values.first['date'] as DateTime;
-    void onTap() => beamToNamed(
-          '/tasks/calendar?ymd=${date.ymd}',
-          data: date,
-        );
+    void onTap() => beamToNamed('/tasks/calendar?ymd=${date.ymd}');
     final nonEmptyValues = selectedData.values.where((e) => e['value'] != 0);
     var totalMinutes = 0;
 
