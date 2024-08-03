@@ -84,6 +84,7 @@ _$AudioDataImpl _$$AudioDataImplFromJson(Map<String, dynamic> json) =>
       duration: Duration(microseconds: (json['duration'] as num).toInt()),
       autoTranscribeWasActive:
           json['autoTranscribeWasActive'] as bool? ?? false,
+      language: json['language'] as String?,
       transcripts: (json['transcripts'] as List<dynamic>?)
           ?.map((e) => AudioTranscript.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -97,6 +98,7 @@ Map<String, dynamic> _$$AudioDataImplToJson(_$AudioDataImpl instance) =>
       'audioDirectory': instance.audioDirectory,
       'duration': instance.duration.inMicroseconds,
       'autoTranscribeWasActive': instance.autoTranscribeWasActive,
+      'language': instance.language,
       'transcripts': instance.transcripts,
     };
 

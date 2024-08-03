@@ -5,7 +5,7 @@ import WhisperKit
 public class WhisperKitRunner: NSObject, FlutterStreamHandler {
     let transcriptionChannelName = "lotti/transcribe"
     let transcriptionProgressChannelName = "lotti/transcribe-progress"
-    let model = "small"
+    let model = "large-v3"
     
     private var eventSink: FlutterEventSink?
     private let transcriptionChannel: FlutterMethodChannel
@@ -28,13 +28,15 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
                 let audioFilePath = args["audioFilePath"] as! String
-
+                let language = args["language"] as! String
+                let detectLanguage = language.isEmpty
+                
                 if (self.whisperKit == nil) {
                     if (self.eventSink != nil) {
                         self.eventSink!(["Initializing model...", ""])
                     }
                 }
-
+                
                 Task {
                     if (self.whisperKit == nil) {
                         self.whisperKit = try? await WhisperKit(model: self.model,
@@ -46,16 +48,16 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         audioPath: audioFilePath,
                         decodeOptions: DecodingOptions(
                             task: DecodingTask.transcribe,
+                            language: detectLanguage ? nil : language,
                             usePrefillPrompt: false,
-                            detectLanguage: true
+                            detectLanguage: detectLanguage
                         ),
                         callback: self.sendTranscriptionProgressEvent
                     )
                     
                     let text : String? = transcription?.first?.text
-                    let language = transcription?.first?.language
-                    
-                    let data = [language, self.model, text]
+                    let detectedLanguage = transcription?.first?.language
+                    let data = [detectedLanguage, self.model, text]
                     result(data)
                 }
             default:

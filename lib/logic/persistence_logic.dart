@@ -410,6 +410,7 @@ class PersistenceLogic {
 
   Future<JournalAudio?> createAudioEntry(
     AudioNote audioNote, {
+    required String? language,
     String? linkedId,
   }) async {
     try {
@@ -424,6 +425,7 @@ class PersistenceLogic {
         dateTo: audioNote.createdAt.add(audioNote.duration),
         dateFrom: audioNote.createdAt,
         autoTranscribeWasActive: autoTranscribe,
+        language: language,
       );
 
       final now = DateTime.now();

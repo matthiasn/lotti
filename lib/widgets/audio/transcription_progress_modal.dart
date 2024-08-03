@@ -15,7 +15,6 @@ class TranscriptionProgressModalContent extends StatelessWidget {
     return StreamBuilder<(String, TranscriptionStatus)>(
       stream: asrService.progressController.stream,
       builder: (context, snapshot) {
-        debugPrint('$snapshot');
         final text = snapshot.data?.$1 ?? '';
         final status = snapshot.data?.$2;
         final hasError = status == TranscriptionStatus.error;
