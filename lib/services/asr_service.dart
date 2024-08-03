@@ -123,6 +123,7 @@ class AsrService {
           {
             'audioFilePath': wavPath,
             'modelPath': modelPath,
+            'language': entry.data.language ?? '',
           },
         );
         final finish = DateTime.now();

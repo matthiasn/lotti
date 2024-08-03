@@ -36,6 +36,7 @@ void main() {
         decibels: 80,
         progress: Duration.zero,
         showIndicator: false,
+        language: 'en',
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
@@ -79,6 +80,7 @@ void main() {
         decibels: 140,
         progress: Duration.zero,
         showIndicator: false,
+        language: 'en',
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
@@ -122,6 +124,7 @@ void main() {
         decibels: 110,
         progress: Duration.zero,
         showIndicator: false,
+        language: 'en',
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
@@ -165,6 +168,7 @@ void main() {
         decibels: 110,
         progress: Duration.zero,
         showIndicator: false,
+        language: 'en',
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
