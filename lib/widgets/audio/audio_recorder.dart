@@ -56,6 +56,10 @@ class AudioRecorderWidget extends ConsumerWidget {
           getIt<NavService>().beamBack();
         }
 
+        final textStyle = monospaceTextStyleLarge.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        );
+
         return VisibilityDetector(
           key: const Key('audio_Recorder'),
           onVisibilityChanged: (VisibilityInfo info) {
@@ -74,9 +78,7 @@ class AudioRecorderWidget extends ConsumerWidget {
                 padding: const EdgeInsets.all(30),
                 child: Text(
                   formatDuration(state.progress.toString()),
-                  style: monospaceTextStyleLarge.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  style: textStyle,
                 ),
               ),
               Row(
@@ -113,6 +115,49 @@ class AudioRecorderWidget extends ConsumerWidget {
                     iconSize: iconSize,
                     tooltip: 'Stop',
                     onPressed: stop,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.language,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(width: 20),
+                  DropdownButton(
+                    value: state.language,
+                    iconEnabledColor: Theme.of(context).colorScheme.outline,
+                    items: [
+                      DropdownMenuItem(
+                        value: '',
+                        child: Text(
+                          'auto',
+                          style: textStyle,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'en',
+                        child: Text(
+                          'English',
+                          style: textStyle,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'de',
+                        child: Text(
+                          'Deutsch',
+                          style: textStyle,
+                        ),
+                      ),
+                    ],
+                    onChanged: (String? value) {
+                      if (value != null) {
+                        cubit.setLanguage(value);
+                      }
+                    },
                   ),
                 ],
               ),

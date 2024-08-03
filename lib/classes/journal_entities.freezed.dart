@@ -728,6 +728,7 @@ mixin _$AudioData {
   String get audioDirectory => throw _privateConstructorUsedError;
   Duration get duration => throw _privateConstructorUsedError;
   bool get autoTranscribeWasActive => throw _privateConstructorUsedError;
+  String? get language => throw _privateConstructorUsedError;
   List<AudioTranscript>? get transcripts => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -748,6 +749,7 @@ abstract class $AudioDataCopyWith<$Res> {
       String audioDirectory,
       Duration duration,
       bool autoTranscribeWasActive,
+      String? language,
       List<AudioTranscript>? transcripts});
 }
 
@@ -770,6 +772,7 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
     Object? audioDirectory = null,
     Object? duration = null,
     Object? autoTranscribeWasActive = null,
+    Object? language = freezed,
     Object? transcripts = freezed,
   }) {
     return _then(_value.copyWith(
@@ -797,6 +800,10 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
           ? _value.autoTranscribeWasActive
           : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
               as bool,
+      language: freezed == language
+          ? _value.language
+          : language // ignore: cast_nullable_to_non_nullable
+              as String?,
       transcripts: freezed == transcripts
           ? _value.transcripts
           : transcripts // ignore: cast_nullable_to_non_nullable
@@ -820,6 +827,7 @@ abstract class _$$AudioDataImplCopyWith<$Res>
       String audioDirectory,
       Duration duration,
       bool autoTranscribeWasActive,
+      String? language,
       List<AudioTranscript>? transcripts});
 }
 
@@ -840,6 +848,7 @@ class __$$AudioDataImplCopyWithImpl<$Res>
     Object? audioDirectory = null,
     Object? duration = null,
     Object? autoTranscribeWasActive = null,
+    Object? language = freezed,
     Object? transcripts = freezed,
   }) {
     return _then(_$AudioDataImpl(
@@ -867,6 +876,10 @@ class __$$AudioDataImplCopyWithImpl<$Res>
           ? _value.autoTranscribeWasActive
           : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
               as bool,
+      language: freezed == language
+          ? _value.language
+          : language // ignore: cast_nullable_to_non_nullable
+              as String?,
       transcripts: freezed == transcripts
           ? _value._transcripts
           : transcripts // ignore: cast_nullable_to_non_nullable
@@ -885,6 +898,7 @@ class _$AudioDataImpl implements _AudioData {
       required this.audioDirectory,
       required this.duration,
       this.autoTranscribeWasActive = false,
+      this.language,
       final List<AudioTranscript>? transcripts})
       : _transcripts = transcripts;
 
@@ -904,6 +918,8 @@ class _$AudioDataImpl implements _AudioData {
   @override
   @JsonKey()
   final bool autoTranscribeWasActive;
+  @override
+  final String? language;
   final List<AudioTranscript>? _transcripts;
   @override
   List<AudioTranscript>? get transcripts {
@@ -916,7 +932,7 @@ class _$AudioDataImpl implements _AudioData {
 
   @override
   String toString() {
-    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, transcripts: $transcripts)';
+    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts)';
   }
 
   @override
@@ -936,6 +952,8 @@ class _$AudioDataImpl implements _AudioData {
             (identical(
                     other.autoTranscribeWasActive, autoTranscribeWasActive) ||
                 other.autoTranscribeWasActive == autoTranscribeWasActive) &&
+            (identical(other.language, language) ||
+                other.language == language) &&
             const DeepCollectionEquality()
                 .equals(other._transcripts, _transcripts));
   }
@@ -950,6 +968,7 @@ class _$AudioDataImpl implements _AudioData {
       audioDirectory,
       duration,
       autoTranscribeWasActive,
+      language,
       const DeepCollectionEquality().hash(_transcripts));
 
   @JsonKey(ignore: true)
@@ -974,6 +993,7 @@ abstract class _AudioData implements AudioData {
       required final String audioDirectory,
       required final Duration duration,
       final bool autoTranscribeWasActive,
+      final String? language,
       final List<AudioTranscript>? transcripts}) = _$AudioDataImpl;
 
   factory _AudioData.fromJson(Map<String, dynamic> json) =
@@ -991,6 +1011,8 @@ abstract class _AudioData implements AudioData {
   Duration get duration;
   @override
   bool get autoTranscribeWasActive;
+  @override
+  String? get language;
   @override
   List<AudioTranscript>? get transcripts;
   @override
