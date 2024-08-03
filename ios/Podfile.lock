@@ -61,7 +61,7 @@ PODS:
   - media_kit_native_event_loop (1.0.0):
     - Flutter
   - MTBBarcodeScanner (5.0.11)
-  - OpenSSL-Universal (3.1.6000)
+  - OpenSSL-Universal (3.2.2000)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -243,7 +243,7 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 8f39d96a9c630685dfb844c289bd1d114c486fb3
   media_kit_native_event_loop: 99111eded5acbdc9c2738021ea6550dd36ca8837
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
-  OpenSSL-Universal: f8ff60e85501991636ffc3d184078d7526a27ff7
+  OpenSSL-Universal: f8a9c4fdab7e21cb70bda471c269e86e9212439c
   package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
