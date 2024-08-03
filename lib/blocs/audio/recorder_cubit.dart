@@ -16,6 +16,7 @@ AudioRecorderState initialState = AudioRecorderState(
   decibels: 0,
   progress: Duration.zero,
   showIndicator: false,
+  language: '',
 );
 
 const intervalMs = 100;
@@ -41,6 +42,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   String? _linkedId;
+  String? _language;
   AudioNote? _audioNote;
 
   Future<void> record({
@@ -100,6 +102,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       if (_audioNote != null) {
         final journalAudio = await persistenceLogic.createAudioEntry(
           _audioNote!,
+          language: _language,
           linkedId: _linkedId,
         );
         _linkedId = null;
@@ -123,6 +126,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   Future<void> resume() async {
     await _audioRecorder.resume();
+  }
+
+  void setLanguage(String language) {
+    _language = language;
+    emit(state.copyWith(language: language));
   }
 
   void setIndicatorVisible({required bool showIndicator}) {

@@ -25,6 +25,7 @@ void main() {
         decibels: 80,
         progress: Duration.zero,
         showIndicator: true,
+        language: 'en',
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
