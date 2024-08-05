@@ -6,7 +6,6 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/tasks/ui/time_by_category_chart.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -89,10 +88,6 @@ class InfiniteJournalPageBody extends StatelessWidget {
             child: CustomScrollView(
               slivers: <Widget>[
                 const JournalSliverAppBar(),
-                if (showTasks)
-                  const SliverToBoxAdapter(
-                    child: CollapsibleTimeChart(),
-                  ),
                 PagedSliverList<int, JournalEntity>(
                   pagingController: snapshot.pagingController,
                   builderDelegate: PagedChildBuilderDelegate<JournalEntity>(

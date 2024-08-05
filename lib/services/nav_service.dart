@@ -23,6 +23,7 @@ class NavService {
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
   final BeamerDelegate journalDelegate = journalBeamerDelegate;
   final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
+  final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
 
   Future<void> restoreRoute() async {
