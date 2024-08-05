@@ -1,6 +1,5 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/tasks/ui/pages/day_view_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/infinite_journal_page.dart';
@@ -12,7 +11,6 @@ class TasksLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
         '/tasks',
-        '/tasks/calendar',
         '/tasks/:entryId',
         '/tasks/:entryId/record_audio/:linkedId',
       ];
@@ -23,8 +21,6 @@ class TasksLocation extends BeamLocation<BeamState> {
 
     final entryId = state.pathParameters['entryId'];
     final linkedId = state.pathParameters['linkedId'];
-    final ymd = state.queryParameters['ymd'];
-    final timeSpanDays = state.queryParameters['timeSpanDays'];
 
     return [
       const BeamPage(
@@ -41,14 +37,6 @@ class TasksLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: ValueKey('record_audio-$linkedId'),
           child: RecordAudioPage(linkedId: linkedId),
-        ),
-      if (pathContains('/calendar'))
-        BeamPage(
-          key: const ValueKey('calendar_page'),
-          child: DayViewPage(
-            initialDayYmd: '$ymd',
-            timeSpanDays: int.tryParse(timeSpanDays ?? '30') ?? 30,
-          ),
         ),
     ];
   }

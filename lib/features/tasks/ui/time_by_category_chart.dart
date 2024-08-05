@@ -189,7 +189,7 @@ class Legend extends StatelessWidget {
     }
 
     final date = selectedData.values.first['date'] as DateTime;
-    void onTap() => beamToNamed('/tasks/calendar?ymd=${date.ymd}');
+    void onTap() => beamToNamed('/calendar?ymd=${date.ymd}');
     final nonEmptyValues = selectedData.values.where((e) => e['value'] != 0);
     var totalMinutes = 0;
 
@@ -265,6 +265,7 @@ class CollapsibleTimeChart extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.only(bottom: 20, left: 20, right: 20),
       child: ExpansionTile(
+        shape: RoundedRectangleBorder(),
         title: Center(child: Text('Time Chart')),
         children: [
           TimeByCategoryChart(),

@@ -55,6 +55,7 @@ class _AppScreenState extends State<AppScreen> {
                   Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
                   Beamer(routerDelegate: navService.tasksDelegate),
+                  Beamer(routerDelegate: navService.calendarDelegate),
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
@@ -113,6 +114,14 @@ class _AppScreenState extends State<AppScreen> {
                   child: Icon(MdiIcons.checkboxMarkedCircle),
                 ),
                 label: context.messages.navTabTitleTasks,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Calendar Tab',
+                icon: const Icon(Ionicons.calendar_outline),
+                activeIcon: OutboxBadgeIcon(
+                  icon: const Icon(Ionicons.calendar),
+                ),
+                label: context.messages.navTabTitleCalendar,
               ),
               createNavBarItem(
                 semanticLabel: 'Settings Tab',
