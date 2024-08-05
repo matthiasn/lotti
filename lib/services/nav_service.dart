@@ -54,8 +54,12 @@ class NavService {
       setIndex(3);
     }
 
-    if (path.startsWith('/settings')) {
+    if (path.startsWith('/calendar')) {
       setIndex(4);
+    }
+
+    if (path.startsWith('/settings')) {
+      setIndex(5);
     }
 
     emitState();
@@ -67,6 +71,7 @@ class NavService {
       dashboardsDelegate,
       journalDelegate,
       tasksDelegate,
+      calendarDelegate,
       settingsDelegate,
     ];
 
@@ -86,8 +91,10 @@ class NavService {
     if (index == 3) {
       beamToNamed('/tasks');
     }
-
     if (index == 4) {
+      beamToNamed('/calendar');
+    }
+    if (index == 5) {
       beamToNamed('/settings');
     }
   }
