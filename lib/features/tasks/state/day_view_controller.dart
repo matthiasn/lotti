@@ -152,3 +152,18 @@ class DayViewController extends _$DayViewController {
     return data;
   }
 }
+
+@Riverpod(keepAlive: true)
+class DaySelectionController extends _$DaySelectionController {
+  DaySelectionController();
+
+  @override
+  DateTime build() {
+    return DateTime.now();
+  }
+
+  // ignore: use_setters_to_change_properties
+  void selectDay(DateTime day) {
+    state = day;
+  }
+}
