@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphic/graphic.dart';
+import 'package:lotti/features/tasks/state/day_view_controller.dart';
 import 'package:lotti/features/tasks/state/time_by_category_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -28,6 +28,9 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
 
     if (selectedDate != newDate) {
       setState(() => selectedData = data);
+      if (newDate != null) {
+        ref.read(daySelectionControllerProvider.notifier).selectDay(newDate);
+      }
     }
   }
 
@@ -174,7 +177,7 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
   }
 }
 
-class Legend extends StatelessWidget {
+class Legend extends ConsumerWidget {
   const Legend({
     required this.selectedData,
     super.key,
@@ -183,13 +186,16 @@ class Legend extends StatelessWidget {
   final Map<int, Map<String, dynamic>> selectedData;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     if (selectedData.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final date = selectedData.values.first['date'] as DateTime;
-    void onTap() => beamToNamed('/calendar?ymd=${date.ymd}');
+
     final nonEmptyValues = selectedData.values.where((e) => e['value'] != 0);
     var totalMinutes = 0;
 
@@ -199,7 +205,7 @@ class Legend extends StatelessWidget {
 
     return Container(
       constraints: const BoxConstraints(
-        minHeight: 160,
+        minHeight: 80,
         maxWidth: 320,
       ),
       child: Column(
@@ -212,10 +218,6 @@ class Legend extends StatelessWidget {
                 style: chartTitleStyleMonospace.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
-              ),
-              IconButton(
-                onPressed: onTap,
-                icon: const Icon(Icons.calendar_today),
               ),
               const Spacer(),
               Text(

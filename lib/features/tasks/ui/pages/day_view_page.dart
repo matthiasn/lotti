@@ -7,7 +7,6 @@ import 'package:lotti/features/tasks/ui/time_by_category_chart.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class DayViewPage extends ConsumerStatefulWidget {
@@ -35,6 +34,7 @@ class DayViewPageState extends ConsumerState<DayViewPage> {
   @override
   Widget build(BuildContext context) {
     final events = ref.watch(dayViewControllerProvider).value;
+
     if (events != null) {
       _eventController
         ..removeWhere((_) => true)
@@ -43,34 +43,26 @@ class DayViewPageState extends ConsumerState<DayViewPage> {
 
     return CalendarControllerProvider(
       controller: _eventController,
-      child: Scaffold(
-        appBar: const TitleAppBar(
-          title: '',
-        ),
-        body: DayViewWidget(
-          initialDay: DateUtilsExtension.fromYmd(widget.initialDayYmd) ??
-              DateTime.now(),
-        ),
+      child: const Scaffold(
+        body: DayViewWidget(),
       ),
     );
   }
 }
 
-class DayViewWidget extends StatefulWidget {
+class DayViewWidget extends ConsumerStatefulWidget {
   const DayViewWidget({
-    required this.initialDay,
     super.key,
     this.state,
   });
 
   final GlobalKey<DayViewState>? state;
-  final DateTime initialDay;
 
   @override
-  State<DayViewWidget> createState() => _DayViewWidgetState();
+  ConsumerState<DayViewWidget> createState() => _DayViewWidgetState();
 }
 
-class _DayViewWidgetState extends State<DayViewWidget> {
+class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
   var _heightPerMinute = .5;
 
   Widget timeLineBuilder(DateTime date) {
@@ -95,6 +87,8 @@ class _DayViewWidgetState extends State<DayViewWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedDay = ref.watch(daySelectionControllerProvider);
+
     return Column(
       children: [
         Expanded(
@@ -103,11 +97,11 @@ class _DayViewWidgetState extends State<DayViewWidget> {
             children: [
               DayView(
                 backgroundColor: Colors.transparent,
-                key: widget.state,
+                key: Key(selectedDay.ymd),
                 showHalfHours: true,
                 heightPerMinute: _heightPerMinute,
                 keepScrollOffset: true,
-                initialDay: widget.initialDay,
+                initialDay: selectedDay,
                 headerStyle: HeaderStyle(
                   headerTextStyle: chartTitleStyleMonospace.copyWith(
                     fontWeight: FontWeight.w400,

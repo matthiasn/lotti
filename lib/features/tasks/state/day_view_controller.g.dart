@@ -23,5 +23,22 @@ final dayViewControllerProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$DayViewController
     = AutoDisposeAsyncNotifier<List<CalendarEventData<JournalEntity>>>;
+String _$daySelectionControllerHash() =>
+    r'12d87629da886ad08785bcf28005a9b9ea4c8397';
+
+/// See also [DaySelectionController].
+@ProviderFor(DaySelectionController)
+final daySelectionControllerProvider =
+    NotifierProvider<DaySelectionController, DateTime>.internal(
+  DaySelectionController.new,
+  name: r'daySelectionControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$daySelectionControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$DaySelectionController = Notifier<DateTime>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
