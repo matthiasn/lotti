@@ -9,6 +9,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class DayViewPage extends ConsumerStatefulWidget {
   const DayViewPage({
@@ -90,115 +91,120 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
   Widget build(BuildContext context) {
     final selectedDay = ref.watch(daySelectionControllerProvider);
 
-    return Column(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Stack(
-            children: [
-              DayView(
-                backgroundColor: Colors.transparent,
-                key: Key(selectedDay.ymd),
-                showHalfHours: true,
-                heightPerMinute: _heightPerMinute,
-                keepScrollOffset: true,
-                initialDay: selectedDay,
-                headerStyle: HeaderStyle(
-                  headerTextStyle: chartTitleStyleMonospace.copyWith(
-                    fontWeight: FontWeight.w400,
+    return VisibilityDetector(
+      key: const Key('DayViewPage'),
+      onVisibilityChanged:
+          ref.read(dayViewControllerProvider.notifier).onVisibilityChanged,
+      child: Column(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Stack(
+              children: [
+                DayView(
+                  backgroundColor: Colors.transparent,
+                  key: Key(selectedDay.ymd),
+                  showHalfHours: true,
+                  heightPerMinute: _heightPerMinute,
+                  keepScrollOffset: true,
+                  initialDay: selectedDay,
+                  headerStyle: HeaderStyle(
+                    headerTextStyle: chartTitleStyleMonospace.copyWith(
+                      fontWeight: FontWeight.w400,
+                    ),
+                    leftIcon: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                    ),
+                    leftIconPadding: const EdgeInsets.only(
+                      left: 30,
+                      top: 10,
+                      bottom: 10,
+                    ),
+                    rightIconPadding: const EdgeInsets.only(
+                      right: 30,
+                      top: 10,
+                      bottom: 10,
+                    ),
+                    rightIcon: const Icon(
+                      Icons.arrow_forward,
+                      size: 24,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                    ),
                   ),
-                  leftIcon: const Icon(
-                    Icons.arrow_back,
-                    size: 24,
+                  dateStringBuilder: (date, {DateTime? secondaryDate}) =>
+                      date.ymwd,
+                  timeLineBuilder: timeLineBuilder,
+                  hourIndicatorSettings: HourIndicatorSettings(
+                    color: Theme.of(context).dividerColor,
                   ),
-                  leftIconPadding: const EdgeInsets.only(
-                    left: 30,
-                    top: 10,
-                    bottom: 10,
+                  halfHourIndicatorSettings: HourIndicatorSettings(
+                    color: Theme.of(context).dividerColor,
+                    lineStyle: LineStyle.dashed,
                   ),
-                  rightIconPadding: const EdgeInsets.only(
-                    right: 30,
-                    top: 10,
-                    bottom: 10,
-                  ),
-                  rightIcon: const Icon(
-                    Icons.arrow_forward,
-                    size: 24,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                ),
-                dateStringBuilder: (date, {DateTime? secondaryDate}) =>
-                    date.ymwd,
-                timeLineBuilder: timeLineBuilder,
-                hourIndicatorSettings: HourIndicatorSettings(
-                  color: Theme.of(context).dividerColor,
-                ),
-                halfHourIndicatorSettings: HourIndicatorSettings(
-                  color: Theme.of(context).dividerColor,
-                  lineStyle: LineStyle.dashed,
-                ),
-                onEventTap: (events, date) {
-                  final event = events.firstOrNull?.event as JournalEntity?;
-                  final id = event?.id;
-                  if (id != null) {
-                    beamToNamed('/journal/$id');
-                  }
-                },
-                verticalLineOffset: 0,
-                timeLineWidth: 65,
-                liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
-                  color: Colors.redAccent,
-                  showTime: true,
-                  showTimeBackgroundView: true,
-                  timeStringBuilder: (date, {DateTime? secondaryDate}) =>
-                      '  ${hhMmFormat.format(date)}',
-                ),
-              ),
-              Positioned(
-                bottom: 50,
-                right: 40,
-                child: GlassContainer.clearGlass(
-                  width: MediaQuery.of(context).size.width * 0.7,
-                  height: 140,
-                  elevation: 0,
-                  borderRadius: BorderRadius.circular(15),
-                  color: Theme.of(context).shadowColor.withOpacity(0.2),
-                  child: const TimeByCategoryChart(
-                    showLegend: false,
-                    showTimeframeSelector: false,
-                    height: 120,
+                  onEventTap: (events, date) {
+                    final event = events.firstOrNull?.event as JournalEntity?;
+                    final id = event?.id;
+                    if (id != null) {
+                      beamToNamed('/journal/$id');
+                    }
+                  },
+                  verticalLineOffset: 0,
+                  timeLineWidth: 65,
+                  liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
+                    color: Colors.redAccent,
+                    showTime: true,
+                    showTimeBackgroundView: true,
+                    timeStringBuilder: (date, {DateTime? secondaryDate}) =>
+                        '  ${hhMmFormat.format(date)}',
                   ),
                 ),
-              ),
-              Positioned(
-                bottom: 10,
-                right: 40,
-                child: GlassContainer.clearGlass(
-                  width: 200,
-                  height: 32,
-                  elevation: 0,
-                  color: Theme.of(context).shadowColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(15),
-                  child: Slider(
-                    inactiveColor: Theme.of(context).dividerColor,
-                    min: 0.25,
-                    max: 5,
-                    value: _heightPerMinute,
-                    onChanged: (double value) {
-                      setState(() {
-                        _heightPerMinute = value;
-                      });
-                    },
+                Positioned(
+                  bottom: 50,
+                  right: 40,
+                  child: GlassContainer.clearGlass(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    height: 140,
+                    elevation: 0,
+                    borderRadius: BorderRadius.circular(15),
+                    color: Theme.of(context).shadowColor.withOpacity(0.2),
+                    child: const TimeByCategoryChart(
+                      showLegend: false,
+                      showTimeframeSelector: false,
+                      height: 120,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: 10,
+                  right: 40,
+                  child: GlassContainer.clearGlass(
+                    width: 200,
+                    height: 32,
+                    elevation: 0,
+                    color: Theme.of(context).shadowColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(15),
+                    child: Slider(
+                      inactiveColor: Theme.of(context).dividerColor,
+                      min: 0.25,
+                      max: 5,
+                      value: _heightPerMinute,
+                      onChanged: (double value) {
+                        setState(() {
+                          _heightPerMinute = value;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const CollapsibleTimeChart(),
-      ],
+          const CollapsibleTimeChart(),
+        ],
+      ),
     );
   }
 }
