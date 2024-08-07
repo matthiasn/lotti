@@ -13,7 +13,16 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 
 class TimeByCategoryChart extends ConsumerStatefulWidget {
-  const TimeByCategoryChart({super.key});
+  const TimeByCategoryChart({
+    this.showLegend = true,
+    this.showTimeframeSelector = true,
+    this.height = 220,
+    super.key,
+  });
+
+  final bool showTimeframeSelector;
+  final bool showLegend;
+  final double height;
 
   @override
   ConsumerState<TimeByCategoryChart> createState() => _TimeByCategoryChart();
@@ -46,14 +55,15 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
       padding: const EdgeInsets.only(right: 20),
       child: Column(
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: TimeSpanSegmentedControl(
-              timeSpanDays: timeSpanDays,
-              onValueChanged: onValueChanged,
-              segments: const [14, 30, 90],
+          if (widget.showTimeframeSelector)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TimeSpanSegmentedControl(
+                timeSpanDays: timeSpanDays,
+                onValueChanged: onValueChanged,
+                segments: const [14, 30, 90],
+              ),
             ),
-          ),
           if (data != null && data.isNotEmpty)
             TapRegion(
               onTapOutside: (_) => setState(() {
@@ -61,9 +71,8 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
               }),
               child: Column(
                 children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 10),
-                    height: 220,
+                  SizedBox(
+                    height: widget.height,
                     child: Chart(
                       data: data,
                       key: Key('${data.hashCode}'),
@@ -157,17 +166,19 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                       axes: [Defaults.horizontalAxis],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Legend(
-                        selectedData: selectedData,
-                        key: Key(selectedData.hashCode.toString()),
+                  if (widget.showLegend) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Legend(
+                          selectedData: selectedData,
+                          key: Key(selectedData.hashCode.toString()),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
