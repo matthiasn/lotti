@@ -1,6 +1,7 @@
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/day_view_controller.dart';
 import 'package:lotti/features/tasks/ui/time_by_category_chart.dart';
@@ -156,15 +157,30 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                 ),
               ),
               Positioned(
-                bottom: 10,
-                right: 10,
-                child: Container(
-                  width: 180,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Theme.of(context).shadowColor.withOpacity(0.2),
+                bottom: 50,
+                right: 40,
+                child: GlassContainer.clearGlass(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  height: 140,
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(15),
+                  color: Theme.of(context).shadowColor.withOpacity(0.2),
+                  child: const TimeByCategoryChart(
+                    showLegend: false,
+                    showTimeframeSelector: false,
+                    height: 120,
                   ),
+                ),
+              ),
+              Positioned(
+                bottom: 10,
+                right: 40,
+                child: GlassContainer.clearGlass(
+                  width: 200,
+                  height: 32,
+                  elevation: 0,
+                  color: Theme.of(context).shadowColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(15),
                   child: Slider(
                     inactiveColor: Theme.of(context).dividerColor,
                     min: 0.25,
