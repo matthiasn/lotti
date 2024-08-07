@@ -15,6 +15,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinycolor2/tinycolor2.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 part 'day_view_controller.g.dart';
 
@@ -25,15 +26,27 @@ class DayViewController extends _$DayViewController {
   }
 
   StreamSubscription<Set<String>>? _updateSubscription;
+  bool _isVisible = true;
 
   void listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
       final latest = await _fetch();
-      if (latest != state.value) {
+      if (latest != state.value && _isVisible) {
         state = AsyncData(latest);
       }
     });
+  }
+
+  void onVisibilityChanged(VisibilityInfo info) {
+    _isVisible = info.visibleFraction > 0.5;
+    if (_isVisible) {
+      _fetch().then((latest) {
+        if (latest != state.value) {
+          state = AsyncData(latest);
+        }
+      });
+    }
   }
 
   @override

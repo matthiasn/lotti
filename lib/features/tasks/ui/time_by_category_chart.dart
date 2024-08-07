@@ -11,6 +11,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class TimeByCategoryChart extends ConsumerStatefulWidget {
   const TimeByCategoryChart({
@@ -51,138 +52,145 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
     final timeSpanDays = ref.watch(provider);
     final onValueChanged = ref.read(provider.notifier).onValueChanged;
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 20),
-      child: Column(
-        children: [
-          if (widget.showTimeframeSelector)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TimeSpanSegmentedControl(
-                timeSpanDays: timeSpanDays,
-                onValueChanged: onValueChanged,
-                segments: const [14, 30, 90],
+    return VisibilityDetector(
+      key: const Key('time_by_category_chart'),
+      onVisibilityChanged: ref
+          .read(timeByCategoryControllerProvider.notifier)
+          .onVisibilityChanged,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 20),
+        child: Column(
+          children: [
+            if (widget.showTimeframeSelector)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TimeSpanSegmentedControl(
+                  timeSpanDays: timeSpanDays,
+                  onValueChanged: onValueChanged,
+                  segments: const [14, 30, 90],
+                ),
               ),
-            ),
-          if (data != null && data.isNotEmpty)
-            TapRegion(
-              onTapOutside: (_) => setState(() {
-                selectedData = {};
-              }),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: widget.height,
-                    child: Chart(
-                      data: data,
-                      key: Key('${data.hashCode}'),
-                      variables: {
-                        'date': Variable(
-                          accessor: (TimeByDayAndCategory item) => item.date,
-                          scale: TimeScale(
-                            tickCount: 5,
-                            min: DateTime.now()
-                                .subtract(Duration(days: timeSpanDays))
-                                .dayAtNoon,
-                            max: DateTime.now().dayAtNoon,
-                            formatter: (DateTime dt) => dt.md,
+            if (data != null && data.isNotEmpty)
+              TapRegion(
+                onTapOutside: (_) => setState(() {
+                  selectedData = {};
+                }),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: widget.height,
+                      child: Chart(
+                        data: data,
+                        key: Key('${data.hashCode}'),
+                        variables: {
+                          'date': Variable(
+                            accessor: (TimeByDayAndCategory item) => item.date,
+                            scale: TimeScale(
+                              tickCount: 5,
+                              min: DateTime.now()
+                                  .subtract(Duration(days: timeSpanDays))
+                                  .dayAtNoon,
+                              max: DateTime.now().dayAtNoon,
+                              formatter: (DateTime dt) => dt.md,
+                            ),
                           ),
-                        ),
-                        'value': Variable(
-                          accessor: (TimeByDayAndCategory item) =>
-                              item.duration.inMinutes,
-                          scale: LinearScale(
-                            min: -600,
-                            max: 600,
+                          'value': Variable(
+                            accessor: (TimeByDayAndCategory item) =>
+                                item.duration.inMinutes,
+                            scale: LinearScale(
+                              min: -600,
+                              max: 600,
+                            ),
                           ),
-                        ),
-                        'formattedValue': Variable(
-                          accessor: (TimeByDayAndCategory item) =>
-                              formatHhMm(item.duration),
-                        ),
-                        'categoryId': Variable(
-                          accessor: (TimeByDayAndCategory item) =>
-                              item.categoryId,
-                        ),
-                        'name': Variable(
-                          accessor: (TimeByDayAndCategory item) =>
-                              item.categoryDefinition?.name ?? 'unassigned',
-                        ),
-                      },
-                      marks: [
-                        AreaMark(
-                          position: Varset('date') *
-                              Varset('value') /
-                              Varset('categoryId'),
-                          shape:
-                              ShapeEncode(value: BasicAreaShape(smooth: true)),
-                          color: ColorEncode(
-                            encoder: (data) {
-                              final categoryId = data['categoryId'] as String;
-                              final categoryDefinition =
-                                  getIt<EntitiesCacheService>()
-                                      .getCategoryById(categoryId);
-                              return colorFromCssHex(
-                                categoryDefinition?.color,
-                                substitute: Colors.grey,
-                              );
+                          'formattedValue': Variable(
+                            accessor: (TimeByDayAndCategory item) =>
+                                formatHhMm(item.duration),
+                          ),
+                          'categoryId': Variable(
+                            accessor: (TimeByDayAndCategory item) =>
+                                item.categoryId,
+                          ),
+                          'name': Variable(
+                            accessor: (TimeByDayAndCategory item) =>
+                                item.categoryDefinition?.name ?? 'unassigned',
+                          ),
+                        },
+                        marks: [
+                          AreaMark(
+                            position: Varset('date') *
+                                Varset('value') /
+                                Varset('categoryId'),
+                            shape: ShapeEncode(
+                              value: BasicAreaShape(smooth: true),
+                            ),
+                            color: ColorEncode(
+                              encoder: (data) {
+                                final categoryId = data['categoryId'] as String;
+                                final categoryDefinition =
+                                    getIt<EntitiesCacheService>()
+                                        .getCategoryById(categoryId);
+                                return colorFromCssHex(
+                                  categoryDefinition?.color,
+                                  substitute: Colors.grey,
+                                );
+                              },
+                            ),
+                            modifiers: [
+                              StackModifier(),
+                              SymmetricModifier(),
+                            ],
+                          ),
+                        ],
+                        selections: {
+                          'touchMove': PointSelection(
+                            on: {
+                              GestureType.scaleUpdate,
+                              GestureType.tapDown,
+                              GestureType.longPressMoveUpdate,
                             },
+                            dim: Dim.x,
+                            variable: 'date',
                           ),
-                          modifiers: [
-                            StackModifier(),
-                            SymmetricModifier(),
+                        },
+                        tooltip: TooltipGuide(
+                          followPointer: [false, true],
+                          renderer: (size, offset, data) {
+                            _onSelectedDataChanged(data);
+                            return <MarkElement>[];
+                          },
+                        ),
+                        crosshair: CrosshairGuide(
+                          followPointer: [true, true],
+                          styles: [
+                            PaintStyle(
+                              strokeColor:
+                                  Theme.of(context).textTheme.bodySmall?.color,
+                              strokeWidth: 2,
+                            ),
+                            PaintStyle(strokeColor: Colors.transparent),
                           ],
                         ),
-                      ],
-                      selections: {
-                        'touchMove': PointSelection(
-                          on: {
-                            GestureType.scaleUpdate,
-                            GestureType.tapDown,
-                            GestureType.longPressMoveUpdate,
-                          },
-                          dim: Dim.x,
-                          variable: 'date',
-                        ),
-                      },
-                      tooltip: TooltipGuide(
-                        followPointer: [false, true],
-                        renderer: (size, offset, data) {
-                          _onSelectedDataChanged(data);
-                          return <MarkElement>[];
-                        },
+                        axes: [Defaults.horizontalAxis],
                       ),
-                      crosshair: CrosshairGuide(
-                        followPointer: [true, true],
-                        styles: [
-                          PaintStyle(
-                            strokeColor:
-                                Theme.of(context).textTheme.bodySmall?.color,
-                            strokeWidth: 2,
+                    ),
+                    if (widget.showLegend) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Legend(
+                            selectedData: selectedData,
+                            key: Key(selectedData.hashCode.toString()),
                           ),
-                          PaintStyle(strokeColor: Colors.transparent),
-                        ],
-                      ),
-                      axes: [Defaults.horizontalAxis],
-                    ),
-                  ),
-                  if (widget.showLegend) ...[
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: Legend(
-                          selectedData: selectedData,
-                          key: Key(selectedData.hashCode.toString()),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
