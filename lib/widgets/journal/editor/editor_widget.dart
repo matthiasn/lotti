@@ -58,6 +58,7 @@ class EditorWidget extends ConsumerWidget {
             if (shouldShowEditorToolBar) ToolbarWidget(controller: controller),
             Flexible(
               child: QuillEditor(
+                controller: controller,
                 scrollController: ScrollController(),
                 focusNode: focusNode,
                 configurations: QuillEditorConfigurations(
@@ -74,7 +75,6 @@ class EditorWidget extends ConsumerWidget {
                   customStyles: customEditorStyles(
                     themeData: Theme.of(context),
                   ),
-                  controller: controller,
                 ),
               ),
             ),

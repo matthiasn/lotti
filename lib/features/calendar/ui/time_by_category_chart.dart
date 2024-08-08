@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphic/graphic.dart';
+import 'package:lotti/features/calendar/ui/time_by_category_chart_legend.dart';
 import 'package:lotti/features/tasks/state/day_view_controller.dart';
 import 'package:lotti/features/tasks/state/time_by_category_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class TimeByCategoryChart extends ConsumerStatefulWidget {
@@ -193,9 +193,8 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                         padding: const EdgeInsets.all(20),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
-                          child: Legend(
+                          child: TimeByCategoryChartLegend(
                             selectedData: selectedData,
-                            key: Key(selectedData.hashCode.toString()),
                           ),
                         ),
                       ),
@@ -205,106 +204,6 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class Legend extends ConsumerWidget {
-  const Legend({
-    required this.selectedData,
-    super.key,
-  });
-
-  final Map<int, Map<String, dynamic>> selectedData;
-
-  @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    if (selectedData.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final date = selectedData.values.first['date'] as DateTime;
-
-    final nonEmptyValues = selectedData.values.where((e) => e['value'] != 0);
-    var totalMinutes = 0;
-
-    for (final e in nonEmptyValues) {
-      totalMinutes += e['value'] as int;
-    }
-
-    return Container(
-      constraints: const BoxConstraints(
-        minHeight: 80,
-        maxWidth: 320,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                date.ymwd,
-                style: chartTitleStyleMonospace.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                formatHhMm(Duration(minutes: totalMinutes)),
-                style: chartTitleStyleMonospace.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          ...nonEmptyValues.map((e) {
-            final name = e['name'] as String;
-            final formattedValue = e['formattedValue'] as String;
-            final categoryId = e['categoryId'] as String;
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Row(
-                children: [
-                  CategoryColorIcon(categoryId),
-                  const SizedBox(width: 10),
-                  Text(
-                    name,
-                    style: chartTitleStyleMonospace,
-                  ),
-                  const Spacer(),
-                  Text(
-                    formattedValue,
-                    style: chartTitleStyleMonospace,
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-}
-
-class CollapsibleTimeChart extends StatelessWidget {
-  const CollapsibleTimeChart({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(bottom: 20, left: 20, right: 20),
-      child: ExpansionTile(
-        shape: RoundedRectangleBorder(),
-        title: Center(child: Text('Time Chart')),
-        children: [
-          TimeByCategoryChart(),
-        ],
       ),
     );
   }

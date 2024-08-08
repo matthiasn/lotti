@@ -180,3 +180,21 @@ class DaySelectionController extends _$DaySelectionController {
     state = day;
   }
 }
+
+@Riverpod(keepAlive: true)
+class CalendarGlobalKeyController extends _$CalendarGlobalKeyController {
+  CalendarGlobalKeyController();
+
+  final GlobalKey<DayViewState> globalKey = GlobalKey<DayViewState>();
+
+  @override
+  GlobalKey<DayViewState> build() {
+    final selectedDay = ref.watch(daySelectionControllerProvider);
+
+    if (globalKey.currentState?.currentDate != selectedDay) {
+      globalKey.currentState?.jumpToDate(selectedDay);
+    }
+
+    return globalKey;
+  }
+}
