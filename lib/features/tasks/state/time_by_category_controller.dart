@@ -26,9 +26,9 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   void listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      final timeSpanDays = ref.read(timeFrameControllerProvider);
-      final latest = await _fetch(timeSpanDays);
-      if (latest != state.value && _isVisible) {
+      if (_isVisible) {
+        final timeSpanDays = ref.read(timeFrameControllerProvider);
+        final latest = await _fetch(timeSpanDays);
         state = AsyncData(latest);
       }
     });
