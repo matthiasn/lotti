@@ -176,8 +176,13 @@ mixin _$TagEntity {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this TagEntity to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $TagEntityCopyWith<TagEntity> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -208,6 +213,8 @@ class _$TagEntityCopyWithImpl<$Res, $Val extends TagEntity>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -284,6 +291,8 @@ class __$$GenericTagImplCopyWithImpl<$Res>
       _$GenericTagImpl _value, $Res Function(_$GenericTagImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -396,12 +405,14 @@ class _$GenericTagImpl implements GenericTag {
                 other.inactive == inactive));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, tag, private, createdAt,
       updatedAt, vectorClock, deletedAt, inactive);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$GenericTagImplCopyWith<_$GenericTagImpl> get copyWith =>
@@ -609,8 +620,11 @@ abstract class GenericTag implements TagEntity {
   DateTime? get deletedAt;
   @override
   bool? get inactive;
+
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$GenericTagImplCopyWith<_$GenericTagImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -644,6 +658,8 @@ class __$$PersonTagImplCopyWithImpl<$Res>
       _$PersonTagImpl _value, $Res Function(_$PersonTagImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -776,12 +792,14 @@ class _$PersonTagImpl implements PersonTag {
                 other.inactive == inactive));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, tag, private, createdAt,
       updatedAt, vectorClock, firstName, lastName, deletedAt, inactive);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$PersonTagImplCopyWith<_$PersonTagImpl> get copyWith =>
@@ -993,8 +1011,11 @@ abstract class PersonTag implements TagEntity {
   DateTime? get deletedAt;
   @override
   bool? get inactive;
+
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PersonTagImplCopyWith<_$PersonTagImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -1028,6 +1049,8 @@ class __$$StoryTagImplCopyWithImpl<$Res>
       _$StoryTagImpl _value, $Res Function(_$StoryTagImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1160,12 +1183,14 @@ class _$StoryTagImpl implements StoryTag {
                 other.inactive == inactive));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, tag, private, createdAt,
       updatedAt, vectorClock, description, longTitle, deletedAt, inactive);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$StoryTagImplCopyWith<_$StoryTagImpl> get copyWith =>
@@ -1377,8 +1402,11 @@ abstract class StoryTag implements TagEntity {
   DateTime? get deletedAt;
   @override
   bool? get inactive;
+
+  /// Create a copy of TagEntity
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$StoryTagImplCopyWith<_$StoryTagImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -5,7 +5,7 @@ import WhisperKit
 public class WhisperKitRunner: NSObject, FlutterStreamHandler {
     let transcriptionChannelName = "lotti/transcribe"
     let transcriptionProgressChannelName = "lotti/transcribe-progress"
-    let model = "large-v3"
+    let model = "small"
     
     private var eventSink: FlutterEventSink?
     private let transcriptionChannel: FlutterMethodChannel

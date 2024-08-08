@@ -25,8 +25,12 @@ mixin _$EntryText {
   String? get markdown => throw _privateConstructorUsedError;
   String? get quill => throw _privateConstructorUsedError;
 
+  /// Serializes this EntryText to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of EntryText
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $EntryTextCopyWith<EntryText> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -55,6 +59,8 @@ class _$EntryTextCopyWithImpl<$Res, $Val extends EntryText>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of EntryText
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -83,6 +89,8 @@ class _$EntryTextCopyWithImpl<$Res, $Val extends EntryText>
     ) as $Val);
   }
 
+  /// Create a copy of EntryText
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $GeolocationCopyWith<$Res>? get geolocation {
@@ -122,6 +130,8 @@ class __$$EntryTextImplCopyWithImpl<$Res>
       _$EntryTextImpl _value, $Res Function(_$EntryTextImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntryText
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -188,12 +198,14 @@ class _$EntryTextImpl implements _EntryText {
             (identical(other.quill, quill) || other.quill == quill));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, plainText, geolocation, markdown, quill);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntryText
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$EntryTextImplCopyWith<_$EntryTextImpl> get copyWith =>
@@ -225,8 +237,11 @@ abstract class _EntryText implements EntryText {
   String? get markdown;
   @override
   String? get quill;
+
+  /// Create a copy of EntryText
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$EntryTextImplCopyWith<_$EntryTextImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

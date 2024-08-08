@@ -22,7 +22,9 @@ mixin _$CategorySettingsState {
   bool get valid => throw _privateConstructorUsedError;
   GlobalKey<FormBuilderState> get formKey => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of CategorySettingsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $CategorySettingsStateCopyWith<CategorySettingsState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -51,6 +53,8 @@ class _$CategorySettingsStateCopyWithImpl<$Res,
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of CategorySettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -105,6 +109,8 @@ class __$$CategorySettingsStateImplCopyWithImpl<$Res>
       $Res Function(_$CategorySettingsStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of CategorySettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -177,7 +183,9 @@ class _$CategorySettingsStateImpl implements _CategorySettingsState {
       valid,
       formKey);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of CategorySettingsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$CategorySettingsStateImplCopyWith<_$CategorySettingsStateImpl>
@@ -201,8 +209,11 @@ abstract class _CategorySettingsState implements CategorySettingsState {
   bool get valid;
   @override
   GlobalKey<FormBuilderState> get formKey;
+
+  /// Create a copy of CategorySettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$CategorySettingsStateImplCopyWith<_$CategorySettingsStateImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

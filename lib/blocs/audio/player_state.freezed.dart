@@ -24,7 +24,9 @@ mixin _$AudioPlayerState {
   bool get showTranscriptsList => throw _privateConstructorUsedError;
   JournalAudio? get audioNote => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AudioPlayerState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $AudioPlayerStateCopyWith<AudioPlayerState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -55,6 +57,8 @@ class _$AudioPlayerStateCopyWithImpl<$Res, $Val extends AudioPlayerState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of AudioPlayerState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -125,6 +129,8 @@ class __$$AudioPlayerStateImplCopyWithImpl<$Res>
       $Res Function(_$AudioPlayerStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AudioPlayerState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -230,7 +236,9 @@ class _$AudioPlayerStateImpl implements _AudioPlayerState {
       showTranscriptsList,
       const DeepCollectionEquality().hash(audioNote));
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AudioPlayerState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AudioPlayerStateImplCopyWith<_$AudioPlayerStateImpl> get copyWith =>
@@ -262,8 +270,11 @@ abstract class _AudioPlayerState implements AudioPlayerState {
   bool get showTranscriptsList;
   @override
   JournalAudio? get audioNote;
+
+  /// Create a copy of AudioPlayerState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AudioPlayerStateImplCopyWith<_$AudioPlayerStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

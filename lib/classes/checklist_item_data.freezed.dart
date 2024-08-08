@@ -23,8 +23,12 @@ mixin _$ChecklistItemData {
   String get title => throw _privateConstructorUsedError;
   bool get isChecked => throw _privateConstructorUsedError;
 
+  /// Serializes this ChecklistItemData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of ChecklistItemData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $ChecklistItemDataCopyWith<ChecklistItemData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -48,6 +52,8 @@ class _$ChecklistItemDataCopyWithImpl<$Res, $Val extends ChecklistItemData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of ChecklistItemData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -86,6 +92,8 @@ class __$$ChecklistItemDataImplCopyWithImpl<$Res>
       $Res Function(_$ChecklistItemDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of ChecklistItemData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -133,11 +141,13 @@ class _$ChecklistItemDataImpl implements _ChecklistItemData {
                 other.isChecked == isChecked));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, title, isChecked);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of ChecklistItemData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$ChecklistItemDataImplCopyWith<_$ChecklistItemDataImpl> get copyWith =>
@@ -164,8 +174,11 @@ abstract class _ChecklistItemData implements ChecklistItemData {
   String get title;
   @override
   bool get isChecked;
+
+  /// Create a copy of ChecklistItemData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ChecklistItemDataImplCopyWith<_$ChecklistItemDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

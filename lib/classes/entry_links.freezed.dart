@@ -87,8 +87,13 @@ mixin _$EntryLink {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this EntryLink to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $EntryLinkCopyWith<EntryLink> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -119,6 +124,8 @@ class _$EntryLinkCopyWithImpl<$Res, $Val extends EntryLink>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -195,6 +202,8 @@ class __$$BasicLinkImplCopyWithImpl<$Res>
       _$BasicLinkImpl _value, $Res Function(_$BasicLinkImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -302,12 +311,14 @@ class _$BasicLinkImpl implements BasicLink {
                 other.deletedAt == deletedAt));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
       updatedAt, vectorClock, linkType, deletedAt);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$BasicLinkImplCopyWith<_$BasicLinkImpl> get copyWith =>
@@ -437,8 +448,11 @@ abstract class BasicLink implements EntryLink {
   String? get linkType;
   @override
   DateTime? get deletedAt;
+
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$BasicLinkImplCopyWith<_$BasicLinkImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
