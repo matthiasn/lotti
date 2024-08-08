@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/calendar/ui/time_by_category_chart.dart';
+import 'package:lotti/features/calendar/ui/time_by_category_chart_card.dart';
 import 'package:lotti/features/tasks/state/day_view_controller.dart';
-import 'package:lotti/features/tasks/ui/time_by_category_chart.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -161,21 +162,10 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                         '  ${hhMmFormat.format(date)}',
                   ),
                 ),
-                Positioned(
+                const Positioned(
                   bottom: 50,
                   right: 40,
-                  child: GlassContainer.clearGlass(
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    height: 140,
-                    elevation: 0,
-                    borderRadius: BorderRadius.circular(15),
-                    color: Theme.of(context).shadowColor.withOpacity(0.2),
-                    child: const TimeByCategoryChart(
-                      showLegend: false,
-                      showTimeframeSelector: false,
-                      height: 120,
-                    ),
-                  ),
+                  child: TimeByCategoryChartCard(),
                 ),
                 Positioned(
                   bottom: 10,
