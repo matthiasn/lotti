@@ -172,6 +172,10 @@ const chartTitleStyleSmall = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
+final chartTitleStyleSmallMonospace = chartTitleStyleSmall.copyWith(
+  fontFeatures: [const FontFeature.tabularFigures()],
+);
+
 TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
       fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,

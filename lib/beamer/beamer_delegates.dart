@@ -1,4 +1,5 @@
 import 'package:beamer/beamer.dart';
+import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
@@ -48,6 +49,18 @@ final tasksBeamerDelegate = BeamerDelegate(
   locationBuilder: (routeInformation, _) {
     if (routeInformation.uri.path.contains('tasks')) {
       return TasksLocation(routeInformation);
+    }
+    return NotFound(path: routeInformation.uri.path);
+  },
+);
+
+final calendarBeamerDelegate = BeamerDelegate(
+  initialPath: '/calendar',
+  updateParent: false,
+  updateFromParent: false,
+  locationBuilder: (routeInformation, _) {
+    if (routeInformation.uri.path.contains('calendar')) {
+      return CalendarLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);
   },
