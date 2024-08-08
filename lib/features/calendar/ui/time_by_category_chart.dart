@@ -195,7 +195,6 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                           duration: const Duration(milliseconds: 300),
                           child: TimeByCategoryChartLegend(
                             selectedData: selectedData,
-                            key: Key(selectedData.hashCode.toString()),
                           ),
                         ),
                       ),
