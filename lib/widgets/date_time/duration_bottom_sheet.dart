@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+import '../../themes/theme.dart';
+
 class DurationBottomSheet extends StatefulWidget {
   const DurationBottomSheet(this.initial, {super.key});
 
@@ -51,12 +53,26 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
         ),
         SizedBox(
           width: 500,
-          child: CupertinoTimerPicker(
-            onTimerDurationChanged: (Duration value) {
-              duration = value;
-            },
-            initialTimerDuration: widget.initial ?? Duration.zero,
-            mode: CupertinoTimerPickerMode.hm,
+          child: CupertinoTheme(
+            data: CupertinoThemeData(
+              textTheme: CupertinoTextThemeData(
+                dateTimePickerTextStyle: TextStyle(
+                  color: Theme.of(context).textTheme.titleLarge?.color ??
+                      Colors.grey,
+                  fontSize: fontSizeLarge,
+                  fontWeight: FontWeight.w300,
+                  fontFamily: mainFont,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            child: CupertinoTimerPicker(
+              onTimerDurationChanged: (Duration value) {
+                duration = value;
+              },
+              initialTimerDuration: widget.initial ?? Duration.zero,
+              mode: CupertinoTimerPickerMode.hm,
+            ),
           ),
         ),
       ],
