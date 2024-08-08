@@ -170,7 +170,21 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                             PaintStyle(strokeColor: Colors.transparent),
                           ],
                         ),
-                        axes: [Defaults.horizontalAxis],
+                        axes: [
+                          AxisGuide(
+                            line: PaintStyle(
+                              strokeColor:
+                                  Theme.of(context).colorScheme.onSurface,
+                              strokeWidth: 0.5,
+                            ),
+                            label: LabelStyle(
+                              textStyle: chartTitleStyleSmallMonospace.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              offset: const Offset(0, 7.5),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (widget.showLegend) ...[
