@@ -18,7 +18,7 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    const minHeight = 150.0;
+    const minHeight = 160.0;
     if (selectedData.isEmpty) {
       return const SizedBox(height: minHeight);
     }
@@ -81,7 +81,6 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
               ),
             );
           }),
-          const SizedBox(height: 10),
         ],
       ),
     );
