@@ -61,7 +61,7 @@ PODS:
   - media_kit_native_event_loop (1.0.0):
     - Flutter
   - MTBBarcodeScanner (5.0.11)
-  - OpenSSL-Universal (3.2.2000)
+  - OpenSSL-Universal (3.3.1000)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -76,9 +76,9 @@ PODS:
   - record_darwin (1.0.0):
     - Flutter
     - FlutterMacOS
-  - SDWebImage (5.19.4):
-    - SDWebImage/Core (= 5.19.4)
-  - SDWebImage/Core (5.19.4)
+  - SDWebImage (5.19.6):
+    - SDWebImage/Core (= 5.19.6)
+  - SDWebImage/Core (5.19.6)
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
@@ -235,7 +235,7 @@ SPEC CHECKSUMS:
   flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
   health: 5a380c0f6c4f619535845992993964293962e99e
-  integration_test: ce0a3ffa1de96d1a89ca0ac26fca7ea18a749ef4
+  integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   location: d5cf8598915965547c3f36761ae9cc4f4e87d22e
@@ -243,13 +243,13 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 8f39d96a9c630685dfb844c289bd1d114c486fb3
   media_kit_native_event_loop: 99111eded5acbdc9c2738021ea6550dd36ca8837
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
-  OpenSSL-Universal: f8a9c4fdab7e21cb70bda471c269e86e9212439c
+  OpenSSL-Universal: 57f92a826947ee3183556bf5e22d7dff8d55f834
   package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   record_darwin: df0a677188e5fed18472550298e675f19ddaffbe
-  SDWebImage: 066c47b573f408f18caa467d71deace7c0f8280d
+  SDWebImage: a79252b60f4678812d94316c91da69ec83089c9f
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   share_plus: 8875f4f2500512ea181eef553c3e27dba5135aad
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78

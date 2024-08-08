@@ -30,7 +30,9 @@ mixin _$JournalPageState {
   Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
   Set<String?> get selectedCategoryIds => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $JournalPageStateCopyWith<JournalPageState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -66,6 +68,8 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -166,6 +170,8 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
       $Res Function(_$JournalPageStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -377,7 +383,9 @@ class _$JournalPageStateImpl implements _JournalPageState {
       const DeepCollectionEquality().hash(_selectedTaskStatuses),
       const DeepCollectionEquality().hash(_selectedCategoryIds));
 
-  @JsonKey(ignore: true)
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
@@ -425,8 +433,11 @@ abstract class _JournalPageState implements JournalPageState {
   Set<String> get selectedTaskStatuses;
   @override
   Set<String?> get selectedCategoryIds;
+
+  /// Create a copy of JournalPageState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -440,8 +451,12 @@ mixin _$TasksFilter {
   Set<String> get selectedCategoryIds => throw _privateConstructorUsedError;
   Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
 
+  /// Serializes this TasksFilter to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $TasksFilterCopyWith<TasksFilter> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -466,6 +481,8 @@ class _$TasksFilterCopyWithImpl<$Res, $Val extends TasksFilter>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -505,6 +522,8 @@ class __$$TasksFilterImplCopyWithImpl<$Res>
       _$TasksFilterImpl _value, $Res Function(_$TasksFilterImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -570,14 +589,16 @@ class _$TasksFilterImpl implements _TasksFilter {
                 .equals(other._selectedTaskStatuses, _selectedTaskStatuses));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
       const DeepCollectionEquality().hash(_selectedCategoryIds),
       const DeepCollectionEquality().hash(_selectedTaskStatuses));
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TasksFilterImplCopyWith<_$TasksFilterImpl> get copyWith =>
@@ -603,8 +624,11 @@ abstract class _TasksFilter implements TasksFilter {
   Set<String> get selectedCategoryIds;
   @override
   Set<String> get selectedTaskStatuses;
+
+  /// Create a copy of TasksFilter
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TasksFilterImplCopyWith<_$TasksFilterImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -24,8 +24,12 @@ mixin _$EventData {
   double get stars => throw _privateConstructorUsedError;
   EventStatus get status => throw _privateConstructorUsedError;
 
+  /// Serializes this EventData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of EventData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $EventDataCopyWith<EventData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -48,6 +52,8 @@ class _$EventDataCopyWithImpl<$Res, $Val extends EventData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of EventData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -91,6 +97,8 @@ class __$$EventDataImplCopyWithImpl<$Res>
       _$EventDataImpl _value, $Res Function(_$EventDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EventData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -146,11 +154,13 @@ class _$EventDataImpl implements _EventData {
             (identical(other.status, status) || other.status == status));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, title, stars, status);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EventData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$EventDataImplCopyWith<_$EventDataImpl> get copyWith =>
@@ -179,8 +189,11 @@ abstract class _EventData implements EventData {
   double get stars;
   @override
   EventStatus get status;
+
+  /// Create a copy of EventData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$EventDataImplCopyWith<_$EventDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

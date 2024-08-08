@@ -50,7 +50,9 @@ mixin _$HabitsState {
   String get searchString => throw _privateConstructorUsedError;
   HabitDisplayFilter get displayFilter => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $HabitsStateCopyWith<HabitsState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -102,6 +104,8 @@ class _$HabitsStateCopyWithImpl<$Res, $Val extends HabitsState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of HabitsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -298,6 +302,8 @@ class __$$HabitsStateSavedImplCopyWithImpl<$Res>
       $Res Function(_$HabitsStateSavedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of HabitsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -735,7 +741,9 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
         displayFilter
       ]);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$HabitsStateSavedImplCopyWith<_$HabitsStateSavedImpl> get copyWith =>
@@ -831,8 +839,11 @@ abstract class _HabitsStateSaved implements HabitsState {
   String get searchString;
   @override
   HabitDisplayFilter get displayFilter;
+
+  /// Create a copy of HabitsState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$HabitsStateSavedImplCopyWith<_$HabitsStateSavedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

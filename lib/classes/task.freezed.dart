@@ -168,8 +168,13 @@ mixin _$TaskStatus {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this TaskStatus to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $TaskStatusCopyWith<TaskStatus> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -200,6 +205,8 @@ class _$TaskStatusCopyWithImpl<$Res, $Val extends TaskStatus>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -233,6 +240,8 @@ class _$TaskStatusCopyWithImpl<$Res, $Val extends TaskStatus>
     ) as $Val);
   }
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $GeolocationCopyWith<$Res>? get geolocation {
@@ -273,6 +282,8 @@ class __$$TaskOpenImplCopyWithImpl<$Res>
       _$TaskOpenImpl _value, $Res Function(_$TaskOpenImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -357,12 +368,14 @@ class _$TaskOpenImpl implements _TaskOpen {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
@@ -543,8 +556,11 @@ abstract class _TaskOpen implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -576,6 +592,8 @@ class __$$TaskStartedImplCopyWithImpl<$Res>
       _$TaskStartedImpl _value, $Res Function(_$TaskStartedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -660,12 +678,14 @@ class _$TaskStartedImpl implements _TaskStarted {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskStartedImplCopyWith<_$TaskStartedImpl> get copyWith =>
@@ -846,8 +866,11 @@ abstract class _TaskStarted implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskStartedImplCopyWith<_$TaskStartedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -879,6 +902,8 @@ class __$$TaskInProgressImplCopyWithImpl<$Res>
       _$TaskInProgressImpl _value, $Res Function(_$TaskInProgressImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -963,12 +988,14 @@ class _$TaskInProgressImpl implements _TaskInProgress {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskInProgressImplCopyWith<_$TaskInProgressImpl> get copyWith =>
@@ -1150,8 +1177,11 @@ abstract class _TaskInProgress implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskInProgressImplCopyWith<_$TaskInProgressImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -1183,6 +1213,8 @@ class __$$TaskGroomedImplCopyWithImpl<$Res>
       _$TaskGroomedImpl _value, $Res Function(_$TaskGroomedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1267,12 +1299,14 @@ class _$TaskGroomedImpl implements _TaskGroomed {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskGroomedImplCopyWith<_$TaskGroomedImpl> get copyWith =>
@@ -1453,8 +1487,11 @@ abstract class _TaskGroomed implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskGroomedImplCopyWith<_$TaskGroomedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -1487,6 +1524,8 @@ class __$$TaskBlockedImplCopyWithImpl<$Res>
       _$TaskBlockedImpl _value, $Res Function(_$TaskBlockedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1580,12 +1619,14 @@ class _$TaskBlockedImpl implements _TaskBlocked {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, id, createdAt, utcOffset, reason, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskBlockedImplCopyWith<_$TaskBlockedImpl> get copyWith =>
@@ -1769,8 +1810,11 @@ abstract class _TaskBlocked implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskBlockedImplCopyWith<_$TaskBlockedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -1803,6 +1847,8 @@ class __$$TaskOnHoldImplCopyWithImpl<$Res>
       _$TaskOnHoldImpl _value, $Res Function(_$TaskOnHoldImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1896,12 +1942,14 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, id, createdAt, utcOffset, reason, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskOnHoldImplCopyWith<_$TaskOnHoldImpl> get copyWith =>
@@ -2085,8 +2133,11 @@ abstract class _TaskOnHold implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskOnHoldImplCopyWith<_$TaskOnHoldImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2118,6 +2169,8 @@ class __$$TaskDoneImplCopyWithImpl<$Res>
       _$TaskDoneImpl _value, $Res Function(_$TaskDoneImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2202,12 +2255,14 @@ class _$TaskDoneImpl implements _TaskDone {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskDoneImplCopyWith<_$TaskDoneImpl> get copyWith =>
@@ -2388,8 +2443,11 @@ abstract class _TaskDone implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskDoneImplCopyWith<_$TaskDoneImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2421,6 +2479,8 @@ class __$$TaskRejectedImplCopyWithImpl<$Res>
       _$TaskRejectedImpl _value, $Res Function(_$TaskRejectedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2505,12 +2565,14 @@ class _$TaskRejectedImpl implements _TaskRejected {
                 other.geolocation == geolocation));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskRejectedImplCopyWith<_$TaskRejectedImpl> get copyWith =>
@@ -2691,8 +2753,11 @@ abstract class _TaskRejected implements TaskStatus {
   String? get timezone;
   @override
   Geolocation? get geolocation;
+
+  /// Create a copy of TaskStatus
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskRejectedImplCopyWith<_$TaskRejectedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2711,8 +2776,12 @@ mixin _$TaskData {
   DateTime? get due => throw _privateConstructorUsedError;
   Duration? get estimate => throw _privateConstructorUsedError;
 
+  /// Serializes this TaskData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $TaskDataCopyWith<TaskData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2744,6 +2813,8 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2787,6 +2858,8 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
     ) as $Val);
   }
 
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $TaskStatusCopyWith<$Res> get status {
@@ -2825,6 +2898,8 @@ class __$$TaskDataImplCopyWithImpl<$Res>
       _$TaskDataImpl _value, $Res Function(_$TaskDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2928,7 +3003,7 @@ class _$TaskDataImpl implements _TaskData {
                 other.estimate == estimate));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -2940,7 +3015,9 @@ class _$TaskDataImpl implements _TaskData {
       due,
       estimate);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$TaskDataImplCopyWith<_$TaskDataImpl> get copyWith =>
@@ -2981,8 +3058,11 @@ abstract class _TaskData implements TaskData {
   DateTime? get due;
   @override
   Duration? get estimate;
+
+  /// Create a copy of TaskData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskDataImplCopyWith<_$TaskDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

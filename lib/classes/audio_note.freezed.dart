@@ -25,8 +25,12 @@ mixin _$AudioNote {
   String get audioDirectory => throw _privateConstructorUsedError;
   Duration get duration => throw _privateConstructorUsedError;
 
+  /// Serializes this AudioNote to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of AudioNote
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $AudioNoteCopyWith<AudioNote> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -53,6 +57,8 @@ class _$AudioNoteCopyWithImpl<$Res, $Val extends AudioNote>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of AudioNote
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -105,6 +111,8 @@ class __$$AudioNoteImplCopyWithImpl<$Res>
       _$AudioNoteImpl _value, $Res Function(_$AudioNoteImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AudioNote
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -175,12 +183,14 @@ class _$AudioNoteImpl implements _AudioNote {
                 other.duration == duration));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, createdAt, audioFile, audioDirectory, duration);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AudioNote
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AudioNoteImplCopyWith<_$AudioNoteImpl> get copyWith =>
@@ -212,8 +222,11 @@ abstract class _AudioNote implements AudioNote {
   String get audioDirectory;
   @override
   Duration get duration;
+
+  /// Create a copy of AudioNote
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AudioNoteImplCopyWith<_$AudioNoteImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

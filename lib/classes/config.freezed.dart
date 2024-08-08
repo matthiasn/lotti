@@ -26,8 +26,12 @@ mixin _$ImapConfig {
   String get password => throw _privateConstructorUsedError;
   int get port => throw _privateConstructorUsedError;
 
+  /// Serializes this ImapConfig to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of ImapConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $ImapConfigCopyWith<ImapConfig> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -52,6 +56,8 @@ class _$ImapConfigCopyWithImpl<$Res, $Val extends ImapConfig>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of ImapConfig
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -106,6 +112,8 @@ class __$$ImapConfigImplCopyWithImpl<$Res>
       _$ImapConfigImpl _value, $Res Function(_$ImapConfigImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of ImapConfig
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -183,12 +191,14 @@ class _$ImapConfigImpl implements _ImapConfig {
             (identical(other.port, port) || other.port == port));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, host, folder, userName, password, port);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of ImapConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$ImapConfigImplCopyWith<_$ImapConfigImpl> get copyWith =>
@@ -223,8 +233,11 @@ abstract class _ImapConfig implements ImapConfig {
   String get password;
   @override
   int get port;
+
+  /// Create a copy of ImapConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ImapConfigImplCopyWith<_$ImapConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -239,8 +252,12 @@ mixin _$MatrixConfig {
   String get user => throw _privateConstructorUsedError;
   String get password => throw _privateConstructorUsedError;
 
+  /// Serializes this MatrixConfig to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of MatrixConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $MatrixConfigCopyWith<MatrixConfig> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -264,6 +281,8 @@ class _$MatrixConfigCopyWithImpl<$Res, $Val extends MatrixConfig>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of MatrixConfig
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -307,6 +326,8 @@ class __$$MatrixConfigImplCopyWithImpl<$Res>
       _$MatrixConfigImpl _value, $Res Function(_$MatrixConfigImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of MatrixConfig
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -364,11 +385,13 @@ class _$MatrixConfigImpl implements _MatrixConfig {
                 other.password == password));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, homeServer, user, password);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of MatrixConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$MatrixConfigImplCopyWith<_$MatrixConfigImpl> get copyWith =>
@@ -397,8 +420,11 @@ abstract class _MatrixConfig implements MatrixConfig {
   String get user;
   @override
   String get password;
+
+  /// Create a copy of MatrixConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MatrixConfigImplCopyWith<_$MatrixConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -412,8 +438,12 @@ mixin _$SyncConfig {
   ImapConfig get imapConfig => throw _privateConstructorUsedError;
   String get sharedSecret => throw _privateConstructorUsedError;
 
+  /// Serializes this SyncConfig to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of SyncConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $SyncConfigCopyWith<SyncConfig> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -439,6 +469,8 @@ class _$SyncConfigCopyWithImpl<$Res, $Val extends SyncConfig>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of SyncConfig
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -457,6 +489,8 @@ class _$SyncConfigCopyWithImpl<$Res, $Val extends SyncConfig>
     ) as $Val);
   }
 
+  /// Create a copy of SyncConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $ImapConfigCopyWith<$Res> get imapConfig {
@@ -488,6 +522,8 @@ class __$$SyncConfigImplCopyWithImpl<$Res>
       _$SyncConfigImpl _value, $Res Function(_$SyncConfigImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of SyncConfig
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -537,11 +573,13 @@ class _$SyncConfigImpl implements _SyncConfig {
                 other.sharedSecret == sharedSecret));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, imapConfig, sharedSecret);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SyncConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$SyncConfigImplCopyWith<_$SyncConfigImpl> get copyWith =>
@@ -567,8 +605,11 @@ abstract class _SyncConfig implements SyncConfig {
   ImapConfig get imapConfig;
   @override
   String get sharedSecret;
+
+  /// Create a copy of SyncConfig
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncConfigImplCopyWith<_$SyncConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

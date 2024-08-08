@@ -90,6 +90,9 @@ class _$OutboxStateCopyWithImpl<$Res, $Val extends OutboxState>
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
+
+  /// Create a copy of OutboxState
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc
@@ -106,6 +109,9 @@ class __$$InitialImplCopyWithImpl<$Res>
   __$$InitialImplCopyWithImpl(
       _$InitialImpl _value, $Res Function(_$InitialImpl) _then)
       : super(_value, _then);
+
+  /// Create a copy of OutboxState
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc
@@ -226,6 +232,9 @@ class __$$LoadingImplCopyWithImpl<$Res>
   __$$LoadingImplCopyWithImpl(
       _$LoadingImpl _value, $Res Function(_$LoadingImpl) _then)
       : super(_value, _then);
+
+  /// Create a copy of OutboxState
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc
@@ -346,6 +355,9 @@ class __$$OnlineImplCopyWithImpl<$Res>
   __$$OnlineImplCopyWithImpl(
       _$OnlineImpl _value, $Res Function(_$OnlineImpl) _then)
       : super(_value, _then);
+
+  /// Create a copy of OutboxState
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc
@@ -466,6 +478,9 @@ class __$$OutboxDisabledImplCopyWithImpl<$Res>
   __$$OutboxDisabledImplCopyWithImpl(
       _$OutboxDisabledImpl _value, $Res Function(_$OutboxDisabledImpl) _then)
       : super(_value, _then);
+
+  /// Create a copy of OutboxState
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc
@@ -586,6 +601,9 @@ class __$$FailedImplCopyWithImpl<$Res>
   __$$FailedImplCopyWithImpl(
       _$FailedImpl _value, $Res Function(_$FailedImpl) _then)
       : super(_value, _then);
+
+  /// Create a copy of OutboxState
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc

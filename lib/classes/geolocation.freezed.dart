@@ -33,8 +33,12 @@ mixin _$Geolocation {
   double? get headingAccuracy => throw _privateConstructorUsedError;
   double? get altitude => throw _privateConstructorUsedError;
 
+  /// Serializes this Geolocation to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of Geolocation
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $GeolocationCopyWith<Geolocation> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -70,6 +74,8 @@ class _$GeolocationCopyWithImpl<$Res, $Val extends Geolocation>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of Geolocation
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -170,6 +176,8 @@ class __$$GeolocationImplCopyWithImpl<$Res>
       _$GeolocationImpl _value, $Res Function(_$GeolocationImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of Geolocation
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -318,7 +326,7 @@ class _$GeolocationImpl implements _Geolocation {
                 other.altitude == altitude));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -335,7 +343,9 @@ class _$GeolocationImpl implements _Geolocation {
       headingAccuracy,
       altitude);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of Geolocation
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$GeolocationImplCopyWith<_$GeolocationImpl> get copyWith =>
@@ -391,8 +401,11 @@ abstract class _Geolocation implements Geolocation {
   double? get headingAccuracy;
   @override
   double? get altitude;
+
+  /// Create a copy of Geolocation
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$GeolocationImplCopyWith<_$GeolocationImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
