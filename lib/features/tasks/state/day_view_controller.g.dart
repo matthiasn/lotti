@@ -6,7 +6,7 @@ part of 'day_view_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dayViewControllerHash() => r'bdb92b8bcf96487ae98d615aa7986c9738664c62';
+String _$dayViewControllerHash() => r'75cbe6d6ef472707901d3d982735aa106ebd1e96';
 
 /// See also [DayViewController].
 @ProviderFor(DayViewController)
@@ -40,5 +40,22 @@ final daySelectionControllerProvider =
 );
 
 typedef _$DaySelectionController = Notifier<DateTime>;
+String _$calendarGlobalKeyControllerHash() =>
+    r'6af4c5140ecb6879c748844d5567949135a8c089';
+
+/// See also [CalendarGlobalKeyController].
+@ProviderFor(CalendarGlobalKeyController)
+final calendarGlobalKeyControllerProvider = NotifierProvider<
+    CalendarGlobalKeyController, GlobalKey<DayViewState>>.internal(
+  CalendarGlobalKeyController.new,
+  name: r'calendarGlobalKeyControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$calendarGlobalKeyControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$CalendarGlobalKeyController = Notifier<GlobalKey<DayViewState>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

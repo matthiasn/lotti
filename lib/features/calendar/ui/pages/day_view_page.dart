@@ -66,7 +66,6 @@ class DayViewWidget extends ConsumerStatefulWidget {
 
 class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
   var _heightPerMinute = .5;
-  final GlobalKey<DayViewState>? state = GlobalKey<DayViewState>();
 
   Widget timeLineBuilder(DateTime date) {
     if (date.minute == 0) {
@@ -90,12 +89,6 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedDay = ref.watch(daySelectionControllerProvider);
-
-    if (state?.currentState?.currentDate != selectedDay) {
-      state?.currentState?.jumpToDate(selectedDay);
-    }
-
     return VisibilityDetector(
       key: const Key('DayViewPage'),
       onVisibilityChanged:
@@ -104,11 +97,11 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
         children: [
           DayView(
             backgroundColor: Colors.transparent,
-            key: state,
+            key: ref.watch(calendarGlobalKeyControllerProvider),
             showHalfHours: true,
             heightPerMinute: _heightPerMinute,
             keepScrollOffset: true,
-            initialDay: selectedDay,
+            initialDay: DateTime.now(),
             headerStyle: HeaderStyle(
               headerTextStyle: chartTitleStyleMonospace.copyWith(
                 fontWeight: FontWeight.w400,
