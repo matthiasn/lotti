@@ -95,8 +95,13 @@ mixin _$SyncMessage {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this SyncMessage to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $SyncMessageCopyWith<SyncMessage> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -120,6 +125,8 @@ class _$SyncMessageCopyWithImpl<$Res, $Val extends SyncMessage>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -155,6 +162,8 @@ class __$$SyncJournalEntityImplCopyWithImpl<$Res>
       $Res Function(_$SyncJournalEntityImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -173,6 +182,8 @@ class __$$SyncJournalEntityImplCopyWithImpl<$Res>
     ));
   }
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $JournalEntityCopyWith<$Res> get journalEntity {
@@ -215,11 +226,13 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
             (identical(other.status, status) || other.status == status));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, journalEntity, status);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$SyncJournalEntityImplCopyWith<_$SyncJournalEntityImpl> get copyWith =>
@@ -330,8 +343,11 @@ abstract class SyncJournalEntity implements SyncMessage {
   JournalEntity get journalEntity;
   @override
   SyncEntryStatus get status;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncJournalEntityImplCopyWith<_$SyncJournalEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -357,6 +373,8 @@ class __$$SyncEntityDefinitionImplCopyWithImpl<$Res>
       $Res Function(_$SyncEntityDefinitionImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -375,6 +393,8 @@ class __$$SyncEntityDefinitionImplCopyWithImpl<$Res>
     ));
   }
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $EntityDefinitionCopyWith<$Res> get entityDefinition {
@@ -419,11 +439,13 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
             (identical(other.status, status) || other.status == status));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, entityDefinition, status);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$SyncEntityDefinitionImplCopyWith<_$SyncEntityDefinitionImpl>
@@ -535,8 +557,11 @@ abstract class SyncEntityDefinition implements SyncMessage {
   EntityDefinition get entityDefinition;
   @override
   SyncEntryStatus get status;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncEntityDefinitionImplCopyWith<_$SyncEntityDefinitionImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -562,6 +587,8 @@ class __$$SyncTagEntityImplCopyWithImpl<$Res>
       _$SyncTagEntityImpl _value, $Res Function(_$SyncTagEntityImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -580,6 +607,8 @@ class __$$SyncTagEntityImplCopyWithImpl<$Res>
     ));
   }
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $TagEntityCopyWith<$Res> get tagEntity {
@@ -622,11 +651,13 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
             (identical(other.status, status) || other.status == status));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, tagEntity, status);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$SyncTagEntityImplCopyWith<_$SyncTagEntityImpl> get copyWith =>
@@ -736,8 +767,11 @@ abstract class SyncTagEntity implements SyncMessage {
   TagEntity get tagEntity;
   @override
   SyncEntryStatus get status;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncTagEntityImplCopyWith<_$SyncTagEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -763,6 +797,8 @@ class __$$SyncEntryLinkImplCopyWithImpl<$Res>
       _$SyncEntryLinkImpl _value, $Res Function(_$SyncEntryLinkImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -781,6 +817,8 @@ class __$$SyncEntryLinkImplCopyWithImpl<$Res>
     ));
   }
 
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $EntryLinkCopyWith<$Res> get entryLink {
@@ -823,11 +861,13 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
             (identical(other.status, status) || other.status == status));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, entryLink, status);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$SyncEntryLinkImplCopyWith<_$SyncEntryLinkImpl> get copyWith =>
@@ -937,8 +977,11 @@ abstract class SyncEntryLink implements SyncMessage {
   EntryLink get entryLink;
   @override
   SyncEntryStatus get status;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncEntryLinkImplCopyWith<_$SyncEntryLinkImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

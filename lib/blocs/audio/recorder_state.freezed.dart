@@ -22,7 +22,9 @@ mixin _$AudioRecorderState {
   bool get showIndicator => throw _privateConstructorUsedError;
   String? get language => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AudioRecorderState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $AudioRecorderStateCopyWith<AudioRecorderState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -51,6 +53,8 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of AudioRecorderState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -109,6 +113,8 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
       $Res Function(_$AudioRecorderStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AudioRecorderState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -189,7 +195,9 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   int get hashCode => Object.hash(
       runtimeType, status, progress, decibels, showIndicator, language);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AudioRecorderState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AudioRecorderStateImplCopyWith<_$AudioRecorderStateImpl> get copyWith =>
@@ -215,8 +223,11 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   bool get showIndicator;
   @override
   String? get language;
+
+  /// Create a copy of AudioRecorderState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AudioRecorderStateImplCopyWith<_$AudioRecorderStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

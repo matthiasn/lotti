@@ -24,7 +24,9 @@ mixin _$DashboardsPageState {
   bool get showSearch => throw _privateConstructorUsedError;
   String get searchString => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardsPageState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $DashboardsPageStateCopyWith<DashboardsPageState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -53,6 +55,8 @@ class _$DashboardsPageStateCopyWithImpl<$Res, $Val extends DashboardsPageState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of DashboardsPageState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -111,6 +115,8 @@ class __$$DashboardsPageStateImplCopyWithImpl<$Res>
       $Res Function(_$DashboardsPageStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardsPageState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -220,7 +226,9 @@ class _$DashboardsPageStateImpl implements _DashboardsPageState {
       showSearch,
       searchString);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardsPageState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardsPageStateImplCopyWith<_$DashboardsPageStateImpl> get copyWith =>
@@ -246,8 +254,11 @@ abstract class _DashboardsPageState implements DashboardsPageState {
   bool get showSearch;
   @override
   String get searchString;
+
+  /// Create a copy of DashboardsPageState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardsPageStateImplCopyWith<_$DashboardsPageStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
