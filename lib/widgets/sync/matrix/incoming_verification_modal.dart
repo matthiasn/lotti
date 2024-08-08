@@ -162,12 +162,14 @@ class _IncomingVerificationWrapperState
     super.initState();
 
     _stream.listen((keyVerification) {
-      showModalBottomSheet<void>(
-        context: context,
-        builder: (context) {
-          return IncomingVerificationModal(keyVerification);
-        },
-      );
+      if (mounted) {
+        showModalBottomSheet<void>(
+          context: context,
+          builder: (context) {
+            return IncomingVerificationModal(keyVerification);
+          },
+        );
+      }
     });
   }
 

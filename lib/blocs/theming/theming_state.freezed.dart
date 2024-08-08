@@ -22,7 +22,9 @@ mixin _$ThemingState {
   String? get lightThemeName => throw _privateConstructorUsedError;
   ThemeMode? get themeMode => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of ThemingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $ThemingStateCopyWith<ThemingState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -51,6 +53,8 @@ class _$ThemingStateCopyWithImpl<$Res, $Val extends ThemingState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of ThemingState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -109,6 +113,8 @@ class __$$ThemingStateImplCopyWithImpl<$Res>
       _$ThemingStateImpl _value, $Res Function(_$ThemingStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of ThemingState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -190,7 +196,9 @@ class _$ThemingStateImpl implements _ThemingState {
   int get hashCode => Object.hash(runtimeType, darkTheme, lightTheme,
       darkThemeName, lightThemeName, themeMode);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of ThemingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$ThemingStateImplCopyWith<_$ThemingStateImpl> get copyWith =>
@@ -215,8 +223,11 @@ abstract class _ThemingState implements ThemingState {
   String? get lightThemeName;
   @override
   ThemeMode? get themeMode;
+
+  /// Create a copy of ThemingState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ThemingStateImplCopyWith<_$ThemingStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

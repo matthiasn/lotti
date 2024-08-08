@@ -77,8 +77,13 @@ mixin _$HabitSchedule {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this HabitSchedule to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $HabitScheduleCopyWith<HabitSchedule> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -102,6 +107,8 @@ class _$HabitScheduleCopyWithImpl<$Res, $Val extends HabitSchedule>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -135,6 +142,8 @@ class __$$DailyHabitScheduleImplCopyWithImpl<$Res>
       $Res Function(_$DailyHabitScheduleImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -188,11 +197,13 @@ class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
                 other.showFrom == showFrom));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, requiredCompletions, showFrom);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DailyHabitScheduleImplCopyWith<_$DailyHabitScheduleImpl> get copyWith =>
@@ -287,8 +298,11 @@ abstract class DailyHabitSchedule implements HabitSchedule {
   @override
   int get requiredCompletions;
   DateTime? get showFrom;
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DailyHabitScheduleImplCopyWith<_$DailyHabitScheduleImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -312,6 +326,8 @@ class __$$WeeklyHabitScheduleImplCopyWithImpl<$Res>
       $Res Function(_$WeeklyHabitScheduleImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -356,11 +372,13 @@ class _$WeeklyHabitScheduleImpl implements WeeklyHabitSchedule {
                 other.requiredCompletions == requiredCompletions));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, requiredCompletions);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$WeeklyHabitScheduleImplCopyWith<_$WeeklyHabitScheduleImpl> get copyWith =>
@@ -453,8 +471,11 @@ abstract class WeeklyHabitSchedule implements HabitSchedule {
 
   @override
   int get requiredCompletions;
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$WeeklyHabitScheduleImplCopyWith<_$WeeklyHabitScheduleImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -478,6 +499,8 @@ class __$$MonthlyHabitScheduleImplCopyWithImpl<$Res>
       $Res Function(_$MonthlyHabitScheduleImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -522,11 +545,13 @@ class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
                 other.requiredCompletions == requiredCompletions));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, requiredCompletions);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$MonthlyHabitScheduleImplCopyWith<_$MonthlyHabitScheduleImpl>
@@ -620,8 +645,11 @@ abstract class MonthlyHabitSchedule implements HabitSchedule {
 
   @override
   int get requiredCompletions;
+
+  /// Create a copy of HabitSchedule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MonthlyHabitScheduleImplCopyWith<_$MonthlyHabitScheduleImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -744,8 +772,13 @@ mixin _$AutoCompleteRule {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this AutoCompleteRule to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $AutoCompleteRuleCopyWith<AutoCompleteRule> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -769,6 +802,8 @@ class _$AutoCompleteRuleCopyWithImpl<$Res, $Val extends AutoCompleteRule>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -804,6 +839,8 @@ class __$$AutoCompleteRuleHealthImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleHealthImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -876,12 +913,14 @@ class _$AutoCompleteRuleHealthImpl implements AutoCompleteRuleHealth {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, dataType, minimum, maximum, title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleHealthImplCopyWith<_$AutoCompleteRuleHealthImpl>
@@ -1027,8 +1066,11 @@ abstract class AutoCompleteRuleHealth implements AutoCompleteRule {
   num? get maximum;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleHealthImplCopyWith<_$AutoCompleteRuleHealthImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -1054,6 +1096,8 @@ class __$$AutoCompleteRuleWorkoutImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleWorkoutImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1126,12 +1170,14 @@ class _$AutoCompleteRuleWorkoutImpl implements AutoCompleteRuleWorkout {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, dataType, minimum, maximum, title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleWorkoutImplCopyWith<_$AutoCompleteRuleWorkoutImpl>
@@ -1277,8 +1323,11 @@ abstract class AutoCompleteRuleWorkout implements AutoCompleteRule {
   num? get maximum;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleWorkoutImplCopyWith<_$AutoCompleteRuleWorkoutImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -1305,6 +1354,8 @@ class __$$AutoCompleteRuleMeasurableImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleMeasurableImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1378,12 +1429,14 @@ class _$AutoCompleteRuleMeasurableImpl implements AutoCompleteRuleMeasurable {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, dataTypeId, minimum, maximum, title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleMeasurableImplCopyWith<_$AutoCompleteRuleMeasurableImpl>
@@ -1529,8 +1582,11 @@ abstract class AutoCompleteRuleMeasurable implements AutoCompleteRule {
   num? get maximum;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleMeasurableImplCopyWith<_$AutoCompleteRuleMeasurableImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -1555,6 +1611,8 @@ class __$$AutoCompleteRuleHabitImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleHabitImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1606,11 +1664,13 @@ class _$AutoCompleteRuleHabitImpl implements AutoCompleteRuleHabit {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, habitId, title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleHabitImplCopyWith<_$AutoCompleteRuleHabitImpl>
@@ -1752,8 +1812,11 @@ abstract class AutoCompleteRuleHabit implements AutoCompleteRule {
   String get habitId;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleHabitImplCopyWith<_$AutoCompleteRuleHabitImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -1777,6 +1840,8 @@ class __$$AutoCompleteRuleAndImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleAndImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -1837,12 +1902,14 @@ class _$AutoCompleteRuleAndImpl implements AutoCompleteRuleAnd {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, const DeepCollectionEquality().hash(_rules), title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleAndImplCopyWith<_$AutoCompleteRuleAndImpl> get copyWith =>
@@ -1984,8 +2051,11 @@ abstract class AutoCompleteRuleAnd implements AutoCompleteRule {
   List<AutoCompleteRule> get rules;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleAndImplCopyWith<_$AutoCompleteRuleAndImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2009,6 +2079,8 @@ class __$$AutoCompleteRuleOrImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleOrImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2069,12 +2141,14 @@ class _$AutoCompleteRuleOrImpl implements AutoCompleteRuleOr {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, const DeepCollectionEquality().hash(_rules), title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleOrImplCopyWith<_$AutoCompleteRuleOrImpl> get copyWith =>
@@ -2216,8 +2290,11 @@ abstract class AutoCompleteRuleOr implements AutoCompleteRule {
   List<AutoCompleteRule> get rules;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleOrImplCopyWith<_$AutoCompleteRuleOrImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2243,6 +2320,8 @@ class __$$AutoCompleteRuleMultipleImplCopyWithImpl<$Res>
       $Res Function(_$AutoCompleteRuleMultipleImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2313,12 +2392,14 @@ class _$AutoCompleteRuleMultipleImpl implements AutoCompleteRuleMultiple {
             (identical(other.title, title) || other.title == title));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType,
       const DeepCollectionEquality().hash(_rules), successes, title);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$AutoCompleteRuleMultipleImplCopyWith<_$AutoCompleteRuleMultipleImpl>
@@ -2462,8 +2543,11 @@ abstract class AutoCompleteRuleMultiple implements AutoCompleteRule {
   int get successes;
   @override
   String? get title;
+
+  /// Create a copy of AutoCompleteRule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AutoCompleteRuleMultipleImplCopyWith<_$AutoCompleteRuleMultipleImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -2724,8 +2808,13 @@ mixin _$EntityDefinition {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this EntityDefinition to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $EntityDefinitionCopyWith<EntityDefinition> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -2756,6 +2845,8 @@ class _$EntityDefinitionCopyWithImpl<$Res, $Val extends EntityDefinition>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2832,6 +2923,8 @@ class __$$MeasurableDataTypeImplCopyWithImpl<$Res>
       $Res Function(_$MeasurableDataTypeImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -2994,7 +3087,7 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
                 other.aggregationType == aggregationType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -3012,7 +3105,9 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
       categoryId,
       aggregationType);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$MeasurableDataTypeImplCopyWith<_$MeasurableDataTypeImpl> get copyWith =>
@@ -3359,8 +3454,11 @@ abstract class MeasurableDataType implements EntityDefinition {
   @override
   String? get categoryId;
   AggregationType? get aggregationType;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MeasurableDataTypeImplCopyWith<_$MeasurableDataTypeImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -3394,6 +3492,8 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
       $Res Function(_$CategoryDefinitionImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -3524,12 +3624,14 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
                 other.deletedAt == deletedAt));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
       vectorClock, private, active, color, categoryId, deletedAt);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$CategoryDefinitionImplCopyWith<_$CategoryDefinitionImpl> get copyWith =>
@@ -3834,8 +3936,11 @@ abstract class CategoryDefinition implements EntityDefinition {
   String? get categoryId;
   @override
   DateTime? get deletedAt;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$CategoryDefinitionImplCopyWith<_$CategoryDefinitionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -3880,6 +3985,8 @@ class __$$HabitDefinitionImplCopyWithImpl<$Res>
       _$HabitDefinitionImpl _value, $Res Function(_$HabitDefinitionImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -3978,6 +4085,8 @@ class __$$HabitDefinitionImplCopyWithImpl<$Res>
     ));
   }
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $HabitScheduleCopyWith<$Res> get habitSchedule {
@@ -3986,6 +4095,8 @@ class __$$HabitDefinitionImplCopyWithImpl<$Res>
     });
   }
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule {
@@ -4110,7 +4221,7 @@ class _$HabitDefinitionImpl implements HabitDefinition {
                 other.priority == priority));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -4133,7 +4244,9 @@ class _$HabitDefinitionImpl implements HabitDefinition {
       dashboardId,
       priority);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$HabitDefinitionImplCopyWith<_$HabitDefinitionImpl> get copyWith =>
@@ -4505,8 +4618,11 @@ abstract class HabitDefinition implements EntityDefinition {
   String? get categoryId;
   String? get dashboardId;
   bool? get priority;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$HabitDefinitionImplCopyWith<_$HabitDefinitionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -4545,6 +4661,8 @@ class __$$DashboardDefinitionImplCopyWithImpl<$Res>
       $Res Function(_$DashboardDefinitionImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -4731,7 +4849,7 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
                 other.categoryId == categoryId));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -4751,7 +4869,9 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
       deletedAt,
       categoryId);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardDefinitionImplCopyWith<_$DashboardDefinitionImpl> get copyWith =>
@@ -5108,8 +5228,11 @@ abstract class DashboardDefinition implements EntityDefinition {
   DateTime? get deletedAt;
   @override
   String? get categoryId;
+
+  /// Create a copy of EntityDefinition
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardDefinitionImplCopyWith<_$DashboardDefinitionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5125,8 +5248,12 @@ mixin _$MeasurementData {
   num get value => throw _privateConstructorUsedError;
   String get dataTypeId => throw _privateConstructorUsedError;
 
+  /// Serializes this MeasurementData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $MeasurementDataCopyWith<MeasurementData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5150,6 +5277,8 @@ class _$MeasurementDataCopyWithImpl<$Res, $Val extends MeasurementData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5198,6 +5327,8 @@ class __$$MeasurementDataImplCopyWithImpl<$Res>
       _$MeasurementDataImpl _value, $Res Function(_$MeasurementDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5266,12 +5397,14 @@ class _$MeasurementDataImpl implements _MeasurementData {
                 other.dataTypeId == dataTypeId));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, dateFrom, dateTo, value, dataTypeId);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$MeasurementDataImplCopyWith<_$MeasurementDataImpl> get copyWith =>
@@ -5304,8 +5437,11 @@ abstract class _MeasurementData implements MeasurementData {
   num get value;
   @override
   String get dataTypeId;
+
+  /// Create a copy of MeasurementData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MeasurementDataImplCopyWith<_$MeasurementDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5324,8 +5460,12 @@ mixin _$WorkoutData {
   num? get distance => throw _privateConstructorUsedError;
   String? get source => throw _privateConstructorUsedError;
 
+  /// Serializes this WorkoutData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $WorkoutDataCopyWith<WorkoutData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5356,6 +5496,8 @@ class _$WorkoutDataCopyWithImpl<$Res, $Val extends WorkoutData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5426,6 +5568,8 @@ class __$$WorkoutDataImplCopyWithImpl<$Res>
       _$WorkoutDataImpl _value, $Res Function(_$WorkoutDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5522,12 +5666,14 @@ class _$WorkoutDataImpl implements _WorkoutData {
             (identical(other.source, source) || other.source == source));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, dateFrom, dateTo, id, workoutType, energy, distance, source);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$WorkoutDataImplCopyWith<_$WorkoutDataImpl> get copyWith =>
@@ -5568,8 +5714,11 @@ abstract class _WorkoutData implements WorkoutData {
   num? get distance;
   @override
   String? get source;
+
+  /// Create a copy of WorkoutData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$WorkoutDataImplCopyWith<_$WorkoutDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5585,8 +5734,12 @@ mixin _$HabitCompletionData {
   String get habitId => throw _privateConstructorUsedError;
   HabitCompletionType? get completionType => throw _privateConstructorUsedError;
 
+  /// Serializes this HabitCompletionData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $HabitCompletionDataCopyWith<HabitCompletionData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5614,6 +5767,8 @@ class _$HabitCompletionDataCopyWithImpl<$Res, $Val extends HabitCompletionData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5666,6 +5821,8 @@ class __$$HabitCompletionDataImplCopyWithImpl<$Res>
       $Res Function(_$HabitCompletionDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5734,12 +5891,14 @@ class _$HabitCompletionDataImpl implements _HabitCompletionData {
                 other.completionType == completionType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, dateFrom, dateTo, habitId, completionType);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$HabitCompletionDataImplCopyWith<_$HabitCompletionDataImpl> get copyWith =>
@@ -5772,8 +5931,11 @@ abstract class _HabitCompletionData implements HabitCompletionData {
   String get habitId;
   @override
   HabitCompletionType? get completionType;
+
+  /// Create a copy of HabitCompletionData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$HabitCompletionDataImplCopyWith<_$HabitCompletionDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -5888,6 +6050,8 @@ mixin _$DashboardItem {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this DashboardItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 }
 
@@ -5907,6 +6071,9 @@ class _$DashboardItemCopyWithImpl<$Res, $Val extends DashboardItem>
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
 }
 
 /// @nodoc
@@ -5928,6 +6095,8 @@ class __$$DashboardMeasurementItemImplCopyWithImpl<$Res>
       $Res Function(_$DashboardMeasurementItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -5980,11 +6149,13 @@ class _$DashboardMeasurementItemImpl implements DashboardMeasurementItem {
                 other.aggregationType == aggregationType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, aggregationType);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardMeasurementItemImplCopyWith<_$DashboardMeasurementItemImpl>
@@ -6118,7 +6289,10 @@ abstract class DashboardMeasurementItem implements DashboardItem {
 
   String get id;
   AggregationType? get aggregationType;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardMeasurementItemImplCopyWith<_$DashboardMeasurementItemImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -6140,6 +6314,8 @@ class __$$DashboardHealthItemImplCopyWithImpl<$Res>
       $Res Function(_$DashboardHealthItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -6192,11 +6368,13 @@ class _$DashboardHealthItemImpl implements DashboardHealthItem {
                 other.healthType == healthType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, color, healthType);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardHealthItemImplCopyWith<_$DashboardHealthItemImpl> get copyWith =>
@@ -6330,7 +6508,10 @@ abstract class DashboardHealthItem implements DashboardItem {
 
   String get color;
   String get healthType;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardHealthItemImplCopyWith<_$DashboardHealthItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -6356,6 +6537,8 @@ class __$$DashboardWorkoutItemImplCopyWithImpl<$Res>
       $Res Function(_$DashboardWorkoutItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -6430,12 +6613,14 @@ class _$DashboardWorkoutItemImpl implements DashboardWorkoutItem {
                 other.valueType == valueType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
       Object.hash(runtimeType, workoutType, displayName, color, valueType);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardWorkoutItemImplCopyWith<_$DashboardWorkoutItemImpl>
@@ -6574,7 +6759,10 @@ abstract class DashboardWorkoutItem implements DashboardItem {
   String get displayName;
   String get color;
   WorkoutValueType get valueType;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardWorkoutItemImplCopyWith<_$DashboardWorkoutItemImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -6596,6 +6784,8 @@ class __$$DashboardHabitItemImplCopyWithImpl<$Res>
       $Res Function(_$DashboardHabitItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -6638,11 +6828,13 @@ class _$DashboardHabitItemImpl implements DashboardHabitItem {
             (identical(other.habitId, habitId) || other.habitId == habitId));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, habitId);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardHabitItemImplCopyWith<_$DashboardHabitItemImpl> get copyWith =>
@@ -6774,7 +6966,10 @@ abstract class DashboardHabitItem implements DashboardItem {
       _$DashboardHabitItemImpl.fromJson;
 
   String get habitId;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardHabitItemImplCopyWith<_$DashboardHabitItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -6799,6 +6994,8 @@ class __$$DashboardSurveyItemImplCopyWithImpl<$Res>
       $Res Function(_$DashboardSurveyItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -6871,7 +7068,7 @@ class _$DashboardSurveyItemImpl implements DashboardSurveyItem {
                 other.surveyName == surveyName));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -6879,7 +7076,9 @@ class _$DashboardSurveyItemImpl implements DashboardSurveyItem {
       surveyType,
       surveyName);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardSurveyItemImplCopyWith<_$DashboardSurveyItemImpl> get copyWith =>
@@ -7015,7 +7214,10 @@ abstract class DashboardSurveyItem implements DashboardItem {
   Map<String, String> get colorsByScoreKey;
   String get surveyType;
   String get surveyName;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardSurveyItemImplCopyWith<_$DashboardSurveyItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -7039,6 +7241,8 @@ class __$$DashboardStoryTimeItemImplCopyWithImpl<$Res>
       $Res Function(_$DashboardStoryTimeItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -7091,11 +7295,13 @@ class _$DashboardStoryTimeItemImpl implements DashboardStoryTimeItem {
             (identical(other.color, color) || other.color == color));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, storyTagId, color);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardStoryTimeItemImplCopyWith<_$DashboardStoryTimeItemImpl>
@@ -7229,7 +7435,10 @@ abstract class DashboardStoryTimeItem implements DashboardItem {
 
   String get storyTagId;
   String get color;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardStoryTimeItemImplCopyWith<_$DashboardStoryTimeItemImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -7252,6 +7461,8 @@ class __$$WildcardStoryTimeItemImplCopyWithImpl<$Res>
       $Res Function(_$WildcardStoryTimeItemImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -7304,11 +7515,13 @@ class _$WildcardStoryTimeItemImpl implements WildcardStoryTimeItem {
             (identical(other.color, color) || other.color == color));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, storySubstring, color);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$WildcardStoryTimeItemImplCopyWith<_$WildcardStoryTimeItemImpl>
@@ -7442,7 +7655,10 @@ abstract class WildcardStoryTimeItem implements DashboardItem {
 
   String get storySubstring;
   String get color;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of DashboardItem
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$WildcardStoryTimeItemImplCopyWith<_$WildcardStoryTimeItemImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

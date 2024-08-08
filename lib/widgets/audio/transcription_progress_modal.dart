@@ -19,14 +19,16 @@ class TranscriptionProgressModalContent extends StatelessWidget {
         final status = snapshot.data?.$2;
         final hasError = status == TranscriptionStatus.error;
 
+        void pop() => Navigator.of(context).pop();
+
         if (status == TranscriptionStatus.done) {
           Future<void>.delayed(const Duration(seconds: 3))
-              .then((value) => Navigator.of(context).pop());
+              .then((value) => pop());
         }
 
         if (hasError) {
           Future<void>.delayed(const Duration(seconds: 5))
-              .then((value) => Navigator.of(context).pop());
+              .then((value) => pop());
         }
 
         return Padding(

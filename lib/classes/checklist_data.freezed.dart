@@ -23,8 +23,12 @@ mixin _$ChecklistData {
   String get title => throw _privateConstructorUsedError;
   bool get isChecked => throw _privateConstructorUsedError;
 
+  /// Serializes this ChecklistData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of ChecklistData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $ChecklistDataCopyWith<ChecklistData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -48,6 +52,8 @@ class _$ChecklistDataCopyWithImpl<$Res, $Val extends ChecklistData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of ChecklistData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -86,6 +92,8 @@ class __$$ChecklistDataImplCopyWithImpl<$Res>
       _$ChecklistDataImpl _value, $Res Function(_$ChecklistDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of ChecklistData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -133,11 +141,13 @@ class _$ChecklistDataImpl implements _ChecklistData {
                 other.isChecked == isChecked));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, title, isChecked);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of ChecklistData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$ChecklistDataImplCopyWith<_$ChecklistDataImpl> get copyWith =>
@@ -163,8 +173,11 @@ abstract class _ChecklistData implements ChecklistData {
   String get title;
   @override
   bool get isChecked;
+
+  /// Create a copy of ChecklistData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ChecklistDataImplCopyWith<_$ChecklistDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -132,8 +132,13 @@ mixin _$QuantitativeData {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
+
+  /// Serializes this QuantitativeData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $QuantitativeDataCopyWith<QuantitativeData> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -164,6 +169,8 @@ class _$QuantitativeDataCopyWithImpl<$Res, $Val extends QuantitativeData>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -236,6 +243,8 @@ class __$$CumulativeQuantityDataImplCopyWithImpl<$Res>
       $Res Function(_$CumulativeQuantityDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -338,12 +347,14 @@ class _$CumulativeQuantityDataImpl implements CumulativeQuantityData {
                 other.platformType == platformType));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, dateFrom, dateTo, value,
       dataType, unit, deviceType, platformType);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$CumulativeQuantityDataImplCopyWith<_$CumulativeQuantityDataImpl>
@@ -508,8 +519,11 @@ abstract class CumulativeQuantityData implements QuantitativeData {
   String? get deviceType;
   @override
   String? get platformType;
+
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$CumulativeQuantityDataImplCopyWith<_$CumulativeQuantityDataImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
@@ -543,6 +557,8 @@ class __$$DiscreteQuantityDataImplCopyWithImpl<$Res>
       $Res Function(_$DiscreteQuantityDataImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -675,12 +691,14 @@ class _$DiscreteQuantityDataImpl implements DiscreteQuantityData {
                 other.deviceId == deviceId));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, dateFrom, dateTo, value,
       dataType, unit, deviceType, platformType, sourceName, sourceId, deviceId);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$DiscreteQuantityDataImplCopyWith<_$DiscreteQuantityDataImpl>
@@ -852,8 +870,11 @@ abstract class DiscreteQuantityData implements QuantitativeData {
   String? get sourceName;
   String? get sourceId;
   String? get deviceId;
+
+  /// Create a copy of QuantitativeData
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DiscreteQuantityDataImplCopyWith<_$DiscreteQuantityDataImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

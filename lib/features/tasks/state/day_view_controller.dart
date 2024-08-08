@@ -31,8 +31,8 @@ class DayViewController extends _$DayViewController {
   void listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      final latest = await _fetch();
-      if (latest != state.value && _isVisible) {
+      if (_isVisible) {
+        final latest = await _fetch();
         state = AsyncData(latest);
       }
     });

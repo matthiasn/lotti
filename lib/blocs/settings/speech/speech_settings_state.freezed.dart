@@ -23,7 +23,9 @@ mixin _$SpeechSettingsState {
       throw _privateConstructorUsedError;
   String? get selectedModel => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SpeechSettingsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $SpeechSettingsStateCopyWith<SpeechSettingsState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -51,6 +53,8 @@ class _$SpeechSettingsStateCopyWithImpl<$Res, $Val extends SpeechSettingsState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of SpeechSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -103,6 +107,8 @@ class __$$SpeechSettingsStateImplCopyWithImpl<$Res>
       $Res Function(_$SpeechSettingsStateImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of SpeechSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -200,7 +206,9 @@ class _$SpeechSettingsStateImpl implements _SpeechSettingsState {
       const DeepCollectionEquality().hash(_downloadedModelSizes),
       selectedModel);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of SpeechSettingsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$SpeechSettingsStateImplCopyWith<_$SpeechSettingsStateImpl> get copyWith =>
@@ -223,8 +231,11 @@ abstract class _SpeechSettingsState implements SpeechSettingsState {
   Map<String, double> get downloadedModelSizes;
   @override
   String? get selectedModel;
+
+  /// Create a copy of SpeechSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SpeechSettingsStateImplCopyWith<_$SpeechSettingsStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

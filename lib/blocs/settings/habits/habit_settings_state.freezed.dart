@@ -23,7 +23,9 @@ mixin _$HabitSettingsState {
   AutoCompleteRule? get autoCompleteRule => throw _privateConstructorUsedError;
   StoryTag? get defaultStory => throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitSettingsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $HabitSettingsStateCopyWith<HabitSettingsState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -55,6 +57,8 @@ class _$HabitSettingsStateCopyWithImpl<$Res, $Val extends HabitSettingsState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of HabitSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -93,6 +97,8 @@ class _$HabitSettingsStateCopyWithImpl<$Res, $Val extends HabitSettingsState>
     ) as $Val);
   }
 
+  /// Create a copy of HabitSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule {
@@ -137,6 +143,8 @@ class __$$HabitSettingsStateSavedImplCopyWithImpl<$Res>
       $Res Function(_$HabitSettingsStateSavedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of HabitSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -239,7 +247,9 @@ class _$HabitSettingsStateSavedImpl implements _HabitSettingsStateSaved {
       autoCompleteRule,
       const DeepCollectionEquality().hash(defaultStory));
 
-  @JsonKey(ignore: true)
+  /// Create a copy of HabitSettingsState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$HabitSettingsStateSavedImplCopyWith<_$HabitSettingsStateSavedImpl>
@@ -268,8 +278,11 @@ abstract class _HabitSettingsStateSaved implements HabitSettingsState {
   AutoCompleteRule? get autoCompleteRule;
   @override
   StoryTag? get defaultStory;
+
+  /// Create a copy of HabitSettingsState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$HabitSettingsStateSavedImplCopyWith<_$HabitSettingsStateSavedImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

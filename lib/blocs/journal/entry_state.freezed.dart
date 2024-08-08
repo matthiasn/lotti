@@ -104,7 +104,9 @@ mixin _$EntryState {
   }) =>
       throw _privateConstructorUsedError;
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $EntryStateCopyWith<EntryState> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -136,6 +138,8 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -174,6 +178,8 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
     ) as $Val);
   }
 
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $JournalEntityCopyWith<$Res>? get entry {
@@ -215,6 +221,8 @@ class __$$EntryStateSavedImplCopyWithImpl<$Res>
       _$EntryStateSavedImpl _value, $Res Function(_$EntryStateSavedImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -303,7 +311,9 @@ class _$EntryStateSavedImpl implements _EntryStateSaved {
   int get hashCode => Object.hash(runtimeType, entryId, entry, showMap,
       isFocused, shouldShowEditorToolBar, formKey);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$EntryStateSavedImplCopyWith<_$EntryStateSavedImpl> get copyWith =>
@@ -439,8 +449,11 @@ abstract class _EntryStateSaved implements EntryState {
   bool get shouldShowEditorToolBar;
   @override
   GlobalKey<FormBuilderState>? get formKey;
+
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$EntryStateSavedImplCopyWith<_$EntryStateSavedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -473,6 +486,8 @@ class __$$EntryStateDirtyImplCopyWithImpl<$Res>
       _$EntryStateDirtyImpl _value, $Res Function(_$EntryStateDirtyImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -561,7 +576,9 @@ class _$EntryStateDirtyImpl implements EntryStateDirty {
   int get hashCode => Object.hash(runtimeType, entryId, entry, showMap,
       isFocused, shouldShowEditorToolBar, formKey);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$EntryStateDirtyImplCopyWith<_$EntryStateDirtyImpl> get copyWith =>
@@ -697,8 +714,11 @@ abstract class EntryStateDirty implements EntryState {
   bool get shouldShowEditorToolBar;
   @override
   GlobalKey<FormBuilderState>? get formKey;
+
+  /// Create a copy of EntryState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$EntryStateDirtyImplCopyWith<_$EntryStateDirtyImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
