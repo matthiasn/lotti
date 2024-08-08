@@ -19,8 +19,8 @@ class ToolbarWidget extends StatelessWidget {
     return Material(
       elevation: 1,
       child: QuillToolbar.simple(
-        configurations: QuillSimpleToolbarConfigurations(
-          controller: controller,
+        controller: controller,
+        configurations: const QuillSimpleToolbarConfigurations(
           toolbarSize: height,
           toolbarSectionSpacing: 0,
           toolbarIconAlignment: WrapAlignment.start,

@@ -458,10 +458,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "6aa89f0903ca3e70f5ceeb1d75d722f6ca583e87a2a8893c7b9f42f7a947f6e5"
+      sha256: "8cde757a1f09061c52bf3cbab2a5a9c5877ca2eddd6356f44a6229aecbf567fc"
       url: "https://pub.dev"
     source: hosted
-    version: "9.6.0"
+    version: "10.1.9"
   dart_style:
     dependency: "direct dev"
     description:
@@ -514,8 +514,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: f79a10b
-      resolved-ref: f79a10b11d35c87febe1bc08df187fd8924fe384
+      ref: ce9a6b6
+      resolved-ref: ce9a6b6245ca24b988ef30491688073949a49c4a
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
@@ -1011,18 +1011,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "7c37e0761e7101809af8e7994d6aef58519cb8035aa307be66867c710d64abf0"
+      sha256: a3ad192d7a126f3662b541e8d695b40e0853abdd9d8c288655df8dcb4ffe79e8
       url: "https://pub.dev"
     source: hosted
-    version: "9.6.0"
+    version: "10.1.9"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
       name: flutter_quill_delta_from_html
-      sha256: "3cddb27325e005459fd2bbd6af4d813525d5b2bcb6e9828ab2b449f70eaf1147"
+      sha256: "36ff8bb045e280f59a2e7feb6f4dca62e80a14c8377dfe8260d8fe69dcda9a33"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.12"
+    version: "1.3.13"
   flutter_rating:
     dependency: "direct main"
     description:
