@@ -25,11 +25,11 @@ class TextViewerWidget extends StatelessWidget {
     return LimitedBox(
       maxHeight: maxHeight,
       child: QuillEditor(
+        controller: controller,
         scrollController: ScrollController(),
         focusNode: FocusNode(),
         configurations: QuillEditorConfigurations(
           customStyles: customEditorStyles(themeData: Theme.of(context)),
-          controller: controller,
         ),
       ),
     );
