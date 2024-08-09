@@ -10,6 +10,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 part 'time_by_category_controller.g.dart';
@@ -24,8 +25,14 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   bool _isVisible = true;
 
   void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = getIt<UpdateNotifications>()
+        .updateStream
+        .throttleTime(
+          const Duration(seconds: 5),
+          leading: false,
+          trailing: true,
+        )
+        .listen((_) async {
       if (_isVisible) {
         final timeSpanDays = ref.read(timeFrameControllerProvider);
         final latest = await _fetch(timeSpanDays);
