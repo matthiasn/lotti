@@ -14,6 +14,7 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -29,8 +30,14 @@ class DayViewController extends _$DayViewController {
   bool _isVisible = true;
 
   void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = getIt<UpdateNotifications>()
+        .updateStream
+        .throttleTime(
+          const Duration(seconds: 5),
+          leading: false,
+          trailing: true,
+        )
+        .listen((_) async {
       if (_isVisible) {
         final latest = await _fetch();
         state = AsyncData(latest);
