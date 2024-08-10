@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/state/matrix_login_provider.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -124,11 +125,11 @@ class _HomeserverLoggedInWidgetState
               ),
             ),
             const SizedBox(height: 20),
-            Text(userId, style: Theme.of(context).textTheme.bodyLarge),
+            Text(userId, style: context.textTheme.bodyLarge),
             const SizedBox(height: 10),
             Text(
               context.messages.settingsMatrixQrTextPage,
-              style: Theme.of(context).textTheme.bodySmall,
+              style: context.textTheme.bodySmall,
             ),
             const SizedBox(height: 80),
           ],

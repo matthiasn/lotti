@@ -128,7 +128,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                     name: 'private',
                     initialValue: item.private,
                     title: context.messages.settingsMeasurablePrivateLabel,
-                    activeColor: Theme.of(context).colorScheme.error,
+                    activeColor: context.colorScheme.error,
                   ),
                   inputSpacer,
                   FormBuilderDropdown(
@@ -145,7 +145,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                     ),
                     style: TextStyle(
                       fontSize: 40,
-                      color: Theme.of(context).textTheme.titleLarge?.color,
+                      color: context.textTheme.titleLarge?.color,
                     ),
                     items: AggregationType.values.map((aggregationType) {
                       return DropdownMenuItem(
@@ -156,7 +156,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                             EnumToString.convertToString(
                               aggregationType,
                             ),
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: context.textTheme.titleMedium,
                           ),
                         ),
                       );

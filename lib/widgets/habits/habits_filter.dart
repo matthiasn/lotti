@@ -4,6 +4,7 @@ import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -40,7 +41,7 @@ class HabitsFilter extends StatelessWidget {
           icon: dataMap.isEmpty
               ? Icon(
                   Icons.filter_alt_off_outlined,
-                  color: Theme.of(context).colorScheme.outline,
+                  color: context.colorScheme.outline,
                 )
               : PieChart(
                   dataMap: dataMap,

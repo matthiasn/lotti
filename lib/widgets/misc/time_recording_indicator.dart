@@ -39,7 +39,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                 topRight: Radius.circular(8),
               ),
               child: Container(
-                color: Theme.of(context).colorScheme.error,
+                color: context.colorScheme.error,
                 width: 90,
                 height: 25,
                 child: Row(

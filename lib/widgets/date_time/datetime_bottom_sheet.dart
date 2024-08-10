@@ -65,8 +65,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
           data: CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
               dateTimePickerTextStyle: TextStyle(
-                color: Theme.of(context).textTheme.titleLarge?.color ??
-                    Colors.grey,
+                color: context.textTheme.titleLarge?.color ?? Colors.grey,
                 fontSize: fontSizeLarge,
                 fontWeight: FontWeight.w300,
                 fontFamily: mainFont,

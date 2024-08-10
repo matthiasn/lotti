@@ -170,8 +170,7 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                         followPointer: [true, true],
                         styles: [
                           PaintStyle(
-                            strokeColor:
-                                Theme.of(context).textTheme.bodySmall?.color,
+                            strokeColor: context.textTheme.bodySmall?.color,
                             strokeWidth: 2,
                           ),
                           PaintStyle(strokeColor: Colors.transparent),
@@ -180,13 +179,12 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                       axes: [
                         AxisGuide(
                           line: PaintStyle(
-                            strokeColor:
-                                Theme.of(context).colorScheme.onSurface,
+                            strokeColor: context.colorScheme.onSurface,
                             strokeWidth: 0.5,
                           ),
                           label: LabelStyle(
                             textStyle: chartTitleStyleSmallMonospace.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: context.colorScheme.onSurface,
                             ),
                             offset: const Offset(0, 7.5),
                           ),

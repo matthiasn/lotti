@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -92,9 +93,8 @@ class ReSyncModal {
     await WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
-        final textTheme = Theme.of(context).textTheme;
         return [
-          page1(modalSheetContext, textTheme),
+          page1(modalSheetContext, context.textTheme),
         ];
       },
       modalTypeBuilder: (context) {

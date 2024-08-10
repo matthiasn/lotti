@@ -45,7 +45,7 @@ class DurationWidget extends ConsumerWidget {
         }
 
         final labelColor =
-            isRecording ? Theme.of(context).colorScheme.error : style?.color;
+            isRecording ? context.colorScheme.error : style?.color;
 
         final saveFn = ref.read(provider.notifier).save;
 
@@ -78,7 +78,7 @@ class DurationWidget extends ConsumerWidget {
                         icon: const Icon(Icons.fiber_manual_record_sharp),
                         iconSize: 20,
                         tooltip: 'Record',
-                        color: Theme.of(context).colorScheme.error,
+                        color: context.colorScheme.error,
                         onPressed: () {
                           _timeService.start(item);
                         },

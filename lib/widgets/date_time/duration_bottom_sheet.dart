@@ -56,8 +56,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
             data: CupertinoThemeData(
               textTheme: CupertinoTextThemeData(
                 dateTimePickerTextStyle: TextStyle(
-                  color: Theme.of(context).textTheme.titleLarge?.color ??
-                      Colors.grey,
+                  color: context.textTheme.titleLarge?.color ?? Colors.grey,
                   fontSize: fontSizeLarge,
                   fontWeight: FontWeight.w300,
                   fontFamily: mainFont,

@@ -79,7 +79,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                           labelText: context.messages.taskEstimateLabel,
                           themeData: Theme.of(context),
                         ),
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: context.textTheme.titleMedium,
                         readOnly: true,
                         controller: TextEditingController(
                           text:

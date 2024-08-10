@@ -63,8 +63,8 @@ class AudioPlayerWidget extends ConsumerWidget {
                   iconSize: 32,
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing && isActive)
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.outline,
+                      ? context.colorScheme.error
+                      : context.colorScheme.outline,
                   onPressed: () {
                     cubit
                       ..setAudioNote(journalAudio)
@@ -81,7 +81,7 @@ class AudioPlayerWidget extends ConsumerWidget {
                         icon: const Icon(Icons.pause_rounded),
                         iconSize: 32,
                         tooltip: 'Pause',
-                        color: Theme.of(context).colorScheme.outline,
+                        color: context.colorScheme.outline,
                         onPressed: cubit.pause,
                       ),
                       IconButton(
@@ -91,8 +91,8 @@ class AudioPlayerWidget extends ConsumerWidget {
                             fontFamily: 'Oswald',
                             fontWeight: FontWeight.bold,
                             color: (state.speed != 1)
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).colorScheme.outline,
+                                ? context.colorScheme.error
+                                : context.colorScheme.outline,
                           ),
                         ),
                         iconSize: 32,
@@ -108,7 +108,7 @@ class AudioPlayerWidget extends ConsumerWidget {
                     icon: const Icon(Icons.transcribe_rounded),
                     iconSize: 20,
                     tooltip: 'Transcribe',
-                    color: Theme.of(context).colorScheme.outline,
+                    color: context.colorScheme.outline,
                     onPressed: () async {
                       await cubit.setAudioNote(journalAudio);
                       final isQueueEmpty = await cubit.transcribe();
@@ -131,7 +131,7 @@ class AudioPlayerWidget extends ConsumerWidget {
                     icon: const Icon(Icons.list),
                     iconSize: 20,
                     tooltip: 'Show Transcriptions',
-                    color: Theme.of(context).colorScheme.outline,
+                    color: context.colorScheme.outline,
                     onPressed: cubit.toggleTranscriptsList,
                   ),
               ],
@@ -152,7 +152,7 @@ class AudioPlayerWidget extends ConsumerWidget {
                     thumbRadius: 5,
                     onSeek: cubit.seek,
                     timeLabelTextStyle: monospaceTextStyle.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
+                      color: context.colorScheme.outline,
                     ),
                   ),
                 ),
@@ -203,7 +203,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: context.colorScheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: 15,

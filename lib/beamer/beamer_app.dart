@@ -68,9 +68,8 @@ class _AppScreenState extends State<AppScreen> {
             ],
           ),
           bottomNavigationBar: SpotifyStyleBottomNavigationBar(
-            selectedItemColor: Theme.of(context).colorScheme.primary,
-            unselectedItemColor:
-                Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            selectedItemColor: context.colorScheme.primary,
+            unselectedItemColor: context.colorScheme.primary.withOpacity(0.5),
             enableFeedback: true,
             elevation: 8,
             iconSize: 30,
