@@ -77,13 +77,6 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
             if (data != null && data.isNotEmpty)
               Column(
                 children: [
-                  if (widget.showLegend) ...[
-                    const SizedBox(height: 20),
-                    const AnimatedSwitcher(
-                      duration: Duration(milliseconds: 300),
-                      child: TimeByCategoryChartLegend(),
-                    ),
-                  ],
                   SizedBox(
                     height: widget.height,
                     child: Chart(
@@ -192,6 +185,10 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                       ],
                     ),
                   ),
+                  if (widget.showLegend) ...[
+                    const SizedBox(height: 20),
+                    const TimeByCategoryChartLegend(),
+                  ],
                 ],
               ),
           ],

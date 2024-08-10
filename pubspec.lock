@@ -2212,14 +2212,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
-  responsive_grid_list:
-    dependency: "direct main"
-    description:
-      name: responsive_grid_list
-      sha256: e6cd1754240795cb8b08a4520c9eb5d28856ecf71de5fe6e64535a68c0913563
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.4.0"
   riverpod:
     dependency: transitive
     description:
