@@ -6,7 +6,7 @@ part of 'day_view_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dayViewControllerHash() => r'75cbe6d6ef472707901d3d982735aa106ebd1e96';
+String _$dayViewControllerHash() => r'47f7b98c060628d6988873378a14f5b9b419f6d0';
 
 /// See also [DayViewController].
 @ProviderFor(DayViewController)
@@ -40,6 +40,23 @@ final daySelectionControllerProvider =
 );
 
 typedef _$DaySelectionController = Notifier<DateTime>;
+String _$timeChartSelectedDataHash() =>
+    r'a29c2e75cefa2c3f4da828ac3262908a772b4cff';
+
+/// See also [TimeChartSelectedData].
+@ProviderFor(TimeChartSelectedData)
+final timeChartSelectedDataProvider = NotifierProvider<TimeChartSelectedData,
+    Map<int, Map<String, dynamic>>>.internal(
+  TimeChartSelectedData.new,
+  name: r'timeChartSelectedDataProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$timeChartSelectedDataHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$TimeChartSelectedData = Notifier<Map<int, Map<String, dynamic>>>;
 String _$calendarGlobalKeyControllerHash() =>
     r'6af4c5140ecb6879c748844d5567949135a8c089';
 

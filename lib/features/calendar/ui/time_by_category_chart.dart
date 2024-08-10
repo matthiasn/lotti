@@ -37,7 +37,12 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
     final newDate = data.values.firstOrNull?['date'] as DateTime?;
 
     if (selectedDate != newDate) {
-      setState(() => selectedData = data);
+      selectedData = data;
+
+      ref
+          .read(timeChartSelectedDataProvider.notifier)
+          .updateSelection(selectedData);
+
       if (newDate != null) {
         ref.read(daySelectionControllerProvider.notifier).selectDay(newDate);
       }
@@ -48,7 +53,6 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
   Widget build(BuildContext context) {
     final data = ref.watch(timeByDayChartProvider).value;
     final provider = timeFrameControllerProvider;
-
     final timeSpanDays = ref.watch(provider);
     final onValueChanged = ref.read(provider.notifier).onValueChanged;
 
@@ -71,136 +75,126 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                 ),
               ),
             if (data != null && data.isNotEmpty)
-              TapRegion(
-                onTapOutside: (_) => setState(() {
-                  selectedData = {};
-                }),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: widget.height,
-                      child: Chart(
-                        data: data,
-                        key: Key('${data.hashCode}'),
-                        variables: {
-                          'date': Variable(
-                            accessor: (TimeByDayAndCategory item) => item.date,
-                            scale: TimeScale(
-                              tickCount: 5,
-                              min: DateTime.now()
-                                  .subtract(Duration(days: timeSpanDays))
-                                  .dayAtNoon,
-                              max: DateTime.now().dayAtNoon,
-                              formatter: (DateTime dt) => dt.md,
-                            ),
+              Column(
+                children: [
+                  if (widget.showLegend) ...[
+                    const SizedBox(height: 20),
+                    const AnimatedSwitcher(
+                      duration: Duration(milliseconds: 300),
+                      child: TimeByCategoryChartLegend(),
+                    ),
+                  ],
+                  SizedBox(
+                    height: widget.height,
+                    child: Chart(
+                      data: data,
+                      key: Key('${data.hashCode}'),
+                      variables: {
+                        'date': Variable(
+                          accessor: (TimeByDayAndCategory item) => item.date,
+                          scale: TimeScale(
+                            tickCount: 5,
+                            min: DateTime.now()
+                                .subtract(Duration(days: timeSpanDays))
+                                .dayAtNoon,
+                            max: DateTime.now().dayAtNoon,
+                            formatter: (DateTime dt) => dt.md,
                           ),
-                          'value': Variable(
-                            accessor: (TimeByDayAndCategory item) =>
-                                item.duration.inMinutes,
-                            scale: LinearScale(
-                              min: -600,
-                              max: 600,
-                            ),
-                          ),
-                          'formattedValue': Variable(
-                            accessor: (TimeByDayAndCategory item) =>
-                                formatHhMm(item.duration),
-                          ),
-                          'categoryId': Variable(
-                            accessor: (TimeByDayAndCategory item) =>
-                                item.categoryId,
-                          ),
-                          'name': Variable(
-                            accessor: (TimeByDayAndCategory item) =>
-                                item.categoryDefinition?.name ?? 'unassigned',
-                          ),
-                        },
-                        marks: [
-                          AreaMark(
-                            position: Varset('date') *
-                                Varset('value') /
-                                Varset('categoryId'),
-                            shape: ShapeEncode(
-                              value: BasicAreaShape(smooth: true),
-                            ),
-                            color: ColorEncode(
-                              encoder: (data) {
-                                final categoryId = data['categoryId'] as String;
-                                final categoryDefinition =
-                                    getIt<EntitiesCacheService>()
-                                        .getCategoryById(categoryId);
-                                return colorFromCssHex(
-                                  categoryDefinition?.color,
-                                  substitute: Colors.grey,
-                                );
-                              },
-                            ),
-                            modifiers: [
-                              StackModifier(),
-                              SymmetricModifier(),
-                            ],
-                          ),
-                        ],
-                        selections: {
-                          'touchMove': PointSelection(
-                            on: {
-                              GestureType.scaleUpdate,
-                              GestureType.tapDown,
-                              GestureType.longPressMoveUpdate,
-                            },
-                            dim: Dim.x,
-                            variable: 'date',
-                          ),
-                        },
-                        tooltip: TooltipGuide(
-                          followPointer: [false, true],
-                          renderer: (size, offset, data) {
-                            _onSelectedDataChanged(data);
-                            return <MarkElement>[];
-                          },
                         ),
-                        crosshair: CrosshairGuide(
-                          followPointer: [true, true],
-                          styles: [
-                            PaintStyle(
-                              strokeColor:
-                                  Theme.of(context).textTheme.bodySmall?.color,
-                              strokeWidth: 2,
-                            ),
-                            PaintStyle(strokeColor: Colors.transparent),
+                        'value': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              item.duration.inMinutes,
+                          scale: LinearScale(
+                            min: -600,
+                            max: 600,
+                          ),
+                        ),
+                        'formattedValue': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              formatHhMm(item.duration),
+                        ),
+                        'categoryId': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              item.categoryId,
+                        ),
+                        'name': Variable(
+                          accessor: (TimeByDayAndCategory item) =>
+                              item.categoryDefinition?.name ?? 'unassigned',
+                        ),
+                      },
+                      marks: [
+                        AreaMark(
+                          position: Varset('date') *
+                              Varset('value') /
+                              Varset('categoryId'),
+                          shape: ShapeEncode(
+                            value: BasicAreaShape(smooth: true),
+                          ),
+                          color: ColorEncode(
+                            encoder: (data) {
+                              final categoryId = data['categoryId'] as String;
+                              final categoryDefinition =
+                                  getIt<EntitiesCacheService>()
+                                      .getCategoryById(categoryId);
+                              return colorFromCssHex(
+                                categoryDefinition?.color,
+                                substitute: Colors.grey,
+                              );
+                            },
+                          ),
+                          modifiers: [
+                            StackModifier(),
+                            SymmetricModifier(),
                           ],
                         ),
-                        axes: [
-                          AxisGuide(
-                            line: PaintStyle(
-                              strokeColor:
-                                  Theme.of(context).colorScheme.onSurface,
-                              strokeWidth: 0.5,
-                            ),
-                            label: LabelStyle(
-                              textStyle: chartTitleStyleSmallMonospace.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              offset: const Offset(0, 7.5),
-                            ),
+                      ],
+                      selections: {
+                        'touchMove': PointSelection(
+                          on: {
+                            GestureType.scaleUpdate,
+                            GestureType.tapDown,
+                            GestureType.longPressMoveUpdate,
+                          },
+                          dim: Dim.x,
+                          variable: 'date',
+                        ),
+                      },
+                      tooltip: TooltipGuide(
+                        followPointer: [false, true],
+                        renderer: (size, offset, data) {
+                          _onSelectedDataChanged(data);
+                          return <MarkElement>[];
+                        },
+                      ),
+                      crosshair: CrosshairGuide(
+                        followPointer: [true, true],
+                        styles: [
+                          PaintStyle(
+                            strokeColor:
+                                Theme.of(context).textTheme.bodySmall?.color,
+                            strokeWidth: 2,
                           ),
+                          PaintStyle(strokeColor: Colors.transparent),
                         ],
                       ),
-                    ),
-                    if (widget.showLegend) ...[
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: TimeByCategoryChartLegend(
-                            selectedData: selectedData,
+                      axes: [
+                        AxisGuide(
+                          line: PaintStyle(
+                            strokeColor:
+                                Theme.of(context).colorScheme.onSurface,
+                            strokeWidth: 0.5,
+                          ),
+                          label: LabelStyle(
+                            textStyle: chartTitleStyleSmallMonospace.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            offset: const Offset(0, 7.5),
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

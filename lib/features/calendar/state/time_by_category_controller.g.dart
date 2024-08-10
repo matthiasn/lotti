@@ -23,8 +23,24 @@ final timeByDayChartProvider =
 
 typedef TimeByDayChartRef
     = AutoDisposeFutureProviderRef<List<TimeByDayAndCategory>>;
+String _$maxCategoriesCountHash() =>
+    r'5ddf03e2337770b00da85a662ea0642546de55d7';
+
+/// See also [maxCategoriesCount].
+@ProviderFor(maxCategoriesCount)
+final maxCategoriesCountProvider = AutoDisposeFutureProvider<int>.internal(
+  maxCategoriesCount,
+  name: r'maxCategoriesCountProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$maxCategoriesCountHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef MaxCategoriesCountRef = AutoDisposeFutureProviderRef<int>;
 String _$timeByCategoryControllerHash() =>
-    r'49fbacc7880d0c898307b7227e7b8957b9616dd2';
+    r'549d3d9f76df5dcedd0a5dd63193bf1ed838379c';
 
 /// See also [TimeByCategoryController].
 @ProviderFor(TimeByCategoryController)

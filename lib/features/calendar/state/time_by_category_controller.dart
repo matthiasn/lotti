@@ -203,3 +203,15 @@ List<DateTime> getDaysAtNoon(int rangeDays, DateTime rangeEnd) {
     return day.dayAtNoon;
   });
 }
+
+@riverpod
+Future<int> maxCategoriesCount(MaxCategoriesCountRef ref) async {
+  final events = ref.watch(timeByDayChartProvider).value;
+  final categoryIdsByDay = <DateTime, Set<String>>{};
+  final nonZeroEvents = events?.where((e) => e.duration > Duration.zero);
+  nonZeroEvents?.forEach((e) {
+    categoryIdsByDay[e.date] = categoryIdsByDay[e.date] ?? {};
+    categoryIdsByDay[e.date]?.add(e.categoryId);
+  });
+  return categoryIdsByDay.values.map((e) => e.length).toList().maxOrNull ?? 0;
+}
