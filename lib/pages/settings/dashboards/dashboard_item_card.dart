@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
@@ -178,10 +179,9 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: ListTile(
-        tileColor: colorScheme.secondaryContainer,
+        tileColor: context.colorScheme.secondaryContainer,
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 8,
@@ -190,12 +190,12 @@ class ItemCard extends StatelessWidget {
         leading: Icon(
           leadingIcon,
           size: 32,
-          color: colorScheme.onSecondaryContainer,
+          color: context.colorScheme.onSecondaryContainer,
         ),
         title: Text(
           title,
           softWrap: true,
-          style: TextStyle(color: colorScheme.onSecondaryContainer),
+          style: TextStyle(color: context.colorScheme.onSecondaryContainer),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -60,7 +61,7 @@ class ShareButtonWidget extends ConsumerWidget {
         iconSize: 24,
         tooltip: tooltip,
         padding: EdgeInsets.zero,
-        color: Theme.of(context).colorScheme.outline,
+        color: context.colorScheme.outline,
         onPressed: onPressed,
       ),
     );

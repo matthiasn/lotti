@@ -29,7 +29,7 @@ class TaskStatusFilter extends StatelessWidget {
             const Divider(),
             Text(
               'Status',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: context.textTheme.bodySmall,
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -75,7 +75,7 @@ class TaskCategoryFilter extends StatelessWidget {
             const Divider(),
             Text(
               'Category',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: context.textTheme.bodySmall,
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -136,7 +136,7 @@ class TaskListToggle extends StatelessWidget {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
-        final iconColor = Theme.of(context).textTheme.titleLarge?.color;
+        final iconColor = context.textTheme.titleLarge?.color;
         final inactiveIconColor = iconColor?.withOpacity(0.5);
         final taskAsListView = snapshot.taskAsListView;
 
@@ -264,7 +264,7 @@ class TaskStatusAllChip extends StatelessWidget {
         return FilterChoiceChip(
           label: context.messages.taskStatusAll,
           isSelected: isSelected,
-          selectedColor: Theme.of(context).colorScheme.secondary,
+          selectedColor: context.colorScheme.secondary,
           onTap: onTap,
         );
       },
@@ -327,7 +327,7 @@ class TaskFilterIcon extends StatelessWidget {
             pageIndexNotifier: pageIndexNotifier,
             context: context,
             pageListBuilder: (modalSheetContext) {
-              final textTheme = Theme.of(context).textTheme;
+              final textTheme = context.textTheme;
               return [
                 page1(modalSheetContext, textTheme),
               ];

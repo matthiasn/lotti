@@ -94,7 +94,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                     TextStyle(
                       fontSize: fontSizeSmall,
                       fontWeight: FontWeight.w300,
-                      color: Theme.of(context).colorScheme.onPrimary,
+                      color: context.colorScheme.onPrimary,
                     ),
                     children: [
                       TextSpan(

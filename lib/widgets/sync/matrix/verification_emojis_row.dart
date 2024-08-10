@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:matrix/encryption.dart';
 
 class VerificationEmojisRow extends StatelessWidget {
@@ -28,7 +29,7 @@ class VerificationEmojisRow extends StatelessWidget {
                 ),
                 Text(
                   emoji.name,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: context.textTheme.bodySmall,
                 ),
               ],
             ),

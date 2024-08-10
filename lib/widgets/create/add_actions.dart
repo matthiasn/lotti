@@ -5,6 +5,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -182,7 +183,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         radius: 80 + items.length * 24,
         key: ValueKey('add_actions $keyDateTime'),
         useOpacity: true,
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: context.colorScheme.primaryContainer,
         items: items,
         icon: Icons.add_rounded,
         duration: const Duration(milliseconds: 250),

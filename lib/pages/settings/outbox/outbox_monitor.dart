@@ -122,7 +122,7 @@ class OutboxItemCard extends StatelessWidget {
         case OutboxStatus.pending:
           return Theme.of(context).primaryColorLight;
         case OutboxStatus.error:
-          return Theme.of(context).colorScheme.error;
+          return context.colorScheme.error;
         case OutboxStatus.sent:
           return Theme.of(context).primaryColor;
       }

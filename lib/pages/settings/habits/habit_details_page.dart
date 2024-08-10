@@ -97,14 +97,14 @@ class HabitDetailsPage extends StatelessWidget {
                         name: 'private',
                         initialValue: item.private,
                         title: context.messages.settingsHabitsPrivateLabel,
-                        activeColor: Theme.of(context).colorScheme.error,
+                        activeColor: context.colorScheme.error,
                       ),
                       FormSwitch(
                         name: 'archived',
                         key: const Key('habit_archived'),
                         initialValue: !state.habitDefinition.active,
                         title: context.messages.habitArchivedLabel,
-                        activeColor: Theme.of(context).colorScheme.outline,
+                        activeColor: context.colorScheme.outline,
                       ),
                       inputSpacer,
                       DateTimeField(
@@ -133,7 +133,7 @@ class HabitDetailsPage extends StatelessWidget {
                         icon: Icon(MdiIcons.trashCanOutline),
                         iconSize: settingsIconSize,
                         tooltip: context.messages.settingsHabitsDeleteTooltip,
-                        color: Theme.of(context).colorScheme.outline,
+                        color: context.colorScheme.outline,
                         onPressed: () async {
                           const deleteKey = 'deleteKey';
                           final result = await showModalActionSheet<String>(

@@ -84,7 +84,7 @@ class SelectDashboardWidget extends StatelessWidget {
             }
 
             final undefined = state.habitDefinition.dashboardId == null;
-            final style = Theme.of(context).textTheme.titleMedium;
+            final style = context.textTheme.titleMedium;
 
             return TextField(
               onTap: onTap,
@@ -110,7 +110,7 @@ class SelectDashboardWidget extends StatelessWidget {
                       ),
                 hintText: context.messages.habitDashboardHint,
                 hintStyle: style?.copyWith(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                  color: context.colorScheme.outline.withOpacity(0.5),
                 ),
                 border: InputBorder.none,
               ),
