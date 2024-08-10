@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/calendar/ui/time_by_category_chart.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-class TimeByCategoryChartCard extends StatelessWidget {
+class TimeByCategoryChartCard extends ConsumerWidget {
   const TimeByCategoryChartCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     void onExpandPressed() {
       WoltModalSheet.show<void>(
         context: context,
@@ -18,7 +23,7 @@ class TimeByCategoryChartCard extends StatelessWidget {
             WoltModalSheetPage(
               hasSabGradient: false,
               topBarTitle: Text(
-                'Time by Category',
+                context.messages.timeByCategoryChartTitle,
                 style: textTheme.titleMedium,
               ),
               isTopBarLayerAlwaysVisible: true,
@@ -31,6 +36,7 @@ class TimeByCategoryChartCard extends StatelessWidget {
                 padding: EdgeInsets.only(
                   top: 20,
                   right: 20,
+                  bottom: 20,
                 ),
                 child: TimeByCategoryChart(height: 260),
               ),
