@@ -20,13 +20,12 @@ class TimeByCategoryChartCard extends ConsumerWidget {
         context: context,
         pageListBuilder: (modalSheetContext) {
           return [
-            WoltModalSheetPage(
-              hasSabGradient: false,
+            NonScrollingWoltModalSheetPage(
               topBarTitle: Text(
                 context.messages.timeByCategoryChartTitle,
                 style: context.textTheme.titleMedium,
               ),
-              isTopBarLayerAlwaysVisible: true,
+              hasTopBarLayer: true,
               trailingNavBarWidget: IconButton(
                 padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
                 icon: const Icon(Icons.close),
@@ -44,12 +43,7 @@ class TimeByCategoryChartCard extends ConsumerWidget {
           ];
         },
         modalTypeBuilder: (context) {
-          final size = MediaQuery.of(context).size.width;
-          if (size < WoltModalConfig.pageBreakpoint) {
-            return WoltModalType.bottomSheet();
-          } else {
-            return WoltModalType.dialog();
-          }
+          return WoltModalType.dialog();
         },
         onModalDismissedWithBarrierTap: Navigator.of(context).pop,
       );

@@ -7,7 +7,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
-import 'package:responsive_grid_list/responsive_grid_list.dart';
 
 class TimeByCategoryChartLegend extends ConsumerWidget {
   const TimeByCategoryChartLegend({
@@ -44,65 +43,64 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
             selectedDay.ymwd,
             style: context.textTheme.titleSmall,
           ),
-          ResponsiveGridList(
-            horizontalGridMargin: 10,
-            verticalGridMargin: 20,
-            minItemWidth: 180,
-            maxItemsPerRow: 1,
-            listViewBuilderOptions: ListViewBuilderOptions(
-              shrinkWrap: true,
-            ),
+          Column(
             children: [
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(25),
-                    child: Container(
-                      height: 20,
-                      width: 20,
-                      color: context.colorScheme.outline.withOpacity(0.1),
+              SizedBox(
+                height: 32,
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(25),
+                      child: Container(
+                        height: 20,
+                        width: 20,
+                        color: context.colorScheme.outline.withOpacity(0.1),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    context.messages.timeByCategoryChartTotalLabel,
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(width: 10),
+                    Text(
+                      context.messages.timeByCategoryChartTotalLabel,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Spacer(),
-                  Text(
-                    formatHhMm(Duration(minutes: totalMinutes)),
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(width: 10),
+                    const Spacer(),
+                    Text(
+                      formatHhMm(Duration(minutes: totalMinutes)),
+                      style: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               ...nonEmptyValues.map((e) {
                 final name = e['name'] as String;
                 final formattedValue = e['formattedValue'] as String;
                 final categoryId = e['categoryId'] as String;
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CategoryColorIcon(categoryId, size: 20),
-                    const SizedBox(width: 10),
-                    Text(
-                      name,
-                      style: context.textTheme.titleSmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(width: 10),
-                    const Spacer(),
-                    Text(
-                      formattedValue,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontFeatures: [const FontFeature.tabularFigures()],
+                return SizedBox(
+                  height: 32,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CategoryColorIcon(categoryId, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        name,
+                        style: context.textTheme.titleSmall,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      const Spacer(),
+                      Text(
+                        formattedValue,
+                        style: context.textTheme.titleSmall?.copyWith(
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }),
             ],
