@@ -46,11 +46,11 @@ class _SelectColorFieldState extends State<SelectColorField> {
       }
     });
 
-    final style = Theme.of(context).textTheme.titleMedium;
+    final style = context.textTheme.titleMedium;
 
     final color = widget.hexColor != null
         ? colorFromCssHex(widget.hexColor)
-        : Theme.of(context).colorScheme.outline;
+        : context.colorScheme.outline;
 
     Future<void> onTap() async {
       await showModalBottomSheet<void>(
@@ -97,13 +97,13 @@ class _SelectColorFieldState extends State<SelectColorField> {
         icon: ColorIcon(color),
         hintText: context.messages.colorPickerHint,
         hintStyle: style?.copyWith(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          color: context.colorScheme.outline.withOpacity(0.5),
         ),
         suffixIcon: IconButton(
           onPressed: onTap,
           icon: Icon(
             Icons.color_lens_outlined,
-            color: Theme.of(context).colorScheme.outline,
+            color: context.colorScheme.outline,
             semanticLabel: 'Pick color',
           ),
         ),

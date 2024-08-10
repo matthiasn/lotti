@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/calendar/ui/time_by_category_chart.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -18,13 +19,12 @@ class TimeByCategoryChartCard extends ConsumerWidget {
       WoltModalSheet.show<void>(
         context: context,
         pageListBuilder: (modalSheetContext) {
-          final textTheme = Theme.of(context).textTheme;
           return [
             WoltModalSheetPage(
               hasSabGradient: false,
               topBarTitle: Text(
                 context.messages.timeByCategoryChartTitle,
-                style: textTheme.titleMedium,
+                style: context.textTheme.titleMedium,
               ),
               isTopBarLayerAlwaysVisible: true,
               trailingNavBarWidget: IconButton(
@@ -79,7 +79,7 @@ class TimeByCategoryChartCard extends ConsumerWidget {
               icon: Icon(
                 Icons.expand,
                 size: 16,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: context.colorScheme.onSurface,
               ),
             ),
           ),

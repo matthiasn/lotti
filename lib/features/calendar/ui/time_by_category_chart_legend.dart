@@ -22,8 +22,8 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
     final data = ref.watch(timeChartSelectedDataProvider);
     final selectedDay = ref.watch(daySelectionControllerProvider);
     final categoriesCount = ref.watch(maxCategoriesCountProvider).value ?? 0;
+    final minHeight = (categoriesCount + 2) * 32.0;
 
-    final minHeight = ((categoriesCount + 2) * 40.0) + 10;
     if (data.isEmpty) {
       return SizedBox(height: minHeight);
     }
@@ -42,7 +42,7 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
         children: [
           Text(
             selectedDay.ymwd,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: context.textTheme.titleSmall,
           ),
           ResponsiveGridList(
             horizontalGridMargin: 10,
@@ -58,18 +58,15 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(25),
                     child: Container(
-                      height: 24,
-                      width: 24,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.1),
+                      height: 20,
+                      width: 20,
+                      color: context.colorScheme.outline.withOpacity(0.1),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
                     context.messages.timeByCategoryChartTotalLabel,
-                    style: chartTitleStyle.copyWith(
+                    style: context.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -77,7 +74,7 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
                   const Spacer(),
                   Text(
                     formatHhMm(Duration(minutes: totalMinutes)),
-                    style: chartTitleStyleMonospace.copyWith(
+                    style: context.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -90,18 +87,20 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CategoryColorIcon(categoryId),
+                    CategoryColorIcon(categoryId, size: 20),
                     const SizedBox(width: 10),
                     Text(
                       name,
-                      style: chartTitleStyle,
+                      style: context.textTheme.titleSmall,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(width: 10),
                     const Spacer(),
                     Text(
                       formattedValue,
-                      style: chartTitleStyleMonospace,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        fontFeatures: [const FontFeature.tabularFigures()],
+                      ),
                     ),
                   ],
                 );

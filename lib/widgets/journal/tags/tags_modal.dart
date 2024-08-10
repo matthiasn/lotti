@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
@@ -116,7 +117,7 @@ class _TagsModalState extends ConsumerState<TagsModal> {
                     onChanged: onChanged,
                     autofocus: true,
                     style: TextStyle(
-                      color: Theme.of(context).textTheme.titleLarge?.color,
+                      color: context.textTheme.titleLarge?.color,
                     ),
                     cursorColor: Theme.of(context).primaryColor,
                   ),

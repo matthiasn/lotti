@@ -32,7 +32,7 @@ class CategoriesTypeCard extends StatelessWidget {
             visible: fromNullableBool(categoryDefinition.private),
             child: Icon(
               MdiIcons.security,
-              color: Theme.of(context).colorScheme.error,
+              color: context.colorScheme.error,
               size: settingsIconSize,
             ),
           ),
@@ -82,7 +82,7 @@ class CategoryColorIcon extends StatelessWidget {
     return ColorIcon(
       category != null
           ? colorFromCssHex(category.color)
-          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          : context.colorScheme.outline.withOpacity(0.2),
       size: size,
     );
   }

@@ -160,8 +160,7 @@ class _HabitDialogState extends State<HabitDialog> {
                     topRight: Radius.circular(30),
                   ),
                   side: BorderSide(
-                    color: (Theme.of(context).textTheme.titleLarge?.color ??
-                            Colors.black)
+                    color: (context.textTheme.titleLarge?.color ?? Colors.black)
                         .withOpacity(0.5),
                   ),
                 ),

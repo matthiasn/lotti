@@ -125,7 +125,7 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                 size: 24,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: context.colorScheme.primaryContainer,
               ),
             ),
             dateStringBuilder: (date, {DateTime? secondaryDate}) => date.ymwd,

@@ -30,8 +30,8 @@ Future<T?> showModalActionSheet<T>({
           ),
           ...actions.map((action) {
             final color = action.isDestructiveAction
-                ? Theme.of(context).colorScheme.error
-                : Theme.of(context).colorScheme.primary;
+                ? context.colorScheme.error
+                : context.colorScheme.primary;
 
             void pop() {
               Navigator.pop<T>(context, action.key);

@@ -57,7 +57,7 @@ class AudioRecorderWidget extends ConsumerWidget {
         }
 
         final textStyle = monospaceTextStyleLarge.copyWith(
-          color: Theme.of(context).colorScheme.outline,
+          color: context.colorScheme.outline,
         );
 
         return VisibilityDetector(
@@ -88,7 +88,7 @@ class AudioRecorderWidget extends ConsumerWidget {
                     key: const Key('pauseIcon'),
                     icon: Icon(
                       Icons.pause_rounded,
-                      color: Theme.of(context).colorScheme.outline,
+                      color: context.colorScheme.outline,
                     ),
                     padding: const EdgeInsets.only(
                       left: 8,
@@ -104,7 +104,7 @@ class AudioRecorderWidget extends ConsumerWidget {
                     key: const Key('stopIcon'),
                     icon: Icon(
                       Icons.stop_rounded,
-                      color: Theme.of(context).colorScheme.outline,
+                      color: context.colorScheme.outline,
                     ),
                     padding: const EdgeInsets.only(
                       left: 29,
@@ -124,12 +124,12 @@ class AudioRecorderWidget extends ConsumerWidget {
                 children: [
                   Icon(
                     Icons.language,
-                    color: Theme.of(context).colorScheme.outline,
+                    color: context.colorScheme.outline,
                   ),
                   const SizedBox(width: 20),
                   DropdownButton(
                     value: state.language,
-                    iconEnabledColor: Theme.of(context).colorScheme.outline,
+                    iconEnabledColor: context.colorScheme.outline,
                     items: [
                       DropdownMenuItem(
                         value: '',

@@ -28,9 +28,8 @@ class FormSwitch extends StatelessWidget {
         semanticsLabel: semanticsLabel,
       ),
       activeColor: activeColor,
-      inactiveThumbColor: Theme.of(context).colorScheme.outline,
-      inactiveTrackColor:
-          Theme.of(context).colorScheme.outline.withOpacity(0.2),
+      inactiveThumbColor: context.colorScheme.outline,
+      inactiveTrackColor: context.colorScheme.outline.withOpacity(0.2),
       decoration: switchDecoration,
     );
   }

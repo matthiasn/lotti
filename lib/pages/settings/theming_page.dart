@@ -31,8 +31,7 @@ class ThemingPage extends StatelessWidget {
               child: Icon(
                 active ? activeIcon : icon,
                 semanticLabel: semanticLabel,
-                color: Theme.of(context).textTheme.titleLarge?.color ??
-                    Colors.grey,
+                color: context.textTheme.titleLarge?.color ?? Colors.grey,
                 size: 25,
               ),
             ),

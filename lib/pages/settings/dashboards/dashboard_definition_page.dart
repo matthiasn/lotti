@@ -365,7 +365,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             name: 'private',
                             initialValue: widget.dashboard.private,
                             title: context.messages.dashboardPrivateLabel,
-                            activeColor: Theme.of(context).colorScheme.error,
+                            activeColor: context.colorScheme.error,
                           ),
                           FormSwitch(
                             name: 'active',
@@ -545,7 +545,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 ),
                                 iconSize: settingsIconSize,
                                 tooltip: context.messages.dashboardDeleteHint,
-                                color: Theme.of(context).colorScheme.outline,
+                                color: context.colorScheme.outline,
                                 onPressed: () async {
                                   const deleteKey = 'deleteKey';
                                   final result =

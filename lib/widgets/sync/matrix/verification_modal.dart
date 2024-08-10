@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -80,7 +81,7 @@ class _VerificationModalState extends State<VerificationModal> {
                         widget.deviceKeys.deviceDisplayName ??
                             widget.deviceKeys.deviceId ??
                             '',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: context.textTheme.titleLarge,
                         softWrap: true,
                       ),
                     ),
@@ -91,7 +92,7 @@ class _VerificationModalState extends State<VerificationModal> {
                   opacity: 0.5,
                   child: Text(
                     widget.deviceKeys.userId,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: context.textTheme.bodySmall,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -120,7 +121,7 @@ class _VerificationModalState extends State<VerificationModal> {
                 if (!isDone && emojis != null) ...[
                   Text(
                     context.messages.settingsMatrixVerifyConfirm,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: context.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),

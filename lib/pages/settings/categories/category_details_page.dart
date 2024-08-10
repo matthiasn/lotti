@@ -103,7 +103,7 @@ class CategoryDetailsPage extends StatelessWidget {
                             name: 'private',
                             initialValue: item.private,
                             title: context.messages.settingsHabitsPrivateLabel,
-                            activeColor: Theme.of(context).colorScheme.error,
+                            activeColor: context.colorScheme.error,
                           ),
                           FormSwitch(
                             name: 'active',
@@ -129,7 +129,7 @@ class CategoryDetailsPage extends StatelessWidget {
                           icon: Icon(MdiIcons.trashCanOutline),
                           iconSize: settingsIconSize,
                           tooltip: context.messages.settingsHabitsDeleteTooltip,
-                          color: Theme.of(context).colorScheme.outline,
+                          color: context.colorScheme.outline,
                           onPressed: () async {
                             const deleteKey = 'deleteKey';
                             final result = await showModalActionSheet<String>(

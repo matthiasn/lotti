@@ -52,8 +52,8 @@ class LinkedDuration extends StatelessWidget {
 
                 final durationStyle = monospaceTextStyleSmall.copyWith(
                   color: (progress > estimate)
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.outline,
+                      ? context.colorScheme.error
+                      : context.colorScheme.outline,
                 );
 
                 return Padding(
@@ -67,8 +67,8 @@ class LinkedDuration extends StatelessWidget {
                           value:
                               min(progress.inSeconds / estimate.inSeconds, 1),
                           color: (progress > estimate)
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.primary,
+                              ? context.colorScheme.error
+                              : context.colorScheme.primary,
                           backgroundColor: Theme.of(context)
                               .colorScheme
                               .outline

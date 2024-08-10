@@ -25,7 +25,7 @@ class DateTimeField extends StatefulWidget {
 class _DateTimeFieldState extends State<DateTimeField> {
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.titleMedium;
+    final style = context.textTheme.titleMedium;
 
     final df = widget.mode == CupertinoDatePickerMode.date
         ? dfYmd

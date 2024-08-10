@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -126,7 +127,7 @@ class _EntryDateTimeModalState extends ConsumerState<EntryDateTimeModal> {
                   child: Text(
                     context.messages.journalDateInvalid,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: context.colorScheme.error,
                     ),
                   ),
                 ),

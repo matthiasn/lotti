@@ -211,7 +211,7 @@ class _HomeserverSettingsWidgetState
                         child: Text(
                           context.messages.settingsMatrixDeleteLabel,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
+                            color: context.colorScheme.error,
                           ),
                           semanticsLabel: 'Delete Matrix Config',
                         ),
@@ -226,7 +226,7 @@ class _HomeserverSettingsWidgetState
                         child: Text(
                           context.messages.settingsMatrixSaveLabel,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
+                            color: context.colorScheme.error,
                           ),
                           semanticsLabel: 'Save Matrix Config',
                         ),

@@ -33,9 +33,7 @@ class FilterChoiceChip extends StatelessWidget {
           ),
           child: Chip(
             side: BorderSide(
-              color: isSelected
-                  ? selectedColor
-                  : Theme.of(context).colorScheme.secondary,
+              color: isSelected ? selectedColor : context.colorScheme.secondary,
             ),
             label: Text(
               label,
