@@ -319,6 +319,8 @@
   "taskStatusOnHold": "on hold",
   "taskStatusOpen": "open",
   "taskStatusRejected": "rejected",
+  "timeByCategoryChartTitle": "Time by Category",
+  "timeByCategoryChartTotalLabel": "Total",
   "viewMenuDisableBrightTheme": "Disable Bright Theme",
   "viewMenuEnableBrightTheme": "Enable Bright Theme",
   "viewMenuHideThemeConfig": "Hide Theme Config",

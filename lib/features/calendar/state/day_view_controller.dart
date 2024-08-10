@@ -189,6 +189,23 @@ class DaySelectionController extends _$DaySelectionController {
 }
 
 @Riverpod(keepAlive: true)
+class TimeChartSelectedData extends _$TimeChartSelectedData {
+  TimeChartSelectedData();
+
+  Map<int, Map<String, dynamic>> selectedData = {};
+
+  @override
+  Map<int, Map<String, dynamic>> build() {
+    return {};
+  }
+
+  // ignore: use_setters_to_change_properties
+  void updateSelection(Map<int, Map<String, dynamic>> data) {
+    state = data;
+  }
+}
+
+@Riverpod(keepAlive: true)
 class CalendarGlobalKeyController extends _$CalendarGlobalKeyController {
   CalendarGlobalKeyController();
 
