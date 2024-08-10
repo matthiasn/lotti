@@ -68,7 +68,7 @@ class JournalCardTitle extends StatelessWidget {
                     visible: fromNullableBool(item.meta.private),
                     child: Icon(
                       MdiIcons.security,
-                      color: Theme.of(context).colorScheme.error,
+                      color: context.colorScheme.error,
                       size: iconSize,
                     ),
                   ),
@@ -91,7 +91,7 @@ class JournalCardTitle extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 4),
                         child: Icon(
                           MdiIcons.flag,
-                          color: Theme.of(context).colorScheme.error,
+                          color: context.colorScheme.error,
                           size: iconSize,
                         ),
                       ),
@@ -229,7 +229,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
       }
     }
 
-    final errorColor = Theme.of(context).colorScheme.error;
+    final errorColor = context.colorScheme.error;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -241,7 +241,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
               return LeadingIcon(
                 Icons.mic_rounded,
                 color: transcripts != null && transcripts.isNotEmpty
-                    ? Theme.of(context).colorScheme.outline
+                    ? context.colorScheme.outline
                     : errorColor.withOpacity(0.4),
               );
             },
@@ -278,7 +278,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: color ?? Theme.of(context).colorScheme.outline,
+      color: color ?? context.colorScheme.outline,
     );
   }
 }

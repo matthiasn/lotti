@@ -33,7 +33,7 @@ class AudioRecordingIndicator extends ConsumerWidget {
               child: Container(
                 width: 100,
                 height: 25,
-                color: Theme.of(context).colorScheme.error,
+                color: context.colorScheme.error,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [

@@ -20,8 +20,7 @@ class WhisperModelCard extends StatelessWidget {
         final progress = snapshot.downloadProgress[model] ?? 0.0;
         final downloaded = progress == 1.0;
 
-        final textColor =
-            downloaded ? null : Theme.of(context).colorScheme.outline;
+        final textColor = downloaded ? null : context.colorScheme.outline;
 
         return Card(
           margin: const EdgeInsets.all(5),

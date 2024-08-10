@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -55,7 +56,7 @@ class _DeviceCardState extends State<DeviceCard> {
               opacity: 0.5,
               child: Text(
                 widget.deviceKeys.userId,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: context.textTheme.bodySmall,
               ),
             ),
             const SizedBox(height: 10),

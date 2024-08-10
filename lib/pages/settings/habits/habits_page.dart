@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/habits/habits_type_card.dart';
 
@@ -42,7 +43,7 @@ class HabitsPage extends StatelessWidget {
               index: index,
               color: category != null
                   ? colorFromCssHex(category.color)
-                  : Theme.of(context).colorScheme.onSecondary.withOpacity(0.2),
+                  : context.colorScheme.onSecondary.withOpacity(0.2),
             );
           },
         );

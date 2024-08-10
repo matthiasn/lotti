@@ -40,7 +40,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
         child: Text(
           dfShorter.format(entry.meta.dateFrom),
           style: monospaceTextStyle.copyWith(
-            color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
+            color: context.textTheme.bodyMedium?.color ?? Colors.grey,
           ),
         ),
       ),

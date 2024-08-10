@@ -122,7 +122,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                           ? habitTitleStyle.copyWith(
                               decoration: TextDecoration.lineThrough,
                               decorationColor:
-                                  Theme.of(context).textTheme.titleLarge?.color,
+                                  context.textTheme.titleLarge?.color,
                               decorationThickness: 2,
                             )
                           : habitTitleStyle,

@@ -113,7 +113,7 @@ class _TagEditPageState extends State<TagEditPage> {
       }
     }
 
-    final errorColor = Theme.of(context).colorScheme.error;
+    final errorColor = context.colorScheme.error;
 
     return Scaffold(
       appBar: TitleAppBar(
@@ -214,7 +214,7 @@ class _TagEditPageState extends State<TagEditPage> {
                     icon: Icon(MdiIcons.trashCanOutline),
                     iconSize: 24,
                     tooltip: context.messages.settingsTagsDeleteTooltip,
-                    color: Theme.of(context).colorScheme.outline,
+                    color: context.colorScheme.outline,
                     onPressed: () {
                       persistenceLogic.upsertTagEntity(
                         widget.tagEntity.copyWith(

@@ -22,7 +22,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontColor = Theme.of(context).textTheme.titleLarge?.color;
+    final fontColor = context.textTheme.titleLarge?.color;
     final itemTextStyle = multiSelectStyle.copyWith(
       color: fontColor,
     );
@@ -38,7 +38,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         title: Text(title, style: titleStyle),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(10)),
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          border: Border.all(color: context.colorScheme.outline),
         ),
         itemsTextStyle: itemTextStyle,
         selectedItemsTextStyle: itemTextStyle.copyWith(
@@ -50,7 +50,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         buttonText: Text(
           buttonText,
           semanticsLabel: semanticsLabel,
-          style: Theme.of(context).textTheme.titleMedium,
+          style: context.textTheme.titleMedium,
         ),
         onConfirm: onConfirm,
       ),

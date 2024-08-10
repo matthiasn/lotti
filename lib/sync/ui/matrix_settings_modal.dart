@@ -7,6 +7,7 @@ import 'package:lotti/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/sync/ui/room_config_page.dart';
 import 'package:lotti/sync/ui/unverified_devices_page.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -31,7 +32,7 @@ class MatrixSettingsCard extends StatelessWidget {
           context: context,
           pageIndexNotifier: pageIndexNotifier,
           pageListBuilder: (modalSheetContext) {
-            final textTheme = Theme.of(context).textTheme;
+            final textTheme = context.textTheme;
             return [
               homeServerConfigPage(
                 context: modalSheetContext,

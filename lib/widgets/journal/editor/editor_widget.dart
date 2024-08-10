@@ -41,7 +41,7 @@ class EditorWidget extends ConsumerWidget {
         entryState.value?.shouldShowEditorToolBar ?? false;
 
     return Card(
-      color: Theme.of(context).colorScheme.surface.brighten(),
+      color: context.colorScheme.surface.brighten(),
       elevation: 0,
       clipBehavior: Clip.hardEdge,
       shape: const RoundedRectangleBorder(

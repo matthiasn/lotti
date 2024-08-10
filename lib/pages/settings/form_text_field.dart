@@ -23,7 +23,7 @@ class FormTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.titleMedium;
+    final style = context.textTheme.titleMedium;
     return FormBuilderTextField(
       name: name,
       minLines: 1,

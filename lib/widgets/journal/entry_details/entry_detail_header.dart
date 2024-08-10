@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
@@ -72,7 +73,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   value: entry?.meta.flag == EntryFlag.import,
                   icon: Icons.flag_outlined,
                   activeIcon: Icons.flag,
-                  activeColor: Theme.of(context).colorScheme.error,
+                  activeColor: context.colorScheme.error,
                 ),
                 if (!showAllIcons)
                   SizedBox(
@@ -90,7 +91,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     value: entry?.meta.private ?? false,
                     icon: Icons.shield_outlined,
                     activeIcon: Icons.shield,
-                    activeColor: Theme.of(context).colorScheme.error,
+                    activeColor: context.colorScheme.error,
                   ),
                   if (entry?.geolocation != null)
                     SwitchIconWidget(

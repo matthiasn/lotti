@@ -4,6 +4,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -65,7 +66,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                     Flexible(
                       child: Text(
                         displayName,
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: context.textTheme.titleLarge,
                         softWrap: true,
                       ),
                     ),
@@ -80,7 +81,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                 if (!isDone && emojis != null) ...[
                   Text(
                     context.messages.settingsMatrixVerifyIncomingConfirm,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: context.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),

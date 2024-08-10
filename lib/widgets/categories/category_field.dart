@@ -66,7 +66,7 @@ class CategoryField extends StatelessWidget {
     }
 
     final categoryUndefined = category == null;
-    final style = Theme.of(context).textTheme.titleMedium;
+    final style = context.textTheme.titleMedium;
 
     return TextField(
       onTap: onTap,
@@ -81,7 +81,7 @@ class CategoryField extends StatelessWidget {
         icon: ColorIcon(
           category != null
               ? colorFromCssHex(category.color)
-              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              : context.colorScheme.outline.withOpacity(0.2),
           size: 24,
         ),
         suffixIcon: categoryUndefined
@@ -98,7 +98,7 @@ class CategoryField extends StatelessWidget {
               ),
         hintText: context.messages.habitCategoryHint,
         hintStyle: style?.copyWith(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          color: context.colorScheme.outline.withOpacity(0.5),
         ),
         border: InputBorder.none,
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -37,7 +38,7 @@ class TranscriptionProgressModalContent extends StatelessWidget {
             data: text,
             styleSheet: MarkdownStyleSheet(
               p: TextStyle(
-                color: hasError ? Theme.of(context).colorScheme.error : null,
+                color: hasError ? context.colorScheme.error : null,
               ),
             ),
           ),
@@ -72,7 +73,7 @@ class TranscriptionProgressModal {
     await WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
-        final textTheme = Theme.of(context).textTheme;
+        final textTheme = context.textTheme;
         return [
           page1(modalSheetContext, textTheme),
         ];

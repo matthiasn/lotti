@@ -22,7 +22,7 @@ class TasksBadge extends StatelessWidget {
         return Badge(
           label: Text('$count', style: badgeStyle),
           isLabelVisible: count != 0,
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: context.colorScheme.error,
           child: child,
         );
       },
