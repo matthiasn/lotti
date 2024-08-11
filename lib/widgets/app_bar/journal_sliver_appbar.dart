@@ -7,7 +7,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
-import 'package:lotti/widgets/search/task_status_filter.dart';
+import 'package:lotti/widgets/search/task_filter_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 

@@ -315,6 +315,8 @@
   "taskStatusDone": "done",
   "taskStatusGroomed": "groomed",
   "taskStatusInProgress": "in progress",
+  "taskCategoryLabel": "Task category:",
+  "taskCategoryUnassignedLabel": "unassigned",
   "taskStatusLabel": "Task status:",
   "taskStatusOnHold": "on hold",
   "taskStatusOpen": "open",
