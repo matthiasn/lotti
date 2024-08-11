@@ -111,15 +111,20 @@ class _TagsModalState extends ConsumerState<TagsModal> {
                   child: Text(context.messages.journalTagsLabel),
                 ),
                 Expanded(
-                  child: CupertinoTextField(
-                    controller: _controller,
-                    onSubmitted: onSubmitted,
-                    onChanged: onChanged,
-                    autofocus: true,
-                    style: TextStyle(
-                      color: context.textTheme.titleLarge?.color,
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      brightness: Theme.of(context).brightness,
                     ),
-                    cursorColor: Theme.of(context).primaryColor,
+                    child: CupertinoTextField(
+                      controller: _controller,
+                      onSubmitted: onSubmitted,
+                      onChanged: onChanged,
+                      autofocus: true,
+                      style: TextStyle(
+                        color: context.textTheme.titleLarge?.color,
+                      ),
+                      cursorColor: Theme.of(context).primaryColor,
+                    ),
                   ),
                 ),
                 IconButton(
