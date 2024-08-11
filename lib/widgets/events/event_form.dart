@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/categories/category_field.dart';
 import 'package:lotti/widgets/events/event_status.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 
@@ -54,6 +55,7 @@ class _EventFormState extends ConsumerState<EventForm> {
             key: formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 const SizedBox(height: 10),
                 FormBuilderTextField(
@@ -74,25 +76,20 @@ class _EventFormState extends ConsumerState<EventForm> {
                   onChanged: notifier.setDirty,
                 ),
                 inputSpacer,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 20,
+                  runSpacing: 20,
                   children: [
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 190),
-                      child: StarRating(
-                        rating: stars,
-                        allowHalfRating: true,
-                        size: 32,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        onRatingChanged: (rating) {
-                          setState(() {
-                            stars = rating;
-                          });
-                          notifier.updateRating(rating);
+                      constraints: const BoxConstraints(maxWidth: 240),
+                      child: CategoryField(
+                        categoryId: widget.event?.meta.categoryId,
+                        onSave: (category) {
+                          notifier.updateCategoryId(category?.id);
                         },
                       ),
                     ),
-                    const SizedBox(width: 10),
                     SizedBox(
                       width: 180,
                       child: FormBuilderDropdown<EventStatus>(
@@ -115,6 +112,21 @@ class _EventFormState extends ConsumerState<EventForm> {
                           dropDownMenuItem(EventStatus.rescheduled),
                           dropDownMenuItem(EventStatus.missed),
                         ],
+                      ),
+                    ),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 190),
+                      child: StarRating(
+                        rating: stars,
+                        allowHalfRating: true,
+                        size: 32,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        onRatingChanged: (rating) {
+                          setState(() {
+                            stars = rating;
+                          });
+                          notifier.updateRating(rating);
+                        },
                       ),
                     ),
                   ],
