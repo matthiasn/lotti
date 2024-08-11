@@ -32,11 +32,7 @@ class TimeByCategoryChartCard extends ConsumerWidget {
                 onPressed: Navigator.of(modalSheetContext).pop,
               ),
               child: const Padding(
-                padding: EdgeInsets.only(
-                  top: 20,
-                  right: 20,
-                  bottom: 20,
-                ),
+                padding: EdgeInsets.all(10),
                 child: TimeByCategoryChart(height: 260),
               ),
             ),
