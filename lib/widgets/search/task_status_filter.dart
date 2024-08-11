@@ -1,20 +1,12 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:quiver/collection.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class TaskStatusFilter extends StatelessWidget {
   const TaskStatusFilter({super.key});
@@ -28,7 +20,7 @@ class TaskStatusFilter extends StatelessWidget {
           children: [
             const Divider(),
             Text(
-              'Status',
+              context.messages.taskStatusLabel,
               style: context.textTheme.bodySmall,
             ),
             const SizedBox(height: 10),
@@ -45,126 +37,6 @@ class TaskStatusFilter extends StatelessWidget {
                 const TaskStatusAllChip(),
                 const SizedBox(width: 5),
               ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class TaskCategoryFilter extends StatelessWidget {
-  const TaskCategoryFilter({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = getIt<EntitiesCacheService>().sortedCategories;
-
-    if (categories.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, state) {
-        final cubit = context.read<JournalPageCubit>();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 10),
-            const Divider(),
-            Text(
-              'Category',
-              style: context.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 5,
-              runSpacing: 10,
-              children: [
-                ...categories.map((category) {
-                  final color = colorFromCssHex(category.color);
-                  return Opacity(
-                    opacity: state.selectedCategoryIds.contains(category.id)
-                        ? 1
-                        : 0.4,
-                    child: ActionChip(
-                      onPressed: () => cubit.toggleSelectedCategoryIds(
-                        category.id,
-                      ),
-                      label: Text(
-                        category.name,
-                        style: TextStyle(
-                          color: color.isLight ? Colors.black : Colors.white,
-                          fontSize: fontSizeMedium,
-                          fontWeight: FontWeight.w300,
-                        ),
-                      ),
-                      backgroundColor: color,
-                    ),
-                  );
-                }),
-                Opacity(
-                  opacity: state.selectedCategoryIds.contains('') ? 1 : 0.4,
-                  child: ActionChip(
-                    onPressed: () => cubit.toggleSelectedCategoryIds(''),
-                    label: const Text(
-                      'unassigned',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: fontSizeMedium,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    backgroundColor: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class TaskListToggle extends StatelessWidget {
-  const TaskListToggle({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        final cubit = context.read<JournalPageCubit>();
-        final iconColor = context.textTheme.titleLarge?.color;
-        final inactiveIconColor = iconColor?.withOpacity(0.5);
-        final taskAsListView = snapshot.taskAsListView;
-
-        return Row(
-          children: [
-            const SizedBox(width: 15),
-            SegmentedButton<bool>(
-              showSelectedIcon: false,
-              onSelectionChanged: (selection) {
-                cubit.toggleTaskAsListView();
-              },
-              segments: [
-                ButtonSegment<bool>(
-                  value: true,
-                  label: Icon(
-                    Icons.density_small_rounded,
-                    color: taskAsListView ? iconColor : inactiveIconColor,
-                  ),
-                ),
-                ButtonSegment<bool>(
-                  value: false,
-                  label: Icon(
-                    Icons.density_medium_rounded,
-                    color: taskAsListView ? inactiveIconColor : iconColor,
-                  ),
-                ),
-              ],
-              selected: {taskAsListView},
             ),
           ],
         );
@@ -268,95 +140,6 @@ class TaskStatusAllChip extends StatelessWidget {
           onTap: onTap,
         );
       },
-    );
-  }
-}
-
-class TaskFilterIcon extends StatelessWidget {
-  const TaskFilterIcon({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final pageIndexNotifier = ValueNotifier(0);
-
-    SliverWoltModalSheetPage page1(
-      BuildContext modalSheetContext,
-      TextTheme textTheme,
-    ) {
-      return WoltModalSheetPage(
-        hasSabGradient: false,
-        topBarTitle: Text('Tasks Filter', style: textTheme.titleSmall),
-        isTopBarLayerAlwaysVisible: true,
-        trailingNavBarWidget: IconButton(
-          padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-          icon: const Icon(Icons.close),
-          onPressed: Navigator.of(modalSheetContext).pop,
-        ),
-        child: const Padding(
-          padding: EdgeInsets.only(
-            bottom: 30,
-            left: 20,
-            top: 10,
-            right: 20,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  JournalFilter(),
-                  SizedBox(width: 10),
-                  TaskListToggle(),
-                ],
-              ),
-              SizedBox(height: 10),
-              TaskStatusFilter(),
-              TaskCategoryFilter(),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 30),
-      child: IconButton(
-        onPressed: () {
-          WoltModalSheet.show<void>(
-            pageIndexNotifier: pageIndexNotifier,
-            context: context,
-            pageListBuilder: (modalSheetContext) {
-              final textTheme = context.textTheme;
-              return [
-                page1(modalSheetContext, textTheme),
-              ];
-            },
-            modalDecorator: (child) {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(
-                    value: context.read<JournalPageCubit>(),
-                  ),
-                ],
-                child: child,
-              );
-            },
-            modalTypeBuilder: (context) {
-              final size = MediaQuery.of(context).size.width;
-              if (size < WoltModalConfig.pageBreakpoint) {
-                return WoltModalType.bottomSheet();
-              } else {
-                return WoltModalType.dialog();
-              }
-            },
-            onModalDismissedWithBarrierTap: () {
-              Navigator.of(context).pop();
-            },
-          );
-        },
-        icon: Icon(MdiIcons.filterVariant),
-      ),
     );
   }
 }
