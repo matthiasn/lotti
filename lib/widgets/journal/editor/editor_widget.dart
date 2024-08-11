@@ -62,6 +62,11 @@ class EditorWidget extends ConsumerWidget {
                 scrollController: ScrollController(),
                 focusNode: focusNode,
                 configurations: QuillEditorConfigurations(
+                  textSelectionThemeData: TextSelectionThemeData(
+                    cursorColor: context.colorScheme.onSurface,
+                    selectionColor:
+                        context.colorScheme.primary.withOpacity(0.5),
+                  ),
                   autoFocus: autoFocus,
                   minHeight: minHeight,
                   placeholder: context.messages.editorPlaceholder,

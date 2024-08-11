@@ -156,12 +156,12 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
           ),
           const Positioned(
             bottom: 50,
-            right: 40,
+            right: 20,
             child: TimeByCategoryChartCard(),
           ),
           Positioned(
             bottom: 10,
-            right: 40,
+            right: 20,
             child: GlassContainer.clearGlass(
               width: 200,
               height: 32,

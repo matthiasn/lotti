@@ -167,15 +167,6 @@ const habitTitleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
-const chartTitleStyleSmall = TextStyle(
-  fontSize: fontSizeSmall,
-  fontWeight: FontWeight.w300,
-);
-
-final chartTitleStyleSmallMonospace = chartTitleStyleSmall.copyWith(
-  fontFeatures: [const FontFeature.tabularFigures()],
-);
-
 TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
       fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,
@@ -296,4 +287,9 @@ extension AppThemeExtension on BuildContext {
   TextTheme get textTheme => Theme.of(this).textTheme;
 
   ColorScheme get colorScheme => Theme.of(this).colorScheme;
+}
+
+extension TextThemeExtension on TextStyle {
+  TextStyle get withTabularFigures =>
+      copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 }
