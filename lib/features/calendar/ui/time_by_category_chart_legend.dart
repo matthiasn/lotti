@@ -87,9 +87,7 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
                     const Spacer(),
                     Text(
                       formattedValue,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontFeatures: [const FontFeature.tabularFigures()],
-                      ),
+                      style: context.textTheme.titleSmall?.withTabularFigures,
                     ),
                   ],
                 ),

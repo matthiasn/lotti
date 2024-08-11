@@ -54,14 +54,10 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
           width: 500,
           child: CupertinoTheme(
             data: CupertinoThemeData(
+              brightness: Theme.of(context).brightness,
               textTheme: CupertinoTextThemeData(
-                dateTimePickerTextStyle: TextStyle(
-                  color: context.textTheme.titleLarge?.color ?? Colors.grey,
-                  fontSize: fontSizeLarge,
-                  fontWeight: FontWeight.w300,
-                  fontFamily: mainFont,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                pickerTextStyle:
+                    context.textTheme.titleLarge?.withTabularFigures,
               ),
             ),
             child: CupertinoTimerPicker(
