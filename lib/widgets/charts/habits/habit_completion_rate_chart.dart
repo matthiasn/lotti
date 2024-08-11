@@ -288,7 +288,7 @@ class InfoLabel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Text(
           text,
-          style: chartTitleStyleSmall,
+          style: context.textTheme.labelSmall,
         ),
       ),
     );
