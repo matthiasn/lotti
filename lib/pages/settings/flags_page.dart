@@ -25,6 +25,7 @@ class FlagsPage extends StatelessWidget {
           attemptEmbedding,
           enableNotificationsFlag,
           autoTranscribeFlag,
+          initializeAsrModelOnStartup,
           recordLocationFlag,
           allowInvalidCertFlag,
           enableMatrixFlag,
