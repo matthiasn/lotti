@@ -218,7 +218,8 @@ void main() {
           ),
         );
 
-        when(() => mockTimeService.start(any())).thenAnswer((_) async {});
+        when(() => mockTimeService.start(any(), any()))
+            .thenAnswer((_) async {});
 
         await tester.pumpAndSettle();
 
@@ -235,7 +236,7 @@ void main() {
         await tester.tap(addTimerIconFinder);
         await tester.pumpAndSettle();
 
-        verify(() => mockTimeService.start(any())).called(1);
+        verify(() => mockTimeService.start(any(), any())).called(1);
         verifyNever(() => mockNavService.beamToNamed(any()));
       },
     );

@@ -71,7 +71,7 @@ class LinkedEntriesWidget extends StatelessWidget {
                     popOnDelete: false,
                     unlinkFn: unlink,
                     parentTags: item.meta.tagIds?.toSet(),
-                    linkedFromId: item.meta.id,
+                    linkedFrom: item,
                   );
                 },
               ),

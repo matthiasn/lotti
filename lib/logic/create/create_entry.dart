@@ -24,11 +24,11 @@ Future<JournalEntity?> createTextEntry({String? linkedId}) async {
   return entry;
 }
 
-Future<JournalEntity?> createTimerEntry({String? linkedId}) async {
-  final timerItem = await createTextEntry(linkedId: linkedId);
-  if (linkedId != null) {
+Future<JournalEntity?> createTimerEntry({JournalEntity? linked}) async {
+  final timerItem = await createTextEntry(linkedId: linked?.meta.id);
+  if (linked != null) {
     if (timerItem != null) {
-      await getIt<TimeService>().start(timerItem);
+      await getIt<TimeService>().start(timerItem, linked);
     }
   }
   return timerItem;

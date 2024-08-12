@@ -95,7 +95,10 @@ void main() {
     testWidgets('entry date is visible', (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailFooter(entryId: testTextEntry.meta.id),
+          EntryDetailFooter(
+            entryId: testTextEntry.meta.id,
+            linkedFrom: null,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -109,7 +112,10 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailFooter(entryId: testTextEntry.meta.id),
+          EntryDetailFooter(
+            entryId: testTextEntry.meta.id,
+            linkedFrom: null,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -124,7 +130,10 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailFooter(entryId: testTextEntry.meta.id),
+          EntryDetailFooter(
+            entryId: testTextEntry.meta.id,
+            linkedFrom: null,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -149,12 +158,15 @@ void main() {
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testEntry);
 
-      Future<void> mockStartTimer() => mockTimeService.start(testEntry);
+      Future<void> mockStartTimer() => mockTimeService.start(testEntry, null);
       when(mockStartTimer).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailFooter(entryId: testTextEntry.meta.id),
+          EntryDetailFooter(
+            entryId: testTextEntry.meta.id,
+            linkedFrom: null,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -195,7 +207,10 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailFooter(entryId: testTextEntry.meta.id),
+          EntryDetailFooter(
+            entryId: testTextEntry.meta.id,
+            linkedFrom: null,
+          ),
         ),
       );
       await tester.pumpAndSettle();

@@ -5,7 +5,6 @@ import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/journal_card_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -222,7 +221,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
       return const SizedBox.shrink();
     }
     void onTap() {
-      if (getIt<NavService>().tasksTabActive()) {
+      if (updatedItem is Task) {
         beamToNamed('/tasks/${updatedItem.meta.id}');
       } else {
         beamToNamed('/journal/${updatedItem.meta.id}');
