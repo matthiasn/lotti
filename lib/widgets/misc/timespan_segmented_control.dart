@@ -19,6 +19,7 @@ class TimeSpanSegmentedControl extends StatelessWidget {
 
     ButtonSegment<int> segment(int days) {
       return buttonSegment(
+        context: context,
         value: days,
         selected: timeSpanDays,
         label: shortLabels ? '${days}d' : '$days days',
