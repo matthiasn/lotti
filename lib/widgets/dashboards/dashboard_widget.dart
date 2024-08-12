@@ -9,7 +9,6 @@ import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
-import 'package:lotti/widgets/charts/stories/wildcard_story_chart.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 
 class DashboardWidget extends StatelessWidget {
@@ -66,15 +65,7 @@ class DashboardWidget extends StatelessWidget {
           return const Text('Story Time Chart currently not implemented');
         },
         wildcardStoryTimeChart: (WildcardStoryTimeItem storyChart) {
-          return Column(
-            children: [
-              WildcardStoryChart(
-                chartConfig: storyChart,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            ],
-          );
+          return const SizedBox.shrink();
         },
         surveyChart: (DashboardSurveyItem surveyChart) {
           return DashboardSurveyChart(
