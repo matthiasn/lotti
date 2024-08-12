@@ -44,6 +44,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: initializeAsrModelOnStartup,
+      description: 'Initialize WhisperKit ASR model on startup',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableMatrixFlag,
       description: 'Enable Matrix Sync',
       status: false,

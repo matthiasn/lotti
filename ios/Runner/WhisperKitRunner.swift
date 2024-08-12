@@ -25,6 +25,22 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
         
         transcriptionChannel.setMethodCallHandler { (call, result) in
             switch call.method {
+
+            case "initialize":
+                if (self.whisperKit == nil) {
+                    if (self.eventSink != nil) {
+                        self.eventSink!(["Initializing model...", ""])
+                    }
+                }
+
+                Task {
+                    if (self.whisperKit == nil) {
+                        self.whisperKit = try? await WhisperKit(model: self.model,
+                                                                verbose: true,
+                                                                prewarm: true)
+                    }
+                }
+
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
                 let audioFilePath = args["audioFilePath"] as! String
