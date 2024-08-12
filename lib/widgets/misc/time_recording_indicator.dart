@@ -31,7 +31,14 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
         final durationString = formatDuration(entryDuration(current));
 
         return GestureDetector(
-          onTap: () => beamToNamed('/journal/${current.meta.id}'),
+          onTap: () {
+            final linkedFrom = _timeService.linkedFrom;
+            linkedFrom != null
+                ? linkedFrom is Task
+                    ? beamToNamed('/tasks/${linkedFrom.meta.id}')
+                    : beamToNamed('/journal/${linkedFrom.meta.id}')
+                : beamToNamed('/journal/${current.meta.id}');
+          },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ClipRRect(

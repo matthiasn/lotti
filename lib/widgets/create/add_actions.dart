@@ -107,8 +107,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           tooltip: context.messages.addActionAddTimeRecording,
           onPressed: () async {
             rebuild();
-            final linkedId = widget.linked?.meta.id;
-            await createTimerEntry(linkedId: linkedId);
+            await createTimerEntry(linked: widget.linked);
           },
           child: Icon(
             MdiIcons.timerOutline,

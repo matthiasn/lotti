@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
@@ -8,10 +9,12 @@ import 'package:lotti/widgets/misc/map_widget.dart';
 class EntryDetailFooter extends ConsumerWidget {
   const EntryDetailFooter({
     required this.entryId,
+    required this.linkedFrom,
     super.key,
   });
 
   final String entryId;
+  final JournalEntity? linkedFrom;
 
   @override
   Widget build(
@@ -32,7 +35,10 @@ class EntryDetailFooter extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             EntryDatetimeWidget(entryId: entry.meta.id),
-            DurationWidget(item: entry),
+            DurationWidget(
+              item: entry,
+              linkedFrom: linkedFrom,
+            ),
           ],
         ),
         Visibility(
