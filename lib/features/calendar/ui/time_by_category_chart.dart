@@ -170,7 +170,7 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
                       strokeWidth: 0.5,
                     ),
                     label: LabelStyle(
-                      textStyle: context.textTheme.bodyLarge,
+                      textStyle: context.textTheme.labelSmall,
                       offset: const Offset(0, 7.5),
                     ),
                   ),
