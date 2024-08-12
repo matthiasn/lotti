@@ -13,12 +13,15 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class DurationWidget extends ConsumerWidget {
   DurationWidget({
     required this.item,
+    required this.linkedFrom,
     super.key,
     this.style,
   });
 
   final TimeService _timeService = getIt<TimeService>();
   final JournalEntity item;
+  final JournalEntity? linkedFrom;
+
   final TextStyle? style;
 
   @override
@@ -80,7 +83,7 @@ class DurationWidget extends ConsumerWidget {
                         tooltip: 'Record',
                         color: context.colorScheme.error,
                         onPressed: () {
-                          _timeService.start(item);
+                          _timeService.start(item, linkedFrom);
                         },
                       ),
                     ),

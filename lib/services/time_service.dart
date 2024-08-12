@@ -11,14 +11,16 @@ class TimeService {
 
   late final StreamController<JournalEntity?> _controller;
   JournalEntity? _current;
+  JournalEntity? linkedFrom;
   Stream<int>? _periodicStream;
 
-  Future<void> start(JournalEntity journalEntity) async {
+  Future<void> start(JournalEntity journalEntity, JournalEntity? linked) async {
     if (_current != null) {
       await stop();
     }
 
     _current = journalEntity;
+    linkedFrom = linked;
 
     const interval = Duration(seconds: 1);
 
