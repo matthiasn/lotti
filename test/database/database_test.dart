@@ -32,6 +32,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: initializeAsrModelOnStartup,
+    description: 'Initialize WhisperKit ASR model on startup',
+    status: false,
+  ),
+  const ConfigFlag(
     name: recordLocationFlag,
     description: 'Record geolocation?',
     status: false,
