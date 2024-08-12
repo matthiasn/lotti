@@ -21,24 +21,28 @@ class HabitStatusSegmentedControl extends StatelessWidget {
       onSelectionChanged: (selected) => onValueChanged(selected.first),
       segments: [
         buttonSegment(
+          context: context,
           value: HabitDisplayFilter.openNow,
           selected: filter,
           label: context.messages.habitsFilterOpenNow,
           semanticsLabel: 'Habits - due',
         ),
         buttonSegment(
+          context: context,
           value: HabitDisplayFilter.pendingLater,
           selected: filter,
           label: context.messages.habitsFilterPendingLater,
           semanticsLabel: 'Habits - later',
         ),
         buttonSegment(
+          context: context,
           value: HabitDisplayFilter.completed,
           selected: filter,
           label: context.messages.habitsFilterCompleted,
           semanticsLabel: 'Habits - done',
         ),
         buttonSegment(
+          context: context,
           value: HabitDisplayFilter.all,
           selected: filter,
           label: context.messages.habitsFilterAll,

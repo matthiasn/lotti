@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 
 ButtonSegment<T> buttonSegment<T>({
+  required BuildContext context,
   required T value,
   required T selected,
   required String label,
@@ -11,6 +13,7 @@ ButtonSegment<T> buttonSegment<T>({
     label: Text(
       label,
       semanticsLabel: semanticsLabel ?? label,
+      style: context.textTheme.labelMedium,
     ),
   );
 }
