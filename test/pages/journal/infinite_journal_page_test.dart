@@ -236,13 +236,10 @@ void main() {
       );
     });
 
-    testWidgets('page is rendered with task entry', (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
-        );
-      }
+    testWidgets('tasks page is rendered with task entry', (tester) async {
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenAnswer((_) => []);
 
       when(
         () => mockJournalDb.getTasks(
@@ -255,8 +252,6 @@ void main() {
 
       when(() => mockJournalDb.journalEntityById(testTask.meta.id))
           .thenAnswer((_) async => testTask);
-
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

@@ -13,6 +13,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -325,11 +326,19 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         _filters.contains(DisplayFilter.flaggedEntriesOnly);
 
     if (showTasks) {
+      final allCategoryIds = getIt<EntitiesCacheService>()
+          .sortedCategories
+          .map((e) => e.id)
+          .toSet();
+
+      final categoryIds =
+          _selectedCategoryIds.isEmpty ? allCategoryIds : _selectedCategoryIds;
+
       final res = await _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         taskStatuses: _selectedTaskStatuses.toList(),
-        categoryIds: _selectedCategoryIds.toList(),
+        categoryIds: categoryIds.toList(),
         limit: _pageSize,
         offset: pageKey,
       );
