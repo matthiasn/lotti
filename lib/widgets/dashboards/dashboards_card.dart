@@ -18,7 +18,6 @@ class DashboardCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/dashboards/${dashboard.id}',
       title: dashboard.name,
-      contentPadding: contentPaddingWithLeading,
       leading: CategoryColorIcon(dashboard.categoryId),
     );
   }
