@@ -18,15 +18,15 @@ class TaskStatusFilter extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Divider(),
+            //const Divider(),
             Text(
               context.messages.taskStatusLabel,
               style: context.textTheme.bodySmall,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
             Wrap(
-              runSpacing: 10,
-              spacing: 5,
+              runSpacing: 8,
+              spacing: 8,
               children: [
                 ...snapshot.taskStatuses.map(
                   (status) => TaskStatusChip(
@@ -35,7 +35,6 @@ class TaskStatusFilter extends StatelessWidget {
                   ),
                 ),
                 const TaskStatusAllChip(),
-                const SizedBox(width: 5),
               ],
             ),
           ],

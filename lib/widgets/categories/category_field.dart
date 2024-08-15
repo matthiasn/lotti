@@ -34,7 +34,7 @@ class CategoryField extends StatelessWidget {
         builder: (BuildContext _) {
           return Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: 10,
@@ -53,7 +53,6 @@ class CategoryField extends StatelessWidget {
                       title: category.name,
                       leading: ColorIcon(
                         colorFromCssHex(category.color),
-                        size: 24,
                       ),
                     ),
                   ),
@@ -82,7 +81,6 @@ class CategoryField extends StatelessWidget {
           category != null
               ? colorFromCssHex(category.color)
               : context.colorScheme.outline.withOpacity(0.2),
-          size: 24,
         ),
         suffixIcon: categoryUndefined
             ? null

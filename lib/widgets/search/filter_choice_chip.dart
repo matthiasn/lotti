@@ -2,8 +2,6 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
-const horizontalChipMargin = 2.0;
-
 class FilterChoiceChip extends StatelessWidget {
   const FilterChoiceChip({
     required this.label,
@@ -27,30 +25,23 @@ class FilterChoiceChip extends StatelessWidget {
       onLongPress: onLongPress,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: Container(
-          margin: const EdgeInsets.symmetric(
-            horizontal: horizontalChipMargin,
-          ),
-          child: Chip(
-            side: BorderSide(
-              color: selectedColor,
+        child: Chip(
+          side: BorderSide(color: selectedColor),
+          label: Text(
+            label,
+            style: choiceChipTextStyle(
+              themeData: Theme.of(context),
+              isSelected: isSelected,
+            ).copyWith(
+              color: isSelected
+                  ? selectedColor.isLight
+                      ? Colors.black
+                      : Colors.white
+                  : context.colorScheme.onSurface,
             ),
-            label: Text(
-              label,
-              style: choiceChipTextStyle(
-                themeData: Theme.of(context),
-                isSelected: isSelected,
-              ).copyWith(
-                color: isSelected
-                    ? selectedColor.isLight
-                        ? Colors.black
-                        : Colors.white
-                    : context.colorScheme.onSurface,
-              ),
-            ),
-            visualDensity: VisualDensity.compact,
-            backgroundColor: isSelected ? selectedColor : null,
           ),
+          visualDensity: VisualDensity.compact,
+          backgroundColor: isSelected ? selectedColor : null,
         ),
       ),
     );

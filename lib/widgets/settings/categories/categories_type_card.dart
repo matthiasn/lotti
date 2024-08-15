@@ -23,7 +23,6 @@ class CategoriesTypeCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/categories/${categoryDefinition.id}',
       title: categoryDefinition.name,
-      contentPadding: contentPaddingWithLeading,
       leading: ColorIcon(colorFromCssHex(categoryDefinition.color)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -45,7 +44,7 @@ class CategoriesTypeCard extends StatelessWidget {
 class ColorIcon extends StatelessWidget {
   const ColorIcon(
     this.color, {
-    this.size = 40.0,
+    this.size = 24.0,
     super.key,
   });
 

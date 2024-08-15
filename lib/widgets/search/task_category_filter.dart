@@ -28,15 +28,14 @@ class TaskCategoryFilter extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            const Divider(),
             Text(
               context.messages.taskCategoryLabel,
               style: context.textTheme.bodySmall,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
             Wrap(
-              spacing: 5,
-              runSpacing: 10,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 ...categories.map((category) {
                   final isSelected =

@@ -12,8 +12,8 @@ class SettingsCard extends StatelessWidget {
     this.leading,
     this.trailing,
     this.contentPadding = const EdgeInsets.symmetric(
-      horizontal: 32,
-      vertical: 8,
+      horizontal: 25,
+      vertical: 5,
     ),
   });
 
@@ -53,10 +53,7 @@ class SettingsNavCard extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
-    this.contentPadding = const EdgeInsets.symmetric(
-      horizontal: 32,
-      vertical: 8,
-    ),
+    this.contentPadding,
   });
 
   final String title;
@@ -65,7 +62,7 @@ class SettingsNavCard extends StatelessWidget {
   final Widget? subtitle;
   final Widget? leading;
   final Widget? trailing;
-  final EdgeInsets contentPadding;
+  final EdgeInsets? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +77,3 @@ class SettingsNavCard extends StatelessWidget {
     );
   }
 }
-
-const contentPaddingWithLeading = EdgeInsets.only(
-  left: 10,
-  top: 5,
-  bottom: 5,
-  right: 20,
-);
