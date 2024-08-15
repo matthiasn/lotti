@@ -21,7 +21,6 @@ class DashboardDefinitionCard extends StatelessWidget {
       path: '/settings/dashboards/${dashboard.id}',
       title: dashboard.name,
       leading: CategoryColorIcon(dashboard.categoryId),
-      contentPadding: contentPaddingWithLeading,
       trailing: Visibility(
         visible: dashboard.private,
         child: Icon(
