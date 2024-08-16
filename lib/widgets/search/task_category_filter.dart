@@ -9,14 +9,25 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 
-class TaskCategoryFilter extends StatelessWidget {
+class TaskCategoryFilter extends StatefulWidget {
   const TaskCategoryFilter({super.key});
+
+  @override
+  State<TaskCategoryFilter> createState() => _TaskCategoryFilterState();
+}
+
+class _TaskCategoryFilterState extends State<TaskCategoryFilter> {
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
     final categories = getIt<EntitiesCacheService>().sortedCategories;
 
-    if (categories.isEmpty) {
+    final filteredCategories = _showAll
+        ? categories
+        : categories.where((category) => category.favorite ?? false).toList();
+
+    if (filteredCategories.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -37,7 +48,7 @@ class TaskCategoryFilter extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ...categories.map((category) {
+                ...filteredCategories.map((category) {
                   final isSelected =
                       state.selectedCategoryIds.contains(category.id);
                   final color = colorFromCssHex(category.color);
@@ -56,6 +67,15 @@ class TaskCategoryFilter extends StatelessWidget {
                   selectedColor: Colors.grey,
                   isSelected: state.selectedCategoryIds.contains(''),
                 ),
+                if (!_showAll)
+                  FilterChoiceChip(
+                    onTap: () => setState(() {
+                      _showAll = !_showAll;
+                    }),
+                    label: '...',
+                    selectedColor: Colors.grey,
+                    isSelected: _showAll,
+                  ),
               ],
             ),
           ],

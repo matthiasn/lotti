@@ -2603,6 +2603,7 @@ mixin _$EntityDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)
@@ -2671,6 +2672,7 @@ mixin _$EntityDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -2739,6 +2741,7 @@ mixin _$EntityDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -3140,6 +3143,7 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)
@@ -3224,6 +3228,7 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -3308,6 +3313,7 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -3479,6 +3485,7 @@ abstract class _$$CategoryDefinitionImplCopyWith<$Res>
       VectorClock? vectorClock,
       bool private,
       bool active,
+      bool? favorite,
       String? color,
       String? categoryId,
       DateTime? deletedAt});
@@ -3504,6 +3511,7 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
     Object? vectorClock = freezed,
     Object? private = null,
     Object? active = null,
+    Object? favorite = freezed,
     Object? color = freezed,
     Object? categoryId = freezed,
     Object? deletedAt = freezed,
@@ -3537,6 +3545,10 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
           ? _value.active
           : active // ignore: cast_nullable_to_non_nullable
               as bool,
+      favorite: freezed == favorite
+          ? _value.favorite
+          : favorite // ignore: cast_nullable_to_non_nullable
+              as bool?,
       color: freezed == color
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
@@ -3564,6 +3576,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
       required this.vectorClock,
       required this.private,
       required this.active,
+      this.favorite,
       this.color,
       this.categoryId,
       this.deletedAt,
@@ -3588,6 +3601,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
   @override
   final bool active;
   @override
+  final bool? favorite;
+  @override
   final String? color;
   @override
   final String? categoryId;
@@ -3599,7 +3614,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
 
   @override
   String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, color: $color, categoryId: $categoryId, deletedAt: $deletedAt)';
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt)';
   }
 
   @override
@@ -3617,6 +3632,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
                 other.vectorClock == vectorClock) &&
             (identical(other.private, private) || other.private == private) &&
             (identical(other.active, active) || other.active == active) &&
+            (identical(other.favorite, favorite) ||
+                other.favorite == favorite) &&
             (identical(other.color, color) || other.color == color) &&
             (identical(other.categoryId, categoryId) ||
                 other.categoryId == categoryId) &&
@@ -3627,7 +3644,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
-      vectorClock, private, active, color, categoryId, deletedAt);
+      vectorClock, private, active, favorite, color, categoryId, deletedAt);
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
@@ -3664,6 +3681,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)
@@ -3707,7 +3725,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
         dashboard,
   }) {
     return categoryDefinition(id, createdAt, updatedAt, name, vectorClock,
-        private, active, color, categoryId, deletedAt);
+        private, active, favorite, color, categoryId, deletedAt);
   }
 
   @override
@@ -3736,6 +3754,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -3779,7 +3798,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
         dashboard,
   }) {
     return categoryDefinition?.call(id, createdAt, updatedAt, name, vectorClock,
-        private, active, color, categoryId, deletedAt);
+        private, active, favorite, color, categoryId, deletedAt);
   }
 
   @override
@@ -3808,6 +3827,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -3853,7 +3873,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
   }) {
     if (categoryDefinition != null) {
       return categoryDefinition(id, createdAt, updatedAt, name, vectorClock,
-          private, active, color, categoryId, deletedAt);
+          private, active, favorite, color, categoryId, deletedAt);
     }
     return orElse();
   }
@@ -3912,6 +3932,7 @@ abstract class CategoryDefinition implements EntityDefinition {
       required final VectorClock? vectorClock,
       required final bool private,
       required final bool active,
+      final bool? favorite,
       final String? color,
       final String? categoryId,
       final DateTime? deletedAt}) = _$CategoryDefinitionImpl;
@@ -3931,6 +3952,7 @@ abstract class CategoryDefinition implements EntityDefinition {
   @override
   bool get private;
   bool get active;
+  bool? get favorite;
   String? get color;
   @override
   String? get categoryId;
@@ -4279,6 +4301,7 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)
@@ -4368,6 +4391,7 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -4457,6 +4481,7 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -4904,6 +4929,7 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)
@@ -4990,6 +5016,7 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
@@ -5076,6 +5103,7 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             VectorClock? vectorClock,
             bool private,
             bool active,
+            bool? favorite,
             String? color,
             String? categoryId,
             DateTime? deletedAt)?
