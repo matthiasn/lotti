@@ -27,7 +27,7 @@ class _TaskCategoryFilterState extends State<TaskCategoryFilter> {
         ? categories
         : categories.where((category) => category.favorite ?? false).toList();
 
-    if (filteredCategories.isEmpty) {
+    if (categories.isEmpty) {
       return const SizedBox.shrink();
     }
 
