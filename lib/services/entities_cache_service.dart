@@ -48,7 +48,7 @@ class EntitiesCacheService {
   Map<String, DashboardDefinition> dashboardsById = {};
 
   List<CategoryDefinition> get sortedCategories {
-    final res = categoriesById.values.toList()
+    final res = categoriesById.values.where((e) => e.active).toList()
       ..sortBy((category) => category.name);
     return res;
   }
