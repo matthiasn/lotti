@@ -6,12 +6,12 @@ part of 'day_view_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dayViewControllerHash() => r'47f7b98c060628d6988873378a14f5b9b419f6d0';
+String _$dayViewControllerHash() => r'71544d88f1f5251993c118b6fc063dc6441e4362';
 
 /// See also [DayViewController].
 @ProviderFor(DayViewController)
 final dayViewControllerProvider = AutoDisposeAsyncNotifierProvider<
-    DayViewController, List<CalendarEventData<JournalEntity>>>.internal(
+    DayViewController, List<CalendarEventData<CalendarEvent>>>.internal(
   DayViewController.new,
   name: r'dayViewControllerProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -22,7 +22,7 @@ final dayViewControllerProvider = AutoDisposeAsyncNotifierProvider<
 );
 
 typedef _$DayViewController
-    = AutoDisposeAsyncNotifier<List<CalendarEventData<JournalEntity>>>;
+    = AutoDisposeAsyncNotifier<List<CalendarEventData<CalendarEvent>>>;
 String _$daySelectionControllerHash() =>
     r'12d87629da886ad08785bcf28005a9b9ea4c8397';
 
