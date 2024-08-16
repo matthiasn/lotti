@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -57,19 +58,19 @@ class DayViewController extends _$DayViewController {
   }
 
   @override
-  Future<List<CalendarEventData<JournalEntity>>> build() async {
+  Future<List<CalendarEventData<CalendarEvent>>> build() async {
     ref.onDispose(() => _updateSubscription?.cancel());
 
     final data = await _fetch();
     return data;
   }
 
-  Future<List<CalendarEventData<JournalEntity>>> _fetch({
+  Future<List<CalendarEventData<CalendarEvent>>> _fetch({
     int timeSpanDays = 90,
   }) async {
     final now = DateTime.now();
     final db = getIt<JournalDb>();
-    final data = <CalendarEventData<JournalEntity>>[];
+    final data = <CalendarEventData<CalendarEvent>>[];
     final start = now.dayAtMidnight.subtract(Duration(days: timeSpanDays));
 
     final items = await db.sortedJournalEntities(
@@ -148,9 +149,14 @@ class DayViewController extends _$DayViewController {
               )
             : journalEntity.entryText?.plainText.truncate(100);
 
+        final event = CalendarEvent(
+          entity: journalEntity,
+          linkedFrom: linkedEntry,
+        );
+
         data.add(
-          CalendarEventData<JournalEntity>(
-            event: journalEntity,
+          CalendarEventData<CalendarEvent>(
+            event: event,
             date: journalEntity.meta.dateFrom,
             startTime: startTime,
             endTime: endTime,
