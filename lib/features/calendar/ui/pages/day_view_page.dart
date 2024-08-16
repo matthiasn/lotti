@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/day_view_controller.dart';
 import 'package:lotti/features/calendar/ui/time_by_category_chart_card.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -26,7 +27,7 @@ class DayViewPage extends ConsumerStatefulWidget {
 }
 
 class DayViewPageState extends ConsumerState<DayViewPage> {
-  final EventController _eventController = EventController();
+  final _eventController = EventController();
 
   @override
   void initState() {
@@ -138,11 +139,14 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
               lineStyle: LineStyle.dashed,
             ),
             onEventTap: (events, date) {
-              final event = events.firstOrNull?.event as JournalEntity?;
-              final id = event?.id;
-              if (id != null) {
-                beamToNamed('/journal/$id');
-              }
+              final event = events.firstOrNull?.event as CalendarEvent?;
+              final id = event?.entity.id;
+              final linkedFrom = event?.linkedFrom;
+              linkedFrom != null
+                  ? linkedFrom is Task
+                      ? beamToNamed('/tasks/${linkedFrom.meta.id}')
+                      : beamToNamed('/journal/${linkedFrom.meta.id}')
+                  : beamToNamed('/journal/$id');
             },
             verticalLineOffset: 0,
             timeLineWidth: 65,
