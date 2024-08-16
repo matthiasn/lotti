@@ -112,6 +112,14 @@ class CategoryDetailsPage extends StatelessWidget {
                             title: context.messages.dashboardActiveLabel,
                             activeColor: starredGold,
                           ),
+                          FormSwitch(
+                            name: 'favorite',
+                            key: const Key('category_favorite'),
+                            initialValue: state.categoryDefinition.favorite,
+                            title: context
+                                .messages.settingsMeasurableFavoriteLabel,
+                            activeColor: starredGold,
+                          ),
                           inputSpacer,
                           SelectColorField(
                             hexColor: state.categoryDefinition.color,

@@ -247,6 +247,7 @@ _$CategoryDefinitionImpl _$$CategoryDefinitionImplFromJson(
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       private: json['private'] as bool,
       active: json['active'] as bool,
+      favorite: json['favorite'] as bool?,
       color: json['color'] as String?,
       categoryId: json['categoryId'] as String?,
       deletedAt: json['deletedAt'] == null
@@ -265,6 +266,7 @@ Map<String, dynamic> _$$CategoryDefinitionImplToJson(
       'vectorClock': instance.vectorClock,
       'private': instance.private,
       'active': instance.active,
+      'favorite': instance.favorite,
       'color': instance.color,
       'categoryId': instance.categoryId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
