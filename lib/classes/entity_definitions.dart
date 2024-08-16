@@ -101,6 +101,7 @@ class EntityDefinition with _$EntityDefinition {
     required VectorClock? vectorClock,
     required bool private,
     required bool active,
+    bool? favorite,
     String? color,
     String? categoryId,
     DateTime? deletedAt,

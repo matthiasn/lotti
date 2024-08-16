@@ -52,11 +52,13 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
       final formData = state.formKey.currentState?.value;
       final private = formData?['private'] as bool? ?? false;
       final active = formData?['active'] as bool? ?? false;
+      final favorite = formData?['favorite'] as bool? ?? false;
 
       final dataType = categoryDefinition.copyWith(
         name: '${formData!['name']}'.trim(),
         private: private,
         active: active,
+        favorite: favorite,
       );
 
       await persistenceLogic.upsertEntityDefinition(dataType);

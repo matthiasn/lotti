@@ -410,26 +410,26 @@ packages:
     dependency: transitive
     description:
       name: custom_lint
-      sha256: "7c0aec12df22f9082146c354692056677f1e70bc43471644d1fdb36c6fdda799"
+      sha256: "4939d89e580c36215e48a7de8fd92f22c79dcc3eb11fda84f3402b3b45aec663"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.4"
+    version: "0.6.5"
   custom_lint_builder:
     dependency: transitive
     description:
       name: custom_lint_builder
-      sha256: d7dc41e709dde223806660268678be7993559e523eb3164e2a1425fd6f7615a9
+      sha256: d9e5bb63ed52c1d006f5a1828992ba6de124c27a531e8fba0a31afffa81621b3
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.4"
+    version: "0.6.5"
   custom_lint_core:
     dependency: transitive
     description:
       name: custom_lint_core
-      sha256: a85e8f78f4c52f6c63cdaf8c872eb573db0231dcdf3c3a5906d493c1f8bc20e6
+      sha256: "4ddbbdaa774265de44c97054dcec058a83d9081d071785ece601e348c18c267d"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.3"
+    version: "0.6.5"
   dart_console:
     dependency: transitive
     description:
@@ -458,10 +458,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "06f69b160456b8cce3c7dfc1120299f502751734ce19b5303514089d4776629c"
+      sha256: "2c971507ae2e235d7afbfcd0c25ce831bf6865685923cb19f8cb2581d682c5fb"
       url: "https://pub.dev"
     source: hosted
-    version: "10.1.10"
+    version: "10.2.0"
   dart_style:
     dependency: "direct dev"
     description:
@@ -635,10 +635,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image_library
-      sha256: c9caee8fe9b6547bd41c960c4f2d1ef8e34321804de6a1777f1d614a24247ad6
+      sha256: "9a94ec9314aa206cfa35f16145c3cd6e2c924badcc670eaaca8a3a8063a68cd7"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.4"
+    version: "4.0.5"
   fake_async:
     dependency: transitive
     description:
@@ -1011,10 +1011,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "848a554c10e084de303037781b3670d2a145c2017b2d52ff198389d6d9cd5576"
+      sha256: d92ce023a84f92b4ca5cceb6bbfe73c87232092282570f3dc29a22edd54cb46d
       url: "https://pub.dev"
     source: hosted
-    version: "10.1.10"
+    version: "10.2.0"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
@@ -1776,10 +1776,10 @@ packages:
     dependency: "direct dev"
     description:
       name: msix
-      sha256: "519b183d15dc9f9c594f247e2d2339d855cf0eaacc30e19b128e14f3ecc62047"
+      sha256: c50d6bd1aafe0d071a3c1e5a5ccb056404502935cb0a549e3178c4aae16caf33
       url: "https://pub.dev"
     source: hosted
-    version: "3.16.7"
+    version: "3.16.8"
   multi_select_flutter:
     dependency: "direct main"
     description:
@@ -2973,10 +2973,10 @@ packages:
     dependency: "direct main"
     description:
       name: wechat_assets_picker
-      sha256: dc44a6f0c8493cf0a53f7bffc92ae3403e22a063dc109bc486bfefa137b60a20
+      sha256: "04b695235aba08aafc1eda255d65582d555c1515fd46d1766a6df063aa5c047a"
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.0"
+    version: "9.2.1"
   wechat_picker_library:
     dependency: transitive
     description:
