@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/send_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -52,7 +53,9 @@ void main() {
       () => mockUpdateNotifications.notify(any()),
     ).thenAnswer((_) {});
 
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    getIt
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<UserActivityService>(UserActivityService());
 
     final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
     final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');

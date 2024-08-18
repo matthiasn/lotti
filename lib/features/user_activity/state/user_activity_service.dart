@@ -1,7 +1,7 @@
 class UserActivityService {
   UserActivityService();
 
-  DateTime _lastActivity = DateTime.now();
+  DateTime _lastActivity = DateTime.fromMillisecondsSinceEpoch(0);
 
   void updateActivity() {
     _lastActivity = DateTime.now();
@@ -10,5 +10,5 @@ class UserActivityService {
   DateTime get lastActivity => _lastActivity;
 
   int get msSinceLastActivity =>
-      _lastActivity.difference(DateTime.now()).inMilliseconds;
+      DateTime.now().difference(_lastActivity).inMilliseconds;
 }
