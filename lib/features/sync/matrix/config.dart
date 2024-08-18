@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/matrix/consts.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
-import 'package:lotti/sync/secure_storage.dart';
 
 Future<MatrixConfig?> loadMatrixConfig({
   required MatrixService service,

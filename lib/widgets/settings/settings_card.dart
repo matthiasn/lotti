@@ -53,7 +53,6 @@ class SettingsNavCard extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
-    this.contentPadding,
   });
 
   final String title;
@@ -62,7 +61,6 @@ class SettingsNavCard extends StatelessWidget {
   final Widget? subtitle;
   final Widget? leading;
   final Widget? trailing;
-  final EdgeInsets? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +71,6 @@ class SettingsNavCard extends StatelessWidget {
       leading: leading,
       trailing: trailing,
       onTap: () => beamToNamed(path),
-      contentPadding: contentPadding,
     );
   }
 }

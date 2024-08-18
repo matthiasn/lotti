@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:glados/glados.dart';
-import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 extension AnyVectorClock on Any {
   Generator<VectorClock> get vc =>

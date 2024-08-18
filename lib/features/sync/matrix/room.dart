@@ -2,9 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/matrix/consts.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 
 Future<String?> joinMatrixRoom({
