@@ -234,7 +234,7 @@ void main() {
         ),
       );
 
-      notifier.setDirty(null);
+      notifier.setDirty(value: true);
 
       await expectLater(
         container.read(testEntryProvider.future),
@@ -369,7 +369,7 @@ void main() {
         ),
       );
 
-      notifier.setDirty(null);
+      notifier.setDirty(value: true);
 
       await expectLater(
         container.read(testEntryProvider.future),
