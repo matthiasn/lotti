@@ -108,8 +108,7 @@ class EntryController extends _$EntryController {
       _editorStateService
           .getUnsavedStream(entryId, lastSaved)
           .listen((bool dirtyFromEditorDrafts) {
-        _dirty = dirtyFromEditorDrafts;
-        emitState();
+        setDirty(value: dirtyFromEditorDrafts);
       });
     }
 
@@ -269,8 +268,8 @@ class EntryController extends _$EntryController {
     }
   }
 
-  void setDirty(dynamic _) {
-    _dirty = true;
+  void setDirty({required bool value}) {
+    _dirty = value;
     emitState();
   }
 
