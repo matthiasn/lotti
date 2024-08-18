@@ -7,9 +7,9 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 

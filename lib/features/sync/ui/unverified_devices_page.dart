@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:lotti/widgets/sync/matrix/device_card.dart';

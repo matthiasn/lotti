@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/sync/state/matrix_room_provider.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';

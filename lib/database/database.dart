@@ -12,8 +12,8 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 

@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'tag_type_definitions.freezed.dart';
 part 'tag_type_definitions.g.dart';

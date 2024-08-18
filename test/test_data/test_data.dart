@@ -8,7 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 final testEpochDateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
