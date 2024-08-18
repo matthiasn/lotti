@@ -8,15 +8,15 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/outbox/outbox_service.dart';
-import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/sync/utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';

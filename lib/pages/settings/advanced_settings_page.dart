@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';

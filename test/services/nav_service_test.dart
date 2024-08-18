@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/sync/secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';

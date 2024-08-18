@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/sync/client_runner.dart';
+import 'package:lotti/features/sync/client_runner.dart';
 
 void main() {
   group('ClientRunner Tests', () {

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/habit_page_app_bar.dart';
@@ -14,8 +16,22 @@ import 'package:lotti/widgets/habits/habits_search.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class HabitsTabPage extends StatelessWidget {
+class HabitsTabPage extends StatefulWidget {
   const HabitsTabPage({super.key});
+
+  @override
+  State<HabitsTabPage> createState() => _HabitsTabPageState();
+}
+
+class _HabitsTabPageState extends State<HabitsTabPage> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    final listener = getIt<UserActivityService>().updateActivity;
+    _scrollController.addListener(listener);
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +87,7 @@ class HabitsTabPage extends StatelessWidget {
           return Scaffold(
             body: SafeArea(
               child: CustomScrollView(
+                controller: _scrollController,
                 slivers: <Widget>[
                   SliverTitleBar(context.messages.settingsHabitsTitle),
                   const HabitsSliverAppBar(),

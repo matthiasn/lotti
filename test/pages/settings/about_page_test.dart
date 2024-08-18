@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/advanced/about_page.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -42,6 +43,7 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
-import 'package:lotti/sync/matrix/stats.dart';
 
 class IncomingStats extends StatelessWidget {
   const IncomingStats({super.key});

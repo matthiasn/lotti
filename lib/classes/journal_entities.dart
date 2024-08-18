@@ -7,7 +7,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:research_package/model.dart';
 
 part 'journal_entities.freezed.dart';
