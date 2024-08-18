@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
@@ -15,7 +16,9 @@ void main() {
 
   group('HealthImportPage Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<HealthImport>(mockHealthImport);
+      getIt
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<UserActivityService>(UserActivityService());
 
       when(
         () => mockHealthImport.getActivityHealthData(

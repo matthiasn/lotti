@@ -6,6 +6,7 @@ import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -47,6 +48,7 @@ void main() {
 
       getIt
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
