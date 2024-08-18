@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
@@ -41,6 +42,9 @@ class TaskAppBar extends StatelessWidget implements PreferredSizeWidget {
             centerTitle: true,
             leadingWidth: 100,
             leading: const BackWidget(),
+            actions: [
+              SaveButton(entryId: item.meta.id),
+            ],
           );
         }
       },
