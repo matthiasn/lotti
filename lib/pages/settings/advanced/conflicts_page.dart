@@ -6,6 +6,8 @@ import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -14,8 +16,6 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/journal_card.dart';
 
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});

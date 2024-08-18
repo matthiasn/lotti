@@ -4,16 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_prompt_icon_widget.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/tags/tag_add.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
-import 'package:lotti/widgets/journal/entry_details/save_button.dart';
-import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
-import 'package:lotti/widgets/journal/tags/tag_add.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {

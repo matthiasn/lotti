@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/widgets/journal/tags/tags_view_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

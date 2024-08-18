@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_modal.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
