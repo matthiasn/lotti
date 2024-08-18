@@ -2,14 +2,8 @@ import 'dart:async';
 
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/sync/client_runner.dart';
-import 'package:lotti/sync/matrix/client.dart';
-import 'package:lotti/sync/matrix/config.dart';
-import 'package:lotti/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/sync/matrix/last_read.dart';
-import 'package:lotti/sync/matrix/room.dart';
-import 'package:lotti/sync/matrix/stats.dart';
-import 'package:lotti/sync/matrix/timeline.dart';
+import 'package:lotti/features/sync/client_runner.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 

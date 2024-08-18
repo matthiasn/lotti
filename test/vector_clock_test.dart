@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:uuid/uuid.dart';
 
 String nodeId1 = const Uuid().v1();

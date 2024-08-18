@@ -7,6 +7,8 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -21,8 +23,6 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
-import 'package:lotti/sync/outbox/outbox_service.dart';
 
 final getIt = GetIt.instance;
 
