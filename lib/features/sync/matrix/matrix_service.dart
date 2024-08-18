@@ -4,6 +4,8 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -18,6 +20,10 @@ class MatrixService {
         _client = createMatrixClient(dbName: dbName) {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
+        while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+
         await processNewTimelineEvents(
           service: this,
           overriddenJournalDb: overriddenJournalDb,
