@@ -156,7 +156,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             ),
           ),
         ),
-        SaveButton(entryId: widget.entryId),
+        if (widget.inLinkedEntries) SaveButton(entryId: widget.entryId),
       ],
     );
   }
