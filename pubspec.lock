@@ -458,10 +458,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "2c971507ae2e235d7afbfcd0c25ce831bf6865685923cb19f8cb2581d682c5fb"
+      sha256: bc3ee7f6ca230cc7d6ebd8ed4b79b6fbe41ddf072e7d02d49aa4a7ca01d1b095
       url: "https://pub.dev"
     source: hosted
-    version: "10.2.0"
+    version: "10.2.1"
   dart_style:
     dependency: "direct dev"
     description:
@@ -1011,18 +1011,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: d92ce023a84f92b4ca5cceb6bbfe73c87232092282570f3dc29a22edd54cb46d
+      sha256: "3ac9afc49bde6c7eedeb6e475e67399dd039c2dd1b7a083c6444bbefccebec05"
       url: "https://pub.dev"
     source: hosted
-    version: "10.2.0"
+    version: "10.2.1"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
       name: flutter_quill_delta_from_html
-      sha256: "36ff8bb045e280f59a2e7feb6f4dca62e80a14c8377dfe8260d8fe69dcda9a33"
+      sha256: "5461df689818d34237f7a5109763e1e4663b973c2a44a46c398bbd46381d297a"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.13"
+    version: "1.4.0"
   flutter_rating:
     dependency: "direct main"
     description:
@@ -1680,10 +1680,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "4357245df2a64c435456d1faee55cb33a9fd30aa0df97aacd6abd52b68f70aa1"
+      sha256: "034633a9be4ef551395bb117d0e5c49423a380c5950dcc3020d312e2d0c12372"
       url: "https://pub.dev"
     source: hosted
-    version: "0.32.0"
+    version: "0.32.1"
   media_kit:
     dependency: "direct main"
     description:
@@ -2224,10 +2224,10 @@ packages:
     dependency: transitive
     description:
       name: riverpod_analyzer_utils
-      sha256: ee72770090078e6841d51355292335f1bc254907c6694283389dcb8156d99a4d
+      sha256: ac28d7bc678471ec986b42d88e5a0893513382ff7542c7ac9634463b044ac72c
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.3"
+    version: "0.5.4"
   riverpod_annotation:
     dependency: "direct main"
     description:
@@ -2240,18 +2240,18 @@ packages:
     dependency: "direct dev"
     description:
       name: riverpod_generator
-      sha256: "1ad626afbd8b01d168870b13c0b036f8a5bdb57c14cd426dc5b4595466bd6e2f"
+      sha256: "63311e361ffc578d655dfc31b48dfa4ed3bc76fd06f9be845e9bf97c5c11a429"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.2"
+    version: "2.4.3"
   riverpod_lint:
     dependency: "direct main"
     description:
       name: riverpod_lint
-      sha256: b95a8cdc6102397f7d51037131c25ce7e51be900be021af4bf0c2d6f1b8f7aa7
+      sha256: a35a92f2c2a4b7a5d95671c96c5432b42c20f26bb3e985e83d0b186471b61a85
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.12"
+    version: "2.3.13"
   runtime_named_locks:
     dependency: transitive
     description:
@@ -2509,10 +2509,10 @@ packages:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: c5e5b2a142a893a752cb36ae5888680248686725a54afceff31f9a3a76bc53c2
+      sha256: "7b41b6c3507854a159e24ae90a8e3e9cc01eb26a477c118d6dca065b5f55453e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.4+1"
+    version: "2.5.4+2"
   sqflite_common_ffi:
     dependency: "direct main"
     description:
@@ -3021,10 +3021,10 @@ packages:
     dependency: "direct main"
     description:
       name: window_manager
-      sha256: e052224c7d8f0d1d0b2e03b7b1047bb08ea800d919a79453518311839881fa5f
+      sha256: ab8b2a7f97543d3db2b506c9d875e637149d48ee0c6a5cb5f5fd6e0dac463792
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.4.2"
   wkt_parser:
     dependency: transitive
     description:
