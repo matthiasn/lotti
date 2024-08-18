@@ -2,8 +2,8 @@ import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/widgets/journal/editor/editor_styles.dart';
-import 'package:lotti/widgets/journal/editor/editor_tools.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 
 class TextViewerWidget extends StatelessWidget {
   const TextViewerWidget({

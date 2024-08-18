@@ -11,6 +11,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'entry_controller.g.dart';

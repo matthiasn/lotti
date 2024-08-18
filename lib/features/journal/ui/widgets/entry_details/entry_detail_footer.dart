@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
-import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
 class EntryDetailFooter extends ConsumerWidget {

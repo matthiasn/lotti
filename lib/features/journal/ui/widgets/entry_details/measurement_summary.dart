@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/ui/widgets/helpers.dart';
+import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/helpers.dart';
-import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 
 class MeasurementSummary extends StatelessWidget {
   const MeasurementSummary(

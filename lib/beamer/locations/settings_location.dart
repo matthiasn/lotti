@@ -1,6 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/pages/journal/entry_details_page.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/pages/settings/advanced/about_page.dart';
 import 'package:lotti/pages/settings/advanced/conflicts_page.dart';
 import 'package:lotti/pages/settings/advanced/logging_page.dart';
