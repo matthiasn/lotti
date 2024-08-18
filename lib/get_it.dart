@@ -7,6 +7,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -28,6 +29,7 @@ final getIt = GetIt.instance;
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
+    ..registerSingleton<UserActivityService>(UserActivityService())
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())

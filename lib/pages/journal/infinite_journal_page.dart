@@ -6,6 +6,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -66,7 +67,7 @@ class InfiniteJournalPage extends StatelessWidget {
   }
 }
 
-class InfiniteJournalPageBody extends StatelessWidget {
+class InfiniteJournalPageBody extends StatefulWidget {
   const InfiniteJournalPageBody({
     required this.showTasks,
     super.key,
@@ -75,17 +76,33 @@ class InfiniteJournalPageBody extends StatelessWidget {
   final bool showTasks;
 
   @override
+  State<InfiniteJournalPageBody> createState() =>
+      _InfiniteJournalPageBodyState();
+}
+
+class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    final listener = getIt<UserActivityService>().updateActivity;
+    _scrollController.addListener(listener);
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cubit = context.read<JournalPageCubit>();
 
     return VisibilityDetector(
-      key: Key(showTasks ? 'tasks_page' : 'journal_page'),
+      key: Key(widget.showTasks ? 'tasks_page' : 'journal_page'),
       onVisibilityChanged: cubit.updateVisibility,
       child: BlocBuilder<JournalPageCubit, JournalPageState>(
         builder: (context, snapshot) {
           return RefreshIndicator(
             onRefresh: () => Future.sync(snapshot.pagingController.refresh),
             child: CustomScrollView(
+              controller: _scrollController,
               slivers: <Widget>[
                 const JournalSliverAppBar(),
                 PagedSliverList<int, JournalEntity>(
