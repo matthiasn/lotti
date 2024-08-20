@@ -8,21 +8,17 @@ import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 class AsrService {
   AsrService() {
     _loadSelectedModel();
-    _initialize();
-
     eventChannel.receiveBroadcastStream().listen(
           _onEvent,
           onError: _onError,
@@ -177,28 +173,6 @@ class AsrService {
       );
     }
     running = false;
-  }
-
-  Future<void> _initialize() async {
-    final initializeOnStartup = await getIt<JournalDb>().getConfigFlag(
-      initializeAsrModelOnStartup,
-    );
-
-    if (!initializeOnStartup) {
-      return;
-    }
-
-    getIt<LoggingDb>().captureEvent(
-      'initializing WhisperKit',
-      domain: 'ASR',
-      subDomain: 'initialize',
-    );
-
-    try {
-      unawaited(methodChannel.invokeMethod('initialize'));
-    } on PlatformException catch (e) {
-      captureException(e);
-    }
   }
 
   Future<bool> enqueue({required JournalAudio entry}) async {
