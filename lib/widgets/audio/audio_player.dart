@@ -8,11 +8,11 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AudioPlayerWidget extends ConsumerWidget {

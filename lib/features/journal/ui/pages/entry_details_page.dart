@@ -5,6 +5,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
@@ -12,9 +16,6 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
-import 'package:lotti/widgets/journal/entry_detail_linked.dart';
-import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
-import 'package:lotti/widgets/journal/entry_details_widget.dart';
 
 class EntryDetailPage extends ConsumerStatefulWidget {
   const EntryDetailPage({
@@ -52,7 +53,12 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
     return Scaffold(
       appBar: item is Task
           ? TaskAppBar(itemId: item.meta.id)
-          : const TitleAppBar(title: '') as PreferredSizeWidget,
+          : TitleAppBar(
+              title: '',
+              actions: [
+                SaveButton(entryId: item.meta.id),
+              ],
+            ) as PreferredSizeWidget,
       floatingActionButton: RadialAddActionButtons(
         linked: item,
         radius: isMobile ? 180 : 120,

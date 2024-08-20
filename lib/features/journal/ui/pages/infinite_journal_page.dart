@@ -6,6 +6,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
-import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class InfiniteJournalPage extends StatelessWidget {

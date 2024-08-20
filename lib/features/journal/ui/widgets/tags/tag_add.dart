@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagAddIconWidget extends ConsumerWidget {

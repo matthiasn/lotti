@@ -10,6 +10,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
@@ -21,7 +22,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -234,7 +234,7 @@ void main() {
         ),
       );
 
-      notifier.setDirty(null);
+      notifier.setDirty(value: true);
 
       await expectLater(
         container.read(testEntryProvider.future),
@@ -369,7 +369,7 @@ void main() {
         ),
       );
 
-      notifier.setDirty(null);
+      notifier.setDirty(value: true);
 
       await expectLater(
         container.read(testEntryProvider.future),

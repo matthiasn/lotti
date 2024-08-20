@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/categories/category_field.dart';
 import 'package:lotti/widgets/events/event_status.dart';
-import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 
 class EventForm extends ConsumerStatefulWidget {
   const EventForm(
@@ -73,7 +73,7 @@ class _EventFormState extends ConsumerState<EventForm> {
                   maxLines: null,
                   style: const TextStyle(fontSize: fontSizeLarge),
                   name: 'title',
-                  onChanged: notifier.setDirty,
+                  onChanged: (_) => notifier.setDirty(value: true),
                 ),
                 inputSpacer,
                 Wrap(

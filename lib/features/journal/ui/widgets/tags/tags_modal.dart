@@ -4,12 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 

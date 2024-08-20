@@ -1,9 +1,9 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
-import 'package:lotti/pages/journal/entry_details_page.dart';
-import 'package:lotti/pages/journal/infinite_journal_page.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class JournalLocation extends BeamLocation<BeamState> {
