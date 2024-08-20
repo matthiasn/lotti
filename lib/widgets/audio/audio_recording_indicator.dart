@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioRecordingIndicator extends ConsumerWidget {
   const AudioRecordingIndicator({super.key});

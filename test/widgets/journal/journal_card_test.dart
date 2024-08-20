@@ -8,12 +8,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 

@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'entry_controller.dart';
+part of 'save_button_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$entryControllerHash() => r'a0f44e36a5e075b82f63ca41bbb029ac0a3e458e';
+String _$saveButtonControllerHash() =>
+    r'e28ad7dabd013b4355272934eab05044da24b1ef';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,36 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$EntryController
-    extends BuildlessAutoDisposeAsyncNotifier<EntryState?> {
+abstract class _$SaveButtonController
+    extends BuildlessAutoDisposeAsyncNotifier<bool?> {
   late final String id;
 
-  FutureOr<EntryState?> build({
+  FutureOr<bool?> build({
     required String id,
   });
 }
 
-/// See also [EntryController].
-@ProviderFor(EntryController)
-const entryControllerProvider = EntryControllerFamily();
+/// See also [SaveButtonController].
+@ProviderFor(SaveButtonController)
+const saveButtonControllerProvider = SaveButtonControllerFamily();
 
-/// See also [EntryController].
-class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
-  /// See also [EntryController].
-  const EntryControllerFamily();
+/// See also [SaveButtonController].
+class SaveButtonControllerFamily extends Family<AsyncValue<bool?>> {
+  /// See also [SaveButtonController].
+  const SaveButtonControllerFamily();
 
-  /// See also [EntryController].
-  EntryControllerProvider call({
+  /// See also [SaveButtonController].
+  SaveButtonControllerProvider call({
     required String id,
   }) {
-    return EntryControllerProvider(
+    return SaveButtonControllerProvider(
       id: id,
     );
   }
 
   @override
-  EntryControllerProvider getProviderOverride(
-    covariant EntryControllerProvider provider,
+  SaveButtonControllerProvider getProviderOverride(
+    covariant SaveButtonControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -77,30 +78,30 @@ class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'entryControllerProvider';
+  String? get name => r'saveButtonControllerProvider';
 }
 
-/// See also [EntryController].
-class EntryControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<EntryController, EntryState?> {
-  /// See also [EntryController].
-  EntryControllerProvider({
+/// See also [SaveButtonController].
+class SaveButtonControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<SaveButtonController, bool?> {
+  /// See also [SaveButtonController].
+  SaveButtonControllerProvider({
     required String id,
   }) : this._internal(
-          () => EntryController()..id = id,
-          from: entryControllerProvider,
-          name: r'entryControllerProvider',
+          () => SaveButtonController()..id = id,
+          from: saveButtonControllerProvider,
+          name: r'saveButtonControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$entryControllerHash,
-          dependencies: EntryControllerFamily._dependencies,
+                  : _$saveButtonControllerHash,
+          dependencies: SaveButtonControllerFamily._dependencies,
           allTransitiveDependencies:
-              EntryControllerFamily._allTransitiveDependencies,
+              SaveButtonControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  EntryControllerProvider._internal(
+  SaveButtonControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -113,8 +114,8 @@ class EntryControllerProvider
   final String id;
 
   @override
-  FutureOr<EntryState?> runNotifierBuild(
-    covariant EntryController notifier,
+  FutureOr<bool?> runNotifierBuild(
+    covariant SaveButtonController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -122,10 +123,10 @@ class EntryControllerProvider
   }
 
   @override
-  Override overrideWith(EntryController Function() create) {
+  Override overrideWith(SaveButtonController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: EntryControllerProvider._internal(
+      override: SaveButtonControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -138,14 +139,14 @@ class EntryControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<EntryController, EntryState?>
+  AutoDisposeAsyncNotifierProviderElement<SaveButtonController, bool?>
       createElement() {
-    return _EntryControllerProviderElement(this);
+    return _SaveButtonControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is EntryControllerProvider && other.id == id;
+    return other is SaveButtonControllerProvider && other.id == id;
   }
 
   @override
@@ -157,18 +158,18 @@ class EntryControllerProvider
   }
 }
 
-mixin EntryControllerRef on AutoDisposeAsyncNotifierProviderRef<EntryState?> {
+mixin SaveButtonControllerRef on AutoDisposeAsyncNotifierProviderRef<bool?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _EntryControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<EntryController,
-        EntryState?> with EntryControllerRef {
-  _EntryControllerProviderElement(super.provider);
+class _SaveButtonControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<SaveButtonController, bool?>
+    with SaveButtonControllerRef {
+  _SaveButtonControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as EntryControllerProvider).id;
+  String get id => (origin as SaveButtonControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

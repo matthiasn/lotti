@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({

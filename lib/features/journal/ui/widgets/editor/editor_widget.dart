@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/editor/editor_styles.dart';
-import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 
 class EditorWidget extends ConsumerWidget {
   const EditorWidget({

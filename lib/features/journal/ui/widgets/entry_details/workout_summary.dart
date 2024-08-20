@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/ui/widgets/helpers.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/helpers.dart';
 
 class WorkoutSummary extends StatelessWidget {
   const WorkoutSummary(
