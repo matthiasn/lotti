@@ -12,6 +12,9 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+const lowerLimit = 0.25;
+const upperLimit = 5.0;
+
 class DayViewPage extends ConsumerStatefulWidget {
   const DayViewPage({
     required this.initialDayYmd,
@@ -88,104 +91,122 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
     return const SizedBox.shrink();
   }
 
+  DateTime _lastScaleUpdate = DateTime.now();
+
+  void onScaleUpdate(ScaleUpdateDetails details) {
+    if (DateTime.now().difference(_lastScaleUpdate).abs() <
+        const Duration(milliseconds: 50)) {
+      return;
+    }
+    setState(() {
+      final verticalScale = -(1 - details.verticalScale) / 5;
+      final heightPerMinute = _heightPerMinute * (1 + verticalScale);
+      _heightPerMinute = heightPerMinute.clamp(lowerLimit, upperLimit);
+    });
+    _lastScaleUpdate = DateTime.now();
+  }
+
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
       key: const Key('DayViewPage'),
       onVisibilityChanged:
           ref.read(dayViewControllerProvider.notifier).onVisibilityChanged,
-      child: Stack(
-        children: [
-          DayView(
-            backgroundColor: Colors.transparent,
-            key: ref.watch(calendarGlobalKeyControllerProvider),
-            showHalfHours: true,
-            heightPerMinute: _heightPerMinute,
-            keepScrollOffset: true,
-            initialDay: DateTime.now(),
-            headerStyle: HeaderStyle(
-              headerTextStyle: chartTitleStyleMonospace.copyWith(
-                fontWeight: FontWeight.w400,
+      child: GestureDetector(
+        onScaleUpdate: onScaleUpdate,
+        child: Stack(
+          children: [
+            DayView(
+              backgroundColor: Colors.transparent,
+              key: ref.watch(calendarGlobalKeyControllerProvider),
+              showHalfHours: true,
+              heightPerMinute: _heightPerMinute,
+              keepScrollOffset: true,
+              initialDay: DateTime.now(),
+              headerStyle: HeaderStyle(
+                headerTextStyle: chartTitleStyleMonospace.copyWith(
+                  fontWeight: FontWeight.w400,
+                ),
+                leftIcon: const Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                ),
+                leftIconPadding: const EdgeInsets.only(
+                  left: 30,
+                  top: 10,
+                  bottom: 10,
+                ),
+                rightIconPadding: const EdgeInsets.only(
+                  right: 30,
+                  top: 10,
+                  bottom: 10,
+                ),
+                rightIcon: const Icon(
+                  Icons.arrow_forward,
+                  size: 24,
+                ),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.primaryContainer,
+                ),
               ),
-              leftIcon: const Icon(
-                Icons.arrow_back,
-                size: 24,
+              dateStringBuilder: (date, {DateTime? secondaryDate}) => date.ymwd,
+              timeLineBuilder: timeLineBuilder,
+              hourIndicatorSettings: HourIndicatorSettings(
+                color: Theme.of(context).dividerColor,
               ),
-              leftIconPadding: const EdgeInsets.only(
-                left: 30,
-                top: 10,
-                bottom: 10,
+              halfHourIndicatorSettings: HourIndicatorSettings(
+                color: Theme.of(context).dividerColor,
+                lineStyle: LineStyle.dashed,
               ),
-              rightIconPadding: const EdgeInsets.only(
-                right: 30,
-                top: 10,
-                bottom: 10,
-              ),
-              rightIcon: const Icon(
-                Icons.arrow_forward,
-                size: 24,
-              ),
-              decoration: BoxDecoration(
-                color: context.colorScheme.primaryContainer,
-              ),
-            ),
-            dateStringBuilder: (date, {DateTime? secondaryDate}) => date.ymwd,
-            timeLineBuilder: timeLineBuilder,
-            hourIndicatorSettings: HourIndicatorSettings(
-              color: Theme.of(context).dividerColor,
-            ),
-            halfHourIndicatorSettings: HourIndicatorSettings(
-              color: Theme.of(context).dividerColor,
-              lineStyle: LineStyle.dashed,
-            ),
-            onEventTap: (events, date) {
-              final event = events.firstOrNull?.event as CalendarEvent?;
-              final id = event?.entity.id;
-              final linkedFrom = event?.linkedFrom;
-              linkedFrom != null
-                  ? linkedFrom is Task
-                      ? beamToNamed('/tasks/${linkedFrom.meta.id}')
-                      : beamToNamed('/journal/${linkedFrom.meta.id}')
-                  : beamToNamed('/journal/$id');
-            },
-            verticalLineOffset: 0,
-            timeLineWidth: 65,
-            liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
-              color: Colors.redAccent,
-              showTime: true,
-              showTimeBackgroundView: true,
-              timeStringBuilder: (date, {DateTime? secondaryDate}) =>
-                  '  ${hhMmFormat.format(date)}',
-            ),
-          ),
-          const Positioned(
-            bottom: 50,
-            right: 20,
-            child: TimeByCategoryChartCard(),
-          ),
-          Positioned(
-            bottom: 10,
-            right: 20,
-            child: GlassContainer.clearGlass(
-              width: 200,
-              height: 32,
-              elevation: 0,
-              color: Theme.of(context).shadowColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(15),
-              child: Slider(
-                inactiveColor: Theme.of(context).dividerColor,
-                min: 0.25,
-                max: 5,
-                value: _heightPerMinute,
-                onChanged: (double value) {
-                  setState(() {
-                    _heightPerMinute = value;
-                  });
-                },
+              onEventTap: (events, date) {
+                final event = events.firstOrNull?.event as CalendarEvent?;
+                final id = event?.entity.id;
+                final linkedFrom = event?.linkedFrom;
+                linkedFrom != null
+                    ? linkedFrom is Task
+                        ? beamToNamed('/tasks/${linkedFrom.meta.id}')
+                        : beamToNamed('/journal/${linkedFrom.meta.id}')
+                    : beamToNamed('/journal/$id');
+              },
+              verticalLineOffset: 0,
+              timeLineWidth: 65,
+              liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
+                color: Colors.redAccent,
+                showTime: true,
+                showTimeBackgroundView: true,
+                timeStringBuilder: (date, {DateTime? secondaryDate}) =>
+                    '  ${hhMmFormat.format(date)}',
               ),
             ),
-          ),
-        ],
+            const Positioned(
+              bottom: 50,
+              right: 20,
+              child: TimeByCategoryChartCard(),
+            ),
+            Positioned(
+              bottom: 10,
+              right: 20,
+              child: GlassContainer.clearGlass(
+                width: 200,
+                height: 32,
+                elevation: 0,
+                color: Theme.of(context).shadowColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(15),
+                child: Slider(
+                  inactiveColor: Theme.of(context).dividerColor,
+                  min: lowerLimit,
+                  max: upperLimit,
+                  value: _heightPerMinute,
+                  onChanged: (double value) {
+                    setState(() {
+                      _heightPerMinute = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
