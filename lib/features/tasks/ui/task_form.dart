@@ -63,7 +63,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                   textCapitalization: TextCapitalization.sentences,
                   keyboardAppearance: Theme.of(context).brightness,
                   maxLines: null,
-                  style: const TextStyle(fontSize: fontSizeLarge),
+                  //style: const TextStyle(fontSize: fontSizeLarge),
                   name: 'title',
                   onChanged: (_) => notifier.setDirty(value: true),
                 ),

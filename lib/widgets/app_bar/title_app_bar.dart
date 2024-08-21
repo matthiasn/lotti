@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -61,20 +60,16 @@ class BackWidget extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: onPressed,
-          child: MouseRegion(
+          child: const MouseRegion(
             cursor: SystemMouseCursors.click,
             child: Row(
               children: [
-                const SizedBox(width: 9),
-                const Icon(
+                SizedBox(width: 9),
+                Icon(
                   Icons.chevron_left,
                   size: 30,
                   weight: 500,
-                ),
-                Text(
-                  context.messages.appBarBack,
-                  style: appBarTextStyleNew,
-                  semanticsLabel: 'Navigate back',
+                  semanticLabel: 'Navigate back',
                 ),
               ],
             ),
