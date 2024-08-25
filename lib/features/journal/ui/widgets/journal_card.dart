@@ -14,13 +14,13 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.
 import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/tasks/ui/linked_duration.dart';
+import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/events/event_status.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
-import 'package:lotti/widgets/tasks/linked_duration.dart';
-import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 const double iconSize = 18;

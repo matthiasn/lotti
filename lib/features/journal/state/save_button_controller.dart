@@ -12,7 +12,7 @@ class SaveButtonController extends _$SaveButtonController {
 
   @override
   Future<bool?> build({required String id}) async {
-    final state = await ref.watch(entryControllerProvider(id: id).future);
+    final state = ref.watch(entryControllerProvider(id: id)).value;
     _id = id;
     final unsaved = state?.map(
       dirty: (_) => true,

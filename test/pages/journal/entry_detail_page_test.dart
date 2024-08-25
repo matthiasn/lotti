@@ -299,7 +299,7 @@ void main() {
       expect(progressBar.value, 0.5);
 
       // test task title is displayed
-      expect(find.text(testTask.data.title), findsOneWidget);
+      expect(find.text(testTask.data.title), findsNWidgets(2));
 
       // task entry duration is rendered
       expect(
