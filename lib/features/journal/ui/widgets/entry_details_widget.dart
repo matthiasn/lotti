@@ -13,9 +13,9 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
+import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/events/event_form.dart';
-import 'package:lotti/widgets/tasks/task_form.dart';
 
 class EntryDetailWidget extends ConsumerWidget {
   const EntryDetailWidget({
