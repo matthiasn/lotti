@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
+import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -34,7 +35,16 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
   @override
   void initState() {
     final listener = getIt<UserActivityService>().updateActivity;
-    _scrollController.addListener(listener);
+    final provider = taskAppBarControllerProvider(id: widget.itemId);
+
+    _scrollController
+      ..addListener(listener)
+      ..addListener(
+        () => ref.read(provider.notifier).updateOffset(
+              _scrollController.offset,
+            ),
+      );
+
     super.initState();
   }
 
@@ -56,11 +66,11 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
         isAndroid: Platform.isAndroid,
       ).animate().fadeIn(duration: const Duration(milliseconds: 500)),
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           TaskSliverAppBar(entryId: widget.itemId),
           SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              controller: _scrollController,
+            child: Padding(
               padding: const EdgeInsets.only(
                 top: 8,
                 bottom: 200,
