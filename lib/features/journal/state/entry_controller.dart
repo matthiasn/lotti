@@ -29,6 +29,10 @@ class EntryController extends _$EntryController {
     listen();
 
     focusNode.addListener(() {
+      if (focusNode.hasFocus == _isFocused) {
+        return;
+      }
+
       _isFocused = focusNode.hasFocus;
       if (_isFocused) {
         _shouldShowEditorToolBar = true;
@@ -199,7 +203,7 @@ class EntryController extends _$EntryController {
       lastSaved: entry.meta.updatedAt,
       controller: controller,
     );
-    _dirty = false;
+    setDirty(value: false);
     await HapticFeedback.heavyImpact();
   }
 
@@ -265,6 +269,9 @@ class EntryController extends _$EntryController {
   }
 
   void setDirty({required bool value}) {
+    if (_dirty == value) {
+      return;
+    }
     _dirty = value;
     emitState();
   }
@@ -344,8 +351,7 @@ class EntryController extends _$EntryController {
         json: quillJsonFromDelta(delta),
         lastSaved: entry.meta.updatedAt,
       );
-      _dirty = true;
-      emitState();
+      setDirty(value: true);
     });
   }
 
