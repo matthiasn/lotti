@@ -8,7 +8,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:research_package/ui.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
   DesktopMenuWrapper({
@@ -26,10 +25,7 @@ class DesktopMenuWrapper extends StatelessWidget {
     }
 
     return MaterialApp(
-      localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
-        RPLocalizations.delegate,
-      ],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       home: StreamBuilder<Set<String>>(

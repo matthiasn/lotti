@@ -57,6 +57,7 @@ class PersistenceLogic {
       final vc = await _vectorClockService.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
       final dateFrom = data.dateFrom;
@@ -131,6 +132,7 @@ class PersistenceLogic {
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
       final journalEntity = JournalEntity.survey(
@@ -174,6 +176,7 @@ class PersistenceLogic {
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
       final measurementEntry = MeasurementEntry(
@@ -225,6 +228,7 @@ class PersistenceLogic {
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
       final defaultStoryId = habitDefinition?.defaultStoryId;
       final tagIds = defaultStoryId != null ? [defaultStoryId] : <String>[];
@@ -278,6 +282,7 @@ class PersistenceLogic {
   }) async {
     try {
       final now = DateTime.now();
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
       final vc = await _vectorClockService.getNextVectorClock();
 
@@ -371,6 +376,7 @@ class PersistenceLogic {
       final vc = await _vectorClockService.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(imageData));
 
       final dateFrom = imageData.capturedAt;
@@ -432,6 +438,7 @@ class PersistenceLogic {
       final vc = await _vectorClockService.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
+      // ignore: deprecated_member_use
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(audioData));
 
       final dateFrom = audioData.dateFrom;
