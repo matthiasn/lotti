@@ -25,7 +25,6 @@ import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:research_package/research_package.dart';
 
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
@@ -191,8 +190,7 @@ class MyBeamerApp extends StatelessWidget {
                 theme: themingSnapshot.lightTheme,
                 darkTheme: themingSnapshot.darkTheme,
                 themeMode: themingSnapshot.themeMode,
-                localizationsDelegates: [
-                  RPLocalizations.delegate,
+                localizationsDelegates: const [
                   AppLocalizations.delegate,
                   FormBuilderLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,
