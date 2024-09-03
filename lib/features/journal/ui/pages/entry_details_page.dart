@@ -72,7 +72,6 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(
-                top: 8,
                 bottom: 200,
                 left: 5,
                 right: 5,
