@@ -60,7 +60,7 @@ class EntryDetailWidget extends ConsumerWidget {
 
     return Card(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      margin: const EdgeInsets.only(left: 4, right: 4, bottom: 4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
