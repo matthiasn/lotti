@@ -7,7 +7,7 @@ part of 'task_app_bar_controller.dart';
 // **************************************************************************
 
 String _$taskAppBarControllerHash() =>
-    r'a3635ee2739b2796840ee424700aa90ef95235b1';
+    r'289e5d61c6f3928fb98d0f83cfcd4cf3255e7a6a';
 
 /// Copied from Dart SDK
 class _SystemHash {

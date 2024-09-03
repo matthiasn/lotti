@@ -7,7 +7,7 @@ part of 'save_button_controller.dart';
 // **************************************************************************
 
 String _$saveButtonControllerHash() =>
-    r'e28ad7dabd013b4355272934eab05044da24b1ef';
+    r'9182c8dbd4ede104a007b687a993aa73a1f2a9a4';
 
 /// Copied from Dart SDK
 class _SystemHash {
