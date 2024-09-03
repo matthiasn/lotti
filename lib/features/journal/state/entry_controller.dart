@@ -63,7 +63,7 @@ class EntryController extends _$EntryController {
   late final String entryId;
   QuillController controller = QuillController.basic();
   final _editorStateService = getIt<EditorStateService>();
-  GlobalKey<FormBuilderState>? formKey;
+  final formKey = GlobalKey<FormBuilderState>();
 
   final FocusNode focusNode = FocusNode();
   final FocusNode taskTitleFocusNode = FocusNode();
@@ -112,10 +112,6 @@ class EntryController extends _$EntryController {
       });
     }
 
-    if (entry is Task || entry is JournalEvent) {
-      formKey = GlobalKey<FormBuilderState>();
-    }
-
     unawaited(Future.microtask(setController));
 
     return EntryState.saved(
@@ -157,8 +153,8 @@ class EntryController extends _$EntryController {
     }
     if (entry is Task) {
       final task = entry;
-      formKey?.currentState?.save();
-      final formData = formKey?.currentState?.value ?? {};
+      formKey.currentState?.save();
+      final formData = formKey.currentState?.value ?? {};
       final title = formData['title'] as String?;
       final status = formData['status'] as String?;
 
@@ -175,8 +171,8 @@ class EntryController extends _$EntryController {
     }
     if (entry is JournalEvent) {
       final event = entry;
-      formKey?.currentState?.save();
-      final formData = formKey?.currentState?.value ?? {};
+      formKey.currentState?.save();
+      final formData = formKey.currentState?.value ?? {};
       final title = formData['title'] as String?;
       final status = formData['status'] as EventStatus?;
 
