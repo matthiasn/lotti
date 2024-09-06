@@ -442,65 +442,6 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<String?> filePath,
 });
 
-class $$OutboxTableTableManager extends RootTableManager<
-    _$SyncDatabase,
-    $OutboxTable,
-    OutboxItem,
-    $$OutboxTableFilterComposer,
-    $$OutboxTableOrderingComposer,
-    $$OutboxTableCreateCompanionBuilder,
-    $$OutboxTableUpdateCompanionBuilder> {
-  $$OutboxTableTableManager(_$SyncDatabase db, $OutboxTable table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $$OutboxTableFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $$OutboxTableOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<int> status = const Value.absent(),
-            Value<int> retries = const Value.absent(),
-            Value<String> message = const Value.absent(),
-            Value<String> subject = const Value.absent(),
-            Value<String?> filePath = const Value.absent(),
-          }) =>
-              OutboxCompanion(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            status: status,
-            retries: retries,
-            message: message,
-            subject: subject,
-            filePath: filePath,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<int> status = const Value.absent(),
-            Value<int> retries = const Value.absent(),
-            required String message,
-            required String subject,
-            Value<String?> filePath = const Value.absent(),
-          }) =>
-              OutboxCompanion.insert(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            status: status,
-            retries: retries,
-            message: message,
-            subject: subject,
-            filePath: filePath,
-          ),
-        ));
-}
-
 class $$OutboxTableFilterComposer
     extends FilterComposer<_$SyncDatabase, $OutboxTable> {
   $$OutboxTableFilterComposer(super.$state);
@@ -588,6 +529,84 @@ class $$OutboxTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
+
+class $$OutboxTableTableManager extends RootTableManager<
+    _$SyncDatabase,
+    $OutboxTable,
+    OutboxItem,
+    $$OutboxTableFilterComposer,
+    $$OutboxTableOrderingComposer,
+    $$OutboxTableCreateCompanionBuilder,
+    $$OutboxTableUpdateCompanionBuilder,
+    (OutboxItem, BaseReferences<_$SyncDatabase, $OutboxTable, OutboxItem>),
+    OutboxItem,
+    PrefetchHooks Function()> {
+  $$OutboxTableTableManager(_$SyncDatabase db, $OutboxTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$OutboxTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$OutboxTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<int> retries = const Value.absent(),
+            Value<String> message = const Value.absent(),
+            Value<String> subject = const Value.absent(),
+            Value<String?> filePath = const Value.absent(),
+          }) =>
+              OutboxCompanion(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            status: status,
+            retries: retries,
+            message: message,
+            subject: subject,
+            filePath: filePath,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<int> retries = const Value.absent(),
+            required String message,
+            required String subject,
+            Value<String?> filePath = const Value.absent(),
+          }) =>
+              OutboxCompanion.insert(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            status: status,
+            retries: retries,
+            message: message,
+            subject: subject,
+            filePath: filePath,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$OutboxTableProcessedTableManager = ProcessedTableManager<
+    _$SyncDatabase,
+    $OutboxTable,
+    OutboxItem,
+    $$OutboxTableFilterComposer,
+    $$OutboxTableOrderingComposer,
+    $$OutboxTableCreateCompanionBuilder,
+    $$OutboxTableUpdateCompanionBuilder,
+    (OutboxItem, BaseReferences<_$SyncDatabase, $OutboxTable, OutboxItem>),
+    OutboxItem,
+    PrefetchHooks Function()>;
 
 class $SyncDatabaseManager {
   final _$SyncDatabase _db;
