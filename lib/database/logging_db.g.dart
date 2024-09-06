@@ -568,73 +568,6 @@ typedef $LogEntriesUpdateCompanionBuilder = LogEntriesCompanion Function({
   Value<int> rowid,
 });
 
-class $LogEntriesTableManager extends RootTableManager<
-    _$LoggingDb,
-    LogEntries,
-    LogEntry,
-    $LogEntriesFilterComposer,
-    $LogEntriesOrderingComposer,
-    $LogEntriesCreateCompanionBuilder,
-    $LogEntriesUpdateCompanionBuilder> {
-  $LogEntriesTableManager(_$LoggingDb db, LogEntries table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $LogEntriesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $LogEntriesOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> createdAt = const Value.absent(),
-            Value<String> domain = const Value.absent(),
-            Value<String?> subDomain = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String> level = const Value.absent(),
-            Value<String> message = const Value.absent(),
-            Value<String?> stacktrace = const Value.absent(),
-            Value<String?> data = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LogEntriesCompanion(
-            id: id,
-            createdAt: createdAt,
-            domain: domain,
-            subDomain: subDomain,
-            type: type,
-            level: level,
-            message: message,
-            stacktrace: stacktrace,
-            data: data,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String createdAt,
-            required String domain,
-            Value<String?> subDomain = const Value.absent(),
-            required String type,
-            required String level,
-            required String message,
-            Value<String?> stacktrace = const Value.absent(),
-            Value<String?> data = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LogEntriesCompanion.insert(
-            id: id,
-            createdAt: createdAt,
-            domain: domain,
-            subDomain: subDomain,
-            type: type,
-            level: level,
-            message: message,
-            stacktrace: stacktrace,
-            data: data,
-            rowid: rowid,
-          ),
-        ));
-}
-
 class $LogEntriesFilterComposer
     extends FilterComposer<_$LoggingDb, LogEntries> {
   $LogEntriesFilterComposer(super.$state);
@@ -732,6 +665,92 @@ class $LogEntriesOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
+
+class $LogEntriesTableManager extends RootTableManager<
+    _$LoggingDb,
+    LogEntries,
+    LogEntry,
+    $LogEntriesFilterComposer,
+    $LogEntriesOrderingComposer,
+    $LogEntriesCreateCompanionBuilder,
+    $LogEntriesUpdateCompanionBuilder,
+    (LogEntry, BaseReferences<_$LoggingDb, LogEntries, LogEntry>),
+    LogEntry,
+    PrefetchHooks Function()> {
+  $LogEntriesTableManager(_$LoggingDb db, LogEntries table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $LogEntriesFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $LogEntriesOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+            Value<String> domain = const Value.absent(),
+            Value<String?> subDomain = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<String> level = const Value.absent(),
+            Value<String> message = const Value.absent(),
+            Value<String?> stacktrace = const Value.absent(),
+            Value<String?> data = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LogEntriesCompanion(
+            id: id,
+            createdAt: createdAt,
+            domain: domain,
+            subDomain: subDomain,
+            type: type,
+            level: level,
+            message: message,
+            stacktrace: stacktrace,
+            data: data,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String createdAt,
+            required String domain,
+            Value<String?> subDomain = const Value.absent(),
+            required String type,
+            required String level,
+            required String message,
+            Value<String?> stacktrace = const Value.absent(),
+            Value<String?> data = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LogEntriesCompanion.insert(
+            id: id,
+            createdAt: createdAt,
+            domain: domain,
+            subDomain: subDomain,
+            type: type,
+            level: level,
+            message: message,
+            stacktrace: stacktrace,
+            data: data,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $LogEntriesProcessedTableManager = ProcessedTableManager<
+    _$LoggingDb,
+    LogEntries,
+    LogEntry,
+    $LogEntriesFilterComposer,
+    $LogEntriesOrderingComposer,
+    $LogEntriesCreateCompanionBuilder,
+    $LogEntriesUpdateCompanionBuilder,
+    (LogEntry, BaseReferences<_$LoggingDb, LogEntries, LogEntry>),
+    LogEntry,
+    PrefetchHooks Function()>;
 
 class $LoggingDbManager {
   final _$LoggingDb _db;
