@@ -276,47 +276,6 @@ typedef $SettingsUpdateCompanionBuilder = SettingsCompanion Function({
   Value<int> rowid,
 });
 
-class $SettingsTableManager extends RootTableManager<
-    _$SettingsDb,
-    Settings,
-    SettingsItem,
-    $SettingsFilterComposer,
-    $SettingsOrderingComposer,
-    $SettingsCreateCompanionBuilder,
-    $SettingsUpdateCompanionBuilder> {
-  $SettingsTableManager(_$SettingsDb db, Settings table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer: $SettingsFilterComposer(ComposerState(db, table)),
-          orderingComposer: $SettingsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> configKey = const Value.absent(),
-            Value<String> value = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SettingsCompanion(
-            configKey: configKey,
-            value: value,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String configKey,
-            required String value,
-            required DateTime updatedAt,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SettingsCompanion.insert(
-            configKey: configKey,
-            value: value,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
-        ));
-}
-
 class $SettingsFilterComposer extends FilterComposer<_$SettingsDb, Settings> {
   $SettingsFilterComposer(super.$state);
   ColumnFilters<String> get configKey => $state.composableBuilder(
@@ -353,6 +312,66 @@ class $SettingsOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
+
+class $SettingsTableManager extends RootTableManager<
+    _$SettingsDb,
+    Settings,
+    SettingsItem,
+    $SettingsFilterComposer,
+    $SettingsOrderingComposer,
+    $SettingsCreateCompanionBuilder,
+    $SettingsUpdateCompanionBuilder,
+    (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
+    SettingsItem,
+    PrefetchHooks Function()> {
+  $SettingsTableManager(_$SettingsDb db, Settings table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $SettingsFilterComposer(ComposerState(db, table)),
+          orderingComposer: $SettingsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> configKey = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SettingsCompanion(
+            configKey: configKey,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String configKey,
+            required String value,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SettingsCompanion.insert(
+            configKey: configKey,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $SettingsProcessedTableManager = ProcessedTableManager<
+    _$SettingsDb,
+    Settings,
+    SettingsItem,
+    $SettingsFilterComposer,
+    $SettingsOrderingComposer,
+    $SettingsCreateCompanionBuilder,
+    $SettingsUpdateCompanionBuilder,
+    (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
+    SettingsItem,
+    PrefetchHooks Function()>;
 
 class $SettingsDbManager {
   final _$SettingsDb _db;
