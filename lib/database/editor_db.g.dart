@@ -426,61 +426,6 @@ typedef $EditorDraftsUpdateCompanionBuilder = EditorDraftsCompanion Function({
   Value<int> rowid,
 });
 
-class $EditorDraftsTableManager extends RootTableManager<
-    _$EditorDb,
-    EditorDrafts,
-    EditorDraftState,
-    $EditorDraftsFilterComposer,
-    $EditorDraftsOrderingComposer,
-    $EditorDraftsCreateCompanionBuilder,
-    $EditorDraftsUpdateCompanionBuilder> {
-  $EditorDraftsTableManager(_$EditorDb db, EditorDrafts table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $EditorDraftsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $EditorDraftsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> entryId = const Value.absent(),
-            Value<String> status = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> lastSaved = const Value.absent(),
-            Value<String> delta = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              EditorDraftsCompanion(
-            id: id,
-            entryId: entryId,
-            status: status,
-            createdAt: createdAt,
-            lastSaved: lastSaved,
-            delta: delta,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String entryId,
-            required String status,
-            required DateTime createdAt,
-            required DateTime lastSaved,
-            required String delta,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              EditorDraftsCompanion.insert(
-            id: id,
-            entryId: entryId,
-            status: status,
-            createdAt: createdAt,
-            lastSaved: lastSaved,
-            delta: delta,
-            rowid: rowid,
-          ),
-        ));
-}
-
 class $EditorDraftsFilterComposer
     extends FilterComposer<_$EditorDb, EditorDrafts> {
   $EditorDraftsFilterComposer(super.$state);
@@ -548,6 +493,86 @@ class $EditorDraftsOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
+
+class $EditorDraftsTableManager extends RootTableManager<
+    _$EditorDb,
+    EditorDrafts,
+    EditorDraftState,
+    $EditorDraftsFilterComposer,
+    $EditorDraftsOrderingComposer,
+    $EditorDraftsCreateCompanionBuilder,
+    $EditorDraftsUpdateCompanionBuilder,
+    (
+      EditorDraftState,
+      BaseReferences<_$EditorDb, EditorDrafts, EditorDraftState>
+    ),
+    EditorDraftState,
+    PrefetchHooks Function()> {
+  $EditorDraftsTableManager(_$EditorDb db, EditorDrafts table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $EditorDraftsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $EditorDraftsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> entryId = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> lastSaved = const Value.absent(),
+            Value<String> delta = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              EditorDraftsCompanion(
+            id: id,
+            entryId: entryId,
+            status: status,
+            createdAt: createdAt,
+            lastSaved: lastSaved,
+            delta: delta,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String entryId,
+            required String status,
+            required DateTime createdAt,
+            required DateTime lastSaved,
+            required String delta,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              EditorDraftsCompanion.insert(
+            id: id,
+            entryId: entryId,
+            status: status,
+            createdAt: createdAt,
+            lastSaved: lastSaved,
+            delta: delta,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $EditorDraftsProcessedTableManager = ProcessedTableManager<
+    _$EditorDb,
+    EditorDrafts,
+    EditorDraftState,
+    $EditorDraftsFilterComposer,
+    $EditorDraftsOrderingComposer,
+    $EditorDraftsCreateCompanionBuilder,
+    $EditorDraftsUpdateCompanionBuilder,
+    (
+      EditorDraftState,
+      BaseReferences<_$EditorDb, EditorDrafts, EditorDraftState>
+    ),
+    EditorDraftState,
+    PrefetchHooks Function()>;
 
 class $EditorDbManager {
   final _$EditorDb _db;
