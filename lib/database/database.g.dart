@@ -5561,6 +5561,119 @@ typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
   Value<int> rowid,
 });
 
+class $JournalTableManager extends RootTableManager<
+    _$JournalDb,
+    Journal,
+    JournalDbEntity,
+    $JournalFilterComposer,
+    $JournalOrderingComposer,
+    $JournalCreateCompanionBuilder,
+    $JournalUpdateCompanionBuilder> {
+  $JournalTableManager(_$JournalDb db, Journal table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $JournalFilterComposer(ComposerState(db, table)),
+          orderingComposer: $JournalOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime> dateFrom = const Value.absent(),
+            Value<DateTime> dateTo = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> starred = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<bool> task = const Value.absent(),
+            Value<String?> taskStatus = const Value.absent(),
+            Value<int> flag = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<String?> subtype = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<int> schemaVersion = const Value.absent(),
+            Value<String?> plainText = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<String?> geohashString = const Value.absent(),
+            Value<int?> geohashInt = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              JournalCompanion(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            dateFrom: dateFrom,
+            dateTo: dateTo,
+            deleted: deleted,
+            starred: starred,
+            private: private,
+            task: task,
+            taskStatus: taskStatus,
+            flag: flag,
+            type: type,
+            subtype: subtype,
+            serialized: serialized,
+            schemaVersion: schemaVersion,
+            plainText: plainText,
+            latitude: latitude,
+            longitude: longitude,
+            geohashString: geohashString,
+            geohashInt: geohashInt,
+            category: category,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            required DateTime dateFrom,
+            required DateTime dateTo,
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> starred = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<bool> task = const Value.absent(),
+            Value<String?> taskStatus = const Value.absent(),
+            Value<int> flag = const Value.absent(),
+            required String type,
+            Value<String?> subtype = const Value.absent(),
+            required String serialized,
+            Value<int> schemaVersion = const Value.absent(),
+            Value<String?> plainText = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<String?> geohashString = const Value.absent(),
+            Value<int?> geohashInt = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              JournalCompanion.insert(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            dateFrom: dateFrom,
+            dateTo: dateTo,
+            deleted: deleted,
+            starred: starred,
+            private: private,
+            task: task,
+            taskStatus: taskStatus,
+            flag: flag,
+            type: type,
+            subtype: subtype,
+            serialized: serialized,
+            schemaVersion: schemaVersion,
+            plainText: plainText,
+            latitude: latitude,
+            longitude: longitude,
+            geohashString: geohashString,
+            geohashInt: geohashInt,
+            category: category,
+            rowid: rowid,
+          ),
+        ));
+}
+
 class $JournalFilterComposer extends FilterComposer<_$JournalDb, Journal> {
   $JournalFilterComposer(super.$state);
   ColumnFilters<String> get id => $state.composableBuilder(
@@ -5777,137 +5890,6 @@ class $JournalOrderingComposer extends OrderingComposer<_$JournalDb, Journal> {
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $JournalTableManager extends RootTableManager<
-    _$JournalDb,
-    Journal,
-    JournalDbEntity,
-    $JournalFilterComposer,
-    $JournalOrderingComposer,
-    $JournalCreateCompanionBuilder,
-    $JournalUpdateCompanionBuilder,
-    (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
-    JournalDbEntity,
-    PrefetchHooks Function()> {
-  $JournalTableManager(_$JournalDb db, Journal table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer: $JournalFilterComposer(ComposerState(db, table)),
-          orderingComposer: $JournalOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<DateTime> dateFrom = const Value.absent(),
-            Value<DateTime> dateTo = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> starred = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<bool> task = const Value.absent(),
-            Value<String?> taskStatus = const Value.absent(),
-            Value<int> flag = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String?> subtype = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> schemaVersion = const Value.absent(),
-            Value<String?> plainText = const Value.absent(),
-            Value<double?> latitude = const Value.absent(),
-            Value<double?> longitude = const Value.absent(),
-            Value<String?> geohashString = const Value.absent(),
-            Value<int?> geohashInt = const Value.absent(),
-            Value<String> category = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalCompanion(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            deleted: deleted,
-            starred: starred,
-            private: private,
-            task: task,
-            taskStatus: taskStatus,
-            flag: flag,
-            type: type,
-            subtype: subtype,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            plainText: plainText,
-            latitude: latitude,
-            longitude: longitude,
-            geohashString: geohashString,
-            geohashInt: geohashInt,
-            category: category,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            required DateTime dateFrom,
-            required DateTime dateTo,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> starred = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<bool> task = const Value.absent(),
-            Value<String?> taskStatus = const Value.absent(),
-            Value<int> flag = const Value.absent(),
-            required String type,
-            Value<String?> subtype = const Value.absent(),
-            required String serialized,
-            Value<int> schemaVersion = const Value.absent(),
-            Value<String?> plainText = const Value.absent(),
-            Value<double?> latitude = const Value.absent(),
-            Value<double?> longitude = const Value.absent(),
-            Value<String?> geohashString = const Value.absent(),
-            Value<int?> geohashInt = const Value.absent(),
-            Value<String> category = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalCompanion.insert(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            deleted: deleted,
-            starred: starred,
-            private: private,
-            task: task,
-            taskStatus: taskStatus,
-            flag: flag,
-            type: type,
-            subtype: subtype,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            plainText: plainText,
-            latitude: latitude,
-            longitude: longitude,
-            geohashString: geohashString,
-            geohashInt: geohashInt,
-            category: category,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $JournalProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Journal,
-    JournalDbEntity,
-    $JournalFilterComposer,
-    $JournalOrderingComposer,
-    $JournalCreateCompanionBuilder,
-    $JournalUpdateCompanionBuilder,
-    (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
-    JournalDbEntity,
-    PrefetchHooks Function()>;
 typedef $ConflictsCreateCompanionBuilder = ConflictsCompanion Function({
   required String id,
   required DateTime createdAt,
@@ -5926,6 +5908,60 @@ typedef $ConflictsUpdateCompanionBuilder = ConflictsCompanion Function({
   Value<int> status,
   Value<int> rowid,
 });
+
+class $ConflictsTableManager extends RootTableManager<
+    _$JournalDb,
+    Conflicts,
+    Conflict,
+    $ConflictsFilterComposer,
+    $ConflictsOrderingComposer,
+    $ConflictsCreateCompanionBuilder,
+    $ConflictsUpdateCompanionBuilder> {
+  $ConflictsTableManager(_$JournalDb db, Conflicts table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $ConflictsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $ConflictsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<int> schemaVersion = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ConflictsCompanion(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            serialized: serialized,
+            schemaVersion: schemaVersion,
+            status: status,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            required String serialized,
+            Value<int> schemaVersion = const Value.absent(),
+            required int status,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ConflictsCompanion.insert(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            serialized: serialized,
+            schemaVersion: schemaVersion,
+            status: status,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $ConflictsFilterComposer extends FilterComposer<_$JournalDb, Conflicts> {
   $ConflictsFilterComposer(super.$state);
@@ -5994,78 +6030,6 @@ class $ConflictsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $ConflictsTableManager extends RootTableManager<
-    _$JournalDb,
-    Conflicts,
-    Conflict,
-    $ConflictsFilterComposer,
-    $ConflictsOrderingComposer,
-    $ConflictsCreateCompanionBuilder,
-    $ConflictsUpdateCompanionBuilder,
-    (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
-    Conflict,
-    PrefetchHooks Function()> {
-  $ConflictsTableManager(_$JournalDb db, Conflicts table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer: $ConflictsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $ConflictsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> schemaVersion = const Value.absent(),
-            Value<int> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConflictsCompanion(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            status: status,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            required String serialized,
-            Value<int> schemaVersion = const Value.absent(),
-            required int status,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConflictsCompanion.insert(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            status: status,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $ConflictsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Conflicts,
-    Conflict,
-    $ConflictsFilterComposer,
-    $ConflictsOrderingComposer,
-    $ConflictsCreateCompanionBuilder,
-    $ConflictsUpdateCompanionBuilder,
-    (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
-    Conflict,
-    PrefetchHooks Function()>;
 typedef $MeasurableTypesCreateCompanionBuilder = MeasurableTypesCompanion
     Function({
   required String id,
@@ -6092,6 +6056,73 @@ typedef $MeasurableTypesUpdateCompanionBuilder = MeasurableTypesCompanion
   Value<int> status,
   Value<int> rowid,
 });
+
+class $MeasurableTypesTableManager extends RootTableManager<
+    _$JournalDb,
+    MeasurableTypes,
+    MeasurableDbEntity,
+    $MeasurableTypesFilterComposer,
+    $MeasurableTypesOrderingComposer,
+    $MeasurableTypesCreateCompanionBuilder,
+    $MeasurableTypesUpdateCompanionBuilder> {
+  $MeasurableTypesTableManager(_$JournalDb db, MeasurableTypes table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $MeasurableTypesFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $MeasurableTypesOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> uniqueName = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<int> version = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MeasurableTypesCompanion(
+            id: id,
+            uniqueName: uniqueName,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            version: version,
+            status: status,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String uniqueName,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            required String serialized,
+            Value<int> version = const Value.absent(),
+            required int status,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MeasurableTypesCompanion.insert(
+            id: id,
+            uniqueName: uniqueName,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            version: version,
+            status: status,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $MeasurableTypesFilterComposer
     extends FilterComposer<_$JournalDb, MeasurableTypes> {
@@ -6191,97 +6222,6 @@ class $MeasurableTypesOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $MeasurableTypesTableManager extends RootTableManager<
-    _$JournalDb,
-    MeasurableTypes,
-    MeasurableDbEntity,
-    $MeasurableTypesFilterComposer,
-    $MeasurableTypesOrderingComposer,
-    $MeasurableTypesCreateCompanionBuilder,
-    $MeasurableTypesUpdateCompanionBuilder,
-    (
-      MeasurableDbEntity,
-      BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>
-    ),
-    MeasurableDbEntity,
-    PrefetchHooks Function()> {
-  $MeasurableTypesTableManager(_$JournalDb db, MeasurableTypes table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $MeasurableTypesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $MeasurableTypesOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> uniqueName = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> version = const Value.absent(),
-            Value<int> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              MeasurableTypesCompanion(
-            id: id,
-            uniqueName: uniqueName,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            version: version,
-            status: status,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String uniqueName,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            Value<int> version = const Value.absent(),
-            required int status,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              MeasurableTypesCompanion.insert(
-            id: id,
-            uniqueName: uniqueName,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            version: version,
-            status: status,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $MeasurableTypesProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    MeasurableTypes,
-    MeasurableDbEntity,
-    $MeasurableTypesFilterComposer,
-    $MeasurableTypesOrderingComposer,
-    $MeasurableTypesCreateCompanionBuilder,
-    $MeasurableTypesUpdateCompanionBuilder,
-    (
-      MeasurableDbEntity,
-      BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>
-    ),
-    MeasurableDbEntity,
-    PrefetchHooks Function()>;
 typedef $HabitDefinitionsCreateCompanionBuilder = HabitDefinitionsCompanion
     Function({
   required String id,
@@ -6306,6 +6246,69 @@ typedef $HabitDefinitionsUpdateCompanionBuilder = HabitDefinitionsCompanion
   Value<bool> active,
   Value<int> rowid,
 });
+
+class $HabitDefinitionsTableManager extends RootTableManager<
+    _$JournalDb,
+    HabitDefinitions,
+    HabitDefinitionDbEntity,
+    $HabitDefinitionsFilterComposer,
+    $HabitDefinitionsOrderingComposer,
+    $HabitDefinitionsCreateCompanionBuilder,
+    $HabitDefinitionsUpdateCompanionBuilder> {
+  $HabitDefinitionsTableManager(_$JournalDb db, HabitDefinitions table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $HabitDefinitionsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $HabitDefinitionsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<bool> active = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HabitDefinitionsCompanion(
+            id: id,
+            name: name,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            active: active,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            required String serialized,
+            required bool active,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HabitDefinitionsCompanion.insert(
+            id: id,
+            name: name,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            active: active,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $HabitDefinitionsFilterComposer
     extends FilterComposer<_$JournalDb, HabitDefinitions> {
@@ -6395,93 +6398,6 @@ class $HabitDefinitionsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $HabitDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    HabitDefinitions,
-    HabitDefinitionDbEntity,
-    $HabitDefinitionsFilterComposer,
-    $HabitDefinitionsOrderingComposer,
-    $HabitDefinitionsCreateCompanionBuilder,
-    $HabitDefinitionsUpdateCompanionBuilder,
-    (
-      HabitDefinitionDbEntity,
-      BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>
-    ),
-    HabitDefinitionDbEntity,
-    PrefetchHooks Function()> {
-  $HabitDefinitionsTableManager(_$JournalDb db, HabitDefinitions table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $HabitDefinitionsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $HabitDefinitionsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool> active = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              HabitDefinitionsCompanion(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            required bool active,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              HabitDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $HabitDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    HabitDefinitions,
-    HabitDefinitionDbEntity,
-    $HabitDefinitionsFilterComposer,
-    $HabitDefinitionsOrderingComposer,
-    $HabitDefinitionsCreateCompanionBuilder,
-    $HabitDefinitionsUpdateCompanionBuilder,
-    (
-      HabitDefinitionDbEntity,
-      BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>
-    ),
-    HabitDefinitionDbEntity,
-    PrefetchHooks Function()>;
 typedef $CategoryDefinitionsCreateCompanionBuilder
     = CategoryDefinitionsCompanion Function({
   required String id,
@@ -6506,6 +6422,69 @@ typedef $CategoryDefinitionsUpdateCompanionBuilder
   Value<bool> active,
   Value<int> rowid,
 });
+
+class $CategoryDefinitionsTableManager extends RootTableManager<
+    _$JournalDb,
+    CategoryDefinitions,
+    CategoryDefinitionDbEntity,
+    $CategoryDefinitionsFilterComposer,
+    $CategoryDefinitionsOrderingComposer,
+    $CategoryDefinitionsCreateCompanionBuilder,
+    $CategoryDefinitionsUpdateCompanionBuilder> {
+  $CategoryDefinitionsTableManager(_$JournalDb db, CategoryDefinitions table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $CategoryDefinitionsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $CategoryDefinitionsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<bool> active = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CategoryDefinitionsCompanion(
+            id: id,
+            name: name,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            active: active,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            required String serialized,
+            required bool active,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CategoryDefinitionsCompanion.insert(
+            id: id,
+            name: name,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            active: active,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $CategoryDefinitionsFilterComposer
     extends FilterComposer<_$JournalDb, CategoryDefinitions> {
@@ -6595,95 +6574,6 @@ class $CategoryDefinitionsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $CategoryDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    CategoryDefinitions,
-    CategoryDefinitionDbEntity,
-    $CategoryDefinitionsFilterComposer,
-    $CategoryDefinitionsOrderingComposer,
-    $CategoryDefinitionsCreateCompanionBuilder,
-    $CategoryDefinitionsUpdateCompanionBuilder,
-    (
-      CategoryDefinitionDbEntity,
-      BaseReferences<_$JournalDb, CategoryDefinitions,
-          CategoryDefinitionDbEntity>
-    ),
-    CategoryDefinitionDbEntity,
-    PrefetchHooks Function()> {
-  $CategoryDefinitionsTableManager(_$JournalDb db, CategoryDefinitions table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $CategoryDefinitionsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $CategoryDefinitionsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool> active = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              CategoryDefinitionsCompanion(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            required bool active,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              CategoryDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $CategoryDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    CategoryDefinitions,
-    CategoryDefinitionDbEntity,
-    $CategoryDefinitionsFilterComposer,
-    $CategoryDefinitionsOrderingComposer,
-    $CategoryDefinitionsCreateCompanionBuilder,
-    $CategoryDefinitionsUpdateCompanionBuilder,
-    (
-      CategoryDefinitionDbEntity,
-      BaseReferences<_$JournalDb, CategoryDefinitions,
-          CategoryDefinitionDbEntity>
-    ),
-    CategoryDefinitionDbEntity,
-    PrefetchHooks Function()>;
 typedef $DashboardDefinitionsCreateCompanionBuilder
     = DashboardDefinitionsCompanion Function({
   required String id,
@@ -6710,6 +6600,73 @@ typedef $DashboardDefinitionsUpdateCompanionBuilder
   Value<bool> active,
   Value<int> rowid,
 });
+
+class $DashboardDefinitionsTableManager extends RootTableManager<
+    _$JournalDb,
+    DashboardDefinitions,
+    DashboardDefinitionDbEntity,
+    $DashboardDefinitionsFilterComposer,
+    $DashboardDefinitionsOrderingComposer,
+    $DashboardDefinitionsCreateCompanionBuilder,
+    $DashboardDefinitionsUpdateCompanionBuilder> {
+  $DashboardDefinitionsTableManager(_$JournalDb db, DashboardDefinitions table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $DashboardDefinitionsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $DashboardDefinitionsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime> lastReviewed = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<bool> active = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DashboardDefinitionsCompanion(
+            id: id,
+            name: name,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            lastReviewed: lastReviewed,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            active: active,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            required DateTime lastReviewed,
+            Value<bool> deleted = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            required String serialized,
+            required bool active,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DashboardDefinitionsCompanion.insert(
+            id: id,
+            name: name,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            lastReviewed: lastReviewed,
+            deleted: deleted,
+            private: private,
+            serialized: serialized,
+            active: active,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $DashboardDefinitionsFilterComposer
     extends FilterComposer<_$JournalDb, DashboardDefinitions> {
@@ -6809,99 +6766,6 @@ class $DashboardDefinitionsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $DashboardDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    DashboardDefinitions,
-    DashboardDefinitionDbEntity,
-    $DashboardDefinitionsFilterComposer,
-    $DashboardDefinitionsOrderingComposer,
-    $DashboardDefinitionsCreateCompanionBuilder,
-    $DashboardDefinitionsUpdateCompanionBuilder,
-    (
-      DashboardDefinitionDbEntity,
-      BaseReferences<_$JournalDb, DashboardDefinitions,
-          DashboardDefinitionDbEntity>
-    ),
-    DashboardDefinitionDbEntity,
-    PrefetchHooks Function()> {
-  $DashboardDefinitionsTableManager(_$JournalDb db, DashboardDefinitions table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $DashboardDefinitionsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $DashboardDefinitionsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<DateTime> lastReviewed = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool> active = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              DashboardDefinitionsCompanion(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            lastReviewed: lastReviewed,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            required DateTime lastReviewed,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            required bool active,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              DashboardDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            lastReviewed: lastReviewed,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $DashboardDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    DashboardDefinitions,
-    DashboardDefinitionDbEntity,
-    $DashboardDefinitionsFilterComposer,
-    $DashboardDefinitionsOrderingComposer,
-    $DashboardDefinitionsCreateCompanionBuilder,
-    $DashboardDefinitionsUpdateCompanionBuilder,
-    (
-      DashboardDefinitionDbEntity,
-      BaseReferences<_$JournalDb, DashboardDefinitions,
-          DashboardDefinitionDbEntity>
-    ),
-    DashboardDefinitionDbEntity,
-    PrefetchHooks Function()>;
 typedef $ConfigFlagsCreateCompanionBuilder = ConfigFlagsCompanion Function({
   required String name,
   required String description,
@@ -6914,6 +6778,49 @@ typedef $ConfigFlagsUpdateCompanionBuilder = ConfigFlagsCompanion Function({
   Value<bool> status,
   Value<int> rowid,
 });
+
+class $ConfigFlagsTableManager extends RootTableManager<
+    _$JournalDb,
+    ConfigFlags,
+    ConfigFlag,
+    $ConfigFlagsFilterComposer,
+    $ConfigFlagsOrderingComposer,
+    $ConfigFlagsCreateCompanionBuilder,
+    $ConfigFlagsUpdateCompanionBuilder> {
+  $ConfigFlagsTableManager(_$JournalDb db, ConfigFlags table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $ConfigFlagsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $ConfigFlagsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> name = const Value.absent(),
+            Value<String> description = const Value.absent(),
+            Value<bool> status = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ConfigFlagsCompanion(
+            name: name,
+            description: description,
+            status: status,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String name,
+            required String description,
+            Value<bool> status = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ConfigFlagsCompanion.insert(
+            name: name,
+            description: description,
+            status: status,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $ConfigFlagsFilterComposer
     extends FilterComposer<_$JournalDb, ConfigFlags> {
@@ -6953,67 +6860,6 @@ class $ConfigFlagsOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $ConfigFlagsTableManager extends RootTableManager<
-    _$JournalDb,
-    ConfigFlags,
-    ConfigFlag,
-    $ConfigFlagsFilterComposer,
-    $ConfigFlagsOrderingComposer,
-    $ConfigFlagsCreateCompanionBuilder,
-    $ConfigFlagsUpdateCompanionBuilder,
-    (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
-    ConfigFlag,
-    PrefetchHooks Function()> {
-  $ConfigFlagsTableManager(_$JournalDb db, ConfigFlags table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $ConfigFlagsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $ConfigFlagsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> name = const Value.absent(),
-            Value<String> description = const Value.absent(),
-            Value<bool> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConfigFlagsCompanion(
-            name: name,
-            description: description,
-            status: status,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String name,
-            required String description,
-            Value<bool> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConfigFlagsCompanion.insert(
-            name: name,
-            description: description,
-            status: status,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $ConfigFlagsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    ConfigFlags,
-    ConfigFlag,
-    $ConfigFlagsFilterComposer,
-    $ConfigFlagsOrderingComposer,
-    $ConfigFlagsCreateCompanionBuilder,
-    $ConfigFlagsUpdateCompanionBuilder,
-    (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
-    ConfigFlag,
-    PrefetchHooks Function()>;
 typedef $TagEntitiesCreateCompanionBuilder = TagEntitiesCompanion Function({
   required String id,
   required String tag,
@@ -7038,6 +6884,73 @@ typedef $TagEntitiesUpdateCompanionBuilder = TagEntitiesCompanion Function({
   Value<String> serialized,
   Value<int> rowid,
 });
+
+class $TagEntitiesTableManager extends RootTableManager<
+    _$JournalDb,
+    TagEntities,
+    TagDbEntity,
+    $TagEntitiesFilterComposer,
+    $TagEntitiesOrderingComposer,
+    $TagEntitiesCreateCompanionBuilder,
+    $TagEntitiesUpdateCompanionBuilder> {
+  $TagEntitiesTableManager(_$JournalDb db, TagEntities table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $TagEntitiesFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $TagEntitiesOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> tag = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<bool?> inactive = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool?> deleted = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TagEntitiesCompanion(
+            id: id,
+            tag: tag,
+            type: type,
+            inactive: inactive,
+            private: private,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            serialized: serialized,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String tag,
+            required String type,
+            Value<bool?> inactive = const Value.absent(),
+            Value<bool> private = const Value.absent(),
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool?> deleted = const Value.absent(),
+            required String serialized,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TagEntitiesCompanion.insert(
+            id: id,
+            tag: tag,
+            type: type,
+            inactive: inactive,
+            private: private,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            deleted: deleted,
+            serialized: serialized,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $TagEntitiesFilterComposer
     extends FilterComposer<_$JournalDb, TagEntities> {
@@ -7137,91 +7050,6 @@ class $TagEntitiesOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $TagEntitiesTableManager extends RootTableManager<
-    _$JournalDb,
-    TagEntities,
-    TagDbEntity,
-    $TagEntitiesFilterComposer,
-    $TagEntitiesOrderingComposer,
-    $TagEntitiesCreateCompanionBuilder,
-    $TagEntitiesUpdateCompanionBuilder,
-    (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
-    TagDbEntity,
-    PrefetchHooks Function()> {
-  $TagEntitiesTableManager(_$JournalDb db, TagEntities table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $TagEntitiesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $TagEntitiesOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> tag = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<bool?> inactive = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool?> deleted = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TagEntitiesCompanion(
-            id: id,
-            tag: tag,
-            type: type,
-            inactive: inactive,
-            private: private,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            serialized: serialized,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String tag,
-            required String type,
-            Value<bool?> inactive = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool?> deleted = const Value.absent(),
-            required String serialized,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TagEntitiesCompanion.insert(
-            id: id,
-            tag: tag,
-            type: type,
-            inactive: inactive,
-            private: private,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            serialized: serialized,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $TagEntitiesProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    TagEntities,
-    TagDbEntity,
-    $TagEntitiesFilterComposer,
-    $TagEntitiesOrderingComposer,
-    $TagEntitiesCreateCompanionBuilder,
-    $TagEntitiesUpdateCompanionBuilder,
-    (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
-    TagDbEntity,
-    PrefetchHooks Function()>;
 typedef $TaggedCreateCompanionBuilder = TaggedCompanion Function({
   required String id,
   required String journalId,
@@ -7234,6 +7062,47 @@ typedef $TaggedUpdateCompanionBuilder = TaggedCompanion Function({
   Value<String> tagEntityId,
   Value<int> rowid,
 });
+
+class $TaggedTableManager extends RootTableManager<
+    _$JournalDb,
+    Tagged,
+    TaggedWith,
+    $TaggedFilterComposer,
+    $TaggedOrderingComposer,
+    $TaggedCreateCompanionBuilder,
+    $TaggedUpdateCompanionBuilder> {
+  $TaggedTableManager(_$JournalDb db, Tagged table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $TaggedFilterComposer(ComposerState(db, table)),
+          orderingComposer: $TaggedOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> journalId = const Value.absent(),
+            Value<String> tagEntityId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaggedCompanion(
+            id: id,
+            journalId: journalId,
+            tagEntityId: tagEntityId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String journalId,
+            required String tagEntityId,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaggedCompanion.insert(
+            id: id,
+            journalId: journalId,
+            tagEntityId: tagEntityId,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $TaggedFilterComposer extends FilterComposer<_$JournalDb, Tagged> {
   $TaggedFilterComposer(super.$state);
@@ -7271,65 +7140,6 @@ class $TaggedOrderingComposer extends OrderingComposer<_$JournalDb, Tagged> {
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
-class $TaggedTableManager extends RootTableManager<
-    _$JournalDb,
-    Tagged,
-    TaggedWith,
-    $TaggedFilterComposer,
-    $TaggedOrderingComposer,
-    $TaggedCreateCompanionBuilder,
-    $TaggedUpdateCompanionBuilder,
-    (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
-    TaggedWith,
-    PrefetchHooks Function()> {
-  $TaggedTableManager(_$JournalDb db, Tagged table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer: $TaggedFilterComposer(ComposerState(db, table)),
-          orderingComposer: $TaggedOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> journalId = const Value.absent(),
-            Value<String> tagEntityId = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TaggedCompanion(
-            id: id,
-            journalId: journalId,
-            tagEntityId: tagEntityId,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String journalId,
-            required String tagEntityId,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TaggedCompanion.insert(
-            id: id,
-            journalId: journalId,
-            tagEntityId: tagEntityId,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $TaggedProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Tagged,
-    TaggedWith,
-    $TaggedFilterComposer,
-    $TaggedOrderingComposer,
-    $TaggedCreateCompanionBuilder,
-    $TaggedUpdateCompanionBuilder,
-    (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
-    TaggedWith,
-    PrefetchHooks Function()>;
 typedef $LinkedEntriesCreateCompanionBuilder = LinkedEntriesCompanion Function({
   required String id,
   required String fromId,
@@ -7346,6 +7156,57 @@ typedef $LinkedEntriesUpdateCompanionBuilder = LinkedEntriesCompanion Function({
   Value<String> serialized,
   Value<int> rowid,
 });
+
+class $LinkedEntriesTableManager extends RootTableManager<
+    _$JournalDb,
+    LinkedEntries,
+    LinkedDbEntry,
+    $LinkedEntriesFilterComposer,
+    $LinkedEntriesOrderingComposer,
+    $LinkedEntriesCreateCompanionBuilder,
+    $LinkedEntriesUpdateCompanionBuilder> {
+  $LinkedEntriesTableManager(_$JournalDb db, LinkedEntries table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $LinkedEntriesFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $LinkedEntriesOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> fromId = const Value.absent(),
+            Value<String> toId = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<String> serialized = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LinkedEntriesCompanion(
+            id: id,
+            fromId: fromId,
+            toId: toId,
+            type: type,
+            serialized: serialized,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String fromId,
+            required String toId,
+            required String type,
+            required String serialized,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LinkedEntriesCompanion.insert(
+            id: id,
+            fromId: fromId,
+            toId: toId,
+            type: type,
+            serialized: serialized,
+            rowid: rowid,
+          ),
+        ));
+}
 
 class $LinkedEntriesFilterComposer
     extends FilterComposer<_$JournalDb, LinkedEntries> {
@@ -7404,76 +7265,6 @@ class $LinkedEntriesOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
-
-class $LinkedEntriesTableManager extends RootTableManager<
-    _$JournalDb,
-    LinkedEntries,
-    LinkedDbEntry,
-    $LinkedEntriesFilterComposer,
-    $LinkedEntriesOrderingComposer,
-    $LinkedEntriesCreateCompanionBuilder,
-    $LinkedEntriesUpdateCompanionBuilder,
-    (LinkedDbEntry, BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>),
-    LinkedDbEntry,
-    PrefetchHooks Function()> {
-  $LinkedEntriesTableManager(_$JournalDb db, LinkedEntries table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $LinkedEntriesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $LinkedEntriesOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> fromId = const Value.absent(),
-            Value<String> toId = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LinkedEntriesCompanion(
-            id: id,
-            fromId: fromId,
-            toId: toId,
-            type: type,
-            serialized: serialized,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String fromId,
-            required String toId,
-            required String type,
-            required String serialized,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LinkedEntriesCompanion.insert(
-            id: id,
-            fromId: fromId,
-            toId: toId,
-            type: type,
-            serialized: serialized,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $LinkedEntriesProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    LinkedEntries,
-    LinkedDbEntry,
-    $LinkedEntriesFilterComposer,
-    $LinkedEntriesOrderingComposer,
-    $LinkedEntriesCreateCompanionBuilder,
-    $LinkedEntriesUpdateCompanionBuilder,
-    (LinkedDbEntry, BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>),
-    LinkedDbEntry,
-    PrefetchHooks Function()>;
 
 class $JournalDbManager {
   final _$JournalDb _db;

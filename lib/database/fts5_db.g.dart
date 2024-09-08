@@ -386,6 +386,57 @@ typedef $JournalFtsUpdateCompanionBuilder = JournalFtsCompanion Function({
   Value<int> rowid,
 });
 
+class $JournalFtsTableManager extends RootTableManager<
+    _$Fts5Db,
+    JournalFts,
+    JournalFt,
+    $JournalFtsFilterComposer,
+    $JournalFtsOrderingComposer,
+    $JournalFtsCreateCompanionBuilder,
+    $JournalFtsUpdateCompanionBuilder> {
+  $JournalFtsTableManager(_$Fts5Db db, JournalFts table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $JournalFtsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $JournalFtsOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> plainText = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String> summary = const Value.absent(),
+            Value<String> tags = const Value.absent(),
+            Value<String> uuid = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              JournalFtsCompanion(
+            plainText: plainText,
+            title: title,
+            summary: summary,
+            tags: tags,
+            uuid: uuid,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String plainText,
+            required String title,
+            required String summary,
+            required String tags,
+            required String uuid,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              JournalFtsCompanion.insert(
+            plainText: plainText,
+            title: title,
+            summary: summary,
+            tags: tags,
+            uuid: uuid,
+            rowid: rowid,
+          ),
+        ));
+}
+
 class $JournalFtsFilterComposer extends FilterComposer<_$Fts5Db, JournalFts> {
   $JournalFtsFilterComposer(super.$state);
   ColumnFilters<String> get plainText => $state.composableBuilder(
@@ -442,76 +493,6 @@ class $JournalFtsOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
-
-class $JournalFtsTableManager extends RootTableManager<
-    _$Fts5Db,
-    JournalFts,
-    JournalFt,
-    $JournalFtsFilterComposer,
-    $JournalFtsOrderingComposer,
-    $JournalFtsCreateCompanionBuilder,
-    $JournalFtsUpdateCompanionBuilder,
-    (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
-    JournalFt,
-    PrefetchHooks Function()> {
-  $JournalFtsTableManager(_$Fts5Db db, JournalFts table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          filteringComposer:
-              $JournalFtsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $JournalFtsOrderingComposer(ComposerState(db, table)),
-          updateCompanionCallback: ({
-            Value<String> plainText = const Value.absent(),
-            Value<String> title = const Value.absent(),
-            Value<String> summary = const Value.absent(),
-            Value<String> tags = const Value.absent(),
-            Value<String> uuid = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalFtsCompanion(
-            plainText: plainText,
-            title: title,
-            summary: summary,
-            tags: tags,
-            uuid: uuid,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String plainText,
-            required String title,
-            required String summary,
-            required String tags,
-            required String uuid,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalFtsCompanion.insert(
-            plainText: plainText,
-            title: title,
-            summary: summary,
-            tags: tags,
-            uuid: uuid,
-            rowid: rowid,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ));
-}
-
-typedef $JournalFtsProcessedTableManager = ProcessedTableManager<
-    _$Fts5Db,
-    JournalFts,
-    JournalFt,
-    $JournalFtsFilterComposer,
-    $JournalFtsOrderingComposer,
-    $JournalFtsCreateCompanionBuilder,
-    $JournalFtsUpdateCompanionBuilder,
-    (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
-    JournalFt,
-    PrefetchHooks Function()>;
 
 class $Fts5DbManager {
   final _$Fts5Db _db;
