@@ -18,10 +18,10 @@ packages:
     dependency: transitive
     description:
       name: accessibility_tools
-      sha256: "0a16adc8dfa3a7ebd38775135d86443011a65d4ecbb438913e4992b5d29135fe"
+      sha256: "7c0b5ac466ea8b971c1b081f3ade0979e6563e8926da62c3b90def78c44dd96b"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "2.2.2"
   analyzer:
     dependency: "direct dev"
     description:
@@ -458,18 +458,18 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: e001f64695c0830551f4ff5729625599d5e338fd5b3f4db42109d0ca37fc1252
+      sha256: "6c2635e87e8998a4dd2e33f90d8255274b165311ad7bc4d5210f3fd916e1df62"
       url: "https://pub.dev"
     source: hosted
-    version: "10.5.9"
+    version: "10.5.17"
   dart_style:
     dependency: "direct dev"
     description:
       name: dart_style
-      sha256: "99e066ce75c89d6b29903d788a7bb9369cf754f7b24bf70bf4b6d6d6b26853b9"
+      sha256: "7856d364b589d1f08986e140938578ed36ed948581fbc3bc9aef1805039ac5ab"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.6"
+    version: "2.3.7"
   dbus:
     dependency: transitive
     description:
@@ -627,10 +627,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image
-      sha256: "9786aab821aac117763d6e4419cd49f5031fbaacfe3fd212c5b313d0334c37a9"
+      sha256: c7b628bdbeb398bdd824cfc9d521f18e04b63ad2af811d182e885d3ae4ef45de
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.1"
+    version: "8.2.3"
   extended_image_library:
     dependency: transitive
     description:
@@ -1011,10 +1011,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "3d47d5e8d838c9d2fb54654df3bb0bd5f2e10e2d1329909401d797757c0f1b51"
+      sha256: "2349c8d32e01f2cb6e33e3b36022eebc66f010b7b830ae9cbe8f47e697a6e67d"
       url: "https://pub.dev"
     source: hosted
-    version: "10.5.9"
+    version: "10.5.17"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
@@ -2108,6 +2108,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  quill_native_bridge:
+    dependency: transitive
+    description:
+      name: quill_native_bridge
+      sha256: "40055dea646c0a3b8d1bc943fc69bbfb5909ac1cb3937fd721ae50d909be60cc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.5.17"
   quiver:
     dependency: "direct main"
     description:
@@ -2997,10 +3005,10 @@ packages:
     dependency: "direct main"
     description:
       name: widgetbook
-      sha256: de5b9887f9ad663bdcc1f957bc22aa0eb4dd7b406ac0142158bf35c0fad4a4f2
+      sha256: "4db3ab02c3159dd898b362c8681b9cdabda33caae3a9d13e3fc71231a485ad33"
       url: "https://pub.dev"
     source: hosted
-    version: "3.8.1"
+    version: "3.9.0"
   win32:
     dependency: transitive
     description:
@@ -3013,10 +3021,10 @@ packages:
     dependency: transitive
     description:
       name: win32_registry
-      sha256: "723b7f851e5724c55409bb3d5a32b203b3afe8587eaf5dafb93a5fed8ecda0d6"
+      sha256: "21ec76dfc731550fd3e2ce7a33a9ea90b828fdf19a5c3bcf556fa992cfa99852"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.4"
+    version: "1.1.5"
   window_manager:
     dependency: "direct main"
     description:
@@ -3066,5 +3074,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.5.0 <4.0.0"
+  dart: ">=3.5.1 <4.0.0"
   flutter: ">=3.24.0"
