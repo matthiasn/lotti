@@ -18,6 +18,13 @@ PODS:
     - Mantle
     - SDWebImage
     - SDWebImageWebPCoder
+  - flutter_inappwebview_ios (0.0.1):
+    - Flutter
+    - flutter_inappwebview_ios/Core (= 0.0.1)
+    - OrderedSet (~> 5.0)
+  - flutter_inappwebview_ios/Core (0.0.1):
+    - Flutter
+    - OrderedSet (~> 5.0)
   - flutter_keyboard_visibility (0.0.1):
     - Flutter
   - flutter_local_notifications (0.0.1):
@@ -33,9 +40,16 @@ PODS:
     - OpenSSL-Universal
   - flutter_secure_storage (6.0.0):
     - Flutter
+  - gal (1.0.0):
+    - Flutter
+    - FlutterMacOS
   - health (1.0.4):
     - Flutter
+  - image_picker_ios (0.0.1):
+    - Flutter
   - integration_test (0.0.1):
+    - Flutter
+  - irondash_engine_context (0.0.1):
     - Flutter
   - just_audio (0.0.1):
     - Flutter
@@ -62,6 +76,7 @@ PODS:
     - Flutter
   - MTBBarcodeScanner (5.0.11)
   - OpenSSL-Universal (3.3.1000)
+  - OrderedSet (5.0.0)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -73,6 +88,8 @@ PODS:
   - qr_code_scanner (0.2.0):
     - Flutter
     - MTBBarcodeScanner
+  - quill_native_bridge (0.0.1):
+    - Flutter
   - record_darwin (1.0.0):
     - Flutter
     - FlutterMacOS
@@ -108,6 +125,8 @@ PODS:
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
+  - super_native_extensions (0.0.1):
+    - Flutter
   - url_launcher_ios (0.0.1):
     - Flutter
   - video_player_avfoundation (0.0.1):
@@ -121,6 +140,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_health_fit (from `.symlinks/plugins/flutter_health_fit/ios`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
+  - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
   - flutter_keyboard_visibility (from `.symlinks/plugins/flutter_keyboard_visibility/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
@@ -128,8 +148,11 @@ DEPENDENCIES:
   - flutter_olm (from `.symlinks/plugins/flutter_olm/ios`)
   - flutter_openssl_crypto (from `.symlinks/plugins/flutter_openssl_crypto/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - gal (from `.symlinks/plugins/gal/darwin`)
   - health (from `.symlinks/plugins/health/ios`)
+  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - irondash_engine_context (from `.symlinks/plugins/irondash_engine_context/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/ios`)
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
@@ -138,11 +161,13 @@ DEPENDENCIES:
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
   - qr_code_scanner (from `.symlinks/plugins/qr_code_scanner/ios`)
+  - quill_native_bridge (from `.symlinks/plugins/quill_native_bridge/ios`)
   - record_darwin (from `.symlinks/plugins/record_darwin/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
+  - super_native_extensions (from `.symlinks/plugins/super_native_extensions/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
 
@@ -153,6 +178,7 @@ SPEC REPOS:
     - Mantle
     - MTBBarcodeScanner
     - OpenSSL-Universal
+    - OrderedSet
     - SDWebImage
     - SDWebImageWebPCoder
     - sqlite3
@@ -170,6 +196,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_health_fit/ios"
   flutter_image_compress_common:
     :path: ".symlinks/plugins/flutter_image_compress_common/ios"
+  flutter_inappwebview_ios:
+    :path: ".symlinks/plugins/flutter_inappwebview_ios/ios"
   flutter_keyboard_visibility:
     :path: ".symlinks/plugins/flutter_keyboard_visibility/ios"
   flutter_local_notifications:
@@ -184,10 +212,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_openssl_crypto/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  gal:
+    :path: ".symlinks/plugins/gal/darwin"
   health:
     :path: ".symlinks/plugins/health/ios"
+  image_picker_ios:
+    :path: ".symlinks/plugins/image_picker_ios/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
+  irondash_engine_context:
+    :path: ".symlinks/plugins/irondash_engine_context/ios"
   just_audio:
     :path: ".symlinks/plugins/just_audio/ios"
   location:
@@ -204,6 +238,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/photo_manager/ios"
   qr_code_scanner:
     :path: ".symlinks/plugins/qr_code_scanner/ios"
+  quill_native_bridge:
+    :path: ".symlinks/plugins/quill_native_bridge/ios"
   record_darwin:
     :path: ".symlinks/plugins/record_darwin/ios"
   share_plus:
@@ -214,6 +250,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite/darwin"
   sqlite3_flutter_libs:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/ios"
+  super_native_extensions:
+    :path: ".symlinks/plugins/super_native_extensions/ios"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   video_player_avfoundation:
@@ -227,6 +265,7 @@ SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
+  flutter_inappwebview_ios: 97215cf7d4677db55df76782dbd2930c5e1c1ea0
   flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
   flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
@@ -234,8 +273,11 @@ SPEC CHECKSUMS:
   flutter_olm: 7154e02866bd06d91e400e94f66d5e2a955de0b1
   flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  gal: 61e868295d28fe67ffa297fae6dacebf56fd53e1
   health: 5a380c0f6c4f619535845992993964293962e99e
+  image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
+  irondash_engine_context: 3458bf979b90d616ffb8ae03a150bafe2e860cc9
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   location: d5cf8598915965547c3f36761ae9cc4f4e87d22e
@@ -244,10 +286,12 @@ SPEC CHECKSUMS:
   media_kit_native_event_loop: 99111eded5acbdc9c2738021ea6550dd36ca8837
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
   OpenSSL-Universal: 57f92a826947ee3183556bf5e22d7dff8d55f834
+  OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
   package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
+  quill_native_bridge: e5afa7d49c08cf68c52a5e23bc272eba6925c622
   record_darwin: df0a677188e5fed18472550298e675f19ddaffbe
   SDWebImage: 8a6b7b160b4d710e2a22b6900e25301075c34cb3
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
@@ -256,6 +300,7 @@ SPEC CHECKSUMS:
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   sqlite3: 0bb0e6389d824e40296f531b858a2a0b71c0d2fb
   sqlite3_flutter_libs: c00457ebd31e59fa6bb830380ddba24d44fbcd3b
+  super_native_extensions: 4916b3c627a9c7fffdc48a23a9eca0b1ac228fa7
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
   video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
 

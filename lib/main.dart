@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
@@ -20,6 +21,7 @@ import 'package:window_manager/window_manager.dart';
 Future<void> main() async {
   await runZonedGuarded(() async {
     getIt.registerSingleton<LoggingDb>(LoggingDb());
+    FlutterQuillExtensions.useSuperClipboardPlugin();
 
     WidgetsFlutterBinding.ensureInitialized();
     MediaKit.ensureInitialized();
