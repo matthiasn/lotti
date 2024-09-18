@@ -114,10 +114,10 @@ packages:
     dependency: "direct main"
     description:
       name: beamer
-      sha256: c32c5dea11c178fca271f2cce8f3bce4bc0ad761a2b69978573c4e75e991abf9
+      sha256: "432cdef240ac6eae978d9ee481f7b3aa5ea112627e29a8e072fd920fc0c4548c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.6.1"
+    version: "1.6.2"
   bloc:
     dependency: "direct main"
     description:
@@ -458,10 +458,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "4e8e949cfa18fd29978e11b7077f655b73ac00ebbcaaf95880391a7375872f28"
+      sha256: "3046b617add2f66bf3124e2144d06f64d0527cb66bffbb6ba1bb4461ef2c43aa"
       url: "https://pub.dev"
     source: hosted
-    version: "10.6.1"
+    version: "10.6.4"
   dart_style:
     dependency: "direct dev"
     description:
@@ -627,10 +627,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image
-      sha256: c7b628bdbeb398bdd824cfc9d521f18e04b63ad2af811d182e885d3ae4ef45de
+      sha256: "75235b2cf90de7663640c2da43b0549fc1f373340b7ee925696e92e8ec55c4db"
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.3"
+    version: "8.2.4"
   extended_image_library:
     dependency: transitive
     description:
@@ -1107,10 +1107,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: fea5c213ab5f0c7af42cdb815a735ad0f18aa453bd7ac28da666f9878165ea46
+      sha256: "37e3dbdde75ceb4a3ae2fd8efdf4517e341009a0477c3f33e4e8b306b5343fb7"
       url: "https://pub.dev"
     source: hosted
-    version: "10.6.1"
+    version: "10.6.4"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
@@ -2320,10 +2320,10 @@ packages:
     dependency: transitive
     description:
       name: quill_native_bridge
-      sha256: a36013831441d995bbaf2d571ebbd1208ee05ff59cf9a0a6946ad007f9f96eec
+      sha256: b6f6bd226d58d5e21a5a1c05bae4f867534d54965cb9409743333cd006c98555
       url: "https://pub.dev"
     source: hosted
-    version: "10.6.1"
+    version: "10.6.4"
   quiver:
     dependency: "direct main"
     description:
