@@ -21,6 +21,7 @@ import 'package:window_manager/window_manager.dart';
 Future<void> main() async {
   await runZonedGuarded(() async {
     getIt.registerSingleton<LoggingDb>(LoggingDb());
+    // ignore: deprecated_member_use
     FlutterQuillExtensions.useSuperClipboardPlugin();
 
     WidgetsFlutterBinding.ensureInitialized();
