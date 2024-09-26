@@ -64,6 +64,7 @@ class EntryController extends _$EntryController {
       }
     });
   }
+
   late final String entryId;
   QuillController controller = QuillController.basic();
   final _editorStateService = getIt<EditorStateService>();
@@ -101,7 +102,10 @@ class EntryController extends _$EntryController {
   }
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build({
+    required String id,
+    //required String? linkedFromId,
+  }) async {
     entryId = id;
     ref.onDispose(() => _updateSubscription?.cancel());
     final entry = await _fetch();
