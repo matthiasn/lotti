@@ -18,5 +18,6 @@ class AudioRecorderState with _$AudioRecorderState {
     required double decibels,
     required bool showIndicator,
     required String? language,
+    String? linkedId,
   }) = _AudioRecorderState;
 }

@@ -63,6 +63,7 @@ class AudioRecorderWidget extends ConsumerWidget {
         return VisibilityDetector(
           key: const Key('audio_Recorder'),
           onVisibilityChanged: (VisibilityInfo info) {
+            debugPrint('visibleBounds: ${info.visibleBounds}');
             cubit.setIndicatorVisible(
               showIndicator: info.visibleBounds == Rect.zero,
             );
