@@ -458,10 +458,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: ad51d0953e5b1c80200a8db0fab635c491d2f86e620f00c49fa0589d60bec8fe
+      sha256: a3552d7dfe4904ab344ccc7bf6453fd2d966b7ef64a945e364ae18dd486b9569
       url: "https://pub.dev"
     source: hosted
-    version: "10.8.0"
+    version: "10.8.1"
   dart_style:
     dependency: "direct dev"
     description:
@@ -890,14 +890,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.4+1"
-  flutter_keyboard_visibility:
-    dependency: transitive
-    description:
-      name: flutter_keyboard_visibility
-      sha256: "98664be7be0e3ffca00de50f7f6a287ab62c763fc8c762e0a21584584a3ff4f8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.0"
   flutter_keyboard_visibility_linux:
     dependency: transitive
     description:
@@ -922,14 +914,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  flutter_keyboard_visibility_web:
+  flutter_keyboard_visibility_temp_fork:
     dependency: transitive
     description:
-      name: flutter_keyboard_visibility_web
-      sha256: d3771a2e752880c79203f8d80658401d0c998e4183edca05a149f5098ce6e3d1
+      name: flutter_keyboard_visibility_temp_fork
+      sha256: e342172aaa6173a661e822c85a005f8c5d0a04a1d263e00cb9f9155adab9cb7c
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "0.1.1"
   flutter_keyboard_visibility_windows:
     dependency: transitive
     description:
@@ -1003,10 +995,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: a23c41ee57573e62fc2190a1f36a0480c4d90bde3a8a8d7126e5d5992fb53fb7
+      sha256: e17575ca576a34b46c58c91f9948891117a1bd97815d2e661813c7f90c647a78
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.3+1"
+    version: "0.7.3+2"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -1051,10 +1043,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "8cefede1dd4bf52d65b37bbcb78f94f76b5b0ede4d5439c52dbe1f5535efbb87"
+      sha256: "27afdee8ea3b7bf5cb3b36f4c195468b24bcaad80036d4daa423bf948e8b5a97"
       url: "https://pub.dev"
     source: hosted
-    version: "10.8.0"
+    version: "10.8.1"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
@@ -1067,10 +1059,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill_extensions
-      sha256: fae541303a35c415a90d53e3372db6d1732e14a2b92a781e79cecb367f863a05
+      sha256: b397f786f122a3ce7a58ba1288e7c24656298709315719deeec22fa4aec7bf8b
       url: "https://pub.dev"
     source: hosted
-    version: "10.8.0"
+    version: "10.8.1"
   flutter_rating:
     dependency: "direct main"
     description:
@@ -1226,10 +1218,10 @@ packages:
     dependency: transitive
     description:
       name: gal_linux
-      sha256: cbff918888aaa7b86d5a992764ad94d217347d63912e008e8449605b1cc0b38a
+      sha256: "0040d61843134cc5a93e4597080a86f2ba073217957e28b2a684b4d8b050873c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.1.2"
   geoclue:
     dependency: "direct main"
     description:
@@ -2645,26 +2637,26 @@ packages:
     dependency: "direct main"
     description:
       name: sqflite
-      sha256: a43e5a27235518c03ca238e7b4732cf35eabe863a369ceba6cbefa537a66f16d
+      sha256: ff5a2436ef8ebdfda748fbfe957f9981524cb5ff11e7bafa8c42771840e8a788
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.3+1"
+    version: "2.3.3+2"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: "4058172e418eb7e7f2058dcb7657d451a8fc264afa0dea4dbd0f304a57131611"
+      sha256: "2d8e607db72e9cb7748c9c6e739e2c9618320a5517de693d5a24609c4671b1a4"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.4+3"
+    version: "2.5.4+4"
   sqflite_common_ffi:
     dependency: "direct main"
     description:
       name: sqflite_common_ffi
-      sha256: "4d6137c29e930d6e4a8ff373989dd9de7bac12e3bc87bce950f6e844e8ad3bb5"
+      sha256: a6057d4c87e9260ba1ec436ebac24760a110589b9c0a859e128842eb69a7ef04
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.3"
+    version: "2.3.3+1"
   sqlite3:
     dependency: "direct main"
     description:
@@ -2773,10 +2765,10 @@ packages:
     dependency: transitive
     description:
       name: synchronized
-      sha256: "51b08572b9f091f8c3eb4d9d4be253f196ff0075d5ec9b10a884026d5b55d7bc"
+      sha256: "69fe30f3a8b04a0be0c15ae6490fc859a78ef4c43ae2dd5e8a623d45bfcf9225"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0+2"
+    version: "3.3.0+3"
   system_info2:
     dependency: transitive
     description:

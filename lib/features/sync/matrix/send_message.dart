@@ -90,25 +90,21 @@ extension SendExtension on MatrixService {
         journalAudio: (JournalAudio journalAudio) async {
           if (shouldResendAttachments ||
               syncMessage.status == SyncEntryStatus.initial) {
-            unawaited(
-              sendFile(
-                fullPath: AudioUtils.getAudioPath(
-                  journalAudio,
-                  docDir,
-                ),
-                relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
+            await sendFile(
+              fullPath: AudioUtils.getAudioPath(
+                journalAudio,
+                docDir,
               ),
+              relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
             );
           }
         },
         journalImage: (JournalImage journalImage) async {
           if (shouldResendAttachments ||
               syncMessage.status == SyncEntryStatus.initial) {
-            unawaited(
-              sendFile(
-                fullPath: getFullImagePath(journalImage),
-                relativePath: getRelativeImagePath(journalImage),
-              ),
+            await sendFile(
+              fullPath: getFullImagePath(journalImage),
+              relativePath: getRelativeImagePath(journalImage),
             );
           }
         },

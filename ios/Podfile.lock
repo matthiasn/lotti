@@ -18,7 +18,7 @@ PODS:
     - Mantle
     - SDWebImage
     - SDWebImageWebPCoder
-  - flutter_keyboard_visibility (0.0.1):
+  - flutter_keyboard_visibility_temp_fork (0.0.1):
     - Flutter
   - flutter_local_notifications (0.0.1):
     - Flutter
@@ -68,7 +68,7 @@ PODS:
   - media_kit_native_event_loop (1.0.0):
     - Flutter
   - MTBBarcodeScanner (5.0.11)
-  - OpenSSL-Universal (3.3.1000)
+  - OpenSSL-Universal (3.3.2000)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -132,7 +132,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_health_fit (from `.symlinks/plugins/flutter_health_fit/ios`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
-  - flutter_keyboard_visibility (from `.symlinks/plugins/flutter_keyboard_visibility/ios`)
+  - flutter_keyboard_visibility_temp_fork (from `.symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_native_timezone (from `.symlinks/plugins/flutter_native_timezone/ios`)
@@ -186,8 +186,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_health_fit/ios"
   flutter_image_compress_common:
     :path: ".symlinks/plugins/flutter_image_compress_common/ios"
-  flutter_keyboard_visibility:
-    :path: ".symlinks/plugins/flutter_keyboard_visibility/ios"
+  flutter_keyboard_visibility_temp_fork:
+    :path: ".symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_native_splash:
@@ -253,7 +253,7 @@ SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
-  flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
+  flutter_keyboard_visibility_temp_fork: 442dadca3b81868a225cd6a2f605bffff1215844
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
   flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
@@ -272,7 +272,7 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 8f39d96a9c630685dfb844c289bd1d114c486fb3
   media_kit_native_event_loop: 99111eded5acbdc9c2738021ea6550dd36ca8837
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
-  OpenSSL-Universal: 57f92a826947ee3183556bf5e22d7dff8d55f834
+  OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
