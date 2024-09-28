@@ -61,7 +61,7 @@ class _AppScreenState extends State<AppScreen> {
               ),
               const TimeRecordingIndicator(),
               const Positioned(
-                right: 120,
+                right: 100,
                 bottom: 0,
                 child: AudioRecordingIndicator(),
               ),
