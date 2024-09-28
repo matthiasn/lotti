@@ -76,6 +76,12 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
             const RecordConfig(sampleRate: 48000),
             path: filePath,
           );
+          emit(
+            initialState.copyWith(
+              status: AudioRecorderStatus.recording,
+              linkedId: linkedId,
+            ),
+          );
         }
       } else {
         _loggingDb.captureEvent(
@@ -97,8 +103,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       debugPrint('stop recording');
       await _audioRecorder.stop();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
-      emit(initialState);
-
+      emit(initialState.copyWith(status: AudioRecorderStatus.stopped));
       if (_audioNote != null) {
         final journalAudio = await persistenceLogic.createAudioEntry(
           _audioNote!,
