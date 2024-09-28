@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 class AudioRecordingIndicator extends ConsumerWidget {
@@ -17,14 +19,20 @@ class AudioRecordingIndicator extends ConsumerWidget {
             !state.showIndicator) {
           return const SizedBox.shrink();
         }
+        final linkedId = state.linkedId;
+        void onTap() {
+          if (getIt<NavService>().tasksTabActive()) {
+            beamToNamed('/tasks/$linkedId/record_audio/$linkedId');
+          } else {
+            beamToNamed('/journal/$linkedId/record_audio/$linkedId');
+          }
+        }
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
             key: const Key('audio_recording_indicator'),
-            onTap: () {
-              context.read<AudioRecorderCubit>().stop();
-            },
+            onTap: onTap,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
@@ -40,13 +48,21 @@ class AudioRecordingIndicator extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        const Icon(Icons.mic_rounded, size: 20),
+                        const Icon(
+                          Icons.mic_outlined,
+                          size: 20,
+                          color: Colors.black87,
+                        ),
                         Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 4),
+                          padding: const EdgeInsets.only(
+                            left: 2,
+                            bottom: 4,
+                            right: 4,
+                          ),
                           child: Text(
                             formatDuration(state.progress),
                             style: monospaceTextStyle.copyWith(
-                              color: Colors.black,
+                              color: Colors.black87,
                             ),
                           ),
                         ),

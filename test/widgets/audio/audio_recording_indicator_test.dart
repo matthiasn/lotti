@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,6 +20,15 @@ void main() {
     tearDown(getIt.reset);
 
     final mockAudioRecorderCubit = MockAudioRecorderCubit();
+    final mockNavService = MockNavService();
+
+    getIt
+      ..registerSingleton<NavService>(mockNavService)
+      ..registerSingleton<SettingsDb>(SettingsDb());
+
+    when(mockNavService.tasksTabActive).thenAnswer(
+      (_) => false,
+    );
 
     testWidgets('widget is displayed, tapping stops recorder', (tester) async {
       final recordingState = AudioRecorderState(
@@ -56,11 +67,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final stopIconFinder = find.byKey(const Key('audio_recording_indicator'));
-      expect(stopIconFinder, findsOneWidget);
+      final indicatorFinder =
+          find.byKey(const Key('audio_recording_indicator'));
+      expect(indicatorFinder, findsOneWidget);
 
-      await tester.tap(stopIconFinder);
-      verify(mockAudioRecorderCubit.stop).called(1);
+      await tester.tap(indicatorFinder);
+      verify(() => mockNavService.beamToNamed(any())).called(1);
     });
   });
 }

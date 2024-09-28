@@ -21,6 +21,7 @@ mixin _$AudioRecorderState {
   double get decibels => throw _privateConstructorUsedError;
   bool get showIndicator => throw _privateConstructorUsedError;
   String? get language => throw _privateConstructorUsedError;
+  String? get linkedId => throw _privateConstructorUsedError;
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
@@ -40,7 +41,8 @@ abstract class $AudioRecorderStateCopyWith<$Res> {
       Duration progress,
       double decibels,
       bool showIndicator,
-      String? language});
+      String? language,
+      String? linkedId});
 }
 
 /// @nodoc
@@ -63,6 +65,7 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
     Object? decibels = null,
     Object? showIndicator = null,
     Object? language = freezed,
+    Object? linkedId = freezed,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -85,6 +88,10 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
           ? _value.language
           : language // ignore: cast_nullable_to_non_nullable
               as String?,
+      linkedId: freezed == linkedId
+          ? _value.linkedId
+          : linkedId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -102,7 +109,8 @@ abstract class _$$AudioRecorderStateImplCopyWith<$Res>
       Duration progress,
       double decibels,
       bool showIndicator,
-      String? language});
+      String? language,
+      String? linkedId});
 }
 
 /// @nodoc
@@ -123,6 +131,7 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
     Object? decibels = null,
     Object? showIndicator = null,
     Object? language = freezed,
+    Object? linkedId = freezed,
   }) {
     return _then(_$AudioRecorderStateImpl(
       status: null == status
@@ -145,6 +154,10 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
           ? _value.language
           : language // ignore: cast_nullable_to_non_nullable
               as String?,
+      linkedId: freezed == linkedId
+          ? _value.linkedId
+          : linkedId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -157,7 +170,8 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
       required this.progress,
       required this.decibels,
       required this.showIndicator,
-      required this.language});
+      required this.language,
+      this.linkedId});
 
   @override
   final AudioRecorderStatus status;
@@ -169,10 +183,12 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   final bool showIndicator;
   @override
   final String? language;
+  @override
+  final String? linkedId;
 
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, decibels: $decibels, showIndicator: $showIndicator, language: $language)';
+    return 'AudioRecorderState(status: $status, progress: $progress, decibels: $decibels, showIndicator: $showIndicator, language: $language, linkedId: $linkedId)';
   }
 
   @override
@@ -188,12 +204,14 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
             (identical(other.showIndicator, showIndicator) ||
                 other.showIndicator == showIndicator) &&
             (identical(other.language, language) ||
-                other.language == language));
+                other.language == language) &&
+            (identical(other.linkedId, linkedId) ||
+                other.linkedId == linkedId));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, status, progress, decibels, showIndicator, language);
+  int get hashCode => Object.hash(runtimeType, status, progress, decibels,
+      showIndicator, language, linkedId);
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
@@ -211,7 +229,8 @@ abstract class _AudioRecorderState implements AudioRecorderState {
       required final Duration progress,
       required final double decibels,
       required final bool showIndicator,
-      required final String? language}) = _$AudioRecorderStateImpl;
+      required final String? language,
+      final String? linkedId}) = _$AudioRecorderStateImpl;
 
   @override
   AudioRecorderStatus get status;
@@ -223,6 +242,8 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   bool get showIndicator;
   @override
   String? get language;
+  @override
+  String? get linkedId;
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
