@@ -7,17 +7,17 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class TimeRecordingIndicatorWidget extends StatelessWidget {
-  TimeRecordingIndicatorWidget({
+class TimeRecordingIndicator extends StatelessWidget {
+  const TimeRecordingIndicator({
     super.key,
   });
 
-  final TimeService _timeService = getIt<TimeService>();
-
   @override
   Widget build(BuildContext context) {
+    final timeService = getIt<TimeService>();
+
     return StreamBuilder(
-      stream: _timeService.getStream(),
+      stream: timeService.getStream(),
       builder: (
         _,
         AsyncSnapshot<JournalEntity?> snapshot,
@@ -32,7 +32,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            final linkedFrom = _timeService.linkedFrom;
+            final linkedFrom = timeService.linkedFrom;
             linkedFrom != null
                 ? linkedFrom is Task
                     ? beamToNamed('/tasks/${linkedFrom.meta.id}')
@@ -73,21 +73,6 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class TimeRecordingIndicator extends StatelessWidget {
-  const TimeRecordingIndicator({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      bottom: 0,
-      child: TimeRecordingIndicatorWidget(),
     );
   }
 }

@@ -59,7 +59,11 @@ class _AppScreenState extends State<AppScreen> {
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
-              const TimeRecordingIndicator(),
+              const Positioned(
+                left: 0,
+                bottom: 0,
+                child: TimeRecordingIndicator(),
+              ),
               const Positioned(
                 right: 100,
                 bottom: 0,
