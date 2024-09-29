@@ -26,7 +26,7 @@ void main() {
       ..registerSingleton<NavService>(mockNavService)
       ..registerSingleton<SettingsDb>(SettingsDb());
 
-    when(mockNavService.tasksTabActive).thenAnswer(
+    when(mockNavService.isTasksTabActive).thenAnswer(
       (_) => false,
     );
 
