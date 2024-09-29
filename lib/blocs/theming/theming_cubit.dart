@@ -5,18 +5,28 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 
 const lightSchemeNameKey = 'LIGHT_SCHEME';
 const darkSchemeNameKey = 'DARK_SCHEMA';
 const themeModeKey = 'THEME_MODE';
 
 class ThemingCubit extends Cubit<ThemingState> {
-  ThemingCubit() : super(ThemingState()) {
+  ThemingCubit() : super(ThemingState(enableTooltips: true)) {
     _loadSelectedSchemes();
+    getIt<JournalDb>()
+        .watchConfigFlag(enableTooltipFlag)
+        .forEach((enableTooltips) {
+      _enableTooltips = enableTooltips;
+      emitState();
+    });
   }
+
+  bool _enableTooltips = false;
 
   Future<void> _loadSelectedSchemes() async {
     _darkThemeName = await getIt<SettingsDb>().itemByKey(darkSchemeNameKey);
@@ -70,6 +80,7 @@ class ThemingCubit extends Cubit<ThemingState> {
         lightTheme: _lightTheme,
         lightThemeName: _lightThemeName,
         themeMode: _themeMode,
+        enableTooltips: _enableTooltips,
       ),
     );
   }
