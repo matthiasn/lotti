@@ -4,16 +4,16 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/blocs/audio/player_cubit.dart';
-import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/speech/state/asr_service.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AudioPlayerWidget extends ConsumerWidget {

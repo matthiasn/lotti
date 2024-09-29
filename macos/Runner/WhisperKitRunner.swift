@@ -5,7 +5,6 @@ import WhisperKit
 public class WhisperKitRunner: NSObject, FlutterStreamHandler {
     let transcriptionChannelName = "lotti/transcribe"
     let transcriptionProgressChannelName = "lotti/transcribe-progress"
-    let model = "large-v3"
     
     private var eventSink: FlutterEventSink?
     private let transcriptionChannel: FlutterMethodChannel
@@ -28,19 +27,16 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
                 let audioFilePath = args["audioFilePath"] as! String
+                let model = args["model"] as! String
                 let language = args["language"] as! String
                 let detectLanguage = language.isEmpty
                 
-                if (self.whisperKit == nil) {
-                    if (self.eventSink != nil) {
-                        self.eventSink!(["Initializing model...", ""])
-                    }
-                }
-                
-                
                 Task {
-                    if (self.whisperKit == nil) {
-                        self.whisperKit = try? await WhisperKit(model: self.model,
+                    if (self.whisperKit == nil || self.whisperKit?.modelVariant.description != model) {
+                        if (self.eventSink != nil) {
+                            self.eventSink!(["Initializing model...", ""])
+                        }
+                        self.whisperKit = try? await WhisperKit(model: model,
                                                                 verbose: true,
                                                                 prewarm: true)
                     }
@@ -58,7 +54,7 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                     
                     let text : String? = transcription?.first?.text
                     let detectedLanguage = transcription?.first?.language
-                    let data = [detectedLanguage, self.model, text]
+                    let data = [detectedLanguage, self.whisperKit?.modelVariant.description, text]
                     result(data)
                 }
             default:

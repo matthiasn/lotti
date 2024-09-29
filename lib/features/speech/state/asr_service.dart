@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -13,8 +13,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 class AsrService {
   AsrService() {
@@ -80,7 +78,7 @@ class AsrService {
   static const EventChannel eventChannel =
       EventChannel('lotti/transcribe-progress');
 
-  String model = 'base';
+  String model = 'small';
   final queue = Queue<JournalAudio>();
   bool running = false;
 
@@ -105,10 +103,6 @@ class AsrService {
     );
 
     final start = DateTime.now();
-    final docDir = await getApplicationDocumentsDirectory();
-    final modelFile = 'ggml-$model.bin';
-    final modelPath = p.join(docDir.path, 'whisper', modelFile);
-
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
     final session = await FFmpegKit.execute(
       '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
@@ -122,7 +116,7 @@ class AsrService {
           'transcribe',
           {
             'audioFilePath': wavPath,
-            'modelPath': modelPath,
+            'model': model,
             'language': entry.data.language ?? '',
           },
         );

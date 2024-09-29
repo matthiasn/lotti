@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/audio/player_cubit.dart';
-import 'package:lotti/blocs/audio/player_state.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
