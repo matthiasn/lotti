@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -48,11 +49,7 @@ class BackWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void onPressed() {
-      final beamedBack = dashboardsBeamerDelegate.beamBack();
-
-      if (!beamedBack) {
-        Navigator.pop(context);
-      }
+      getIt<NavService>().beamBack();
     }
 
     return Row(
