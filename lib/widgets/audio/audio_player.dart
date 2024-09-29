@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -110,10 +111,10 @@ class AudioPlayerWidget extends ConsumerWidget {
                     tooltip: 'Transcribe',
                     color: context.colorScheme.outline,
                     onPressed: () async {
-                      await cubit.setAudioNote(journalAudio);
-                      final isQueueEmpty = await cubit.transcribe();
+                      final isQueueEmpty =
+                          getIt<AsrService>().enqueue(entry: journalAudio);
 
-                      if (isQueueEmpty) {
+                      if (await isQueueEmpty) {
                         if (!context.mounted) return;
                         await TranscriptionProgressModal.show(context);
                       }
