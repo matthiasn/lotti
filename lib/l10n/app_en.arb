@@ -248,6 +248,7 @@
   "settingsSpeechModelSelectionTitle": "Whisper speech recognition model:",
   "settingsSpeechAudioWithoutTranscript": "Audio entries without transcript:",
   "settingsSpeechAudioWithoutTranscriptButton": "Find & transcribe",
+  "settingsSpeechLastActivity": "Last transcription activity:",
   "settingsSyncCancelButton": "Cancel",
   "settingsSyncCfgTitle": "Sync Assistant",
   "settingsSyncCloseButton": "Close",
