@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/features/speech/state/recorder_cubit.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
 
 class CustomRect extends CustomClipper<Rect> {

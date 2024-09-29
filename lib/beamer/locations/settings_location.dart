@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/speech/ui/pages/speech_settings_page.dart';
 import 'package:lotti/pages/settings/advanced/about_page.dart';
 import 'package:lotti/pages/settings/advanced/conflicts_page.dart';
 import 'package:lotti/pages/settings/advanced/logging_page.dart';
@@ -22,7 +23,6 @@ import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
 import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
-import 'package:lotti/pages/settings/speech/speech_settings_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
-import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
+import 'package:lotti/features/speech/state/speech_settings_cubit.dart';
+import 'package:lotti/features/speech/state/speech_settings_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';

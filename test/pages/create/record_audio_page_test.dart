@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/speech/state/recorder_cubit.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/pages/record_audio_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
