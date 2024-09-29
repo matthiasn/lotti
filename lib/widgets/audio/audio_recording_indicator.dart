@@ -3,8 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -20,8 +21,13 @@ class AudioRecordingIndicator extends ConsumerWidget {
           return const SizedBox.shrink();
         }
         final linkedId = state.linkedId;
+
+        final linkedEntry = linkedId != null
+            ? ref.watch(entryControllerProvider(id: linkedId)).value?.entry
+            : null;
+
         void onTap() {
-          if (getIt<NavService>().tasksTabActive()) {
+          if (linkedEntry is Task) {
             beamToNamed('/tasks/$linkedId/record_audio/$linkedId');
           } else {
             beamToNamed('/journal/$linkedId/record_audio/$linkedId');
