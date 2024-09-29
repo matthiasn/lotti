@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
-import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/speech/state/asr_service.dart';
+import 'package:lotti/features/speech/state/speech_settings_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 
