@@ -5,7 +5,6 @@ import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -26,7 +25,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   final Player _audioPlayer = Player();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
-  final AsrService _asrService = getIt<AsrService>();
 
   void updateProgress(Duration duration) {
     emit(state.copyWith(progress: duration));
@@ -82,14 +80,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         stackTrace: stackTrace,
       );
     }
-  }
-
-  Future<bool> transcribe() async {
-    if (state.audioNote == null) {
-      return false;
-    }
-
-    return _asrService.enqueue(entry: state.audioNote!);
   }
 
   Future<void> seek(Duration newPosition) async {
