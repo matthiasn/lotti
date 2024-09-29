@@ -188,24 +188,27 @@ class MyBeamerApp extends StatelessWidget {
               );
             }
 
-            return DesktopMenuWrapper(
-              child: MaterialApp.router(
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: themingSnapshot.lightTheme,
-                darkTheme: themingSnapshot.darkTheme,
-                themeMode: themingSnapshot.themeMode,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  FormBuilderLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                debugShowCheckedModeBanner: false,
-                routerDelegate: routerDelegate,
-                routeInformationParser: BeamerParser(),
-                backButtonDispatcher: BeamerBackButtonDispatcher(
-                  delegate: routerDelegate,
+            return TooltipVisibility(
+              visible: themingSnapshot.enableTooltips,
+              child: DesktopMenuWrapper(
+                child: MaterialApp.router(
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  theme: themingSnapshot.lightTheme,
+                  darkTheme: themingSnapshot.darkTheme,
+                  themeMode: themingSnapshot.themeMode,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    FormBuilderLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  debugShowCheckedModeBanner: false,
+                  routerDelegate: routerDelegate,
+                  routeInformationParser: BeamerParser(),
+                  backButtonDispatcher: BeamerBackButtonDispatcher(
+                    delegate: routerDelegate,
+                  ),
                 ),
               ),
             );
