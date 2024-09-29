@@ -27,6 +27,7 @@ class FlagsPage extends StatelessWidget {
           autoTranscribeFlag,
           recordLocationFlag,
           allowInvalidCertFlag,
+          enableTooltipFlag,
           enableMatrixFlag,
           resendAttachments,
         };
