@@ -99,7 +99,7 @@ class NavService {
     }
   }
 
-  bool tasksTabActive() {
+  bool isTasksTabActive() {
     return index == 3;
   }
 

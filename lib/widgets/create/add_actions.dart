@@ -125,7 +125,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            if (getIt<NavService>().tasksTabActive()) {
+            if (getIt<NavService>().isTasksTabActive()) {
               beamToNamed('/tasks/$linkedId/record_audio/$linkedId');
             } else {
               beamToNamed('/journal/$linkedId/record_audio/$linkedId');
@@ -147,7 +147,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             );
 
             if (task != null) {
-              beamToNamed('/journal/${task.meta.id}');
+              beamToNamed('/tasks/${task.meta.id}');
             }
           },
           child: const Icon(

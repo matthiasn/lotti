@@ -274,7 +274,7 @@ void main() {
 
         verify(
           () => mockNavService
-              .beamToNamed('/journal/79ef5021-12df-4651-ac6e-c9a5b58a859c'),
+              .beamToNamed('/tasks/79ef5021-12df-4651-ac6e-c9a5b58a859c'),
         ).called(1);
       },
     );
@@ -375,7 +375,7 @@ void main() {
           (_) async {},
         );
 
-        when(mockNavService.tasksTabActive).thenAnswer(
+        when(mockNavService.isTasksTabActive).thenAnswer(
           (_) => false,
         );
 
