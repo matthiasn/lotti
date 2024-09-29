@@ -34,6 +34,7 @@ final themes = {
 @freezed
 class ThemingState with _$ThemingState {
   factory ThemingState({
+    required bool enableTooltips,
     ThemeData? darkTheme,
     ThemeData? lightTheme,
     String? darkThemeName,

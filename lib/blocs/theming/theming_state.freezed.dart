@@ -16,6 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$ThemingState {
+  bool get enableTooltips => throw _privateConstructorUsedError;
   ThemeData? get darkTheme => throw _privateConstructorUsedError;
   ThemeData? get lightTheme => throw _privateConstructorUsedError;
   String? get darkThemeName => throw _privateConstructorUsedError;
@@ -36,7 +37,8 @@ abstract class $ThemingStateCopyWith<$Res> {
       _$ThemingStateCopyWithImpl<$Res, ThemingState>;
   @useResult
   $Res call(
-      {ThemeData? darkTheme,
+      {bool enableTooltips,
+      ThemeData? darkTheme,
       ThemeData? lightTheme,
       String? darkThemeName,
       String? lightThemeName,
@@ -58,6 +60,7 @@ class _$ThemingStateCopyWithImpl<$Res, $Val extends ThemingState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? enableTooltips = null,
     Object? darkTheme = freezed,
     Object? lightTheme = freezed,
     Object? darkThemeName = freezed,
@@ -65,6 +68,10 @@ class _$ThemingStateCopyWithImpl<$Res, $Val extends ThemingState>
     Object? themeMode = freezed,
   }) {
     return _then(_value.copyWith(
+      enableTooltips: null == enableTooltips
+          ? _value.enableTooltips
+          : enableTooltips // ignore: cast_nullable_to_non_nullable
+              as bool,
       darkTheme: freezed == darkTheme
           ? _value.darkTheme
           : darkTheme // ignore: cast_nullable_to_non_nullable
@@ -98,7 +105,8 @@ abstract class _$$ThemingStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {ThemeData? darkTheme,
+      {bool enableTooltips,
+      ThemeData? darkTheme,
       ThemeData? lightTheme,
       String? darkThemeName,
       String? lightThemeName,
@@ -118,6 +126,7 @@ class __$$ThemingStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? enableTooltips = null,
     Object? darkTheme = freezed,
     Object? lightTheme = freezed,
     Object? darkThemeName = freezed,
@@ -125,6 +134,10 @@ class __$$ThemingStateImplCopyWithImpl<$Res>
     Object? themeMode = freezed,
   }) {
     return _then(_$ThemingStateImpl(
+      enableTooltips: null == enableTooltips
+          ? _value.enableTooltips
+          : enableTooltips // ignore: cast_nullable_to_non_nullable
+              as bool,
       darkTheme: freezed == darkTheme
           ? _value.darkTheme
           : darkTheme // ignore: cast_nullable_to_non_nullable
@@ -153,12 +166,15 @@ class __$$ThemingStateImplCopyWithImpl<$Res>
 
 class _$ThemingStateImpl implements _ThemingState {
   _$ThemingStateImpl(
-      {this.darkTheme,
+      {required this.enableTooltips,
+      this.darkTheme,
       this.lightTheme,
       this.darkThemeName,
       this.lightThemeName,
       this.themeMode});
 
+  @override
+  final bool enableTooltips;
   @override
   final ThemeData? darkTheme;
   @override
@@ -172,7 +188,7 @@ class _$ThemingStateImpl implements _ThemingState {
 
   @override
   String toString() {
-    return 'ThemingState(darkTheme: $darkTheme, lightTheme: $lightTheme, darkThemeName: $darkThemeName, lightThemeName: $lightThemeName, themeMode: $themeMode)';
+    return 'ThemingState(enableTooltips: $enableTooltips, darkTheme: $darkTheme, lightTheme: $lightTheme, darkThemeName: $darkThemeName, lightThemeName: $lightThemeName, themeMode: $themeMode)';
   }
 
   @override
@@ -180,6 +196,8 @@ class _$ThemingStateImpl implements _ThemingState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ThemingStateImpl &&
+            (identical(other.enableTooltips, enableTooltips) ||
+                other.enableTooltips == enableTooltips) &&
             (identical(other.darkTheme, darkTheme) ||
                 other.darkTheme == darkTheme) &&
             (identical(other.lightTheme, lightTheme) ||
@@ -193,8 +211,8 @@ class _$ThemingStateImpl implements _ThemingState {
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, darkTheme, lightTheme,
-      darkThemeName, lightThemeName, themeMode);
+  int get hashCode => Object.hash(runtimeType, enableTooltips, darkTheme,
+      lightTheme, darkThemeName, lightThemeName, themeMode);
 
   /// Create a copy of ThemingState
   /// with the given fields replaced by the non-null parameter values.
@@ -207,12 +225,15 @@ class _$ThemingStateImpl implements _ThemingState {
 
 abstract class _ThemingState implements ThemingState {
   factory _ThemingState(
-      {final ThemeData? darkTheme,
+      {required final bool enableTooltips,
+      final ThemeData? darkTheme,
       final ThemeData? lightTheme,
       final String? darkThemeName,
       final String? lightThemeName,
       final ThemeMode? themeMode}) = _$ThemingStateImpl;
 
+  @override
+  bool get enableTooltips;
   @override
   ThemeData? get darkTheme;
   @override

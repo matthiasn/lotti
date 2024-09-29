@@ -13,6 +13,7 @@ import '../mocks/mocks.dart';
 final expectedActiveFlagNames = {
   privateFlag,
   enableSyncFlag,
+  enableTooltipFlag,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -50,6 +51,11 @@ final expectedFlags = <ConfigFlag>{
     name: enableMatrixFlag,
     description: 'Enable Matrix Sync',
     status: false,
+  ),
+  const ConfigFlag(
+    name: enableTooltipFlag,
+    description: 'Enable Tooltips',
+    status: true,
   ),
   const ConfigFlag(
     name: resendAttachments,
