@@ -1,4 +1,3 @@
-import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -108,8 +107,6 @@ class MockTimeService extends Mock implements TimeService {}
 class MockAsrService extends Mock implements AsrService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
-
-class MockDownloadManager extends Mock implements DownloadManager {}
 
 class MockEditorDb extends Mock implements EditorDb {}
 
