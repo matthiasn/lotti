@@ -63,7 +63,7 @@ class WhisperModelCard extends StatelessWidget {
                       context.messages.settingsSpeechDownloadButton,
                       semanticsLabel: 'download $model',
                     ),
-                    onPressed: () => cubit.downloadModel(model),
+                    onPressed: () {},
                   ),
                 if (progress == 1.0)
                   Text(

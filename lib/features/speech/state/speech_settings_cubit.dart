@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/speech_settings_state.dart';
@@ -14,7 +13,7 @@ const downloadPath =
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
 
 class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
-  SpeechSettingsCubit({DownloadManager? downloadManager})
+  SpeechSettingsCubit()
       : super(
           SpeechSettingsState(
             availableModels: availableModels,
@@ -22,8 +21,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
             downloadedModelSizes: <String, double>{},
           ),
         ) {
-    _downloadManager = downloadManager ?? DownloadManager();
-
     for (final model in availableModels) {
       _downloadProgress[model] = 0;
     }
@@ -35,7 +32,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
   Map<String, double> _downloadProgress = <String, double>{};
   Map<String, double> _downloadedModelSizes = <String, double>{};
   String _selectedModel = '';
-  late final DownloadManager _downloadManager;
 
   Future<void> loadSelectedModel() async {
     final selectedModel = await getIt<SettingsDb>().itemByKey(whisperModelKey);
@@ -75,38 +71,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
       selectedModel,
     );
 
-    emitState();
-  }
-
-  Future<void> downloadModel(String model) async {
-    final fileName = 'ggml-$model.bin';
-    final url = '$downloadPath/$fileName';
-    final docDir = await findDocumentsDirectory();
-    final modelsDir =
-        await Directory('${docDir.path}/whisper/').create(recursive: true);
-
-    await _downloadManager.addDownload(url, modelsDir.path);
-    final task = _downloadManager.getDownload(url);
-
-    if (task == null) {
-      return;
-    }
-
-    task.progress.addListener(() {
-      final value = task.progress.value;
-      _downloadProgress[model] = value;
-
-      if (value == 1.0) {
-        detectDownloadedModels();
-
-        if (_selectedModel.isEmpty) {
-          _selectedModel = model;
-        }
-      }
-      emitState();
-    });
-
-    await task.whenDownloadComplete();
     emitState();
   }
 
