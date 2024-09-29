@@ -1,7 +1,4 @@
-import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:lotti/blocs/audio/player_cubit.dart';
-import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,12 +11,14 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/speech/state/asr_service.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -108,8 +107,6 @@ class MockTimeService extends Mock implements TimeService {}
 class MockAsrService extends Mock implements AsrService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
-
-class MockDownloadManager extends Mock implements DownloadManager {}
 
 class MockEditorDb extends Mock implements EditorDb {}
 

@@ -3,9 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/asr_service.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -14,7 +13,6 @@ import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final mockDownloadManager = MockDownloadManager();
 
   group('SpeechSettingsCubit Tests - ', () {
     setUpAll(() async {
@@ -34,11 +32,6 @@ void main() {
       final testModel = await File(p.join(whisperDir.path, 'ggml-small.bin'))
           .create(recursive: true);
       await testModel.writeAsString('foo');
-
-      when(() => mockDownloadManager.addDownload(any(), any()))
-          .thenAnswer((invocation) async {
-        return null;
-      });
     });
 
     /*

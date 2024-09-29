@@ -2,7 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
-import 'package:lotti/pages/create/record_audio_page.dart';
+import 'package:lotti/features/speech/ui/pages/record_audio_page.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class TasksLocation extends BeamLocation<BeamState> {

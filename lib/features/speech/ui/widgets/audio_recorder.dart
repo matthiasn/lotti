@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/speech/state/recorder_cubit.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/vu_meter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
-import 'package:lotti/widgets/audio/vu_meter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 const double iconSize = 64;
