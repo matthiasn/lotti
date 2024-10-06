@@ -33,3 +33,33 @@ class AiPromptIconWidget extends ConsumerWidget {
     );
   }
 }
+
+class AiChecklistIconWidget extends ConsumerWidget {
+  const AiChecklistIconWidget({
+    required this.journalEntity,
+    this.linkedFromId,
+    super.key,
+  });
+
+  final JournalEntity? journalEntity;
+  final String? linkedFromId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return IconButton(
+      icon: const Icon(Icons.checklist_rounded),
+      tooltip: 'Create checklist items',
+      onPressed: () {
+        ref.read(aiResponseProvider.notifier).createChecklistItems(
+              journalEntity,
+              linkedFromId: linkedFromId,
+            );
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          builder: (BuildContext context) => const AiResponsePreview(),
+        );
+      },
+    );
+  }
+}

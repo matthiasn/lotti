@@ -151,6 +151,14 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                         linkedFromId: widget.linkedFromId,
                       ),
                     ),
+                  if (isDesktop)
+                    SizedBox(
+                      width: 40,
+                      child: AiChecklistIconWidget(
+                        journalEntity: entry,
+                        linkedFromId: widget.linkedFromId,
+                      ),
+                    ),
                 ],
               ],
             ),
