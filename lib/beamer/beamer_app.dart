@@ -51,11 +51,11 @@ class _AppScreenState extends State<AppScreen> {
               IndexedStack(
                 index: index,
                 children: [
+                  Beamer(routerDelegate: navService.tasksDelegate),
+                  Beamer(routerDelegate: navService.calendarDelegate),
                   Beamer(routerDelegate: navService.habitsDelegate),
                   Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
-                  Beamer(routerDelegate: navService.tasksDelegate),
-                  Beamer(routerDelegate: navService.calendarDelegate),
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
@@ -91,24 +91,6 @@ class _AppScreenState extends State<AppScreen> {
             currentIndex: index,
             items: [
               createNavBarItem(
-                semanticLabel: 'Habits Tab',
-                icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
-                activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                label: context.messages.navTabTitleHabits,
-              ),
-              createNavBarItem(
-                semanticLabel: 'Dashboards Tab',
-                icon: const Icon(Ionicons.bar_chart_outline),
-                activeIcon: const Icon(Ionicons.bar_chart),
-                label: context.messages.navTabTitleInsights,
-              ),
-              createNavBarItem(
-                semanticLabel: 'Logbook Tab',
-                icon: const Icon(Ionicons.book_outline),
-                activeIcon: const Icon(Ionicons.book),
-                label: context.messages.navTabTitleJournal,
-              ),
-              createNavBarItem(
                 semanticLabel: 'Tasks Tab',
                 icon: TasksBadge(
                   child: Icon(MdiIcons.checkboxMarkedCircleOutline),
@@ -125,6 +107,24 @@ class _AppScreenState extends State<AppScreen> {
                   icon: const Icon(Ionicons.calendar),
                 ),
                 label: context.messages.navTabTitleCalendar,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Habits Tab',
+                icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
+                label: context.messages.navTabTitleHabits,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Dashboards Tab',
+                icon: const Icon(Ionicons.bar_chart_outline),
+                activeIcon: const Icon(Ionicons.bar_chart),
+                label: context.messages.navTabTitleInsights,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Logbook Tab',
+                icon: const Icon(Ionicons.book_outline),
+                activeIcon: const Icon(Ionicons.book),
+                label: context.messages.navTabTitleJournal,
               ),
               createNavBarItem(
                 semanticLabel: 'Settings Tab',
