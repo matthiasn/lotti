@@ -846,12 +846,9 @@ class JournalDb extends _$JournalDb {
     );
   }
 
-  Future<List<String>> linksForEntryId(String entryId) {
-    return linkedEntriesFor(entryId).get();
-  }
-
-  Future<List<LinkedDbEntry>> linksForEntryIds(Set<String> ids) async {
-    return linksForIds(ids.toList()).get();
+  Future<List<EntryLink>> linksForEntryIds(Set<String> ids) async {
+    final entryLinks = await linksForIds(ids.toList()).get();
+    return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }
 
   Future<int> upsertEntryLink(EntryLink link) async {
