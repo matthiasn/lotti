@@ -1624,10 +1624,10 @@ packages:
     dependency: "direct main"
     description:
       name: langchain
-      sha256: "98fc0517bf806390938ef3d8388a7a550f78b2b0da3a5cd6571a8907343e7150"
+      sha256: e04fa5e2edf15effcce77c5c6731cb1006bf7eafca5440e771fc264e8eb18991
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6"
+    version: "0.7.7+1"
   langchain_core:
     dependency: transitive
     description:
@@ -1640,10 +1640,10 @@ packages:
     dependency: "direct main"
     description:
       name: langchain_ollama
-      sha256: "6997c565cd8baffca4cea2b7526f808f09010568de35fa0b7ac60400c4fe9bc1"
+      sha256: b5d6ea4f36de402a81479b4262b82e86235837a1d858e334f9b9d03b6a14ab83
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.2"
+    version: "0.3.2+1"
   langchain_tiktoken:
     dependency: transitive
     description:
@@ -2328,10 +2328,10 @@ packages:
     dependency: "direct main"
     description:
       name: research_package
-      sha256: "78b49707171a6bc2a7582797e1c6928882c4a9e484509ee835887406fe63051d"
+      sha256: ba3211709de86e4cfe951f9091cb22761943635456c0533e0fb3864111f8f5f9
       url: "https://pub.dev"
     source: hosted
-    version: "1.7.0"
+    version: "1.7.1"
   resizable_widget:
     dependency: transitive
     description:

@@ -5,7 +5,6 @@ import 'package:lotti/blocs/dashboards/dashboards_page_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/dashboards/dashboards_filter.dart';
-import 'package:lotti/widgets/settings/settings_icon.dart';
 
 class DashboardsSliverAppBar extends StatelessWidget {
   const DashboardsSliverAppBar({
@@ -21,13 +20,9 @@ class DashboardsSliverAppBar extends StatelessWidget {
           titleSpacing: 0,
           scrolledUnderElevation: 10,
           elevation: 10,
-          title: const Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              DashboardsFilter(),
-              SettingsButton('/settings/dashboards'),
-            ],
-          ),
+          actions: const [
+            DashboardsFilter(),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
               context.messages.navTabTitleInsights,
