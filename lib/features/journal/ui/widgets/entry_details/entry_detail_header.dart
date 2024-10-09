@@ -144,6 +144,11 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     ),
                   ),
                   if (isDesktop)
+                    AiPopUpMenu(
+                      journalEntity: entry,
+                      linkedFromId: widget.linkedFromId,
+                    ),
+                  if (isDesktop)
                     SizedBox(
                       width: 40,
                       child: AiPromptIconWidget(
