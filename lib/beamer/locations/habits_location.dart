@@ -2,7 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
-import 'package:lotti/pages/habits/habits_page.dart';
+import 'package:lotti/features/habits/ui/habits_page.dart';
 
 class HabitsLocation extends BeamLocation<BeamState> {
   HabitsLocation(RouteInformation super.routeInformation);
