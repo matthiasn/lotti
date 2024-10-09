@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/ollama_prompt.dart';
+import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/ai/ui/ai_response_preview.dart';
 
 class AiPromptIconWidget extends ConsumerWidget {
@@ -50,14 +51,14 @@ class AiChecklistIconWidget extends ConsumerWidget {
       icon: const Icon(Icons.checklist_rounded),
       tooltip: 'Create checklist items',
       onPressed: () {
-        ref.read(aiResponseProvider.notifier).createChecklistItems(
+        ref.read(aiChecklistResponseProvider.notifier).createChecklistItems(
               journalEntity,
               linkedFromId: linkedFromId,
             );
         showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
-          builder: (BuildContext context) => const AiResponsePreview(),
+          builder: (BuildContext context) => const AiChecklistResponsePreview(),
         );
       },
     );
