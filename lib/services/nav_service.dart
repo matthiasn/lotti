@@ -24,7 +24,7 @@ class NavService {
   String currentPath = '/habits';
   final indexStreamController = StreamController<int>.broadcast();
 
-  int index = 0;
+  int index = tasksIndex;
 
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
@@ -106,7 +106,7 @@ class NavService {
   }
 
   bool isTasksTabActive() {
-    return index == 3;
+    return index == tasksIndex;
   }
 
   void setIndex(int newIndex) {
