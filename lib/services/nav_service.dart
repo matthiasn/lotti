@@ -8,6 +8,13 @@ import 'package:lotti/get_it.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
+const tasksIndex = 0;
+const calendarIndex = 1;
+const habitsIndex = 2;
+const dashboardsIndex = 3;
+const journalIndex = 4;
+const settingsIndex = 5;
+
 class NavService {
   NavService() {
     // TODO: fix and bring back
@@ -41,25 +48,24 @@ class NavService {
   void setPath(String path) {
     currentPath = path;
 
+    if (path.startsWith('/tasks')) {
+      setIndex(tasksIndex);
+    }
+    if (path.startsWith('/calendar')) {
+      setIndex(calendarIndex);
+    }
     if (path.startsWith('/habits')) {
-      setIndex(0);
+      setIndex(habitsIndex);
     }
     if (path.startsWith('/dashboards')) {
-      setIndex(1);
+      setIndex(dashboardsIndex);
     }
     if (path.startsWith('/journal')) {
-      setIndex(2);
-    }
-    if (path.startsWith('/tasks')) {
-      setIndex(3);
-    }
-
-    if (path.startsWith('/calendar')) {
-      setIndex(4);
+      setIndex(journalIndex);
     }
 
     if (path.startsWith('/settings')) {
-      setIndex(5);
+      setIndex(settingsIndex);
     }
 
     emitState();
@@ -67,11 +73,11 @@ class NavService {
 
   BeamerDelegate delegateByIndex(int index) {
     final beamerDelegates = <BeamerDelegate>[
+      tasksDelegate,
+      calendarDelegate,
       habitsDelegate,
       dashboardsDelegate,
       journalDelegate,
-      tasksDelegate,
-      calendarDelegate,
       settingsDelegate,
     ];
 
@@ -79,22 +85,22 @@ class NavService {
   }
 
   void setTabRoot(int newIndex) {
-    if (index == 0) {
-      beamToNamed('/habits');
-    }
-    if (index == 1) {
-      beamToNamed('/dashboards');
-    }
-    if (index == 2) {
-      beamToNamed('/journal');
-    }
-    if (index == 3) {
+    if (index == tasksIndex) {
       beamToNamed('/tasks');
     }
-    if (index == 4) {
+    if (index == calendarIndex) {
       beamToNamed('/calendar');
     }
-    if (index == 5) {
+    if (index == habitsIndex) {
+      beamToNamed('/habits');
+    }
+    if (index == dashboardsIndex) {
+      beamToNamed('/dashboards');
+    }
+    if (index == journalIndex) {
+      beamToNamed('/journal');
+    }
+    if (index == settingsIndex) {
       beamToNamed('/settings');
     }
   }
