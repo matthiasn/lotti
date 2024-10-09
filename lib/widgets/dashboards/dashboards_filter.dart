@@ -45,7 +45,7 @@ class DashboardsFilter extends StatelessWidget {
 
             return IconButton(
               key: const Key('dashboard_category_filter'),
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
               icon: dataMap.isEmpty
                   ? Icon(
                       Icons.filter_alt_off_outlined,

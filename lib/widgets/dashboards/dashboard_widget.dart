@@ -9,7 +9,6 @@ import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
-import 'package:lotti/widgets/settings/settings_icon.dart';
 
 class DashboardWidget extends StatelessWidget {
   const DashboardWidget({
@@ -107,7 +106,6 @@ class DashboardWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              SettingsButton('/settings/dashboards/$dashboardId'),
             ],
           ),
         ],

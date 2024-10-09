@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
+import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
-import 'package:lotti/widgets/habits/habits_filter.dart';
-import 'package:lotti/widgets/habits/status_segmented_control.dart';
-import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitsSliverAppBar extends StatelessWidget {
@@ -53,11 +52,6 @@ class HabitsSliverAppBar extends StatelessWidget {
                             ? Theme.of(context).primaryColor
                             : context.colorScheme.outline,
                       ),
-                    ),
-                    SettingsButton(
-                      state.searchString.isNotEmpty
-                          ? '/settings/habits/search/${state.searchString}'
-                          : '/settings/habits',
                     ),
                     if (state.minY > 20)
                       IconButton(
