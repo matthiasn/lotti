@@ -62,10 +62,13 @@ class AiChecklistResponse extends Notifier<List<ChecklistItemData>> {
     final responseList = json.decode(match?.group(0) ?? '[]') as List<dynamic>;
 
     state = responseList
-        .map((e) => ChecklistItemData(
-              title: e['title'] as String,
-              isChecked: false,
-            ))
+        .map(
+          (e) => ChecklistItemData(
+            // ignore: avoid_dynamic_calls
+            title: e['title'] as String,
+            isChecked: false,
+          ),
+        )
         .toList();
 
     debugPrint(responseList.toString());

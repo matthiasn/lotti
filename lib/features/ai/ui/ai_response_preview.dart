@@ -3,8 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/ollama_prompt.dart';
 import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
-
-import '../../tasks/ui/checkbox_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
 
 class AiResponsePreview extends ConsumerWidget {
   const AiResponsePreview({super.key});
