@@ -75,6 +75,11 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   activeIcon: Icons.flag,
                   activeColor: context.colorScheme.error,
                 ),
+                if (isDesktop)
+                  AiPopUpMenu(
+                    journalEntity: entry,
+                    linkedFromId: widget.linkedFromId,
+                  ),
                 if (!showAllIcons)
                   SizedBox(
                     width: 40,
@@ -143,27 +148,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                       onPressed: () => setState(() => showAllIcons = false),
                     ),
                   ),
-                  if (isDesktop)
-                    AiPopUpMenu(
-                      journalEntity: entry,
-                      linkedFromId: widget.linkedFromId,
-                    ),
-                  if (isDesktop)
-                    SizedBox(
-                      width: 40,
-                      child: AiPromptIconWidget(
-                        journalEntity: entry,
-                        linkedFromId: widget.linkedFromId,
-                      ),
-                    ),
-                  if (isDesktop)
-                    SizedBox(
-                      width: 40,
-                      child: AiChecklistIconWidget(
-                        journalEntity: entry,
-                        linkedFromId: widget.linkedFromId,
-                      ),
-                    ),
                 ],
               ],
             ),
