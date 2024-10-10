@@ -1,4 +1,7 @@
 {
+  "aiAssistantTitle": "AI Assistant",
+  "aiAssistantCreateChecklist": "Create checklist items",
+  "aiAssistantRunPrompt": "Ask Llama3",
   "addActionAddAudioRecording": "Start Audio Recording",
   "addActionAddMeasurable": "Add Measurable",
   "addActionAddPhotos": "Add Photo(s)",

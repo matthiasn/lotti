@@ -28,7 +28,7 @@ class AiResponse extends Notifier<String> {
     }
     final llm = Ollama(
       defaultOptions: const OllamaOptions(
-        model: 'llama2:13b',
+        model: 'llama3:8b',
         temperature: 1,
       ),
     );
