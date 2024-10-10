@@ -38,6 +38,10 @@ class _TaskFormState extends ConsumerState<TaskForm> {
     final save = notifier.save;
     final formKey = entryState?.formKey;
 
+    if (entryState == null) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
