@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -35,7 +36,7 @@ void main() {
 
       when(
         () => mockJournalDb.linksForEntryIds(any()),
-      ).thenAnswer((_) async => <LinkedDbEntry>[]);
+      ).thenAnswer((_) async => <EntryLink>[]);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
