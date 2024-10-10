@@ -18,7 +18,7 @@ class EventForm extends ConsumerStatefulWidget {
     this.focusOnTitle = false,
   });
 
-  final JournalEvent? event;
+  final JournalEvent event;
   final bool focusOnTitle;
 
   @override
@@ -31,20 +31,24 @@ class _EventFormState extends ConsumerState<EventForm> {
   @override
   void initState() {
     super.initState();
-    stars = widget.event?.data.stars ?? stars;
+    stars = widget.event.data.stars;
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.event?.data;
+    final data = widget.event.data;
 
-    final entryId = widget.event!.meta.id;
+    final entryId = widget.event.meta.id;
     final provider = entryControllerProvider(id: entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
     final save = notifier.save;
     final formKey = entryState?.formKey;
+
+    if (entryState == null) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,9 +65,9 @@ class _EventFormState extends ConsumerState<EventForm> {
                 FormBuilderTextField(
                   autofocus: widget.focusOnTitle,
                   focusNode: notifier.eventTitleFocusNode,
-                  initialValue: data?.title ?? '',
+                  initialValue: data.title,
                   decoration: inputDecoration(
-                    labelText: '${data?.title}'.isEmpty
+                    labelText: data.title.isEmpty
                         ? context.messages.eventNameLabel
                         : '',
                     themeData: Theme.of(context),
@@ -84,7 +88,7 @@ class _EventFormState extends ConsumerState<EventForm> {
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 240),
                       child: CategoryField(
-                        categoryId: widget.event?.meta.categoryId,
+                        categoryId: widget.event.meta.categoryId,
                         onSave: (category) {
                           notifier.updateCategoryId(category?.id);
                         },
@@ -101,7 +105,7 @@ class _EventFormState extends ConsumerState<EventForm> {
                           labelText: 'Status:',
                           themeData: Theme.of(context),
                         ),
-                        initialValue: data?.status ?? EventStatus.planned,
+                        initialValue: data.status,
                         items: [
                           dropDownMenuItem(EventStatus.tentative),
                           dropDownMenuItem(EventStatus.planned),
