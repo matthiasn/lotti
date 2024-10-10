@@ -41,8 +41,7 @@ class Maintenance {
     required DateTime end,
   }) async {
     final outboxService = getIt<OutboxService>();
-    final count = double.maxFinite.toInt();
-
+    final count = await _db.countJournalEntries().getSingle();
     const pageSize = 100;
     final pages = (count / pageSize).ceil();
 
@@ -62,6 +61,16 @@ class Maintenance {
             status: SyncEntryStatus.update,
           ),
         );
+
+        final entryLinks = await _db.linksForEntryIds({entry.meta.id});
+        for (final entryLink in entryLinks) {
+          await outboxService.enqueueMessage(
+            SyncMessage.entryLink(
+              status: SyncEntryStatus.update,
+              entryLink: entryLink,
+            ),
+          );
+        }
       }
     }
   }

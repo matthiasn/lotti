@@ -5344,16 +5344,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).map((QueryRow row) => row.read<int>('_c0'));
   }
 
-  Selectable<String> linkedEntriesFor(String fromId) {
-    return customSelect('SELECT to_id FROM linked_entries WHERE from_id = ?1',
-        variables: [
-          Variable<String>(fromId)
-        ],
-        readsFrom: {
-          linkedEntries,
-        }).map((QueryRow row) => row.read<String>('to_id'));
-  }
-
   Selectable<JournalDbEntity> linkedJournalEntities(String fromId) {
     return customSelect(
         'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',

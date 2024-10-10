@@ -539,10 +539,6 @@ SELECT journal_id FROM tagged
 countTagged:
 SELECT COUNT(*) FROM tagged;
 
-linkedEntriesFor:
-SELECT to_id FROM linked_entries
-  WHERE from_id = :from_id;
-
 linkedJournalEntities:
 SELECT * FROM journal
   WHERE deleted = false
