@@ -1,5 +1,6 @@
 {
   "aiAssistantTitle": "AI Assistant",
+  "entryActions": "Entry Actions",
   "aiAssistantCreateChecklist": "Create checklist items",
   "aiAssistantRunPrompt": "Ask Llama3",
   "addActionAddAudioRecording": "Start Audio Recording",

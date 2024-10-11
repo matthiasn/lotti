@@ -14,7 +14,9 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
@@ -80,6 +82,13 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     journalEntity: entry,
                     linkedFromId: widget.linkedFromId,
                   ),
+                IconButton(
+                  icon: const Icon(Icons.more_horiz),
+                  onPressed: () => ExtendedHeaderActions.show(
+                    context: context,
+                    entryId: id,
+                  ),
+                ),
                 if (!showAllIcons)
                   SizedBox(
                     width: 40,
@@ -203,6 +212,81 @@ class SwitchIconWidget extends StatelessWidget {
               )
             : Icon(icon),
       ),
+    );
+  }
+}
+
+class ExtendedHeaderActions {
+  static SliverWoltModalSheetPage page1({
+    required BuildContext context,
+    required TextTheme textTheme,
+    required String entryId,
+  }) {
+    final linkService = getIt<LinkService>();
+
+    return WoltModalSheetPage(
+      hasSabGradient: false,
+      topBarTitle: Text(
+        context.messages.entryActions,
+        style: textTheme.titleLarge,
+      ),
+      isTopBarLayerAlwaysVisible: true,
+      child: Padding(
+        padding: const EdgeInsets.all(WoltModalConfig.pagePadding).copyWith(
+          top: 0,
+        ),
+        child: Column(
+          children: [
+            ShareButtonListTile(entryId: entryId),
+            ListTile(
+              leading: const Icon(Icons.add_link),
+              title: Text(context.messages.journalLinkFromHint),
+              onTap: () {
+                linkService.linkFrom(entryId);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: Icon(MdiIcons.target),
+              title: Text(context.messages.journalLinkToHint),
+              onTap: () {
+                linkService.linkTo(entryId);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Future<void> show({
+    required BuildContext context,
+    required String entryId,
+  }) async {
+    await WoltModalSheet.show<void>(
+      context: context,
+      pageListBuilder: (modalSheetContext) {
+        final textTheme = context.textTheme;
+        return [
+          page1(
+            context: modalSheetContext,
+            textTheme: textTheme,
+            entryId: entryId,
+          ),
+        ];
+      },
+      modalTypeBuilder: (context) {
+        final size = MediaQuery.of(context).size.width;
+        if (size < WoltModalConfig.pageBreakpoint) {
+          return WoltModalType.bottomSheet();
+        } else {
+          return WoltModalType.dialog();
+        }
+      },
+      onModalDismissedWithBarrierTap: () {
+        Navigator.of(context).pop();
+      },
     );
   }
 }
