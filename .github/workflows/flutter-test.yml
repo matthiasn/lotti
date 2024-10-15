@@ -13,7 +13,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install network-manager mpv libmpv-dev
+        run: sudo apt-get install network-manager mpv libmpv-dev sqlite3
       - uses: actions/checkout@v3
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
