@@ -18,10 +18,10 @@ packages:
     dependency: transitive
     description:
       name: accessibility_tools
-      sha256: "7c0b5ac466ea8b971c1b081f3ade0979e6563e8926da62c3b90def78c44dd96b"
+      sha256: ae082866ddc7d4b06d7344f20f551d71302c80070d1e6c5f112f1d09b98de95c
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.2"
+    version: "2.2.3"
   analyzer:
     dependency: "direct dev"
     description:
@@ -66,10 +66,10 @@ packages:
     dependency: transitive
     description:
       name: args
-      sha256: "7cf60b9f0cc88203c5a190b4cd62a99feea42759a7fa695010eb5de1c0b2252a"
+      sha256: bf9f5caeea8d8fe6721a9c358dd8a5c1947b27f1cfaa18b39c301273594919e6
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.6.0"
   async:
     dependency: transitive
     description:
@@ -784,10 +784,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_dotenv
-      sha256: "9357883bdd153ab78cbf9ffa07656e336b8bbb2b5a3ca596b0b27e119f7c7d77"
+      sha256: b7c7be5cd9f6ef7a78429cabd2774d3c4af50e79cb2b7593e3d5d763ef95c61b
       url: "https://pub.dev"
     source: hosted
-    version: "5.1.0"
+    version: "5.2.1"
   flutter_driver:
     dependency: transitive
     description: flutter
@@ -805,10 +805,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_form_builder
-      sha256: b42ad8a9b3e8a629eb0fee8e4feaf7c2862fc40808ebf9f7ddc9da798e890136
+      sha256: c278ef69b08957d484f83413f0e77b656a39b7a7bb4eb8a295da3a820ecc6545
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.1"
+    version: "9.5.0"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -971,10 +971,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: e17575ca576a34b46c58c91f9948891117a1bd97815d2e661813c7f90c647a78
+      sha256: bd9c475d9aae256369edacafc29d1e74c81f78a10cdcdacbbbc9e3c43d009e4a
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.3+2"
+    version: "0.7.4"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -1051,10 +1051,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_riverpod
-      sha256: "0f1974eff5bbe774bf1d870e406fc6f29e3d6f1c46bd9c58e7172ff68a785d7d"
+      sha256: "711d916456563f715bde1e139d7cfdca009f8264befab3ac9f8ded8b6ec26405"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.1"
+    version: "2.5.3"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1403,10 +1403,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_android
-      sha256: d3e5e00fdfeca8fd4ffb3227001264d449cc8950414c2ff70b0e06b9c628e643
+      sha256: d34e0d9e024e81321b2aeed7b202ec6181cc282e6a1c0c0b4e6ad07ef1065d82
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.12+15"
+    version: "0.8.12+16"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1419,10 +1419,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: "6703696ad49f5c3c8356d576d7ace84d1faf459afb07accbb0fae780753ff447"
+      sha256: "4f0568120c6fcc0aaa04511cb9f9f4d29fc3d0139884b1d06be88dcec7641d6b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.12"
+    version: "0.8.12+1"
   image_picker_linux:
     dependency: transitive
     description:
@@ -1712,10 +1712,10 @@ packages:
     dependency: "direct main"
     description:
       name: location
-      sha256: "6463a242973bf247e3fb1c7722919521b98026978ee3b5177202e103a39c145e"
+      sha256: ee57923720163324416ce0306b701db6d845d2c1a3bf44d25b607cbddbaa3973
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "7.0.1"
   location_platform_interface:
     dependency: transitive
     description:
@@ -1728,10 +1728,10 @@ packages:
     dependency: transitive
     description:
       name: location_web
-      sha256: "613597b489beb396f658c6f4358dd383c5ed0a1402d95e287642a5f2d8171cb0"
+      sha256: e6435cfd175b0f6e94d6fdc43c104d13cec7e27b21a8cee00bd9516a3d6a4c81
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.3"
+    version: "5.0.4"
   logger:
     dependency: transitive
     description:
@@ -2056,10 +2056,10 @@ packages:
     dependency: "direct main"
     description:
       name: photo_manager
-      sha256: "32a1ce1095aeaaa792a29f28c1f74613aa75109f21c2d4ab85be3ad9964230a4"
+      sha256: "70159eee32203e8162d49d588232f0299ed3f383c63eef1e899cb6b83dee6b26"
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.0"
+    version: "3.5.1"
   photo_manager_image_provider:
     dependency: transitive
     description:
@@ -2344,10 +2344,10 @@ packages:
     dependency: transitive
     description:
       name: riverpod
-      sha256: f21b32ffd26a36555e501b04f4a5dca43ed59e16343f1a30c13632b2351dfa4d
+      sha256: c86fedfb45dd1da98ee6493dd9374325cdf494e7d523ebfb0c387eecc5f7b5c9
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.1"
+    version: "2.5.3"
   riverpod_analyzer_utils:
     dependency: transitive
     description:
@@ -2360,10 +2360,10 @@ packages:
     dependency: "direct main"
     description:
       name: riverpod_annotation
-      sha256: e5e796c0eba4030c704e9dae1b834a6541814963292839dcf9638d53eba84f5c
+      sha256: "77fdedb87d09344809e8b514ab864d0537b1cb580a93d09bf579b0403aa6203a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.5"
+    version: "2.5.3"
   riverpod_generator:
     dependency: "direct dev"
     description:
@@ -2741,18 +2741,18 @@ packages:
     dependency: transitive
     description:
       name: super_clipboard
-      sha256: bfbfc602becb256c675c37332a0c5083a870f20806092938a247c36b3d6ecb88
+      sha256: "4a6ae6dfaa282ec1f2bff750976f535517ed8ca842d5deae13985eb11c00ac1f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.23"
+    version: "0.8.24"
   super_native_extensions:
     dependency: transitive
     description:
       name: super_native_extensions
-      sha256: "8fe12946dbee374937eacb8aea2658369e66306708319675fda641f7f13874ac"
+      sha256: a433bba8186cd6b707560c42535bf284804665231c00bca86faf1aa4968b7637
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.23"
+    version: "0.8.24"
   sync_http:
     dependency: transitive
     description:
@@ -3029,10 +3029,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: b176e047ead64968d07bc36e7a60bcd471455f2bcba3997814e4c2a8596b5fc8
+      sha256: "340b29bc38b2c341ed3afa08148f3d9f351220403cdd2b3a9eb38b71a4be1a9d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.11"
+    version: "2.7.12"
   video_player_avfoundation:
     dependency: transitive
     description:
@@ -3165,10 +3165,10 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: "4d45dc9069dba4619dc0ebd93c7cec5e66d8482cb625a370ac806dcc8165f2ec"
+      sha256: e5c39a90447e7c81cfec14b041cdbd0d0916bd9ebbc7fe02ab69568be703b9bd
       url: "https://pub.dev"
     source: hosted
-    version: "5.5.5"
+    version: "5.6.0"
   win32_registry:
     dependency: transitive
     description:
@@ -3229,10 +3229,10 @@ packages:
     dependency: transitive
     description:
       name: youtube_explode_dart
-      sha256: "28dca07fefb4b6518beab95f0c1ef81031f921ed0fe87ebcd9c51378546edfee"
+      sha256: "523a01ef948607d3e8fdcdcdcef1ce805c7d26480f609e3b209d1c73520a6c3c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.3"
+    version: "2.3.1"
 sdks:
   dart: ">=3.5.1 <4.0.0"
   flutter: ">=3.24.0"
