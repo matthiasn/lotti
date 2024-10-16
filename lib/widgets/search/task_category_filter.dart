@@ -23,17 +23,21 @@ class _TaskCategoryFilterState extends State<TaskCategoryFilter> {
   Widget build(BuildContext context) {
     final categories = getIt<EntitiesCacheService>().sortedCategories;
 
-    final filteredCategories = _showAll
-        ? categories
-        : categories.where((category) => category.favorite ?? false).toList();
-
-    if (categories.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, state) {
         final cubit = context.read<JournalPageCubit>();
+
+        final filteredCategories = _showAll
+            ? categories
+            : categories.where((category) {
+                final isSelected =
+                    state.selectedCategoryIds.contains(category.id);
+                return category.favorite ?? isSelected;
+              }).toList();
+
+        if (categories.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
