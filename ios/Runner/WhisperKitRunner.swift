@@ -46,7 +46,7 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         decodeOptions: DecodingOptions(
                             task: DecodingTask.transcribe,
                             language: detectLanguage ? nil : language,
-                            usePrefillPrompt: false,
+                            usePrefillPrompt: !detectLanguage,
                             detectLanguage: detectLanguage
                         ),
                         callback: self.sendTranscriptionProgressEvent
