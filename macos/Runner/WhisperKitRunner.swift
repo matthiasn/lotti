@@ -26,36 +26,45 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
             switch call.method {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
-                let audioFilePath = args["audioFilePath"] as! String
-                let model = args["model"] as! String
-                let language = args["language"] as! String
-                let detectLanguage = language.isEmpty
-                
+               
                 Task {
-                    if (self.whisperKit == nil || self.whisperKit?.modelVariant.description != model) {
-                        if (self.eventSink != nil) {
-                            self.eventSink!(["Initializing model...", ""])
+                    do {
+                        let audioFilePath = args["audioFilePath"] as! String
+                        let model = args["model"] as! String
+                        let language = args["language"] as! String
+                        let detectLanguage = language.isEmpty
+                        
+                        if (self.whisperKit == nil ||
+                            self.whisperKit?.modelVariant.description != model ||
+                            self.whisperKit?.modelState != ModelState.loaded) {
+                            if (self.eventSink != nil) {
+                                self.eventSink!(["Initializing model...", ""])
+                            }
+                            self.whisperKit = try await WhisperKit(model: model,
+                                                                   verbose: true,
+                                                                   prewarm: true)
                         }
-                        self.whisperKit = try? await WhisperKit(model: model,
-                                                                verbose: true,
-                                                                prewarm: true)
+                        
+                        let transcription = try await self.whisperKit!.transcribe(
+                            audioPath: audioFilePath,
+                            decodeOptions: DecodingOptions(
+                                task: DecodingTask.transcribe,
+                                language: detectLanguage ? nil : language,
+                                usePrefillPrompt: !detectLanguage,
+                                detectLanguage: detectLanguage
+                            ),
+                            callback: self.sendTranscriptionProgressEvent
+                        )
+                        
+                        let text : String? = transcription.first?.text
+                        let detectedLanguage = transcription.first?.language
+                        let data = [detectedLanguage, self.whisperKit?.modelVariant.description, text]
+                        result(data)
+                    } catch {
+                        if (self.eventSink != nil) {
+                            self.eventSink!(["Failed to transcribe audio: \(error)", ""])
+                        }
                     }
-                    
-                    let transcription = try? await self.whisperKit!.transcribe(
-                        audioPath: audioFilePath,
-                        decodeOptions: DecodingOptions(
-                            task: DecodingTask.transcribe,
-                            language: detectLanguage ? nil : language,
-                            usePrefillPrompt: !detectLanguage,
-                            detectLanguage: detectLanguage
-                        ),
-                        callback: self.sendTranscriptionProgressEvent
-                    )
-                    
-                    let text : String? = transcription?.first?.text
-                    let detectedLanguage = transcription?.first?.language
-                    let data = [detectedLanguage, self.whisperKit?.modelVariant.description, text]
-                    result(data)
                 }
             default:
                 result(FlutterMethodNotImplemented)
