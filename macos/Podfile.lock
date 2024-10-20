@@ -47,6 +47,8 @@ PODS:
   - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
+  - quill_native_bridge_macos (0.0.1):
+    - FlutterMacOS
   - record_darwin (1.0.0):
     - Flutter
     - FlutterMacOS
@@ -109,6 +111,7 @@ DEPENDENCIES:
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
+  - quill_native_bridge_macos (from `Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos`)
   - record_darwin (from `Flutter/ephemeral/.symlinks/plugins/record_darwin/macos`)
   - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
   - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
@@ -166,6 +169,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   photo_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/macos
+  quill_native_bridge_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos
   record_darwin:
     :path: Flutter/ephemeral/.symlinks/plugins/record_darwin/macos
   screen_retriever:
@@ -189,7 +194,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
-  device_info_plus: f1aae8670672f75c4c8850ecbe0b2ddef62b0a22
+  device_info_plus: 74e614483d05c89290d30a4c8feae15d555f7427
   ffmpeg-kit-macos-https: 60de703db964ccca7fd0d4d1611f4c102a8139cc
   ffmpeg_kit_flutter: 5bd75928cf88ec177cea410b027681e4bfe09452
   file_selector_macos: cc3858c981fe6889f364731200d6232dac1d812d
@@ -207,12 +212,13 @@ SPEC CHECKSUMS:
   media_kit_libs_macos_audio: 3871782a4f3f84c77f04d7666c87800a781c24da
   media_kit_native_event_loop: 7321675377cb9ae8596a29bddf3a3d2b5e8792c5
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
-  package_info_plus: d2f71247aab4b6521434f887276093acc70d214c
+  package_info_plus: f5790acc797bf17c3e959e9d6cf162cc68ff7523
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
+  quill_native_bridge_macos: f90985c5269ac7ba84d933605b463d96e5f544fe
   record_darwin: df0a677188e5fed18472550298e675f19ddaffbe
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
-  share_plus: a182a58e04e51647c0481aadabbc4de44b3a2bce
+  share_plus: fd717ef89a2801d3491e737630112b80c310640e
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
   sqflite_darwin: a553b1fd6fe66f53bbb0fe5b4f5bab93f08d7a13
   sqlite3: 0bb0e6389d824e40296f531b858a2a0b71c0d2fb
