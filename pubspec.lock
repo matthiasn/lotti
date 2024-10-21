@@ -2383,10 +2383,11 @@ packages:
   research_package:
     dependency: "direct main"
     description:
-      name: research_package
-      sha256: ba3211709de86e4cfe951f9091cb22761943635456c0533e0fb3864111f8f5f9
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "54f41c1d"
+      resolved-ref: "54f41c1d6dc019415428705a582af36013d95474"
+      url: "https://github.com/matthiasn/research.package"
+    source: git
     version: "1.7.1"
   resizable_widget:
     dependency: transitive

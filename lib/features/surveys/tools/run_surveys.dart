@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/pages/create/fill_survey_page.dart';
-import 'package:lotti/surveys/calculate.dart';
-import 'package:lotti/surveys/cfq11_survey.dart';
-import 'package:lotti/surveys/panas_survey.dart';
+import 'package:lotti/features/surveys/definitions/cfq11_survey.dart';
+import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
+import 'package:lotti/features/surveys/definitions/panas_survey.dart';
+import 'package:lotti/features/surveys/tools/calculate.dart';
+import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:research_package/research_package.dart';
 
 Future<void> runSurvey({
@@ -70,6 +71,23 @@ void runCfq11({
     themeData: themeData,
     resultCallback: createResultCallback(
       scoreDefinitions: cfq11ScoreDefinitions,
+      context: context,
+      linkedId: linkedId,
+    ),
+  );
+}
+
+void runGhq12({
+  required BuildContext context,
+  required ThemeData themeData,
+  String? linkedId,
+}) {
+  runSurvey(
+    context: context,
+    task: ghq12SurveyTask,
+    themeData: themeData,
+    resultCallback: createResultCallback(
+      scoreDefinitions: ghq12ScoreDefinitions,
       context: context,
       linkedId: linkedId,
     ),
