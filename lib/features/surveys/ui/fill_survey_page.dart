@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
