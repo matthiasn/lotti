@@ -7,14 +7,24 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+const panasSurveyTaskName = 'panasSurveyTask';
+const cfq11SurveyTaskName = 'cfq11SurveyTask';
+const ghq12SurveyTaskName = 'ghq12SurveyTask';
+
 DashboardSurveyItem cfq11SurveyChart = const DashboardSurveyItem(
   surveyType: 'cfq11SurveyTask',
   surveyName: 'CFQ11',
   colorsByScoreKey: {'CFQ11': '#82E6CE'},
 );
 
+DashboardSurveyItem ghq12SurveyChart = const DashboardSurveyItem(
+  surveyType: ghq12SurveyTaskName,
+  surveyName: 'GHQ12',
+  colorsByScoreKey: {'GHQ12': '#82E6CE'},
+);
+
 DashboardSurveyItem panasSurveyChart = const DashboardSurveyItem(
-  surveyType: 'panasSurveyTask',
+  surveyType: panasSurveyTaskName,
   surveyName: 'PANAS',
   colorsByScoreKey: {
     'Positive Affect Score': '#00FF00',
@@ -23,8 +33,9 @@ DashboardSurveyItem panasSurveyChart = const DashboardSurveyItem(
 );
 
 Map<String, DashboardSurveyItem> surveyTypes = {
-  'cfq11SurveyTask': cfq11SurveyChart,
-  'panasSurveyTask': panasSurveyChart,
+  cfq11SurveyTaskName: cfq11SurveyChart,
+  ghq12SurveyTaskName: ghq12SurveyChart,
+  panasSurveyTaskName: panasSurveyChart,
 };
 
 List<Observation> aggregateSurvey({

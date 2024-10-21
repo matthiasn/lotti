@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
@@ -40,14 +40,20 @@ class DashboardSurveyChart extends StatelessWidget {
         final items = snapshot.data ?? [];
 
         void onTapAdd() {
-          if (chartConfig.surveyType == 'cfq11SurveyTask') {
+          if (chartConfig.surveyType == cfq11SurveyTaskName) {
             runCfq11(
               context: context,
               themeData: Theme.of(context),
             );
           }
-          if (chartConfig.surveyType == 'panasSurveyTask') {
+          if (chartConfig.surveyType == panasSurveyTaskName) {
             runPanas(
+              context: context,
+              themeData: Theme.of(context),
+            );
+          }
+          if (chartConfig.surveyType == ghq12SurveyTaskName) {
+            runGhq12(
               context: context,
               themeData: Theme.of(context),
             );
