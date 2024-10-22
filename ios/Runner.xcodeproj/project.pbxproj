@@ -13,8 +13,8 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		AD72C7632BBB1C3C00B50833 /* WhisperKitRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD72C7622BBB1C3C00B50833 /* WhisperKitRunner.swift */; };
 		ADB650B7270B3C4300B98C66 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADB650B6270B3C4300B98C66 /* HealthKit.framework */; };
+		ADDE424D2CC70E4700832FB2 /* WhisperKitRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDE424C2CC70E4700832FB2 /* WhisperKitRunner.swift */; };
 		ADFF30672BB4FE6300B8F8C8 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = ADFF30662BB4FE6300B8F8C8 /* WhisperKit */; };
 		FD4BDDFBB85CAB6754042A0B /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E08CACAFD56E1EF268BBD8C5 /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -49,10 +49,10 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD0869BB271438AF00225DF9 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Flutter/Base.xcconfig; sourceTree = "<group>"; };
-		AD72C7622BBB1C3C00B50833 /* WhisperKitRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitRunner.swift; sourceTree = "<group>"; };
 		ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
 		ADB650B5270B3C4300B98C66 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		ADB650B6270B3C4300B98C66 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		ADDE424C2CC70E4700832FB2 /* WhisperKitRunner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WhisperKitRunner.swift; path = ../../darwin/WhisperKitRunner.swift; sourceTree = "<group>"; };
 		ADEF534728103FDF00F29D25 /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		E08CACAFD56E1EF268BBD8C5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F9EF5E47E2CAAE216BAF45A3 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
@@ -115,6 +115,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				ADDE424C2CC70E4700832FB2 /* WhisperKitRunner.swift */,
 				ADEF534728103FDF00F29D25 /* RunnerDebug.entitlements */,
 				ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */,
 				ADB650B5270B3C4300B98C66 /* Runner.entitlements */,
@@ -126,7 +127,6 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
-				AD72C7622BBB1C3C00B50833 /* WhisperKitRunner.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -297,7 +297,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AD72C7632BBB1C3C00B50833 /* WhisperKitRunner.swift in Sources */,
+				ADDE424D2CC70E4700832FB2 /* WhisperKitRunner.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
