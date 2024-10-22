@@ -1,5 +1,11 @@
 import Foundation
+
+#if os(OSX)
 import FlutterMacOS
+#elseif os(iOS)
+import Flutter
+#endif
+
 import WhisperKit
 
 public class WhisperKitRunner: NSObject, FlutterStreamHandler {
@@ -26,7 +32,7 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
             switch call.method {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
-               
+                
                 Task {
                     do {
                         let audioFilePath = args["audioFilePath"] as! String
@@ -37,33 +43,38 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         if (self.whisperKit == nil ||
                             self.whisperKit?.modelVariant.description != model ||
                             self.whisperKit?.modelState != ModelState.loaded) {
-                            if (self.eventSink != nil) {
-                                self.eventSink!(["Initializing model...", ""])
-                            }
+                            self.eventSink?(["Initializing model...", ""])
+                            
+                            await self.whisperKit?.unloadModels()
                             self.whisperKit = try await WhisperKit(model: model,
                                                                    verbose: true,
                                                                    prewarm: true)
                         }
                         
-                        let transcription = try await self.whisperKit!.transcribe(
-                            audioPath: audioFilePath,
-                            decodeOptions: DecodingOptions(
-                                task: DecodingTask.transcribe,
-                                language: detectLanguage ? nil : language,
-                                usePrefillPrompt: !detectLanguage,
-                                detectLanguage: detectLanguage
-                            ),
-                            callback: self.sendTranscriptionProgressEvent
-                        )
-                        
-                        let text : String? = transcription.first?.text
-                        let detectedLanguage = transcription.first?.language
-                        let data = [detectedLanguage, self.whisperKit?.modelVariant.description, text]
-                        result(data)
-                    } catch {
-                        if (self.eventSink != nil) {
-                            self.eventSink!(["Failed to transcribe audio: \(error)", ""])
+                        if (self.whisperKit == nil) {
+                            self.eventSink?(["Failed to load model", ""])
+                        } else {
+                            let transcription = try await self.whisperKit?.transcribe(
+                                audioPath: audioFilePath,
+                                decodeOptions: DecodingOptions(
+                                    task: DecodingTask.transcribe,
+                                    language: detectLanguage ? nil : language,
+                                    usePrefillPrompt: !detectLanguage,
+                                    detectLanguage: detectLanguage
+                                ),
+                                callback: self.sendTranscriptionProgressEvent
+                            )
+                            
+                            let text : String? = transcription?.first?.text
+                            let detectedLanguage = transcription?.first?.language
+                            let data = [detectedLanguage, self.whisperKit?.modelVariant.description, text]
+                            result(data)
                         }
+                        
+                        
+                    } catch {
+                        self.eventSink?(["Failed to transcribe audio: \(error)", ""])
+                        
                     }
                 }
             default:
