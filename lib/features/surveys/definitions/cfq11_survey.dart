@@ -1,53 +1,22 @@
 import 'package:research_package/model.dart';
 
-List<RPChoice> cqf11Choices = [
-  RPChoice(text: '0—Better than usual', value: 0),
-  RPChoice(text: '1—No worse than usual', value: 1),
-  RPChoice(text: '2—Worse than usual', value: 2),
-  RPChoice(text: '3—Much worse than usual', value: 3),
-];
-
-// ignore: unused-code
-RPChoiceAnswerFormat cfq11AnswerFormat = RPChoiceAnswerFormat(
+final cfq11AnswerFormat = RPChoiceAnswerFormat(
   answerStyle: RPChoiceAnswerStyle.SingleChoice,
-  choices: cqf11Choices,
+  choices: [
+    RPChoice(text: 'Better than usual', value: 0),
+    RPChoice(text: 'No worse than usual', value: 1),
+    RPChoice(text: 'Worse than usual', value: 2),
+    RPChoice(text: 'Much worse than usual', value: 3),
+  ],
 );
 
-List<RPImageChoice> cfq11Images = [
-  RPImageChoice(
-    imageUrl: 'assets/icons/survey_0.png',
-    value: 0,
-    description: 'Better than usual',
-  ),
-  RPImageChoice(
-    imageUrl: 'assets/icons/survey_1.png',
-    value: 1,
-    description: 'No worse than usual',
-  ),
-  RPImageChoice(
-    imageUrl: 'assets/icons/survey_2.png',
-    value: 2,
-    description: 'Worse than usual',
-  ),
-  RPImageChoice(
-    imageUrl: 'assets/icons/survey_3.png',
-    value: 3,
-    description: 'Much worse than usual',
-  ),
-];
-
-RPImageChoiceAnswerFormat cfq11ImageChoiceAnswerFormat =
-    RPImageChoiceAnswerFormat(
-  choices: cfq11Images,
-);
-
-RPCompletionStep cfq11CompletionStep = RPCompletionStep(
+final cfq11CompletionStep = RPCompletionStep(
   identifier: 'cfq11Completion',
   title: 'Finished',
   text: 'Thank you for filling out the CFQ11!',
 );
 
-RPInstructionStep cfq11InstructionStep = RPInstructionStep(
+final cfq11InstructionStep = RPInstructionStep(
   identifier: 'cfq11Instructions',
   title: 'Chalder Fatigue Scale (CFQ 11)',
   text:
@@ -66,64 +35,64 @@ RPInstructionStep cfq11InstructionStep = RPInstructionStep(
       'community settings." J Psychosom Res 69(1): 17-22.',
 );
 
-RPOrderedTask cfq11SurveyTask = RPOrderedTask(
+final cfq11SurveyTask = RPOrderedTask(
   identifier: 'cfq11SurveyTask',
   steps: [
     cfq11InstructionStep,
     RPQuestionStep(
       identifier: 'cfq11Step1',
       title: 'Do you have problems with tiredness?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step2',
       title: 'Do you need to rest more?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step3',
       title: 'Do you feel sleepy or drowsy?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step4',
       title: 'Do you have problems starting things?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step5',
       title: 'Do you lack energy?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step6',
       title: 'Do you have less strength in your muscles?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step7',
       title: 'Do you feel weak?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step8',
       title: 'Do you have difficulty concentrating?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step9',
       title: 'Do you make slips of the tongue when speaking?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step10',
       title: 'Do you find it more difficult to find the right word?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     RPQuestionStep(
       identifier: 'cfq11Step11',
       title: 'How is your memory?',
-      answerFormat: cfq11ImageChoiceAnswerFormat,
+      answerFormat: cfq11AnswerFormat,
     ),
     cfq11CompletionStep,
   ],
