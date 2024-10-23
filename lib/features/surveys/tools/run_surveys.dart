@@ -4,10 +4,9 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:research_package/research_package.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
-import '../../../widgets/misc/wolt_modal_config.dart';
 
 Future<void> runSurvey({
   required RPOrderedTask task,
@@ -38,7 +37,7 @@ Future<void> runSurvey({
             ),
             child: SurveyWidget(task, resultCallback),
           ),
-        )
+        ),
       ];
     },
     modalTypeBuilder: (context) {

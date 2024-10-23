@@ -32,7 +32,7 @@ class SurveyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxHeight: 500),
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 20, left: 10, right: 10),
       child: RPUITask(
         task: task,
         onSubmit: resultCallback,
