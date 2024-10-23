@@ -2384,8 +2384,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "54f41c1d"
-      resolved-ref: "54f41c1d6dc019415428705a582af36013d95474"
+      ref: "1e930f7e"
+      resolved-ref: "1e930f7e5fa145de07495674bc5d8fc54473318e"
       url: "https://github.com/matthiasn/research.package"
     source: git
     version: "1.7.1"
