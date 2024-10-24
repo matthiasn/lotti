@@ -30,21 +30,19 @@ class SurveyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
+    return Container(
       constraints: const BoxConstraints(maxHeight: 500),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: RPUITask(
-          task: task,
-          onSubmit: resultCallback,
-          onCancel: (RPTaskResult? result) {
-            if (result == null) {
-              debugPrint('No result');
-            } else {
-              cancelCallBack(result);
-            }
-          },
-        ),
+      padding: const EdgeInsets.only(bottom: 20, left: 10, right: 10),
+      child: RPUITask(
+        task: task,
+        onSubmit: resultCallback,
+        onCancel: (RPTaskResult? result) {
+          if (result == null) {
+            debugPrint('No result');
+          } else {
+            cancelCallBack(result);
+          }
+        },
       ),
     );
   }
