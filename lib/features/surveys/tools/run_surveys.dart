@@ -4,7 +4,9 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:research_package/research_package.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 Future<void> runSurvey({
   required RPOrderedTask task,
@@ -12,50 +14,39 @@ Future<void> runSurvey({
   required void Function(RPTaskResult) resultCallback,
   required BuildContext context,
 }) async {
-  await showModalBottomSheet<void>(
+  await WoltModalSheet.show<void>(
     context: context,
     useRootNavigator: true,
-    builder: (BuildContext context) {
-      // final textColor = themeData.textTheme.titleMedium?.color ?? Colors.grey;
-
-      return Theme(
-        data: themeData.copyWith(
-          scaffoldBackgroundColor: Colors.transparent,
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              foregroundColor: themeData.colorScheme.onPrimary,
+    useSafeArea: true,
+    pageListBuilder: (modalSheetContext) {
+      return [
+        WoltModalSheetPage(
+          backgroundColor: themeData.canvasColor,
+          child: Theme(
+            data: themeData.copyWith(
+              scaffoldBackgroundColor: Colors.transparent,
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: themeData.colorScheme.onPrimary,
+                ),
+              ),
+              textTheme: themeData.textTheme.copyWith(
+                bodyLarge: themeData.textTheme.bodyMedium,
+                headlineSmall: themeData.textTheme.bodyLarge,
+              ),
             ),
+            child: SurveyWidget(task, resultCallback),
           ),
-          textTheme: themeData.textTheme.apply(
-            fontFamily: 'PlusJakartaSans',
-          )
-          /*  .copyWith(
-                // TODO: remove deprecated usage
-                // ignore: deprecated_member_use
-                headline3: TextStyle(
-                  fontSize: fontSizeLarge,
-                  fontFamily: 'PlusJakartaSans',
-                  color: textColor,
-                ),
-                // TODO: remove deprecated usage
-                // ignore: deprecated_member_use
-                headline5: TextStyle(
-                  fontSize: fontSizeMedium,
-                  color: textColor,
-                  fontFamily: 'PlusJakartaSans',
-                ),
-                // TODO: remove deprecated usage
-                // ignore: deprecated_member_use
-                headline6: TextStyle(
-                  color: textColor,
-                  fontSize: fontSizeMedium,
-                  fontFamily: 'PlusJakartaSans',
-                ),
-              )*/
-          ,
         ),
-        child: SurveyWidget(task, resultCallback),
-      );
+      ];
+    },
+    modalTypeBuilder: (context) {
+      final size = MediaQuery.of(context).size.width;
+      if (size < WoltModalConfig.pageBreakpoint) {
+        return WoltModalType.bottomSheet();
+      } else {
+        return WoltModalType.dialog();
+      }
     },
   );
 }
