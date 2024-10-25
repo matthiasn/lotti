@@ -5,8 +5,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
-class DeleteIconWidget extends ConsumerWidget {
-  const DeleteIconWidget({
+class DeleteIconListTile extends ConsumerWidget {
+  const DeleteIconListTile({
     required this.entryId,
     required this.beamBack,
     super.key,
@@ -43,15 +43,15 @@ class DeleteIconWidget extends ConsumerWidget {
       }
     }
 
-    return SizedBox(
-      width: 40,
-      child: IconButton(
-        icon: const Icon(Icons.delete_outline_rounded),
-        splashColor: Colors.transparent,
-        tooltip: context.messages.journalDeleteHint,
-        padding: EdgeInsets.zero,
-        onPressed: onPressed,
-      ),
+    return ListTile(
+      leading: const Icon(Icons.delete_outline_rounded),
+      title: Text(context.messages.journalDeleteHint),
+      onTap: () async {
+        await onPressed();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 }
