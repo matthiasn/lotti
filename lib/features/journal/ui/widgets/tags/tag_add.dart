@@ -7,8 +7,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class TagAddIconWidget extends ConsumerWidget {
-  TagAddIconWidget({
+class TagAddListTile extends ConsumerWidget {
+  TagAddListTile({
     required this.entryId,
     super.key,
   });
@@ -36,14 +36,10 @@ class TagAddIconWidget extends ConsumerWidget {
       );
     }
 
-    return SizedBox(
-      width: 40,
-      child: IconButton(
-        onPressed: onTapAdd,
-        icon: Icon(MdiIcons.tag),
-        splashColor: Colors.transparent,
-        tooltip: context.messages.journalTagPlusHint,
-      ),
+    return ListTile(
+      leading: Icon(MdiIcons.tag),
+      title: Text(context.messages.journalTagPlusHint),
+      onTap: onTapAdd,
     );
   }
 }
