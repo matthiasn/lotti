@@ -1,5 +1,6 @@
 {
   "aiAssistantTitle": "AI Assistant",
+  "entryActions": "Entry Actions",
   "aiAssistantCreateChecklist": "Create checklist items",
   "aiAssistantRunPrompt": "Ask Llama3",
   "addActionAddAudioRecording": "Start Audio Recording",
@@ -118,6 +119,7 @@
   "journalLinkFromHint": "Link from",
   "journalLinkToHint": "Link to",
   "journalPrivateTooltip": "private only",
+  "journalPrivateTitle": "Toggle private mode",
   "journalSearchHint": "Search journal...",
   "journalShareAudioHint": "Share audio",
   "journalSharePhotoHint": "Share photo",

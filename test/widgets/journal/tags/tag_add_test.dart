@@ -67,7 +67,7 @@ void main() {
     testWidgets('Icon tap opens modal', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          TagAddIconWidget(entryId: testTextEntry.meta.id),
+          TagAddListTile(entryId: testTextEntry.meta.id),
         ),
       );
 
