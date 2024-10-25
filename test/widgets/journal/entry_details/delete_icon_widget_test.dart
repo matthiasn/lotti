@@ -40,7 +40,7 @@ void main() {
     testWidgets('calls delete in cubit', (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DeleteIconWidget(
+          DeleteIconListTile(
             entryId: testTextEntry.meta.id,
             beamBack: true,
           ),
