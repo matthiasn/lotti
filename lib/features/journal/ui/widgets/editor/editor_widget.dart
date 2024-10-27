@@ -55,7 +55,11 @@ class EditorWidget extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (shouldShowEditorToolBar) ToolbarWidget(controller: controller),
+            if (shouldShowEditorToolBar)
+              ToolbarWidget(
+                controller: controller,
+                entryId: entryId,
+              ),
             Flexible(
               child: QuillEditor(
                 controller: controller,

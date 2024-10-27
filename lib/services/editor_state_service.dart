@@ -117,4 +117,6 @@ class EditorStateService {
       unsavedStreamController.add(false);
     }
   }
+
+  bool entryIsUnsaved(String id) => editorStateById.containsKey(id);
 }
