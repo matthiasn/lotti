@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:core';
 import 'dart:math';
 
@@ -128,7 +129,9 @@ List<String> daysInRange({
   required DateTime rangeEnd,
 }) {
   final range = rangeEnd.difference(rangeStart);
-  return getDayStrings(range.inDays + 1, rangeStart);
+  return LinkedHashSet<String>.from(
+    getDayStrings(range.inDays + 1, rangeStart),
+  ).toList();
 }
 
 List<Observation> aggregateMaxByDay(
