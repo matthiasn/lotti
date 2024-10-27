@@ -72,6 +72,7 @@ class EntryController extends _$EntryController {
   final FocusNode focusNode = FocusNode();
   final FocusNode taskTitleFocusNode = FocusNode();
   final FocusNode eventTitleFocusNode = FocusNode();
+  bool animationCompleted = false;
 
   bool _dirty = false;
   bool _isFocused = false;
@@ -95,6 +96,9 @@ class EntryController extends _$EntryController {
         final latest = await _fetch();
         if (latest != state.value?.entry) {
           state = AsyncData(state.value?.copyWith(entry: latest));
+          if (!_dirty && !_editorStateService.entryIsUnsaved(id)) {
+            setController();
+          }
         }
       }
     });
