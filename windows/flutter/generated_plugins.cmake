@@ -10,7 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   irondash_engine_context
   media_kit_libs_windows_audio
   record_windows
-  screen_retriever
+  screen_retriever_windows
   share_plus
   sqlite3_flutter_libs
   super_native_extensions
