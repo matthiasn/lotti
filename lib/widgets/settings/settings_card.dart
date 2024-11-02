@@ -13,7 +13,7 @@ class SettingsCard extends StatelessWidget {
     this.trailing,
     this.contentPadding = const EdgeInsets.symmetric(
       horizontal: 25,
-      vertical: 5,
+      vertical: 2,
     ),
   });
 
@@ -27,7 +27,7 @@ class SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Material(
       child: ListTile(
         contentPadding: contentPadding,
         title: Text(
@@ -53,6 +53,10 @@ class SettingsNavCard extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 25,
+      vertical: 2,
+    ),
   });
 
   final String title;
@@ -61,16 +65,23 @@ class SettingsNavCard extends StatelessWidget {
   final Widget? subtitle;
   final Widget? leading;
   final Widget? trailing;
+  final EdgeInsets? contentPadding;
 
   @override
   Widget build(BuildContext context) {
-    return SettingsCard(
-      title: title,
-      semanticsLabel: semanticsLabel,
-      subtitle: subtitle,
-      leading: leading,
-      trailing: trailing,
-      onTap: () => beamToNamed(path),
+    return Material(
+      child: ListTile(
+        contentPadding: contentPadding,
+        title: Text(
+          title,
+          semanticsLabel: semanticsLabel,
+          style: settingsCardTextStyle,
+        ),
+        subtitle: subtitle,
+        leading: leading,
+        trailing: trailing,
+        onTap: () => beamToNamed(path),
+      ),
     );
   }
 }
