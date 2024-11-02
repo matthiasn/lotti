@@ -17,10 +17,12 @@ class DashboardDefinitionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final description = dashboard.description;
     return SettingsNavCard(
       path: '/settings/dashboards/${dashboard.id}',
       title: dashboard.name,
       leading: CategoryColorIcon(dashboard.categoryId),
+      subtitle: description.isNotEmpty ? Text(description) : null,
       trailing: Visibility(
         visible: dashboard.private,
         child: Icon(
