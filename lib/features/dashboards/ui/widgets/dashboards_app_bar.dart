@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/dashboards/dashboards_page_cubit.dart';
 import 'package:lotti/blocs/dashboards/dashboards_page_state.dart';
+import 'package:lotti/features/dashboards/ui/widgets/dashboards_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/dashboards/dashboards_filter.dart';
 
 class DashboardsSliverAppBar extends StatelessWidget {
   const DashboardsSliverAppBar({
