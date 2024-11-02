@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/dashboards/dashboards_page_cubit.dart';
+import 'package:lotti/features/dashboards/ui/widgets/dashboards_app_bar.dart';
+import 'package:lotti/features/dashboards/ui/widgets/dashboards_list.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/dashboards/dashboards_app_bar.dart';
-import 'package:lotti/widgets/dashboards/dashboards_list.dart';
 
 class DashboardsListPage extends StatefulWidget {
   const DashboardsListPage({super.key});

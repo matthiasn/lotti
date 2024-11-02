@@ -19,7 +19,7 @@ class DashboardSettingsPage extends StatelessWidget {
         semanticLabel: 'Add Dashboard',
       ),
       title: context.messages.settingsDashboardsTitle,
-      getName: (habitDefinition) => habitDefinition.name,
+      getName: (habit) => '${habit.name} ${habit.description}',
       definitionCard: (int index, DashboardDefinition item) {
         return DashboardDefinitionCard(
           index: index,
