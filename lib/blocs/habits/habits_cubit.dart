@@ -435,9 +435,9 @@ double minY({
 
 List<String> getDays(int timeSpanDays) {
   final now = DateTime.now();
-
-  return daysInRange(
-    rangeStart: now.subtract(Duration(days: timeSpanDays)),
+  final days = daysInRange(
+    rangeStart: now.dayAtMidnight.subtract(Duration(days: timeSpanDays)),
     rangeEnd: now,
   )..sort();
+  return days;
 }
