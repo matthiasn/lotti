@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -148,7 +149,7 @@ class TimeFrameController extends _$TimeFrameController {
 }
 
 @riverpod
-Future<List<TimeByDayAndCategory>> timeByDayChart(TimeByDayChartRef ref) async {
+Future<List<TimeByDayAndCategory>> timeByDayChart(Ref ref) async {
   final timeByCategoryAndDay = ref.watch(timeByCategoryControllerProvider);
   return _convertTimeByCategory(timeByCategoryAndDay.value);
 }
@@ -205,7 +206,7 @@ List<DateTime> getDaysAtNoon(int rangeDays, DateTime rangeEnd) {
 }
 
 @riverpod
-Future<int> maxCategoriesCount(MaxCategoriesCountRef ref) async {
+Future<int> maxCategoriesCount(Ref ref) async {
   final events = ref.watch(timeByDayChartProvider).value;
   final categoryIdsByDay = <DateTime, Set<String>>{};
   final nonZeroEvents = events?.where((e) => e.duration > Duration.zero);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:matrix/matrix.dart';
@@ -21,18 +22,18 @@ class MatrixLoginController extends _$MatrixLoginController {
 }
 
 @riverpod
-Stream<LoginState> loginStateStream(LoginStateStreamRef ref) {
+Stream<LoginState> loginStateStream(Ref ref) {
   return getIt<MatrixService>().client.onLoginStateChanged.stream;
 }
 
 @riverpod
-Future<bool> isLoggedIn(IsLoggedInRef ref) async {
+Future<bool> isLoggedIn(Ref ref) async {
   final loginState = ref.watch(loginStateStreamProvider).value;
   return loginState == LoginState.loggedIn;
 }
 
 @riverpod
-Future<String?> loggedInUserId(LoggedInUserIdRef ref) async {
+Future<String?> loggedInUserId(Ref ref) async {
   final matrixService = getIt<MatrixService>();
   final loginState = ref.watch(loginStateStreamProvider).valueOrNull ??
       matrixService.client.onLoginStateChanged.value;

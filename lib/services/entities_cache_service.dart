@@ -49,7 +49,7 @@ class EntitiesCacheService {
 
   List<CategoryDefinition> get sortedCategories {
     final res = categoriesById.values.where((e) => e.active).toList()
-      ..sortBy((category) => category.name);
+      ..sortBy((category) => category.name.toLowerCase());
     return res;
   }
 
