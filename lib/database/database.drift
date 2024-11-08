@@ -493,7 +493,8 @@ SELECT * FROM habit_definitions
 allCategoryDefinitions:
 SELECT * FROM category_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  AND deleted = false;
+  AND deleted = false
+  ORDER BY name COLLATE NOCASE;
 
 categoryById:
 SELECT * FROM category_definitions

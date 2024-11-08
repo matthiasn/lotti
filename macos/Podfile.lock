@@ -193,7 +193,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
-  device_info_plus: 74e614483d05c89290d30a4c8feae15d555f7427
+  device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
   ffmpeg-kit-macos-https: 60de703db964ccca7fd0d4d1611f4c102a8139cc
   ffmpeg_kit_flutter: 5bd75928cf88ec177cea410b027681e4bfe09452
   file_selector_macos: cc3858c981fe6889f364731200d6232dac1d812d
@@ -211,15 +211,15 @@ SPEC CHECKSUMS:
   media_kit_libs_macos_audio: 3871782a4f3f84c77f04d7666c87800a781c24da
   media_kit_native_event_loop: 7321675377cb9ae8596a29bddf3a3d2b5e8792c5
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
-  package_info_plus: f5790acc797bf17c3e959e9d6cf162cc68ff7523
+  package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
   quill_native_bridge_macos: f90985c5269ac7ba84d933605b463d96e5f544fe
   record_darwin: a0d515a0ef78c440c123ea3ac76184c9927a94d6
   screen_retriever_macos: 776e0fa5d42c6163d2bf772d22478df4b302b161
-  share_plus: fd717ef89a2801d3491e737630112b80c310640e
+  share_plus: 1fa619de8392a4398bfaf176d441853922614e89
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
-  sqflite_darwin: a553b1fd6fe66f53bbb0fe5b4f5bab93f08d7a13
+  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
   sqlite3: 0aa20658a9b238a3b1ff7175eb7bdd863b0ab4fd
   sqlite3_flutter_libs: f0b7a85544d8bac7b8bac12eac7d05bcfdd786d0
   super_native_extensions: 85efee3a7495b46b04befcfc86ed12069264ebf3
