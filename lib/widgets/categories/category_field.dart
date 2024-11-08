@@ -23,7 +23,6 @@ class CategoryField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
-    final categories = getIt<EntitiesCacheService>().sortedCategories;
 
     final controller = TextEditingController()..text = category?.name ?? '';
 
@@ -32,6 +31,8 @@ class CategoryField extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         builder: (BuildContext _) {
+          final categories = getIt<EntitiesCacheService>().sortedCategories;
+
           return Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.8,

@@ -5236,7 +5236,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<CategoryDefinitionDbEntity> allCategoryDefinitions() {
     return customSelect(
-        'SELECT * FROM category_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE',
+        'SELECT * FROM category_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
         variables: [],
         readsFrom: {
           categoryDefinitions,
