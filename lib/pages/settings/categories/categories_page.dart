@@ -19,7 +19,7 @@ class CategoriesPage extends StatelessWidget {
         semanticLabel: 'Add Category',
       ),
       title: context.messages.settingsCategoriesTitle,
-      getName: (category) => category.name,
+      getName: (category) => category.name.toLowerCase(),
       definitionCard: (int index, CategoryDefinition categoryDefinition) =>
           CategoriesTypeCard(categoryDefinition, index: index),
     );

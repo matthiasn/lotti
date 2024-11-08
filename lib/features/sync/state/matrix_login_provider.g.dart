@@ -20,6 +20,8 @@ final loginStateStreamProvider = AutoDisposeStreamProvider<LoginState>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef LoginStateStreamRef = AutoDisposeStreamProviderRef<LoginState>;
 String _$isLoggedInHash() => r'e6fca2a8e06f31e155da7448053c88df2f721a12';
 
@@ -34,6 +36,8 @@ final isLoggedInProvider = AutoDisposeFutureProvider<bool>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef IsLoggedInRef = AutoDisposeFutureProviderRef<bool>;
 String _$loggedInUserIdHash() => r'5461bb2f51c4fd99c3ccdbfab6cdf6e2aa0acacc';
 
@@ -49,6 +53,8 @@ final loggedInUserIdProvider = AutoDisposeFutureProvider<String?>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef LoggedInUserIdRef = AutoDisposeFutureProviderRef<String?>;
 String _$matrixLoginControllerHash() =>
     r'3fb97078ff542a174f4a09aa988aae4be681b33d';
@@ -68,4 +74,4 @@ final matrixLoginControllerProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$MatrixLoginController = AutoDisposeAsyncNotifier<LoginState?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
