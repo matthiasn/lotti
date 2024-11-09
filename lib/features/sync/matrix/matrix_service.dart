@@ -20,8 +20,8 @@ class MatrixService {
         _client = createMatrixClient(dbName: dbName) {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
-        while (getIt<UserActivityService>().msSinceLastActivity < 4000) {
-          await Future<void>.delayed(const Duration(milliseconds: 500));
+        while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
         }
 
         await processNewTimelineEvents(
