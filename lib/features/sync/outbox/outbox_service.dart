@@ -11,6 +11,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -30,6 +31,9 @@ class OutboxService {
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
+        while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
         await sendNext();
       },
     );
