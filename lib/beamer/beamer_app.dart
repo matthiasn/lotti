@@ -12,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_recording_indicator.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
@@ -188,26 +189,38 @@ class MyBeamerApp extends StatelessWidget {
               );
             }
 
-            return TooltipVisibility(
-              visible: themingSnapshot.enableTooltips,
-              child: DesktopMenuWrapper(
-                child: MaterialApp.router(
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  theme: themingSnapshot.lightTheme,
-                  darkTheme: themingSnapshot.darkTheme,
-                  themeMode: themingSnapshot.themeMode,
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    FormBuilderLocalizations.delegate,
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  debugShowCheckedModeBanner: false,
-                  routerDelegate: routerDelegate,
-                  routeInformationParser: BeamerParser(),
-                  backButtonDispatcher: BeamerBackButtonDispatcher(
-                    delegate: routerDelegate,
+            final updateActivity = getIt<UserActivityService>().updateActivity;
+
+            return Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (event) => updateActivity(),
+              onPointerMove: (event) => updateActivity(),
+              onPointerPanZoomStart: (event) => updateActivity(),
+              onPointerPanZoomEnd: (event) => updateActivity(),
+              onPointerUp: (event) => updateActivity(),
+              onPointerSignal: (event) => updateActivity(),
+              onPointerPanZoomUpdate: (event) => updateActivity(),
+              child: TooltipVisibility(
+                visible: themingSnapshot.enableTooltips,
+                child: DesktopMenuWrapper(
+                  child: MaterialApp.router(
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    theme: themingSnapshot.lightTheme,
+                    darkTheme: themingSnapshot.darkTheme,
+                    themeMode: themingSnapshot.themeMode,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      FormBuilderLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                    ],
+                    debugShowCheckedModeBanner: false,
+                    routerDelegate: routerDelegate,
+                    routeInformationParser: BeamerParser(),
+                    backButtonDispatcher: BeamerBackButtonDispatcher(
+                      delegate: routerDelegate,
+                    ),
                   ),
                 ),
               ),
