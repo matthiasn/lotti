@@ -8,6 +8,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widg
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tag_add.dart';
+import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
@@ -211,6 +212,7 @@ class ExtendedHeaderActions {
               entryId: entryId,
               beamBack: !inLinkedEntries,
             ),
+            SpeechModalListTile(entryId: entryId),
             ShareButtonListTile(entryId: entryId),
             TagAddListTile(entryId: entryId),
             ListTile(

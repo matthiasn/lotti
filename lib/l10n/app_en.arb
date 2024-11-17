@@ -299,6 +299,7 @@
   "settingsThemingTitle": "Theming",
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
+  "speechModalTitle": "Manage Speech Recognition",
   "syncAssistantHeadline": "Sync Assistant",
   "syncAssistantPage1": "Let's get the synchronization between Lotti on Desktop and Lotti on your mobile device set up, shall we? You need to start on the desktop side.",
   "syncAssistantPage2": "The communication between happens without you having to give your data away to cloud-based services. Instead, you provide your own email account and each device in the communication stores encrypted messages for your other devices in an IMAP folder. Please provide your server settings on the next page.",
