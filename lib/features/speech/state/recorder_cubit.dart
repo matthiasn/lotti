@@ -77,7 +77,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
             path: filePath,
           );
           emit(
-            initialState.copyWith(
+            state.copyWith(
               status: AudioRecorderStatus.recording,
               linkedId: linkedId,
             ),
