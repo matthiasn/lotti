@@ -242,10 +242,10 @@ packages:
     dependency: "direct main"
     description:
       name: calendar_view
-      sha256: "0268c53439f6348f11a35e8a87493843473ab7c28190fe9f38c9ee05a9621564"
+      sha256: "40612640fc84b84ba6bc188315fa62b329c143b06599f00f144b5239a5b3be50"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "1.3.0"
   canonical_json:
     dependency: transitive
     description:
@@ -370,10 +370,10 @@ packages:
     dependency: transitive
     description:
       name: coverage
-      sha256: "88b0fddbe4c92910fefc09cc0248f5e7f0cd23e450ded4c28f16ab8ee8f83268"
+      sha256: "4b03e11f6d5b8f6e5bb5e9f7889a56fe6c5cbe942da5378ea4d4d7f73ef9dfe5"
       url: "https://pub.dev"
     source: hosted
-    version: "1.10.0"
+    version: "1.11.0"
   cross_file:
     dependency: transitive
     description:
@@ -466,10 +466,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "2962476fb9471439a959b68b0e032febee76475e934f2d65d8d86dd0d5bff7a6"
+      sha256: bddb0b2948bd5b5a328f1651764486d162c59a8ccffd4c63e8b2c5e44be1dac4
       url: "https://pub.dev"
     source: hosted
-    version: "10.8.2"
+    version: "10.8.3"
   dart_style:
     dependency: "direct dev"
     description:
@@ -691,10 +691,10 @@ packages:
     dependency: transitive
     description:
       name: file_selector_linux
-      sha256: "712ce7fab537ba532c8febdb1a8f167b32441e74acd68c3ccb2e36dcb52c4ab2"
+      sha256: b2b91daf8a68ecfa4a01b778a6f52edef9b14ecd506e771488ea0f2e0784198b
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.3"
+    version: "0.9.3+1"
   file_selector_macos:
     dependency: transitive
     description:
@@ -1467,10 +1467,10 @@ packages:
     dependency: "direct main"
     description:
       name: infinite_scroll_pagination
-      sha256: b68bce20752fcf36c7739e60de4175494f74e99e9a69b4dd2fe3a1dd07a7f16a
+      sha256: "4047eb8191e8b33573690922a9e995af64c3949dc87efc844f936b039ea279df"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "4.1.0"
   ini:
     dependency: transitive
     description:
@@ -1744,10 +1744,10 @@ packages:
     dependency: transitive
     description:
       name: logger
-      sha256: "697d067c60c20999686a0add96cf6aba723b3aa1f83ecf806a8097231529ec32"
+      sha256: be4b23575aac7ebf01f225a241eb7f6b5641eeaf43c6a8613510fc2f8cf187d1
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.5.0"
   logging:
     dependency: transitive
     description:
@@ -2064,10 +2064,10 @@ packages:
     dependency: "direct main"
     description:
       name: photo_manager
-      sha256: f5ef2618870e9a50d8bfeb81a02c242d580ae8614bd5ea9e1b80dbb7e49d4260
+      sha256: ebe91591ec4148ddb4864352b2612a9c9e70c02384d27c8672d8ab604c7021e6
       url: "https://pub.dev"
     source: hosted
-    version: "3.6.1"
+    version: "3.6.2"
   photo_manager_image_provider:
     dependency: transitive
     description:
@@ -2288,10 +2288,10 @@ packages:
     dependency: transitive
     description:
       name: quill_native_bridge_web
-      sha256: "59d673b946ecb8dbcdd387a4957de12f0263690bdbe159832355855ac7a45de9"
+      sha256: bb3ab017fdb9b60a29cac0bce3acfd48396d13c1bd0499c97af112c84937b4d1
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.1-dev.4"
+    version: "0.0.1-dev.5"
   quill_native_bridge_windows:
     dependency: transitive
     description:
@@ -2545,10 +2545,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences
-      sha256: "746e5369a43170c25816cc472ee016d3a66bc13fcf430c0bc41ad7b4b2922051"
+      sha256: "95f9997ca1fb9799d494d0cb2a780fd7be075818d59f00c43832ed112b158a82"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.3.3"
   shared_preferences_android:
     dependency: transitive
     description:
@@ -3022,10 +3022,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_linux
-      sha256: e2b9622b4007f97f504cd64c0128309dfb978ae66adbe944125ed9e1750f06af
+      sha256: "4e9ba368772369e3e08f231d2301b4ef72b9ff87c31192ef471b380ef29a4935"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.0"
+    version: "3.2.1"
   url_launcher_macos:
     dependency: transitive
     description:
@@ -3094,10 +3094,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "26d520739b7c6b5d2a2b3274427874a8390831fd4cd5bb8cfbd7d913477d3a2e"
+      sha256: ab9ff38fc771e9ee1139320adbe3d18a60327370c218c60752068ebee4b49ab1
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.14"
+    version: "1.1.15"
   vector_math:
     dependency: transitive
     description:
@@ -3294,10 +3294,10 @@ packages:
     dependency: "direct main"
     description:
       name: wolt_modal_sheet
-      sha256: "2695dadd87e25604f0d9d64fae3696f4e053dcb7983a71e4494bb94b5bf3b67b"
+      sha256: b2d1c2af08ff70c17a66325d6e510cb2f902f432c887cc55e72c55701a94fac4
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.3"
+    version: "0.9.4"
   xdg_directories:
     dependency: transitive
     description:
@@ -3326,10 +3326,10 @@ packages:
     dependency: transitive
     description:
       name: youtube_explode_dart
-      sha256: "6d5f9a0a55d02743e59ca495887432814bddb6b11400b08ee0eeaf69c83d0089"
+      sha256: "51ca5b2c03bf56060143d4f87df90ec3227592d7ae8a8003532533ae019d4291"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.5"
+    version: "2.3.6"
 sdks:
   dart: ">=3.5.0 <4.0.0"
   flutter: ">=3.24.0"
