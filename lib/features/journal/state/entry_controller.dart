@@ -363,6 +363,13 @@ class EntryController extends _$EntryController {
     return _persistenceLogic.addTagDefinition(tag);
   }
 
+  Future<void> setLanguage(String language) async {
+    return _persistenceLogic.updateLanguage(
+      journalEntityId: entryId,
+      language: language,
+    );
+  }
+
   Future<void> addTagIds(List<String> addedTagIds) async {
     await _persistenceLogic.addTagsWithLinked(
       journalEntityId: entryId,
