@@ -24,6 +24,14 @@ Future<JournalEntity?> createTextEntry({String? linkedId}) async {
   return entry;
 }
 
+Future<JournalEntity?> createChecklist({required Task task}) async {
+  final entry = await getIt<PersistenceLogic>().createChecklist(
+    task: task,
+  );
+
+  return entry;
+}
+
 Future<JournalEntity?> createTimerEntry({JournalEntity? linked}) async {
   final timerItem = await createTextEntry(linkedId: linked?.meta.id);
   if (linked != null) {

@@ -22,6 +22,7 @@ ChecklistData _$ChecklistDataFromJson(Map<String, dynamic> json) {
 mixin _$ChecklistData {
   String get title => throw _privateConstructorUsedError;
   List<String> get linkedChecklistItems => throw _privateConstructorUsedError;
+  List<String> get linkedTasks => throw _privateConstructorUsedError;
 
   /// Serializes this ChecklistData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -39,7 +40,10 @@ abstract class $ChecklistDataCopyWith<$Res> {
           ChecklistData value, $Res Function(ChecklistData) then) =
       _$ChecklistDataCopyWithImpl<$Res, ChecklistData>;
   @useResult
-  $Res call({String title, List<String> linkedChecklistItems});
+  $Res call(
+      {String title,
+      List<String> linkedChecklistItems,
+      List<String> linkedTasks});
 }
 
 /// @nodoc
@@ -59,6 +63,7 @@ class _$ChecklistDataCopyWithImpl<$Res, $Val extends ChecklistData>
   $Res call({
     Object? title = null,
     Object? linkedChecklistItems = null,
+    Object? linkedTasks = null,
   }) {
     return _then(_value.copyWith(
       title: null == title
@@ -68,6 +73,10 @@ class _$ChecklistDataCopyWithImpl<$Res, $Val extends ChecklistData>
       linkedChecklistItems: null == linkedChecklistItems
           ? _value.linkedChecklistItems
           : linkedChecklistItems // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      linkedTasks: null == linkedTasks
+          ? _value.linkedTasks
+          : linkedTasks // ignore: cast_nullable_to_non_nullable
               as List<String>,
     ) as $Val);
   }
@@ -81,7 +90,10 @@ abstract class _$$ChecklistDataImplCopyWith<$Res>
       __$$ChecklistDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String title, List<String> linkedChecklistItems});
+  $Res call(
+      {String title,
+      List<String> linkedChecklistItems,
+      List<String> linkedTasks});
 }
 
 /// @nodoc
@@ -99,6 +111,7 @@ class __$$ChecklistDataImplCopyWithImpl<$Res>
   $Res call({
     Object? title = null,
     Object? linkedChecklistItems = null,
+    Object? linkedTasks = null,
   }) {
     return _then(_$ChecklistDataImpl(
       title: null == title
@@ -109,6 +122,10 @@ class __$$ChecklistDataImplCopyWithImpl<$Res>
           ? _value._linkedChecklistItems
           : linkedChecklistItems // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      linkedTasks: null == linkedTasks
+          ? _value._linkedTasks
+          : linkedTasks // ignore: cast_nullable_to_non_nullable
+              as List<String>,
     ));
   }
 }
@@ -117,8 +134,11 @@ class __$$ChecklistDataImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ChecklistDataImpl implements _ChecklistData {
   const _$ChecklistDataImpl(
-      {required this.title, required final List<String> linkedChecklistItems})
-      : _linkedChecklistItems = linkedChecklistItems;
+      {required this.title,
+      required final List<String> linkedChecklistItems,
+      required final List<String> linkedTasks})
+      : _linkedChecklistItems = linkedChecklistItems,
+        _linkedTasks = linkedTasks;
 
   factory _$ChecklistDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$ChecklistDataImplFromJson(json);
@@ -134,9 +154,17 @@ class _$ChecklistDataImpl implements _ChecklistData {
     return EqualUnmodifiableListView(_linkedChecklistItems);
   }
 
+  final List<String> _linkedTasks;
+  @override
+  List<String> get linkedTasks {
+    if (_linkedTasks is EqualUnmodifiableListView) return _linkedTasks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_linkedTasks);
+  }
+
   @override
   String toString() {
-    return 'ChecklistData(title: $title, linkedChecklistItems: $linkedChecklistItems)';
+    return 'ChecklistData(title: $title, linkedChecklistItems: $linkedChecklistItems, linkedTasks: $linkedTasks)';
   }
 
   @override
@@ -146,13 +174,18 @@ class _$ChecklistDataImpl implements _ChecklistData {
             other is _$ChecklistDataImpl &&
             (identical(other.title, title) || other.title == title) &&
             const DeepCollectionEquality()
-                .equals(other._linkedChecklistItems, _linkedChecklistItems));
+                .equals(other._linkedChecklistItems, _linkedChecklistItems) &&
+            const DeepCollectionEquality()
+                .equals(other._linkedTasks, _linkedTasks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, title,
-      const DeepCollectionEquality().hash(_linkedChecklistItems));
+  int get hashCode => Object.hash(
+      runtimeType,
+      title,
+      const DeepCollectionEquality().hash(_linkedChecklistItems),
+      const DeepCollectionEquality().hash(_linkedTasks));
 
   /// Create a copy of ChecklistData
   /// with the given fields replaced by the non-null parameter values.
@@ -173,7 +206,8 @@ class _$ChecklistDataImpl implements _ChecklistData {
 abstract class _ChecklistData implements ChecklistData {
   const factory _ChecklistData(
       {required final String title,
-      required final List<String> linkedChecklistItems}) = _$ChecklistDataImpl;
+      required final List<String> linkedChecklistItems,
+      required final List<String> linkedTasks}) = _$ChecklistDataImpl;
 
   factory _ChecklistData.fromJson(Map<String, dynamic> json) =
       _$ChecklistDataImpl.fromJson;
@@ -182,6 +216,8 @@ abstract class _ChecklistData implements ChecklistData {
   String get title;
   @override
   List<String> get linkedChecklistItems;
+  @override
+  List<String> get linkedTasks;
 
   /// Create a copy of ChecklistData
   /// with the given fields replaced by the non-null parameter values.

@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/features/tasks/ui/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
@@ -136,6 +137,7 @@ class EntryDetailsContent extends ConsumerWidget {
           event: (_) => const SizedBox.shrink(),
           quantitative: (_) => const SizedBox.shrink(),
           workout: (_) => const SizedBox.shrink(),
+          checklist: (_) => const SizedBox.shrink(),
           orElse: () {
             return EditorWidget(
               entryId: itemId,
@@ -162,7 +164,9 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           journalEntry: (_) => const SizedBox.shrink(),
           journalImage: (_) => const SizedBox.shrink(),
-          checklist: (_) => const SizedBox.shrink(),
+          checklist: (checklist) => ChecklistWrapper(
+            entryId: checklist.meta.id,
+          ),
           checklistItem: (_) => const SizedBox.shrink(),
         ),
         EntryDetailFooter(
