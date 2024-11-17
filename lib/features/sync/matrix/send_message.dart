@@ -47,6 +47,7 @@ extension SendExtension on MatrixService {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
+      return;
     }
 
     if (roomId == null) {
