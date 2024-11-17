@@ -8,6 +8,7 @@ class ChecklistData with _$ChecklistData {
   const factory ChecklistData({
     required String title,
     required List<String> linkedChecklistItems,
+    required List<String> linkedTasks,
   }) = _ChecklistData;
 
   factory ChecklistData.fromJson(Map<String, dynamic> json) =>

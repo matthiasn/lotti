@@ -119,6 +119,7 @@ class WidgetbookApp extends StatelessWidget {
                           ),
                     ],
                     child: ChecklistWidget(
+                      title: 'Checklist',
                       itemIds: [
                         checklistItem1.meta.id,
                         checklistItem2.meta.id,

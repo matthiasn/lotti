@@ -12,6 +12,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/categories/category_field.dart';
 import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 
+import 'checklists_widget.dart';
+
 class TaskForm extends ConsumerStatefulWidget {
   const TaskForm(
     this.task, {
@@ -193,6 +195,9 @@ class _TaskFormState extends ConsumerState<TaskForm> {
           ),
         ),
         EditorWidget(entryId: entryId),
+        const SizedBox(height: 10),
+        ChecklistsWidget(entryId: entryId, task: widget.task),
+        const SizedBox(height: 20),
       ],
     );
   }

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -520,6 +521,107 @@ class PersistenceLogic {
       );
       return null;
     }
+  }
+
+  Future<JournalEntity?> createChecklist({
+    required Task task,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final id = uuid.v1();
+      final vc = await _vectorClockService.getNextVectorClock();
+
+      final newChecklist = JournalEntity.checklist(
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          id: id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        data: ChecklistData(
+          title: 'Checklist: ${task.data.title}',
+          linkedChecklistItems: [],
+          linkedTasks: [task.id],
+        ),
+      );
+      await createDbEntity(
+        newChecklist,
+        enqueueSync: true,
+      );
+      addGeolocation(id);
+
+      await updateTask(
+        journalEntityId: task.id,
+        taskData: task.data.copyWith(
+          checklistIds: [
+            ...?task.data.checklistIds,
+            newChecklist.meta.id,
+          ],
+        ),
+      );
+
+      return newChecklist;
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createChecklistEntry',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  Future<bool> updateChecklist({
+    required String checklistId,
+    required String title,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final journalEntity = await _journalDb.journalEntityById(checklistId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      await journalEntity.maybeMap(
+        checklist: (Checklist checklist) async {
+          final vc = await _vectorClockService.getNextVectorClock(
+            previous: journalEntity.meta.vectorClock,
+          );
+
+          final oldMeta = journalEntity.meta;
+          final newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          final newTask = checklist.copyWith(
+            meta: newMeta,
+            data: checklist.data.copyWith(title: title),
+          );
+
+          await updateDbEntity(newTask, enqueueSync: true);
+        },
+        orElse: () async => _loggingDb.captureException(
+          'not a checklist',
+          domain: 'persistence_logic',
+          subDomain: 'updateChecklist',
+        ),
+      );
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'updateChecklist',
+        stackTrace: stackTrace,
+      );
+    }
+    return true;
   }
 
   Future<bool> createLink({
