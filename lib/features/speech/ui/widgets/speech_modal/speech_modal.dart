@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/speech_modal/transcribe_button.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -32,6 +33,8 @@ class SpeechModal {
               ),
               child: Column(
                 children: [
+                  const SizedBox(height: 20),
+                  TranscribeButton(entryId: entryId),
                   TranscriptsList(entryId: entryId),
                 ],
               ),
