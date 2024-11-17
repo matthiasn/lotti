@@ -1,16 +1,10 @@
-import 'dart:io';
-
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
-import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 
 class AudioPlayerWidget extends ConsumerWidget {
@@ -39,9 +33,6 @@ class AudioPlayerWidget extends ConsumerWidget {
       1.75: '1.75x',
       2: '2x',
     };
-
-    final provider = entryControllerProvider(id: journalAudio.meta.id);
-    final notifier = ref.read(provider.notifier);
 
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
@@ -100,29 +91,6 @@ class AudioPlayerWidget extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (Platform.isMacOS || Platform.isIOS)
-                  IconButton(
-                    icon: const Icon(Icons.transcribe_rounded),
-                    iconSize: 20,
-                    tooltip: 'Transcribe',
-                    color: context.colorScheme.outline,
-                    onPressed: () async {
-                      final isQueueEmpty =
-                          getIt<AsrService>().enqueue(entry: journalAudio);
-
-                      if (await isQueueEmpty) {
-                        if (!context.mounted) return;
-                        await TranscriptionProgressModal.show(context);
-                      }
-
-                      await Future<void>.delayed(
-                        const Duration(milliseconds: 100),
-                      );
-                      notifier
-                        ..setController()
-                        ..emitState();
-                    },
-                  ),
               ],
             ),
             Row(
