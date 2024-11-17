@@ -24,9 +24,7 @@ class TranscribeButton extends ConsumerWidget {
     }
 
     final provider = entryControllerProvider(id: entryId);
-
     final notifier = ref.read(provider.notifier);
-
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;
