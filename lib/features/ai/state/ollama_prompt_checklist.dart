@@ -67,6 +67,7 @@ class AiChecklistResponse extends Notifier<List<ChecklistItemData>> {
             // ignore: avoid_dynamic_calls
             title: e['title'] as String,
             isChecked: false,
+            linkedChecklists: [],
           ),
         )
         .toList();

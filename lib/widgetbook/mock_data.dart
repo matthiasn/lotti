@@ -7,6 +7,7 @@ final checklistItem1 = ChecklistItem(
   data: const ChecklistItemData(
     title: 'Create PR',
     isChecked: true,
+    linkedChecklists: [],
   ),
 );
 
@@ -15,6 +16,7 @@ final checklistItem2 = ChecklistItem(
   data: const ChecklistItemData(
     title: 'release iOS',
     isChecked: false,
+    linkedChecklists: [],
   ),
 );
 
@@ -23,6 +25,7 @@ final checklistItem3 = ChecklistItem(
   data: const ChecklistItemData(
     title: 'release macOS',
     isChecked: false,
+    linkedChecklists: [],
   ),
 );
 

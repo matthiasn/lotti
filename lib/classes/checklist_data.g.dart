@@ -9,11 +9,13 @@ part of 'checklist_data.dart';
 _$ChecklistDataImpl _$$ChecklistDataImplFromJson(Map<String, dynamic> json) =>
     _$ChecklistDataImpl(
       title: json['title'] as String,
-      isChecked: json['isChecked'] as bool,
+      linkedChecklistItems: (json['linkedChecklistItems'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$$ChecklistDataImplToJson(_$ChecklistDataImpl instance) =>
     <String, dynamic>{
       'title': instance.title,
-      'isChecked': instance.isChecked,
+      'linkedChecklistItems': instance.linkedChecklistItems,
     };
