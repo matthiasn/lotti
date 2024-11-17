@@ -801,11 +801,51 @@ class PersistenceLogic {
       _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
-        subDomain: 'updateTask',
+        subDomain: 'updateEvent',
         stackTrace: stackTrace,
       );
     }
     return true;
+  }
+
+  Future<void> updateLanguage({
+    required String journalEntityId,
+    required String language,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+
+      await journalEntity?.maybeMap(
+        journalAudio: (JournalAudio item) async {
+          final vc = await _vectorClockService.getNextVectorClock(
+            previous: journalEntity.meta.vectorClock,
+          );
+
+          final newEvent = item.copyWith(
+            meta: item.meta.copyWith(
+              updatedAt: now,
+              vectorClock: vc,
+            ),
+            data: item.data.copyWith(language: language),
+          );
+
+          await updateDbEntity(newEvent, enqueueSync: true);
+        },
+        orElse: () async => _loggingDb.captureException(
+          'not an audio entry',
+          domain: 'persistence_logic',
+          subDomain: 'updateLanguage',
+        ),
+      );
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'updateLanguage',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<bool> addAudioTranscript({
