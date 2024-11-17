@@ -6,7 +6,7 @@ part of 'time_by_category_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$timeByDayChartHash() => r'74bb3ef819bea42d16baefda30f192ee4b2561f0';
+String _$timeByDayChartHash() => r'45b2343b0389964c5a15929d0b30ccece5af7b9c';
 
 /// See also [timeByDayChart].
 @ProviderFor(timeByDayChart)
@@ -26,7 +26,7 @@ final timeByDayChartProvider =
 typedef TimeByDayChartRef
     = AutoDisposeFutureProviderRef<List<TimeByDayAndCategory>>;
 String _$maxCategoriesCountHash() =>
-    r'5ddf03e2337770b00da85a662ea0642546de55d7';
+    r'80545aaffb42f87975f49ae0ad50d955e7acacd2';
 
 /// See also [maxCategoriesCount].
 @ProviderFor(maxCategoriesCount)
