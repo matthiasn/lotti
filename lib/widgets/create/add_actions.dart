@@ -176,24 +176,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
       );
 
-    final linkedItem = widget.linked;
-    if (linkedItem is Task) {
-      items.add(
-        FloatingActionButton(
-          heroTag: 'Checklist',
-          tooltip: context.messages.addActionAddChecklist,
-          onPressed: () async {
-            rebuild();
-            await createChecklist(task: linkedItem);
-          },
-          child: const Icon(
-            Icons.checklist_rounded,
-            size: actionIconSize,
-          ),
-        ),
-      );
-    }
-
     return Padding(
       padding: const EdgeInsets.only(right: 1, bottom: 1.5),
       child: CircleFloatingButton.floatingActionButton(
