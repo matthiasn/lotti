@@ -557,6 +557,7 @@ class PersistenceLogic {
 
       await updateTask(
         journalEntityId: task.id,
+        entryText: task.entryText,
         taskData: task.data.copyWith(
           checklistIds: [
             ...?task.data.checklistIds,
