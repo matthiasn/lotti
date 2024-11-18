@@ -36,38 +36,61 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
   }
 
   @override
+  void didChangeDependencies() {
+    setState(() {
+      _isChecked = widget.isChecked;
+    });
+
+    super.didChangeDependencies();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return CheckboxListTile(
-      title: GestureDetector(
-        onTap: () {
-          setState(() {
-            _isEditing = true;
-          });
-        },
-        child: AnimatedCrossFade(
-          duration: checklistCrossFadeDuration,
-          firstChild: TitleTextField(
-            initialValue: widget.title,
-            onSave: (title) {
-              setState(() {
-                _isEditing = false;
-              });
-              widget.onTitleChange?.call(title);
-            },
-            resetToInitialValue: true,
-            onClear: () {
-              setState(() {
-                _isEditing = false;
-              });
-            },
-          ),
-          secondChild: SizedBox(
-            width: double.infinity,
-            child: Text(widget.title),
-          ),
-          crossFadeState:
-              _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+      title: AnimatedCrossFade(
+        duration: checklistCrossFadeDuration,
+        firstChild: TitleTextField(
+          initialValue: widget.title,
+          onSave: (title) {
+            setState(() {
+              _isEditing = false;
+            });
+            widget.onTitleChange?.call(title);
+          },
+          resetToInitialValue: true,
+          onClear: () {
+            setState(() {
+              _isEditing = false;
+            });
+          },
         ),
+        secondChild: SizedBox(
+          width: double.infinity,
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  widget.title,
+                  softWrap: true,
+                  maxLines: 3,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.edit,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        crossFadeState:
+            _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
       value: _isChecked,
       controlAffinity: ListTileControlAffinity.leading,
@@ -81,10 +104,12 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
             )
           : null,
       onChanged: (bool? value) {
+        final isChecked = value ?? false;
         setState(() {
-          _isChecked = value ?? false;
+          _isChecked = isChecked;
         });
-        widget.onChanged(_isChecked);
+
+        widget.onChanged(isChecked);
       },
     );
   }

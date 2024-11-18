@@ -56,7 +56,13 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         ),
         secondChild: Row(
           children: [
-            Text(widget.title),
+            Flexible(
+              child: Text(
+                widget.title,
+                softWrap: true,
+                maxLines: 3,
+              ),
+            ),
             IconButton(
               icon: const Icon(
                 Icons.edit,
@@ -73,14 +79,17 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         crossFadeState:
             _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
-      subtitle: ClipRRect(
-        borderRadius: BorderRadius.circular(3),
-        child: LinearProgressIndicator(
-          minHeight: 5,
-          color: successColor,
-          backgroundColor: successColor.desaturate().withOpacity(0.3),
-          value: widget.completionRate,
-          semanticsLabel: 'Checklist progress',
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            minHeight: 5,
+            color: successColor,
+            backgroundColor: successColor.desaturate().withOpacity(0.3),
+            value: widget.completionRate,
+            semanticsLabel: 'Checklist progress',
+          ),
         ),
       ),
       children: [
