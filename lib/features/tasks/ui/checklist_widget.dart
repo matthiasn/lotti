@@ -4,6 +4,8 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class ChecklistWidget extends StatefulWidget {
   const ChecklistWidget({
@@ -71,9 +73,15 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         crossFadeState:
             _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
-      subtitle: LinearProgressIndicator(
-        value: widget.completionRate,
-        semanticsLabel: 'Checklist progress',
+      subtitle: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: LinearProgressIndicator(
+          minHeight: 5,
+          color: successColor,
+          backgroundColor: successColor.desaturate().withOpacity(0.3),
+          value: widget.completionRate,
+          semanticsLabel: 'Checklist progress',
+        ),
       ),
       children: [
         Padding(

@@ -280,7 +280,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                     context.messages.completeHabitSuccessButton,
                                     style: saveButtonStyle(Theme.of(context))
                                         .copyWith(
-                                      color: habitSuccessColor,
+                                      color: successColor,
                                     ),
                                   ),
                                 ).animate(autoPlay: true).shimmer(

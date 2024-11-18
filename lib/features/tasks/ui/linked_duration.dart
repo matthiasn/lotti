@@ -6,7 +6,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class LinkedDuration extends StatelessWidget {
   LinkedDuration({
@@ -66,13 +68,10 @@ class LinkedDuration extends StatelessWidget {
                           minHeight: 5,
                           value:
                               min(progress.inSeconds / estimate.inSeconds, 1),
-                          color: (progress > estimate)
-                              ? context.colorScheme.error
-                              : context.colorScheme.primary,
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withOpacity(0.5),
+                          color:
+                              (progress > estimate) ? failColor : successColor,
+                          backgroundColor:
+                              successColor.desaturate().withOpacity(0.3),
                         ),
                       ),
                       const SizedBox(height: 5),
