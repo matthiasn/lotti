@@ -11,6 +11,9 @@ _$ChecklistItemDataImpl _$$ChecklistItemDataImplFromJson(
     _$ChecklistItemDataImpl(
       title: json['title'] as String,
       isChecked: json['isChecked'] as bool,
+      linkedChecklists: (json['linkedChecklists'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$$ChecklistItemDataImplToJson(
@@ -18,4 +21,5 @@ Map<String, dynamic> _$$ChecklistItemDataImplToJson(
     <String, dynamic>{
       'title': instance.title,
       'isChecked': instance.isChecked,
+      'linkedChecklists': instance.linkedChecklists,
     };

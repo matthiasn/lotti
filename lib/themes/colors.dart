@@ -9,13 +9,13 @@ final Color alarm = colorFromCssHex('#FF7373');
 final Color nickel = colorFromCssHex('#B4B2B2');
 final cardColor = oldPrimaryColor.desaturate(60).darken(60);
 
-final habitSuccessColor = colorFromCssHex('#34C191');
-final habitFailColor = colorFromCssHex('#FF7373');
+final successColor = colorFromCssHex('#34C191');
+final failColor = colorFromCssHex('#FF7373');
 
-final habitSkipColor = habitSuccessColor
+final habitSkipColor = successColor
     .lighten()
     .desaturate()
-    .mix(habitFailColor.lighten().desaturate().complement());
+    .mix(failColor.lighten().desaturate().complement());
 
 const tagColor = Color.fromRGBO(155, 200, 246, 1);
 const tagTextColor = Color.fromRGBO(51, 51, 51, 1);

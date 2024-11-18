@@ -87,6 +87,7 @@ class TaskData with _$TaskData {
     required String title,
     DateTime? due,
     Duration? estimate,
+    List<String>? checklistIds,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>

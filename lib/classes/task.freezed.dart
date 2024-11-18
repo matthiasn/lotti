@@ -2775,6 +2775,7 @@ mixin _$TaskData {
   String get title => throw _privateConstructorUsedError;
   DateTime? get due => throw _privateConstructorUsedError;
   Duration? get estimate => throw _privateConstructorUsedError;
+  List<String>? get checklistIds => throw _privateConstructorUsedError;
 
   /// Serializes this TaskData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -2798,7 +2799,8 @@ abstract class $TaskDataCopyWith<$Res> {
       List<TaskStatus> statusHistory,
       String title,
       DateTime? due,
-      Duration? estimate});
+      Duration? estimate,
+      List<String>? checklistIds});
 
   $TaskStatusCopyWith<$Res> get status;
 }
@@ -2825,6 +2827,7 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
     Object? title = null,
     Object? due = freezed,
     Object? estimate = freezed,
+    Object? checklistIds = freezed,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -2855,6 +2858,10 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
           ? _value.estimate
           : estimate // ignore: cast_nullable_to_non_nullable
               as Duration?,
+      checklistIds: freezed == checklistIds
+          ? _value.checklistIds
+          : checklistIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ) as $Val);
   }
 
@@ -2884,7 +2891,8 @@ abstract class _$$TaskDataImplCopyWith<$Res>
       List<TaskStatus> statusHistory,
       String title,
       DateTime? due,
-      Duration? estimate});
+      Duration? estimate,
+      List<String>? checklistIds});
 
   @override
   $TaskStatusCopyWith<$Res> get status;
@@ -2910,6 +2918,7 @@ class __$$TaskDataImplCopyWithImpl<$Res>
     Object? title = null,
     Object? due = freezed,
     Object? estimate = freezed,
+    Object? checklistIds = freezed,
   }) {
     return _then(_$TaskDataImpl(
       status: null == status
@@ -2940,6 +2949,10 @@ class __$$TaskDataImplCopyWithImpl<$Res>
           ? _value.estimate
           : estimate // ignore: cast_nullable_to_non_nullable
               as Duration?,
+      checklistIds: freezed == checklistIds
+          ? _value._checklistIds
+          : checklistIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }
@@ -2954,8 +2967,10 @@ class _$TaskDataImpl implements _TaskData {
       required final List<TaskStatus> statusHistory,
       required this.title,
       this.due,
-      this.estimate})
-      : _statusHistory = statusHistory;
+      this.estimate,
+      final List<String>? checklistIds})
+      : _statusHistory = statusHistory,
+        _checklistIds = checklistIds;
 
   factory _$TaskDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$TaskDataImplFromJson(json);
@@ -2980,10 +2995,19 @@ class _$TaskDataImpl implements _TaskData {
   final DateTime? due;
   @override
   final Duration? estimate;
+  final List<String>? _checklistIds;
+  @override
+  List<String>? get checklistIds {
+    final value = _checklistIds;
+    if (value == null) return null;
+    if (_checklistIds is EqualUnmodifiableListView) return _checklistIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds)';
   }
 
   @override
@@ -3000,7 +3024,9 @@ class _$TaskDataImpl implements _TaskData {
             (identical(other.title, title) || other.title == title) &&
             (identical(other.due, due) || other.due == due) &&
             (identical(other.estimate, estimate) ||
-                other.estimate == estimate));
+                other.estimate == estimate) &&
+            const DeepCollectionEquality()
+                .equals(other._checklistIds, _checklistIds));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3013,7 +3039,8 @@ class _$TaskDataImpl implements _TaskData {
       const DeepCollectionEquality().hash(_statusHistory),
       title,
       due,
-      estimate);
+      estimate,
+      const DeepCollectionEquality().hash(_checklistIds));
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
@@ -3039,7 +3066,8 @@ abstract class _TaskData implements TaskData {
       required final List<TaskStatus> statusHistory,
       required final String title,
       final DateTime? due,
-      final Duration? estimate}) = _$TaskDataImpl;
+      final Duration? estimate,
+      final List<String>? checklistIds}) = _$TaskDataImpl;
 
   factory _TaskData.fromJson(Map<String, dynamic> json) =
       _$TaskDataImpl.fromJson;
@@ -3058,6 +3086,8 @@ abstract class _TaskData implements TaskData {
   DateTime? get due;
   @override
   Duration? get estimate;
+  @override
+  List<String>? get checklistIds;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.

@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class ChecklistWidget extends StatefulWidget {
   const ChecklistWidget({
+    required this.title,
     required this.itemIds,
+    required this.onTitleSave,
+    required this.onCreateChecklistItem,
+    this.completionRate = 0.0,
     super.key,
   });
 
+  final String title;
   final List<String> itemIds;
+  final StringCallback onTitleSave;
+  final StringCallback onCreateChecklistItem;
+  final double completionRate;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -21,14 +33,15 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
+      initiallyExpanded: true,
       title: AnimatedCrossFade(
         duration: checklistCrossFadeDuration,
         firstChild: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: TitleTextField(
-            initialValue: 'Checklist',
+            initialValue: widget.title,
             onSave: (title) {
-              debugPrint('Saved: $title');
+              widget.onTitleSave.call(title);
               setState(() {
                 _isEditing = false;
               });
@@ -43,7 +56,13 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         ),
         secondChild: Row(
           children: [
-            const Text('Checklist'),
+            Flexible(
+              child: Text(
+                widget.title,
+                softWrap: true,
+                maxLines: 3,
+              ),
+            ),
             IconButton(
               icon: const Icon(
                 Icons.edit,
@@ -60,9 +79,18 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         crossFadeState:
             _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
-      subtitle: const LinearProgressIndicator(
-        value: 0.87,
-        semanticsLabel: 'Checklist progress',
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            minHeight: 5,
+            color: successColor,
+            backgroundColor: successColor.desaturate().withOpacity(0.3),
+            value: widget.completionRate,
+            semanticsLabel: 'Checklist progress',
+          ),
+        ),
       ),
       children: [
         Padding(
@@ -72,7 +100,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           ),
           child: TitleTextField(
             onSave: (title) {
-              debugPrint('Saved: $title');
+              widget.onCreateChecklistItem.call(title);
             },
             clearOnSave: true,
             semanticsLabel: 'Add item to checklist',
@@ -80,6 +108,37 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         ),
         ...widget.itemIds.map(CheckboxItemWrapper.new),
       ],
+    );
+  }
+}
+
+class ChecklistWrapper extends ConsumerWidget {
+  const ChecklistWrapper({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = checklistControllerProvider(id: entryId);
+    final notifier = ref.read(provider.notifier);
+    final checklist = ref.watch(provider).value;
+
+    final completionRate =
+        ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
+
+    if (checklist == null) {
+      return const SizedBox.shrink();
+    }
+
+    return ChecklistWidget(
+      title: checklist.data.title,
+      itemIds: checklist.data.linkedChecklistItems,
+      onTitleSave: notifier.updateTitle,
+      onCreateChecklistItem: notifier.createChecklistItem,
+      completionRate: completionRate ?? 0.0,
     );
   }
 }

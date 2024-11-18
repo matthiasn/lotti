@@ -6,7 +6,7 @@ part of 'matrix_login_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$loginStateStreamHash() => r'e643511b02c1a28f58434438896b333d978320d7';
+String _$loginStateStreamHash() => r'799f4deff791f17893c37e2ae3eeaaad184486b0';
 
 /// See also [loginStateStream].
 @ProviderFor(loginStateStream)
@@ -23,7 +23,7 @@ final loginStateStreamProvider = AutoDisposeStreamProvider<LoginState>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LoginStateStreamRef = AutoDisposeStreamProviderRef<LoginState>;
-String _$isLoggedInHash() => r'e6fca2a8e06f31e155da7448053c88df2f721a12';
+String _$isLoggedInHash() => r'3b2979ba7a521872d8cf83091efdf290efcb6a9b';
 
 /// See also [isLoggedIn].
 @ProviderFor(isLoggedIn)
@@ -39,7 +39,7 @@ final isLoggedInProvider = AutoDisposeFutureProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef IsLoggedInRef = AutoDisposeFutureProviderRef<bool>;
-String _$loggedInUserIdHash() => r'5461bb2f51c4fd99c3ccdbfab6cdf6e2aa0acacc';
+String _$loggedInUserIdHash() => r'ca80d49453e2b9d26d4fdbcada7311ea5f2fbeea';
 
 /// See also [loggedInUserId].
 @ProviderFor(loggedInUserId)
