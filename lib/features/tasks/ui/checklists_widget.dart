@@ -9,8 +9,8 @@ import 'package:lotti/logic/create/create_entry.dart';
 class ChecklistsWidget extends ConsumerWidget {
   const ChecklistsWidget({
     required this.entryId,
-    super.key,
     required this.task,
+    super.key,
   });
 
   final String entryId;

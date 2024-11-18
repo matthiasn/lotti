@@ -62,9 +62,43 @@ class ChecklistController extends _$ChecklistController {
       );
       await _persistenceLogic.updateChecklist(
         checklistId: entryId,
-        title: title ?? '',
+        data: updated.data,
       );
       state = AsyncData(updated);
+    }
+  }
+
+  Future<void> createChecklistItem(String? title) async {
+    final current = state.value;
+    final data = current?.data;
+    if (current != null && data != null && title != null) {
+      final created = await _persistenceLogic.createChecklistItem(
+        title: title,
+        checklist: current,
+      );
+
+      if (created != null) {
+        final updated = current.copyWith(
+          data: current.data.copyWith(
+            linkedChecklistItems: [
+              ...data.linkedChecklistItems,
+              created.id,
+            ],
+          ),
+        );
+
+        await _persistenceLogic.updateChecklist(
+          checklistId: current.id,
+          data: updated.data.copyWith(
+            linkedChecklistItems: [
+              ...data.linkedChecklistItems,
+              created.id,
+            ],
+          ),
+        );
+
+        state = AsyncData(updated);
+      }
     }
   }
 }

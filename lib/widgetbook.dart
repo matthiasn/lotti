@@ -125,6 +125,8 @@ class WidgetbookApp extends StatelessWidget {
                         checklistItem2.meta.id,
                         checklistItem3.meta.id,
                       ],
+                      onCreateChecklistItem: (title) {},
+                      onTitleSave: (title) {},
                     ),
                   ),
                 ),

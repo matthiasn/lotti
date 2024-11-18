@@ -9,13 +9,15 @@ class ChecklistWidget extends StatefulWidget {
   const ChecklistWidget({
     required this.title,
     required this.itemIds,
-    this.onTitleSave,
+    required this.onTitleSave,
+    required this.onCreateChecklistItem,
     super.key,
   });
 
   final String title;
   final List<String> itemIds;
-  final StringCallback? onTitleSave;
+  final StringCallback onTitleSave;
+  final StringCallback onCreateChecklistItem;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -35,7 +37,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           child: TitleTextField(
             initialValue: widget.title,
             onSave: (title) {
-              widget.onTitleSave?.call(title);
+              widget.onTitleSave.call(title);
               setState(() {
                 _isEditing = false;
               });
@@ -79,8 +81,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           ),
           child: TitleTextField(
             onSave: (title) {
-              debugPrint('Saved: $title');
-              widget.onTitleSave?.call(title);
+              widget.onCreateChecklistItem.call(title);
             },
             clearOnSave: true,
             semanticsLabel: 'Add item to checklist',
@@ -114,6 +115,7 @@ class ChecklistWrapper extends ConsumerWidget {
       title: checklist.data.title,
       itemIds: checklist.data.linkedChecklistItems,
       onTitleSave: notifier.updateTitle,
+      onCreateChecklistItem: notifier.createChecklistItem,
     );
   }
 }
