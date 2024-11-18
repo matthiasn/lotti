@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -100,5 +101,28 @@ class ChecklistController extends _$ChecklistController {
         state = AsyncData(updated);
       }
     }
+  }
+}
+
+@riverpod
+class ChecklistCompletionController extends _$ChecklistCompletionController {
+  ChecklistCompletionController();
+
+  @override
+  Future<double> build({required String id}) async {
+    final checklistData =
+        ref.watch(checklistControllerProvider(id: id)).value?.data;
+
+    final linkedIds = checklistData?.linkedChecklistItems ?? <String>[];
+    final total = linkedIds.length;
+
+    final linkedChecklistItems = linkedIds
+        .map((id) => ref.watch(checklistItemControllerProvider(id: id)).value);
+
+    final completed = linkedChecklistItems
+        .where((item) => item?.data.isChecked ?? false)
+        .length;
+
+    return total == 0 ? 0.0 : completed / total;
   }
 }
