@@ -10,6 +10,7 @@ class CheckboxItemWidget extends StatefulWidget {
     required this.title,
     required this.isChecked,
     required this.onChanged,
+    this.onTitleChange,
     this.onEdit,
     super.key,
   });
@@ -18,6 +19,7 @@ class CheckboxItemWidget extends StatefulWidget {
   final bool isChecked;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
+  final StringCallback? onTitleChange;
 
   @override
   State<CheckboxItemWidget> createState() => _CheckboxItemWidgetState();
@@ -38,7 +40,6 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
     return CheckboxListTile(
       title: GestureDetector(
         onTap: () {
-          debugPrint('Tapped');
           setState(() {
             _isEditing = true;
           });
@@ -48,10 +49,10 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
           firstChild: TitleTextField(
             initialValue: widget.title,
             onSave: (title) {
-              debugPrint('Saved: $title');
               setState(() {
                 _isEditing = false;
               });
+              widget.onTitleChange?.call(title);
             },
             resetToInitialValue: true,
             onClear: () {
@@ -80,7 +81,6 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
             )
           : null,
       onChanged: (bool? value) {
-        debugPrint('Checked $value');
         setState(() {
           _isChecked = value ?? false;
         });

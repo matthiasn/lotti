@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -576,9 +577,64 @@ class PersistenceLogic {
     }
   }
 
+  Future<JournalEntity?> createChecklistItem({
+    required Checklist checklist,
+    required String title,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final id = uuid.v1();
+      final vc = await _vectorClockService.getNextVectorClock();
+
+      final newChecklistItem = JournalEntity.checklistItem(
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          id: id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        data: ChecklistItemData(
+          title: title,
+          isChecked: false,
+          linkedChecklists: [],
+        ),
+      );
+
+      await createDbEntity(
+        newChecklistItem,
+        enqueueSync: true,
+      );
+      addGeolocation(id);
+
+      await updateChecklist(
+        checklistId: checklist.id,
+        data: checklist.data.copyWith(
+          linkedChecklistItems: [
+            ...checklist.data.linkedChecklistItems,
+            newChecklistItem.meta.id,
+          ],
+        ),
+      );
+
+      return newChecklistItem;
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createChecklistEntry',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   Future<bool> updateChecklist({
     required String checklistId,
-    required String title,
+    required ChecklistData data,
   }) async {
     try {
       final now = DateTime.now();
@@ -600,12 +656,12 @@ class PersistenceLogic {
             vectorClock: vc,
           );
 
-          final newTask = checklist.copyWith(
+          final updatedChecklist = checklist.copyWith(
             meta: newMeta,
-            data: checklist.data.copyWith(title: title),
+            data: data,
           );
 
-          await updateDbEntity(newTask, enqueueSync: true);
+          await updateDbEntity(updatedChecklist, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not a checklist',
@@ -618,6 +674,54 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateChecklist',
+        stackTrace: stackTrace,
+      );
+    }
+    return true;
+  }
+
+  Future<bool> updateChecklistItem({
+    required String checklistItemId,
+    required ChecklistItemData data,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final journalEntity = await _journalDb.journalEntityById(checklistItemId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      await journalEntity.maybeMap(
+        checklistItem: (ChecklistItem checklistItem) async {
+          final vc = await _vectorClockService.getNextVectorClock(
+            previous: journalEntity.meta.vectorClock,
+          );
+
+          final oldMeta = journalEntity.meta;
+          final newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          final updatedChecklist = checklistItem.copyWith(
+            meta: newMeta,
+            data: data,
+          );
+
+          await updateDbEntity(updatedChecklist, enqueueSync: true);
+        },
+        orElse: () async => _loggingDb.captureException(
+          'not a checklist item',
+          domain: 'persistence_logic',
+          subDomain: 'updateChecklistItem',
+        ),
+      );
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'updateChecklistItem',
         stackTrace: stackTrace,
       );
     }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -61,6 +62,30 @@ class ChecklistItemController extends _$ChecklistItemController {
           isChecked: !data.isChecked,
         ),
       );
+
+      getIt<PersistenceLogic>().updateChecklistItem(
+        checklistItemId: entryId,
+        data: updated.data,
+      );
+
+      state = AsyncData(updated);
+    }
+  }
+
+  void updateTitle(String? title) {
+    debugPrint('updateTitle $title');
+    final current = state.value;
+    final data = current?.data;
+    if (current != null && data != null && title != null) {
+      final updated = current.copyWith(
+        data: data.copyWith(title: title),
+      );
+
+      getIt<PersistenceLogic>().updateChecklistItem(
+        checklistItemId: entryId,
+        data: updated.data,
+      );
+
       state = AsyncData(updated);
     }
   }
