@@ -149,11 +149,9 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: true,
                         habitDefinitions: state.habitDefinitions,
-                        aboveColor: habitFailColor
-                            .lighten()
-                            .desaturate()
-                            .withOpacity(0.5),
-                        color: habitFailColor.withOpacity(0.8),
+                        aboveColor:
+                            failColor.lighten().desaturate().withOpacity(0.5),
+                        color: failColor.withOpacity(0.8),
                       ),
                       barData(
                         days: state.days,
@@ -178,7 +176,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showFailed: false,
                         habitDefinitions: state.habitDefinitions,
                         opacity: 0.9,
-                        color: habitSuccessColor,
+                        color: successColor,
                       ),
                     ],
                   ),

@@ -7,7 +7,8 @@ part 'checklist_data.g.dart';
 class ChecklistData with _$ChecklistData {
   const factory ChecklistData({
     required String title,
-    required bool isChecked,
+    required List<String> linkedChecklistItems,
+    required List<String> linkedTasks,
   }) = _ChecklistData;
 
   factory ChecklistData.fromJson(Map<String, dynamic> json) =>

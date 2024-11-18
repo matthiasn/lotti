@@ -28,7 +28,10 @@ class CheckboxItemWrapper extends ConsumerWidget {
         return CheckboxItemWidget(
           title: item.data.title,
           isChecked: item.data.isChecked,
-          onChanged: (checked) => ref.read(provider.notifier).toggleChecked(),
+          onChanged: (checked) => ref.read(provider.notifier).toggleChecked(
+                checked: checked,
+              ),
+          onTitleChange: ref.read(provider.notifier).updateTitle,
         );
       },
       error: ErrorWidget.new,

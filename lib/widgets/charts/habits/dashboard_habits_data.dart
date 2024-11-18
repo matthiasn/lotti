@@ -32,8 +32,8 @@ Color habitCompletionColor(HabitCompletionType completionType) {
       : completionType == HabitCompletionType.skip
           ? habitSkipColor.withOpacity(0.4)
           : completionType == HabitCompletionType.success
-              ? habitSuccessColor
-              : habitFailColor.withOpacity(0.6);
+              ? successColor
+              : failColor.withOpacity(0.6);
 }
 
 List<HabitResult> habitResultsByDay(

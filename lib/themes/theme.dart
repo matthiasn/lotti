@@ -176,7 +176,7 @@ TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,
-      color: habitFailColor,
+      color: failColor,
     );
 
 const segmentItemStyle = TextStyle(
