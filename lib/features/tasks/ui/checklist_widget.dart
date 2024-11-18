@@ -11,6 +11,7 @@ class ChecklistWidget extends StatefulWidget {
     required this.itemIds,
     required this.onTitleSave,
     required this.onCreateChecklistItem,
+    this.completionRate = 0.0,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class ChecklistWidget extends StatefulWidget {
   final List<String> itemIds;
   final StringCallback onTitleSave;
   final StringCallback onCreateChecklistItem;
+  final double completionRate;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -69,8 +71,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         crossFadeState:
             _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
-      subtitle: const LinearProgressIndicator(
-        value: 0.87,
+      subtitle: LinearProgressIndicator(
+        value: widget.completionRate,
         semanticsLabel: 'Checklist progress',
       ),
       children: [
@@ -107,6 +109,9 @@ class ChecklistWrapper extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     final checklist = ref.watch(provider).value;
 
+    final completionRate =
+        ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
+
     if (checklist == null) {
       return const SizedBox.shrink();
     }
@@ -116,6 +121,7 @@ class ChecklistWrapper extends ConsumerWidget {
       itemIds: checklist.data.linkedChecklistItems,
       onTitleSave: notifier.updateTitle,
       onCreateChecklistItem: notifier.createChecklistItem,
+      completionRate: completionRate ?? 0.0,
     );
   }
 }
