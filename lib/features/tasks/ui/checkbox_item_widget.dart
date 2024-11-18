@@ -36,12 +36,13 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
   }
 
   @override
-  void didChangeDependencies() {
-    setState(() {
-      _isChecked = widget.isChecked;
-    });
-
-    super.didChangeDependencies();
+  void didUpdateWidget(CheckboxItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isChecked != widget.isChecked) {
+      setState(() {
+        _isChecked = widget.isChecked;
+      });
+    }
   }
 
   @override
