@@ -53,7 +53,7 @@ class ChecklistItemController extends _$ChecklistItemController {
     return res;
   }
 
-  void toggleChecked({required bool checked}) {
+  void updateChecked({required bool checked}) {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null) {
