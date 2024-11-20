@@ -276,20 +276,82 @@ typedef $SettingsUpdateCompanionBuilder = SettingsCompanion Function({
   Value<int> rowid,
 });
 
+class $SettingsFilterComposer extends Composer<_$SettingsDb, Settings> {
+  $SettingsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get configKey => $composableBuilder(
+      column: $table.configKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $SettingsOrderingComposer extends Composer<_$SettingsDb, Settings> {
+  $SettingsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get configKey => $composableBuilder(
+      column: $table.configKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $SettingsAnnotationComposer extends Composer<_$SettingsDb, Settings> {
+  $SettingsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get configKey =>
+      $composableBuilder(column: $table.configKey, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
 class $SettingsTableManager extends RootTableManager<
     _$SettingsDb,
     Settings,
     SettingsItem,
     $SettingsFilterComposer,
     $SettingsOrderingComposer,
+    $SettingsAnnotationComposer,
     $SettingsCreateCompanionBuilder,
-    $SettingsUpdateCompanionBuilder> {
+    $SettingsUpdateCompanionBuilder,
+    (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
+    SettingsItem,
+    PrefetchHooks Function()> {
   $SettingsTableManager(_$SettingsDb db, Settings table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer: $SettingsFilterComposer(ComposerState(db, table)),
-          orderingComposer: $SettingsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $SettingsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $SettingsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $SettingsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> configKey = const Value.absent(),
             Value<String> value = const Value.absent(),
@@ -314,45 +376,25 @@ class $SettingsTableManager extends RootTableManager<
             updatedAt: updatedAt,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $SettingsFilterComposer extends FilterComposer<_$SettingsDb, Settings> {
-  $SettingsFilterComposer(super.$state);
-  ColumnFilters<String> get configKey => $state.composableBuilder(
-      column: $state.table.configKey,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get value => $state.composableBuilder(
-      column: $state.table.value,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $SettingsOrderingComposer
-    extends OrderingComposer<_$SettingsDb, Settings> {
-  $SettingsOrderingComposer(super.$state);
-  ColumnOrderings<String> get configKey => $state.composableBuilder(
-      column: $state.table.configKey,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get value => $state.composableBuilder(
-      column: $state.table.value,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
+typedef $SettingsProcessedTableManager = ProcessedTableManager<
+    _$SettingsDb,
+    Settings,
+    SettingsItem,
+    $SettingsFilterComposer,
+    $SettingsOrderingComposer,
+    $SettingsAnnotationComposer,
+    $SettingsCreateCompanionBuilder,
+    $SettingsUpdateCompanionBuilder,
+    (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
+    SettingsItem,
+    PrefetchHooks Function()>;
 
 class $SettingsDbManager {
   final _$SettingsDb _db;

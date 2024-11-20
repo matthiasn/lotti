@@ -386,22 +386,100 @@ typedef $JournalFtsUpdateCompanionBuilder = JournalFtsCompanion Function({
   Value<int> rowid,
 });
 
+class $JournalFtsFilterComposer extends Composer<_$Fts5Db, JournalFts> {
+  $JournalFtsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get plainText => $composableBuilder(
+      column: $table.plainText, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get summary => $composableBuilder(
+      column: $table.summary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tags => $composableBuilder(
+      column: $table.tags, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uuid => $composableBuilder(
+      column: $table.uuid, builder: (column) => ColumnFilters(column));
+}
+
+class $JournalFtsOrderingComposer extends Composer<_$Fts5Db, JournalFts> {
+  $JournalFtsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get plainText => $composableBuilder(
+      column: $table.plainText, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get summary => $composableBuilder(
+      column: $table.summary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tags => $composableBuilder(
+      column: $table.tags, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uuid => $composableBuilder(
+      column: $table.uuid, builder: (column) => ColumnOrderings(column));
+}
+
+class $JournalFtsAnnotationComposer extends Composer<_$Fts5Db, JournalFts> {
+  $JournalFtsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get plainText =>
+      $composableBuilder(column: $table.plainText, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get summary =>
+      $composableBuilder(column: $table.summary, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
+
+  GeneratedColumn<String> get uuid =>
+      $composableBuilder(column: $table.uuid, builder: (column) => column);
+}
+
 class $JournalFtsTableManager extends RootTableManager<
     _$Fts5Db,
     JournalFts,
     JournalFt,
     $JournalFtsFilterComposer,
     $JournalFtsOrderingComposer,
+    $JournalFtsAnnotationComposer,
     $JournalFtsCreateCompanionBuilder,
-    $JournalFtsUpdateCompanionBuilder> {
+    $JournalFtsUpdateCompanionBuilder,
+    (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
+    JournalFt,
+    PrefetchHooks Function()> {
   $JournalFtsTableManager(_$Fts5Db db, JournalFts table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $JournalFtsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $JournalFtsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $JournalFtsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $JournalFtsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $JournalFtsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> plainText = const Value.absent(),
             Value<String> title = const Value.absent(),
@@ -434,65 +512,25 @@ class $JournalFtsTableManager extends RootTableManager<
             uuid: uuid,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $JournalFtsFilterComposer extends FilterComposer<_$Fts5Db, JournalFts> {
-  $JournalFtsFilterComposer(super.$state);
-  ColumnFilters<String> get plainText => $state.composableBuilder(
-      column: $state.table.plainText,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get title => $state.composableBuilder(
-      column: $state.table.title,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get summary => $state.composableBuilder(
-      column: $state.table.summary,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get tags => $state.composableBuilder(
-      column: $state.table.tags,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get uuid => $state.composableBuilder(
-      column: $state.table.uuid,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $JournalFtsOrderingComposer
-    extends OrderingComposer<_$Fts5Db, JournalFts> {
-  $JournalFtsOrderingComposer(super.$state);
-  ColumnOrderings<String> get plainText => $state.composableBuilder(
-      column: $state.table.plainText,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get title => $state.composableBuilder(
-      column: $state.table.title,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get summary => $state.composableBuilder(
-      column: $state.table.summary,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get tags => $state.composableBuilder(
-      column: $state.table.tags,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get uuid => $state.composableBuilder(
-      column: $state.table.uuid,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
+typedef $JournalFtsProcessedTableManager = ProcessedTableManager<
+    _$Fts5Db,
+    JournalFts,
+    JournalFt,
+    $JournalFtsFilterComposer,
+    $JournalFtsOrderingComposer,
+    $JournalFtsAnnotationComposer,
+    $JournalFtsCreateCompanionBuilder,
+    $JournalFtsUpdateCompanionBuilder,
+    (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
+    JournalFt,
+    PrefetchHooks Function()>;
 
 class $Fts5DbManager {
   final _$Fts5Db _db;

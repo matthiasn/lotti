@@ -426,22 +426,113 @@ typedef $EditorDraftsUpdateCompanionBuilder = EditorDraftsCompanion Function({
   Value<int> rowid,
 });
 
+class $EditorDraftsFilterComposer extends Composer<_$EditorDb, EditorDrafts> {
+  $EditorDraftsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get entryId => $composableBuilder(
+      column: $table.entryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSaved => $composableBuilder(
+      column: $table.lastSaved, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get delta => $composableBuilder(
+      column: $table.delta, builder: (column) => ColumnFilters(column));
+}
+
+class $EditorDraftsOrderingComposer extends Composer<_$EditorDb, EditorDrafts> {
+  $EditorDraftsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get entryId => $composableBuilder(
+      column: $table.entryId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSaved => $composableBuilder(
+      column: $table.lastSaved, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get delta => $composableBuilder(
+      column: $table.delta, builder: (column) => ColumnOrderings(column));
+}
+
+class $EditorDraftsAnnotationComposer
+    extends Composer<_$EditorDb, EditorDrafts> {
+  $EditorDraftsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSaved =>
+      $composableBuilder(column: $table.lastSaved, builder: (column) => column);
+
+  GeneratedColumn<String> get delta =>
+      $composableBuilder(column: $table.delta, builder: (column) => column);
+}
+
 class $EditorDraftsTableManager extends RootTableManager<
     _$EditorDb,
     EditorDrafts,
     EditorDraftState,
     $EditorDraftsFilterComposer,
     $EditorDraftsOrderingComposer,
+    $EditorDraftsAnnotationComposer,
     $EditorDraftsCreateCompanionBuilder,
-    $EditorDraftsUpdateCompanionBuilder> {
+    $EditorDraftsUpdateCompanionBuilder,
+    (
+      EditorDraftState,
+      BaseReferences<_$EditorDb, EditorDrafts, EditorDraftState>
+    ),
+    EditorDraftState,
+    PrefetchHooks Function()> {
   $EditorDraftsTableManager(_$EditorDb db, EditorDrafts table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $EditorDraftsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $EditorDraftsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $EditorDraftsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $EditorDraftsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $EditorDraftsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> entryId = const Value.absent(),
@@ -478,76 +569,28 @@ class $EditorDraftsTableManager extends RootTableManager<
             delta: delta,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $EditorDraftsFilterComposer
-    extends FilterComposer<_$EditorDb, EditorDrafts> {
-  $EditorDraftsFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get entryId => $state.composableBuilder(
-      column: $state.table.entryId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get lastSaved => $state.composableBuilder(
-      column: $state.table.lastSaved,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get delta => $state.composableBuilder(
-      column: $state.table.delta,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $EditorDraftsOrderingComposer
-    extends OrderingComposer<_$EditorDb, EditorDrafts> {
-  $EditorDraftsOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get entryId => $state.composableBuilder(
-      column: $state.table.entryId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get lastSaved => $state.composableBuilder(
-      column: $state.table.lastSaved,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get delta => $state.composableBuilder(
-      column: $state.table.delta,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
+typedef $EditorDraftsProcessedTableManager = ProcessedTableManager<
+    _$EditorDb,
+    EditorDrafts,
+    EditorDraftState,
+    $EditorDraftsFilterComposer,
+    $EditorDraftsOrderingComposer,
+    $EditorDraftsAnnotationComposer,
+    $EditorDraftsCreateCompanionBuilder,
+    $EditorDraftsUpdateCompanionBuilder,
+    (
+      EditorDraftState,
+      BaseReferences<_$EditorDb, EditorDrafts, EditorDraftState>
+    ),
+    EditorDraftState,
+    PrefetchHooks Function()>;
 
 class $EditorDbManager {
   final _$EditorDb _db;
