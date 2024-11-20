@@ -49,7 +49,6 @@ class ThemingCubit extends Cubit<ThemingState> {
     _lightTheme = withOverrides(
       FlexThemeData.light(
         scheme: scheme,
-        useMaterial3: true,
         fontFamily: mainFont,
       ),
     );
@@ -60,7 +59,6 @@ class ThemingCubit extends Cubit<ThemingState> {
     _darkTheme = withOverrides(
       FlexThemeData.dark(
         scheme: scheme,
-        useMaterial3: true,
         fontFamily: mainFont,
       ),
     );
