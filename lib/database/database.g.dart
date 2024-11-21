@@ -5551,20 +5551,246 @@ typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
   Value<int> rowid,
 });
 
+class $JournalFilterComposer extends Composer<_$JournalDb, Journal> {
+  $JournalFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get dateFrom => $composableBuilder(
+      column: $table.dateFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get dateTo => $composableBuilder(
+      column: $table.dateTo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get starred => $composableBuilder(
+      column: $table.starred, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get task => $composableBuilder(
+      column: $table.task, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get taskStatus => $composableBuilder(
+      column: $table.taskStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get flag => $composableBuilder(
+      column: $table.flag, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get subtype => $composableBuilder(
+      column: $table.subtype, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schemaVersion => $composableBuilder(
+      column: $table.schemaVersion, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get plainText => $composableBuilder(
+      column: $table.plainText, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+      column: $table.latitude, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+      column: $table.longitude, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get geohashString => $composableBuilder(
+      column: $table.geohashString, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get geohashInt => $composableBuilder(
+      column: $table.geohashInt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
+}
+
+class $JournalOrderingComposer extends Composer<_$JournalDb, Journal> {
+  $JournalOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get dateFrom => $composableBuilder(
+      column: $table.dateFrom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get dateTo => $composableBuilder(
+      column: $table.dateTo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get starred => $composableBuilder(
+      column: $table.starred, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get task => $composableBuilder(
+      column: $table.task, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get taskStatus => $composableBuilder(
+      column: $table.taskStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get flag => $composableBuilder(
+      column: $table.flag, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get subtype => $composableBuilder(
+      column: $table.subtype, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schemaVersion => $composableBuilder(
+      column: $table.schemaVersion,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get plainText => $composableBuilder(
+      column: $table.plainText, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+      column: $table.latitude, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+      column: $table.longitude, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get geohashString => $composableBuilder(
+      column: $table.geohashString,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get geohashInt => $composableBuilder(
+      column: $table.geohashInt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+}
+
+class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
+  $JournalAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dateFrom =>
+      $composableBuilder(column: $table.dateFrom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dateTo =>
+      $composableBuilder(column: $table.dateTo, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get starred =>
+      $composableBuilder(column: $table.starred, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<bool> get task =>
+      $composableBuilder(column: $table.task, builder: (column) => column);
+
+  GeneratedColumn<String> get taskStatus => $composableBuilder(
+      column: $table.taskStatus, builder: (column) => column);
+
+  GeneratedColumn<int> get flag =>
+      $composableBuilder(column: $table.flag, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get subtype =>
+      $composableBuilder(column: $table.subtype, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<int> get schemaVersion => $composableBuilder(
+      column: $table.schemaVersion, builder: (column) => column);
+
+  GeneratedColumn<String> get plainText =>
+      $composableBuilder(column: $table.plainText, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<String> get geohashString => $composableBuilder(
+      column: $table.geohashString, builder: (column) => column);
+
+  GeneratedColumn<int> get geohashInt => $composableBuilder(
+      column: $table.geohashInt, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+}
+
 class $JournalTableManager extends RootTableManager<
     _$JournalDb,
     Journal,
     JournalDbEntity,
     $JournalFilterComposer,
     $JournalOrderingComposer,
+    $JournalAnnotationComposer,
     $JournalCreateCompanionBuilder,
-    $JournalUpdateCompanionBuilder> {
+    $JournalUpdateCompanionBuilder,
+    (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
+    JournalDbEntity,
+    PrefetchHooks Function()> {
   $JournalTableManager(_$JournalDb db, Journal table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer: $JournalFilterComposer(ComposerState(db, table)),
-          orderingComposer: $JournalOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $JournalFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $JournalOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $JournalAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -5661,225 +5887,25 @@ class $JournalTableManager extends RootTableManager<
             category: category,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $JournalFilterComposer extends FilterComposer<_$JournalDb, Journal> {
-  $JournalFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get dateFrom => $state.composableBuilder(
-      column: $state.table.dateFrom,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get dateTo => $state.composableBuilder(
-      column: $state.table.dateTo,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get starred => $state.composableBuilder(
-      column: $state.table.starred,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get task => $state.composableBuilder(
-      column: $state.table.task,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get taskStatus => $state.composableBuilder(
-      column: $state.table.taskStatus,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get flag => $state.composableBuilder(
-      column: $state.table.flag,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get type => $state.composableBuilder(
-      column: $state.table.type,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get subtype => $state.composableBuilder(
-      column: $state.table.subtype,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get schemaVersion => $state.composableBuilder(
-      column: $state.table.schemaVersion,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get plainText => $state.composableBuilder(
-      column: $state.table.plainText,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<double> get latitude => $state.composableBuilder(
-      column: $state.table.latitude,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<double> get longitude => $state.composableBuilder(
-      column: $state.table.longitude,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get geohashString => $state.composableBuilder(
-      column: $state.table.geohashString,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get geohashInt => $state.composableBuilder(
-      column: $state.table.geohashInt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get category => $state.composableBuilder(
-      column: $state.table.category,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $JournalOrderingComposer extends OrderingComposer<_$JournalDb, Journal> {
-  $JournalOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get dateFrom => $state.composableBuilder(
-      column: $state.table.dateFrom,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get dateTo => $state.composableBuilder(
-      column: $state.table.dateTo,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get starred => $state.composableBuilder(
-      column: $state.table.starred,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get task => $state.composableBuilder(
-      column: $state.table.task,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get taskStatus => $state.composableBuilder(
-      column: $state.table.taskStatus,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get flag => $state.composableBuilder(
-      column: $state.table.flag,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get type => $state.composableBuilder(
-      column: $state.table.type,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get subtype => $state.composableBuilder(
-      column: $state.table.subtype,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get schemaVersion => $state.composableBuilder(
-      column: $state.table.schemaVersion,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get plainText => $state.composableBuilder(
-      column: $state.table.plainText,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<double> get latitude => $state.composableBuilder(
-      column: $state.table.latitude,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<double> get longitude => $state.composableBuilder(
-      column: $state.table.longitude,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get geohashString => $state.composableBuilder(
-      column: $state.table.geohashString,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get geohashInt => $state.composableBuilder(
-      column: $state.table.geohashInt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get category => $state.composableBuilder(
-      column: $state.table.category,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $JournalProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    Journal,
+    JournalDbEntity,
+    $JournalFilterComposer,
+    $JournalOrderingComposer,
+    $JournalAnnotationComposer,
+    $JournalCreateCompanionBuilder,
+    $JournalUpdateCompanionBuilder,
+    (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
+    JournalDbEntity,
+    PrefetchHooks Function()>;
 typedef $ConflictsCreateCompanionBuilder = ConflictsCompanion Function({
   required String id,
   required DateTime createdAt,
@@ -5899,21 +5925,110 @@ typedef $ConflictsUpdateCompanionBuilder = ConflictsCompanion Function({
   Value<int> rowid,
 });
 
+class $ConflictsFilterComposer extends Composer<_$JournalDb, Conflicts> {
+  $ConflictsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schemaVersion => $composableBuilder(
+      column: $table.schemaVersion, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+}
+
+class $ConflictsOrderingComposer extends Composer<_$JournalDb, Conflicts> {
+  $ConflictsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schemaVersion => $composableBuilder(
+      column: $table.schemaVersion,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+}
+
+class $ConflictsAnnotationComposer extends Composer<_$JournalDb, Conflicts> {
+  $ConflictsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<int> get schemaVersion => $composableBuilder(
+      column: $table.schemaVersion, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+}
+
 class $ConflictsTableManager extends RootTableManager<
     _$JournalDb,
     Conflicts,
     Conflict,
     $ConflictsFilterComposer,
     $ConflictsOrderingComposer,
+    $ConflictsAnnotationComposer,
     $ConflictsCreateCompanionBuilder,
-    $ConflictsUpdateCompanionBuilder> {
+    $ConflictsUpdateCompanionBuilder,
+    (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
+    Conflict,
+    PrefetchHooks Function()> {
   $ConflictsTableManager(_$JournalDb db, Conflicts table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer: $ConflictsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $ConflictsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $ConflictsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $ConflictsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $ConflictsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -5950,76 +6065,25 @@ class $ConflictsTableManager extends RootTableManager<
             status: status,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $ConflictsFilterComposer extends FilterComposer<_$JournalDb, Conflicts> {
-  $ConflictsFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get schemaVersion => $state.composableBuilder(
-      column: $state.table.schemaVersion,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $ConflictsOrderingComposer
-    extends OrderingComposer<_$JournalDb, Conflicts> {
-  $ConflictsOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get schemaVersion => $state.composableBuilder(
-      column: $state.table.schemaVersion,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $ConflictsProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    Conflicts,
+    Conflict,
+    $ConflictsFilterComposer,
+    $ConflictsOrderingComposer,
+    $ConflictsAnnotationComposer,
+    $ConflictsCreateCompanionBuilder,
+    $ConflictsUpdateCompanionBuilder,
+    (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
+    Conflict,
+    PrefetchHooks Function()>;
 typedef $MeasurableTypesCreateCompanionBuilder = MeasurableTypesCompanion
     Function({
   required String id,
@@ -6047,22 +6111,142 @@ typedef $MeasurableTypesUpdateCompanionBuilder = MeasurableTypesCompanion
   Value<int> rowid,
 });
 
+class $MeasurableTypesFilterComposer
+    extends Composer<_$JournalDb, MeasurableTypes> {
+  $MeasurableTypesFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uniqueName => $composableBuilder(
+      column: $table.uniqueName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get version => $composableBuilder(
+      column: $table.version, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+}
+
+class $MeasurableTypesOrderingComposer
+    extends Composer<_$JournalDb, MeasurableTypes> {
+  $MeasurableTypesOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uniqueName => $composableBuilder(
+      column: $table.uniqueName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get version => $composableBuilder(
+      column: $table.version, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+}
+
+class $MeasurableTypesAnnotationComposer
+    extends Composer<_$JournalDb, MeasurableTypes> {
+  $MeasurableTypesAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get uniqueName => $composableBuilder(
+      column: $table.uniqueName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+}
+
 class $MeasurableTypesTableManager extends RootTableManager<
     _$JournalDb,
     MeasurableTypes,
     MeasurableDbEntity,
     $MeasurableTypesFilterComposer,
     $MeasurableTypesOrderingComposer,
+    $MeasurableTypesAnnotationComposer,
     $MeasurableTypesCreateCompanionBuilder,
-    $MeasurableTypesUpdateCompanionBuilder> {
+    $MeasurableTypesUpdateCompanionBuilder,
+    (
+      MeasurableDbEntity,
+      BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>
+    ),
+    MeasurableDbEntity,
+    PrefetchHooks Function()> {
   $MeasurableTypesTableManager(_$JournalDb db, MeasurableTypes table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $MeasurableTypesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $MeasurableTypesOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $MeasurableTypesFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $MeasurableTypesOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $MeasurableTypesAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> uniqueName = const Value.absent(),
@@ -6111,107 +6295,28 @@ class $MeasurableTypesTableManager extends RootTableManager<
             status: status,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $MeasurableTypesFilterComposer
-    extends FilterComposer<_$JournalDb, MeasurableTypes> {
-  $MeasurableTypesFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get uniqueName => $state.composableBuilder(
-      column: $state.table.uniqueName,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get version => $state.composableBuilder(
-      column: $state.table.version,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $MeasurableTypesOrderingComposer
-    extends OrderingComposer<_$JournalDb, MeasurableTypes> {
-  $MeasurableTypesOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get uniqueName => $state.composableBuilder(
-      column: $state.table.uniqueName,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get version => $state.composableBuilder(
-      column: $state.table.version,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $MeasurableTypesProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    MeasurableTypes,
+    MeasurableDbEntity,
+    $MeasurableTypesFilterComposer,
+    $MeasurableTypesOrderingComposer,
+    $MeasurableTypesAnnotationComposer,
+    $MeasurableTypesCreateCompanionBuilder,
+    $MeasurableTypesUpdateCompanionBuilder,
+    (
+      MeasurableDbEntity,
+      BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>
+    ),
+    MeasurableDbEntity,
+    PrefetchHooks Function()>;
 typedef $HabitDefinitionsCreateCompanionBuilder = HabitDefinitionsCompanion
     Function({
   required String id,
@@ -6237,22 +6342,133 @@ typedef $HabitDefinitionsUpdateCompanionBuilder = HabitDefinitionsCompanion
   Value<int> rowid,
 });
 
+class $HabitDefinitionsFilterComposer
+    extends Composer<_$JournalDb, HabitDefinitions> {
+  $HabitDefinitionsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get active => $composableBuilder(
+      column: $table.active, builder: (column) => ColumnFilters(column));
+}
+
+class $HabitDefinitionsOrderingComposer
+    extends Composer<_$JournalDb, HabitDefinitions> {
+  $HabitDefinitionsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get active => $composableBuilder(
+      column: $table.active, builder: (column) => ColumnOrderings(column));
+}
+
+class $HabitDefinitionsAnnotationComposer
+    extends Composer<_$JournalDb, HabitDefinitions> {
+  $HabitDefinitionsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<bool> get active =>
+      $composableBuilder(column: $table.active, builder: (column) => column);
+}
+
 class $HabitDefinitionsTableManager extends RootTableManager<
     _$JournalDb,
     HabitDefinitions,
     HabitDefinitionDbEntity,
     $HabitDefinitionsFilterComposer,
     $HabitDefinitionsOrderingComposer,
+    $HabitDefinitionsAnnotationComposer,
     $HabitDefinitionsCreateCompanionBuilder,
-    $HabitDefinitionsUpdateCompanionBuilder> {
+    $HabitDefinitionsUpdateCompanionBuilder,
+    (
+      HabitDefinitionDbEntity,
+      BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>
+    ),
+    HabitDefinitionDbEntity,
+    PrefetchHooks Function()> {
   $HabitDefinitionsTableManager(_$JournalDb db, HabitDefinitions table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $HabitDefinitionsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $HabitDefinitionsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $HabitDefinitionsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $HabitDefinitionsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $HabitDefinitionsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
@@ -6297,97 +6513,28 @@ class $HabitDefinitionsTableManager extends RootTableManager<
             active: active,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $HabitDefinitionsFilterComposer
-    extends FilterComposer<_$JournalDb, HabitDefinitions> {
-  $HabitDefinitionsFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get active => $state.composableBuilder(
-      column: $state.table.active,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $HabitDefinitionsOrderingComposer
-    extends OrderingComposer<_$JournalDb, HabitDefinitions> {
-  $HabitDefinitionsOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get active => $state.composableBuilder(
-      column: $state.table.active,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $HabitDefinitionsProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    HabitDefinitions,
+    HabitDefinitionDbEntity,
+    $HabitDefinitionsFilterComposer,
+    $HabitDefinitionsOrderingComposer,
+    $HabitDefinitionsAnnotationComposer,
+    $HabitDefinitionsCreateCompanionBuilder,
+    $HabitDefinitionsUpdateCompanionBuilder,
+    (
+      HabitDefinitionDbEntity,
+      BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>
+    ),
+    HabitDefinitionDbEntity,
+    PrefetchHooks Function()>;
 typedef $CategoryDefinitionsCreateCompanionBuilder
     = CategoryDefinitionsCompanion Function({
   required String id,
@@ -6413,22 +6560,134 @@ typedef $CategoryDefinitionsUpdateCompanionBuilder
   Value<int> rowid,
 });
 
+class $CategoryDefinitionsFilterComposer
+    extends Composer<_$JournalDb, CategoryDefinitions> {
+  $CategoryDefinitionsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get active => $composableBuilder(
+      column: $table.active, builder: (column) => ColumnFilters(column));
+}
+
+class $CategoryDefinitionsOrderingComposer
+    extends Composer<_$JournalDb, CategoryDefinitions> {
+  $CategoryDefinitionsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get active => $composableBuilder(
+      column: $table.active, builder: (column) => ColumnOrderings(column));
+}
+
+class $CategoryDefinitionsAnnotationComposer
+    extends Composer<_$JournalDb, CategoryDefinitions> {
+  $CategoryDefinitionsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<bool> get active =>
+      $composableBuilder(column: $table.active, builder: (column) => column);
+}
+
 class $CategoryDefinitionsTableManager extends RootTableManager<
     _$JournalDb,
     CategoryDefinitions,
     CategoryDefinitionDbEntity,
     $CategoryDefinitionsFilterComposer,
     $CategoryDefinitionsOrderingComposer,
+    $CategoryDefinitionsAnnotationComposer,
     $CategoryDefinitionsCreateCompanionBuilder,
-    $CategoryDefinitionsUpdateCompanionBuilder> {
+    $CategoryDefinitionsUpdateCompanionBuilder,
+    (
+      CategoryDefinitionDbEntity,
+      BaseReferences<_$JournalDb, CategoryDefinitions,
+          CategoryDefinitionDbEntity>
+    ),
+    CategoryDefinitionDbEntity,
+    PrefetchHooks Function()> {
   $CategoryDefinitionsTableManager(_$JournalDb db, CategoryDefinitions table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $CategoryDefinitionsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $CategoryDefinitionsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $CategoryDefinitionsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $CategoryDefinitionsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $CategoryDefinitionsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
@@ -6473,97 +6732,29 @@ class $CategoryDefinitionsTableManager extends RootTableManager<
             active: active,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $CategoryDefinitionsFilterComposer
-    extends FilterComposer<_$JournalDb, CategoryDefinitions> {
-  $CategoryDefinitionsFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get active => $state.composableBuilder(
-      column: $state.table.active,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $CategoryDefinitionsOrderingComposer
-    extends OrderingComposer<_$JournalDb, CategoryDefinitions> {
-  $CategoryDefinitionsOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get active => $state.composableBuilder(
-      column: $state.table.active,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $CategoryDefinitionsProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    CategoryDefinitions,
+    CategoryDefinitionDbEntity,
+    $CategoryDefinitionsFilterComposer,
+    $CategoryDefinitionsOrderingComposer,
+    $CategoryDefinitionsAnnotationComposer,
+    $CategoryDefinitionsCreateCompanionBuilder,
+    $CategoryDefinitionsUpdateCompanionBuilder,
+    (
+      CategoryDefinitionDbEntity,
+      BaseReferences<_$JournalDb, CategoryDefinitions,
+          CategoryDefinitionDbEntity>
+    ),
+    CategoryDefinitionDbEntity,
+    PrefetchHooks Function()>;
 typedef $DashboardDefinitionsCreateCompanionBuilder
     = DashboardDefinitionsCompanion Function({
   required String id,
@@ -6591,22 +6782,144 @@ typedef $DashboardDefinitionsUpdateCompanionBuilder
   Value<int> rowid,
 });
 
+class $DashboardDefinitionsFilterComposer
+    extends Composer<_$JournalDb, DashboardDefinitions> {
+  $DashboardDefinitionsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastReviewed => $composableBuilder(
+      column: $table.lastReviewed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get active => $composableBuilder(
+      column: $table.active, builder: (column) => ColumnFilters(column));
+}
+
+class $DashboardDefinitionsOrderingComposer
+    extends Composer<_$JournalDb, DashboardDefinitions> {
+  $DashboardDefinitionsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastReviewed => $composableBuilder(
+      column: $table.lastReviewed,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get active => $composableBuilder(
+      column: $table.active, builder: (column) => ColumnOrderings(column));
+}
+
+class $DashboardDefinitionsAnnotationComposer
+    extends Composer<_$JournalDb, DashboardDefinitions> {
+  $DashboardDefinitionsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastReviewed => $composableBuilder(
+      column: $table.lastReviewed, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<bool> get active =>
+      $composableBuilder(column: $table.active, builder: (column) => column);
+}
+
 class $DashboardDefinitionsTableManager extends RootTableManager<
     _$JournalDb,
     DashboardDefinitions,
     DashboardDefinitionDbEntity,
     $DashboardDefinitionsFilterComposer,
     $DashboardDefinitionsOrderingComposer,
+    $DashboardDefinitionsAnnotationComposer,
     $DashboardDefinitionsCreateCompanionBuilder,
-    $DashboardDefinitionsUpdateCompanionBuilder> {
+    $DashboardDefinitionsUpdateCompanionBuilder,
+    (
+      DashboardDefinitionDbEntity,
+      BaseReferences<_$JournalDb, DashboardDefinitions,
+          DashboardDefinitionDbEntity>
+    ),
+    DashboardDefinitionDbEntity,
+    PrefetchHooks Function()> {
   $DashboardDefinitionsTableManager(_$JournalDb db, DashboardDefinitions table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $DashboardDefinitionsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $DashboardDefinitionsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $DashboardDefinitionsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $DashboardDefinitionsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $DashboardDefinitionsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
@@ -6655,107 +6968,29 @@ class $DashboardDefinitionsTableManager extends RootTableManager<
             active: active,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $DashboardDefinitionsFilterComposer
-    extends FilterComposer<_$JournalDb, DashboardDefinitions> {
-  $DashboardDefinitionsFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get lastReviewed => $state.composableBuilder(
-      column: $state.table.lastReviewed,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get active => $state.composableBuilder(
-      column: $state.table.active,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $DashboardDefinitionsOrderingComposer
-    extends OrderingComposer<_$JournalDb, DashboardDefinitions> {
-  $DashboardDefinitionsOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get lastReviewed => $state.composableBuilder(
-      column: $state.table.lastReviewed,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get active => $state.composableBuilder(
-      column: $state.table.active,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $DashboardDefinitionsProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    DashboardDefinitions,
+    DashboardDefinitionDbEntity,
+    $DashboardDefinitionsFilterComposer,
+    $DashboardDefinitionsOrderingComposer,
+    $DashboardDefinitionsAnnotationComposer,
+    $DashboardDefinitionsCreateCompanionBuilder,
+    $DashboardDefinitionsUpdateCompanionBuilder,
+    (
+      DashboardDefinitionDbEntity,
+      BaseReferences<_$JournalDb, DashboardDefinitions,
+          DashboardDefinitionDbEntity>
+    ),
+    DashboardDefinitionDbEntity,
+    PrefetchHooks Function()>;
 typedef $ConfigFlagsCreateCompanionBuilder = ConfigFlagsCompanion Function({
   required String name,
   required String description,
@@ -6769,22 +7004,83 @@ typedef $ConfigFlagsUpdateCompanionBuilder = ConfigFlagsCompanion Function({
   Value<int> rowid,
 });
 
+class $ConfigFlagsFilterComposer extends Composer<_$JournalDb, ConfigFlags> {
+  $ConfigFlagsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+}
+
+class $ConfigFlagsOrderingComposer extends Composer<_$JournalDb, ConfigFlags> {
+  $ConfigFlagsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+}
+
+class $ConfigFlagsAnnotationComposer
+    extends Composer<_$JournalDb, ConfigFlags> {
+  $ConfigFlagsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<bool> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+}
+
 class $ConfigFlagsTableManager extends RootTableManager<
     _$JournalDb,
     ConfigFlags,
     ConfigFlag,
     $ConfigFlagsFilterComposer,
     $ConfigFlagsOrderingComposer,
+    $ConfigFlagsAnnotationComposer,
     $ConfigFlagsCreateCompanionBuilder,
-    $ConfigFlagsUpdateCompanionBuilder> {
+    $ConfigFlagsUpdateCompanionBuilder,
+    (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
+    ConfigFlag,
+    PrefetchHooks Function()> {
   $ConfigFlagsTableManager(_$JournalDb db, ConfigFlags table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $ConfigFlagsFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $ConfigFlagsOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $ConfigFlagsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $ConfigFlagsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $ConfigFlagsAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> name = const Value.absent(),
             Value<String> description = const Value.absent(),
@@ -6809,47 +7105,25 @@ class $ConfigFlagsTableManager extends RootTableManager<
             status: status,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $ConfigFlagsFilterComposer
-    extends FilterComposer<_$JournalDb, ConfigFlags> {
-  $ConfigFlagsFilterComposer(super.$state);
-  ColumnFilters<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get description => $state.composableBuilder(
-      column: $state.table.description,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $ConfigFlagsOrderingComposer
-    extends OrderingComposer<_$JournalDb, ConfigFlags> {
-  $ConfigFlagsOrderingComposer(super.$state);
-  ColumnOrderings<String> get name => $state.composableBuilder(
-      column: $state.table.name,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get description => $state.composableBuilder(
-      column: $state.table.description,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get status => $state.composableBuilder(
-      column: $state.table.status,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $ConfigFlagsProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    ConfigFlags,
+    ConfigFlag,
+    $ConfigFlagsFilterComposer,
+    $ConfigFlagsOrderingComposer,
+    $ConfigFlagsAnnotationComposer,
+    $ConfigFlagsCreateCompanionBuilder,
+    $ConfigFlagsUpdateCompanionBuilder,
+    (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
+    ConfigFlag,
+    PrefetchHooks Function()>;
 typedef $TagEntitiesCreateCompanionBuilder = TagEntitiesCompanion Function({
   required String id,
   required String tag,
@@ -6875,22 +7149,137 @@ typedef $TagEntitiesUpdateCompanionBuilder = TagEntitiesCompanion Function({
   Value<int> rowid,
 });
 
+class $TagEntitiesFilterComposer extends Composer<_$JournalDb, TagEntities> {
+  $TagEntitiesFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tag => $composableBuilder(
+      column: $table.tag, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inactive => $composableBuilder(
+      column: $table.inactive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+}
+
+class $TagEntitiesOrderingComposer extends Composer<_$JournalDb, TagEntities> {
+  $TagEntitiesOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tag => $composableBuilder(
+      column: $table.tag, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inactive => $composableBuilder(
+      column: $table.inactive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get private => $composableBuilder(
+      column: $table.private, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+}
+
+class $TagEntitiesAnnotationComposer
+    extends Composer<_$JournalDb, TagEntities> {
+  $TagEntitiesAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tag =>
+      $composableBuilder(column: $table.tag, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<bool> get inactive =>
+      $composableBuilder(column: $table.inactive, builder: (column) => column);
+
+  GeneratedColumn<bool> get private =>
+      $composableBuilder(column: $table.private, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+}
+
 class $TagEntitiesTableManager extends RootTableManager<
     _$JournalDb,
     TagEntities,
     TagDbEntity,
     $TagEntitiesFilterComposer,
     $TagEntitiesOrderingComposer,
+    $TagEntitiesAnnotationComposer,
     $TagEntitiesCreateCompanionBuilder,
-    $TagEntitiesUpdateCompanionBuilder> {
+    $TagEntitiesUpdateCompanionBuilder,
+    (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
+    TagDbEntity,
+    PrefetchHooks Function()> {
   $TagEntitiesTableManager(_$JournalDb db, TagEntities table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $TagEntitiesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $TagEntitiesOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $TagEntitiesFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $TagEntitiesOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $TagEntitiesAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> tag = const Value.absent(),
@@ -6939,107 +7328,25 @@ class $TagEntitiesTableManager extends RootTableManager<
             serialized: serialized,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $TagEntitiesFilterComposer
-    extends FilterComposer<_$JournalDb, TagEntities> {
-  $TagEntitiesFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get tag => $state.composableBuilder(
-      column: $state.table.tag,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get type => $state.composableBuilder(
-      column: $state.table.type,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get inactive => $state.composableBuilder(
-      column: $state.table.inactive,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $TagEntitiesOrderingComposer
-    extends OrderingComposer<_$JournalDb, TagEntities> {
-  $TagEntitiesOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get tag => $state.composableBuilder(
-      column: $state.table.tag,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get type => $state.composableBuilder(
-      column: $state.table.type,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get inactive => $state.composableBuilder(
-      column: $state.table.inactive,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get private => $state.composableBuilder(
-      column: $state.table.private,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
-      column: $state.table.createdAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
-      column: $state.table.updatedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get deleted => $state.composableBuilder(
-      column: $state.table.deleted,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $TagEntitiesProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    TagEntities,
+    TagDbEntity,
+    $TagEntitiesFilterComposer,
+    $TagEntitiesOrderingComposer,
+    $TagEntitiesAnnotationComposer,
+    $TagEntitiesCreateCompanionBuilder,
+    $TagEntitiesUpdateCompanionBuilder,
+    (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
+    TagDbEntity,
+    PrefetchHooks Function()>;
 typedef $TaggedCreateCompanionBuilder = TaggedCompanion Function({
   required String id,
   required String journalId,
@@ -7053,20 +7360,82 @@ typedef $TaggedUpdateCompanionBuilder = TaggedCompanion Function({
   Value<int> rowid,
 });
 
+class $TaggedFilterComposer extends Composer<_$JournalDb, Tagged> {
+  $TaggedFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get journalId => $composableBuilder(
+      column: $table.journalId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tagEntityId => $composableBuilder(
+      column: $table.tagEntityId, builder: (column) => ColumnFilters(column));
+}
+
+class $TaggedOrderingComposer extends Composer<_$JournalDb, Tagged> {
+  $TaggedOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get journalId => $composableBuilder(
+      column: $table.journalId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tagEntityId => $composableBuilder(
+      column: $table.tagEntityId, builder: (column) => ColumnOrderings(column));
+}
+
+class $TaggedAnnotationComposer extends Composer<_$JournalDb, Tagged> {
+  $TaggedAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get journalId =>
+      $composableBuilder(column: $table.journalId, builder: (column) => column);
+
+  GeneratedColumn<String> get tagEntityId => $composableBuilder(
+      column: $table.tagEntityId, builder: (column) => column);
+}
+
 class $TaggedTableManager extends RootTableManager<
     _$JournalDb,
     Tagged,
     TaggedWith,
     $TaggedFilterComposer,
     $TaggedOrderingComposer,
+    $TaggedAnnotationComposer,
     $TaggedCreateCompanionBuilder,
-    $TaggedUpdateCompanionBuilder> {
+    $TaggedUpdateCompanionBuilder,
+    (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
+    TaggedWith,
+    PrefetchHooks Function()> {
   $TaggedTableManager(_$JournalDb db, Tagged table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer: $TaggedFilterComposer(ComposerState(db, table)),
-          orderingComposer: $TaggedOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $TaggedFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $TaggedOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $TaggedAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> journalId = const Value.absent(),
@@ -7091,45 +7460,25 @@ class $TaggedTableManager extends RootTableManager<
             tagEntityId: tagEntityId,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $TaggedFilterComposer extends FilterComposer<_$JournalDb, Tagged> {
-  $TaggedFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get journalId => $state.composableBuilder(
-      column: $state.table.journalId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get tagEntityId => $state.composableBuilder(
-      column: $state.table.tagEntityId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $TaggedOrderingComposer extends OrderingComposer<_$JournalDb, Tagged> {
-  $TaggedOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get journalId => $state.composableBuilder(
-      column: $state.table.journalId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get tagEntityId => $state.composableBuilder(
-      column: $state.table.tagEntityId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
+typedef $TaggedProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    Tagged,
+    TaggedWith,
+    $TaggedFilterComposer,
+    $TaggedOrderingComposer,
+    $TaggedAnnotationComposer,
+    $TaggedCreateCompanionBuilder,
+    $TaggedUpdateCompanionBuilder,
+    (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
+    TaggedWith,
+    PrefetchHooks Function()>;
 typedef $LinkedEntriesCreateCompanionBuilder = LinkedEntriesCompanion Function({
   required String id,
   required String fromId,
@@ -7147,22 +7496,103 @@ typedef $LinkedEntriesUpdateCompanionBuilder = LinkedEntriesCompanion Function({
   Value<int> rowid,
 });
 
+class $LinkedEntriesFilterComposer
+    extends Composer<_$JournalDb, LinkedEntries> {
+  $LinkedEntriesFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fromId => $composableBuilder(
+      column: $table.fromId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get toId => $composableBuilder(
+      column: $table.toId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnFilters(column));
+}
+
+class $LinkedEntriesOrderingComposer
+    extends Composer<_$JournalDb, LinkedEntries> {
+  $LinkedEntriesOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fromId => $composableBuilder(
+      column: $table.fromId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get toId => $composableBuilder(
+      column: $table.toId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+}
+
+class $LinkedEntriesAnnotationComposer
+    extends Composer<_$JournalDb, LinkedEntries> {
+  $LinkedEntriesAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fromId =>
+      $composableBuilder(column: $table.fromId, builder: (column) => column);
+
+  GeneratedColumn<String> get toId =>
+      $composableBuilder(column: $table.toId, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+      column: $table.serialized, builder: (column) => column);
+}
+
 class $LinkedEntriesTableManager extends RootTableManager<
     _$JournalDb,
     LinkedEntries,
     LinkedDbEntry,
     $LinkedEntriesFilterComposer,
     $LinkedEntriesOrderingComposer,
+    $LinkedEntriesAnnotationComposer,
     $LinkedEntriesCreateCompanionBuilder,
-    $LinkedEntriesUpdateCompanionBuilder> {
+    $LinkedEntriesUpdateCompanionBuilder,
+    (LinkedDbEntry, BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>),
+    LinkedDbEntry,
+    PrefetchHooks Function()> {
   $LinkedEntriesTableManager(_$JournalDb db, LinkedEntries table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $LinkedEntriesFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $LinkedEntriesOrderingComposer(ComposerState(db, table)),
+          createFilteringComposer: () =>
+              $LinkedEntriesFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $LinkedEntriesOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $LinkedEntriesAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> fromId = const Value.absent(),
@@ -7195,66 +7625,25 @@ class $LinkedEntriesTableManager extends RootTableManager<
             serialized: serialized,
             rowid: rowid,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $LinkedEntriesFilterComposer
-    extends FilterComposer<_$JournalDb, LinkedEntries> {
-  $LinkedEntriesFilterComposer(super.$state);
-  ColumnFilters<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get fromId => $state.composableBuilder(
-      column: $state.table.fromId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get toId => $state.composableBuilder(
-      column: $state.table.toId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get type => $state.composableBuilder(
-      column: $state.table.type,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $LinkedEntriesOrderingComposer
-    extends OrderingComposer<_$JournalDb, LinkedEntries> {
-  $LinkedEntriesOrderingComposer(super.$state);
-  ColumnOrderings<String> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get fromId => $state.composableBuilder(
-      column: $state.table.fromId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get toId => $state.composableBuilder(
-      column: $state.table.toId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get type => $state.composableBuilder(
-      column: $state.table.type,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get serialized => $state.composableBuilder(
-      column: $state.table.serialized,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
+typedef $LinkedEntriesProcessedTableManager = ProcessedTableManager<
+    _$JournalDb,
+    LinkedEntries,
+    LinkedDbEntry,
+    $LinkedEntriesFilterComposer,
+    $LinkedEntriesOrderingComposer,
+    $LinkedEntriesAnnotationComposer,
+    $LinkedEntriesCreateCompanionBuilder,
+    $LinkedEntriesUpdateCompanionBuilder,
+    (LinkedDbEntry, BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>),
+    LinkedDbEntry,
+    PrefetchHooks Function()>;
 
 class $JournalDbManager {
   final _$JournalDb _db;
