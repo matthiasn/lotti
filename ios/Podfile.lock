@@ -22,7 +22,7 @@ PODS:
     - Flutter
   - flutter_local_notifications (0.0.1):
     - Flutter
-  - flutter_native_splash (0.0.1):
+  - flutter_native_splash (2.4.3):
     - Flutter
   - flutter_native_timezone (0.0.1):
     - Flutter
@@ -253,8 +253,8 @@ SPEC CHECKSUMS:
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_keyboard_visibility_temp_fork: 442dadca3b81868a225cd6a2f605bffff1215844
-  flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
-  flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
+  flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
+  flutter_native_splash: e8a1e01082d97a8099d973f919f57904c925008a
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
   flutter_olm: 7154e02866bd06d91e400e94f66d5e2a955de0b1
   flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
