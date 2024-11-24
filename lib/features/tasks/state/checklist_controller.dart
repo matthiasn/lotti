@@ -75,7 +75,7 @@ class ChecklistController extends _$ChecklistController {
     if (current != null && data != null && title != null) {
       final created = await _persistenceLogic.createChecklistItem(
         title: title,
-        checklist: current,
+        checklistId: current.id,
       );
 
       if (created != null) {

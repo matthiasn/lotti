@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/ollama_prompt.dart';
 import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 
 class AiResponsePreview extends ConsumerWidget {
   const AiResponsePreview({super.key});
@@ -25,7 +28,12 @@ class AiResponsePreview extends ConsumerWidget {
 }
 
 class AiChecklistResponsePreview extends ConsumerWidget {
-  const AiChecklistResponsePreview({super.key});
+  const AiChecklistResponsePreview({
+    required this.linkedFromId,
+    super.key,
+  });
+
+  final String? linkedFromId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,12 +46,26 @@ class AiChecklistResponsePreview extends ConsumerWidget {
           constraints: const BoxConstraints(minWidth: 600),
           child: Column(
             children: [
+              const Text('Select the items that are relevant to you:'),
               for (final item in items)
                 CheckboxItemWidget(
                   title: item.title,
                   isChecked: false,
                   onChanged: (checked) {},
                 ),
+              Button(
+                'Create checklist',
+                onPressed: () {
+                  getIt<PersistenceLogic>().createChecklist(
+                    taskId: linkedFromId,
+                    items: items,
+                  );
+
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
             ],
           ),
         ),
