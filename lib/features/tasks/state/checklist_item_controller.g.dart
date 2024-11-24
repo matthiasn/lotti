@@ -7,7 +7,7 @@ part of 'checklist_item_controller.dart';
 // **************************************************************************
 
 String _$checklistItemControllerHash() =>
-    r'cf89592805757d76a4a99acd0f686a8dd07709df';
+    r'5be1b06249350cb526c6a4b91676da1c3d967df3';
 
 /// Copied from Dart SDK
 class _SystemHash {

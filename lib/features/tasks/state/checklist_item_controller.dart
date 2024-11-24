@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -62,11 +63,10 @@ class ChecklistItemController extends _$ChecklistItemController {
           isChecked: checked,
         ),
       );
-
-      getIt<PersistenceLogic>().updateChecklistItem(
-        checklistItemId: entryId,
-        data: updated.data,
-      );
+      ref.read(checklistRepositoryProvider).updateChecklistItem(
+            checklistItemId: entryId,
+            data: updated.data,
+          );
 
       state = AsyncData(updated);
     }
@@ -81,10 +81,10 @@ class ChecklistItemController extends _$ChecklistItemController {
         data: data.copyWith(title: title),
       );
 
-      getIt<PersistenceLogic>().updateChecklistItem(
-        checklistItemId: entryId,
-        data: updated.data,
-      );
+      ref.read(checklistRepositoryProvider).updateChecklistItem(
+            checklistItemId: entryId,
+            data: updated.data,
+          );
 
       state = AsyncData(updated);
     }
