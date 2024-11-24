@@ -112,7 +112,7 @@ class OutboxService {
           ),
         );
       }
-      await enqueueNextSendRequest();
+      unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,

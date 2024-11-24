@@ -1,8 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -24,10 +26,13 @@ Future<JournalEntity?> createTextEntry({String? linkedId}) async {
   return entry;
 }
 
-Future<JournalEntity?> createChecklist({required Task task}) async {
-  final entry = await getIt<PersistenceLogic>().createChecklist(
-    taskId: task.id,
-  );
+Future<JournalEntity?> createChecklist({
+  required Task task,
+  required WidgetRef ref,
+}) async {
+  final entry = await ref.read(checklistRepositoryProvider).createChecklist(
+        taskId: task.id,
+      );
 
   return entry;
 }
