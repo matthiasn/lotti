@@ -26,7 +26,7 @@ Future<JournalEntity?> createTextEntry({String? linkedId}) async {
 
 Future<JournalEntity?> createChecklist({required Task task}) async {
   final entry = await getIt<PersistenceLogic>().createChecklist(
-    task: task,
+    taskId: task.id,
   );
 
   return entry;

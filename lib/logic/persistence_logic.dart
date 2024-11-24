@@ -525,9 +525,20 @@ class PersistenceLogic {
   }
 
   Future<JournalEntity?> createChecklist({
-    required Task task,
+    required String? taskId,
+    List<ChecklistItemData>? items,
   }) async {
     try {
+      if (taskId == null) {
+        return null;
+      }
+
+      final task = await getIt<JournalDb>().journalEntityById(taskId);
+
+      if (task is! Task) {
+        return null;
+      }
+
       final now = DateTime.now();
       final id = uuid.v1();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -566,6 +577,15 @@ class PersistenceLogic {
         ),
       );
 
+      if (items != null) {
+        for (final item in items) {
+          await createChecklistItem(
+            checklistId: newChecklist.meta.id,
+            title: item.title,
+          );
+        }
+      }
+
       return newChecklist;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -579,7 +599,7 @@ class PersistenceLogic {
   }
 
   Future<JournalEntity?> createChecklistItem({
-    required Checklist checklist,
+    required String checklistId,
     required String title,
   }) async {
     try {
@@ -611,14 +631,21 @@ class PersistenceLogic {
       );
       addGeolocation(id);
 
-      await updateChecklist(
-        checklistId: checklist.id,
-        data: checklist.data.copyWith(
-          linkedChecklistItems: [
-            ...checklist.data.linkedChecklistItems,
-            newChecklistItem.meta.id,
-          ],
-        ),
+      final checklistEntity = await _journalDb.journalEntityById(checklistId);
+
+      await checklistEntity?.maybeMap(
+        checklist: (Checklist checklist) async {
+          await updateChecklist(
+            checklistId: checklistId,
+            data: checklist.data.copyWith(
+              linkedChecklistItems: [
+                ...checklist.data.linkedChecklistItems,
+                newChecklistItem.meta.id,
+              ],
+            ),
+          );
+        },
+        orElse: () async {},
       );
 
       return newChecklistItem;

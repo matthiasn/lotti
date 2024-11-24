@@ -85,7 +85,9 @@ class AiChecklistListTile extends ConsumerWidget {
         showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
-          builder: (BuildContext context) => const AiChecklistResponsePreview(),
+          builder: (BuildContext context) => AiChecklistResponsePreview(
+            linkedFromId: linkedFromId,
+          ),
         );
       },
     );
