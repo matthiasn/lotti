@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -61,10 +62,10 @@ class ChecklistController extends _$ChecklistController {
       final updated = current.copyWith(
         data: data.copyWith(title: title ?? ''),
       );
-      await _persistenceLogic.updateChecklist(
-        checklistId: entryId,
-        data: updated.data,
-      );
+      await ref.read(checklistRepositoryProvider).updateChecklist(
+            checklistId: entryId,
+            data: updated.data,
+          );
       state = AsyncData(updated);
     }
   }
@@ -73,10 +74,11 @@ class ChecklistController extends _$ChecklistController {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null && title != null) {
-      final created = await _persistenceLogic.createChecklistItem(
-        title: title,
-        checklist: current,
-      );
+      final created =
+          await ref.read(checklistRepositoryProvider).createChecklistItem(
+                title: title,
+                checklistId: current.id,
+              );
 
       if (created != null) {
         final updated = current.copyWith(
@@ -88,15 +90,15 @@ class ChecklistController extends _$ChecklistController {
           ),
         );
 
-        await _persistenceLogic.updateChecklist(
-          checklistId: current.id,
-          data: updated.data.copyWith(
-            linkedChecklistItems: [
-              ...data.linkedChecklistItems,
-              created.id,
-            ],
-          ),
-        );
+        await ref.read(checklistRepositoryProvider).updateChecklist(
+              checklistId: current.id,
+              data: updated.data.copyWith(
+                linkedChecklistItems: [
+                  ...data.linkedChecklistItems,
+                  created.id,
+                ],
+              ),
+            );
 
         state = AsyncData(updated);
       }
