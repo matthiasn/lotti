@@ -33,7 +33,7 @@ class ChecklistsWidget extends ConsumerWidget {
             Text(context.messages.checklistsTitle),
             IconButton(
               tooltip: context.messages.addActionAddChecklist,
-              onPressed: () => createChecklist(task: task),
+              onPressed: () => createChecklist(task: task, ref: ref),
               icon: const Icon(Icons.add_rounded),
             ),
           ],
