@@ -184,9 +184,7 @@ class JournalFilterIcon extends StatelessWidget {
                 return WoltModalType.dialog();
               }
             },
-            onModalDismissedWithBarrierTap: () {
-              Navigator.of(context).pop();
-            },
+            barrierDismissible: true,
           );
         },
         icon: Icon(MdiIcons.filterVariant),
