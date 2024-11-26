@@ -141,7 +141,7 @@ class ChecklistRepository {
         newChecklistItem,
         enqueueSync: true,
       );
-      //_persistenceLogic.addGeolocation(id);
+      _persistenceLogic.addGeolocation(id);
 
       return newChecklistItem;
     } catch (exception, stackTrace) {

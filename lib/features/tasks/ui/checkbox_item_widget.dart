@@ -10,6 +10,7 @@ class CheckboxItemWidget extends StatefulWidget {
     required this.title,
     required this.isChecked,
     required this.onChanged,
+    this.onDelete,
     this.onTitleChange,
     this.onEdit,
     super.key,
@@ -19,6 +20,7 @@ class CheckboxItemWidget extends StatefulWidget {
   final bool isChecked;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final StringCallback? onTitleChange;
 
   @override
@@ -87,6 +89,14 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
                   });
                 },
               ),
+              if (widget.onDelete != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_forever_rounded,
+                    size: 20,
+                  ),
+                  onPressed: widget.onDelete,
+                ),
             ],
           ),
         ),

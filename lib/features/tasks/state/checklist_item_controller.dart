@@ -44,8 +44,13 @@ class ChecklistItemController extends _$ChecklistItemController {
     }
   }
 
-  Future<JournalEntity?> _fetch() async {
-    return getIt<JournalDb>().journalEntityById(entryId);
+  Future<ChecklistItem?> _fetch() async {
+    final res = await getIt<JournalDb>().journalEntityById(entryId);
+    if (res is ChecklistItem && !res.isDeleted) {
+      return res;
+    } else {
+      return null;
+    }
   }
 
   Future<bool> delete() async {
