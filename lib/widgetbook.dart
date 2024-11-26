@@ -129,6 +129,7 @@ class WidgetbookApp extends StatelessWidget {
                       completionRate: 0.5,
                       onCreateChecklistItem: (title) {},
                       onTitleSave: (title) {},
+                      updateItemOrder: (items) async {},
                     ),
                   ),
                 ),
