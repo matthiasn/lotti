@@ -214,7 +214,7 @@ SPEC CHECKSUMS:
   package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
-  quill_native_bridge_macos: f90985c5269ac7ba84d933605b463d96e5f544fe
+  quill_native_bridge_macos: 3a5f378bc757eb92825193853020b759b56cbb2c
   record_darwin: a0d515a0ef78c440c123ea3ac76184c9927a94d6
   screen_retriever_macos: 776e0fa5d42c6163d2bf772d22478df4b302b161
   share_plus: 1fa619de8392a4398bfaf176d441853922614e89
