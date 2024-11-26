@@ -15,7 +15,9 @@ class ChecklistWidget extends StatefulWidget {
     required this.onTitleSave,
     required this.onCreateChecklistItem,
     required this.completionRate,
-    required this.id, super.key,
+    required this.id,
+    required this.updateItemOrder,
+    super.key,
   });
 
   final String id;
@@ -23,6 +25,8 @@ class ChecklistWidget extends StatefulWidget {
   final List<String> itemIds;
   final StringCallback onTitleSave;
   final StringCallback onCreateChecklistItem;
+  final Future<void> Function(List<String> linkedChecklistItems)
+      updateItemOrder;
   final double completionRate;
 
   @override
@@ -31,6 +35,21 @@ class ChecklistWidget extends StatefulWidget {
 
 class _ChecklistWidgetState extends State<ChecklistWidget> {
   bool _isEditing = false;
+  late List<String> _itemIds;
+
+  @override
+  void initState() {
+    _itemIds = widget.itemIds;
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    setState(() {
+      _itemIds = widget.itemIds;
+    });
+    super.didChangeDependencies();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +128,33 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             semanticsLabel: 'Add item to checklist',
           ),
         ),
-        ...widget.itemIds.map(CheckboxItemWrapper.new),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: _isEditing,
+          onReorder: (int oldIndex, int newIndex) {
+            final itemIds = [..._itemIds];
+            final movedItem = itemIds.removeAt(oldIndex);
+            final insertionIndex =
+                newIndex > oldIndex ? newIndex - 1 : newIndex;
+            itemIds.insert(insertionIndex, movedItem);
+            setState(() {
+              _itemIds = itemIds;
+            });
+
+            widget.updateItemOrder(itemIds);
+          },
+          children: List.generate(
+            _itemIds.length,
+            (int index) {
+              final item = _itemIds.elementAt(index);
+              return CheckboxItemWrapper(
+                item,
+                key: Key(item),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -142,6 +187,7 @@ class ChecklistWrapper extends ConsumerWidget {
       itemIds: checklist.data.linkedChecklistItems,
       onTitleSave: notifier.updateTitle,
       onCreateChecklistItem: notifier.createChecklistItem,
+      updateItemOrder: notifier.updateItemOrder,
       completionRate: completionRate,
     );
   }

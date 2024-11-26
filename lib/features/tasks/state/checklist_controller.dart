@@ -71,6 +71,21 @@ class ChecklistController extends _$ChecklistController {
     }
   }
 
+  Future<void> updateItemOrder(List<String> linkedChecklistItems) async {
+    final current = state.value;
+    final data = current?.data;
+    if (current != null && data != null) {
+      final updated = current.copyWith(
+        data: data.copyWith(linkedChecklistItems: linkedChecklistItems),
+      );
+      await ref.read(checklistRepositoryProvider).updateChecklist(
+            checklistId: entryId,
+            data: updated.data,
+          );
+      state = AsyncData(updated);
+    }
+  }
+
   Future<void> createChecklistItem(String? title) async {
     final current = state.value;
     final data = current?.data;
