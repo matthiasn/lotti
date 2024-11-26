@@ -30,6 +30,7 @@ class CheckboxItemWrapper extends ConsumerWidget {
         }
         return Dismissible(
           key: Key(item.id),
+          dismissThresholds: const {DismissDirection.endToStart: 0.25},
           onDismissed: (_) => ref.read(provider.notifier).delete(),
           background: ColoredBox(
             color: context.colorScheme.error,
