@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -116,15 +117,15 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
         ref.watch(checklistControllerProvider(id: id)).value?.data;
 
     final linkedIds = checklistData?.linkedChecklistItems ?? <String>[];
-    final total = linkedIds.length;
-
     final linkedChecklistItems = linkedIds
-        .map((id) => ref.watch(checklistItemControllerProvider(id: id)).value);
+        .map((id) => ref.watch(checklistItemControllerProvider(id: id)).value)
+        .whereNotNull()
+        .where((item) => item.isDeleted == false)
+        .toList();
+    final totalCount = linkedChecklistItems.length;
+    final completedCount =
+        linkedChecklistItems.where((item) => item.data.isChecked).length;
 
-    final completed = linkedChecklistItems
-        .where((item) => item?.data.isChecked ?? false)
-        .length;
-
-    return total == 0 ? 0.0 : completed / total;
+    return totalCount == 0 ? 0.0 : completedCount / totalCount;
   }
 }
