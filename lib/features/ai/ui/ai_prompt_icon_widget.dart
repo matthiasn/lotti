@@ -157,9 +157,7 @@ class AiAssistantModal {
           return WoltModalType.dialog();
         }
       },
-      onModalDismissedWithBarrierTap: () {
-        Navigator.of(context).pop();
-      },
+      barrierDismissible: true,
     );
   }
 }
