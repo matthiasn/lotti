@@ -105,9 +105,7 @@ class ReSyncModal {
           return WoltModalType.dialog();
         }
       },
-      onModalDismissedWithBarrierTap: () {
-        Navigator.of(context).pop();
-      },
+      barrierDismissible: true,
     );
   }
 }

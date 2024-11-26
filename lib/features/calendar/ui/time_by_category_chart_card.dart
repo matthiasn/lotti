@@ -38,10 +38,8 @@ class TimeByCategoryChartCard extends ConsumerWidget {
             ),
           ];
         },
-        modalTypeBuilder: (context) {
-          return WoltModalType.dialog();
-        },
-        onModalDismissedWithBarrierTap: Navigator.of(context).pop,
+        modalTypeBuilder: (_) => WoltModalType.dialog(),
+        barrierDismissible: true,
       );
     }
 
