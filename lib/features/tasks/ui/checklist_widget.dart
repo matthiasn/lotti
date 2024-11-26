@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
@@ -13,10 +14,11 @@ class ChecklistWidget extends StatefulWidget {
     required this.itemIds,
     required this.onTitleSave,
     required this.onCreateChecklistItem,
-    this.completionRate = 0.0,
-    super.key,
+    required this.completionRate,
+    required this.id, super.key,
   });
 
+  final String id;
   final String title;
   final List<String> itemIds;
   final StringCallback onTitleSave;
@@ -33,7 +35,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
-      initiallyExpanded: true,
+      key: ValueKey('${widget.id} ${widget.completionRate}'),
+      initiallyExpanded: widget.completionRate < 1,
       title: AnimatedCrossFade(
         duration: checklistCrossFadeDuration,
         firstChild: Padding(
@@ -129,16 +132,17 @@ class ChecklistWrapper extends ConsumerWidget {
     final completionRate =
         ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
 
-    if (checklist == null) {
+    if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();
     }
 
     return ChecklistWidget(
+      id: checklist.id,
       title: checklist.data.title,
       itemIds: checklist.data.linkedChecklistItems,
       onTitleSave: notifier.updateTitle,
       onCreateChecklistItem: notifier.createChecklistItem,
-      completionRate: completionRate ?? 0.0,
+      completionRate: completionRate,
     );
   }
 }
