@@ -6,7 +6,6 @@ import 'package:lotti/features/ai/state/ollama_prompt.dart';
 import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 
 class AiResponsePreview extends ConsumerWidget {
   const AiResponsePreview({super.key});
@@ -68,8 +67,7 @@ class _AiChecklistResponsePreviewState
                     }
                   },
                 ),
-              Button(
-                'Create checklist',
+              TextButton(
                 onPressed: () {
                   ref.read(checklistRepositoryProvider).createChecklist(
                         taskId: widget.linkedFromId,
@@ -80,6 +78,7 @@ class _AiChecklistResponsePreviewState
                     Navigator.of(context).pop();
                   }
                 },
+                child: const Text('Create checklist'),
               ),
             ],
           ),

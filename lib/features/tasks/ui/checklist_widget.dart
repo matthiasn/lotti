@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
@@ -13,14 +14,19 @@ class ChecklistWidget extends StatefulWidget {
     required this.itemIds,
     required this.onTitleSave,
     required this.onCreateChecklistItem,
-    this.completionRate = 0.0,
+    required this.completionRate,
+    required this.id,
+    required this.updateItemOrder,
     super.key,
   });
 
+  final String id;
   final String title;
   final List<String> itemIds;
   final StringCallback onTitleSave;
   final StringCallback onCreateChecklistItem;
+  final Future<void> Function(List<String> linkedChecklistItems)
+      updateItemOrder;
   final double completionRate;
 
   @override
@@ -29,11 +35,27 @@ class ChecklistWidget extends StatefulWidget {
 
 class _ChecklistWidgetState extends State<ChecklistWidget> {
   bool _isEditing = false;
+  late List<String> _itemIds;
+
+  @override
+  void initState() {
+    _itemIds = widget.itemIds;
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    setState(() {
+      _itemIds = widget.itemIds;
+    });
+    super.didChangeDependencies();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
-      initiallyExpanded: true,
+      key: ValueKey('${widget.id} ${widget.completionRate}'),
+      initiallyExpanded: widget.completionRate < 1,
       title: AnimatedCrossFade(
         duration: checklistCrossFadeDuration,
         firstChild: Padding(
@@ -106,7 +128,33 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             semanticsLabel: 'Add item to checklist',
           ),
         ),
-        ...widget.itemIds.map(CheckboxItemWrapper.new),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: _isEditing,
+          onReorder: (int oldIndex, int newIndex) {
+            final itemIds = [..._itemIds];
+            final movedItem = itemIds.removeAt(oldIndex);
+            final insertionIndex =
+                newIndex > oldIndex ? newIndex - 1 : newIndex;
+            itemIds.insert(insertionIndex, movedItem);
+            setState(() {
+              _itemIds = itemIds;
+            });
+
+            widget.updateItemOrder(itemIds);
+          },
+          children: List.generate(
+            _itemIds.length,
+            (int index) {
+              final item = _itemIds.elementAt(index);
+              return CheckboxItemWrapper(
+                item,
+                key: Key(item),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -129,16 +177,18 @@ class ChecklistWrapper extends ConsumerWidget {
     final completionRate =
         ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
 
-    if (checklist == null) {
+    if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();
     }
 
     return ChecklistWidget(
+      id: checklist.id,
       title: checklist.data.title,
       itemIds: checklist.data.linkedChecklistItems,
       onTitleSave: notifier.updateTitle,
       onCreateChecklistItem: notifier.createChecklistItem,
-      completionRate: completionRate ?? 0.0,
+      updateItemOrder: notifier.updateItemOrder,
+      completionRate: completionRate,
     );
   }
 }
