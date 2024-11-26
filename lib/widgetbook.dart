@@ -119,14 +119,17 @@ class WidgetbookApp extends StatelessWidget {
                           ),
                     ],
                     child: ChecklistWidget(
+                      id: '1',
                       title: 'Checklist',
                       itemIds: [
                         checklistItem1.meta.id,
                         checklistItem2.meta.id,
                         checklistItem3.meta.id,
                       ],
+                      completionRate: 0.5,
                       onCreateChecklistItem: (title) {},
                       onTitleSave: (title) {},
+                      updateItemOrder: (items) async {},
                     ),
                   ),
                 ),

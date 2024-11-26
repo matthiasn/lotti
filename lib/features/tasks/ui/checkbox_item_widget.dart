@@ -10,6 +10,7 @@ class CheckboxItemWidget extends StatefulWidget {
     required this.title,
     required this.isChecked,
     required this.onChanged,
+    this.onDelete,
     this.onTitleChange,
     this.onEdit,
     super.key,
@@ -19,6 +20,7 @@ class CheckboxItemWidget extends StatefulWidget {
   final bool isChecked;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final StringCallback? onTitleChange;
 
   @override
@@ -47,71 +49,80 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      title: AnimatedCrossFade(
-        duration: checklistCrossFadeDuration,
-        firstChild: TitleTextField(
-          initialValue: widget.title,
-          onSave: (title) {
-            setState(() {
-              _isEditing = false;
-            });
-            widget.onTitleChange?.call(title);
-          },
-          resetToInitialValue: true,
-          onClear: () {
-            setState(() {
-              _isEditing = false;
-            });
-          },
-        ),
-        secondChild: SizedBox(
-          width: double.infinity,
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  widget.title,
-                  softWrap: true,
-                  maxLines: 3,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        listTileTheme: Theme.of(context).listTileTheme.copyWith(
+              dense: true,
+              minVerticalPadding: 0,
+              minTileHeight: 0,
+            ),
+      ),
+      child: CheckboxListTile(
+        title: AnimatedCrossFade(
+          duration: checklistCrossFadeDuration,
+          firstChild: TitleTextField(
+            initialValue: widget.title,
+            onSave: (title) {
+              setState(() {
+                _isEditing = false;
+              });
+              widget.onTitleChange?.call(title);
+            },
+            resetToInitialValue: true,
+            onClear: () {
+              setState(() {
+                _isEditing = false;
+              });
+            },
+          ),
+          secondChild: SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    softWrap: true,
+                    maxLines: 3,
+                  ),
                 ),
-              ),
-              IconButton(
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isEditing = !_isEditing;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          crossFadeState:
+              _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+        ),
+        value: _isChecked,
+        controlAffinity: ListTileControlAffinity.leading,
+        secondary: widget.onEdit != null
+            ? IconButton(
                 icon: const Icon(
                   Icons.edit,
                   size: 20,
                 ),
-                onPressed: () {
-                  setState(() {
-                    _isEditing = !_isEditing;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        crossFadeState:
-            _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-      ),
-      value: _isChecked,
-      controlAffinity: ListTileControlAffinity.leading,
-      secondary: widget.onEdit != null
-          ? IconButton(
-              icon: const Icon(
-                Icons.edit,
-                size: 20,
-              ),
-              onPressed: widget.onEdit,
-            )
-          : null,
-      onChanged: (bool? value) {
-        final isChecked = value ?? false;
-        setState(() {
-          _isChecked = isChecked;
-        });
+                onPressed: widget.onEdit,
+              )
+            : null,
+        onChanged: (bool? value) {
+          final isChecked = value ?? false;
+          setState(() {
+            _isChecked = isChecked;
+          });
 
-        widget.onChanged(isChecked);
-      },
+          widget.onChanged(isChecked);
+        },
+      ),
     );
   }
 }
