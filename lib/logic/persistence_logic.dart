@@ -973,11 +973,12 @@ class PersistenceLogic {
 
   Future<void> addGeolocationAsync(String journalEntityId) async {
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
       final geolocation = await location?.getCurrentGeoLocation().timeout(
             const Duration(seconds: 5),
             onTimeout: () => null,
           );
+
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity != null && geolocation != null) {
         final metadata = journalEntity.meta;
