@@ -43,7 +43,10 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         if (self.whisperKit == nil ||
                             self.whisperKit?.modelVariant.description != model ||
                             self.whisperKit?.modelState != ModelState.loaded) {
-                            self.eventSink?(["Initializing model...", ""])
+                            
+                            DispatchQueue.main.async {
+                                self.eventSink?(["Initializing model...", ""])
+                            }
                             
                             await self.whisperKit?.unloadModels()
                             self.whisperKit = try await WhisperKit(model: model,
@@ -52,7 +55,9 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                         }
                         
                         if (self.whisperKit == nil) {
-                            self.eventSink?(["Failed to load model", ""])
+                            DispatchQueue.main.async {
+                                self.eventSink?(["Failed to load model", ""])
+                            }
                         } else {
                             let transcription = try await self.whisperKit?.transcribe(
                                 audioPath: audioFilePath,
@@ -68,17 +73,21 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                             let text : String? = transcription?.first?.text
                             let detectedLanguage = transcription?.first?.language
                             let data = [detectedLanguage, self.whisperKit?.modelVariant.description, text]
-                            result(data)
+                            
+                            DispatchQueue.main.async {
+                                result(data)
+                            }
                         }
-                        
-                        
                     } catch {
-                        self.eventSink?(["Failed to transcribe audio: \(error)", ""])
-                        
+                        DispatchQueue.main.async {
+                            self.eventSink?(["Failed to transcribe audio: \(error)", ""])
+                        }
                     }
                 }
             default:
-                result(FlutterMethodNotImplemented)
+                DispatchQueue.main.async {
+                    result(FlutterMethodNotImplemented)
+                }
             }
         }
         
@@ -90,8 +99,10 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
             return nil
         }
         
-        eventSink([progress.text,
-                   progress.timings.pipelineStart.formatted()])
+        DispatchQueue.main.async {
+            eventSink([progress.text,
+                       progress.timings.pipelineStart.formatted()])
+        }
         return nil
     }
     
