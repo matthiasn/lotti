@@ -86,7 +86,7 @@ class ChecklistController extends _$ChecklistController {
     }
   }
 
-  Future<void> createChecklistItem(String? title) async {
+  Future<String?> createChecklistItem(String? title) async {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null && title != null) {
@@ -117,8 +117,10 @@ class ChecklistController extends _$ChecklistController {
             );
 
         state = AsyncData(updated);
+        return created.id;
       }
     }
+    return null;
   }
 }
 

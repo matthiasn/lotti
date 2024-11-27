@@ -24,7 +24,7 @@ class ChecklistWidget extends StatefulWidget {
   final String title;
   final List<String> itemIds;
   final StringCallback onTitleSave;
-  final StringCallback onCreateChecklistItem;
+  final Future<String?> Function(String?) onCreateChecklistItem;
   final Future<void> Function(List<String> linkedChecklistItems)
       updateItemOrder;
   final double completionRate;
@@ -39,8 +39,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
 
   @override
   void initState() {
-    _itemIds = widget.itemIds;
     super.initState();
+    _itemIds = widget.itemIds;
   }
 
   @override
@@ -54,6 +54,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
+      maintainState: true,
       key: ValueKey('${widget.id} ${widget.completionRate}'),
       initiallyExpanded: widget.completionRate < 1,
       title: AnimatedCrossFade(
@@ -121,8 +122,13 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             vertical: 10,
           ),
           child: TitleTextField(
-            onSave: (title) {
-              widget.onCreateChecklistItem.call(title);
+            onSave: (title) async {
+              final id = await widget.onCreateChecklistItem.call(title);
+              setState(() {
+                if (id != null) {
+                  _itemIds = [..._itemIds, id];
+                }
+              });
             },
             clearOnSave: true,
             semanticsLabel: 'Add item to checklist',
