@@ -57,6 +57,10 @@ class MaintenancePage extends StatelessWidget {
                 onTap: maintenance.syncDefinitions,
               ),
               SettingsCard(
+                title: context.messages.maintenanceSyncCategories,
+                onTap: maintenance.syncCategories,
+              ),
+              SettingsCard(
                 title: context.messages.maintenancePurgeDeleted,
                 onTap: db.purgeDeleted,
               ),
