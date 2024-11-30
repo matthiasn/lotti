@@ -145,6 +145,20 @@ class Maintenance {
     }
   }
 
+  Future<void> syncCategories() async {
+    final outboxService = getIt<OutboxService>();
+    final categories = await _db.watchCategories().first;
+
+    for (final category in categories) {
+      await outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: category,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    }
+  }
+
   Future<void> deleteTaggedLinks() async {
     await createDbBackup(journalDbFileName);
     await _db.deleteTagged();

@@ -156,6 +156,7 @@
   "maintenanceResetHostId": "Reset Host ID",
   "maintenanceStories": "Assign stories from parent entries",
   "maintenanceSyncDefinitions": "Sync tags, measurables, dashboards, habits",
+  "maintenanceSyncCategories": "Sync categories",
   "maintenanceSyncSkip": "Skip sync message",
   "manualLinkText": "Check out the manual for more information",
   "measurableDeleteConfirm": "YES, DELETE THIS MEASURABLE",
