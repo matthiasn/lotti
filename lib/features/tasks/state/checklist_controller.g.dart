@@ -7,7 +7,7 @@ part of 'checklist_controller.dart';
 // **************************************************************************
 
 String _$checklistControllerHash() =>
-    r'7484a3e7f406e25b55c944337e08257efb2082cb';
+    r'f2f64aaf386fcb76fa5ef2c281ffe6ec5afbf62f';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -176,7 +176,7 @@ class _ChecklistControllerProviderElement
 }
 
 String _$checklistCompletionControllerHash() =>
-    r'5a77b1e2f4430530570968cae7eeea098ea9aaf7';
+    r'eba25442a2767af0e8a5ace1889ed6233baf1535';
 
 abstract class _$ChecklistCompletionController
     extends BuildlessAutoDisposeAsyncNotifier<double> {
