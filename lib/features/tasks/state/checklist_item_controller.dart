@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -78,7 +77,6 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   void updateTitle(String? title) {
-    debugPrint('updateTitle $title');
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null && title != null) {
@@ -87,6 +85,33 @@ class ChecklistItemController extends _$ChecklistItemController {
       );
 
       ref.read(checklistRepositoryProvider).updateChecklistItem(
+            checklistItemId: entryId,
+            data: updated.data,
+          );
+
+      state = AsyncData(updated);
+    }
+  }
+
+  Future<void> moveToChecklist({
+    required String linkedChecklistId,
+    required String fromChecklistId,
+  }) async {
+    final current = state.value;
+    final data = current?.data;
+    if (current != null && data != null) {
+      final linkedChecklists = {
+        ...data.linkedChecklists,
+        linkedChecklistId,
+      }..remove(fromChecklistId);
+
+      final updated = current.copyWith(
+        data: data.copyWith(
+          linkedChecklists: linkedChecklists.toList(),
+        ),
+      );
+
+      await ref.read(checklistRepositoryProvider).updateChecklistItem(
             checklistItemId: entryId,
             data: updated.data,
           );
