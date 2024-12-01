@@ -56,28 +56,67 @@ class ChecklistController extends _$ChecklistController {
     return res;
   }
 
-  Future<void> updateTitle(String? title) async {
-    final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null) {
-      final updated = current.copyWith(
-        data: data.copyWith(title: title ?? ''),
+  Future<void> updateTitle(String? title) => updateChecklist(
+        (checklist) => checklist.copyWith(
+          data: checklist.data.copyWith(title: title ?? ''),
+        ),
       );
-      await ref.read(checklistRepositoryProvider).updateChecklist(
-            checklistId: entryId,
-            data: updated.data,
+
+  Future<void> updateItemOrder(List<String> linkedChecklistItems) =>
+      updateChecklist(
+        (checklist) => checklist.copyWith(
+          data: checklist.data
+              .copyWith(linkedChecklistItems: linkedChecklistItems),
+        ),
+      );
+
+  Future<void> dropChecklistItem(Object? localData) async {
+    if (localData != null && localData is Map && localData.isNotEmpty) {
+      final droppedChecklistItemId = localData['checklistItemId'] as String;
+      final fromChecklistId = localData['checklistId'] as String;
+
+      await ref
+          .read(
+            checklistItemControllerProvider(id: droppedChecklistItemId)
+                .notifier,
+          )
+          .moveToChecklist(
+            linkedChecklistId: droppedChecklistItemId,
+            fromChecklistId: fromChecklistId,
           );
-      state = AsyncData(updated);
+
+      await updateChecklist(
+        (checklist) => checklist.copyWith(
+          data: checklist.data.copyWith(
+            linkedChecklistItems: {
+              ...checklist.data.linkedChecklistItems,
+              droppedChecklistItemId,
+            }.toList(),
+          ),
+        ),
+      );
+
+      await ref
+          .read(checklistControllerProvider(id: fromChecklistId).notifier)
+          .unlinkItem(droppedChecklistItemId);
     }
   }
 
-  Future<void> updateItemOrder(List<String> linkedChecklistItems) async {
+  Future<void> unlinkItem(String checklistItemId) => updateChecklist(
+        (checklist) => checklist.copyWith(
+          data: checklist.data.copyWith(
+            linkedChecklistItems: checklist.data.linkedChecklistItems
+                .where((id) => id != checklistItemId)
+                .toList(),
+          ),
+        ),
+      );
+
+  Future<void> updateChecklist(Checklist Function(Checklist) updateFn) async {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null) {
-      final updated = current.copyWith(
-        data: data.copyWith(linkedChecklistItems: linkedChecklistItems),
-      );
+      final updated = updateFn(current);
       await ref.read(checklistRepositoryProvider).updateChecklist(
             checklistId: entryId,
             data: updated.data,
