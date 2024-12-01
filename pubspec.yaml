@@ -142,6 +142,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
+  super_drag_and_drop: ^0.8.24
   timezone: ^0.10.0
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2

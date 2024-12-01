@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
@@ -44,11 +41,13 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   }
 
   @override
-  void didChangeDependencies() {
-    setState(() {
-      _itemIds = widget.itemIds;
-    });
-    super.didChangeDependencies();
+  void didUpdateWidget(ChecklistWidget oldWidget) {
+    if (oldWidget.itemIds != widget.itemIds) {
+      setState(() {
+        _itemIds = widget.itemIds;
+      });
+    }
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
@@ -156,45 +155,13 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
               final item = _itemIds.elementAt(index);
               return CheckboxItemWrapper(
                 item,
-                key: Key(item),
+                checklistId: widget.id,
+                key: Key('$item${widget.id}$index'),
               );
             },
           ),
         ),
       ],
-    );
-  }
-}
-
-class ChecklistWrapper extends ConsumerWidget {
-  const ChecklistWrapper({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = checklistControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
-    final checklist = ref.watch(provider).value;
-
-    final completionRate =
-        ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
-
-    if (checklist == null || completionRate == null) {
-      return const SizedBox.shrink();
-    }
-
-    return ChecklistWidget(
-      id: checklist.id,
-      title: checklist.data.title,
-      itemIds: checklist.data.linkedChecklistItems,
-      onTitleSave: notifier.updateTitle,
-      onCreateChecklistItem: notifier.createChecklistItem,
-      updateItemOrder: notifier.updateItemOrder,
-      completionRate: completionRate,
     );
   }
 }

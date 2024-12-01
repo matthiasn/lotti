@@ -86,6 +86,67 @@ class ChecklistController extends _$ChecklistController {
     }
   }
 
+  Future<void> dropChecklistItem(Object? localData) async {
+    final current = state.value;
+    final data = current?.data;
+    if (current != null &&
+        data != null &&
+        localData != null &&
+        localData is Map &&
+        localData.isNotEmpty) {
+      final droppedChecklistItemId = localData['checklistItemId'] as String;
+      final fromChecklistId = localData['checklistId'] as String;
+
+      await ref
+          .read(
+            checklistItemControllerProvider(id: droppedChecklistItemId)
+                .notifier,
+          )
+          .moveToChecklist(
+            linkedChecklistId: droppedChecklistItemId,
+            fromChecklistId: fromChecklistId,
+          );
+
+      final updated = current.copyWith(
+        data: data.copyWith(
+          linkedChecklistItems: {
+            ...current.data.linkedChecklistItems,
+            droppedChecklistItemId,
+          }.toList(),
+        ),
+      );
+      await ref.read(checklistRepositoryProvider).updateChecklist(
+            checklistId: entryId,
+            data: updated.data,
+          );
+
+      await ref
+          .read(checklistControllerProvider(id: fromChecklistId).notifier)
+          .unlinkItem(droppedChecklistItemId);
+
+      state = AsyncData(updated);
+    }
+  }
+
+  Future<void> unlinkItem(String checklistItemId) async {
+    final current = state.value;
+    final data = current?.data;
+    if (current != null && data != null) {
+      final updated = current.copyWith(
+        data: data.copyWith(
+          linkedChecklistItems: current.data.linkedChecklistItems
+              .where((id) => id != checklistItemId)
+              .toList(),
+        ),
+      );
+      await ref.read(checklistRepositoryProvider).updateChecklist(
+            checklistId: entryId,
+            data: updated.data,
+          );
+      state = AsyncData(updated);
+    }
+  }
+
   Future<String?> createChecklistItem(String? title) async {
     final current = state.value;
     final data = current?.data;
