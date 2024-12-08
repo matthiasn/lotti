@@ -111,4 +111,6 @@ final entryTypeDisplayNames = {
   'WorkoutEntry': 'Workout',
   'HabitCompletionEntry': 'Habit',
   'QuantitativeEntry': 'Health',
+  'Checklist': 'Checklist',
+  'ChecklistItem': 'ChecklistItem',
 };

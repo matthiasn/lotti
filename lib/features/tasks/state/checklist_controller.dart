@@ -18,15 +18,16 @@ class ChecklistController extends _$ChecklistController {
     listen();
   }
   late final String entryId;
+  final subscribedIds = <String>{};
   StreamSubscription<Set<String>>? _updateSubscription;
   final _persistenceLogic = getIt<PersistenceLogic>();
 
   void listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(entryId)) {
+      if (affectedIds.intersection(subscribedIds).isNotEmpty) {
         final latest = await _fetch();
-        if (latest != state.value && latest is Checklist) {
+        if (latest != state.value) {
           state = AsyncData(latest);
         }
       }
@@ -36,18 +37,25 @@ class ChecklistController extends _$ChecklistController {
   @override
   Future<Checklist?> build({required String id}) async {
     entryId = id;
+    subscribedIds.add(id);
     ref.onDispose(() => _updateSubscription?.cancel());
-    final entry = await _fetch();
+    final checklist = await _fetch();
 
-    if (entry is Checklist) {
-      return entry;
+    if (checklist != null) {
+      subscribedIds.addAll(checklist.data.linkedChecklistItems);
+    }
+
+    return checklist;
+  }
+
+  Future<Checklist?> _fetch() async {
+    final res = await getIt<JournalDb>().journalEntityById(entryId);
+
+    if (res is Checklist && !res.isDeleted) {
+      return res;
     } else {
       return null;
     }
-  }
-
-  Future<JournalEntity?> _fetch() async {
-    return getIt<JournalDb>().journalEntityById(entryId);
   }
 
   Future<bool> delete() async {

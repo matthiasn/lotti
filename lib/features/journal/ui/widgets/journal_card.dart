@@ -244,6 +244,8 @@ class _JournalCardState extends ConsumerState<JournalCard> {
                     : errorColor.withOpacity(0.4),
               );
             },
+            checklist: (_) => LeadingIcon(MdiIcons.checkAll),
+            checklistItem: (_) => LeadingIcon(MdiIcons.check),
             quantitative: (_) => LeadingIcon(MdiIcons.heart),
             measurement: (_) => LeadingIcon(MdiIcons.numeric),
             habitCompletion: (habitCompletion) =>
