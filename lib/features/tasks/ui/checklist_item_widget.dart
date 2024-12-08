@@ -5,8 +5,8 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 // ignore: avoid_positional_boolean_parameters
 typedef BoolCallback = void Function(bool);
 
-class CheckboxItemWidget extends StatefulWidget {
-  const CheckboxItemWidget({
+class ChecklistItemWidget extends StatefulWidget {
+  const ChecklistItemWidget({
     required this.title,
     required this.isChecked,
     required this.onChanged,
@@ -24,10 +24,10 @@ class CheckboxItemWidget extends StatefulWidget {
   final StringCallback? onTitleChange;
 
   @override
-  State<CheckboxItemWidget> createState() => _CheckboxItemWidgetState();
+  State<ChecklistItemWidget> createState() => _ChecklistItemWidgetState();
 }
 
-class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
+class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
   late bool _isChecked;
   bool _isEditing = false;
 
@@ -38,7 +38,7 @@ class _CheckboxItemWidgetState extends State<CheckboxItemWidget> {
   }
 
   @override
-  void didUpdateWidget(CheckboxItemWidget oldWidget) {
+  void didUpdateWidget(ChecklistItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isChecked != widget.isChecked) {
       setState(() {

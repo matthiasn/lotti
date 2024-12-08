@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
-import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/get_it.dart';
@@ -60,7 +60,7 @@ class WidgetbookApp extends StatelessWidget {
               useCases: [
                 WidgetbookUseCase(
                   name: 'CheckboxItemWidget',
-                  builder: (context) => CheckboxItemWidget(
+                  builder: (context) => ChecklistItemWidget(
                     title: 'Create PR',
                     isChecked: true,
                     onChanged: (checked) {},

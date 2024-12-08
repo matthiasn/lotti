@@ -180,7 +180,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalDbEntity?> entityById(String id) async {
-    final res = await (select(journal)..where((t) => t.id.equals(id))).get();
+    final res = await (select(journal)
+          ..where((t) => t.id.equals(id))
+          ..where((t) => t.deleted.equals(false)))
+        .get();
+
     return res.firstOrNull;
   }
 

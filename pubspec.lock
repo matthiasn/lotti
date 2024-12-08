@@ -370,10 +370,10 @@ packages:
     dependency: transitive
     description:
       name: coverage
-      sha256: "4b03e11f6d5b8f6e5bb5e9f7889a56fe6c5cbe942da5378ea4d4d7f73ef9dfe5"
+      sha256: e3493833ea012784c740e341952298f1cc77f1f01b1bbc3eb4eecf6984fb7f43
       url: "https://pub.dev"
     source: hosted
-    version: "1.11.0"
+    version: "1.11.1"
   cross_file:
     dependency: transitive
     description:
@@ -571,10 +571,10 @@ packages:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: "488263d85d027333fc602eb7714125de317e8c7db064aa6c2f208a8f79139e7b"
+      sha256: f4ab5d6976b1e31551ceb82ff597a505bda7818ff4f7be08a1da9d55eb6e730c
       url: "https://pub.dev"
     source: hosted
-    version: "2.22.0"
+    version: "2.22.1"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -918,10 +918,10 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_launcher_icons
-      sha256: "619817c4b65b322b5104b6bb6dfe6cda62d9729bd7ad4303ecc8b4e690a67a77"
+      sha256: "31cd0885738e87c72d6f055564d37fabcdacee743b396b78c7636c169cac64f5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.14.1"
+    version: "0.14.2"
   flutter_linkify:
     dependency: "direct main"
     description:
@@ -1552,10 +1552,10 @@ packages:
     dependency: "direct main"
     description:
       name: jiffy
-      sha256: "3497caaa36d36a29033e66803c9739ce6bccbc7e241ca46070f76ee9e6f6eb0c"
+      sha256: "1c1b86459969ff9f32dc5b0ffe392f1e08181e66396cf9dd8fa7c90552a691af"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.1"
+    version: "6.3.2"
   jovial_misc:
     dependency: transitive
     description:
@@ -2024,10 +2024,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_foundation
-      sha256: f234384a3fdd67f989b4d54a5d73ca2a6c422fa55ae694381ae0f4375cd1ea16
+      sha256: "4843174df4d288f5e29185bd6e72a6fbdf5a4a4602717eed565497429f179942"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.1"
   path_provider_linux:
     dependency: transitive
     description:
@@ -2240,10 +2240,10 @@ packages:
     dependency: transitive
     description:
       name: quill_native_bridge_android
-      sha256: "7d77c4aafe0daf73df01e996d0ac37a0401e19b92210ce5fce76cb064cf57b18"
+      sha256: b75c7e6ede362a7007f545118e756b1f19053994144ec9eda932ce5e54a57569
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.1"
+    version: "0.0.1+2"
   quill_native_bridge_ios:
     dependency: transitive
     description:
@@ -2545,10 +2545,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_android
-      sha256: "3b9febd815c9ca29c9e3520d50ec32f49157711e143b7a4ca039eb87e8ade5ab"
+      sha256: "7f172d1b06de5da47b6264c2692ee2ead20bbbc246690427cdb4fc301cd0c549"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.3"
+    version: "2.3.4"
   shared_preferences_foundation:
     dependency: transitive
     description:
@@ -2758,10 +2758,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "7ae52b23366e5295005022e62fa093f64bfe190810223ea0ebf733a4cd140bce"
+      sha256: "636b0fe8a2de894e5455572f6cbbc458f4ffecfe9f860b79439e27041ea4f0b9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.26"
+    version: "0.5.27"
   sqlparser:
     dependency: transitive
     description:
@@ -3014,10 +3014,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_ios
-      sha256: e43b677296fadce447e987a2f519dcf5f6d1e527dc35d01ffab4fff5b8a7063e
+      sha256: "16a513b6c12bb419304e72ea0ae2ab4fed569920d1c7cb850263fe3acc824626"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.1"
+    version: "6.3.2"
   url_launcher_linux:
     dependency: transitive
     description:
@@ -3030,10 +3030,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_macos
-      sha256: "769549c999acdb42b8bcfa7c43d72bf79a382ca7441ab18a808e101149daf672"
+      sha256: "17ba2000b847f334f16626a574c702b196723af2a289e7a93ffcb79acff855c2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.1"
+    version: "3.2.2"
   url_launcher_platform_interface:
     dependency: transitive
     description:
@@ -3134,10 +3134,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: "0b146e5d82e886ff43e5a46c6bcbe390761b802864a6e2503eb612d69a405dfa"
+      sha256: f498e44a547a3572a928fa30ac8760e127d5e5fc86b81b10b0d56300866322f3
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.3"
+    version: "2.6.4"
   video_player_platform_interface:
     dependency: transitive
     description:
