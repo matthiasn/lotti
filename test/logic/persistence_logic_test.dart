@@ -133,14 +133,6 @@ void main() {
           testText,
         );
 
-        // expect to get created entry in watch stream
-        expect(
-          (await getIt<JournalDb>().watchEntityById(textEntry.meta.id).first)
-              ?.entryText
-              ?.plainText,
-          testText,
-        );
-
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntity(
           textEntry.copyWith(
@@ -152,14 +144,6 @@ void main() {
         // expect to find updated entry
         expect(
           (await getIt<JournalDb>().journalEntityById(textEntry.meta.id))
-              ?.entryText
-              ?.plainText,
-          updatedTestText,
-        );
-
-        // expect to get updated entry in watch stream
-        expect(
-          (await getIt<JournalDb>().watchEntityById(textEntry.meta.id).first)
               ?.entryText
               ?.plainText,
           updatedTestText,

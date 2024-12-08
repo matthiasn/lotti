@@ -12,7 +12,6 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -489,25 +488,6 @@ class JournalDb extends _$JournalDb {
   }) async {
     final dbEntities = await sortedInRange(rangeStart, rangeEnd).get();
     return dbEntities.map(fromDbEntity).toList();
-  }
-
-  Stream<Map<String, Duration>> watchLinkedTotalDuration({
-    required String linkedFrom,
-  }) {
-    return watchLinkedEntities(
-      linkedFrom: linkedFrom,
-    ).map((
-      List<JournalEntity> items,
-    ) {
-      final durations = <String, Duration>{};
-      for (final journalEntity in items) {
-        if (journalEntity is! Task) {
-          final duration = entryDuration(journalEntity);
-          durations[journalEntity.meta.id] = duration;
-        }
-      }
-      return durations;
-    });
   }
 
   Stream<List<JournalEntity>> watchLinkedToEntities({

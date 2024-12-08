@@ -117,22 +117,6 @@ void main() {
         ]),
       );
 
-      when(
-        () => mockJournalDb.watchEntityById(testTask.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testTask]),
-      );
-
-      when(
-        () => mockJournalDb.watchLinkedTotalDuration(
-          linkedFrom: testTask.meta.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<Map<String, Duration>>.fromIterable([
-          {testTask.meta.id: const Duration(hours: 1)},
-        ]),
-      );
-
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
@@ -158,12 +142,6 @@ void main() {
           limit: 50,
         ),
       ).thenAnswer((_) async => [testTextEntry]);
-
-      when(
-        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
-      );
 
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
@@ -293,12 +271,6 @@ void main() {
         ),
       ).thenAnswer((_) async => [testWeightEntry]);
 
-      when(
-        () => mockJournalDb.watchEntityById(testWeightEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testWeightEntry]),
-      );
-
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       when(() => mockJournalDb.journalEntityById(testWeightEntry.meta.id))
@@ -343,14 +315,6 @@ void main() {
           private: false,
         );
       }
-
-      when(
-        () => mockJournalDb
-            .watchEntityById(testMeasurementChocolateEntry.meta.id),
-      ).thenAnswer(
-        (_) =>
-            Stream<JournalEntity>.fromIterable([testMeasurementChocolateEntry]),
-      );
 
       when(
         () => mockJournalDb.watchMeasurableDataTypeById(
@@ -457,12 +421,6 @@ void main() {
         (_) => Stream<MeasurableDataType>.fromIterable([
           measurableCoverage,
         ]),
-      );
-
-      when(
-        () => mockJournalDb.watchEntityById(testMeasuredCoverageEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testMeasuredCoverageEntry]),
       );
 
       when(
