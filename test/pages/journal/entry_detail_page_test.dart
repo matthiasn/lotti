@@ -145,24 +145,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchEntityById(testTask.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testTask]),
-      );
-
-      when(
-        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
-      );
-
-      when(
-        () => mockJournalDb.watchEntityById(testWeightEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testWeightEntry]),
-      );
-
-      when(
         () => mockEditorStateService.getUnsavedStream(
           any(),
           any(),
@@ -185,13 +167,9 @@ void main() {
       ).thenAnswer((_) => Stream<List<JournalEntity>>.fromIterable([]));
 
       when(
-        () => mockJournalDb.watchLinkedTotalDuration(
-          linkedFrom: testTask.meta.id,
-        ),
+        () => mockJournalDb.getLinkedEntities(testTask.meta.id),
       ).thenAnswer(
-        (_) => Stream<Map<String, Duration>>.fromIterable([
-          {testTask.meta.id: const Duration(hours: 1)},
-        ]),
+        (_) async => [testTextEntry],
       );
 
       when(mockTimeService.getStream)
@@ -224,15 +202,6 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('Text Entry is rendered', (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
-        );
-      }
-
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
 
@@ -263,15 +232,6 @@ void main() {
     });
 
     testWidgets('Task Entry is rendered', (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
-        );
-      }
-
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
       when(() => mockJournalDb.journalEntityById(testTask.meta.id))
           .thenAnswer((_) async => testTask);
 
@@ -291,12 +251,12 @@ void main() {
         findsOneWidget,
       );
 
-      // test task displays progress bar with 2 hours progress and 3 hours total
+      // test task displays progress bar with 2 hours progress and 4 hours total
       final progressBar =
           tester.firstWidget(find.byType(LinearProgressIndicator))
               as LinearProgressIndicator;
       expect(progressBar, isNotNull);
-      expect(progressBar.value, 0.5);
+      expect(progressBar.value, 0.25);
 
       // test task title is displayed
       expect(find.text(testTask.data.title), findsNWidgets(2));
@@ -304,7 +264,7 @@ void main() {
       // task entry duration is rendered
       expect(
         find.text('02:00:00'),
-        findsNWidgets(2),
+        findsNWidgets(1),
       );
 
       // test task is starred
