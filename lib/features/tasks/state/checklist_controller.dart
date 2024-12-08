@@ -75,6 +75,10 @@ class ChecklistController extends _$ChecklistController {
       final droppedChecklistItemId = localData['checklistItemId'] as String;
       final fromChecklistId = localData['checklistId'] as String;
 
+      if (fromChecklistId == entryId) {
+        return;
+      }
+
       await ref
           .read(
             checklistItemControllerProvider(id: droppedChecklistItemId)
