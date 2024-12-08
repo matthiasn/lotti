@@ -46,7 +46,12 @@ class TaskSliverAppBar extends ConsumerWidget {
       titleSpacing: 0,
       scrolledUnderElevation: 10,
       elevation: 10,
-      title: LinkedDuration(task: item),
+      title: Column(
+        children: [
+          LinkedDuration(task: item),
+          LinkedDuration2(taskId: item.id),
+        ],
+      ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(25),
         child: AnimatedOpacity(
