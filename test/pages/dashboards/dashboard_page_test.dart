@@ -72,12 +72,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchEntityById(testTask.meta.id),
-      ).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([testTask]),
-      );
-
-      when(
         () => mockJournalDb.watchSurveysByType(
           type: any(named: 'type'),
           rangeStart: any(named: 'rangeStart'),
@@ -112,16 +106,6 @@ void main() {
 
       when(mockHealthImport.getWorkoutsHealthDataDelta)
           .thenAnswer((_) async {});
-
-      when(
-        () => mockJournalDb.watchLinkedTotalDuration(
-          linkedFrom: testTask.meta.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<Map<String, Duration>>.fromIterable([
-          {testTask.meta.id: const Duration(hours: 1)},
-        ]),
-      );
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));

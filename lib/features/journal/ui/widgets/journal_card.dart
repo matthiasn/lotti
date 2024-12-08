@@ -153,7 +153,7 @@ class JournalCardTitle extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (showLinkedDuration) LinkedDuration(task: task),
+                    if (showLinkedDuration) LinkedDuration(taskId: task.id),
                     TextViewerWidget(
                       entryText: task.entryText,
                       maxHeight: maxHeight,
