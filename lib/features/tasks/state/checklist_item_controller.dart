@@ -23,7 +23,7 @@ class ChecklistItemController extends _$ChecklistItemController {
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
       if (affectedIds.contains(entryId)) {
         final latest = await _fetch();
-        if (latest != state.value && latest is ChecklistItem) {
+        if (latest != state.value) {
           state = AsyncData(latest);
         }
       }
@@ -34,13 +34,7 @@ class ChecklistItemController extends _$ChecklistItemController {
   Future<ChecklistItem?> build({required String id}) async {
     entryId = id;
     ref.onDispose(() => _updateSubscription?.cancel());
-    final entry = await _fetch();
-
-    if (entry is ChecklistItem) {
-      return entry;
-    } else {
-      return null;
-    }
+    return _fetch();
   }
 
   Future<ChecklistItem?> _fetch() async {

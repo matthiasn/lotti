@@ -195,11 +195,23 @@ extension JournalEntityExtension on JournalEntity {
   bool get isDeleted => meta.deletedAt != null;
 
   Set<String> get affectedIds {
-    final ids = <String>{meta.id};
+    final ids = <String>{id};
 
     if (this is HabitCompletionEntry) {
       final habitCompletion = this as HabitCompletionEntry;
       ids.add(habitCompletion.data.habitId);
+    }
+
+    if (this is Checklist) {
+      final checklist = this as Checklist;
+      ids
+        ..addAll(checklist.data.linkedChecklistItems)
+        ..addAll(checklist.data.linkedTasks);
+    }
+
+    if (this is ChecklistItem) {
+      final checklistItem = this as ChecklistItem;
+      ids.addAll(checklistItem.data.linkedChecklists);
     }
 
     return ids;

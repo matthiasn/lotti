@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/tasks/ui/checkbox_item_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/themes/colors.dart';
@@ -152,11 +152,11 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           children: List.generate(
             _itemIds.length,
             (int index) {
-              final item = _itemIds.elementAt(index);
-              return CheckboxItemWrapper(
-                item,
+              final itemId = _itemIds.elementAt(index);
+              return ChecklistItemWrapper(
+                itemId,
                 checklistId: widget.id,
-                key: Key('$item${widget.id}$index'),
+                key: Key('$itemId${widget.id}$index'),
               );
             },
           ),
