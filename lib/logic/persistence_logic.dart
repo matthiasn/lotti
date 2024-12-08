@@ -1282,7 +1282,6 @@ class PersistenceLogic {
       );
 
       await _journalDb.updateJournalEntity(journalEntity);
-
       _updateNotifications.notify(journalEntity.affectedIds);
 
       await getIt<Fts5Db>().insertText(

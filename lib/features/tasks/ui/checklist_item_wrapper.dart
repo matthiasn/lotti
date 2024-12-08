@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
-import 'package:lotti/features/tasks/ui/checkbox_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
-class CheckboxItemWrapper extends ConsumerWidget {
-  const CheckboxItemWrapper(
+class ChecklistItemWrapper extends ConsumerWidget {
+  const ChecklistItemWrapper(
     this.itemId, {
     required this.checklistId,
     super.key,
@@ -28,7 +28,7 @@ class CheckboxItemWrapper extends ConsumerWidget {
     return item.map(
       data: (data) {
         final item = data.value;
-        if (item == null) {
+        if (item == null || item.isDeleted) {
           return const SizedBox.shrink();
         }
         return DragItemWidget(
@@ -87,7 +87,7 @@ class CheckboxItemWrapper extends ConsumerWidget {
                 );
                 return result ?? false;
               },
-              child: CheckboxItemWidget(
+              child: ChecklistItemWidget(
                 title: item.data.title,
                 isChecked: item.data.isChecked,
                 onChanged: (checked) =>

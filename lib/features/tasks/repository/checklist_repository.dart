@@ -55,7 +55,7 @@ class ChecklistRepository {
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
         data: ChecklistData(
-          title: 'Checklist: ${task.data.title}',
+          title: task.data.title,
           linkedChecklistItems: [],
           linkedTasks: [task.id],
         ),
@@ -133,7 +133,7 @@ class ChecklistRepository {
         data: ChecklistItemData(
           title: title,
           isChecked: false,
-          linkedChecklists: [],
+          linkedChecklists: [checklistId],
         ),
       );
 
