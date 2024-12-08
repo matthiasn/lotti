@@ -1,9 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -99,6 +101,68 @@ class LinkedDuration extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class LinkedDuration2 extends ConsumerWidget {
+  const LinkedDuration2({
+    required this.taskId,
+    super.key,
+  });
+
+  final String taskId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state =
+        ref.watch(taskProgressControllerProvider(id: taskId)).valueOrNull;
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
+
+    final progress = state.progress;
+    final estimate = state.estimate;
+
+    final durationStyle = monospaceTextStyleSmall.copyWith(
+      color: (progress > estimate)
+          ? context.colorScheme.error
+          : context.colorScheme.outline,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 20),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              minHeight: 5,
+              value: min(progress.inSeconds / estimate.inSeconds, 1),
+              color: (progress > estimate) ? failColor : successColor,
+              backgroundColor: successColor.desaturate().withOpacity(0.3),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  formatDuration(progress),
+                  style: durationStyle,
+                ),
+                Text(
+                  formatDuration(estimate),
+                  style: durationStyle,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
