@@ -375,4 +375,6 @@ final List<String> entryTypes = [
   'WorkoutEntry',
   'HabitCompletionEntry',
   'QuantitativeEntry',
+  'Checklist',
+  'ChecklistItem',
 ];
