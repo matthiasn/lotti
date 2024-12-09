@@ -383,4 +383,28 @@ class EntryController extends _$EntryController {
       tagId: tagId,
     );
   }
+
+  Future<void> updateChecklistOrder(List<String> checklistIds) async {
+    final task = state.value?.entry;
+
+    if (task != null && task is Task) {
+      final checklists =
+          await _journalDb.getJournalEntitiesForIds({...checklistIds});
+
+      final existingIds = checklists
+          .where((item) => !item.isDeleted)
+          .map((item) => item.meta.id)
+          .toSet();
+
+      final filtered = checklistIds.where(existingIds.contains).toList();
+
+      await _persistenceLogic.updateTask(
+        entryText: entryTextFromController(controller),
+        journalEntityId: entryId,
+        taskData: task.data.copyWith(
+          checklistIds: filtered,
+        ),
+      );
+    }
+  }
 }
