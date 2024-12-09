@@ -57,8 +57,14 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<UserActivityService>(UserActivityService());
 
-    final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
-    final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');
+    final aliceDb = JournalDb(
+      overriddenFilename: 'alice_db.sqlite',
+      inMemoryDatabase: true,
+    );
+    final bobDb = JournalDb(
+      overriddenFilename: 'bob_db.sqlite',
+      inMemoryDatabase: true,
+    );
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
 
@@ -115,7 +121,7 @@ void main() {
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<SettingsDb>(mockSettingsDb)
+        ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<SecureStorage>(secureStorageMock);
 
       when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
@@ -319,7 +325,10 @@ void main() {
         }
 
         await waitUntilAsync(
-          () async => await aliceDb.getJournalCount() == n,
+          () async {
+            final currentCount = await aliceDb.getJournalCount();
+            return currentCount == n;
+          },
         );
         debugPrint('\n--- Alice finished receiving messages');
         final aliceEntriesCount = await aliceDb.getJournalCount();

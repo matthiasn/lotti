@@ -21,7 +21,7 @@ services:
 
   dendrite:
     hostname: dendrite
-    image: matrixdotorg/dendrite-monolith:v0.13.6
+    image: matrixdotorg/dendrite-monolith:v0.13.8
     command: -really-enable-open-registration
     ports:
       - 8008:8008
@@ -42,7 +42,7 @@ services:
 
   toxiproxy:
     hostname: toxiproxy
-    image: ghcr.io/shopify/toxiproxy:2.9.0
+    image: ghcr.io/shopify/toxiproxy:2.11.0
     depends_on:
       - dendrite
     ports:
