@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/list_extension.dart';
@@ -59,8 +60,10 @@ Future<void> listenToTimelineEvents({
 Future<void> processNewTimelineEvents({
   required MatrixService service,
   JournalDb? overriddenJournalDb,
+  LoggingDb? overriddenLoggingDb,
+  SettingsDb? overriddenSettingsDb,
 }) async {
-  final loggingDb = getIt<LoggingDb>();
+  final loggingDb = overriddenLoggingDb ?? getIt<LoggingDb>();
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
@@ -111,7 +114,7 @@ Future<void> processNewTimelineEvents({
       try {
         if (eventId.startsWith(r'$')) {
           service.lastReadEventContextId = eventId;
-          await setLastReadMatrixEventId(eventId);
+          await setLastReadMatrixEventId(eventId, overriddenSettingsDb);
           final loginState = service.client.onLoginStateChanged.value;
           if (loginState == LoginState.loggedIn) {
             await timeline.setReadMarker(eventId: eventId);

@@ -53,10 +53,6 @@ void main() {
       () => mockUpdateNotifications.notify(any()),
     ).thenAnswer((_) {});
 
-    getIt
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<UserActivityService>(UserActivityService());
-
     final aliceDb = JournalDb(
       overriddenFilename: 'alice_db.sqlite',
       inMemoryDatabase: true,
@@ -115,18 +111,16 @@ void main() {
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
 
-      final mockSettingsDb = MockSettingsDb();
-
       getIt
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<SecureStorage>(secureStorageMock);
 
-      when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
-      when(() => mockSettingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 0);
+      await Future<void>.delayed(const Duration(seconds: 5));
     });
 
     setUp(() {});
@@ -146,6 +140,8 @@ void main() {
           dbName: 'Alice',
           deviceDisplayName: 'Alice',
           overriddenJournalDb: aliceDb,
+          overriddenLoggingDb: LoggingDb(inMemoryDatabase: true),
+          overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
         );
 
         await alice.login();
@@ -171,6 +167,8 @@ void main() {
           dbName: 'Bob',
           deviceDisplayName: 'Bob',
           overriddenJournalDb: bobDb,
+          overriddenLoggingDb: LoggingDb(inMemoryDatabase: true),
+          overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
         );
 
         await bob.login();
