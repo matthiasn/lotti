@@ -6,7 +6,7 @@ import 'package:lotti/features/tasks/ui/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 
-class ChecklistsWidget extends ConsumerWidget {
+class ChecklistsWidget extends ConsumerStatefulWidget {
   const ChecklistsWidget({
     required this.entryId,
     required this.task,
@@ -17,13 +17,24 @@ class ChecklistsWidget extends ConsumerWidget {
   final Task task;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+  ConsumerState<ChecklistsWidget> createState() => _ChecklistsWidgetState();
+}
+
+class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
+  bool _isEditing = false;
+  List<String>? _checklistIds;
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = entryControllerProvider(id: widget.entryId);
     final item = ref.watch(provider).value?.entry;
+    final notifier = ref.read(provider.notifier);
 
     if (item == null || item is! Task) {
       return const SizedBox.shrink();
     }
+
+    final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
 
     return Column(
       children: [
@@ -33,13 +44,49 @@ class ChecklistsWidget extends ConsumerWidget {
             Text(context.messages.checklistsTitle),
             IconButton(
               tooltip: context.messages.addActionAddChecklist,
-              onPressed: () => createChecklist(task: task, ref: ref),
+              onPressed: () => createChecklist(task: widget.task, ref: ref),
               icon: const Icon(Icons.add_rounded),
+            ),
+            IconButton(
+              tooltip: context.messages.addActionAddChecklist,
+              onPressed: () {
+                setState(() {
+                  _isEditing = !_isEditing;
+                });
+              },
+              icon: const Icon(Icons.reorder),
             ),
           ],
         ),
-        ...?item.data.checklistIds?.map(
-          (checklistId) => ChecklistWrapper(entryId: checklistId),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: _isEditing,
+          onReorder: (int oldIndex, int newIndex) {
+            final itemIds = [...checklistIds];
+            final movedItem = itemIds.removeAt(oldIndex);
+            final insertionIndex =
+                newIndex > oldIndex ? newIndex - 1 : newIndex;
+            itemIds.insert(insertionIndex, movedItem);
+            setState(() {
+              _checklistIds = itemIds;
+            });
+
+            notifier.updateChecklistOrder(itemIds);
+          },
+          children: List.generate(
+            checklistIds.length,
+            (int index) {
+              final checklistId = checklistIds.elementAt(index);
+              return ChecklistWrapper(
+                key: Key('$checklistId${widget.entryId}$index'),
+                entryId: checklistId,
+                padding: _isEditing
+                    ? const EdgeInsets.only(right: 40)
+                    : EdgeInsets.zero,
+              );
+            },
+          ),
         ),
       ],
     );
