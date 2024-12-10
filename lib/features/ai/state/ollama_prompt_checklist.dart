@@ -33,7 +33,7 @@ class AiChecklistResponse extends Notifier<List<ChecklistItemData>> {
 
     final llm = Ollama(
       defaultOptions: const OllamaOptions(
-        model: 'llama3.1',
+        model: 'tulu3:latest',
         temperature: 3,
         system:
             'Assume that the input is describing a task that needs to be completed. '
