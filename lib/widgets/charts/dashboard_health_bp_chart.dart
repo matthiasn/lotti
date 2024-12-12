@@ -74,12 +74,12 @@ class DashboardHealthBpChart extends StatelessWidget {
                   getDrawingHorizontalLine: (value) {
                     if (value == 80.0) {
                       return gridLineEmphasized.copyWith(
-                        color: Colors.blue.withOpacity(0.4),
+                        color: Colors.blue.withAlpha(102),
                       );
                     }
                     if (value == 120.0) {
                       return gridLineEmphasized.copyWith(
-                        color: Colors.red.withOpacity(0.4),
+                        color: Colors.red.withAlpha(102),
                       );
                     }
 
@@ -162,7 +162,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                     color: Colors.red,
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withAlpha(26),
                     ),
                     curveSmoothness: 0.1,
                     isStrokeCapRound: true,
@@ -182,7 +182,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                     color: Colors.blue,
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.blue.withOpacity(0.2),
+                      color: Colors.blue.withAlpha(51),
                     ),
                     isStrokeCapRound: true,
                     dotData: const FlDotData(

@@ -241,7 +241,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
                 Icons.mic_rounded,
                 color: transcripts != null && transcripts.isNotEmpty
                     ? context.colorScheme.outline
-                    : errorColor.withOpacity(0.4),
+                    : errorColor.withAlpha(102),
               );
             },
             checklist: (_) => LeadingIcon(MdiIcons.checkAll),

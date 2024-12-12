@@ -110,7 +110,7 @@ class SelectDashboardWidget extends StatelessWidget {
                       ),
                 hintText: context.messages.habitDashboardHint,
                 hintStyle: style?.copyWith(
-                  color: context.colorScheme.outline.withOpacity(0.5),
+                  color: context.colorScheme.outline.withAlpha(127),
                 ),
                 border: InputBorder.none,
               ),

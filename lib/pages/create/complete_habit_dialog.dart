@@ -161,7 +161,7 @@ class _HabitDialogState extends State<HabitDialog> {
                   ),
                   side: BorderSide(
                     color: (context.textTheme.titleLarge?.color ?? Colors.black)
-                        .withOpacity(0.5),
+                        .withAlpha(127),
                   ),
                 ),
                 child: Container(
@@ -267,7 +267,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                         .copyWith(
                                       color: habitSkipColor
                                           .desaturate(40)
-                                          .withOpacity(0.8),
+                                          .withAlpha(204),
                                     ),
                                   ),
                                 ),

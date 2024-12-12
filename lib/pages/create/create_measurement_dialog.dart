@@ -105,7 +105,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         borderRadius: const BorderRadius.all(Radius.circular(20)),
         side: BorderSide(
           color: (context.textTheme.titleLarge?.color ?? Colors.black)
-              .withOpacity(0.5),
+              .withAlpha(127),
         ),
       ),
       actionsAlignment: MainAxisAlignment.end,

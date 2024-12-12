@@ -46,7 +46,7 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
                     child: Container(
                       height: 20,
                       width: 20,
-                      color: context.colorScheme.outline.withOpacity(0.1),
+                      color: context.colorScheme.outline.withAlpha(26),
                     ),
                   ),
                   const SizedBox(width: 10),

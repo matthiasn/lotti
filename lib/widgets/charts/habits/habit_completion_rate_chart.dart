@@ -131,7 +131,8 @@ class HabitCompletionRateChart extends StatelessWidget
                     borderData: FlBorderData(
                       show: true,
                       border: Border.all(
-                        color: chartTextColor.withOpacity(labelOpacity),
+                        color: chartTextColor
+                            .withAlpha((labelOpacity * 255).floor()),
                       ),
                     ),
                     minX: 0,
@@ -150,8 +151,8 @@ class HabitCompletionRateChart extends StatelessWidget
                         showFailed: true,
                         habitDefinitions: state.habitDefinitions,
                         aboveColor:
-                            failColor.lighten().desaturate().withOpacity(0.5),
-                        color: failColor.withOpacity(0.8),
+                            failColor.lighten().desaturate().withAlpha(127),
+                        color: failColor.withAlpha(204),
                       ),
                       barData(
                         days: state.days,
@@ -175,7 +176,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: false,
                         habitDefinitions: state.habitDefinitions,
-                        opacity: 0.9,
+                        alpha: 230,
                         color: successColor,
                       ),
                     ],
@@ -202,7 +203,7 @@ LineChartBarData barData({
   required bool showSkipped,
   required bool showFailed,
   required Color color,
-  double opacity = 0.5,
+  int alpha = 127,
   Color? aboveColor,
 }) {
   final spots = days.mapIndexed((idx, day) {
@@ -242,7 +243,7 @@ LineChartBarData barData({
     dotData: const FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,
-      color: color.withOpacity(opacity),
+      color: color.withAlpha(alpha),
     ),
     aboveBarData: aboveColor != null
         ? BarAreaData(

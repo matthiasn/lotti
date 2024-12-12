@@ -93,7 +93,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             icon: ColorIcon(
               category != null
                   ? colorFromCssHex(category.color)
-                  : context.colorScheme.outline.withOpacity(0.2),
+                  : context.colorScheme.outline.withAlpha(51),
             ),
             suffixIcon: categoryUndefined
                 ? null
@@ -109,7 +109,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                   ),
             hintText: context.messages.habitCategoryHint,
             hintStyle: style?.copyWith(
-              color: context.colorScheme.outline.withOpacity(0.5),
+              color: context.colorScheme.outline.withAlpha(127),
             ),
             border: InputBorder.none,
           ),

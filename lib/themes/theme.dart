@@ -209,10 +209,10 @@ ThemeData withOverrides(ThemeData themeData) {
     ),
     sliderTheme: themeData.sliderTheme.copyWith(
       activeTrackColor: themeData.colorScheme.secondary,
-      inactiveTrackColor: themeData.colorScheme.secondary.withOpacity(0.7),
+      inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(178),
       thumbColor: themeData.colorScheme.secondary,
       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-      overlayColor: themeData.colorScheme.secondary.withOpacity(0.5),
+      overlayColor: themeData.colorScheme.secondary.withAlpha(127),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
       clipBehavior: Clip.hardEdge,

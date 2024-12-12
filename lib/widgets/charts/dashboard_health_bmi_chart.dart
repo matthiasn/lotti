@@ -123,7 +123,7 @@ class BmiRangeLegend extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3), //New
+              color: Colors.black.withAlpha(77), //New
               blurRadius: 8,
               offset: const Offset(0, 8),
             ),
@@ -132,7 +132,7 @@ class BmiRangeLegend extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: ColoredBox(
-            color: Colors.white.withOpacity(0.75),
+            color: Colors.white.withAlpha(191),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Column(
@@ -149,7 +149,7 @@ class BmiRangeLegend extends StatelessWidget {
                               width: 12,
                               height: 12,
                               color: colorFromCssHex(range.hexColor)
-                                  .withOpacity(0.7),
+                                  .withAlpha(178),
                             ),
                           ),
                           const SizedBox(

@@ -22,9 +22,13 @@ Color colorFromCssHex(
 // Converts Color to CSS style hex color string
 String colorToCssHex(Color color, {bool leadingHashSign = true}) {
   final rgb = '${leadingHashSign ? '#' : ''}'
-      '${color.red.toRadixString(16).padLeft(2, '0')}'
-      '${color.green.toRadixString(16).padLeft(2, '0')}'
-      '${color.blue.toRadixString(16).padLeft(2, '0')}';
-  final alpha = color.alpha.toRadixString(16).padLeft(2, '0');
+      '${colorHexChannel(color.r)}'
+      '${colorHexChannel(color.g)}'
+      '${colorHexChannel(color.b)}';
+  final alpha = colorHexChannel(color.a);
   return '$rgb${alpha == 'ff' ? '' : alpha}'.toUpperCase();
+}
+
+String colorHexChannel(double channel) {
+  return (channel * 255).round().toRadixString(16).padLeft(2, '0');
 }
