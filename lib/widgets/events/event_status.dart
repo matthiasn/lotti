@@ -17,7 +17,7 @@ class EventStatusWidget extends StatelessWidget {
         status.label,
         style: const TextStyle(fontSize: fontSizeSmall),
       ),
-      backgroundColor: status.color.withOpacity(0.6),
+      backgroundColor: status.color.withAlpha(153),
       visualDensity: VisualDensity.compact,
     );
   }

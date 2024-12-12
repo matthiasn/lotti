@@ -29,7 +29,7 @@ class FormSwitch extends StatelessWidget {
       ),
       activeColor: activeColor,
       inactiveThumbColor: context.colorScheme.outline,
-      inactiveTrackColor: context.colorScheme.outline.withOpacity(0.2),
+      inactiveTrackColor: context.colorScheme.outline.withAlpha(51),
       decoration: switchDecoration,
     );
   }

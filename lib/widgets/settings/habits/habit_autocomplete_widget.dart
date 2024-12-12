@@ -113,7 +113,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: ColoredBox(
-        color: Colors.grey.withOpacity(0.6),
+        color: Colors.grey.withAlpha(152),
         child: Column(
           children: [
             Row(
@@ -133,7 +133,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
               widget.autoCompleteRule!.map(
                 health: (health) {
                   return Container(
-                    color: Colors.blue.withOpacity(0.5),
+                    color: Colors.blue.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +150,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                 },
                 habit: (habit) {
                   return Container(
-                    color: Colors.blue.withOpacity(0.5),
+                    color: Colors.blue.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +165,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                 },
                 workout: (workout) {
                   return Container(
-                    color: Colors.blue.withOpacity(0.5),
+                    color: Colors.blue.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +182,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
                 },
                 measurable: (measurable) {
                   return Container(
-                    color: Colors.green.withOpacity(0.5),
+                    color: Colors.green.withAlpha(127),
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -29,7 +29,7 @@ class TranscriptionProgressView extends StatelessWidget {
           ),
           subtitle: Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: context.colorScheme.inverseSurface.withOpacity(0.1),
+            color: context.colorScheme.inverseSurface.withAlpha(26),
             child: MarkdownBody(
               data: text,
               styleSheet: MarkdownStyleSheet(

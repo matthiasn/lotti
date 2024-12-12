@@ -155,7 +155,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                 show: true,
                 gradient: LinearGradient(
                   colors: gradientColors
-                      .map((color) => color.withOpacity(0.3))
+                      .map((color) => color.withAlpha(77))
                       .toList(),
                 ),
               ),
