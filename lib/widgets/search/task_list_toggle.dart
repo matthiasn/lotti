@@ -13,7 +13,7 @@ class TaskListToggle extends StatelessWidget {
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
         final iconColor = context.textTheme.titleLarge?.color;
-        final inactiveIconColor = iconColor?.withOpacity(0.5);
+        final inactiveIconColor = iconColor?.withAlpha(127);
         final taskAsListView = snapshot.taskAsListView;
 
         return Row(

@@ -52,7 +52,7 @@ class ConfigFlagCard extends StatelessWidget {
             const SizedBox(width: 8),
             CupertinoSwitch(
               value: item.status,
-              activeColor: context.colorScheme.error,
+              activeTrackColor: context.colorScheme.error,
               onChanged: (bool status) {
                 _db.upsertConfigFlag(item.copyWith(status: status));
               },

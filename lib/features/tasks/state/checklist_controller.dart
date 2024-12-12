@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -187,7 +186,7 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
     final linkedIds = checklistData?.linkedChecklistItems ?? <String>[];
     final linkedChecklistItems = linkedIds
         .map((id) => ref.watch(checklistItemControllerProvider(id: id)).value)
-        .whereNotNull()
+        .nonNulls
         .where((item) => item.isDeleted == false)
         .toList();
     final totalCount = linkedChecklistItems.length;

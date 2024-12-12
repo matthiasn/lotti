@@ -48,7 +48,7 @@ class TimeByCategoryChartCard extends ConsumerWidget {
       height: 140,
       elevation: 0,
       borderRadius: BorderRadius.circular(15),
-      color: Theme.of(context).shadowColor.withOpacity(0.2),
+      color: Theme.of(context).shadowColor.withAlpha(51),
       child: Stack(
         children: [
           const Padding(

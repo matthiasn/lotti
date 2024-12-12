@@ -6,7 +6,7 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 typedef ColorByValue = Color Function(Observation);
 
-const gridOpacity = 0.3;
+const gridAlpha = 76;
 const labelOpacity = 0.5;
 
 class ChartLabel extends StatelessWidget {
@@ -32,7 +32,7 @@ Widget leftTitleWidgets(double value, TitleMeta meta) {
 }
 
 final gridLine = FlLine(
-  color: chartTextColor.withOpacity(gridOpacity),
+  color: chartTextColor.withAlpha(gridAlpha),
   strokeWidth: 1,
 );
 

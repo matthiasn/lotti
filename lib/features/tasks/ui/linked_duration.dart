@@ -49,7 +49,7 @@ class LinkedDuration extends ConsumerWidget {
               minHeight: 5,
               value: value.toDouble(),
               color: (progress > estimate) ? failColor : successColor,
-              backgroundColor: successColor.desaturate().withOpacity(0.3),
+              backgroundColor: successColor.desaturate().withAlpha(77),
             ),
           ),
           const SizedBox(height: 5),

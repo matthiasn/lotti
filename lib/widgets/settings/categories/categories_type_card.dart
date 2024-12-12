@@ -92,7 +92,7 @@ class CategoryColorIcon extends StatelessWidget {
     return ColorIcon(
       category != null
           ? colorFromCssHex(category.color)
-          : context.colorScheme.outline.withOpacity(0.2),
+          : context.colorScheme.outline.withAlpha(51),
       size: size,
     );
   }

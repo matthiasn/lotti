@@ -31,7 +31,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
             horizontal: 20,
             vertical: 10,
           ),
-          color: Theme.of(context).primaryColor.withOpacity(0.3),
+          color: Theme.of(context).primaryColor.withAlpha(77),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
