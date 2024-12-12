@@ -97,7 +97,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         icon: ColorIcon(color),
         hintText: context.messages.colorPickerHint,
         hintStyle: style?.copyWith(
-          color: context.colorScheme.outline.withOpacity(0.5),
+          color: context.colorScheme.outline.withAlpha(127),
         ),
         suffixIcon: IconButton(
           onPressed: onTap,

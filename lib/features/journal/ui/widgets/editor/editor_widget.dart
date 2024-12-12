@@ -68,8 +68,7 @@ class EditorWidget extends ConsumerWidget {
                 configurations: QuillEditorConfigurations(
                   textSelectionThemeData: TextSelectionThemeData(
                     cursorColor: context.colorScheme.onSurface,
-                    selectionColor:
-                        context.colorScheme.primary.withOpacity(0.5),
+                    selectionColor: context.colorScheme.primary.withAlpha(127),
                   ),
                   autoFocus: autoFocus,
                   minHeight: minHeight,

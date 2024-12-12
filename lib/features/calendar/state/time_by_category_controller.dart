@@ -110,13 +110,13 @@ class TimeByCategoryController extends _$TimeByCategoryController {
             (entryIdFromLinkedIds[journalEntity.meta.id] ?? <String>{})
                 .map((id) {
           return linkedEntries[id];
-        }).whereNotNull();
+        }).nonNulls;
 
         final categoryId = linkedTo
             .map((item) {
               return item.meta.categoryId;
             })
-            .whereNotNull()
+            .nonNulls
             .firstOrNull;
 
         final category =

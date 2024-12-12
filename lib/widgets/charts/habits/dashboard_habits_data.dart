@@ -30,10 +30,10 @@ Color habitCompletionColor(HabitCompletionType completionType) {
   return completionType == HabitCompletionType.fail
       ? alarm
       : completionType == HabitCompletionType.skip
-          ? habitSkipColor.withOpacity(0.4)
+          ? habitSkipColor.withAlpha(102)
           : completionType == HabitCompletionType.success
               ? successColor
-              : failColor.withOpacity(0.6);
+              : failColor.withAlpha(153);
 }
 
 List<HabitResult> habitResultsByDay(

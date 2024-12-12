@@ -190,7 +190,7 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                 width: 200,
                 height: 32,
                 elevation: 0,
-                color: Theme.of(context).shadowColor.withOpacity(0.2),
+                color: Theme.of(context).shadowColor.withAlpha(51),
                 borderRadius: BorderRadius.circular(15),
                 child: Slider(
                   inactiveColor: Theme.of(context).dividerColor,

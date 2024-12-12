@@ -10,8 +10,8 @@ void main() {
 
     test('Valid CSS color with alpha is parsed correctly', () {
       expect(
-        colorFromCssHex('#FF00007F'),
-        const Color.fromRGBO(255, 0, 0, 0.5),
+        colorFromCssHex('#FF000080'),
+        isSameColorAs(const Color.fromRGBO(255, 0, 0, 0.502)),
       );
     });
 
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('Valid CSS color with alpha is parsed correctly', () {
-      expect(colorToCssHex(const Color.fromRGBO(255, 0, 0, 0.5)), '#FF00007F');
+      expect(colorToCssHex(const Color.fromRGBO(255, 0, 0, 0.5)), '#FF000080');
     });
   });
 }

@@ -43,7 +43,7 @@ class HabitsPage extends StatelessWidget {
               index: index,
               color: category != null
                   ? colorFromCssHex(category.color)
-                  : context.colorScheme.onSecondary.withOpacity(0.2),
+                  : context.colorScheme.onSecondary.withAlpha(51),
             );
           },
         );

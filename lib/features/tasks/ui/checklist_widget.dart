@@ -108,7 +108,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           child: LinearProgressIndicator(
             minHeight: 5,
             color: successColor,
-            backgroundColor: successColor.desaturate().withOpacity(0.3),
+            backgroundColor: successColor.desaturate().withAlpha(77),
             value: widget.completionRate,
             semanticsLabel: 'Checklist progress',
           ),

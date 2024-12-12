@@ -89,8 +89,8 @@ List<LineChartBarData> surveyLines({
         .toList();
 
     final gradientColors = <Color>[
-      color.withOpacity(0.6),
-      color.withOpacity(0.9),
+      color.withAlpha(153),
+      color.withAlpha(230),
     ];
 
     return LineChartBarData(
@@ -108,8 +108,7 @@ List<LineChartBarData> surveyLines({
       belowBarData: BarAreaData(
         show: true,
         gradient: LinearGradient(
-          colors:
-              gradientColors.map((color) => color.withOpacity(0.1)).toList(),
+          colors: gradientColors.map((color) => color.withAlpha(26)).toList(),
         ),
       ),
     );

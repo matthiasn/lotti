@@ -112,7 +112,7 @@ class DayViewController extends _$DayViewController {
               journalEntity is WorkoutEntry)) {
         final linkedTo = entryIdFromLinkedIds[journalEntity.meta.id]
             ?.map((id) => linkedEntries[id])
-            .whereNotNull();
+            .nonNulls;
 
         final linkedEntry = linkedTo?.firstOrNull;
         final categoryId = linkedEntry?.meta.categoryId;
