@@ -14,7 +14,6 @@ _$MetadataImpl _$$MetadataImplFromJson(Map<String, dynamic> json) =>
       dateFrom: DateTime.parse(json['dateFrom'] as String),
       dateTo: DateTime.parse(json['dateTo'] as String),
       categoryId: json['categoryId'] as String?,
-      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
       tagIds:
           (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
       utcOffset: (json['utcOffset'] as num?)?.toInt(),
@@ -28,6 +27,12 @@ _$MetadataImpl _$$MetadataImplFromJson(Map<String, dynamic> json) =>
       flag: $enumDecodeNullable(_$EntryFlagEnumMap, json['flag']),
       starred: json['starred'] as bool?,
       private: json['private'] as bool?,
+      linkedEntryIds: (json['linkedEntryIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet(),
+      linkedFromEntryIds: (json['linkedFromEntryIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet(),
     );
 
 Map<String, dynamic> _$$MetadataImplToJson(_$MetadataImpl instance) =>
@@ -38,7 +43,6 @@ Map<String, dynamic> _$$MetadataImplToJson(_$MetadataImpl instance) =>
       'dateFrom': instance.dateFrom.toIso8601String(),
       'dateTo': instance.dateTo.toIso8601String(),
       'categoryId': instance.categoryId,
-      'tags': instance.tags,
       'tagIds': instance.tagIds,
       'utcOffset': instance.utcOffset,
       'timezone': instance.timezone,
@@ -47,6 +51,8 @@ Map<String, dynamic> _$$MetadataImplToJson(_$MetadataImpl instance) =>
       'flag': _$EntryFlagEnumMap[instance.flag],
       'starred': instance.starred,
       'private': instance.private,
+      'linkedEntryIds': instance.linkedEntryIds?.toList(),
+      'linkedFromEntryIds': instance.linkedFromEntryIds?.toList(),
     };
 
 const _$EntryFlagEnumMap = {

@@ -28,7 +28,6 @@ class Metadata with _$Metadata {
     required DateTime dateFrom,
     required DateTime dateTo,
     String? categoryId,
-    List<String>? tags,
     List<String>? tagIds,
     int? utcOffset,
     String? timezone,
@@ -37,6 +36,8 @@ class Metadata with _$Metadata {
     EntryFlag? flag,
     bool? starred,
     bool? private,
+    Set<String>? linkedEntryIds,
+    Set<String>? linkedFromEntryIds,
   }) = _Metadata;
 
   factory Metadata.fromJson(Map<String, dynamic> json) =>

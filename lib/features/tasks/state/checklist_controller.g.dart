@@ -176,7 +176,7 @@ class _ChecklistControllerProviderElement
 }
 
 String _$checklistCompletionControllerHash() =>
-    r'eba25442a2767af0e8a5ace1889ed6233baf1535';
+    r'4b310c9e55f67f91e4734baec26dfd420e9754de';
 
 abstract class _$ChecklistCompletionController
     extends BuildlessAutoDisposeAsyncNotifier<double> {

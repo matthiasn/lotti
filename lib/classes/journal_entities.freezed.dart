@@ -26,7 +26,6 @@ mixin _$Metadata {
   DateTime get dateFrom => throw _privateConstructorUsedError;
   DateTime get dateTo => throw _privateConstructorUsedError;
   String? get categoryId => throw _privateConstructorUsedError;
-  List<String>? get tags => throw _privateConstructorUsedError;
   List<String>? get tagIds => throw _privateConstructorUsedError;
   int? get utcOffset => throw _privateConstructorUsedError;
   String? get timezone => throw _privateConstructorUsedError;
@@ -35,6 +34,8 @@ mixin _$Metadata {
   EntryFlag? get flag => throw _privateConstructorUsedError;
   bool? get starred => throw _privateConstructorUsedError;
   bool? get private => throw _privateConstructorUsedError;
+  Set<String>? get linkedEntryIds => throw _privateConstructorUsedError;
+  Set<String>? get linkedFromEntryIds => throw _privateConstructorUsedError;
 
   /// Serializes this Metadata to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -58,7 +59,6 @@ abstract class $MetadataCopyWith<$Res> {
       DateTime dateFrom,
       DateTime dateTo,
       String? categoryId,
-      List<String>? tags,
       List<String>? tagIds,
       int? utcOffset,
       String? timezone,
@@ -66,7 +66,9 @@ abstract class $MetadataCopyWith<$Res> {
       DateTime? deletedAt,
       EntryFlag? flag,
       bool? starred,
-      bool? private});
+      bool? private,
+      Set<String>? linkedEntryIds,
+      Set<String>? linkedFromEntryIds});
 }
 
 /// @nodoc
@@ -90,7 +92,6 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
     Object? dateFrom = null,
     Object? dateTo = null,
     Object? categoryId = freezed,
-    Object? tags = freezed,
     Object? tagIds = freezed,
     Object? utcOffset = freezed,
     Object? timezone = freezed,
@@ -99,6 +100,8 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
     Object? flag = freezed,
     Object? starred = freezed,
     Object? private = freezed,
+    Object? linkedEntryIds = freezed,
+    Object? linkedFromEntryIds = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -125,10 +128,6 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
           ? _value.categoryId
           : categoryId // ignore: cast_nullable_to_non_nullable
               as String?,
-      tags: freezed == tags
-          ? _value.tags
-          : tags // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
       tagIds: freezed == tagIds
           ? _value.tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
@@ -161,6 +160,14 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
           ? _value.private
           : private // ignore: cast_nullable_to_non_nullable
               as bool?,
+      linkedEntryIds: freezed == linkedEntryIds
+          ? _value.linkedEntryIds
+          : linkedEntryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>?,
+      linkedFromEntryIds: freezed == linkedFromEntryIds
+          ? _value.linkedFromEntryIds
+          : linkedFromEntryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>?,
     ) as $Val);
   }
 }
@@ -180,7 +187,6 @@ abstract class _$$MetadataImplCopyWith<$Res>
       DateTime dateFrom,
       DateTime dateTo,
       String? categoryId,
-      List<String>? tags,
       List<String>? tagIds,
       int? utcOffset,
       String? timezone,
@@ -188,7 +194,9 @@ abstract class _$$MetadataImplCopyWith<$Res>
       DateTime? deletedAt,
       EntryFlag? flag,
       bool? starred,
-      bool? private});
+      bool? private,
+      Set<String>? linkedEntryIds,
+      Set<String>? linkedFromEntryIds});
 }
 
 /// @nodoc
@@ -210,7 +218,6 @@ class __$$MetadataImplCopyWithImpl<$Res>
     Object? dateFrom = null,
     Object? dateTo = null,
     Object? categoryId = freezed,
-    Object? tags = freezed,
     Object? tagIds = freezed,
     Object? utcOffset = freezed,
     Object? timezone = freezed,
@@ -219,6 +226,8 @@ class __$$MetadataImplCopyWithImpl<$Res>
     Object? flag = freezed,
     Object? starred = freezed,
     Object? private = freezed,
+    Object? linkedEntryIds = freezed,
+    Object? linkedFromEntryIds = freezed,
   }) {
     return _then(_$MetadataImpl(
       id: null == id
@@ -245,10 +254,6 @@ class __$$MetadataImplCopyWithImpl<$Res>
           ? _value.categoryId
           : categoryId // ignore: cast_nullable_to_non_nullable
               as String?,
-      tags: freezed == tags
-          ? _value._tags
-          : tags // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
       tagIds: freezed == tagIds
           ? _value._tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
@@ -281,6 +286,14 @@ class __$$MetadataImplCopyWithImpl<$Res>
           ? _value.private
           : private // ignore: cast_nullable_to_non_nullable
               as bool?,
+      linkedEntryIds: freezed == linkedEntryIds
+          ? _value._linkedEntryIds
+          : linkedEntryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>?,
+      linkedFromEntryIds: freezed == linkedFromEntryIds
+          ? _value._linkedFromEntryIds
+          : linkedFromEntryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>?,
     ));
   }
 }
@@ -295,7 +308,6 @@ class _$MetadataImpl implements _Metadata {
       required this.dateFrom,
       required this.dateTo,
       this.categoryId,
-      final List<String>? tags,
       final List<String>? tagIds,
       this.utcOffset,
       this.timezone,
@@ -303,9 +315,12 @@ class _$MetadataImpl implements _Metadata {
       this.deletedAt,
       this.flag,
       this.starred,
-      this.private})
-      : _tags = tags,
-        _tagIds = tagIds;
+      this.private,
+      final Set<String>? linkedEntryIds,
+      final Set<String>? linkedFromEntryIds})
+      : _tagIds = tagIds,
+        _linkedEntryIds = linkedEntryIds,
+        _linkedFromEntryIds = linkedFromEntryIds;
 
   factory _$MetadataImpl.fromJson(Map<String, dynamic> json) =>
       _$$MetadataImplFromJson(json);
@@ -322,16 +337,6 @@ class _$MetadataImpl implements _Metadata {
   final DateTime dateTo;
   @override
   final String? categoryId;
-  final List<String>? _tags;
-  @override
-  List<String>? get tags {
-    final value = _tags;
-    if (value == null) return null;
-    if (_tags is EqualUnmodifiableListView) return _tags;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
   final List<String>? _tagIds;
   @override
   List<String>? get tagIds {
@@ -356,10 +361,30 @@ class _$MetadataImpl implements _Metadata {
   final bool? starred;
   @override
   final bool? private;
+  final Set<String>? _linkedEntryIds;
+  @override
+  Set<String>? get linkedEntryIds {
+    final value = _linkedEntryIds;
+    if (value == null) return null;
+    if (_linkedEntryIds is EqualUnmodifiableSetView) return _linkedEntryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(value);
+  }
+
+  final Set<String>? _linkedFromEntryIds;
+  @override
+  Set<String>? get linkedFromEntryIds {
+    final value = _linkedFromEntryIds;
+    if (value == null) return null;
+    if (_linkedFromEntryIds is EqualUnmodifiableSetView)
+      return _linkedFromEntryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(value);
+  }
 
   @override
   String toString() {
-    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+    return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tagIds: $tagIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private, linkedEntryIds: $linkedEntryIds, linkedFromEntryIds: $linkedFromEntryIds)';
   }
 
   @override
@@ -377,7 +402,6 @@ class _$MetadataImpl implements _Metadata {
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
             (identical(other.categoryId, categoryId) ||
                 other.categoryId == categoryId) &&
-            const DeepCollectionEquality().equals(other._tags, _tags) &&
             const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
             (identical(other.utcOffset, utcOffset) ||
                 other.utcOffset == utcOffset) &&
@@ -389,7 +413,11 @@ class _$MetadataImpl implements _Metadata {
                 other.deletedAt == deletedAt) &&
             (identical(other.flag, flag) || other.flag == flag) &&
             (identical(other.starred, starred) || other.starred == starred) &&
-            (identical(other.private, private) || other.private == private));
+            (identical(other.private, private) || other.private == private) &&
+            const DeepCollectionEquality()
+                .equals(other._linkedEntryIds, _linkedEntryIds) &&
+            const DeepCollectionEquality()
+                .equals(other._linkedFromEntryIds, _linkedFromEntryIds));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -402,7 +430,6 @@ class _$MetadataImpl implements _Metadata {
       dateFrom,
       dateTo,
       categoryId,
-      const DeepCollectionEquality().hash(_tags),
       const DeepCollectionEquality().hash(_tagIds),
       utcOffset,
       timezone,
@@ -410,7 +437,9 @@ class _$MetadataImpl implements _Metadata {
       deletedAt,
       flag,
       starred,
-      private);
+      private,
+      const DeepCollectionEquality().hash(_linkedEntryIds),
+      const DeepCollectionEquality().hash(_linkedFromEntryIds));
 
   /// Create a copy of Metadata
   /// with the given fields replaced by the non-null parameter values.
@@ -436,7 +465,6 @@ abstract class _Metadata implements Metadata {
       required final DateTime dateFrom,
       required final DateTime dateTo,
       final String? categoryId,
-      final List<String>? tags,
       final List<String>? tagIds,
       final int? utcOffset,
       final String? timezone,
@@ -444,7 +472,9 @@ abstract class _Metadata implements Metadata {
       final DateTime? deletedAt,
       final EntryFlag? flag,
       final bool? starred,
-      final bool? private}) = _$MetadataImpl;
+      final bool? private,
+      final Set<String>? linkedEntryIds,
+      final Set<String>? linkedFromEntryIds}) = _$MetadataImpl;
 
   factory _Metadata.fromJson(Map<String, dynamic> json) =
       _$MetadataImpl.fromJson;
@@ -462,8 +492,6 @@ abstract class _Metadata implements Metadata {
   @override
   String? get categoryId;
   @override
-  List<String>? get tags;
-  @override
   List<String>? get tagIds;
   @override
   int? get utcOffset;
@@ -479,6 +507,10 @@ abstract class _Metadata implements Metadata {
   bool? get starred;
   @override
   bool? get private;
+  @override
+  Set<String>? get linkedEntryIds;
+  @override
+  Set<String>? get linkedFromEntryIds;
 
   /// Create a copy of Metadata
   /// with the given fields replaced by the non-null parameter values.
