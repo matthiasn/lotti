@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -20,11 +19,11 @@ class LinkedDuration extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state =
-        ref.watch(taskProgressControllerProvider(id: taskId)).valueOrNull ??
-            const TaskProgressState(
-              progress: Duration.zero,
-              estimate: Duration.zero,
-            );
+        ref.watch(taskProgressControllerProvider(id: taskId)).valueOrNull;
+
+    if (state == null || state.estimate == Duration.zero) {
+      return const SizedBox.shrink();
+    }
 
     final progress = state.progress;
     final estimate = state.estimate;
