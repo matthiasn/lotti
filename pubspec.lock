@@ -731,10 +731,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: "74959b99b92b9eebeed1a4049426fd67c4abc3c5a0f4d12e2877097d6a11ae08"
+      sha256: c724234b05e378383e958f3e82ca84a3e1e3c06a0898462044dd8a24b1ee9864
       url: "https://pub.dev"
     source: hosted
-    version: "0.69.2"
+    version: "0.70.0"
   flex_color_scheme:
     dependency: "direct main"
     description:
@@ -3294,10 +3294,10 @@ packages:
     dependency: "direct main"
     description:
       name: wolt_modal_sheet
-      sha256: b2d1c2af08ff70c17a66325d6e510cb2f902f432c887cc55e72c55701a94fac4
+      sha256: dc220672cde0c1169bfbbd4de4b0070332aeb4108b9da10e0d3be6e3d79b8082
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.4"
+    version: "0.10.0"
   xdg_directories:
     dependency: transitive
     description:
@@ -3332,4 +3332,4 @@ packages:
     version: "2.3.6"
 sdks:
   dart: ">=3.6.0 <4.0.0"
-  flutter: ">=3.24.0"
+  flutter: ">=3.27.0"
