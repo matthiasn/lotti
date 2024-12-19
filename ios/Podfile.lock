@@ -84,9 +84,9 @@ PODS:
     - Flutter
   - record_darwin (1.0.0):
     - Flutter
-  - SDWebImage (5.19.7):
-    - SDWebImage/Core (= 5.19.7)
-  - SDWebImage/Core (5.19.7)
+  - SDWebImage (5.20.0):
+    - SDWebImage/Core (= 5.20.0)
+  - SDWebImage/Core (5.20.0)
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
@@ -98,21 +98,21 @@ PODS:
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
-  - sqlite3 (3.47.1):
-    - sqlite3/common (= 3.47.1)
-  - sqlite3/common (3.47.1)
-  - sqlite3/dbstatvtab (3.47.1):
+  - sqlite3 (3.47.2):
+    - sqlite3/common (= 3.47.2)
+  - sqlite3/common (3.47.2)
+  - sqlite3/dbstatvtab (3.47.2):
     - sqlite3/common
-  - sqlite3/fts5 (3.47.1):
+  - sqlite3/fts5 (3.47.2):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.47.1):
+  - sqlite3/perf-threadsafe (3.47.2):
     - sqlite3/common
-  - sqlite3/rtree (3.47.1):
+  - sqlite3/rtree (3.47.2):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
     - FlutterMacOS
-    - sqlite3 (~> 3.47.1)
+    - sqlite3 (~> 3.47.2)
     - sqlite3/dbstatvtab
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
@@ -260,7 +260,7 @@ SPEC CHECKSUMS:
   flutter_olm: 7154e02866bd06d91e400e94f66d5e2a955de0b1
   flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
-  gal: 61e868295d28fe67ffa297fae6dacebf56fd53e1
+  gal: 6a522c75909f1244732d4596d11d6a2f86ff37a5
   health: 5a380c0f6c4f619535845992993964293962e99e
   image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
@@ -279,13 +279,13 @@ SPEC CHECKSUMS:
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   quill_native_bridge_ios: 2b01d585fcc73d0f5eed78c0bd244ee564b06f5a
   record_darwin: 3b1a8e7d5c0cbf45ad6165b4d83a6ca643d929c3
-  SDWebImage: 8a6b7b160b4d710e2a22b6900e25301075c34cb3
+  SDWebImage: 73c6079366fea25fa4bb9640d5fb58f0893facd8
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   share_plus: 8b6f8b3447e494cca5317c8c3073de39b3600d1f
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
-  sqlite3: 1e522f0938463e44b7faf50393b40bdc1e1e456d
-  sqlite3_flutter_libs: 1b4e98da20ebd4e9b1240269b78cdcf492dbe9f3
+  sqlite3: 7559e33dae4c78538df563795af3a86fc887ee71
+  sqlite3_flutter_libs: 58ae36c0dd086395d066b4fe4de9cdca83e717b3
   super_native_extensions: 4916b3c627a9c7fffdc48a23a9eca0b1ac228fa7
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
   video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3

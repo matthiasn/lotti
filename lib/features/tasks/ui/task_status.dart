@@ -22,7 +22,6 @@ class TaskStatusWidget extends StatelessWidget {
         task.data.status.map(
           open: (_) => context.messages.taskStatusOpen,
           groomed: (_) => context.messages.taskStatusGroomed,
-          // ignore: flutter_style_todos
           started: (_) => 'STARTED', // TODO: remove DEPRECATED status
           inProgress: (_) => context.messages.taskStatusInProgress,
           blocked: (_) => context.messages.taskStatusBlocked,
