@@ -37,6 +37,10 @@ class TaskProgressController extends _$TaskProgressController {
 
     _timeServiceSubscription = _timeService.getStream().listen((journalEntity) {
       if (journalEntity != null) {
+        if (_timeService.linkedFrom?.id != entryId) {
+          return;
+        }
+
         final duration = entryDuration(journalEntity);
         _durations[journalEntity.meta.id] = duration;
         state = AsyncData(_getProgress());
