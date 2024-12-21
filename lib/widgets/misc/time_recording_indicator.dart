@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TimeRecordingIndicator extends StatelessWidget {
   const TimeRecordingIndicator({
@@ -29,6 +29,11 @@ class TimeRecordingIndicator extends StatelessWidget {
         }
 
         final durationString = formatDuration(entryDuration(current));
+        final backgroundColor = context.colorScheme.surface;
+
+        const borderRadius = BorderRadius.only(
+          topRight: Radius.circular(8),
+        );
 
         return GestureDetector(
           onTap: () {
@@ -41,28 +46,28 @@ class TimeRecordingIndicator extends StatelessWidget {
           },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(8),
-              ),
+            child: Material(
+              elevation: 8,
+              borderRadius: borderRadius,
               child: Container(
-                color: context.colorScheme.error,
-                width: 90,
-                height: 25,
+                decoration: BoxDecoration(
+                  borderRadius: borderRadius,
+                  color: backgroundColor,
+                ),
+                width: 105,
+                height: 30,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      MdiIcons.timerOutline,
-                      color: Colors.black,
-                      size: 16,
-                    ),
+                    const SizedBox(width: 10),
+                    const TimeRecordingIndicatorDot(),
+                    const SizedBox(width: 5),
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         durationString,
                         style: monospaceTextStyle.copyWith(
-                          color: Colors.black,
+                          //color: textColor,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
