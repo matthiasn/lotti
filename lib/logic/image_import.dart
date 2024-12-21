@@ -13,7 +13,7 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 Future<void> importImageAssets(
   BuildContext context, {
-  JournalEntity? linked,
+  String? linkedId,
 }) async {
   final persistenceLogic = getIt<PersistenceLogic>();
 
@@ -80,7 +80,7 @@ Future<void> importImageAssets(
 
         await persistenceLogic.createImageEntry(
           imageData,
-          linkedId: linked?.meta.id,
+          linkedId: linkedId,
         );
       }
     }
