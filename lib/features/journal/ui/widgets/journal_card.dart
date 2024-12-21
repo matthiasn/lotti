@@ -16,6 +16,7 @@ import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -145,10 +146,17 @@ class JournalCardTitle extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          data.title,
-                          style: const TextStyle(
-                            fontSize: fontSizeLarge,
+                        TimeRecordingIcon(
+                          taskId: item.id,
+                          padding: const EdgeInsets.only(right: 10),
+                        ),
+                        Flexible(
+                          child: Text(
+                            data.title,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: fontSizeLarge,
+                            ),
                           ),
                         ),
                       ],
@@ -357,7 +365,16 @@ class TaskListCard extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CategoryColorIcon(task.meta.categoryId),
-        trailing: TaskStatusWidget(task),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TaskStatusWidget(task),
+            TimeRecordingIcon(
+              taskId: task.meta.id,
+              padding: const EdgeInsets.only(left: 10),
+            ),
+          ],
+        ),
         title: Text(
           task.data.title,
           style: const TextStyle(

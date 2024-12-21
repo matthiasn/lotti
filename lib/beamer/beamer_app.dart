@@ -76,6 +76,7 @@ class _AppScreenState extends State<AppScreen> {
             selectedItemColor: context.colorScheme.primary,
             unselectedItemColor: context.colorScheme.primary.withAlpha(127),
             enableFeedback: true,
+            backgroundColor: context.colorScheme.surface,
             elevation: 8,
             iconSize: 30,
             selectedLabelStyle: const TextStyle(

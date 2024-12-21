@@ -8,6 +8,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/checklists_widget.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/categories/category_field.dart';
@@ -75,7 +76,6 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                 inputSpacer,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     SizedBox(
                       width: 120,
@@ -103,6 +103,11 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                         },
                       ),
                     ),
+                    TimeRecordingIcon(
+                      taskId: entryId,
+                      padding: const EdgeInsets.only(left: 10),
+                    ),
+                    const Spacer(),
                     SizedBox(
                       width: 180,
                       child: FormBuilderDropdown<String>(
