@@ -46,11 +46,7 @@ class ChecklistRepository {
         ),
       );
 
-      await _persistenceLogic.createDbEntity(
-        newChecklist,
-        enqueueSync: true,
-      );
-      _persistenceLogic.addGeolocation(newChecklist.id);
+      await _persistenceLogic.createDbEntity(newChecklist);
 
       await _persistenceLogic.updateTask(
         journalEntityId: task.id,
@@ -110,11 +106,7 @@ class ChecklistRepository {
         ),
       );
 
-      await _persistenceLogic.createDbEntity(
-        newChecklistItem,
-        enqueueSync: true,
-      );
-      _persistenceLogic.addGeolocation(newChecklistItem.id);
+      await _persistenceLogic.createDbEntity(newChecklistItem);
 
       return newChecklistItem;
     } catch (exception, stackTrace) {
