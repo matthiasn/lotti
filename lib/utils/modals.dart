@@ -60,6 +60,8 @@ class ModalUtils {
             context: modalSheetContext,
             title: title,
             child: builder(modalSheetContext),
+            isTopBarLayerAlwaysVisible: title != null,
+            showCloseButton: title != null,
           ),
         ];
       },
