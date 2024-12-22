@@ -3,16 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../mocks/sync_config_test_mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
@@ -68,30 +73,39 @@ void main() {
         .thenAnswer((_) async => [testTag1]);
 
     setUpAll(() {
+      registerFallbackValue(FakeTagEntity());
+      registerFallbackValue(FakeSyncMessage());
+      registerFallbackValue(FakeJournalEntity());
+
+      final mockOutboxService = MockOutboxService();
+      final mockVectorClockService = MockVectorClockService();
+
       getIt
+        ..registerSingleton<OutboxService>(mockOutboxService)
+        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<VectorClockService>(mockVectorClockService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<EditorStateService>(mockEditorStateService);
 
       when(
-        () => mockPersistenceLogic.addTagsWithLinked(
-          journalEntityId: testTextEntryWithTags.meta.id,
-          addedTagIds: any(named: 'addedTagIds'),
-        ),
-      ).thenAnswer((invocation) async => true);
+        () => mockJournalDb.upsertTagEntity(any()),
+      ).thenAnswer((invocation) async => 1);
 
       when(
-        () => mockPersistenceLogic.removeTag(
-          journalEntityId: testTextEntryWithTags.meta.id,
-          tagId: any(named: 'tagId'),
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
         ),
-      ).thenAnswer((invocation) async => true);
+      ).thenAnswer((invocation) async => const VectorClock({}));
 
       when(
-        () => mockPersistenceLogic.addTagDefinition(any()),
-      ).thenAnswer((invocation) async => '');
+        () => mockPersistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((invocation) async => true);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
 
       when(
         () => mockEditorStateService.getUnsavedStream(

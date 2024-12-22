@@ -15,6 +15,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
+import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
@@ -297,7 +298,7 @@ void main() {
         vectorClock: null,
       );
 
-      await getIt<PersistenceLogic>().upsertTagEntity(testStoryTag);
+      await TagsRepository.upsertTagEntity(testStoryTag);
 
       // expect tag in database when queried
       expect(
@@ -329,7 +330,7 @@ void main() {
       );
 
       // add tag to task
-      await getIt<PersistenceLogic>().addTagsWithLinked(
+      await TagsRepository.addTagsWithLinked(
         journalEntityId: task.meta.id,
         addedTagIds: [testStoryTag.id],
       );
@@ -405,8 +406,10 @@ void main() {
       expect(await getIt<JournalDb>().watchTaggedCount().first, 2);
 
       // remove tags and expect them to be empty
-      await getIt<PersistenceLogic>()
-          .removeTag(journalEntityId: comment.meta.id, tagId: testTagId);
+      await TagsRepository.removeTag(
+        journalEntityId: comment.meta.id,
+        tagId: testTagId,
+      );
 
       expect(await getIt<JournalDb>().watchTaggedCount().first, 1);
 
@@ -588,7 +591,7 @@ void main() {
 
     test('create and retrieve tag', () async {
       const testTag = 'test-tag';
-      await getIt<PersistenceLogic>().addTagDefinition(testTag);
+      await TagsRepository.addTagDefinition(testTag);
 
       final createdTag =
           (await getIt<JournalDb>().getMatchingTags(testTag)).first;

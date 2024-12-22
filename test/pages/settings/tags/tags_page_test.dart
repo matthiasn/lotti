@@ -54,7 +54,7 @@ void main() {
         ]),
       );
 
-      when(() => mockPersistenceLogic.upsertTagEntity(any()))
+      when(() => mockJournalDb.upsertTagEntity(any()))
           .thenAnswer((_) async => 1);
     });
     tearDown(getIt.reset);
