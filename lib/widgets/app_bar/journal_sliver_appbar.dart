@@ -9,7 +9,6 @@ import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_filter_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
@@ -121,42 +120,28 @@ class JournalFilterIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageIndexNotifier = ValueNotifier(0);
-
     return Padding(
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          WoltModalSheet.show<void>(
-            pageIndexNotifier: pageIndexNotifier,
+          ModalUtils.showSinglePageModal(
             context: context,
-            pageListBuilder: (modalSheetContext) {
-              return [
-                ModalUtils.modalSheetPage(
-                  context: modalSheetContext,
-                  title: modalSheetContext.messages.journalSearchHint,
-                  child: const Column(
-                    children: [
-                      JournalFilter(),
-                      SizedBox(height: 10),
-                      EntryTypeFilter(),
-                    ],
-                  ),
-                ),
-              ];
-            },
+            title: context.messages.journalSearchHint,
             modalDecorator: (child) {
               return MultiBlocProvider(
                 providers: [
-                  BlocProvider.value(
-                    value: context.read<JournalPageCubit>(),
-                  ),
+                  BlocProvider.value(value: context.read<JournalPageCubit>()),
                 ],
                 child: child,
               );
             },
-            modalTypeBuilder: ModalUtils.modalTypeBuilder,
-            barrierDismissible: true,
+            child: const Column(
+              children: [
+                JournalFilter(),
+                SizedBox(height: 10),
+                EntryTypeFilter(),
+              ],
+            ),
           );
         },
         icon: Icon(MdiIcons.filterVariant),

@@ -45,4 +45,27 @@ class ModalUtils {
       ),
     );
   }
+
+  static Future<void> showSinglePageModal({
+    required BuildContext context,
+    required Widget child,
+    String? title,
+    Widget Function(Widget)? modalDecorator,
+  }) async {
+    await WoltModalSheet.show<void>(
+      context: context,
+      pageListBuilder: (modalSheetContext) {
+        return [
+          ModalUtils.modalSheetPage(
+            context: modalSheetContext,
+            title: title,
+            child: child,
+          ),
+        ];
+      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      barrierDismissible: true,
+      modalDecorator: modalDecorator,
+    );
+  }
 }

@@ -8,46 +8,35 @@ import 'package:lotti/widgets/search/task_category_filter.dart';
 import 'package:lotti/widgets/search/task_list_toggle.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class TaskFilterIcon extends StatelessWidget {
   const TaskFilterIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final pageIndexNotifier = ValueNotifier(0);
-
     return Padding(
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          WoltModalSheet.show<void>(
-            pageIndexNotifier: pageIndexNotifier,
+          ModalUtils.showSinglePageModal(
             context: context,
-            pageListBuilder: (modalSheetContext) {
-              return [
-                ModalUtils.modalSheetPage(
-                  context: modalSheetContext,
-                  title: modalSheetContext.messages.tasksFilterTitle,
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          JournalFilter(),
-                          SizedBox(width: 10),
-                          TaskListToggle(),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      TaskStatusFilter(),
-                      TaskCategoryFilter(),
-                    ],
-                  ),
+            title: context.messages.tasksFilterTitle,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    JournalFilter(),
+                    SizedBox(width: 10),
+                    TaskListToggle(),
+                  ],
                 ),
-              ];
-            },
+                SizedBox(height: 10),
+                TaskStatusFilter(),
+                TaskCategoryFilter(),
+              ],
+            ),
             modalDecorator: (child) {
               return MultiBlocProvider(
                 providers: [
@@ -58,8 +47,6 @@ class TaskFilterIcon extends StatelessWidget {
                 child: child,
               );
             },
-            modalTypeBuilder: ModalUtils.modalTypeBuilder,
-            barrierDismissible: true,
           );
         },
         icon: Icon(MdiIcons.filterVariant),

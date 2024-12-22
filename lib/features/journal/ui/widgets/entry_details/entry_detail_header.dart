@@ -17,7 +17,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
@@ -190,57 +189,49 @@ class ExtendedHeaderActions {
     required bool inLinkedEntries,
     required Future<void> Function()? unlinkFn,
   }) async {
-    await WoltModalSheet.show<void>(
+    final linkService = getIt<LinkService>();
+
+    await ModalUtils.showSinglePageModal(
       context: context,
-      pageListBuilder: (modalSheetContext) {
-        final linkService = getIt<LinkService>();
-        return [
-          ModalUtils.modalSheetPage(
-            context: context,
-            title: context.messages.entryActions,
-            child: Column(
-              children: [
-                TogglePrivateListTile(entryId: entryId),
-                ToggleMapListTile(entryId: entryId),
-                DeleteIconListTile(
-                  entryId: entryId,
-                  beamBack: !inLinkedEntries,
-                ),
-                SpeechModalListTile(entryId: entryId),
-                ShareButtonListTile(entryId: entryId),
-                TagAddListTile(entryId: entryId),
-                ListTile(
-                  leading: const Icon(Icons.add_link),
-                  title: Text(context.messages.journalLinkFromHint),
-                  onTap: () {
-                    linkService.linkFrom(entryId);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                ListTile(
-                  leading: Icon(MdiIcons.target),
-                  title: Text(context.messages.journalLinkToHint),
-                  onTap: () {
-                    linkService.linkTo(entryId);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                if (unlinkFn != null)
-                  ListTile(
-                    leading: Icon(MdiIcons.linkOff),
-                    title: Text(context.messages.journalUnlinkHint),
-                    onTap: () {
-                      unlinkFn();
-                      Navigator.of(context).pop();
-                    },
-                  ),
-              ],
-            ),
+      title: context.messages.entryActions,
+      child: Column(
+        children: [
+          TogglePrivateListTile(entryId: entryId),
+          ToggleMapListTile(entryId: entryId),
+          DeleteIconListTile(
+            entryId: entryId,
+            beamBack: !inLinkedEntries,
           ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
+          SpeechModalListTile(entryId: entryId),
+          ShareButtonListTile(entryId: entryId),
+          TagAddListTile(entryId: entryId),
+          ListTile(
+            leading: const Icon(Icons.add_link),
+            title: Text(context.messages.journalLinkFromHint),
+            onTap: () {
+              linkService.linkFrom(entryId);
+              Navigator.of(context).pop();
+            },
+          ),
+          ListTile(
+            leading: Icon(MdiIcons.target),
+            title: Text(context.messages.journalLinkToHint),
+            onTap: () {
+              linkService.linkTo(entryId);
+              Navigator.of(context).pop();
+            },
+          ),
+          if (unlinkFn != null)
+            ListTile(
+              leading: Icon(MdiIcons.linkOff),
+              title: Text(context.messages.journalUnlinkHint),
+              onTap: () {
+                unlinkFn();
+                Navigator.of(context).pop();
+              },
+            ),
+        ],
+      ),
     );
   }
 }

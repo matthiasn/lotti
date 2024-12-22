@@ -5,7 +5,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class ReSyncModalContent extends StatefulWidget {
   const ReSyncModalContent({super.key});
@@ -69,19 +68,10 @@ class _ReSyncModalContentState extends State<ReSyncModalContent> {
 
 class ReSyncModal {
   static Future<void> show(BuildContext context) async {
-    await WoltModalSheet.show<void>(
+    await ModalUtils.showSinglePageModal(
       context: context,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          ModalUtils.modalSheetPage(
-            context: modalSheetContext,
-            title: 'Re-sync entries',
-            child: const ReSyncModalContent(),
-          ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
+      title: 'Re-sync entries',
+      child: const ReSyncModalContent(),
     );
   }
 }
