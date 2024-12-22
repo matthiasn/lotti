@@ -13,7 +13,7 @@ class CreateEntryModal {
     await ModalUtils.showSinglePageModal(
       context: context,
       title: context.messages.createEntryTitle,
-      child: Column(
+      builder: (_) => Column(
         children: [
           CreateEventListTile(linkedFromId),
           CreateTaskListTile(linkedFromId, categoryId: categoryId),

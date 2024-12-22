@@ -29,7 +29,7 @@ class SpeechModalListTile extends ConsumerWidget {
     void onTapAdd() => ModalUtils.showSinglePageModal(
           context: context,
           title: context.messages.speechModalTitle,
-          child: Column(
+          builder: (_) => Column(
             children: [
               const SizedBox(height: 20),
               TranscribeButton(entryId: entryId),

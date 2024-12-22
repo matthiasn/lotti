@@ -21,7 +21,7 @@ class TaskFilterIcon extends StatelessWidget {
           ModalUtils.showSinglePageModal(
             context: context,
             title: context.messages.tasksFilterTitle,
-            child: const Column(
+            builder: (_) => const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(

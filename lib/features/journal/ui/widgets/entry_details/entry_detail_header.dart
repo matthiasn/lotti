@@ -194,7 +194,7 @@ class ExtendedHeaderActions {
     await ModalUtils.showSinglePageModal(
       context: context,
       title: context.messages.entryActions,
-      child: Column(
+      builder: (context) => Column(
         children: [
           TogglePrivateListTile(entryId: entryId),
           ToggleMapListTile(entryId: entryId),
