@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:lotti/utils/modals.dart';
 
 class TranscriptionProgressModalContent extends StatelessWidget {
   const TranscriptionProgressModalContent({super.key});
@@ -33,7 +33,7 @@ class TranscriptionProgressModalContent extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(16),
           child: MarkdownBody(
             data: text,
             styleSheet: MarkdownStyleSheet(
@@ -49,44 +49,11 @@ class TranscriptionProgressModalContent extends StatelessWidget {
 }
 
 class TranscriptionProgressModal {
-  static SliverWoltModalSheetPage page1(
-    BuildContext modalSheetContext,
-    TextTheme textTheme,
-  ) {
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      topBarTitle: Text(
-        'Transcription Progress',
-        style: textTheme.titleSmall,
-      ),
-      isTopBarLayerAlwaysVisible: true,
-      trailingNavBarWidget: IconButton(
-        padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-        icon: const Icon(Icons.close),
-        onPressed: Navigator.of(modalSheetContext).pop,
-      ),
-      child: const TranscriptionProgressModalContent(),
-    );
-  }
-
   static Future<void> show(BuildContext context) async {
-    await WoltModalSheet.show<void>(
+    await ModalUtils.showSinglePageModal(
       context: context,
-      pageListBuilder: (modalSheetContext) {
-        final textTheme = context.textTheme;
-        return [
-          page1(modalSheetContext, textTheme),
-        ];
-      },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
-      barrierDismissible: true,
+      title: context.messages.speechModalTranscriptionProgress,
+      builder: (_) => const TranscriptionProgressModalContent(),
     );
   }
 }

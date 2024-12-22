@@ -4,12 +4,11 @@ import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_filter_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
@@ -121,70 +120,28 @@ class JournalFilterIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageIndexNotifier = ValueNotifier(0);
-
-    SliverWoltModalSheetPage page1(
-      BuildContext modalSheetContext,
-      TextTheme textTheme,
-    ) {
-      return WoltModalSheetPage(
-        hasSabGradient: false,
-        topBarTitle: Text('Entries Filter', style: textTheme.titleSmall),
-        isTopBarLayerAlwaysVisible: true,
-        trailingNavBarWidget: IconButton(
-          padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-          icon: const Icon(Icons.close),
-          onPressed: Navigator.of(modalSheetContext).pop,
-        ),
-        child: const Padding(
-          padding: EdgeInsets.only(
-            bottom: 30,
-            left: 10,
-            top: 10,
-            right: 10,
-          ),
-          child: Column(
-            children: [
-              JournalFilter(),
-              SizedBox(height: 10),
-              EntryTypeFilter(),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Padding(
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          WoltModalSheet.show<void>(
-            pageIndexNotifier: pageIndexNotifier,
+          ModalUtils.showSinglePageModal(
             context: context,
-            pageListBuilder: (modalSheetContext) {
-              return [
-                page1(modalSheetContext, context.textTheme),
-              ];
-            },
+            title: context.messages.journalSearchHint,
             modalDecorator: (child) {
               return MultiBlocProvider(
                 providers: [
-                  BlocProvider.value(
-                    value: context.read<JournalPageCubit>(),
-                  ),
+                  BlocProvider.value(value: context.read<JournalPageCubit>()),
                 ],
                 child: child,
               );
             },
-            modalTypeBuilder: (context) {
-              final size = MediaQuery.of(context).size.width;
-              if (size < WoltModalConfig.pageBreakpoint) {
-                return WoltModalType.bottomSheet();
-              } else {
-                return WoltModalType.dialog();
-              }
-            },
-            barrierDismissible: true,
+            builder: (_) => const Column(
+              children: [
+                JournalFilter(),
+                SizedBox(height: 10),
+                EntryTypeFilter(),
+              ],
+            ),
           );
         },
         icon: Icon(MdiIcons.filterVariant),

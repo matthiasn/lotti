@@ -8,7 +8,7 @@ import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -61,14 +61,7 @@ class MatrixSettingsCard extends StatelessWidget {
               ),
             ];
           },
-          modalTypeBuilder: (context) {
-            final size = MediaQuery.of(context).size.width;
-            if (size < WoltModalConfig.pageBreakpoint) {
-              return WoltModalType.bottomSheet();
-            } else {
-              return WoltModalType.dialog();
-            }
-          },
+          modalTypeBuilder: ModalUtils.modalTypeBuilder,
           barrierDismissible: true,
         );
       },

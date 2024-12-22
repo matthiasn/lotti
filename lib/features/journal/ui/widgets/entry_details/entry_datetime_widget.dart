@@ -4,6 +4,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
@@ -30,7 +31,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 5),
       child: TextButton(
         onPressed: () {
-          showModalBottomSheet<void>(
+          ModalUtils.showSinglePageModal(
             context: context,
             builder: (BuildContext _) {
               return EntryDateTimeModal(item: entry);

@@ -4,7 +4,7 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:research_package/research_package.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -20,8 +20,11 @@ Future<void> runSurvey({
     useSafeArea: true,
     pageListBuilder: (modalSheetContext) {
       return [
-        WoltModalSheetPage(
+        ModalUtils.modalSheetPage(
+          context: modalSheetContext,
           backgroundColor: themeData.canvasColor,
+          isTopBarLayerAlwaysVisible: false,
+          showCloseButton: false,
           child: Theme(
             data: themeData.copyWith(
               scaffoldBackgroundColor: Colors.transparent,
@@ -40,14 +43,7 @@ Future<void> runSurvey({
         ),
       ];
     },
-    modalTypeBuilder: (context) {
-      final size = MediaQuery.of(context).size.width;
-      if (size < WoltModalConfig.pageBreakpoint) {
-        return WoltModalType.bottomSheet();
-      } else {
-        return WoltModalType.dialog();
-      }
-    },
+    modalTypeBuilder: ModalUtils.modalTypeBuilder,
   );
 }
 

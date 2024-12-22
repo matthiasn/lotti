@@ -6,56 +6,7 @@ import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcribe_button.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
-class SpeechModal {
-  static Future<void> show({
-    required BuildContext context,
-    required String entryId,
-  }) async {
-    await WoltModalSheet.show<void>(
-      context: context,
-      pageListBuilder: (modalSheetContext) {
-        final textTheme = context.textTheme;
-        return [
-          WoltModalSheetPage(
-            hasSabGradient: false,
-            topBarTitle: Text(
-              context.messages.speechModalTitle,
-              style: textTheme.titleLarge,
-            ),
-            isTopBarLayerAlwaysVisible: true,
-            child: Padding(
-              padding:
-                  const EdgeInsets.all(WoltModalConfig.pagePadding).copyWith(
-                top: 0,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  TranscribeButton(entryId: entryId),
-                  LanguageDropdown(entryId: entryId),
-                  TranscriptsList(entryId: entryId),
-                ],
-              ),
-            ),
-          ),
-        ];
-      },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
-      barrierDismissible: true,
-    );
-  }
-}
+import 'package:lotti/utils/modals.dart';
 
 class SpeechModalListTile extends ConsumerWidget {
   const SpeechModalListTile({
@@ -75,12 +26,18 @@ class SpeechModalListTile extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void onTapAdd() {
-      SpeechModal.show(
-        context: context,
-        entryId: entryId,
-      );
-    }
+    void onTapAdd() => ModalUtils.showSinglePageModal(
+          context: context,
+          title: context.messages.speechModalTitle,
+          builder: (_) => Column(
+            children: [
+              const SizedBox(height: 20),
+              TranscribeButton(entryId: entryId),
+              LanguageDropdown(entryId: entryId),
+              TranscriptsList(entryId: entryId),
+            ],
+          ),
+        );
 
     return ListTile(
       leading: const Icon(Icons.transcribe_rounded),
