@@ -5,7 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';

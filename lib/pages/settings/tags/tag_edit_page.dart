@@ -4,7 +4,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/services/tags_service.dart';

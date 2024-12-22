@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';

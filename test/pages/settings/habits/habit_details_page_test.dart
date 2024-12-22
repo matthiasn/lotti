@@ -6,7 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/habits/habit_create_page.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';

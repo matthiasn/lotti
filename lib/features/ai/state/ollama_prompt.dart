@@ -5,7 +5,7 @@ import 'package:langchain_ollama/langchain_ollama.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 final aiResponseProvider = NotifierProvider<AiResponse, String>(AiResponse.new);

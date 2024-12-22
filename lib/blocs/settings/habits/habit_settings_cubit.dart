@@ -8,7 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
-import 'package:lotti/logic/persistence/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/settings/habits/habit_autocomplete_widget.dart';
 
