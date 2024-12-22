@@ -101,7 +101,7 @@ class PersistenceLogic {
           uuidV5Input: json.encode(data),
         ),
       );
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(journalEntity, shouldAddGeolocation: false);
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -125,7 +125,7 @@ class PersistenceLogic {
           uuidV5Input: data.id,
         ),
       );
-      await createDbEntity(workout, enqueueSync: true);
+      await createDbEntity(workout, shouldAddGeolocation: false);
 
       return workout;
     } catch (exception, stackTrace) {
@@ -154,12 +154,7 @@ class PersistenceLogic {
         ),
       );
 
-      await createDbEntity(
-        journalEntity,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEntity.meta.id);
+      await createDbEntity(journalEntity, linkedId: linkedId);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -190,16 +185,15 @@ class PersistenceLogic {
         entryText: entryTextFromPlain(comment),
       );
 
+      final shouldAddGeolocation =
+          data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+              data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+
       await createDbEntity(
         measurementEntry,
-        enqueueSync: true,
         linkedId: linkedId,
+        shouldAddGeolocation: shouldAddGeolocation,
       );
-
-      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        addGeolocation(measurementEntry.meta.id);
-      }
 
       return measurementEntry;
     } catch (exception, stackTrace) {
@@ -236,16 +230,15 @@ class PersistenceLogic {
         entryText: entryTextFromPlain(comment),
       );
 
+      final shouldAddGeolocation =
+          data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+              data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+
       await createDbEntity(
         habitCompletionEntry,
-        enqueueSync: true,
         linkedId: linkedId,
+        shouldAddGeolocation: shouldAddGeolocation,
       );
-
-      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        addGeolocation(habitCompletionEntry.meta.id);
-      }
 
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
@@ -279,12 +272,8 @@ class PersistenceLogic {
         ),
       );
 
-      await createDbEntity(
-        task,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(task.meta.id);
+      await createDbEntity(task, linkedId: linkedId);
+
       return task;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -312,12 +301,8 @@ class PersistenceLogic {
         ),
       );
 
-      await createDbEntity(
-        journalEvent,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEvent.meta.id);
+      await createDbEntity(journalEvent, linkedId: linkedId);
+
       return journalEvent;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -348,8 +333,8 @@ class PersistenceLogic {
       );
       await createDbEntity(
         journalEntity,
-        enqueueSync: true,
         linkedId: linkedId,
+        shouldAddGeolocation: false,
       );
       return journalEntity;
     } catch (exception, stackTrace) {
@@ -396,12 +381,7 @@ class PersistenceLogic {
           flag: EntryFlag.import,
         ),
       );
-      await createDbEntity(
-        journalEntity,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEntity.meta.id);
+      await createDbEntity(journalEntity, linkedId: linkedId);
 
       if (autoTranscribe) {
         await getIt<AsrService>().enqueue(entry: journalEntity);
@@ -433,12 +413,9 @@ class PersistenceLogic {
           dateFrom: started,
         ),
       );
-      await createDbEntity(
-        journalEntity,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEntity.meta.id);
+
+      await createDbEntity(journalEntity, linkedId: linkedId);
+
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -488,7 +465,8 @@ class PersistenceLogic {
 
   Future<bool?> createDbEntity(
     JournalEntity journalEntity, {
-    bool enqueueSync = false,
+    bool shouldAddGeolocation = true,
+    bool enqueueSync = true,
     String? linkedId,
   }) async {
     final tagsService = getIt<TagsService>();
@@ -535,6 +513,10 @@ class PersistenceLogic {
       }
 
       await getIt<NotificationService>().updateBadge();
+
+      if (shouldAddGeolocation) {
+        addGeolocation(journalEntity.id);
+      }
 
       return saved;
     } catch (exception, stackTrace) {
