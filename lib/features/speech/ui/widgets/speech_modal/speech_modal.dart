@@ -7,36 +7,6 @@ import 'package:lotti/features/speech/ui/widgets/speech_modal/transcribe_button.
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
-class SpeechModal {
-  static Future<void> show({
-    required BuildContext context,
-    required String entryId,
-  }) async {
-    await WoltModalSheet.show<void>(
-      context: context,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          ModalUtils.modalSheetPage(
-            context: modalSheetContext,
-            title: context.messages.speechModalTitle,
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                TranscribeButton(entryId: entryId),
-                LanguageDropdown(entryId: entryId),
-                TranscriptsList(entryId: entryId),
-              ],
-            ),
-          ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
-    );
-  }
-}
 
 class SpeechModalListTile extends ConsumerWidget {
   const SpeechModalListTile({
@@ -56,12 +26,18 @@ class SpeechModalListTile extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void onTapAdd() {
-      SpeechModal.show(
-        context: context,
-        entryId: entryId,
-      );
-    }
+    void onTapAdd() => ModalUtils.showSinglePageModal(
+          context: context,
+          title: context.messages.speechModalTitle,
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              TranscribeButton(entryId: entryId),
+              LanguageDropdown(entryId: entryId),
+              TranscriptsList(entryId: entryId),
+            ],
+          ),
+        );
 
     return ListTile(
       leading: const Icon(Icons.transcribe_rounded),

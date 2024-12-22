@@ -6,7 +6,6 @@ import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/ai/ui/ai_response_preview.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class AiPopUpMenu extends StatelessWidget {
   const AiPopUpMenu({
@@ -22,10 +21,21 @@ class AiPopUpMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.assistant_rounded),
-      onPressed: () => AiAssistantModal.show(
+      onPressed: () => ModalUtils.showSinglePageModal(
         context: context,
-        journalEntity: journalEntity,
-        linkedFromId: linkedFromId,
+        title: context.messages.aiAssistantTitle,
+        child: Column(
+          children: [
+            AiPromptListTile(
+              journalEntity: journalEntity,
+              linkedFromId: linkedFromId,
+            ),
+            AiChecklistListTile(
+              journalEntity: journalEntity,
+              linkedFromId: linkedFromId,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -89,40 +99,6 @@ class AiChecklistListTile extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class AiAssistantModal {
-  static Future<void> show({
-    required BuildContext context,
-    required JournalEntity? journalEntity,
-    required String? linkedFromId,
-  }) async {
-    await WoltModalSheet.show<void>(
-      context: context,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          ModalUtils.modalSheetPage(
-            context: modalSheetContext,
-            title: modalSheetContext.messages.aiAssistantTitle,
-            child: Column(
-              children: [
-                AiPromptListTile(
-                  journalEntity: journalEntity,
-                  linkedFromId: linkedFromId,
-                ),
-                AiChecklistListTile(
-                  journalEntity: journalEntity,
-                  linkedFromId: linkedFromId,
-                ),
-              ],
-            ),
-          ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
     );
   }
 }

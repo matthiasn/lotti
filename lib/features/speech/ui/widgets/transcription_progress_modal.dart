@@ -5,7 +5,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class TranscriptionProgressModalContent extends StatelessWidget {
   const TranscriptionProgressModalContent({super.key});
@@ -51,19 +50,10 @@ class TranscriptionProgressModalContent extends StatelessWidget {
 
 class TranscriptionProgressModal {
   static Future<void> show(BuildContext context) async {
-    await WoltModalSheet.show<void>(
+    await ModalUtils.showSinglePageModal(
       context: context,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          ModalUtils.modalSheetPage(
-            context: modalSheetContext,
-            title: context.messages.speechModalTranscriptionProgress,
-            child: const TranscriptionProgressModalContent(),
-          ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
+      title: context.messages.speechModalTranscriptionProgress,
+      child: const TranscriptionProgressModalContent(),
     );
   }
 }
