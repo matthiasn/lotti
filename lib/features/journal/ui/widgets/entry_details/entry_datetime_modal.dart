@@ -49,93 +49,89 @@ class _EntryDateTimeModalState extends ConsumerState<EntryDateTimeModal> {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IntrinsicWidth(
-                child: DateTimeField(
-                  dateTime: dateFrom,
-                  labelText: context.messages.journalDateFromLabel,
-                  setDateTime: (picked) {
-                    setState(() {
-                      dateFrom = picked;
-                    });
-                  },
-                ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IntrinsicWidth(
+              child: DateTimeField(
+                dateTime: dateFrom,
+                labelText: context.messages.journalDateFromLabel,
+                setDateTime: (picked) {
+                  setState(() {
+                    dateFrom = picked;
+                  });
+                },
               ),
-              IntrinsicWidth(
-                child: DateTimeField(
-                  dateTime: dateTo,
-                  labelText: context.messages.journalDateToLabel,
-                  setDateTime: (picked) {
-                    setState(() {
-                      dateTo = picked;
-                    });
-                  },
-                ),
+            ),
+            IntrinsicWidth(
+              child: DateTimeField(
+                dateTime: dateTo,
+                labelText: context.messages.journalDateToLabel,
+                setDateTime: (picked) {
+                  setState(() {
+                    dateTo = picked;
+                  });
+                },
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              context.messages.journalDurationLabel,
+              textAlign: TextAlign.end,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(
+                formatDuration(dateFrom.difference(dateTo).abs()),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(
-                context.messages.journalDurationLabel,
-                textAlign: TextAlign.end,
+              Visibility(
+                visible: valid && changed,
+                child: TextButton(
+                  onPressed: () async {
+                    await ref.read(provider.notifier).updateFromTo(
+                          dateFrom: dateFrom,
+                          dateTo: dateTo,
+                        );
+                    pop();
+                  },
+                  child: Text(
+                    context.messages.journalDateSaveButton,
+                    style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
+              Visibility(
+                visible: !valid,
                 child: Text(
-                  formatDuration(dateFrom.difference(dateTo).abs()),
+                  context.messages.journalDateInvalid,
+                  style: TextStyle(
+                    color: context.colorScheme.error,
+                  ),
                 ),
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Visibility(
-                  visible: valid && changed,
-                  child: TextButton(
-                    onPressed: () async {
-                      await ref.read(provider.notifier).updateFromTo(
-                            dateFrom: dateFrom,
-                            dateTo: dateTo,
-                          );
-                      pop();
-                    },
-                    child: Text(
-                      context.messages.journalDateSaveButton,
-                      style: const TextStyle(
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
-                Visibility(
-                  visible: !valid,
-                  child: Text(
-                    context.messages.journalDateInvalid,
-                    style: TextStyle(
-                      color: context.colorScheme.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

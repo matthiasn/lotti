@@ -11,6 +11,7 @@ class SettingsCard extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
+    this.backgroundColor = Colors.transparent,
     this.contentPadding = const EdgeInsets.symmetric(
       horizontal: 25,
       vertical: 2,
@@ -24,10 +25,12 @@ class SettingsCard extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final EdgeInsets? contentPadding;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Material(
+      color: backgroundColor,
       child: ListTile(
         contentPadding: contentPadding,
         title: Text(
@@ -53,6 +56,7 @@ class SettingsNavCard extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
+    this.backgroundColor = Colors.transparent,
     this.contentPadding = const EdgeInsets.symmetric(
       horizontal: 25,
       vertical: 2,
@@ -66,10 +70,12 @@ class SettingsNavCard extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final EdgeInsets? contentPadding;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Material(
+      color: backgroundColor,
       child: ListTile(
         contentPadding: contentPadding,
         title: Text(
