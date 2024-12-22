@@ -4,8 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/location.dart';
@@ -15,8 +14,6 @@ Future<void> importImageAssets(
   BuildContext context, {
   String? linkedId,
 }) async {
-  final persistenceLogic = getIt<PersistenceLogic>();
-
   final assets = await AssetPicker.pickAssets(
     context,
     pickerConfig: const AssetPickerConfig(
@@ -78,7 +75,7 @@ Future<void> importImageAssets(
           geolocation: geolocation,
         );
 
-        await persistenceLogic.createImageEntry(
+        await JournalRepository.createImageEntry(
           imageData,
           linkedId: linkedId,
         );

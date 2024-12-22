@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
@@ -138,7 +139,7 @@ class EntryController extends _$EntryController {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    return _persistenceLogic.updateJournalEntityDate(
+    return JournalRepository.updateJournalEntityDate(
       entryId,
       dateFrom: dateFrom,
       dateTo: dateTo,
@@ -146,7 +147,7 @@ class EntryController extends _$EntryController {
   }
 
   Future<bool> updateCategoryId(String? categoryId) async {
-    return _persistenceLogic.updateCategoryId(
+    return JournalRepository.updateCategoryId(
       entryId,
       categoryId: categoryId,
     );
@@ -229,7 +230,7 @@ class EntryController extends _$EntryController {
   Future<bool> delete({
     required bool beamBack,
   }) async {
-    final res = await _persistenceLogic.deleteJournalEntity(entryId);
+    final res = await JournalRepository.deleteJournalEntity(entryId);
     if (beamBack) {
       getIt<NavService>().beamBack();
     }
