@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class ReSyncModalContent extends StatefulWidget {
@@ -69,42 +68,19 @@ class _ReSyncModalContentState extends State<ReSyncModalContent> {
 }
 
 class ReSyncModal {
-  static SliverWoltModalSheetPage page1(
-    BuildContext modalSheetContext,
-    TextTheme textTheme,
-  ) {
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      topBarTitle: Text(
-        'Re-sync entries',
-        style: textTheme.titleSmall,
-      ),
-      isTopBarLayerAlwaysVisible: true,
-      trailingNavBarWidget: IconButton(
-        padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-        icon: const Icon(Icons.close),
-        onPressed: Navigator.of(modalSheetContext).pop,
-      ),
-      child: const ReSyncModalContent(),
-    );
-  }
-
   static Future<void> show(BuildContext context) async {
     await WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
         return [
-          page1(modalSheetContext, context.textTheme),
+          ModalUtils.modalSheetPage(
+            context: modalSheetContext,
+            title: 'Re-sync entries',
+            child: const ReSyncModalContent(),
+          ),
         ];
       },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
     );
   }

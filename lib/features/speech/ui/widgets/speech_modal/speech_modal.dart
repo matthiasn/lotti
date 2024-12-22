@@ -6,8 +6,7 @@ import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcribe_button.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class SpeechModal {
@@ -18,40 +17,22 @@ class SpeechModal {
     await WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
-        final textTheme = context.textTheme;
         return [
-          WoltModalSheetPage(
-            hasSabGradient: false,
-            topBarTitle: Text(
-              context.messages.speechModalTitle,
-              style: textTheme.titleLarge,
-            ),
-            isTopBarLayerAlwaysVisible: true,
-            child: Padding(
-              padding:
-                  const EdgeInsets.all(WoltModalConfig.pagePadding).copyWith(
-                top: 0,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  TranscribeButton(entryId: entryId),
-                  LanguageDropdown(entryId: entryId),
-                  TranscriptsList(entryId: entryId),
-                ],
-              ),
+          ModalUtils.modalSheetPage(
+            context: modalSheetContext,
+            title: context.messages.speechModalTitle,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                TranscribeButton(entryId: entryId),
+                LanguageDropdown(entryId: entryId),
+                TranscriptsList(entryId: entryId),
+              ],
             ),
           ),
         ];
       },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
     );
   }

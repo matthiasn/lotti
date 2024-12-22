@@ -5,8 +5,7 @@ import 'package:lotti/features/ai/state/ollama_prompt.dart';
 import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/ai/ui/ai_response_preview.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class AiPopUpMenu extends StatelessWidget {
@@ -95,42 +94,6 @@ class AiChecklistListTile extends ConsumerWidget {
 }
 
 class AiAssistantModal {
-  static SliverWoltModalSheetPage page1({
-    required BuildContext modalSheetContext,
-    required TextTheme textTheme,
-    required JournalEntity? journalEntity,
-    required String? linkedFromId,
-  }) {
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      topBarTitle: Text(
-        modalSheetContext.messages.aiAssistantTitle,
-        style: textTheme.titleLarge,
-      ),
-      isTopBarLayerAlwaysVisible: true,
-      trailingNavBarWidget: IconButton(
-        padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-        icon: const Icon(Icons.close),
-        onPressed: Navigator.of(modalSheetContext).pop,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-        child: Column(
-          children: [
-            AiPromptListTile(
-              journalEntity: journalEntity,
-              linkedFromId: linkedFromId,
-            ),
-            AiChecklistListTile(
-              journalEntity: journalEntity,
-              linkedFromId: linkedFromId,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   static Future<void> show({
     required BuildContext context,
     required JournalEntity? journalEntity,
@@ -139,24 +102,26 @@ class AiAssistantModal {
     await WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
-        final textTheme = context.textTheme;
         return [
-          page1(
-            modalSheetContext: modalSheetContext,
-            textTheme: textTheme,
-            journalEntity: journalEntity,
-            linkedFromId: linkedFromId,
+          ModalUtils.modalSheetPage(
+            context: modalSheetContext,
+            title: modalSheetContext.messages.aiAssistantTitle,
+            child: Column(
+              children: [
+                AiPromptListTile(
+                  journalEntity: journalEntity,
+                  linkedFromId: linkedFromId,
+                ),
+                AiChecklistListTile(
+                  journalEntity: journalEntity,
+                  linkedFromId: linkedFromId,
+                ),
+              ],
+            ),
           ),
         ];
       },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
     );
   }

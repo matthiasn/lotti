@@ -4,7 +4,7 @@ import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_filter_icon.dart';
@@ -123,37 +123,6 @@ class JournalFilterIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final pageIndexNotifier = ValueNotifier(0);
 
-    SliverWoltModalSheetPage page1(
-      BuildContext modalSheetContext,
-      TextTheme textTheme,
-    ) {
-      return WoltModalSheetPage(
-        hasSabGradient: false,
-        topBarTitle: Text('Entries Filter', style: textTheme.titleSmall),
-        isTopBarLayerAlwaysVisible: true,
-        trailingNavBarWidget: IconButton(
-          padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-          icon: const Icon(Icons.close),
-          onPressed: Navigator.of(modalSheetContext).pop,
-        ),
-        child: const Padding(
-          padding: EdgeInsets.only(
-            bottom: 30,
-            left: 10,
-            top: 10,
-            right: 10,
-          ),
-          child: Column(
-            children: [
-              JournalFilter(),
-              SizedBox(height: 10),
-              EntryTypeFilter(),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Padding(
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
@@ -163,7 +132,17 @@ class JournalFilterIcon extends StatelessWidget {
             context: context,
             pageListBuilder: (modalSheetContext) {
               return [
-                page1(modalSheetContext, context.textTheme),
+                ModalUtils.modalSheetPage(
+                  context: modalSheetContext,
+                  title: modalSheetContext.messages.journalSearchHint,
+                  child: const Column(
+                    children: [
+                      JournalFilter(),
+                      SizedBox(height: 10),
+                      EntryTypeFilter(),
+                    ],
+                  ),
+                ),
               ];
             },
             modalDecorator: (child) {
@@ -176,14 +155,7 @@ class JournalFilterIcon extends StatelessWidget {
                 child: child,
               );
             },
-            modalTypeBuilder: (context) {
-              final size = MediaQuery.of(context).size.width;
-              if (size < WoltModalConfig.pageBreakpoint) {
-                return WoltModalType.bottomSheet();
-              } else {
-                return WoltModalType.dialog();
-              }
-            },
+            modalTypeBuilder: ModalUtils.modalTypeBuilder,
             barrierDismissible: true,
           );
         },
