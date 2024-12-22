@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -47,7 +47,7 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   Future<bool> delete() async {
-    final res = await getIt<PersistenceLogic>().deleteJournalEntity(entryId);
+    final res = await JournalRepository.deleteJournalEntity(entryId);
     state = const AsyncData(null);
     return res;
   }

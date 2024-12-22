@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -20,9 +22,15 @@ void main() {
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockUpdateNotifications = MockUpdateNotifications();
     final mockNavService = MockNavService();
+    final mockNotificationService = MockNotificationService();
 
     setUpAll(() {
+      registerFallbackValue(FakeMetadata());
+      registerFallbackValue(FakeJournalEntity());
+
       getIt
+        ..registerSingleton<NotificationService>(mockNotificationService)
+        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -32,9 +40,26 @@ void main() {
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
       );
-      when(() => mockPersistenceLogic.deleteJournalEntity(any())).thenAnswer(
-        (_) async => true,
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer(
+        (_) async => testTextEntry,
       );
+
+      when(mockNotificationService.updateBadge).thenAnswer((_) async {});
+
+      when(
+        () => mockPersistenceLogic.updateMetadata(
+          testTextEntry.meta,
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
+      );
+
+      when(
+        () => mockPersistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
     });
 
     testWidgets('calls delete in cubit', (WidgetTester tester) async {

@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 
 class TimeService {
   TimeService() {
@@ -50,10 +49,8 @@ class TimeService {
   }
 
   Future<void> stop() async {
-    final persistenceLogic = getIt<PersistenceLogic>();
-
     if (_current != null) {
-      await persistenceLogic.updateJournalEntityDate(
+      await JournalRepository.updateJournalEntityDate(
         _current!.meta.id,
         dateFrom: _current!.meta.dateFrom,
         dateTo: DateTime.now(),

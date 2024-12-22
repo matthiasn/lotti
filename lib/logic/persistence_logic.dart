@@ -331,67 +331,6 @@ class PersistenceLogic {
     return null;
   }
 
-  Future<JournalEntity?> createImageEntry(
-    ImageData imageData, {
-    String? linkedId,
-  }) async {
-    try {
-      final journalEntity = JournalEntity.journalImage(
-        data: imageData,
-        meta: await createMetadata(
-          dateFrom: imageData.capturedAt,
-          dateTo: imageData.capturedAt,
-          uuidV5Input: json.encode(imageData),
-          flag: EntryFlag.import,
-        ),
-        geolocation: imageData.geolocation,
-      );
-      await createDbEntity(
-        journalEntity,
-        linkedId: linkedId,
-        shouldAddGeolocation: false,
-      );
-      return journalEntity;
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'createImageEntry',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return null;
-  }
-
-  Future<JournalEntity?> createTextEntry(
-    EntryText entryText, {
-    required DateTime started,
-    required String id,
-    String? linkedId,
-  }) async {
-    try {
-      final journalEntity = JournalEntity.journalEntry(
-        entryText: entryText,
-        meta: await createMetadata(
-          dateFrom: started,
-        ),
-      );
-
-      await createDbEntity(journalEntity, linkedId: linkedId);
-
-      return journalEntity;
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'createTextEntry',
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
   Future<bool> createLink({
     required String fromId,
     required String toId,
@@ -685,68 +624,6 @@ class PersistenceLogic {
     unawaited(addGeolocationAsync(journalEntityId));
   }
 
-  Future<bool> updateJournalEntityDate(
-    String journalEntityId, {
-    required DateTime dateFrom,
-    required DateTime dateTo,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await updateDbEntity(
-        journalEntity.copyWith(
-          meta: await updateMetadata(
-            journalEntity.meta,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-          ),
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateJournalEntityDate',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
-  }
-
-  Future<bool> updateCategoryId(
-    String journalEntityId, {
-    required String? categoryId,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await updateDbEntity(
-        journalEntity.copyWith(
-          meta: await updateMetadata(
-            journalEntity.meta,
-            categoryId: categoryId,
-          ),
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateCategoryId',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
-  }
-
   Future<bool> updateJournalEntity(
     JournalEntity journalEntity,
     Metadata metadata,
@@ -763,38 +640,6 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntity',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool> deleteJournalEntity(
-    String journalEntityId,
-  ) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await updateDbEntity(
-        journalEntity.copyWith(
-          meta: await updateMetadata(
-            journalEntity.meta,
-            deletedAt: DateTime.now(),
-          ),
-        ),
-      );
-
-      await getIt<NotificationService>().updateBadge();
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'deleteJournalEntity',
         stackTrace: stackTrace,
       );
     }

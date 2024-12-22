@@ -20,6 +20,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -55,10 +56,12 @@ void main() {
     final mockAiLogic = MockAiLogic();
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockNavService = MockNavService();
+    final mockNotificationService = MockNotificationService();
 
     setUpAll(() {
       registerFallbackValue(FakeJournalEntity());
       registerFallbackValue(FakeMetadata());
+      registerFallbackValue(FakeJournalEntity());
       registerFallbackValue(const AsyncLoading<EntryState?>());
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -81,6 +84,7 @@ void main() {
 
       getIt
         ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
@@ -107,6 +111,8 @@ void main() {
           .thenAnswer(
         (_) async => true,
       );
+
+      when(mockNotificationService.updateBadge).thenAnswer((_) async {});
     });
 
     tearDownAll(getIt.reset);
@@ -265,8 +271,16 @@ void main() {
       final testEntryProvider = entryControllerProvider(id: entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
-      Future<bool> testFn() =>
-          mockPersistenceLogic.deleteJournalEntity(entryId);
+      when(
+        () => mockPersistenceLogic.updateMetadata(
+          testTextEntry.meta,
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
+      );
+
+      Future<bool?> testFn() => mockPersistenceLogic.updateDbEntity(any());
       when(testFn).thenAnswer((invocation) async => true);
 
       await notifier.delete(beamBack: false);
@@ -298,9 +312,16 @@ void main() {
         ),
       );
 
-      Future<bool> testFn() =>
-          mockPersistenceLogic.deleteJournalEntity(entryId);
+      when(
+        () => mockPersistenceLogic.updateMetadata(
+          testTextEntry.meta,
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
+      );
 
+      Future<bool?> testFn() => mockPersistenceLogic.updateDbEntity(any());
       when(testFn).thenAnswer((invocation) async => true);
 
       await notifier.delete(beamBack: true);

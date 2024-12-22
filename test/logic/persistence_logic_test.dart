@@ -12,6 +12,7 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
@@ -120,7 +121,7 @@ void main() {
         const updatedTestText = 'updated test text';
 
         // create test entry
-        final textEntry = await getIt<PersistenceLogic>().createTextEntry(
+        final textEntry = await JournalRepository.createTextEntry(
           const EntryText(plainText: testText),
           id: uuid.v1(),
           started: now,
@@ -322,7 +323,7 @@ void main() {
       // create linked comment entry
       const testText = 'test comment for task';
       const updatedTestText = 'updated test comment for task';
-      final comment = await getIt<PersistenceLogic>().createTextEntry(
+      final comment = await JournalRepository.createTextEntry(
         const EntryText(plainText: testText),
         id: uuid.v1(),
         started: now,
@@ -434,7 +435,7 @@ void main() {
       );
 
       // delete task and expect counts to be updated
-      await getIt<PersistenceLogic>().deleteJournalEntity(task.meta.id);
+      await JournalRepository.deleteJournalEntity(task.meta.id);
       expect(await getIt<JournalDb>().watchJournalCount().first, 2);
       expect(await getIt<JournalDb>().getJournalCount(), 2);
       expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
