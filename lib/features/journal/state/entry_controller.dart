@@ -12,6 +12,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -365,7 +366,7 @@ class EntryController extends _$EntryController {
   }
 
   Future<void> setLanguage(String language) async {
-    return _persistenceLogic.updateLanguage(
+    return SpeechRepository.updateLanguage(
       journalEntityId: entryId,
       language: language,
     );
