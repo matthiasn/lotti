@@ -9,8 +9,8 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class CreateTextEntryListTile extends StatelessWidget {
-  const CreateTextEntryListTile({
-    this.linkedFromId,
+  const CreateTextEntryListTile(
+    this.linkedFromId, {
     super.key,
   });
 
@@ -30,8 +30,8 @@ class CreateTextEntryListTile extends StatelessWidget {
 }
 
 class CreateScreenshotListTile extends StatelessWidget {
-  const CreateScreenshotListTile({
-    this.linkedFromId,
+  const CreateScreenshotListTile(
+    this.linkedFromId, {
     super.key,
   });
 
@@ -51,8 +51,8 @@ class CreateScreenshotListTile extends StatelessWidget {
 }
 
 class CreateTimerListTile extends ConsumerWidget {
-  const CreateTimerListTile({
-    required this.linkedFromId,
+  const CreateTimerListTile(
+    this.linkedFromId, {
     super.key,
   });
 
@@ -75,8 +75,8 @@ class CreateTimerListTile extends ConsumerWidget {
 }
 
 class CreateAudioRecordingListTile extends StatelessWidget {
-  const CreateAudioRecordingListTile({
-    this.linkedFromId,
+  const CreateAudioRecordingListTile(
+    this.linkedFromId, {
     super.key,
   });
 
@@ -100,8 +100,8 @@ class CreateAudioRecordingListTile extends StatelessWidget {
 }
 
 class CreateTaskListTile extends StatelessWidget {
-  const CreateTaskListTile({
-    this.linkedFromId,
+  const CreateTaskListTile(
+    this.linkedFromId, {
     this.categoryId,
     super.key,
   });
@@ -131,8 +131,8 @@ class CreateTaskListTile extends StatelessWidget {
 }
 
 class CreateEventListTile extends StatelessWidget {
-  const CreateEventListTile({
-    this.linkedFromId,
+  const CreateEventListTile(
+    this.linkedFromId, {
     super.key,
   });
 
@@ -159,8 +159,8 @@ class CreateEventListTile extends StatelessWidget {
 }
 
 class ImportImageAssetsListTile extends StatelessWidget {
-  const ImportImageAssetsListTile({
-    this.linkedFromId,
+  const ImportImageAssetsListTile(
+    this.linkedFromId, {
     super.key,
   });
 

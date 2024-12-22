@@ -5,6 +5,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
@@ -23,43 +24,31 @@ class CategoryField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
-
     final controller = TextEditingController()..text = category?.name ?? '';
 
     void onTap() {
-      showModalBottomSheet<void>(
+      ModalUtils.showSinglePageModal(
         context: context,
-        isScrollControlled: true,
+        title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {
           final categories = getIt<EntitiesCacheService>().sortedCategories;
 
-          return Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 20,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...categories.map(
-                    (category) => SettingsCard(
-                      onTap: () {
-                        onSave(category);
-                        Navigator.pop(context);
-                      },
-                      title: category.name,
-                      leading: ColorIcon(
-                        colorFromCssHex(category.color),
-                      ),
-                    ),
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...categories.map(
+                (category) => SettingsCard(
+                  onTap: () {
+                    onSave(category);
+                    Navigator.pop(context);
+                  },
+                  title: category.name,
+                  leading: ColorIcon(
+                    colorFromCssHex(category.color),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       );
