@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';

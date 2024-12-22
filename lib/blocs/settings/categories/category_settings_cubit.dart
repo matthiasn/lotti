@@ -6,7 +6,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/blocs/settings/categories/category_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/utils/color.dart';
 
 class CategorySettingsCubit extends Cubit<CategorySettingsState> {

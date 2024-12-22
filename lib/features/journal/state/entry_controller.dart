@@ -12,8 +12,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -360,7 +361,7 @@ class EntryController extends _$EntryController {
   }
 
   Future<String> addTagDefinition(String tag) async {
-    return _persistenceLogic.addTagDefinition(tag);
+    return TagsRepository.addTagDefinition(tag);
   }
 
   Future<void> setLanguage(String language) async {
@@ -371,14 +372,14 @@ class EntryController extends _$EntryController {
   }
 
   Future<void> addTagIds(List<String> addedTagIds) async {
-    await _persistenceLogic.addTagsWithLinked(
+    await TagsRepository.addTagsWithLinked(
       journalEntityId: entryId,
       addedTagIds: addedTagIds,
     );
   }
 
   Future<void> removeTagId(String tagId) async {
-    await _persistenceLogic.removeTag(
+    await TagsRepository.removeTag(
       journalEntityId: entryId,
       tagId: tagId,
     );
