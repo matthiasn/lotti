@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -105,7 +106,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       emit(initialState.copyWith(status: AudioRecorderStatus.stopped));
       if (_audioNote != null) {
-        final journalAudio = await persistenceLogic.createAudioEntry(
+        final journalAudio = await SpeechRepository.createAudioEntry(
           _audioNote!,
           language: _language,
           linkedId: _linkedId,

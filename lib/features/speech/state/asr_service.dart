@@ -10,8 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/audio_utils.dart';
 
 class AsrService {
@@ -139,7 +139,7 @@ class AsrService {
               processingTime: finish.difference(start),
             );
 
-            await getIt<PersistenceLogic>().addAudioTranscript(
+            await SpeechRepository.addAudioTranscript(
               journalEntityId: entry.meta.id,
               transcript: transcript,
             );

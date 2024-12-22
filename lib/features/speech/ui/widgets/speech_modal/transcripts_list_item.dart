@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -61,7 +60,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
             opacity: show ? 1 : 0,
             child: IconButton(
               onPressed: () {
-                getIt<PersistenceLogic>().removeAudioTranscript(
+                SpeechRepository.removeAudioTranscript(
                   journalEntityId: widget.entryId,
                   transcript: widget.transcript,
                 );
