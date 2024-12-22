@@ -14,8 +14,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -184,68 +184,6 @@ class SwitchListTile extends StatelessWidget {
 }
 
 class ExtendedHeaderActions {
-  static SliverWoltModalSheetPage page1({
-    required BuildContext context,
-    required TextTheme textTheme,
-    required String entryId,
-    required bool inLinkedEntries,
-    required Future<void> Function()? unlinkFn,
-  }) {
-    final linkService = getIt<LinkService>();
-
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      topBarTitle: Text(
-        context.messages.entryActions,
-        style: textTheme.titleLarge,
-      ),
-      isTopBarLayerAlwaysVisible: true,
-      child: Padding(
-        padding: const EdgeInsets.all(WoltModalConfig.pagePadding).copyWith(
-          top: 0,
-        ),
-        child: Column(
-          children: [
-            TogglePrivateListTile(entryId: entryId),
-            ToggleMapListTile(entryId: entryId),
-            DeleteIconListTile(
-              entryId: entryId,
-              beamBack: !inLinkedEntries,
-            ),
-            SpeechModalListTile(entryId: entryId),
-            ShareButtonListTile(entryId: entryId),
-            TagAddListTile(entryId: entryId),
-            ListTile(
-              leading: const Icon(Icons.add_link),
-              title: Text(context.messages.journalLinkFromHint),
-              onTap: () {
-                linkService.linkFrom(entryId);
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              leading: Icon(MdiIcons.target),
-              title: Text(context.messages.journalLinkToHint),
-              onTap: () {
-                linkService.linkTo(entryId);
-                Navigator.of(context).pop();
-              },
-            ),
-            if (unlinkFn != null)
-              ListTile(
-                leading: Icon(MdiIcons.linkOff),
-                title: Text(context.messages.journalUnlinkHint),
-                onTap: () {
-                  unlinkFn();
-                  Navigator.of(context).pop();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   static Future<void> show({
     required BuildContext context,
     required String entryId,
@@ -255,25 +193,53 @@ class ExtendedHeaderActions {
     await WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
-        final textTheme = context.textTheme;
+        final linkService = getIt<LinkService>();
         return [
-          page1(
-            context: modalSheetContext,
-            textTheme: textTheme,
-            entryId: entryId,
-            inLinkedEntries: inLinkedEntries,
-            unlinkFn: unlinkFn,
+          ModalUtils.modalSheetPage(
+            context: context,
+            title: context.messages.entryActions,
+            child: Column(
+              children: [
+                TogglePrivateListTile(entryId: entryId),
+                ToggleMapListTile(entryId: entryId),
+                DeleteIconListTile(
+                  entryId: entryId,
+                  beamBack: !inLinkedEntries,
+                ),
+                SpeechModalListTile(entryId: entryId),
+                ShareButtonListTile(entryId: entryId),
+                TagAddListTile(entryId: entryId),
+                ListTile(
+                  leading: const Icon(Icons.add_link),
+                  title: Text(context.messages.journalLinkFromHint),
+                  onTap: () {
+                    linkService.linkFrom(entryId);
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(MdiIcons.target),
+                  title: Text(context.messages.journalLinkToHint),
+                  onTap: () {
+                    linkService.linkTo(entryId);
+                    Navigator.of(context).pop();
+                  },
+                ),
+                if (unlinkFn != null)
+                  ListTile(
+                    leading: Icon(MdiIcons.linkOff),
+                    title: Text(context.messages.journalUnlinkHint),
+                    onTap: () {
+                      unlinkFn();
+                      Navigator.of(context).pop();
+                    },
+                  ),
+              ],
+            ),
           ),
         ];
       },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
     );
   }
