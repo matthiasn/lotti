@@ -60,6 +60,7 @@ class TimeService {
       );
 
       _current = null;
+      linkedFrom = null;
       _controller.add(null);
     }
   }
