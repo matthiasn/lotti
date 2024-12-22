@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -103,7 +104,7 @@ class _TagEditPageState extends State<TagEditPage> {
             );
           }
 
-          await persistenceLogic.upsertTagEntity(newTagEntity);
+          await TagsRepository.upsertTagEntity(newTagEntity);
           maybePop();
 
           setState(() {
@@ -216,7 +217,7 @@ class _TagEditPageState extends State<TagEditPage> {
                     tooltip: context.messages.settingsTagsDeleteTooltip,
                     color: context.colorScheme.outline,
                     onPressed: () {
-                      persistenceLogic.upsertTagEntity(
+                      TagsRepository.upsertTagEntity(
                         widget.tagEntity.copyWith(
                           deletedAt: DateTime.now(),
                         ),

@@ -9,6 +9,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -95,7 +96,7 @@ class Maintenance {
         final linkedEntities = await _db.getLinkedEntities(entry.meta.id);
 
         for (final linked in linkedEntities) {
-          await persistenceLogic.addTags(
+          await TagsRepository.addTags(
             journalEntityId: linked.meta.id,
             addedTagIds: storyTags,
           );

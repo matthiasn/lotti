@@ -11,7 +11,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -35,11 +34,11 @@ class PersistenceLogic {
     init();
   }
 
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final VectorClockService _vectorClockService = getIt<VectorClockService>();
+  JournalDb get _journalDb => getIt<JournalDb>();
+  VectorClockService get _vectorClockService => getIt<VectorClockService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-  final OutboxService _outboxService = getIt<OutboxService>();
+  LoggingDb get _loggingDb => getIt<LoggingDb>();
+  final OutboxService outboxService = getIt<OutboxService>();
   final uuid = const Uuid();
   DeviceLocation? location;
 
@@ -49,34 +48,78 @@ class PersistenceLogic {
     }
   }
 
+  /// Creates a [Metadata] object with either a random UUID v1 ID or a
+  /// deterministic UUID v5 ID. If [uuidV5Input] is provided, it will be used
+  /// as the basis for the UUID v5 ID.
+  /// The [dateFrom] and [dateTo] parameters are optional and will default to
+  /// the current date and time if not provided. The [dateFrom] and [dateTo] can
+  /// for example differ when importing photos from the camera roll.
+  Future<Metadata> createMetadata({
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String? uuidV5Input,
+    bool? private,
+    List<String>? tagIds,
+    String? categoryId,
+    bool? starred,
+    EntryFlag? flag,
+  }) async {
+    final now = DateTime.now();
+    final vc = await _vectorClockService.getNextVectorClock();
+
+    // avoid inserting the same external entity multiple times
+    final id = uuidV5Input != null
+        ? uuid.v5(Namespace.nil.value, uuidV5Input)
+        : uuid.v1();
+
+    return Metadata(
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: dateFrom ?? now,
+      dateTo: dateTo ?? now,
+      id: id,
+      vectorClock: vc,
+      private: private,
+      tagIds: tagIds,
+      categoryId: categoryId,
+      starred: starred,
+      timezone: await getLocalTimezone(),
+      utcOffset: now.timeZoneOffset.inMinutes,
+      flag: flag,
+    );
+  }
+
+  Future<Metadata> updateMetadata(
+    Metadata metadata, {
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String? categoryId,
+    DateTime? deletedAt,
+  }) async =>
+      metadata.copyWith(
+        updatedAt: DateTime.now(),
+        vectorClock: await _vectorClockService.getNextVectorClock(
+          previous: metadata.vectorClock,
+        ),
+        dateFrom: dateFrom ?? metadata.dateFrom,
+        dateTo: dateTo ?? metadata.dateTo,
+        categoryId: categoryId ?? metadata.categoryId,
+        deletedAt: deletedAt ?? metadata.deletedAt,
+      );
+
   Future<QuantitativeEntry?> createQuantitativeEntry(
     QuantitativeData data,
   ) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
-      // avoid inserting the same external entity multiple times
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-
-      final dateFrom = data.dateFrom;
-      final dateTo = data.dateTo;
-
       final journalEntity = QuantitativeEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          uuidV5Input: json.encode(data),
         ),
       );
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(journalEntity, shouldAddGeolocation: false);
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -92,25 +135,15 @@ class PersistenceLogic {
 
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      final dateFrom = data.dateFrom;
-      final dateTo = data.dateTo;
-
       final workout = WorkoutEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          id: data.id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          uuidV5Input: data.id,
         ),
       );
-      await createDbEntity(workout, enqueueSync: true);
+      await createDbEntity(workout, shouldAddGeolocation: false);
 
       return workout;
     } catch (exception, stackTrace) {
@@ -130,31 +163,16 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-
       final journalEntity = JournalEntity.survey(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: data.taskResult.startDate ?? now,
-          dateTo: data.taskResult.endDate ?? now,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: data.taskResult.startDate,
+          dateTo: data.taskResult.endDate,
+          uuidV5Input: json.encode(data),
         ),
       );
 
-      await createDbEntity(
-        journalEntity,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEntity.meta.id);
+      await createDbEntity(journalEntity, linkedId: linkedId);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -174,37 +192,26 @@ class PersistenceLogic {
     String? comment,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-
       final measurementEntry = MeasurementEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
-          id: id,
+          uuidV5Input: json.encode(data),
           private: private,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
         ),
         entryText: entryTextFromPlain(comment),
       );
 
+      final shouldAddGeolocation =
+          data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+              data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+
       await createDbEntity(
         measurementEntry,
-        enqueueSync: true,
         linkedId: linkedId,
+        shouldAddGeolocation: shouldAddGeolocation,
       );
-
-      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        addGeolocation(measurementEntry.meta.id);
-      }
 
       return measurementEntry;
     } catch (exception, stackTrace) {
@@ -226,40 +233,30 @@ class PersistenceLogic {
     String? comment,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
       final defaultStoryId = habitDefinition?.defaultStoryId;
       final tagIds = defaultStoryId != null ? [defaultStoryId] : <String>[];
 
       final habitCompletionEntry = HabitCompletionEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
-          id: id,
-          vectorClock: vc,
-          private: habitDefinition?.private ?? false,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+          uuidV5Input: json.encode(data),
+          private: habitDefinition?.private,
           tagIds: tagIds,
         ),
         entryText: entryTextFromPlain(comment),
       );
 
+      final shouldAddGeolocation =
+          data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+              data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+
       await createDbEntity(
         habitCompletionEntry,
-        enqueueSync: true,
         linkedId: linkedId,
+        shouldAddGeolocation: shouldAddGeolocation,
       );
-
-      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        addGeolocation(habitCompletionEntry.meta.id);
-      }
 
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
@@ -281,34 +278,20 @@ class PersistenceLogic {
     String? categoryId,
   }) async {
     try {
-      final now = DateTime.now();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final task = Task(
         data: data,
         entryText: entryText,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
-          id: id,
+          uuidV5Input: json.encode(data),
           categoryId: categoryId,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
           starred: true,
         ),
       );
 
-      await createDbEntity(
-        task,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(task.meta.id);
+      await createDbEntity(task, linkedId: linkedId);
+
       return task;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -328,32 +311,16 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final id = uuid.v1();
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final journalEvent = JournalEvent(
         data: data,
         entryText: entryText,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
           starred: true,
         ),
       );
 
-      await createDbEntity(
-        journalEvent,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEvent.meta.id);
+      await createDbEntity(journalEvent, linkedId: linkedId);
+
       return journalEvent;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -372,34 +339,20 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
-      // avoid inserting the same external entity multiple times
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(imageData));
-
-      final dateFrom = imageData.capturedAt;
-      final dateTo = imageData.capturedAt;
       final journalEntity = JournalEntity.journalImage(
         data: imageData,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: imageData.capturedAt,
+          dateTo: imageData.capturedAt,
+          uuidV5Input: json.encode(imageData),
           flag: EntryFlag.import,
         ),
         geolocation: imageData.geolocation,
       );
       await createDbEntity(
         journalEntity,
-        enqueueSync: true,
         linkedId: linkedId,
+        shouldAddGeolocation: false,
       );
       return journalEntity;
     } catch (exception, stackTrace) {
@@ -434,35 +387,19 @@ class PersistenceLogic {
         language: language,
       );
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
-      // avoid inserting the same external entity multiple times
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(audioData));
-
       final dateFrom = audioData.dateFrom;
       final dateTo = audioData.dateTo;
+
       final journalEntity = JournalAudio(
         data: audioData,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: dateFrom,
           dateTo: dateTo,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+          uuidV5Input: json.encode(audioData),
           flag: EntryFlag.import,
         ),
       );
-      await createDbEntity(
-        journalEntity,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEntity.meta.id);
+      await createDbEntity(journalEntity, linkedId: linkedId);
 
       if (autoTranscribe) {
         await getIt<AsrService>().enqueue(entry: journalEntity);
@@ -488,28 +425,15 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: started,
-          dateTo: now,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
-      await createDbEntity(
-        journalEntity,
-        enqueueSync: true,
-        linkedId: linkedId,
-      );
-      addGeolocation(journalEntity.meta.id);
+
+      await createDbEntity(journalEntity, linkedId: linkedId);
+
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -539,7 +463,7 @@ class PersistenceLogic {
     final res = await _journalDb.upsertEntryLink(link);
     _updateNotifications.notify({link.fromId, link.toId});
 
-    await _outboxService.enqueueMessage(
+    await outboxService.enqueueMessage(
       SyncMessage.entryLink(
         entryLink: link,
         status: SyncEntryStatus.initial,
@@ -559,17 +483,18 @@ class PersistenceLogic {
 
   Future<bool?> createDbEntity(
     JournalEntity journalEntity, {
-    bool enqueueSync = false,
+    bool shouldAddGeolocation = true,
+    bool enqueueSync = true,
     String? linkedId,
   }) async {
-    final tagsService = getIt<TagsService>();
-    JournalEntity? linked;
-
-    if (linkedId != null) {
-      linked = await _journalDb.journalEntityById(linkedId);
-    }
-
     try {
+      final tagsService = getIt<TagsService>();
+      JournalEntity? linked;
+
+      if (linkedId != null) {
+        linked = await _journalDb.journalEntityById(linkedId);
+      }
+
       final linkedTagIds = linked?.meta.tagIds;
       final storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
 
@@ -590,7 +515,7 @@ class PersistenceLogic {
       await _journalDb.addTagged(withTags);
 
       if (saved && enqueueSync) {
-        await _outboxService.enqueueMessage(
+        await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             journalEntity: withTags,
             status: SyncEntryStatus.initial,
@@ -606,6 +531,10 @@ class PersistenceLogic {
       }
 
       await getIt<NotificationService>().updateBadge();
+
+      if (shouldAddGeolocation) {
+        addGeolocation(journalEntity.id);
+      }
 
       return saved;
     } catch (exception, stackTrace) {
@@ -626,75 +555,65 @@ class PersistenceLogic {
     DateTime dateTo,
   ) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
         return false;
       }
 
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
-      );
-
-      final oldMeta = journalEntity.meta;
-      final newMeta = oldMeta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        dateTo: dateTo,
-      );
+      final newMeta = await updateMetadata(journalEntity.meta, dateTo: dateTo);
 
       if (journalEntity is JournalEntry) {
-        final newJournalEntry = journalEntity.copyWith(
-          meta: newMeta,
-          entryText: entryText,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+          ),
         );
-
-        await updateDbEntity(newJournalEntry, enqueueSync: true);
       }
 
       if (journalEntity is JournalAudio) {
-        final newJournalAudio = journalEntity.copyWith(
-          meta: newMeta.copyWith(
-            flag: oldMeta.flag == EntryFlag.import
-                ? EntryFlag.none
-                : oldMeta.flag,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta.copyWith(
+              flag: newMeta.flag == EntryFlag.import
+                  ? EntryFlag.none
+                  : newMeta.flag,
+            ),
+            entryText: entryText,
           ),
-          entryText: entryText,
         );
-
-        await updateDbEntity(newJournalAudio, enqueueSync: true);
       }
 
       if (journalEntity is JournalImage) {
-        final newJournalImage = journalEntity.copyWith(
-          meta: newMeta.copyWith(
-            flag: oldMeta.flag == EntryFlag.import
-                ? EntryFlag.none
-                : oldMeta.flag,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta.copyWith(
+              flag: newMeta.flag == EntryFlag.import
+                  ? EntryFlag.none
+                  : newMeta.flag,
+            ),
+            entryText: entryText,
           ),
-          entryText: entryText,
         );
-
-        await updateDbEntity(newJournalImage, enqueueSync: true);
       }
 
       if (journalEntity is MeasurementEntry) {
-        final newEntry = journalEntity.copyWith(
-          meta: newMeta,
-          entryText: entryText,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+          ),
         );
-
-        await updateDbEntity(newEntry, enqueueSync: true);
       }
 
       if (journalEntity is HabitCompletionEntry) {
-        final newEntry = journalEntity.copyWith(
-          meta: newMeta,
-          entryText: entryText,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+          ),
         );
-
-        await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -714,7 +633,6 @@ class PersistenceLogic {
     EntryText? entryText,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -723,23 +641,13 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         task: (Task task) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
+          await updateDbEntity(
+            task.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              entryText: entryText,
+              data: taskData,
+            ),
           );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
-          final newTask = task.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-            data: taskData,
-          );
-
-          await updateDbEntity(newTask, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not a task',
@@ -764,7 +672,6 @@ class PersistenceLogic {
     EntryText? entryText,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -773,23 +680,13 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         event: (JournalEvent event) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
+          await updateDbEntity(
+            event.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              entryText: entryText,
+              data: data,
+            ),
           );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
-          final newEvent = event.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-            data: data,
-          );
-
-          await updateDbEntity(newEvent, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an event',
@@ -813,24 +710,16 @@ class PersistenceLogic {
     required String language,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       await journalEntity?.maybeMap(
         journalAudio: (JournalAudio item) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final newEvent = item.copyWith(
-            meta: item.meta.copyWith(
-              updatedAt: now,
-              vectorClock: vc,
+          await updateDbEntity(
+            item.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              data: item.data.copyWith(language: language),
             ),
-            data: item.data.copyWith(language: language),
           );
-
-          await updateDbEntity(newEvent, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an audio entry',
@@ -853,7 +742,6 @@ class PersistenceLogic {
     required AudioTranscript transcript,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -862,16 +750,6 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         journalAudio: (JournalAudio journalAudio) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
           final data = journalAudio.data;
           final updatedData = journalAudio.data.copyWith(
             transcripts: [
@@ -891,13 +769,13 @@ class PersistenceLogic {
               entryText.plainText.isEmpty ||
               '${entryText.markdown}'.trim().isEmpty;
 
-          final updated = journalAudio.copyWith(
-            meta: newMeta,
-            entryText: replaceEntryText ? newEntryText : entryText,
-            data: updatedData,
+          await updateDbEntity(
+            journalAudio.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              entryText: replaceEntryText ? newEntryText : entryText,
+              data: updatedData,
+            ),
           );
-
-          await updateDbEntity(updated, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an audio entry',
@@ -921,7 +799,6 @@ class PersistenceLogic {
     required AudioTranscript transcript,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -930,16 +807,6 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         journalAudio: (JournalAudio journalAudio) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
           final data = journalAudio.data;
           final updatedData = journalAudio.data.copyWith(
             transcripts: data.transcripts
@@ -947,12 +814,12 @@ class PersistenceLogic {
                 .toList(),
           );
 
-          final updated = journalAudio.copyWith(
-            meta: newMeta,
-            data: updatedData,
+          await updateDbEntity(
+            journalAudio.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              data: updatedData,
+            ),
           );
-
-          await updateDbEntity(updated, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an audio entry',
@@ -978,26 +845,18 @@ class PersistenceLogic {
             onTimeout: () => null,
           );
 
+      if (geolocation == null) {
+        return;
+      }
+
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity != null && geolocation != null) {
-        final metadata = journalEntity.meta;
-        final now = DateTime.now();
-        final vc = await _vectorClockService.getNextVectorClock(
-          previous: metadata.vectorClock,
+      if (journalEntity != null) {
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: await updateMetadata(journalEntity.meta),
+            geolocation: geolocation,
+          ),
         );
-
-        final newMeta = metadata.copyWith(
-          updatedAt: now,
-          vectorClock: vc,
-        );
-
-        final newJournalEntity = journalEntity.copyWith(
-          meta: newMeta,
-          geolocation: geolocation,
-        );
-
-        await updateDbEntity(newJournalEntity, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -1025,23 +884,15 @@ class PersistenceLogic {
         return false;
       }
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(
+          meta: await updateMetadata(
+            journalEntity.meta,
+            dateFrom: dateFrom,
+            dateTo: dateTo,
+          ),
+        ),
       );
-
-      final newMeta = journalEntity.meta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: newMeta,
-      );
-
-      await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -1064,22 +915,14 @@ class PersistenceLogic {
         return false;
       }
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(
+          meta: await updateMetadata(
+            journalEntity.meta,
+            categoryId: categoryId,
+          ),
+        ),
       );
-
-      final newMeta = journalEntity.meta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        categoryId: categoryId,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: newMeta,
-      );
-
-      await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -1096,136 +939,17 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: metadata.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
-
-      final newMeta = metadata.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
+      await _journalDb.addTagged(
+        journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: newMeta,
-      );
-
-      await updateDbEntity(newJournalEntity, enqueueSync: true);
-      await _journalDb.addTagged(newJournalEntity);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntity',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool?> addTags({
-    required String journalEntityId,
-    required List<String> addedTagIds,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final meta = addTagsToMeta(journalEntity.meta, addedTagIds);
-
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: meta.vectorClock,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: meta.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: vc,
-        ),
-      );
-
-      return await updateDbEntity(newJournalEntity, enqueueSync: true);
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addTags',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool?> addTagsWithLinked({
-    required String journalEntityId,
-    required List<String> addedTagIds,
-  }) async {
-    try {
-      await addTags(
-        journalEntityId: journalEntityId,
-        addedTagIds: addedTagIds,
-      );
-
-      final tagsService = getIt<TagsService>();
-      final storyTags = tagsService.getFilteredStoryTagIds(addedTagIds);
-
-      final linkedEntities = await _journalDb.getLinkedEntities(
-        journalEntityId,
-      );
-
-      for (final linked in linkedEntities) {
-        await addTags(
-          journalEntityId: linked.meta.id,
-          addedTagIds: storyTags,
-        );
-      }
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addTagsWithLinked',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool?> removeTag({
-    required String journalEntityId,
-    required String tagId,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final meta = removeTagFromMeta(journalEntity.meta, tagId);
-
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: meta.vectorClock,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: meta.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: vc,
-        ),
-      );
-
-      return await updateDbEntity(newJournalEntity, enqueueSync: true);
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'removeTag',
         stackTrace: stackTrace,
       );
     }
@@ -1243,19 +967,14 @@ class PersistenceLogic {
         return false;
       }
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(
+          meta: await updateMetadata(
+            journalEntity.meta,
+            deletedAt: DateTime.now(),
+          ),
+        ),
       );
-
-      final newMeta = journalEntity.meta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        deletedAt: now,
-      );
-
-      final newEntity = journalEntity.copyWith(meta: newMeta);
-      await updateDbEntity(newEntity, enqueueSync: true);
 
       await getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
@@ -1272,7 +991,7 @@ class PersistenceLogic {
 
   Future<bool?> updateDbEntity(
     JournalEntity journalEntity, {
-    bool enqueueSync = false,
+    bool enqueueSync = true,
   }) async {
     try {
       unawaited(
@@ -1290,7 +1009,7 @@ class PersistenceLogic {
       );
 
       if (enqueueSync) {
-        await _outboxService.enqueueMessage(
+        await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             journalEntity: journalEntity,
             status: SyncEntryStatus.update,
@@ -1317,7 +1036,7 @@ class PersistenceLogic {
     final linesAffected =
         await _journalDb.upsertEntityDefinition(entityDefinition);
     _updateNotifications.notify({entityDefinition.id});
-    await _outboxService.enqueueMessage(
+    await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: entityDefinition,
         status: SyncEntryStatus.update,
@@ -1326,20 +1045,9 @@ class PersistenceLogic {
     return linesAffected;
   }
 
-  Future<int> upsertTagEntity(TagEntity tagEntity) async {
-    final linesAffected = await _journalDb.upsertTagEntity(tagEntity);
-    await _outboxService.enqueueMessage(
-      SyncMessage.tagEntity(
-        tagEntity: tagEntity,
-        status: SyncEntryStatus.update,
-      ),
-    );
-    return linesAffected;
-  }
-
   Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) async {
     final linesAffected = await _journalDb.upsertDashboardDefinition(dashboard);
-    await _outboxService.enqueueMessage(
+    await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: dashboard,
         status: SyncEntryStatus.update,
@@ -1377,41 +1085,4 @@ class PersistenceLogic {
 
     return linesAffected;
   }
-
-  Future<String> addTagDefinition(String tagString) async {
-    final now = DateTime.now();
-    final id = uuid.v1();
-    await upsertTagEntity(
-      TagEntity.genericTag(
-        id: id,
-        tag: tagString.trim(),
-        private: false,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      ),
-    );
-    return id;
-  }
-}
-
-Metadata addTagsToMeta(Metadata meta, List<String> addedTagIds) {
-  final existingTagIds = meta.tagIds ?? [];
-  final tagIds = [...existingTagIds];
-
-  for (final tagId in addedTagIds) {
-    if (!tagIds.contains(tagId)) {
-      tagIds.add(tagId);
-    }
-  }
-
-  return meta.copyWith(
-    tagIds: tagIds,
-  );
-}
-
-Metadata removeTagFromMeta(Metadata meta, String tagId) {
-  return meta.copyWith(
-    tagIds: meta.tagIds?.where((String id) => id != tagId).toList(),
-  );
 }

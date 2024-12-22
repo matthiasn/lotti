@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/features/tags/repository/tags_repository.dart';
 
 void main() {
   test(

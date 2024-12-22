@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../mocks/sync_config_test_mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
@@ -21,20 +23,26 @@ void main() {
   group('TagEditPage Widget Tests - ', () {
     setUpAll(() {
       registerFallbackValue(FakeTagEntity());
+      registerFallbackValue(FakeSyncMessage());
     });
 
     setUp(() {
       mockTagsService = mockTagsServiceWithTags([]);
+      final mockOutboxService = MockOutboxService();
       mockJournalDb = mockJournalDbWithMeasurableTypes([]);
       mockPersistenceLogic = MockPersistenceLogic();
 
       getIt
+        ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-      when(() => mockPersistenceLogic.upsertTagEntity(any()))
+      when(() => mockJournalDb.upsertTagEntity(any()))
           .thenAnswer((_) async => 1);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
     });
     tearDown(getIt.reset);
 
