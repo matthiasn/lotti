@@ -20,20 +20,16 @@ class CreateEntryModal {
             title: modalSheetContext.messages.createEntryTitle,
             child: Column(
               children: [
-                CreateEventListTile(linkedFromId: linkedFromId),
+                CreateEventListTile(linkedFromId),
                 CreateTaskListTile(
-                  linkedFromId: linkedFromId,
+                  linkedFromId,
                   categoryId: categoryId,
                 ),
-                CreateAudioRecordingListTile(linkedFromId: linkedFromId),
-                if (linkedFromId != null)
-                  CreateTimerListTile(linkedFromId: linkedFromId),
-                CreateTextEntryListTile(linkedFromId: linkedFromId),
-                ImportImageAssetsListTile(linkedFromId: linkedFromId),
-                if (isMacOS)
-                  CreateScreenshotListTile(
-                    linkedFromId: linkedFromId,
-                  ),
+                CreateAudioRecordingListTile(linkedFromId),
+                if (linkedFromId != null) CreateTimerListTile(linkedFromId),
+                CreateTextEntryListTile(linkedFromId),
+                ImportImageAssetsListTile(linkedFromId),
+                if (isMacOS) CreateScreenshotListTile(linkedFromId),
               ],
             ),
           ),
