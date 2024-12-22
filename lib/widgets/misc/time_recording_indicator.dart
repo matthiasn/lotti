@@ -66,7 +66,6 @@ class TimeRecordingIndicator extends StatelessWidget {
                       child: Text(
                         durationString,
                         style: monospaceTextStyle.copyWith(
-                          //color: textColor,
                           fontWeight: FontWeight.w400,
                         ),
                       ),

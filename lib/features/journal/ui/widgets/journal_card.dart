@@ -368,11 +368,11 @@ class TaskListCard extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TaskStatusWidget(task),
             TimeRecordingIcon(
               taskId: task.meta.id,
-              padding: const EdgeInsets.only(left: 10),
+              padding: const EdgeInsets.only(right: 10),
             ),
+            TaskStatusWidget(task),
           ],
         ),
         title: Text(
