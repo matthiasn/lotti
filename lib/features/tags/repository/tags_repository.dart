@@ -7,7 +7,6 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class TagsRepository {
@@ -16,8 +15,6 @@ class TagsRepository {
   static TagsService get _tagsService => getIt<TagsService>();
   static PersistenceLogic get _persistenceLogic => getIt<PersistenceLogic>();
   static OutboxService get outboxService => getIt<OutboxService>();
-  static VectorClockService get _vectorClockService =>
-      getIt<VectorClockService>();
 
   static Future<bool?> addTags({
     required String journalEntityId,
@@ -30,22 +27,12 @@ class TagsRepository {
         return false;
       }
 
-      final meta = addTagsToMeta(journalEntity.meta, addedTagIds);
-
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: meta.vectorClock,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: meta.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: vc,
-        ),
-      );
-
       return await _persistenceLogic.updateDbEntity(
-        newJournalEntity,
-        enqueueSync: true,
+        journalEntity.copyWith(
+          meta: await _persistenceLogic.updateMetadata(
+            addTagsToMeta(journalEntity.meta, addedTagIds),
+          ),
+        ),
       );
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -105,22 +92,12 @@ class TagsRepository {
         return false;
       }
 
-      final meta = removeTagFromMeta(journalEntity.meta, tagId);
-
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: meta.vectorClock,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: meta.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: vc,
-        ),
-      );
-
       return await _persistenceLogic.updateDbEntity(
-        newJournalEntity,
-        enqueueSync: true,
+        journalEntity.copyWith(
+          meta: await _persistenceLogic.updateMetadata(
+            removeTagFromMeta(journalEntity.meta, tagId),
+          ),
+        ),
       );
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
