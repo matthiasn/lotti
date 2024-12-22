@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/location.dart';

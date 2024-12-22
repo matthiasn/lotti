@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';

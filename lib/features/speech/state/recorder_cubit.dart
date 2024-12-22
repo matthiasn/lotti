@@ -7,7 +7,7 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
 

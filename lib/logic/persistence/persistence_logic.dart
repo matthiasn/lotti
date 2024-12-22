@@ -11,7 +11,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -35,11 +34,11 @@ class PersistenceLogic {
     init();
   }
 
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final VectorClockService _vectorClockService = getIt<VectorClockService>();
+  JournalDb get _journalDb => getIt<JournalDb>();
+  VectorClockService get _vectorClockService => getIt<VectorClockService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-  final OutboxService _outboxService = getIt<OutboxService>();
+  LoggingDb get _loggingDb => getIt<LoggingDb>();
+  final OutboxService outboxService = getIt<OutboxService>();
   final uuid = const Uuid();
   DeviceLocation? location;
 
@@ -539,7 +538,7 @@ class PersistenceLogic {
     final res = await _journalDb.upsertEntryLink(link);
     _updateNotifications.notify({link.fromId, link.toId});
 
-    await _outboxService.enqueueMessage(
+    await outboxService.enqueueMessage(
       SyncMessage.entryLink(
         entryLink: link,
         status: SyncEntryStatus.initial,
@@ -590,7 +589,7 @@ class PersistenceLogic {
       await _journalDb.addTagged(withTags);
 
       if (saved && enqueueSync) {
-        await _outboxService.enqueueMessage(
+        await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             journalEntity: withTags,
             status: SyncEntryStatus.initial,
@@ -1124,115 +1123,6 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<bool?> addTags({
-    required String journalEntityId,
-    required List<String> addedTagIds,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final meta = addTagsToMeta(journalEntity.meta, addedTagIds);
-
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: meta.vectorClock,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: meta.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: vc,
-        ),
-      );
-
-      return await updateDbEntity(newJournalEntity, enqueueSync: true);
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addTags',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool?> addTagsWithLinked({
-    required String journalEntityId,
-    required List<String> addedTagIds,
-  }) async {
-    try {
-      await addTags(
-        journalEntityId: journalEntityId,
-        addedTagIds: addedTagIds,
-      );
-
-      final tagsService = getIt<TagsService>();
-      final storyTags = tagsService.getFilteredStoryTagIds(addedTagIds);
-
-      final linkedEntities = await _journalDb.getLinkedEntities(
-        journalEntityId,
-      );
-
-      for (final linked in linkedEntities) {
-        await addTags(
-          journalEntityId: linked.meta.id,
-          addedTagIds: storyTags,
-        );
-      }
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addTagsWithLinked',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool?> removeTag({
-    required String journalEntityId,
-    required String tagId,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final meta = removeTagFromMeta(journalEntity.meta, tagId);
-
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: meta.vectorClock,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: meta.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: vc,
-        ),
-      );
-
-      return await updateDbEntity(newJournalEntity, enqueueSync: true);
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'removeTag',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
   Future<bool> deleteJournalEntity(
     String journalEntityId,
   ) async {
@@ -1290,7 +1180,7 @@ class PersistenceLogic {
       );
 
       if (enqueueSync) {
-        await _outboxService.enqueueMessage(
+        await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             journalEntity: journalEntity,
             status: SyncEntryStatus.update,
@@ -1317,7 +1207,7 @@ class PersistenceLogic {
     final linesAffected =
         await _journalDb.upsertEntityDefinition(entityDefinition);
     _updateNotifications.notify({entityDefinition.id});
-    await _outboxService.enqueueMessage(
+    await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: entityDefinition,
         status: SyncEntryStatus.update,
@@ -1326,20 +1216,9 @@ class PersistenceLogic {
     return linesAffected;
   }
 
-  Future<int> upsertTagEntity(TagEntity tagEntity) async {
-    final linesAffected = await _journalDb.upsertTagEntity(tagEntity);
-    await _outboxService.enqueueMessage(
-      SyncMessage.tagEntity(
-        tagEntity: tagEntity,
-        status: SyncEntryStatus.update,
-      ),
-    );
-    return linesAffected;
-  }
-
   Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) async {
     final linesAffected = await _journalDb.upsertDashboardDefinition(dashboard);
-    await _outboxService.enqueueMessage(
+    await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: dashboard,
         status: SyncEntryStatus.update,
@@ -1377,41 +1256,4 @@ class PersistenceLogic {
 
     return linesAffected;
   }
-
-  Future<String> addTagDefinition(String tagString) async {
-    final now = DateTime.now();
-    final id = uuid.v1();
-    await upsertTagEntity(
-      TagEntity.genericTag(
-        id: id,
-        tag: tagString.trim(),
-        private: false,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      ),
-    );
-    return id;
-  }
-}
-
-Metadata addTagsToMeta(Metadata meta, List<String> addedTagIds) {
-  final existingTagIds = meta.tagIds ?? [];
-  final tagIds = [...existingTagIds];
-
-  for (final tagId in addedTagIds) {
-    if (!tagIds.contains(tagId)) {
-      tagIds.add(tagId);
-    }
-  }
-
-  return meta.copyWith(
-    tagIds: tagIds,
-  );
-}
-
-Metadata removeTagFromMeta(Metadata meta, String tagId) {
-  return meta.copyWith(
-    tagIds: meta.tagIds?.where((String id) => id != tagId).toList(),
-  );
 }

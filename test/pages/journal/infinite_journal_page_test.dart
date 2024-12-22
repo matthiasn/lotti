@@ -16,7 +16,7 @@ import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';

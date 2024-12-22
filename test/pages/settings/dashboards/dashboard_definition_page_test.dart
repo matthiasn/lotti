@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
