@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
@@ -23,7 +21,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
@@ -334,118 +331,6 @@ class PersistenceLogic {
     return null;
   }
 
-  Future<JournalEntity?> createImageEntry(
-    ImageData imageData, {
-    String? linkedId,
-  }) async {
-    try {
-      final journalEntity = JournalEntity.journalImage(
-        data: imageData,
-        meta: await createMetadata(
-          dateFrom: imageData.capturedAt,
-          dateTo: imageData.capturedAt,
-          uuidV5Input: json.encode(imageData),
-          flag: EntryFlag.import,
-        ),
-        geolocation: imageData.geolocation,
-      );
-      await createDbEntity(
-        journalEntity,
-        linkedId: linkedId,
-        shouldAddGeolocation: false,
-      );
-      return journalEntity;
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'createImageEntry',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return null;
-  }
-
-  Future<JournalAudio?> createAudioEntry(
-    AudioNote audioNote, {
-    required String? language,
-    String? linkedId,
-  }) async {
-    try {
-      final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
-        autoTranscribeFlag,
-      );
-
-      final audioData = AudioData(
-        audioDirectory: audioNote.audioDirectory,
-        duration: audioNote.duration,
-        audioFile: audioNote.audioFile,
-        dateTo: audioNote.createdAt.add(audioNote.duration),
-        dateFrom: audioNote.createdAt,
-        autoTranscribeWasActive: autoTranscribe,
-        language: language,
-      );
-
-      final dateFrom = audioData.dateFrom;
-      final dateTo = audioData.dateTo;
-
-      final journalEntity = JournalAudio(
-        data: audioData,
-        meta: await createMetadata(
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          uuidV5Input: json.encode(audioData),
-          flag: EntryFlag.import,
-        ),
-      );
-      await createDbEntity(journalEntity, linkedId: linkedId);
-
-      if (autoTranscribe) {
-        await getIt<AsrService>().enqueue(entry: journalEntity);
-      }
-
-      return journalEntity;
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'createAudioEntry',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return null;
-  }
-
-  Future<JournalEntity?> createTextEntry(
-    EntryText entryText, {
-    required DateTime started,
-    required String id,
-    String? linkedId,
-  }) async {
-    try {
-      final journalEntity = JournalEntity.journalEntry(
-        entryText: entryText,
-        meta: await createMetadata(
-          dateFrom: started,
-        ),
-      );
-
-      await createDbEntity(journalEntity, linkedId: linkedId);
-
-      return journalEntity;
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'createTextEntry',
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
   Future<bool> createLink({
     required String fromId,
     required String toId,
@@ -705,139 +590,6 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<void> updateLanguage({
-    required String journalEntityId,
-    required String language,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      await journalEntity?.maybeMap(
-        journalAudio: (JournalAudio item) async {
-          await updateDbEntity(
-            item.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
-              data: item.data.copyWith(language: language),
-            ),
-          );
-        },
-        orElse: () async => _loggingDb.captureException(
-          'not an audio entry',
-          domain: 'persistence_logic',
-          subDomain: 'updateLanguage',
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateLanguage',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  Future<bool> addAudioTranscript({
-    required String journalEntityId,
-    required AudioTranscript transcript,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await journalEntity.maybeMap(
-        journalAudio: (JournalAudio journalAudio) async {
-          final data = journalAudio.data;
-          final updatedData = journalAudio.data.copyWith(
-            transcripts: [
-              ...?data.transcripts,
-              transcript,
-            ],
-          );
-
-          final entryText = journalAudio.entryText;
-
-          final newEntryText = EntryText(
-            plainText: transcript.transcript,
-            markdown: transcript.transcript,
-          );
-
-          final replaceEntryText = entryText == null ||
-              entryText.plainText.isEmpty ||
-              '${entryText.markdown}'.trim().isEmpty;
-
-          await updateDbEntity(
-            journalAudio.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
-              entryText: replaceEntryText ? newEntryText : entryText,
-              data: updatedData,
-            ),
-          );
-        },
-        orElse: () async => _loggingDb.captureException(
-          'not an audio entry',
-          domain: 'persistence_logic',
-          subDomain: 'addAudioTranscript',
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addAudioTranscript',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
-  }
-
-  Future<bool> removeAudioTranscript({
-    required String journalEntityId,
-    required AudioTranscript transcript,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await journalEntity.maybeMap(
-        journalAudio: (JournalAudio journalAudio) async {
-          final data = journalAudio.data;
-          final updatedData = journalAudio.data.copyWith(
-            transcripts: data.transcripts
-                ?.where((element) => element.created != transcript.created)
-                .toList(),
-          );
-
-          await updateDbEntity(
-            journalAudio.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
-              data: updatedData,
-            ),
-          );
-        },
-        orElse: () async => _loggingDb.captureException(
-          'not an audio entry',
-          domain: 'persistence_logic',
-          subDomain: 'removeAudioTranscript',
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'removeAudioTranscript',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
-  }
-
   Future<void> addGeolocationAsync(String journalEntityId) async {
     try {
       final geolocation = await location?.getCurrentGeoLocation().timeout(
@@ -872,68 +624,6 @@ class PersistenceLogic {
     unawaited(addGeolocationAsync(journalEntityId));
   }
 
-  Future<bool> updateJournalEntityDate(
-    String journalEntityId, {
-    required DateTime dateFrom,
-    required DateTime dateTo,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await updateDbEntity(
-        journalEntity.copyWith(
-          meta: await updateMetadata(
-            journalEntity.meta,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-          ),
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateJournalEntityDate',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
-  }
-
-  Future<bool> updateCategoryId(
-    String journalEntityId, {
-    required String? categoryId,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await updateDbEntity(
-        journalEntity.copyWith(
-          meta: await updateMetadata(
-            journalEntity.meta,
-            categoryId: categoryId,
-          ),
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateCategoryId',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
-  }
-
   Future<bool> updateJournalEntity(
     JournalEntity journalEntity,
     Metadata metadata,
@@ -950,38 +640,6 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntity',
-        stackTrace: stackTrace,
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool> deleteJournalEntity(
-    String journalEntityId,
-  ) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await updateDbEntity(
-        journalEntity.copyWith(
-          meta: await updateMetadata(
-            journalEntity.meta,
-            deletedAt: DateTime.now(),
-          ),
-        ),
-      );
-
-      await getIt<NotificationService>().updateBadge();
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'deleteJournalEntity',
         stackTrace: stackTrace,
       );
     }

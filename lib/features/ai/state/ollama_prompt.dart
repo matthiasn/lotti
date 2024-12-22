@@ -4,8 +4,7 @@ import 'package:langchain/langchain.dart';
 import 'package:langchain_ollama/langchain_ollama.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 final aiResponseProvider = NotifierProvider<AiResponse, String>(AiResponse.new);
@@ -39,7 +38,7 @@ class AiResponse extends Notifier<String> {
       state += res.outputAsString;
     });
 
-    await getIt<PersistenceLogic>().createTextEntry(
+    await JournalRepository.createTextEntry(
       EntryText(
         plainText: state,
         markdown: state,

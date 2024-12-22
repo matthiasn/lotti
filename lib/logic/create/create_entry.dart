@@ -4,6 +4,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -13,7 +14,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
 Future<JournalEntity?> createTextEntry({String? linkedId}) async {
-  final entry = await getIt<PersistenceLogic>().createTextEntry(
+  final entry = await JournalRepository.createTextEntry(
     const EntryText(plainText: ''),
     id: uuid.v1(),
     linkedId: linkedId,
@@ -81,7 +82,7 @@ Future<JournalEvent?> createEvent({String? linkedId}) =>
 Future<JournalEntity?> createScreenshot({String? linkedId}) async {
   final persistenceLogic = getIt<PersistenceLogic>();
   final imageData = await takeScreenshotMac();
-  final entry = await persistenceLogic.createImageEntry(
+  final entry = await JournalRepository.createImageEntry(
     imageData,
     linkedId: linkedId,
   );
