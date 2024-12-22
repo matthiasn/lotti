@@ -89,6 +89,24 @@ class PersistenceLogic {
     );
   }
 
+  Future<Metadata> updateMetadata(
+    Metadata metadata, {
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String? categoryId,
+    DateTime? deletedAt,
+  }) async =>
+      metadata.copyWith(
+        updatedAt: DateTime.now(),
+        vectorClock: await _vectorClockService.getNextVectorClock(
+          previous: metadata.vectorClock,
+        ),
+        dateFrom: dateFrom ?? metadata.dateFrom,
+        dateTo: dateTo ?? metadata.dateTo,
+        categoryId: categoryId ?? metadata.categoryId,
+        deletedAt: deletedAt ?? metadata.deletedAt,
+      );
+
   Future<QuantitativeEntry?> createQuantitativeEntry(
     QuantitativeData data,
   ) async {
@@ -469,14 +487,14 @@ class PersistenceLogic {
     bool enqueueSync = true,
     String? linkedId,
   }) async {
-    final tagsService = getIt<TagsService>();
-    JournalEntity? linked;
-
-    if (linkedId != null) {
-      linked = await _journalDb.journalEntityById(linkedId);
-    }
-
     try {
+      final tagsService = getIt<TagsService>();
+      JournalEntity? linked;
+
+      if (linkedId != null) {
+        linked = await _journalDb.journalEntityById(linkedId);
+      }
+
       final linkedTagIds = linked?.meta.tagIds;
       final storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
 
@@ -537,75 +555,65 @@ class PersistenceLogic {
     DateTime dateTo,
   ) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
         return false;
       }
 
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
-      );
-
-      final oldMeta = journalEntity.meta;
-      final newMeta = oldMeta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        dateTo: dateTo,
-      );
+      final newMeta = await updateMetadata(journalEntity.meta, dateTo: dateTo);
 
       if (journalEntity is JournalEntry) {
-        final newJournalEntry = journalEntity.copyWith(
-          meta: newMeta,
-          entryText: entryText,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+          ),
         );
-
-        await updateDbEntity(newJournalEntry, enqueueSync: true);
       }
 
       if (journalEntity is JournalAudio) {
-        final newJournalAudio = journalEntity.copyWith(
-          meta: newMeta.copyWith(
-            flag: oldMeta.flag == EntryFlag.import
-                ? EntryFlag.none
-                : oldMeta.flag,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta.copyWith(
+              flag: newMeta.flag == EntryFlag.import
+                  ? EntryFlag.none
+                  : newMeta.flag,
+            ),
+            entryText: entryText,
           ),
-          entryText: entryText,
         );
-
-        await updateDbEntity(newJournalAudio, enqueueSync: true);
       }
 
       if (journalEntity is JournalImage) {
-        final newJournalImage = journalEntity.copyWith(
-          meta: newMeta.copyWith(
-            flag: oldMeta.flag == EntryFlag.import
-                ? EntryFlag.none
-                : oldMeta.flag,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta.copyWith(
+              flag: newMeta.flag == EntryFlag.import
+                  ? EntryFlag.none
+                  : newMeta.flag,
+            ),
+            entryText: entryText,
           ),
-          entryText: entryText,
         );
-
-        await updateDbEntity(newJournalImage, enqueueSync: true);
       }
 
       if (journalEntity is MeasurementEntry) {
-        final newEntry = journalEntity.copyWith(
-          meta: newMeta,
-          entryText: entryText,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+          ),
         );
-
-        await updateDbEntity(newEntry, enqueueSync: true);
       }
 
       if (journalEntity is HabitCompletionEntry) {
-        final newEntry = journalEntity.copyWith(
-          meta: newMeta,
-          entryText: entryText,
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+          ),
         );
-
-        await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -625,7 +633,6 @@ class PersistenceLogic {
     EntryText? entryText,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -634,23 +641,13 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         task: (Task task) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
+          await updateDbEntity(
+            task.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              entryText: entryText,
+              data: taskData,
+            ),
           );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
-          final newTask = task.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-            data: taskData,
-          );
-
-          await updateDbEntity(newTask, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not a task',
@@ -675,7 +672,6 @@ class PersistenceLogic {
     EntryText? entryText,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -684,23 +680,13 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         event: (JournalEvent event) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
+          await updateDbEntity(
+            event.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              entryText: entryText,
+              data: data,
+            ),
           );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
-          final newEvent = event.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-            data: data,
-          );
-
-          await updateDbEntity(newEvent, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an event',
@@ -724,24 +710,16 @@ class PersistenceLogic {
     required String language,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       await journalEntity?.maybeMap(
         journalAudio: (JournalAudio item) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final newEvent = item.copyWith(
-            meta: item.meta.copyWith(
-              updatedAt: now,
-              vectorClock: vc,
+          await updateDbEntity(
+            item.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              data: item.data.copyWith(language: language),
             ),
-            data: item.data.copyWith(language: language),
           );
-
-          await updateDbEntity(newEvent, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an audio entry',
@@ -764,7 +742,6 @@ class PersistenceLogic {
     required AudioTranscript transcript,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -773,16 +750,6 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         journalAudio: (JournalAudio journalAudio) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
           final data = journalAudio.data;
           final updatedData = journalAudio.data.copyWith(
             transcripts: [
@@ -802,13 +769,13 @@ class PersistenceLogic {
               entryText.plainText.isEmpty ||
               '${entryText.markdown}'.trim().isEmpty;
 
-          final updated = journalAudio.copyWith(
-            meta: newMeta,
-            entryText: replaceEntryText ? newEntryText : entryText,
-            data: updatedData,
+          await updateDbEntity(
+            journalAudio.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              entryText: replaceEntryText ? newEntryText : entryText,
+              data: updatedData,
+            ),
           );
-
-          await updateDbEntity(updated, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an audio entry',
@@ -832,7 +799,6 @@ class PersistenceLogic {
     required AudioTranscript transcript,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
@@ -841,16 +807,6 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         journalAudio: (JournalAudio journalAudio) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
           final data = journalAudio.data;
           final updatedData = journalAudio.data.copyWith(
             transcripts: data.transcripts
@@ -858,12 +814,12 @@ class PersistenceLogic {
                 .toList(),
           );
 
-          final updated = journalAudio.copyWith(
-            meta: newMeta,
-            data: updatedData,
+          await updateDbEntity(
+            journalAudio.copyWith(
+              meta: await updateMetadata(journalEntity.meta),
+              data: updatedData,
+            ),
           );
-
-          await updateDbEntity(updated, enqueueSync: true);
         },
         orElse: () async => _loggingDb.captureException(
           'not an audio entry',
@@ -889,26 +845,18 @@ class PersistenceLogic {
             onTimeout: () => null,
           );
 
+      if (geolocation == null) {
+        return;
+      }
+
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity != null && geolocation != null) {
-        final metadata = journalEntity.meta;
-        final now = DateTime.now();
-        final vc = await _vectorClockService.getNextVectorClock(
-          previous: metadata.vectorClock,
+      if (journalEntity != null) {
+        await updateDbEntity(
+          journalEntity.copyWith(
+            meta: await updateMetadata(journalEntity.meta),
+            geolocation: geolocation,
+          ),
         );
-
-        final newMeta = metadata.copyWith(
-          updatedAt: now,
-          vectorClock: vc,
-        );
-
-        final newJournalEntity = journalEntity.copyWith(
-          meta: newMeta,
-          geolocation: geolocation,
-        );
-
-        await updateDbEntity(newJournalEntity, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -936,23 +884,15 @@ class PersistenceLogic {
         return false;
       }
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(
+          meta: await updateMetadata(
+            journalEntity.meta,
+            dateFrom: dateFrom,
+            dateTo: dateTo,
+          ),
+        ),
       );
-
-      final newMeta = journalEntity.meta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: newMeta,
-      );
-
-      await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -975,22 +915,14 @@ class PersistenceLogic {
         return false;
       }
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(
+          meta: await updateMetadata(
+            journalEntity.meta,
+            categoryId: categoryId,
+          ),
+        ),
       );
-
-      final newMeta = journalEntity.meta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        categoryId: categoryId,
-      );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: newMeta,
-      );
-
-      await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -1007,22 +939,12 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: metadata.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
-
-      final newMeta = metadata.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
+      await _journalDb.addTagged(
+        journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
-
-      final newJournalEntity = journalEntity.copyWith(
-        meta: newMeta,
-      );
-
-      await updateDbEntity(newJournalEntity, enqueueSync: true);
-      await _journalDb.addTagged(newJournalEntity);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -1045,19 +967,14 @@ class PersistenceLogic {
         return false;
       }
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock(
-        previous: journalEntity.meta.vectorClock,
+      await updateDbEntity(
+        journalEntity.copyWith(
+          meta: await updateMetadata(
+            journalEntity.meta,
+            deletedAt: DateTime.now(),
+          ),
+        ),
       );
-
-      final newMeta = journalEntity.meta.copyWith(
-        updatedAt: now,
-        vectorClock: vc,
-        deletedAt: now,
-      );
-
-      final newEntity = journalEntity.copyWith(meta: newMeta);
-      await updateDbEntity(newEntity, enqueueSync: true);
 
       await getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
@@ -1074,7 +991,7 @@ class PersistenceLogic {
 
   Future<bool?> updateDbEntity(
     JournalEntity journalEntity, {
-    bool enqueueSync = false,
+    bool enqueueSync = true,
   }) async {
     try {
       unawaited(

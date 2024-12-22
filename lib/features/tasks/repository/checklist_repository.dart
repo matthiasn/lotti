@@ -6,7 +6,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_repository.g.dart';
@@ -18,7 +17,6 @@ ChecklistRepository checklistRepository(Ref ref) {
 
 class ChecklistRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
-  final VectorClockService _vectorClockService = getIt<VectorClockService>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
@@ -125,7 +123,6 @@ class ChecklistRepository {
     required ChecklistData data,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(checklistId);
 
       if (journalEntity == null) {
@@ -134,25 +131,14 @@ class ChecklistRepository {
 
       await journalEntity.maybeMap(
         checklist: (Checklist checklist) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
           final updatedChecklist = checklist.copyWith(
-            meta: newMeta,
+            meta: await _persistenceLogic.updateMetadata(
+              journalEntity.meta,
+            ),
             data: data,
           );
 
-          await _persistenceLogic.updateDbEntity(
-            updatedChecklist,
-            enqueueSync: true,
-          );
+          await _persistenceLogic.updateDbEntity(updatedChecklist);
         },
         orElse: () async => _loggingDb.captureException(
           'not a checklist',
@@ -176,7 +162,6 @@ class ChecklistRepository {
     required ChecklistItemData data,
   }) async {
     try {
-      final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(checklistItemId);
 
       if (journalEntity == null) {
@@ -185,25 +170,12 @@ class ChecklistRepository {
 
       await journalEntity.maybeMap(
         checklistItem: (ChecklistItem checklistItem) async {
-          final vc = await _vectorClockService.getNextVectorClock(
-            previous: journalEntity.meta.vectorClock,
-          );
-
-          final oldMeta = journalEntity.meta;
-          final newMeta = oldMeta.copyWith(
-            updatedAt: now,
-            vectorClock: vc,
-          );
-
           final updatedChecklist = checklistItem.copyWith(
-            meta: newMeta,
+            meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
             data: data,
           );
 
-          await _persistenceLogic.updateDbEntity(
-            updatedChecklist,
-            enqueueSync: true,
-          );
+          await _persistenceLogic.updateDbEntity(updatedChecklist);
         },
         orElse: () async => _loggingDb.captureException(
           'not a checklist item',

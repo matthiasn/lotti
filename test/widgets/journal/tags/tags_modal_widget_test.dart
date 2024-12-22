@@ -101,7 +101,7 @@ void main() {
       ).thenAnswer((invocation) async => const VectorClock({}));
 
       when(
-        () => mockPersistenceLogic.updateDbEntity(any(), enqueueSync: true),
+        () => mockPersistenceLogic.updateDbEntity(any()),
       ).thenAnswer((invocation) async => true);
 
       when(() => mockOutboxService.enqueueMessage(any()))
