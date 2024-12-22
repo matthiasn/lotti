@@ -7,8 +7,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence/persistence_logic.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/timezone.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_repository.g.dart';
@@ -39,32 +37,20 @@ class ChecklistRepository {
         return null;
       }
 
-      final now = DateTime.now();
-      final id = uuid.v1();
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final newChecklist = Checklist(
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
+        meta: await _persistenceLogic.createMetadata(),
         data: ChecklistData(
           title: task.data.title,
           linkedChecklistItems: [],
           linkedTasks: [task.id],
         ),
       );
+
       await _persistenceLogic.createDbEntity(
         newChecklist,
         enqueueSync: true,
       );
-      _persistenceLogic.addGeolocation(id);
+      _persistenceLogic.addGeolocation(newChecklist.id);
 
       await _persistenceLogic.updateTask(
         journalEntityId: task.id,
@@ -115,21 +101,8 @@ class ChecklistRepository {
     required String title,
   }) async {
     try {
-      final now = DateTime.now();
-      final id = uuid.v1();
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final newChecklistItem = ChecklistItem(
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
+        meta: await _persistenceLogic.createMetadata(),
         data: ChecklistItemData(
           title: title,
           isChecked: false,
@@ -141,7 +114,7 @@ class ChecklistRepository {
         newChecklistItem,
         enqueueSync: true,
       );
-      _persistenceLogic.addGeolocation(id);
+      _persistenceLogic.addGeolocation(newChecklistItem.id);
 
       return newChecklistItem;
     } catch (exception, stackTrace) {
