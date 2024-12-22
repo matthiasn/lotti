@@ -71,7 +71,7 @@ class ReSyncModal {
     await ModalUtils.showSinglePageModal(
       context: context,
       title: 'Re-sync entries',
-      child: const ReSyncModalContent(),
+      builder: (_) => const ReSyncModalContent(),
     );
   }
 }

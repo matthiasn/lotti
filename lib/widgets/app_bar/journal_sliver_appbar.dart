@@ -135,7 +135,7 @@ class JournalFilterIcon extends StatelessWidget {
                 child: child,
               );
             },
-            child: const Column(
+            builder: (_) => const Column(
               children: [
                 JournalFilter(),
                 SizedBox(height: 10),

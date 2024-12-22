@@ -24,7 +24,7 @@ class AiPopUpMenu extends StatelessWidget {
       onPressed: () => ModalUtils.showSinglePageModal(
         context: context,
         title: context.messages.aiAssistantTitle,
-        child: Column(
+        builder: (_) => Column(
           children: [
             AiPromptListTile(
               journalEntity: journalEntity,

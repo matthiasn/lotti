@@ -53,7 +53,7 @@ class TranscriptionProgressModal {
     await ModalUtils.showSinglePageModal(
       context: context,
       title: context.messages.speechModalTranscriptionProgress,
-      child: const TranscriptionProgressModalContent(),
+      builder: (_) => const TranscriptionProgressModalContent(),
     );
   }
 }

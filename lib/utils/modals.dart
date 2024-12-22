@@ -48,7 +48,7 @@ class ModalUtils {
 
   static Future<void> showSinglePageModal({
     required BuildContext context,
-    required Widget child,
+    required Widget Function(BuildContext) builder,
     String? title,
     Widget Function(Widget)? modalDecorator,
   }) async {
@@ -59,7 +59,7 @@ class ModalUtils {
           ModalUtils.modalSheetPage(
             context: modalSheetContext,
             title: title,
-            child: child,
+            child: builder(modalSheetContext),
           ),
         ];
       },
