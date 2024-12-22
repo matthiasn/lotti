@@ -48,31 +48,57 @@ class PersistenceLogic {
     }
   }
 
+  /// Creates a [Metadata] object with either a random UUID v1 ID or a
+  /// deterministic UUID v5 ID. If [uuidV5Input] is provided, it will be used
+  /// as the basis for the UUID v5 ID.
+  /// The [dateFrom] and [dateTo] parameters are optional and will default to
+  /// the current date and time if not provided. The [dateFrom] and [dateTo] can
+  /// for example differ when importing photos from the camera roll.
+  Future<Metadata> createMetadata({
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String? uuidV5Input,
+    bool? private,
+    List<String>? tagIds,
+    String? categoryId,
+    bool? starred,
+    EntryFlag? flag,
+  }) async {
+    final now = DateTime.now();
+    final vc = await _vectorClockService.getNextVectorClock();
+
+    // avoid inserting the same external entity multiple times
+    final id = uuidV5Input != null
+        ? uuid.v5(Namespace.nil.value, uuidV5Input)
+        : uuid.v1();
+
+    return Metadata(
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: dateFrom ?? now,
+      dateTo: dateTo ?? now,
+      id: id,
+      vectorClock: vc,
+      private: private,
+      tagIds: tagIds,
+      categoryId: categoryId,
+      starred: starred,
+      timezone: await getLocalTimezone(),
+      utcOffset: now.timeZoneOffset.inMinutes,
+      flag: flag,
+    );
+  }
+
   Future<QuantitativeEntry?> createQuantitativeEntry(
     QuantitativeData data,
   ) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
-      // avoid inserting the same external entity multiple times
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-
-      final dateFrom = data.dateFrom;
-      final dateTo = data.dateTo;
-
       final journalEntity = QuantitativeEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          uuidV5Input: json.encode(data),
         ),
       );
       await createDbEntity(journalEntity, enqueueSync: true);
@@ -91,22 +117,12 @@ class PersistenceLogic {
 
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      final dateFrom = data.dateFrom;
-      final dateTo = data.dateTo;
-
       final workout = WorkoutEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          id: data.id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          uuidV5Input: data.id,
         ),
       );
       await createDbEntity(workout, enqueueSync: true);
@@ -129,22 +145,12 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-
       final journalEntity = JournalEntity.survey(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: data.taskResult.startDate ?? now,
-          dateTo: data.taskResult.endDate ?? now,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: data.taskResult.startDate,
+          dateTo: data.taskResult.endDate,
+          uuidV5Input: json.encode(data),
         ),
       );
 
@@ -173,23 +179,13 @@ class PersistenceLogic {
     String? comment,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-
       final measurementEntry = MeasurementEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
-          id: id,
+          uuidV5Input: json.encode(data),
           private: private,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
         ),
         entryText: entryTextFromPlain(comment),
       );
@@ -225,25 +221,16 @@ class PersistenceLogic {
     String? comment,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
       final defaultStoryId = habitDefinition?.defaultStoryId;
       final tagIds = defaultStoryId != null ? [defaultStoryId] : <String>[];
 
       final habitCompletionEntry = HabitCompletionEntry(
         data: data,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
-          id: id,
-          vectorClock: vc,
-          private: habitDefinition?.private ?? false,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+          uuidV5Input: json.encode(data),
+          private: habitDefinition?.private,
           tagIds: tagIds,
         ),
         entryText: entryTextFromPlain(comment),
@@ -280,24 +267,14 @@ class PersistenceLogic {
     String? categoryId,
   }) async {
     try {
-      final now = DateTime.now();
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final task = Task(
         data: data,
         entryText: entryText,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
-          id: id,
+          uuidV5Input: json.encode(data),
           categoryId: categoryId,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
           starred: true,
         ),
       );
@@ -327,22 +304,10 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final id = uuid.v1();
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final journalEvent = JournalEvent(
         data: data,
         entryText: entryText,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
           starred: true,
         ),
       );
@@ -371,26 +336,12 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
-      // avoid inserting the same external entity multiple times
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(imageData));
-
-      final dateFrom = imageData.capturedAt;
-      final dateTo = imageData.capturedAt;
       final journalEntity = JournalEntity.journalImage(
         data: imageData,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+        meta: await createMetadata(
+          dateFrom: imageData.capturedAt,
+          dateTo: imageData.capturedAt,
+          uuidV5Input: json.encode(imageData),
           flag: EntryFlag.import,
         ),
         geolocation: imageData.geolocation,
@@ -433,26 +384,15 @@ class PersistenceLogic {
         language: language,
       );
 
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
-      // avoid inserting the same external entity multiple times
-      // ignore: deprecated_member_use
-      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(audioData));
-
       final dateFrom = audioData.dateFrom;
       final dateTo = audioData.dateTo;
+
       final journalEntity = JournalAudio(
         data: audioData,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: dateFrom,
           dateTo: dateTo,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
+          uuidV5Input: json.encode(audioData),
           flag: EntryFlag.import,
         ),
       );
@@ -487,20 +427,10 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
-
       final journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
-        meta: Metadata(
-          createdAt: now,
-          updatedAt: now,
+        meta: await createMetadata(
           dateFrom: started,
-          dateTo: now,
-          id: id,
-          vectorClock: vc,
-          timezone: await getLocalTimezone(),
-          utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
       await createDbEntity(
