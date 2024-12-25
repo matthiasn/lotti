@@ -127,24 +127,6 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                 headerTextStyle: chartTitleStyleMonospace.copyWith(
                   fontWeight: FontWeight.w400,
                 ),
-                leftIconConfig: IconDataConfig(
-                  icon: (_) => const Padding(
-                    padding: EdgeInsets.only(left: 30, top: 10, bottom: 10),
-                    child: Icon(
-                      Icons.arrow_back,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                rightIconConfig: IconDataConfig(
-                  icon: (_) => const Padding(
-                    padding: EdgeInsets.only(right: 30, top: 10, bottom: 10),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      size: 24,
-                    ),
-                  ),
-                ),
                 decoration: BoxDecoration(
                   color: context.colorScheme.primaryContainer,
                 ),
