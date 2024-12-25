@@ -6,7 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_links.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
