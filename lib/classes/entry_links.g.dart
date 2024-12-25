@@ -16,7 +16,7 @@ _$BasicLinkImpl _$$BasicLinkImplFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
-      linkType: json['linkType'] as String?,
+      hidden: json['hidden'] as bool?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -30,6 +30,6 @@ Map<String, dynamic> _$$BasicLinkImplToJson(_$BasicLinkImpl instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
-      'linkType': instance.linkType,
+      'hidden': instance.hidden,
       'deletedAt': instance.deletedAt?.toIso8601String(),
     };
