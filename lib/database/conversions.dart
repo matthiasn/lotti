@@ -203,6 +203,9 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
     serialized: jsonEncode(link),
     fromId: link.fromId,
     toId: link.toId,
+    hidden: link.hidden ?? false,
+    createdAt: link.createdAt,
+    updatedAt: link.updatedAt,
     type: link.map(
       basic: (_) => 'BasicLink',
     ),

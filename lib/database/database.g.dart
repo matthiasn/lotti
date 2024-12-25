@@ -4188,8 +4188,30 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
       type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL');
+  static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
+  late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
+      'hidden', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      $customConstraints: 'DEFAULT FALSE',
+      defaultValue: const CustomExpression('FALSE'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      $customConstraints: '');
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      $customConstraints: '');
   @override
-  List<GeneratedColumn> get $columns => [id, fromId, toId, type, serialized];
+  List<GeneratedColumn> get $columns =>
+      [id, fromId, toId, type, serialized, hidden, createdAt, updatedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4231,6 +4253,18 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
+    if (data.containsKey('hidden')) {
+      context.handle(_hiddenMeta,
+          hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
     return context;
   }
 
@@ -4254,6 +4288,12 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
           .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
       serialized: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
+      hidden: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}hidden']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
     );
   }
 
@@ -4275,12 +4315,18 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
   final String toId;
   final String type;
   final String serialized;
+  final bool? hidden;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   const LinkedDbEntry(
       {required this.id,
       required this.fromId,
       required this.toId,
       required this.type,
-      required this.serialized});
+      required this.serialized,
+      this.hidden,
+      this.createdAt,
+      this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4289,6 +4335,15 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
     map['to_id'] = Variable<String>(toId);
     map['type'] = Variable<String>(type);
     map['serialized'] = Variable<String>(serialized);
+    if (!nullToAbsent || hidden != null) {
+      map['hidden'] = Variable<bool>(hidden);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -4299,6 +4354,14 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
       toId: Value(toId),
       type: Value(type),
       serialized: Value(serialized),
+      hidden:
+          hidden == null && nullToAbsent ? const Value.absent() : Value(hidden),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -4311,6 +4374,9 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
       toId: serializer.fromJson<String>(json['to_id']),
       type: serializer.fromJson<String>(json['type']),
       serialized: serializer.fromJson<String>(json['serialized']),
+      hidden: serializer.fromJson<bool?>(json['hidden']),
+      createdAt: serializer.fromJson<DateTime?>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updated_at']),
     );
   }
   @override
@@ -4322,6 +4388,9 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
       'to_id': serializer.toJson<String>(toId),
       'type': serializer.toJson<String>(type),
       'serialized': serializer.toJson<String>(serialized),
+      'hidden': serializer.toJson<bool?>(hidden),
+      'created_at': serializer.toJson<DateTime?>(createdAt),
+      'updated_at': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -4330,13 +4399,19 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
           String? fromId,
           String? toId,
           String? type,
-          String? serialized}) =>
+          String? serialized,
+          Value<bool?> hidden = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
       LinkedDbEntry(
         id: id ?? this.id,
         fromId: fromId ?? this.fromId,
         toId: toId ?? this.toId,
         type: type ?? this.type,
         serialized: serialized ?? this.serialized,
+        hidden: hidden.present ? hidden.value : this.hidden,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
       );
   LinkedDbEntry copyWithCompanion(LinkedEntriesCompanion data) {
     return LinkedDbEntry(
@@ -4346,6 +4421,9 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
       type: data.type.present ? data.type.value : this.type,
       serialized:
           data.serialized.present ? data.serialized.value : this.serialized,
+      hidden: data.hidden.present ? data.hidden.value : this.hidden,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -4356,13 +4434,17 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
           ..write('fromId: $fromId, ')
           ..write('toId: $toId, ')
           ..write('type: $type, ')
-          ..write('serialized: $serialized')
+          ..write('serialized: $serialized, ')
+          ..write('hidden: $hidden, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, fromId, toId, type, serialized);
+  int get hashCode => Object.hash(
+      id, fromId, toId, type, serialized, hidden, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4371,7 +4453,10 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
           other.fromId == this.fromId &&
           other.toId == this.toId &&
           other.type == this.type &&
-          other.serialized == this.serialized);
+          other.serialized == this.serialized &&
+          other.hidden == this.hidden &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
@@ -4380,6 +4465,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
   final Value<String> toId;
   final Value<String> type;
   final Value<String> serialized;
+  final Value<bool?> hidden;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const LinkedEntriesCompanion({
     this.id = const Value.absent(),
@@ -4387,6 +4475,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
     this.toId = const Value.absent(),
     this.type = const Value.absent(),
     this.serialized = const Value.absent(),
+    this.hidden = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LinkedEntriesCompanion.insert({
@@ -4395,6 +4486,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
     required String toId,
     required String type,
     required String serialized,
+    this.hidden = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         fromId = Value(fromId),
@@ -4407,6 +4501,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
     Expression<String>? toId,
     Expression<String>? type,
     Expression<String>? serialized,
+    Expression<bool>? hidden,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4415,6 +4512,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
       if (toId != null) 'to_id': toId,
       if (type != null) 'type': type,
       if (serialized != null) 'serialized': serialized,
+      if (hidden != null) 'hidden': hidden,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4425,6 +4525,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
       Value<String>? toId,
       Value<String>? type,
       Value<String>? serialized,
+      Value<bool?>? hidden,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
       Value<int>? rowid}) {
     return LinkedEntriesCompanion(
       id: id ?? this.id,
@@ -4432,6 +4535,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
       toId: toId ?? this.toId,
       type: type ?? this.type,
       serialized: serialized ?? this.serialized,
+      hidden: hidden ?? this.hidden,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4454,6 +4560,15 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
     if (serialized.present) {
       map['serialized'] = Variable<String>(serialized.value);
     }
+    if (hidden.present) {
+      map['hidden'] = Variable<bool>(hidden.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4468,6 +4583,9 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
           ..write('toId: $toId, ')
           ..write('type: $type, ')
           ..write('serialized: $serialized, ')
+          ..write('hidden: $hidden, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4565,6 +4683,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id)');
   late final Index idxLinkedEntriesType = Index('idx_linked_entries_type',
       'CREATE INDEX idx_linked_entries_type ON linked_entries (type)');
+  late final Index idxLinkedEntriesHidden = Index('idx_linked_entries_hidden',
+      'CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden)');
   Selectable<ConfigFlag> listConfigFlags() {
     return customSelect('SELECT * FROM config_flags',
         variables: [],
@@ -5399,10 +5519,15 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<String> linkedJournalEntityIds(String fromId) {
-    return customSelect('SELECT to_id FROM linked_entries WHERE from_id = ?1',
+  Selectable<String> linkedJournalEntityIds(String fromId, List<bool?> hidden) {
+    var $arrayStartIndex = 2;
+    final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
+    $arrayStartIndex += hidden.length;
+    return customSelect(
+        'SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden)',
         variables: [
-          Variable<String>(fromId)
+          Variable<String>(fromId),
+          for (var $ in hidden) Variable<bool>($)
         ],
         readsFrom: {
           linkedEntries,
@@ -5479,7 +5604,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
         linkedEntries,
         idxLinkedEntriesFromId,
         idxLinkedEntriesToId,
-        idxLinkedEntriesType
+        idxLinkedEntriesType,
+        idxLinkedEntriesHidden
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -7485,6 +7611,9 @@ typedef $LinkedEntriesCreateCompanionBuilder = LinkedEntriesCompanion Function({
   required String toId,
   required String type,
   required String serialized,
+  Value<bool?> hidden,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
   Value<int> rowid,
 });
 typedef $LinkedEntriesUpdateCompanionBuilder = LinkedEntriesCompanion Function({
@@ -7493,6 +7622,9 @@ typedef $LinkedEntriesUpdateCompanionBuilder = LinkedEntriesCompanion Function({
   Value<String> toId,
   Value<String> type,
   Value<String> serialized,
+  Value<bool?> hidden,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
   Value<int> rowid,
 });
 
@@ -7519,6 +7651,15 @@ class $LinkedEntriesFilterComposer
 
   ColumnFilters<String> get serialized => $composableBuilder(
       column: $table.serialized, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hidden => $composableBuilder(
+      column: $table.hidden, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
 }
 
 class $LinkedEntriesOrderingComposer
@@ -7544,6 +7685,15 @@ class $LinkedEntriesOrderingComposer
 
   ColumnOrderings<String> get serialized => $composableBuilder(
       column: $table.serialized, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hidden => $composableBuilder(
+      column: $table.hidden, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $LinkedEntriesAnnotationComposer
@@ -7569,6 +7719,15 @@ class $LinkedEntriesAnnotationComposer
 
   GeneratedColumn<String> get serialized => $composableBuilder(
       column: $table.serialized, builder: (column) => column);
+
+  GeneratedColumn<bool> get hidden =>
+      $composableBuilder(column: $table.hidden, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $LinkedEntriesTableManager extends RootTableManager<
@@ -7599,6 +7758,9 @@ class $LinkedEntriesTableManager extends RootTableManager<
             Value<String> toId = const Value.absent(),
             Value<String> type = const Value.absent(),
             Value<String> serialized = const Value.absent(),
+            Value<bool?> hidden = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LinkedEntriesCompanion(
@@ -7607,6 +7769,9 @@ class $LinkedEntriesTableManager extends RootTableManager<
             toId: toId,
             type: type,
             serialized: serialized,
+            hidden: hidden,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -7615,6 +7780,9 @@ class $LinkedEntriesTableManager extends RootTableManager<
             required String toId,
             required String type,
             required String serialized,
+            Value<bool?> hidden = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LinkedEntriesCompanion.insert(
@@ -7623,6 +7791,9 @@ class $LinkedEntriesTableManager extends RootTableManager<
             toId: toId,
             type: type,
             serialized: serialized,
+            hidden: hidden,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
