@@ -157,6 +157,9 @@ CREATE TABLE linked_entries (
   to_id TEXT NOT NULL,
   type TEXT NOT NULL,
   serialized TEXT NOT NULL,
+  hidden BOOLEAN DEFAULT FALSE,
+  created_at DATETIME,
+  updated_at DATETIME,
   PRIMARY KEY (id),
   UNIQUE(from_id, to_id, type)
 ) as LinkedDbEntry;
@@ -164,6 +167,7 @@ CREATE TABLE linked_entries (
 CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id);
 CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id);
 CREATE INDEX idx_linked_entries_type ON linked_entries (type);
+CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
@@ -563,7 +567,7 @@ SELECT * FROM journal
   ORDER BY date_from DESC;
 
 linkedJournalEntityIds:
-SELECT to_id FROM linked_entries WHERE from_id = :from_id;
+SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 
 linkedToJournalEntities:
 SELECT * FROM journal

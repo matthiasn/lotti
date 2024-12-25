@@ -8,7 +8,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
-class LinkedEntriesWidget extends StatelessWidget {
+class LinkedEntriesWidget extends StatefulWidget {
   const LinkedEntriesWidget({
     required this.item,
     super.key,
@@ -17,11 +17,21 @@ class LinkedEntriesWidget extends StatelessWidget {
   final JournalEntity item;
 
   @override
+  State<LinkedEntriesWidget> createState() => _LinkedEntriesWidgetState();
+}
+
+class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
+  bool _includeHidden = false;
+
+  @override
   Widget build(BuildContext context) {
     final db = getIt<JournalDb>();
 
     return StreamBuilder<List<String>>(
-      stream: db.watchLinkedEntityIds(item.meta.id),
+      stream: db.watchLinkedEntityIds(
+        widget.item.meta.id,
+        includedHidden: _includeHidden,
+      ),
       builder: (context, itemsSnapshot) {
         if (itemsSnapshot.data == null || itemsSnapshot.data!.isEmpty) {
           return Container();
@@ -30,11 +40,33 @@ class LinkedEntriesWidget extends StatelessWidget {
 
           return Column(
             children: [
-              Text(
-                context.messages.journalLinkedEntriesLabel,
-                style: TextStyle(
-                  color: context.colorScheme.outline,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    context.messages.journalLinkedEntriesLabel,
+                    style: TextStyle(
+                      color: context.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                  Text(
+                    // TODO: l10n
+                    'hidden:',
+                    style: TextStyle(
+                      color: context.colorScheme.outline,
+                    ),
+                  ),
+                  // TODO: move to filter bottom sheet, use controller
+                  Checkbox(
+                    value: _includeHidden,
+                    onChanged: (value) {
+                      setState(() {
+                        _includeHidden = value ?? false;
+                      });
+                    },
+                  ),
+                ],
               ),
               ...List.generate(
                 itemIds.length,
@@ -59,7 +91,7 @@ class LinkedEntriesWidget extends StatelessWidget {
 
                     if (result == unlinkKey) {
                       await db.removeLink(
-                        fromId: item.meta.id,
+                        fromId: widget.item.meta.id,
                         toId: itemId,
                       );
                     }
@@ -70,8 +102,8 @@ class LinkedEntriesWidget extends StatelessWidget {
                     itemId: itemId,
                     popOnDelete: false,
                     unlinkFn: unlink,
-                    parentTags: item.meta.tagIds?.toSet(),
-                    linkedFrom: item,
+                    parentTags: widget.item.meta.tagIds?.toSet(),
+                    linkedFrom: widget.item,
                   );
                 },
               ),
