@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
-part 'entry_links.freezed.dart';
-part 'entry_links.g.dart';
+part 'entry_link.g.dart';
+part 'entry_link.freezed.dart';
 
 @freezed
 class EntryLink with _$EntryLink {
@@ -13,7 +13,7 @@ class EntryLink with _$EntryLink {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
-    String? linkType,
+    bool? hidden,
     DateTime? deletedAt,
   }) = BasicLink;
 

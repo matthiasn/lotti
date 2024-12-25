@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'entry_links.dart';
+part of 'entry_link.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -26,7 +26,7 @@ mixin _$EntryLink {
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
   VectorClock? get vectorClock => throw _privateConstructorUsedError;
-  String? get linkType => throw _privateConstructorUsedError;
+  bool? get hidden => throw _privateConstructorUsedError;
   DateTime? get deletedAt => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
@@ -37,7 +37,7 @@ mixin _$EntryLink {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
-            String? linkType,
+            bool? hidden,
             DateTime? deletedAt)
         basic,
   }) =>
@@ -51,7 +51,7 @@ mixin _$EntryLink {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
-            String? linkType,
+            bool? hidden,
             DateTime? deletedAt)?
         basic,
   }) =>
@@ -65,7 +65,7 @@ mixin _$EntryLink {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
-            String? linkType,
+            bool? hidden,
             DateTime? deletedAt)?
         basic,
     required TResult orElse(),
@@ -110,7 +110,7 @@ abstract class $EntryLinkCopyWith<$Res> {
       DateTime createdAt,
       DateTime updatedAt,
       VectorClock? vectorClock,
-      String? linkType,
+      bool? hidden,
       DateTime? deletedAt});
 }
 
@@ -135,7 +135,7 @@ class _$EntryLinkCopyWithImpl<$Res, $Val extends EntryLink>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? vectorClock = freezed,
-    Object? linkType = freezed,
+    Object? hidden = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(_value.copyWith(
@@ -163,10 +163,10 @@ class _$EntryLinkCopyWithImpl<$Res, $Val extends EntryLink>
           ? _value.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
-      linkType: freezed == linkType
-          ? _value.linkType
-          : linkType // ignore: cast_nullable_to_non_nullable
-              as String?,
+      hidden: freezed == hidden
+          ? _value.hidden
+          : hidden // ignore: cast_nullable_to_non_nullable
+              as bool?,
       deletedAt: freezed == deletedAt
           ? _value.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
@@ -190,7 +190,7 @@ abstract class _$$BasicLinkImplCopyWith<$Res>
       DateTime createdAt,
       DateTime updatedAt,
       VectorClock? vectorClock,
-      String? linkType,
+      bool? hidden,
       DateTime? deletedAt});
 }
 
@@ -213,7 +213,7 @@ class __$$BasicLinkImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? vectorClock = freezed,
-    Object? linkType = freezed,
+    Object? hidden = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(_$BasicLinkImpl(
@@ -241,10 +241,10 @@ class __$$BasicLinkImplCopyWithImpl<$Res>
           ? _value.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
-      linkType: freezed == linkType
-          ? _value.linkType
-          : linkType // ignore: cast_nullable_to_non_nullable
-              as String?,
+      hidden: freezed == hidden
+          ? _value.hidden
+          : hidden // ignore: cast_nullable_to_non_nullable
+              as bool?,
       deletedAt: freezed == deletedAt
           ? _value.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
@@ -263,7 +263,7 @@ class _$BasicLinkImpl implements BasicLink {
       required this.createdAt,
       required this.updatedAt,
       required this.vectorClock,
-      this.linkType,
+      this.hidden,
       this.deletedAt});
 
   factory _$BasicLinkImpl.fromJson(Map<String, dynamic> json) =>
@@ -282,13 +282,13 @@ class _$BasicLinkImpl implements BasicLink {
   @override
   final VectorClock? vectorClock;
   @override
-  final String? linkType;
+  final bool? hidden;
   @override
   final DateTime? deletedAt;
 
   @override
   String toString() {
-    return 'EntryLink.basic(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, linkType: $linkType, deletedAt: $deletedAt)';
+    return 'EntryLink.basic(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, deletedAt: $deletedAt)';
   }
 
   @override
@@ -305,8 +305,7 @@ class _$BasicLinkImpl implements BasicLink {
                 other.updatedAt == updatedAt) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
-            (identical(other.linkType, linkType) ||
-                other.linkType == linkType) &&
+            (identical(other.hidden, hidden) || other.hidden == hidden) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -314,7 +313,7 @@ class _$BasicLinkImpl implements BasicLink {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
-      updatedAt, vectorClock, linkType, deletedAt);
+      updatedAt, vectorClock, hidden, deletedAt);
 
   /// Create a copy of EntryLink
   /// with the given fields replaced by the non-null parameter values.
@@ -334,12 +333,12 @@ class _$BasicLinkImpl implements BasicLink {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
-            String? linkType,
+            bool? hidden,
             DateTime? deletedAt)
         basic,
   }) {
-    return basic(id, fromId, toId, createdAt, updatedAt, vectorClock, linkType,
-        deletedAt);
+    return basic(
+        id, fromId, toId, createdAt, updatedAt, vectorClock, hidden, deletedAt);
   }
 
   @override
@@ -352,12 +351,12 @@ class _$BasicLinkImpl implements BasicLink {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
-            String? linkType,
+            bool? hidden,
             DateTime? deletedAt)?
         basic,
   }) {
-    return basic?.call(id, fromId, toId, createdAt, updatedAt, vectorClock,
-        linkType, deletedAt);
+    return basic?.call(
+        id, fromId, toId, createdAt, updatedAt, vectorClock, hidden, deletedAt);
   }
 
   @override
@@ -370,14 +369,14 @@ class _$BasicLinkImpl implements BasicLink {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
-            String? linkType,
+            bool? hidden,
             DateTime? deletedAt)?
         basic,
     required TResult orElse(),
   }) {
     if (basic != null) {
-      return basic(id, fromId, toId, createdAt, updatedAt, vectorClock,
-          linkType, deletedAt);
+      return basic(id, fromId, toId, createdAt, updatedAt, vectorClock, hidden,
+          deletedAt);
     }
     return orElse();
   }
@@ -426,7 +425,7 @@ abstract class BasicLink implements EntryLink {
       required final DateTime createdAt,
       required final DateTime updatedAt,
       required final VectorClock? vectorClock,
-      final String? linkType,
+      final bool? hidden,
       final DateTime? deletedAt}) = _$BasicLinkImpl;
 
   factory BasicLink.fromJson(Map<String, dynamic> json) =
@@ -445,7 +444,7 @@ abstract class BasicLink implements EntryLink {
   @override
   VectorClock? get vectorClock;
   @override
-  String? get linkType;
+  bool? get hidden;
   @override
   DateTime? get deletedAt;
 
