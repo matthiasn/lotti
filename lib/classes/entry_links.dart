@@ -13,7 +13,7 @@ class EntryLink with _$EntryLink {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
-    String? linkType,
+    bool? hidden,
     DateTime? deletedAt,
   }) = BasicLink;
 
