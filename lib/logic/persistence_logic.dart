@@ -336,13 +336,15 @@ class PersistenceLogic {
     required String toId,
   }) async {
     final now = DateTime.now();
+
     final link = EntryLink.basic(
       id: uuid.v1(),
       fromId: fromId,
       toId: toId,
       createdAt: now,
       updatedAt: now,
-      vectorClock: null,
+      hidden: false,
+      vectorClock: await _vectorClockService.getNextVectorClock(),
     );
 
     final res = await _journalDb.upsertEntryLink(link);
@@ -352,6 +354,24 @@ class PersistenceLogic {
       SyncMessage.entryLink(
         entryLink: link,
         status: SyncEntryStatus.initial,
+      ),
+    );
+    return res != 0;
+  }
+
+  Future<bool> updateLink(EntryLink link) async {
+    final updated = link.copyWith(
+      updatedAt: DateTime.now(),
+      vectorClock: await _vectorClockService.getNextVectorClock(),
+    );
+
+    final res = await _journalDb.upsertEntryLink(updated);
+    _updateNotifications.notify({link.fromId, link.toId});
+
+    await outboxService.enqueueMessage(
+      SyncMessage.entryLink(
+        entryLink: updated,
+        status: SyncEntryStatus.update,
       ),
     );
     return res != 0;
