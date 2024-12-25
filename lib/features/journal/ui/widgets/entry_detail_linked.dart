@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
@@ -22,6 +23,17 @@ class LinkedEntriesWidget extends StatefulWidget {
 
 class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
   bool _includeHidden = false;
+  bool _releaseHideLinkedEntries = false;
+
+  @override
+  void initState() {
+    super.initState();
+    getIt<JournalDb>().getConfigFlag(releaseHideLinkedEntries).then((value) {
+      setState(() {
+        _releaseHideLinkedEntries = value;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,23 +61,25 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                       color: context.colorScheme.outline,
                     ),
                   ),
-                  const SizedBox(width: 40),
-                  Text(
-                    // TODO: l10n
-                    'hidden:',
-                    style: TextStyle(
-                      color: context.colorScheme.outline,
+                  if (_releaseHideLinkedEntries) ...[
+                    const SizedBox(width: 40),
+                    Text(
+                      // TODO: l10n
+                      'hidden:',
+                      style: TextStyle(
+                        color: context.colorScheme.outline,
+                      ),
                     ),
-                  ),
-                  // TODO: move to filter bottom sheet, use controller
-                  Checkbox(
-                    value: _includeHidden,
-                    onChanged: (value) {
-                      setState(() {
-                        _includeHidden = value ?? false;
-                      });
-                    },
-                  ),
+                    // TODO: move to filter bottom sheet, use controller
+                    Checkbox(
+                      value: _includeHidden,
+                      onChanged: (value) {
+                        setState(() {
+                          _includeHidden = value ?? false;
+                        });
+                      },
+                    ),
+                  ],
                 ],
               ),
               ...List.generate(

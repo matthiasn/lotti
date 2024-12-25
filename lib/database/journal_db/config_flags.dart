@@ -70,6 +70,13 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: releaseHideLinkedEntries,
+      description: 'Release hiding linked entries',
+      status: false,
+    ),
+  );
   if (Platform.isMacOS) {
     await db.insertFlagIfNotExists(
       const ConfigFlag(

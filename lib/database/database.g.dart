@@ -5534,6 +5534,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).map((QueryRow row) => row.read<String>('to_id'));
   }
 
+  Selectable<LinkedDbEntry> linksFromId(String fromId, List<bool?> hidden) {
+    var $arrayStartIndex = 2;
+    final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
+    $arrayStartIndex += hidden.length;
+    return customSelect(
+        'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden)',
+        variables: [
+          Variable<String>(fromId),
+          for (var $ in hidden) Variable<bool>($)
+        ],
+        readsFrom: {
+          linkedEntries,
+        }).asyncMap(linkedEntries.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> linkedToJournalEntities(String toId) {
     return customSelect(
         'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT from_id FROM linked_entries WHERE to_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
