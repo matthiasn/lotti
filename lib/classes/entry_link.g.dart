@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'entry_links.dart';
+part of 'entry_link.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
