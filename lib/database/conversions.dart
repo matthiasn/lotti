@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_links.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -203,6 +203,9 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
     serialized: jsonEncode(link),
     fromId: link.fromId,
     toId: link.toId,
+    hidden: link.hidden ?? false,
+    createdAt: link.createdAt,
+    updatedAt: link.updatedAt,
     type: link.map(
       basic: (_) => 'BasicLink',
     ),

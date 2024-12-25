@@ -50,6 +50,16 @@ DefaultStyles customEditorStyles({
       VerticalSpacing.zero,
       null,
     ),
+    placeHolder: DefaultTextBlockStyle(
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSizeMedium,
+        color: textColor?.withAlpha(72),
+      ),
+      const HorizontalSpacing(2, 0),
+      VerticalSpacing.zero,
+      VerticalSpacing.zero,
+      null,
+    ),
     bold: GoogleFonts.plusJakartaSans(
       fontSize: fontSizeMedium,
       color: textColor,

@@ -8,3 +8,4 @@ const enableMatrixFlag = 'enable_matrix';
 const enableTooltipFlag = 'enable_tooltip';
 const resendAttachments = 'resend_attachments';
 const attemptEmbedding = 'attempt_embedding';
+const releaseHideLinkedEntries = 'release_hide_linked_entries';

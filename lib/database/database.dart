@@ -6,7 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_links.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
@@ -42,7 +42,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration {
@@ -71,6 +71,22 @@ class JournalDb extends _$JournalDb {
             debugPrint('Add category_id in journal table, with index');
             await m.addColumn(journal, journal.category);
             await m.createIndex(idxJournalCategory);
+          }();
+        }
+
+        if (from < 22) {
+          await () async {
+            debugPrint('Add hidden in linked_entries table, with index');
+            await m.addColumn(linkedEntries, linkedEntries.hidden);
+            await m.createIndex(idxLinkedEntriesHidden);
+          }();
+        }
+
+        if (from < 23) {
+          await () async {
+            debugPrint('Add timestamps in linked_entries table, with index');
+            await m.addColumn(linkedEntries, linkedEntries.createdAt);
+            await m.addColumn(linkedEntries, linkedEntries.updatedAt);
           }();
         }
       },
@@ -471,10 +487,24 @@ class JournalDb extends _$JournalDb {
 
   // Returns stream with a sorted list of items IDs linked to from the
   // provided item id.
-  Stream<List<String>> watchLinkedEntityIds(String linkedFrom) {
-    return linkedJournalEntityIds(linkedFrom)
-        .watch()
-        .asyncMap(getSortedLinkedEntityIds);
+  Stream<List<String>> watchLinkedEntityIds(
+    String linkedFrom, {
+    bool includedHidden = false,
+  }) {
+    return linkedJournalEntityIds(
+      linkedFrom,
+      includedHidden ? [false, true] : [false],
+    ).watch().asyncMap(getSortedLinkedEntityIds);
+  }
+
+  Stream<List<EntryLink>> watchLinksFromId(
+    String linkedFrom, {
+    bool includedHidden = false,
+  }) {
+    return linksFromId(
+      linkedFrom,
+      includedHidden ? [false, true] : [false],
+    ).watch().asyncMap((m) => m.map(entryLinkFromLinkedDbEntry).toList());
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
@@ -837,8 +867,9 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertEntryLink(EntryLink link) async {
     if (link.fromId != link.toId) {
-      final res =
-          into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+      final res = into(linkedEntries).insertOnConflictUpdate(
+        linkedDbEntity(link),
+      );
       return res;
     } else {
       return 0;

@@ -53,6 +53,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: releaseHideLinkedEntries,
+    description: 'Release hiding linked entries',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableTooltipFlag,
     description: 'Enable Tooltips',
     status: true,
