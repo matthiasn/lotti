@@ -245,12 +245,12 @@ class JournalRepository {
 
   Future<List<EntryLink>> getLinksFromId(
     String linkedFrom, {
-    bool includedHidden = false,
+    bool includeHidden = false,
   }) async {
     final res = await getIt<JournalDb>()
         .linksFromId(
           linkedFrom,
-          includedHidden ? [false, true] : [false],
+          includeHidden ? [false, true] : [false],
         )
         .get();
 

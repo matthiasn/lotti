@@ -20,8 +20,9 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   void listen() {
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(entryId)) {
-        final latest = await _fetch();
+      if (affectedIds.contains(id)) {
+        final includeHidden = ref.read(includeHiddenControllerProvider);
+        final latest = await _fetch(includeHidden: includeHidden);
         if (latest != state.value) {
           state = AsyncData(latest);
         }
@@ -31,18 +32,30 @@ class LinkedEntriesController extends _$LinkedEntriesController {
 
   @override
   Future<List<EntryLink>> build({
-    required String entryId,
-    bool includedHidden = false,
+    required String id,
   }) async {
     ref.onDispose(() => _updateSubscription?.cancel());
-    final res = await _fetch();
+    final includeHidden = ref.watch(includeHiddenControllerProvider);
+    final res = await _fetch(includeHidden: includeHidden);
     return res;
   }
 
-  Future<List<EntryLink>> _fetch() async {
+  Future<List<EntryLink>> _fetch({required bool includeHidden}) async {
     return ref.read(journalRepositoryProvider).getLinksFromId(
-          entryId,
-          includedHidden: includedHidden,
+          id,
+          includeHidden: includeHidden,
         );
+  }
+}
+
+@riverpod
+class IncludeHiddenController extends _$IncludeHiddenController {
+  @override
+  bool build() {
+    return false;
+  }
+
+  void toggleIncludeHidden() {
+    state = !state;
   }
 }
