@@ -238,7 +238,7 @@ class JournalRepository {
     required String fromId,
     required String toId,
   }) async {
-    final res = getIt<JournalDb>().removeLink(fromId: fromId, toId: toId);
+    final res = getIt<JournalDb>().deleteLink(fromId, toId);
     getIt<UpdateNotifications>().notify({fromId, toId});
     return res;
   }
