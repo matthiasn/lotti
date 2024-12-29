@@ -14,7 +14,6 @@ class JournalCardController extends _$JournalCardController {
     listen();
   }
 
-  late final String entryId;
   StreamSubscription<Set<String>>? _updateSubscription;
   final JournalDb _journalDb = getIt<JournalDb>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
@@ -22,7 +21,7 @@ class JournalCardController extends _$JournalCardController {
   void listen() {
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(entryId)) {
+      if (affectedIds.contains(id)) {
         final latest = await _fetch();
         if (latest != state.value) {
           state = AsyncData(latest);
@@ -33,13 +32,12 @@ class JournalCardController extends _$JournalCardController {
 
   @override
   Future<JournalEntity?> build({required String id}) async {
-    entryId = id;
     ref.onDispose(() => _updateSubscription?.cancel());
     final entry = await _fetch();
     return entry;
   }
 
   Future<JournalEntity?> _fetch() async {
-    return _journalDb.journalEntityById(entryId);
+    return _journalDb.journalEntityById(id);
   }
 }
