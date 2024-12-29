@@ -178,7 +178,7 @@ class _LinkedEntriesControllerProviderElement
 }
 
 String _$includeHiddenControllerHash() =>
-    r'17b3dba1ffd729ce0551409290bdb5dc0bb2237a';
+    r'224d7a7bbee3c403c65bb85517e10fb1eeac3148';
 
 abstract class _$IncludeHiddenController
     extends BuildlessAutoDisposeNotifier<bool> {
