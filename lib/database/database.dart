@@ -497,16 +497,6 @@ class JournalDb extends _$JournalDb {
     ).watch().asyncMap(getSortedLinkedEntityIds);
   }
 
-  Stream<List<EntryLink>> watchLinksFromId(
-    String linkedFrom, {
-    bool includedHidden = false,
-  }) {
-    return linksFromId(
-      linkedFrom,
-      includedHidden ? [false, true] : [false],
-    ).watch().asyncMap((m) => m.map(entryLinkFromLinkedDbEntry).toList());
-  }
-
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final dbEntities = await linkedJournalEntities(linkedFrom).get();
     return dbEntities.map(fromDbEntity).toList();

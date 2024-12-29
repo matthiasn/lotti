@@ -111,6 +111,29 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                     }
                   }
 
+                  Future<void> toggleHiddenLink() async {
+                    const hideLinkKey = 'hideLinkKey';
+                    final result = await showModalActionSheet<String>(
+                      context: context,
+                      title: context.messages.journalUnlinkQuestion,
+                      actions: [
+                        ModalSheetAction(
+                          icon: Icons.warning,
+                          label: context.messages.journalUnlinkConfirm,
+                          key: hideLinkKey,
+                          isDefaultAction: true,
+                        ),
+                      ],
+                    );
+
+                    if (result == hideLinkKey) {
+                      await db.removeLink(
+                        fromId: widget.item.meta.id,
+                        toId: itemId,
+                      );
+                    }
+                  }
+
                   return EntryDetailWidget(
                     key: Key('$itemId-$itemId'),
                     itemId: itemId,
