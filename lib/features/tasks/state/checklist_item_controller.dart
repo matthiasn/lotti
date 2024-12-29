@@ -15,13 +15,12 @@ class ChecklistItemController extends _$ChecklistItemController {
   ChecklistItemController() {
     listen();
   }
-  late final String entryId;
   StreamSubscription<Set<String>>? _updateSubscription;
 
   void listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(entryId)) {
+      if (affectedIds.contains(id)) {
         final latest = await _fetch();
         if (latest != state.value) {
           state = AsyncData(latest);
@@ -32,13 +31,12 @@ class ChecklistItemController extends _$ChecklistItemController {
 
   @override
   Future<ChecklistItem?> build({required String id}) async {
-    entryId = id;
     ref.onDispose(() => _updateSubscription?.cancel());
     return _fetch();
   }
 
   Future<ChecklistItem?> _fetch() async {
-    final res = await getIt<JournalDb>().journalEntityById(entryId);
+    final res = await getIt<JournalDb>().journalEntityById(id);
     if (res is ChecklistItem && !res.isDeleted) {
       return res;
     } else {
@@ -47,7 +45,7 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   Future<bool> delete() async {
-    final res = await JournalRepository.deleteJournalEntity(entryId);
+    final res = await JournalRepository.deleteJournalEntity(id);
     state = const AsyncData(null);
     return res;
   }
@@ -62,7 +60,7 @@ class ChecklistItemController extends _$ChecklistItemController {
         ),
       );
       ref.read(checklistRepositoryProvider).updateChecklistItem(
-            checklistItemId: entryId,
+            checklistItemId: id,
             data: updated.data,
           );
 
@@ -79,7 +77,7 @@ class ChecklistItemController extends _$ChecklistItemController {
       );
 
       ref.read(checklistRepositoryProvider).updateChecklistItem(
-            checklistItemId: entryId,
+            checklistItemId: id,
             data: updated.data,
           );
 
@@ -106,7 +104,7 @@ class ChecklistItemController extends _$ChecklistItemController {
       );
 
       await ref.read(checklistRepositoryProvider).updateChecklistItem(
-            checklistItemId: entryId,
+            checklistItemId: id,
             data: updated.data,
           );
 
