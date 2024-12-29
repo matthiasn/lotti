@@ -7,7 +7,7 @@ part of 'linked_entries_controller.dart';
 // **************************************************************************
 
 String _$linkedEntriesControllerHash() =>
-    r'846f664c0a5e59e63d0a6fe1e012d2a1c6298d06';
+    r'd5fa807c8730c555ada7a5b0b931c1e493137413';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -32,12 +32,10 @@ class _SystemHash {
 
 abstract class _$LinkedEntriesController
     extends BuildlessAutoDisposeAsyncNotifier<List<EntryLink>> {
-  late final String entryId;
-  late final bool includedHidden;
+  late final String id;
 
   FutureOr<List<EntryLink>> build({
-    required String entryId,
-    bool includedHidden = false,
+    required String id,
   });
 }
 
@@ -53,12 +51,10 @@ class LinkedEntriesControllerFamily
 
   /// See also [LinkedEntriesController].
   LinkedEntriesControllerProvider call({
-    required String entryId,
-    bool includedHidden = false,
+    required String id,
   }) {
     return LinkedEntriesControllerProvider(
-      entryId: entryId,
-      includedHidden: includedHidden,
+      id: id,
     );
   }
 
@@ -67,8 +63,7 @@ class LinkedEntriesControllerFamily
     covariant LinkedEntriesControllerProvider provider,
   ) {
     return call(
-      entryId: provider.entryId,
-      includedHidden: provider.includedHidden,
+      id: provider.id,
     );
   }
 
@@ -93,12 +88,9 @@ class LinkedEntriesControllerProvider
         List<EntryLink>> {
   /// See also [LinkedEntriesController].
   LinkedEntriesControllerProvider({
-    required String entryId,
-    bool includedHidden = false,
+    required String id,
   }) : this._internal(
-          () => LinkedEntriesController()
-            ..entryId = entryId
-            ..includedHidden = includedHidden,
+          () => LinkedEntriesController()..id = id,
           from: linkedEntriesControllerProvider,
           name: r'linkedEntriesControllerProvider',
           debugGetCreateSourceHash:
@@ -108,8 +100,7 @@ class LinkedEntriesControllerProvider
           dependencies: LinkedEntriesControllerFamily._dependencies,
           allTransitiveDependencies:
               LinkedEntriesControllerFamily._allTransitiveDependencies,
-          entryId: entryId,
-          includedHidden: includedHidden,
+          id: id,
         );
 
   LinkedEntriesControllerProvider._internal(
@@ -119,20 +110,17 @@ class LinkedEntriesControllerProvider
     required super.allTransitiveDependencies,
     required super.debugGetCreateSourceHash,
     required super.from,
-    required this.entryId,
-    required this.includedHidden,
+    required this.id,
   }) : super.internal();
 
-  final String entryId;
-  final bool includedHidden;
+  final String id;
 
   @override
   FutureOr<List<EntryLink>> runNotifierBuild(
     covariant LinkedEntriesController notifier,
   ) {
     return notifier.build(
-      entryId: entryId,
-      includedHidden: includedHidden,
+      id: id,
     );
   }
 
@@ -141,16 +129,13 @@ class LinkedEntriesControllerProvider
     return ProviderOverride(
       origin: this,
       override: LinkedEntriesControllerProvider._internal(
-        () => create()
-          ..entryId = entryId
-          ..includedHidden = includedHidden,
+        () => create()..id = id,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
-        entryId: entryId,
-        includedHidden: includedHidden,
+        id: id,
       ),
     );
   }
@@ -163,16 +148,13 @@ class LinkedEntriesControllerProvider
 
   @override
   bool operator ==(Object other) {
-    return other is LinkedEntriesControllerProvider &&
-        other.entryId == entryId &&
-        other.includedHidden == includedHidden;
+    return other is LinkedEntriesControllerProvider && other.id == id;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, entryId.hashCode);
-    hash = _SystemHash.combine(hash, includedHidden.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -182,11 +164,8 @@ class LinkedEntriesControllerProvider
 // ignore: unused_element
 mixin LinkedEntriesControllerRef
     on AutoDisposeAsyncNotifierProviderRef<List<EntryLink>> {
-  /// The parameter `entryId` of this provider.
-  String get entryId;
-
-  /// The parameter `includedHidden` of this provider.
-  bool get includedHidden;
+  /// The parameter `id` of this provider.
+  String get id;
 }
 
 class _LinkedEntriesControllerProviderElement
@@ -195,10 +174,25 @@ class _LinkedEntriesControllerProviderElement
   _LinkedEntriesControllerProviderElement(super.provider);
 
   @override
-  String get entryId => (origin as LinkedEntriesControllerProvider).entryId;
-  @override
-  bool get includedHidden =>
-      (origin as LinkedEntriesControllerProvider).includedHidden;
+  String get id => (origin as LinkedEntriesControllerProvider).id;
 }
+
+String _$includeHiddenControllerHash() =>
+    r'8edd4a77df97b17dd1c49287aec43358881ca3f2';
+
+/// See also [IncludeHiddenController].
+@ProviderFor(IncludeHiddenController)
+final includeHiddenControllerProvider =
+    AutoDisposeNotifierProvider<IncludeHiddenController, bool>.internal(
+  IncludeHiddenController.new,
+  name: r'includeHiddenControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$includeHiddenControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$IncludeHiddenController = AutoDisposeNotifier<bool>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

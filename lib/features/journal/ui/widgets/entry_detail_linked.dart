@@ -42,7 +42,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
     return StreamBuilder<List<String>>(
       stream: db.watchLinkedEntityIds(
         widget.item.meta.id,
-        includedHidden: _includeHidden,
+        includeHidden: _includeHidden,
       ),
       builder: (context, itemsSnapshot) {
         if (itemsSnapshot.data == null || itemsSnapshot.data!.isEmpty) {

@@ -489,11 +489,11 @@ class JournalDb extends _$JournalDb {
   // provided item id.
   Stream<List<String>> watchLinkedEntityIds(
     String linkedFrom, {
-    bool includedHidden = false,
+    bool includeHidden = false,
   }) {
     return linkedJournalEntityIds(
       linkedFrom,
-      includedHidden ? [false, true] : [false],
+      includeHidden ? [false, true] : [false],
     ).watch().asyncMap(getSortedLinkedEntityIds);
   }
 
