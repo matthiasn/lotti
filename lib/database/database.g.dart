@@ -5539,7 +5539,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
     $arrayStartIndex += hidden.length;
     return customSelect(
-        'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden)',
+        'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden) ORDER BY created_at DESC',
         variables: [
           Variable<String>(fromId),
           for (var $ in hidden) Variable<bool>($)

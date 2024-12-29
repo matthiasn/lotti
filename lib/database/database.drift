@@ -570,7 +570,10 @@ linkedJournalEntityIds:
 SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 
 linksFromId:
-SELECT * FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
+SELECT * FROM linked_entries
+  WHERE from_id = :from_id
+  AND hidden IN :hidden
+  ORDER BY created_at DESC;
 
 linkedToJournalEntities:
 SELECT * FROM journal

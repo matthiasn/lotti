@@ -7,7 +7,7 @@ part of 'linked_entries_controller.dart';
 // **************************************************************************
 
 String _$linkedEntriesControllerHash() =>
-    r'd5fa807c8730c555ada7a5b0b931c1e493137413';
+    r'abb693df07814c4e7aeef0c9d4a79b4010bc6469';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -178,21 +178,150 @@ class _LinkedEntriesControllerProviderElement
 }
 
 String _$includeHiddenControllerHash() =>
-    r'8edd4a77df97b17dd1c49287aec43358881ca3f2';
+    r'17b3dba1ffd729ce0551409290bdb5dc0bb2237a';
+
+abstract class _$IncludeHiddenController
+    extends BuildlessAutoDisposeNotifier<bool> {
+  late final String id;
+
+  bool build({
+    required String id,
+  });
+}
 
 /// See also [IncludeHiddenController].
 @ProviderFor(IncludeHiddenController)
-final includeHiddenControllerProvider =
-    AutoDisposeNotifierProvider<IncludeHiddenController, bool>.internal(
-  IncludeHiddenController.new,
-  name: r'includeHiddenControllerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$includeHiddenControllerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+const includeHiddenControllerProvider = IncludeHiddenControllerFamily();
 
-typedef _$IncludeHiddenController = AutoDisposeNotifier<bool>;
+/// See also [IncludeHiddenController].
+class IncludeHiddenControllerFamily extends Family<bool> {
+  /// See also [IncludeHiddenController].
+  const IncludeHiddenControllerFamily();
+
+  /// See also [IncludeHiddenController].
+  IncludeHiddenControllerProvider call({
+    required String id,
+  }) {
+    return IncludeHiddenControllerProvider(
+      id: id,
+    );
+  }
+
+  @override
+  IncludeHiddenControllerProvider getProviderOverride(
+    covariant IncludeHiddenControllerProvider provider,
+  ) {
+    return call(
+      id: provider.id,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'includeHiddenControllerProvider';
+}
+
+/// See also [IncludeHiddenController].
+class IncludeHiddenControllerProvider
+    extends AutoDisposeNotifierProviderImpl<IncludeHiddenController, bool> {
+  /// See also [IncludeHiddenController].
+  IncludeHiddenControllerProvider({
+    required String id,
+  }) : this._internal(
+          () => IncludeHiddenController()..id = id,
+          from: includeHiddenControllerProvider,
+          name: r'includeHiddenControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$includeHiddenControllerHash,
+          dependencies: IncludeHiddenControllerFamily._dependencies,
+          allTransitiveDependencies:
+              IncludeHiddenControllerFamily._allTransitiveDependencies,
+          id: id,
+        );
+
+  IncludeHiddenControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+  }) : super.internal();
+
+  final String id;
+
+  @override
+  bool runNotifierBuild(
+    covariant IncludeHiddenController notifier,
+  ) {
+    return notifier.build(
+      id: id,
+    );
+  }
+
+  @override
+  Override overrideWith(IncludeHiddenController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: IncludeHiddenControllerProvider._internal(
+        () => create()..id = id,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeNotifierProviderElement<IncludeHiddenController, bool>
+      createElement() {
+    return _IncludeHiddenControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is IncludeHiddenControllerProvider && other.id == id;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin IncludeHiddenControllerRef on AutoDisposeNotifierProviderRef<bool> {
+  /// The parameter `id` of this provider.
+  String get id;
+}
+
+class _IncludeHiddenControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<IncludeHiddenController, bool>
+    with IncludeHiddenControllerRef {
+  _IncludeHiddenControllerProviderElement(super.provider);
+
+  @override
+  String get id => (origin as IncludeHiddenControllerProvider).id;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
