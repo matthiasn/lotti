@@ -5477,6 +5477,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<String> journalEntityIdsByDateFromDesc(List<String> ids) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect(
+        'SELECT id FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+        variables: [
+          for (var $ in ids) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).map((QueryRow row) => row.read<String>('id'));
+  }
+
   Selectable<LinkedDbEntry> linksForIds(List<String> toIds) {
     var $arrayStartIndex = 1;
     final expandedtoIds = $expandVar($arrayStartIndex, toIds.length);

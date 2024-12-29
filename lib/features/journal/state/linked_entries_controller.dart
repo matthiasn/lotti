@@ -66,10 +66,6 @@ class IncludeHiddenController extends _$IncludeHiddenController {
     return false;
   }
 
-  void toggleIncludeHidden() {
-    state = !state;
-  }
-
   set includeHidden(bool value) {
     state = value;
   }

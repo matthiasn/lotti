@@ -14,7 +14,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'journal_repository.g.dart';
@@ -206,34 +205,6 @@ class JournalRepository {
     return res != 0;
   }
 
-  Future<bool> toggleHideLink({
-    required String fromId,
-    required String toId,
-  }) async {
-    final now = DateTime.now();
-
-    final link = EntryLink.basic(
-      id: uuid.v1(),
-      fromId: fromId,
-      toId: toId,
-      createdAt: now,
-      updatedAt: now,
-      hidden: false,
-      vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
-    );
-
-    final res = await getIt<JournalDb>().upsertEntryLink(link);
-    getIt<UpdateNotifications>().notify({link.fromId, link.toId});
-
-    await getIt<OutboxService>().enqueueMessage(
-      SyncMessage.entryLink(
-        entryLink: link,
-        status: SyncEntryStatus.initial,
-      ),
-    );
-    return res != 0;
-  }
-
   Future<int> removeLink({
     required String fromId,
     required String toId,
@@ -247,14 +218,23 @@ class JournalRepository {
     String linkedFrom, {
     bool includeHidden = false,
   }) async {
+    final linksByToId = <String, EntryLink>{};
+
     final res = await getIt<JournalDb>()
-        .linksFromId(
-          linkedFrom,
-          includeHidden ? [false, true] : [false],
-        )
+        .linksFromId(linkedFrom, includeHidden ? [false, true] : [false])
         .get();
 
-    return res.map(entryLinkFromLinkedDbEntry).toList();
+    for (final link in res.map(entryLinkFromLinkedDbEntry)) {
+      linksByToId[link.toId] = link;
+    }
+
+    // sort by the (editable) date from, descending, to allow for changing the
+    // start date of the linked entries and get the list reordered accordingly
+    final sortedToIds = await getIt<JournalDb>()
+        .journalEntityIdsByDateFromDesc(linksByToId.keys.toList())
+        .get();
+
+    return sortedToIds.map((id) => linksByToId[id]).nonNulls.toList();
   }
 }
 

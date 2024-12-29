@@ -551,6 +551,13 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
+journalEntityIdsByDateFromDesc:
+SELECT id FROM journal
+  WHERE deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
+
 linksForIds:
 SELECT * FROM linked_entries
   WHERE to_id IN :to_ids;
