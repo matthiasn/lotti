@@ -79,7 +79,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                     showTaskDetails: true,
                   ),
                   LinkedEntriesWidget(item),
-                  LinkedFromEntriesWidget(item: item),
+                  LinkedFromEntriesWidget(item),
                 ],
               ).animate().fadeIn(
                     duration: const Duration(
