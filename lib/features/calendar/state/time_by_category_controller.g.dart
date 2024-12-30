@@ -44,7 +44,7 @@ final maxCategoriesCountProvider = AutoDisposeFutureProvider<int>.internal(
 // ignore: unused_element
 typedef MaxCategoriesCountRef = AutoDisposeFutureProviderRef<int>;
 String _$timeByCategoryControllerHash() =>
-    r'8205b8f91c276887a4fe4dc7fba0f64eef339fdd';
+    r'0a2452961c7a08e980fe2b9a7ce2908c270ee50b';
 
 /// See also [TimeByCategoryController].
 @ProviderFor(TimeByCategoryController)

@@ -78,7 +78,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                     popOnDelete: true,
                     showTaskDetails: true,
                   ),
-                  LinkedEntriesWidget(item: item),
+                  LinkedEntriesWidget(item),
                   LinkedFromEntriesWidget(item: item),
                 ],
               ).animate().fadeIn(

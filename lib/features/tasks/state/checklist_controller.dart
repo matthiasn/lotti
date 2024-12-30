@@ -13,10 +13,6 @@ part 'checklist_controller.g.dart';
 
 @riverpod
 class ChecklistController extends _$ChecklistController {
-  ChecklistController() {
-    listen();
-  }
-  late final String entryId;
   final subscribedIds = <String>{};
   StreamSubscription<Set<String>>? _updateSubscription;
 
@@ -34,7 +30,6 @@ class ChecklistController extends _$ChecklistController {
 
   @override
   Future<Checklist?> build({required String id}) async {
-    entryId = id;
     subscribedIds.add(id);
     ref.onDispose(() => _updateSubscription?.cancel());
     final checklist = await _fetch();
@@ -43,11 +38,13 @@ class ChecklistController extends _$ChecklistController {
       subscribedIds.addAll(checklist.data.linkedChecklistItems);
     }
 
+    listen();
+
     return checklist;
   }
 
   Future<Checklist?> _fetch() async {
-    final res = await getIt<JournalDb>().journalEntityById(entryId);
+    final res = await getIt<JournalDb>().journalEntityById(id);
 
     if (res is Checklist && !res.isDeleted) {
       return res;
@@ -57,7 +54,8 @@ class ChecklistController extends _$ChecklistController {
   }
 
   Future<bool> delete() async {
-    final res = await JournalRepository.deleteJournalEntity(entryId);
+    final res =
+        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
     state = const AsyncData(null);
     return res;
   }
@@ -81,7 +79,7 @@ class ChecklistController extends _$ChecklistController {
       final droppedChecklistItemId = localData['checklistItemId'] as String;
       final fromChecklistId = localData['checklistId'] as String;
 
-      if (fromChecklistId == entryId) {
+      if (fromChecklistId == id) {
         return;
       }
 
@@ -128,7 +126,7 @@ class ChecklistController extends _$ChecklistController {
     if (current != null && data != null) {
       final updated = updateFn(current);
       await ref.read(checklistRepositoryProvider).updateChecklist(
-            checklistId: entryId,
+            checklistId: id,
             data: updated.data,
           );
       state = AsyncData(updated);

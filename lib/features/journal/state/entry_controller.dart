@@ -28,46 +28,42 @@ part 'entry_controller.g.dart';
 
 @riverpod
 class EntryController extends _$EntryController {
-  EntryController() {
-    listen();
+  void focusNodeListener() {
+    if (focusNode.hasFocus == _isFocused) {
+      return;
+    }
 
-    focusNode.addListener(() {
-      if (focusNode.hasFocus == _isFocused) {
-        return;
-      }
+    _isFocused = focusNode.hasFocus;
+    if (_isFocused) {
+      _shouldShowEditorToolBar = true;
+    }
+    emitState();
 
-      _isFocused = focusNode.hasFocus;
-      if (_isFocused) {
-        _shouldShowEditorToolBar = true;
+    if (isDesktop) {
+      if (focusNode.hasFocus) {
+        hotKeyManager.register(
+          saveHotKey,
+          keyDownHandler: (hotKey) => save(),
+        );
+      } else {
+        hotKeyManager.unregister(saveHotKey);
       }
-      emitState();
-
-      if (isDesktop) {
-        if (focusNode.hasFocus) {
-          hotKeyManager.register(
-            saveHotKey,
-            keyDownHandler: (hotKey) => save(),
-          );
-        } else {
-          hotKeyManager.unregister(saveHotKey);
-        }
-      }
-    });
-
-    taskTitleFocusNode.addListener(() {
-      if (isDesktop) {
-        if (taskTitleFocusNode.hasFocus) {
-          hotKeyManager.register(
-            saveHotKey,
-            keyDownHandler: (hotKey) => save(),
-          );
-        } else {
-          hotKeyManager.unregister(saveHotKey);
-        }
-      }
-    });
+    }
   }
-  late final String entryId;
+
+  void taskTitleFocusNodeListener() {
+    if (isDesktop) {
+      if (taskTitleFocusNode.hasFocus) {
+        hotKeyManager.register(
+          saveHotKey,
+          keyDownHandler: (hotKey) => save(),
+        );
+      } else {
+        hotKeyManager.unregister(saveHotKey);
+      }
+    }
+  }
+
   QuillController controller = QuillController.basic();
   final _editorStateService = getIt<EditorStateService>();
   final formKey = GlobalKey<FormBuilderState>();
@@ -93,9 +89,12 @@ class EntryController extends _$EntryController {
   );
 
   void listen() {
+    focusNode.addListener(focusNodeListener);
+    taskTitleFocusNode.addListener(taskTitleFocusNodeListener);
+
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(entryId)) {
+      if (affectedIds.contains(id)) {
         final latest = await _fetch();
         if (latest != state.value?.entry) {
           state = AsyncData(state.value?.copyWith(entry: latest));
@@ -109,19 +108,29 @@ class EntryController extends _$EntryController {
 
   @override
   Future<EntryState?> build({required String id}) async {
-    entryId = id;
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() {
+        _updateSubscription?.cancel();
+      })
+      ..onDispose(() {
+        focusNode.removeListener(focusNodeListener);
+      })
+      ..onDispose(() {
+        taskTitleFocusNode.removeListener(taskTitleFocusNodeListener);
+      });
+
     final entry = await _fetch();
 
     final lastSaved = entry?.meta.updatedAt;
 
     if (lastSaved != null) {
       _editorStateService
-          .getUnsavedStream(entryId, lastSaved)
+          .getUnsavedStream(id, lastSaved)
           .listen((bool dirtyFromEditorDrafts) {
         setDirty(value: dirtyFromEditorDrafts);
       });
     }
+    listen();
 
     unawaited(Future.microtask(setController));
 
@@ -139,25 +148,28 @@ class EntryController extends _$EntryController {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    return JournalRepository.updateJournalEntityDate(
-      entryId,
-      dateFrom: dateFrom,
-      dateTo: dateTo,
-    );
+    return ref.read(journalRepositoryProvider).updateJournalEntityDate(
+          id,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+        );
   }
 
   Future<bool> updateCategoryId(String? categoryId) async {
-    return JournalRepository.updateCategoryId(
-      entryId,
-      categoryId: categoryId,
-    );
+    return ref.read(journalRepositoryProvider).updateCategoryId(
+          id,
+          categoryId: categoryId,
+        );
   }
 
   Future<JournalEntity?> _fetch() async {
-    return _journalDb.journalEntityById(entryId);
+    return _journalDb.journalEntityById(id);
   }
 
-  Future<void> save({Duration? estimate}) async {
+  Future<void> save({
+    Duration? estimate,
+    bool stopRecording = false,
+  }) async {
     final entry = state.value?.entry;
     if (entry == null) {
       return;
@@ -171,7 +183,7 @@ class EntryController extends _$EntryController {
 
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
-        journalEntityId: entryId,
+        journalEntityId: id,
         taskData: task.data.copyWith(
           title: title ?? task.data.title,
           estimate: estimate ?? task.data.estimate,
@@ -189,7 +201,7 @@ class EntryController extends _$EntryController {
 
       await _persistenceLogic.updateEvent(
         entryText: entryTextFromController(controller),
-        journalEntityId: entryId,
+        journalEntityId: id,
         data: event.data.copyWith(
           title: title ?? event.data.title,
           status: status ?? event.data.status,
@@ -199,14 +211,20 @@ class EntryController extends _$EntryController {
       final running = getIt<TimeService>().getCurrent();
 
       await _persistenceLogic.updateJournalEntityText(
-        entryId,
+        id,
         entryTextFromController(controller),
-        running?.meta.id == entryId ? DateTime.now() : entry.meta.dateTo,
+        running?.id == id ? DateTime.now() : entry.meta.dateTo,
       );
+
+      if (stopRecording) {
+        await Future<void>.delayed(const Duration(milliseconds: 100)).then((_) {
+          getIt<TimeService>().stop();
+        });
+      }
     }
 
     await _editorStateService.entryWasSaved(
-      id: entryId,
+      id: id,
       lastSaved: entry.meta.updatedAt,
       controller: controller,
     );
@@ -219,7 +237,7 @@ class EntryController extends _$EntryController {
     if (event != null && event is JournalEvent) {
       await _persistenceLogic.updateEvent(
         entryText: entryTextFromController(controller),
-        journalEntityId: entryId,
+        journalEntityId: id,
         data: event.data.copyWith(
           stars: stars,
         ),
@@ -230,7 +248,8 @@ class EntryController extends _$EntryController {
   Future<bool> delete({
     required bool beamBack,
   }) async {
-    final res = await JournalRepository.deleteJournalEntity(entryId);
+    final res =
+        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
     if (beamBack) {
       getIt<NavService>().beamBack();
     }
@@ -250,7 +269,7 @@ class EntryController extends _$EntryController {
   }
 
   Future<void> toggleStarred() async {
-    final item = await _journalDb.journalEntityById(entryId);
+    final item = await _journalDb.journalEntityById(id);
     if (item != null) {
       final prev = item.meta.starred ?? false;
       await _persistenceLogic.updateJournalEntity(
@@ -263,7 +282,7 @@ class EntryController extends _$EntryController {
   }
 
   Future<void> togglePrivate() async {
-    final item = await _journalDb.journalEntityById(entryId);
+    final item = await _journalDb.journalEntityById(id);
     if (item != null) {
       final prev = item.meta.private ?? false;
       await _persistenceLogic.updateJournalEntity(
@@ -292,7 +311,7 @@ class EntryController extends _$EntryController {
     if (_dirty) {
       state = AsyncData(
         EntryState.dirty(
-          entryId: entryId,
+          entryId: id,
           entry: entry,
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
@@ -303,7 +322,7 @@ class EntryController extends _$EntryController {
     } else {
       state = AsyncData(
         EntryState.saved(
-          entryId: entryId,
+          entryId: id,
           entry: entry,
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
@@ -319,7 +338,7 @@ class EntryController extends _$EntryController {
   }
 
   Future<void> toggleFlagged() async {
-    final item = await _journalDb.journalEntityById(entryId);
+    final item = await _journalDb.journalEntityById(id);
     if (item != null) {
       await _persistenceLogic.updateJournalEntity(
         item,
@@ -340,7 +359,7 @@ class EntryController extends _$EntryController {
     }
 
     final serializedQuill =
-        _editorStateService.getDelta(entryId) ?? entry.entryText?.quill;
+        _editorStateService.getDelta(id) ?? entry.entryText?.quill;
     final markdown =
         entry.entryText?.markdown ?? entry.entryText?.plainText ?? '';
     final quill = serializedQuill ?? markdownToDelta(markdown);
@@ -348,13 +367,13 @@ class EntryController extends _$EntryController {
 
     controller = makeController(
       serializedQuill: quill,
-      selection: _editorStateService.getSelection(entryId),
+      selection: _editorStateService.getSelection(id),
     );
 
     controller.changes.listen((DocChange event) {
       final delta = deltaFromController(controller);
       _editorStateService.saveTempState(
-        id: entryId,
+        id: id,
         json: quillJsonFromDelta(delta),
         lastSaved: entry.meta.updatedAt,
       );
@@ -368,21 +387,21 @@ class EntryController extends _$EntryController {
 
   Future<void> setLanguage(String language) async {
     return SpeechRepository.updateLanguage(
-      journalEntityId: entryId,
+      journalEntityId: id,
       language: language,
     );
   }
 
   Future<void> addTagIds(List<String> addedTagIds) async {
     await TagsRepository.addTagsWithLinked(
-      journalEntityId: entryId,
+      journalEntityId: id,
       addedTagIds: addedTagIds,
     );
   }
 
   Future<void> removeTagId(String tagId) async {
     await TagsRepository.removeTag(
-      journalEntityId: entryId,
+      journalEntityId: id,
       tagId: tagId,
     );
   }
@@ -403,7 +422,7 @@ class EntryController extends _$EntryController {
 
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
-        journalEntityId: entryId,
+        journalEntityId: id,
         taskData: task.data.copyWith(
           checklistIds: filtered,
         ),

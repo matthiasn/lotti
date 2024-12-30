@@ -13,10 +13,6 @@ part 'task_progress_controller.g.dart';
 
 @riverpod
 class TaskProgressController extends _$TaskProgressController {
-  TaskProgressController() {
-    listen();
-  }
-  late final String entryId;
   final _durations = <String, Duration>{};
   final _subscribedIds = <String>{};
   Duration? _estimate;
@@ -37,7 +33,7 @@ class TaskProgressController extends _$TaskProgressController {
 
     _timeServiceSubscription = _timeService.getStream().listen((journalEntity) {
       if (journalEntity != null) {
-        if (_timeService.linkedFrom?.id != entryId) {
+        if (_timeService.linkedFrom?.id != id) {
           return;
         }
 
@@ -50,24 +46,24 @@ class TaskProgressController extends _$TaskProgressController {
 
   @override
   Future<TaskProgressState?> build({required String id}) async {
-    entryId = id;
     _subscribedIds.add(id);
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..onDispose(() => _timeServiceSubscription?.cancel());
     final progress = await _fetch();
+    listen();
     return progress;
   }
 
   Future<TaskProgressState?> _fetch() async {
-    final task = await getIt<JournalDb>().journalEntityById(entryId);
+    final task = await getIt<JournalDb>().journalEntityById(id);
 
     if (task is! Task) {
       return null;
     }
 
     _estimate = task.data.estimate;
-    final items = await getIt<JournalDb>().getLinkedEntities(entryId);
+    final items = await getIt<JournalDb>().getLinkedEntities(id);
     final linkedIds = items.map((item) => item.id).toList();
     _subscribedIds.addAll(linkedIds);
 

@@ -489,22 +489,12 @@ class JournalDb extends _$JournalDb {
   // provided item id.
   Stream<List<String>> watchLinkedEntityIds(
     String linkedFrom, {
-    bool includedHidden = false,
+    bool includeHidden = false,
   }) {
     return linkedJournalEntityIds(
       linkedFrom,
-      includedHidden ? [false, true] : [false],
+      includeHidden ? [false, true] : [false],
     ).watch().asyncMap(getSortedLinkedEntityIds);
-  }
-
-  Stream<List<EntryLink>> watchLinksFromId(
-    String linkedFrom, {
-    bool includedHidden = false,
-  }) {
-    return linksFromId(
-      linkedFrom,
-      includedHidden ? [false, true] : [false],
-    ).watch().asyncMap((m) => m.map(entryLinkFromLinkedDbEntry).toList());
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
@@ -874,13 +864,6 @@ class JournalDb extends _$JournalDb {
     } else {
       return 0;
     }
-  }
-
-  Future<int> removeLink({
-    required String fromId,
-    required String toId,
-  }) async {
-    return deleteLink(fromId, toId);
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_header.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
@@ -25,16 +26,17 @@ class EntryDetailWidget extends ConsumerWidget {
     required this.popOnDelete,
     super.key,
     this.showTaskDetails = false,
-    this.unlinkFn,
     this.parentTags,
     this.linkedFrom,
+    this.link,
   });
 
   final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
-  final Future<void> Function()? unlinkFn;
+
   final JournalEntity? linkedFrom;
+  final EntryLink? link;
   final Set<String>? parentTags;
 
   @override
@@ -74,9 +76,9 @@ class EntryDetailWidget extends ConsumerWidget {
             ),
             EntryDetailsContent(
               itemId,
-              unlinkFn: unlinkFn,
               linkedFrom: linkedFrom,
               parentTags: parentTags,
+              link: link,
             ),
           ],
         ),
@@ -88,15 +90,17 @@ class EntryDetailWidget extends ConsumerWidget {
 class EntryDetailsContent extends ConsumerWidget {
   const EntryDetailsContent(
     this.itemId, {
-    this.unlinkFn,
     this.linkedFrom,
+    this.link,
     this.parentTags,
     super.key,
   });
 
   final String itemId;
-  final Future<void> Function()? unlinkFn;
+
   final JournalEntity? linkedFrom;
+  final EntryLink? link;
+
   final Set<String>? parentTags;
 
   @override
@@ -128,9 +132,9 @@ class EntryDetailsContent extends ConsumerWidget {
       children: [
         EntryDetailHeader(
           entryId: itemId,
-          inLinkedEntries: unlinkFn != null,
+          inLinkedEntries: linkedFrom != null,
           linkedFromId: linkedFrom?.meta.id,
-          unlinkFn: unlinkFn,
+          link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
         item.maybeMap(
@@ -141,10 +145,7 @@ class EntryDetailsContent extends ConsumerWidget {
           checklist: (_) => const SizedBox.shrink(),
           checklistItem: (_) => const SizedBox.shrink(),
           orElse: () {
-            return EditorWidget(
-              entryId: itemId,
-              unlinkFn: unlinkFn,
-            );
+            return EditorWidget(entryId: itemId);
           },
         ),
         item.map(
