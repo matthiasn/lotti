@@ -435,7 +435,7 @@ void main() {
       );
 
       // delete task and expect counts to be updated
-      await JournalRepository.deleteJournalEntity(task.meta.id);
+      await JournalRepository().deleteJournalEntity(task.meta.id);
       expect(await getIt<JournalDb>().watchJournalCount().first, 2);
       expect(await getIt<JournalDb>().getJournalCount(), 2);
       expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
