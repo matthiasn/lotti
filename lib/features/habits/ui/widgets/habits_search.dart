@@ -22,10 +22,9 @@ class HabitsSearchWidget extends StatelessWidget {
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Theme(
-                data: Theme.of(context).copyWith(
-                  inputDecorationTheme: const InputDecorationTheme(),
-                ),
+                data: Theme.of(context).copyWith(),
                 child: SearchBar(
+                  elevation: WidgetStateProperty.all(5),
                   controller: controller,
                   leading: const Padding(
                     padding: EdgeInsets.only(left: 8),

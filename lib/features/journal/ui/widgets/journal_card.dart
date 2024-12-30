@@ -362,6 +362,7 @@ class TaskListCard extends StatelessWidget {
     void onTap() => beamToNamed('/tasks/${task.meta.id}');
 
     return Card(
+      margin: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
       child: ListTile(
         onTap: onTap,
         leading: CategoryColorIcon(task.meta.categoryId),
