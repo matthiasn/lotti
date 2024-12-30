@@ -32,7 +32,12 @@ class TimeRecordingIndicator extends StatelessWidget {
         final backgroundColor = context.colorScheme.surface;
 
         const borderRadius = BorderRadius.only(
-          topRight: Radius.circular(8),
+          topRight: Radius.circular(inputBorderRadius),
+          topLeft: Radius.circular(inputBorderRadius),
+        );
+
+        final borderSide = BorderSide(
+          color: context.colorScheme.error.withAlpha(128),
         );
 
         return GestureDetector(
@@ -47,12 +52,17 @@ class TimeRecordingIndicator extends StatelessWidget {
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: Material(
-              elevation: 8,
+              elevation: 5,
               borderRadius: borderRadius,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: borderRadius,
                   color: backgroundColor,
+                  border: Border(
+                    top: borderSide,
+                    right: borderSide,
+                    left: borderSide,
+                  ),
                 ),
                 width: 105,
                 height: 30,
@@ -65,8 +75,8 @@ class TimeRecordingIndicator extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         durationString,
-                        style: monospaceTextStyle.copyWith(
-                          fontWeight: FontWeight.w400,
+                        style: const TextStyle(
+                          fontFeatures: [FontFeature.tabularFigures()],
                         ),
                       ),
                     ),
