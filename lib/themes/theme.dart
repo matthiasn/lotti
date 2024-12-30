@@ -18,6 +18,8 @@ class AppTheme {
 const double inputBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
 
+const verticalModalSpacer = SizedBox(height: 30);
+
 InputDecoration inputDecoration({
   required ThemeData themeData,
   String? labelText,

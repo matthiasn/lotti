@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/state/ollama_prompt.dart';
 import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/ai/ui/ai_response_preview.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 
 class AiPopUpMenu extends StatelessWidget {
@@ -34,7 +35,7 @@ class AiPopUpMenu extends StatelessWidget {
               journalEntity: journalEntity,
               linkedFromId: linkedFromId,
             ),
-            const SizedBox(height: 40),
+            verticalModalSpacer,
           ],
         ),
       ),
