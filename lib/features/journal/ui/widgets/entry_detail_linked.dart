@@ -1,130 +1,111 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/modal/modal_action_sheet.dart';
-import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/utils/modals.dart';
 
-class LinkedEntriesWidget extends StatefulWidget {
-  const LinkedEntriesWidget({
-    required this.item,
+class LinkedEntriesWidget extends ConsumerWidget {
+  const LinkedEntriesWidget(
+    this.item, {
     super.key,
   });
 
   final JournalEntity item;
 
   @override
-  State<LinkedEntriesWidget> createState() => _LinkedEntriesWidgetState();
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = linkedEntriesControllerProvider(id: item.id);
+    final entryLinks = ref.watch(provider).valueOrNull ?? [];
+
+    if (entryLinks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final color = context.colorScheme.outline;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              context.messages.journalLinkedEntriesLabel,
+              style: TextStyle(color: color),
+            ),
+            IconButton(
+              icon: Icon(Icons.filter_list, color: color),
+              onPressed: () {
+                ModalUtils.showSinglePageModal(
+                  context: context,
+                  builder: (BuildContext _) =>
+                      LinkedFilterModalContent(entryId: item.id),
+                );
+              },
+            ),
+          ],
+        ),
+        ...List.generate(
+          entryLinks.length,
+          (int index) {
+            final link = entryLinks.elementAt(index);
+            final toId = link.toId;
+
+            return EntryDetailWidget(
+              key: Key('${item.id}-$toId'),
+              itemId: toId,
+              popOnDelete: false,
+              parentTags: item.meta.tagIds?.toSet(),
+              linkedFrom: item,
+              link: link,
+            );
+          },
+        ),
+      ],
+    );
+  }
 }
 
-class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
-  bool _includeHidden = false;
-  bool _releaseHideLinkedEntries = false;
+class LinkedFilterModalContent extends ConsumerWidget {
+  const LinkedFilterModalContent({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
 
   @override
-  void initState() {
-    super.initState();
-    getIt<JournalDb>().getConfigFlag(releaseHideLinkedEntries).then((value) {
-      setState(() {
-        _releaseHideLinkedEntries = value;
-      });
-    });
-  }
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = includeHiddenControllerProvider(id: entryId);
+    final notifier = ref.read(provider.notifier);
+    final includeHidden = ref.watch(provider);
+    final color = context.colorScheme.outline;
 
-  @override
-  Widget build(BuildContext context) {
-    final db = getIt<JournalDb>();
-
-    return StreamBuilder<List<String>>(
-      stream: db.watchLinkedEntityIds(
-        widget.item.meta.id,
-        includedHidden: _includeHidden,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 50, left: 20, right: 20),
+      child: Row(
+        children: [
+          Text(
+            context.messages.journalLinkedEntriesHiddenLabel,
+            style: TextStyle(color: color),
+          ),
+          Checkbox(
+            value: includeHidden,
+            side: BorderSide(color: color),
+            onChanged: (value) {
+              notifier.includeHidden = value ?? false;
+            },
+          ),
+        ],
       ),
-      builder: (context, itemsSnapshot) {
-        if (itemsSnapshot.data == null || itemsSnapshot.data!.isEmpty) {
-          return Container();
-        } else {
-          final itemIds = itemsSnapshot.data!;
-
-          return Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    context.messages.journalLinkedEntriesLabel,
-                    style: TextStyle(
-                      color: context.colorScheme.outline,
-                    ),
-                  ),
-                  if (_releaseHideLinkedEntries) ...[
-                    const SizedBox(width: 40),
-                    Text(
-                      // TODO: l10n
-                      'hidden:',
-                      style: TextStyle(
-                        color: context.colorScheme.outline,
-                      ),
-                    ),
-                    // TODO: move to filter bottom sheet, use controller
-                    Checkbox(
-                      value: _includeHidden,
-                      onChanged: (value) {
-                        setState(() {
-                          _includeHidden = value ?? false;
-                        });
-                      },
-                    ),
-                  ],
-                ],
-              ),
-              ...List.generate(
-                itemIds.length,
-                (int index) {
-                  final itemId = itemIds.elementAt(index);
-
-                  Future<void> unlink() async {
-                    const unlinkKey = 'unlinkKey';
-                    final result = await showModalActionSheet<String>(
-                      context: context,
-                      title: context.messages.journalUnlinkQuestion,
-                      actions: [
-                        ModalSheetAction(
-                          icon: Icons.warning,
-                          label: context.messages.journalUnlinkConfirm,
-                          key: unlinkKey,
-                          isDestructiveAction: true,
-                          isDefaultAction: true,
-                        ),
-                      ],
-                    );
-
-                    if (result == unlinkKey) {
-                      await db.removeLink(
-                        fromId: widget.item.meta.id,
-                        toId: itemId,
-                      );
-                    }
-                  }
-
-                  return EntryDetailWidget(
-                    key: Key('$itemId-$itemId'),
-                    itemId: itemId,
-                    popOnDelete: false,
-                    unlinkFn: unlink,
-                    parentTags: widget.item.meta.tagIds?.toSet(),
-                    linkedFrom: widget.item,
-                  );
-                },
-              ),
-            ],
-          );
-        }
-      },
     );
   }
 }

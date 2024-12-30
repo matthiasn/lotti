@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -18,7 +16,6 @@ class EditorWidget extends ConsumerWidget {
     this.maxHeight = double.maxFinite,
     this.padding = 16,
     this.autoFocus = false,
-    this.unlinkFn,
   });
 
   final String entryId;
@@ -26,7 +23,6 @@ class EditorWidget extends ConsumerWidget {
   final double minHeight;
   final bool autoFocus;
   final double padding;
-  final Future<void> Function()? unlinkFn;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

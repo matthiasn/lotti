@@ -5,6 +5,8 @@ linter:
     public_member_api_docs: false
     lines_longer_than_80_chars: false
     flutter_style_todos: false
+    document_ignores: false
+    avoid_catches_without_on_clauses: false
 
 analyzer:
   exclude:

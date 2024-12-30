@@ -23,10 +23,6 @@ part 'day_view_controller.g.dart';
 
 @riverpod
 class DayViewController extends _$DayViewController {
-  DayViewController() {
-    listen();
-  }
-
   StreamSubscription<Set<String>>? _updateSubscription;
   bool _isVisible = true;
 
@@ -60,8 +56,8 @@ class DayViewController extends _$DayViewController {
   @override
   Future<List<CalendarEventData<CalendarEvent>>> build() async {
     ref.onDispose(() => _updateSubscription?.cancel());
-
     final data = await _fetch();
+    listen();
     return data;
   }
 

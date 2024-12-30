@@ -96,8 +96,7 @@ class DurationWidget extends ConsumerWidget {
                         tooltip: 'Stop',
                         color: labelColor,
                         onPressed: () async {
-                          await _timeService.stop();
-                          await saveFn();
+                          await saveFn(stopRecording: true);
                         },
                       ),
                     ),

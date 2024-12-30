@@ -18,10 +18,10 @@ packages:
     dependency: transitive
     description:
       name: accessibility_tools
-      sha256: ae082866ddc7d4b06d7344f20f551d71302c80070d1e6c5f112f1d09b98de95c
+      sha256: b49df78d786610d642f16787a84da737bcc4dd18533a9cb41cb35eb5ceee5e4c
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.3"
+    version: "2.3.0"
   analyzer:
     dependency: "direct dev"
     description:
@@ -370,10 +370,10 @@ packages:
     dependency: "direct main"
     description:
       name: country_flags
-      sha256: dad797491167a5b8dee465b969cb756795d842fdfc3fc1ff93f22e9c1884b73d
+      sha256: "66726c7070d60c2f90c4a1d58980e9188fa04335d6287e98aef835461019c3c2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.0"
+    version: "3.2.0"
   coverage:
     dependency: transitive
     description:
@@ -571,18 +571,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: c2d073d35ad441730812f4ea05b5dd031fb81c5f9786a4f5fb77ecd6307b6f74
+      sha256: cc593c8acaccaf4a5750fac034e06289f572038a38391d4343739789591e6b01
       url: "https://pub.dev"
     source: hosted
-    version: "2.22.1"
+    version: "2.23.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: f4ab5d6976b1e31551ceb82ff597a505bda7818ff4f7be08a1da9d55eb6e730c
+      sha256: fde4fcb5776c2048ecdf672de396e3fdad8e93bf5148b69dd401cf6767a16e0d
       url: "https://pub.dev"
     source: hosted
-    version: "2.22.1"
+    version: "2.23.0"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -627,10 +627,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image
-      sha256: "613875dc319f17546ea07499b5f0774755709a19a36dfde812e5eda9eb7a5c8c"
+      sha256: "93890a88d89ce017789f6c031c32ad8d2c685f1a5c25c169550746d973ca5e44"
       url: "https://pub.dev"
     source: hosted
-    version: "9.0.7"
+    version: "9.0.9"
   extended_image_library:
     dependency: transitive
     description:
@@ -821,10 +821,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_form_builder
-      sha256: c278ef69b08957d484f83413f0e77b656a39b7a7bb4eb8a295da3a820ecc6545
+      sha256: "39aee5a2548df0b3979a83eea38468116a888341fbca8a92c4be18a486a7bb57"
       url: "https://pub.dev"
     source: hosted
-    version: "9.5.0"
+    version: "9.6.0"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -1043,10 +1043,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_quill_delta_from_html
-      sha256: "63873b5391b56daa999ce8fa7dd23dfd7d0417a70e00a647ba450f4a8988afd0"
+      sha256: "3809961f59b323e3ff368921c8f4a2ae559ff05a6bd132e565d7e6180db868e8"
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.3"
+    version: "1.4.5"
   flutter_quill_extensions:
     dependency: "direct main"
     description:
@@ -1157,10 +1157,10 @@ packages:
     dependency: "direct main"
     description:
       name: form_builder_validators
-      sha256: c61ed7b1deecf0e1ebe49e2fa79e3283937c5a21c7e48e3ed9856a4a14e1191a
+      sha256: "517fb884183fff7a0ef3db7d375981011da26ee452f20fb3d2e788ad527ad01d"
       url: "https://pub.dev"
     source: hosted
-    version: "11.0.0"
+    version: "11.1.1"
   freezed:
     dependency: "direct dev"
     description:
@@ -1419,10 +1419,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_android
-      sha256: fa8141602fde3f7e2f81dbf043613eb44dfa325fa0bcf93c0f142c9f7a2c193e
+      sha256: aa6f1280b670861ac45220cc95adc59bb6ae130259d36f980ccb62220dc5e59f
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.12+18"
+    version: "0.8.12+19"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1712,10 +1712,10 @@ packages:
     dependency: transitive
     description:
       name: lints
-      sha256: "4a16b3f03741e1252fda5de3ce712666d010ba2122f8e912c94f9f7b90e1a4c3"
+      sha256: c35bb79562d980e9a453fc715854e1ed39e24e7d0297a880ef54e17f9874a9d7
       url: "https://pub.dev"
     source: hosted
-    version: "5.1.0"
+    version: "5.1.1"
   lists:
     dependency: transitive
     description:
@@ -2208,10 +2208,10 @@ packages:
     dependency: transitive
     description:
       name: pubspec_parse
-      sha256: c799b721d79eb6ee6fa56f00c04b472dcd44a30d258fac2174a6ec57302678f8
+      sha256: "81876843eb50dc2e1e5b151792c9a985c5ed2536914115ed04e9c8528f6647b0"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.0"
+    version: "1.4.0"
   qr:
     dependency: transitive
     description:
@@ -3118,10 +3118,10 @@ packages:
     dependency: "direct dev"
     description:
       name: very_good_analysis
-      sha256: "1fb637c0022034b1f19ea2acb42a3603cbd8314a470646a59a2fb01f5f3a8629"
+      sha256: "62d2b86d183fb81b2edc22913d9f155d26eb5cf3855173adb1f59fac85035c63"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.0"
+    version: "7.0.0"
   video_player:
     dependency: transitive
     description:
@@ -3326,10 +3326,10 @@ packages:
     dependency: transitive
     description:
       name: yaml
-      sha256: "75769501ea3489fca56601ff33454fe45507ea3bfb014161abc3b43ae25989d5"
+      sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.2"
+    version: "3.1.3"
   youtube_explode_dart:
     dependency: transitive
     description:

@@ -18,10 +18,6 @@ part 'time_by_category_controller.g.dart';
 
 @riverpod
 class TimeByCategoryController extends _$TimeByCategoryController {
-  TimeByCategoryController() {
-    listen();
-  }
-
   StreamSubscription<Set<String>>? _updateSubscription;
   bool _isVisible = true;
 
@@ -59,6 +55,7 @@ class TimeByCategoryController extends _$TimeByCategoryController {
     ref.onDispose(() => _updateSubscription?.cancel());
     final timeSpanDays = ref.watch(timeFrameControllerProvider);
     final data = await _fetch(timeSpanDays);
+    listen();
     return data;
   }
 

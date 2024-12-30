@@ -11,10 +11,6 @@ part 'habit_completion_controller.g.dart';
 
 @riverpod
 class HabitCompletionController extends _$HabitCompletionController {
-  HabitCompletionController() {
-    listen();
-  }
-
   late final String _habitId;
   late final DateTime _rangeStart;
   late final DateTime _rangeEnd;
@@ -47,6 +43,7 @@ class HabitCompletionController extends _$HabitCompletionController {
 
     ref.onDispose(() => _updateSubscription?.cancel());
     final results = await _fetch();
+    listen();
     return results;
   }
 

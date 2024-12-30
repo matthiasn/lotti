@@ -7,7 +7,7 @@ part of 'habit_completion_controller.dart';
 // **************************************************************************
 
 String _$habitCompletionControllerHash() =>
-    r'6b03886453fb918bfd8a55213a5b3ce8a50345f5';
+    r'5655bcdd2c0d3997a640fc6fb4294b0f8d788f00';
 
 /// Copied from Dart SDK
 class _SystemHash {
