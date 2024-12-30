@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_prompt_icon_widget.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
@@ -16,6 +17,8 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {
@@ -23,12 +26,10 @@ class EntryDetailHeader extends ConsumerStatefulWidget {
     required this.entryId,
     this.inLinkedEntries = false,
     super.key,
-    this.unlinkFn,
     this.linkedFromId,
   });
 
   final bool inLinkedEntries;
-  final Future<void> Function()? unlinkFn;
   final String entryId;
   final String? linkedFromId;
 
@@ -87,7 +88,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     context: context,
                     entryId: id,
                     inLinkedEntries: widget.inLinkedEntries,
-                    unlinkFn: widget.unlinkFn,
+                    linkedFromId: widget.linkedFromId,
                   ),
                 ),
               ],
@@ -186,8 +187,8 @@ class ExtendedHeaderActions {
   static Future<void> show({
     required BuildContext context,
     required String entryId,
+    required String? linkedFromId,
     required bool inLinkedEntries,
-    required Future<void> Function()? unlinkFn,
   }) async {
     final linkService = getIt<LinkService>();
 
@@ -221,14 +222,10 @@ class ExtendedHeaderActions {
               Navigator.of(context).pop();
             },
           ),
-          if (unlinkFn != null)
-            ListTile(
-              leading: Icon(MdiIcons.linkOff),
-              title: Text(context.messages.journalUnlinkHint),
-              onTap: () {
-                unlinkFn();
-                Navigator.of(context).pop();
-              },
+          if (linkedFromId != null)
+            UnlinkListTile(
+              entryId: entryId,
+              linkedFromId: linkedFromId,
             ),
         ],
       ),
@@ -263,6 +260,53 @@ class TogglePrivateListTile extends ConsumerWidget {
       icon: Icons.shield_outlined,
       activeIcon: Icons.shield,
       activeColor: context.colorScheme.error,
+    );
+  }
+}
+
+class UnlinkListTile extends ConsumerWidget {
+  const UnlinkListTile({
+    required this.entryId,
+    required this.linkedFromId,
+    super.key,
+  });
+
+  final String entryId;
+  final String linkedFromId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    Future<void> unlink() async {
+      final notifier =
+          ref.read(linkedEntriesControllerProvider(id: linkedFromId).notifier);
+
+      const unlinkKey = 'unlinkKey';
+      final result = await showModalActionSheet<String>(
+        context: context,
+        title: context.messages.journalUnlinkQuestion,
+        actions: [
+          ModalSheetAction(
+            icon: Icons.warning,
+            label: context.messages.journalUnlinkConfirm,
+            key: unlinkKey,
+            isDestructiveAction: true,
+            isDefaultAction: true,
+          ),
+        ],
+      );
+
+      if (result == unlinkKey) {
+        await notifier.removeLink(toId: entryId);
+      }
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+
+    return ListTile(
+      leading: const Icon(Icons.link_off_outlined),
+      title: Text(context.messages.journalUnlinkHint),
+      onTap: unlink,
     );
   }
 }

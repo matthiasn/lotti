@@ -5,8 +5,6 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/modal/modal_action_sheet.dart';
-import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
 class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
@@ -22,7 +20,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final provider = linkedEntriesControllerProvider(id: item.id);
-    final notifier = ref.read(provider.notifier);
     final entryLinks = ref.watch(provider).valueOrNull ?? [];
 
     final includeHiddenProvider = includeHiddenControllerProvider(id: item.id);
@@ -61,33 +58,10 @@ class LinkedEntriesWidget extends ConsumerWidget {
           (int index) {
             final itemId = itemIds.elementAt(index);
 
-            // TODO: move to extended entry actions
-            Future<void> unlink() async {
-              const unlinkKey = 'unlinkKey';
-              final result = await showModalActionSheet<String>(
-                context: context,
-                title: context.messages.journalUnlinkQuestion,
-                actions: [
-                  ModalSheetAction(
-                    icon: Icons.warning,
-                    label: context.messages.journalUnlinkConfirm,
-                    key: unlinkKey,
-                    isDestructiveAction: true,
-                    isDefaultAction: true,
-                  ),
-                ],
-              );
-
-              if (result == unlinkKey) {
-                await notifier.removeLink(toId: itemId);
-              }
-            }
-
             return EntryDetailWidget(
               key: Key('$itemId-$itemId'),
               itemId: itemId,
               popOnDelete: false,
-              unlinkFn: unlink,
               parentTags: item.meta.tagIds?.toSet(),
               linkedFrom: item,
             );

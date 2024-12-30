@@ -25,7 +25,6 @@ class EntryDetailWidget extends ConsumerWidget {
     required this.popOnDelete,
     super.key,
     this.showTaskDetails = false,
-    this.unlinkFn,
     this.parentTags,
     this.linkedFrom,
   });
@@ -33,7 +32,7 @@ class EntryDetailWidget extends ConsumerWidget {
   final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
-  final Future<void> Function()? unlinkFn;
+
   final JournalEntity? linkedFrom;
   final Set<String>? parentTags;
 
@@ -74,7 +73,6 @@ class EntryDetailWidget extends ConsumerWidget {
             ),
             EntryDetailsContent(
               itemId,
-              unlinkFn: unlinkFn,
               linkedFrom: linkedFrom,
               parentTags: parentTags,
             ),
@@ -88,14 +86,13 @@ class EntryDetailWidget extends ConsumerWidget {
 class EntryDetailsContent extends ConsumerWidget {
   const EntryDetailsContent(
     this.itemId, {
-    this.unlinkFn,
     this.linkedFrom,
     this.parentTags,
     super.key,
   });
 
   final String itemId;
-  final Future<void> Function()? unlinkFn;
+
   final JournalEntity? linkedFrom;
   final Set<String>? parentTags;
 
@@ -128,9 +125,8 @@ class EntryDetailsContent extends ConsumerWidget {
       children: [
         EntryDetailHeader(
           entryId: itemId,
-          inLinkedEntries: unlinkFn != null,
+          inLinkedEntries: linkedFrom != null,
           linkedFromId: linkedFrom?.meta.id,
-          unlinkFn: unlinkFn,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
         item.maybeMap(
@@ -141,10 +137,7 @@ class EntryDetailsContent extends ConsumerWidget {
           checklist: (_) => const SizedBox.shrink(),
           checklistItem: (_) => const SizedBox.shrink(),
           orElse: () {
-            return EditorWidget(
-              entryId: itemId,
-              unlinkFn: unlinkFn,
-            );
+            return EditorWidget(entryId: itemId);
           },
         ),
         item.map(
