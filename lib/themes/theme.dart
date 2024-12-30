@@ -26,7 +26,9 @@ InputDecoration inputDecoration({
 }) {
   final inputBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(inputBorderRadius),
-    borderSide: BorderSide(color: themeData.colorScheme.outline),
+    borderSide: BorderSide(
+      color: themeData.colorScheme.outline.withAlpha(100),
+    ),
   );
 
   final errorBorder = OutlineInputBorder(
@@ -205,7 +207,12 @@ ThemeData withOverrides(ThemeData themeData) {
     hoverColor: Colors.transparent,
     cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        side: BorderSide(
+          color: themeData.colorScheme.outline.withAlpha(100),
+        ),
+      ),
     ),
     sliderTheme: themeData.sliderTheme.copyWith(
       activeTrackColor: themeData.colorScheme.secondary,
