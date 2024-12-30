@@ -21,7 +21,7 @@ part 'journal_repository.g.dart';
 class JournalRepository {
   JournalRepository();
 
-  static Future<bool> updateCategoryId(
+  Future<bool> updateCategoryId(
     String journalEntityId, {
     required String? categoryId,
   }) async {
@@ -54,7 +54,7 @@ class JournalRepository {
     return true;
   }
 
-  static Future<bool> deleteJournalEntity(
+  Future<bool> deleteJournalEntity(
     String journalEntityId,
   ) async {
     try {
@@ -89,7 +89,7 @@ class JournalRepository {
     return true;
   }
 
-  static Future<bool> updateJournalEntityDate(
+  Future<bool> updateJournalEntityDate(
     String journalEntityId, {
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -104,15 +104,14 @@ class JournalRepository {
         return false;
       }
 
-      await persistenceLogic.updateDbEntity(
-        journalEntity.copyWith(
-          meta: await persistenceLogic.updateMetadata(
-            journalEntity.meta,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-          ),
+      final updated = journalEntity.copyWith(
+        meta: await persistenceLogic.updateMetadata(
+          journalEntity.meta,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
         ),
       );
+      await persistenceLogic.updateDbEntity(updated);
     } catch (exception, stackTrace) {
       getIt<LoggingDb>().captureException(
         exception,

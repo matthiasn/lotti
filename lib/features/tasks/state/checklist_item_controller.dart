@@ -44,7 +44,8 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   Future<bool> delete() async {
-    final res = await JournalRepository.deleteJournalEntity(id);
+    final res =
+        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
     state = const AsyncData(null);
     return res;
   }

@@ -28,45 +28,42 @@ part 'entry_controller.g.dart';
 
 @riverpod
 class EntryController extends _$EntryController {
-  EntryController() {
-    listen();
+  void focusNodeListener() {
+    if (focusNode.hasFocus == _isFocused) {
+      return;
+    }
 
-    focusNode.addListener(() {
-      if (focusNode.hasFocus == _isFocused) {
-        return;
-      }
+    _isFocused = focusNode.hasFocus;
+    if (_isFocused) {
+      _shouldShowEditorToolBar = true;
+    }
+    emitState();
 
-      _isFocused = focusNode.hasFocus;
-      if (_isFocused) {
-        _shouldShowEditorToolBar = true;
+    if (isDesktop) {
+      if (focusNode.hasFocus) {
+        hotKeyManager.register(
+          saveHotKey,
+          keyDownHandler: (hotKey) => save(),
+        );
+      } else {
+        hotKeyManager.unregister(saveHotKey);
       }
-      emitState();
-
-      if (isDesktop) {
-        if (focusNode.hasFocus) {
-          hotKeyManager.register(
-            saveHotKey,
-            keyDownHandler: (hotKey) => save(),
-          );
-        } else {
-          hotKeyManager.unregister(saveHotKey);
-        }
-      }
-    });
-
-    taskTitleFocusNode.addListener(() {
-      if (isDesktop) {
-        if (taskTitleFocusNode.hasFocus) {
-          hotKeyManager.register(
-            saveHotKey,
-            keyDownHandler: (hotKey) => save(),
-          );
-        } else {
-          hotKeyManager.unregister(saveHotKey);
-        }
-      }
-    });
+    }
   }
+
+  void taskTitleFocusNodeListener() {
+    if (isDesktop) {
+      if (taskTitleFocusNode.hasFocus) {
+        hotKeyManager.register(
+          saveHotKey,
+          keyDownHandler: (hotKey) => save(),
+        );
+      } else {
+        hotKeyManager.unregister(saveHotKey);
+      }
+    }
+  }
+
   QuillController controller = QuillController.basic();
   final _editorStateService = getIt<EditorStateService>();
   final formKey = GlobalKey<FormBuilderState>();
@@ -92,6 +89,9 @@ class EntryController extends _$EntryController {
   );
 
   void listen() {
+    focusNode.addListener(focusNodeListener);
+    taskTitleFocusNode.addListener(taskTitleFocusNodeListener);
+
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(id)) {
@@ -108,7 +108,17 @@ class EntryController extends _$EntryController {
 
   @override
   Future<EntryState?> build({required String id}) async {
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() {
+        _updateSubscription?.cancel();
+      })
+      ..onDispose(() {
+        focusNode.removeListener(focusNodeListener);
+      })
+      ..onDispose(() {
+        taskTitleFocusNode.removeListener(taskTitleFocusNodeListener);
+      });
+
     final entry = await _fetch();
 
     final lastSaved = entry?.meta.updatedAt;
@@ -120,6 +130,7 @@ class EntryController extends _$EntryController {
         setDirty(value: dirtyFromEditorDrafts);
       });
     }
+    listen();
 
     unawaited(Future.microtask(setController));
 
@@ -137,25 +148,28 @@ class EntryController extends _$EntryController {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    return JournalRepository.updateJournalEntityDate(
-      id,
-      dateFrom: dateFrom,
-      dateTo: dateTo,
-    );
+    return ref.read(journalRepositoryProvider).updateJournalEntityDate(
+          id,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+        );
   }
 
   Future<bool> updateCategoryId(String? categoryId) async {
-    return JournalRepository.updateCategoryId(
-      id,
-      categoryId: categoryId,
-    );
+    return ref.read(journalRepositoryProvider).updateCategoryId(
+          id,
+          categoryId: categoryId,
+        );
   }
 
   Future<JournalEntity?> _fetch() async {
     return _journalDb.journalEntityById(id);
   }
 
-  Future<void> save({Duration? estimate}) async {
+  Future<void> save({
+    Duration? estimate,
+    bool stopRecording = false,
+  }) async {
     final entry = state.value?.entry;
     if (entry == null) {
       return;
@@ -199,8 +213,14 @@ class EntryController extends _$EntryController {
       await _persistenceLogic.updateJournalEntityText(
         id,
         entryTextFromController(controller),
-        running?.meta.id == id ? DateTime.now() : entry.meta.dateTo,
+        running?.id == id ? DateTime.now() : entry.meta.dateTo,
       );
+
+      if (stopRecording) {
+        await Future<void>.delayed(const Duration(milliseconds: 100)).then((_) {
+          getIt<TimeService>().stop();
+        });
+      }
     }
 
     await _editorStateService.entryWasSaved(
@@ -228,7 +248,8 @@ class EntryController extends _$EntryController {
   Future<bool> delete({
     required bool beamBack,
   }) async {
-    final res = await JournalRepository.deleteJournalEntity(id);
+    final res =
+        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
     if (beamBack) {
       getIt<NavService>().beamBack();
     }
