@@ -12,9 +12,6 @@ part 'checklist_item_controller.g.dart';
 
 @riverpod
 class ChecklistItemController extends _$ChecklistItemController {
-  ChecklistItemController() {
-    listen();
-  }
   StreamSubscription<Set<String>>? _updateSubscription;
 
   void listen() {
@@ -32,7 +29,9 @@ class ChecklistItemController extends _$ChecklistItemController {
   @override
   Future<ChecklistItem?> build({required String id}) async {
     ref.onDispose(() => _updateSubscription?.cancel());
-    return _fetch();
+    final item = await _fetch();
+    listen();
+    return item;
   }
 
   Future<ChecklistItem?> _fetch() async {

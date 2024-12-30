@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SwitchListTile extends StatelessWidget {
   const SwitchListTile({
@@ -151,6 +153,41 @@ class ToggleMapListTile extends ConsumerWidget {
       value: entryState.showMap,
       icon: Icons.map_outlined,
       activeIcon: Icons.map,
+      activeColor: Theme.of(context).primaryColor,
+    );
+  }
+}
+
+class ToggleHiddenListTile extends ConsumerWidget {
+  const ToggleHiddenListTile({
+    required this.entryId,
+    required this.link,
+    super.key,
+  });
+
+  final String entryId;
+  final EntryLink link;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = linkedEntriesControllerProvider(id: link.fromId);
+    final notifier = ref.read(provider.notifier);
+    final isHidden = link.hidden ?? false;
+
+    void updateLink() {
+      final hidden = link.hidden ?? false;
+      final updatedLink = link.copyWith(hidden: !hidden);
+      notifier.updateLink(updatedLink);
+      Navigator.of(context).pop();
+    }
+
+    return SwitchListTile(
+      // TODO: l10n
+      title: isHidden ? 'Un-Hide' : 'Hide',
+      onPressed: updateLink,
+      value: isHidden,
+      icon: MdiIcons.archive,
+      activeIcon: MdiIcons.archiveCancel,
       activeColor: Theme.of(context).primaryColor,
     );
   }

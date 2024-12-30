@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_prompt_icon_widget.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -17,11 +18,13 @@ class EntryDetailHeader extends ConsumerStatefulWidget {
     this.inLinkedEntries = false,
     super.key,
     this.linkedFromId,
+    this.link,
   });
 
   final bool inLinkedEntries;
   final String entryId;
   final String? linkedFromId;
+  final EntryLink? link;
 
   @override
   ConsumerState<EntryDetailHeader> createState() => _EntryDetailHeaderState();
@@ -79,6 +82,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     entryId: id,
                     inLinkedEntries: widget.inLinkedEntries,
                     linkedFromId: widget.linkedFromId,
+                    link: widget.link,
                   ),
                 ),
               ],

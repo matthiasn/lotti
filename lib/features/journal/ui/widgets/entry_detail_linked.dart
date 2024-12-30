@@ -26,8 +26,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final includeHiddenNotifier = ref.read(includeHiddenProvider.notifier);
     final includeHidden = ref.watch(includeHiddenProvider);
 
-    final itemIds = entryLinks.map((link) => link.toId).toList();
-
     return Column(
       children: [
         Row(
@@ -54,16 +52,18 @@ class LinkedEntriesWidget extends ConsumerWidget {
           ],
         ),
         ...List.generate(
-          itemIds.length,
+          entryLinks.length,
           (int index) {
-            final itemId = itemIds.elementAt(index);
+            final link = entryLinks.elementAt(index);
+            final toId = link.toId;
 
             return EntryDetailWidget(
-              key: Key('$itemId-$itemId'),
-              itemId: itemId,
+              key: Key('${item.id}-$toId'),
+              itemId: toId,
               popOnDelete: false,
               parentTags: item.meta.tagIds?.toSet(),
               linkedFrom: item,
+              link: link,
             );
           },
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_items.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
@@ -15,6 +16,7 @@ class ExtendedHeaderModal {
     required BuildContext context,
     required String entryId,
     required String? linkedFromId,
+    required EntryLink? link,
     required bool inLinkedEntries,
   }) async {
     final linkService = getIt<LinkService>();
@@ -53,6 +55,11 @@ class ExtendedHeaderModal {
             UnlinkListTile(
               entryId: entryId,
               linkedFromId: linkedFromId,
+            ),
+          if (link != null)
+            ToggleHiddenListTile(
+              entryId: entryId,
+              link: link,
             ),
         ],
       ),
