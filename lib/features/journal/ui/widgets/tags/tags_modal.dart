@@ -153,6 +153,7 @@ class _TagsModalState extends ConsumerState<TagsModal> {
               constraints: const BoxConstraints(minHeight: 25),
               child: TagsListWidget(entryId: widget.entryId),
             ),
+            verticalModalSpacer,
           ],
         ),
       ),
