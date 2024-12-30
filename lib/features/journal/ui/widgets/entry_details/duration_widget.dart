@@ -77,7 +77,6 @@ class DurationWidget extends ConsumerWidget {
                     Visibility(
                       visible: !isRecording,
                       child: IconButton(
-                        padding: const EdgeInsets.only(right: 8),
                         icon: const Icon(Icons.fiber_manual_record_sharp),
                         iconSize: 20,
                         tooltip: 'Record',
@@ -90,7 +89,6 @@ class DurationWidget extends ConsumerWidget {
                     Visibility(
                       visible: isRecording,
                       child: IconButton(
-                        padding: const EdgeInsets.only(right: 8),
                         icon: const Icon(Icons.stop),
                         iconSize: 20,
                         tooltip: 'Stop',
@@ -126,7 +124,10 @@ class FormattedTime extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       formatDuration(entryDuration(displayed)),
-      style: monospaceTextStyle.copyWith(color: labelColor),
+      style: TextStyle(
+        fontFeatures: const [FontFeature.tabularFigures()],
+        color: labelColor,
+      ),
     );
   }
 }

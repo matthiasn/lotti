@@ -20,7 +20,7 @@ class ToolbarWidget extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     const duration = Duration(milliseconds: 400);
     const curve = Curves.easeInOutQuint;
-    const height = 60.0;
+    const height = 45.0;
 
     final toolbar = Material(
       elevation: 1,

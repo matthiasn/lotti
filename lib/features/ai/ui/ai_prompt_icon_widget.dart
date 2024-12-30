@@ -34,6 +34,7 @@ class AiPopUpMenu extends StatelessWidget {
               journalEntity: journalEntity,
               linkedFromId: linkedFromId,
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),

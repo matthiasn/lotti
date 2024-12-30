@@ -14,7 +14,7 @@ class EditorWidget extends ConsumerWidget {
     super.key,
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
-    this.padding = 16,
+    this.padding = 10,
     this.autoFocus = false,
   });
 
@@ -40,9 +40,12 @@ class EditorWidget extends ConsumerWidget {
       color: context.colorScheme.surface.brighten(),
       elevation: 0,
       clipBehavior: Clip.hardEdge,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(inputBorderRadius)),
-        side: BorderSide(),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            const BorderRadius.all(Radius.circular(inputBorderRadius)),
+        side: BorderSide(
+          color: context.colorScheme.outline.withAlpha(100),
+        ),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
