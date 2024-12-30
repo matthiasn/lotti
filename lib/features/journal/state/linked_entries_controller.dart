@@ -10,23 +10,20 @@ part 'linked_entries_controller.g.dart';
 
 @riverpod
 class LinkedEntriesController extends _$LinkedEntriesController {
-  LinkedEntriesController() {
-    listen();
-  }
-
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final watchedIds = <String>{};
 
   void listen() {
     _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+        _updateNotifications.updateStream.listen((affectedIds) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
         final includeHidden = ref.read(includeHiddenControllerProvider(id: id));
-        final latest = await _fetch(includeHidden: includeHidden);
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
+        _fetch(includeHidden: includeHidden).then((latest) {
+          if (latest != state.value) {
+            state = AsyncData(latest);
+          }
+        });
       }
     });
   }
@@ -39,6 +36,7 @@ class LinkedEntriesController extends _$LinkedEntriesController {
     final includeHidden = ref.watch(includeHiddenControllerProvider(id: id));
     final res = await _fetch(includeHidden: includeHidden);
     watchedIds.add(id);
+    listen();
     return res;
   }
 
@@ -56,6 +54,10 @@ class LinkedEntriesController extends _$LinkedEntriesController {
           fromId: id,
           toId: toId,
         );
+  }
+
+  Future<void> updateLink(EntryLink link) async {
+    await ref.read(journalRepositoryProvider).updateLink(link);
   }
 }
 

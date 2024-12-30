@@ -13,9 +13,6 @@ part 'task_progress_controller.g.dart';
 
 @riverpod
 class TaskProgressController extends _$TaskProgressController {
-  TaskProgressController() {
-    listen();
-  }
   final _durations = <String, Duration>{};
   final _subscribedIds = <String>{};
   Duration? _estimate;
@@ -54,6 +51,7 @@ class TaskProgressController extends _$TaskProgressController {
       ..onDispose(() => _updateSubscription?.cancel())
       ..onDispose(() => _timeServiceSubscription?.cancel());
     final progress = await _fetch();
+    listen();
     return progress;
   }
 

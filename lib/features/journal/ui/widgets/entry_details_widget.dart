@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -27,6 +28,7 @@ class EntryDetailWidget extends ConsumerWidget {
     this.showTaskDetails = false,
     this.parentTags,
     this.linkedFrom,
+    this.link,
   });
 
   final String itemId;
@@ -34,6 +36,7 @@ class EntryDetailWidget extends ConsumerWidget {
   final bool showTaskDetails;
 
   final JournalEntity? linkedFrom;
+  final EntryLink? link;
   final Set<String>? parentTags;
 
   @override
@@ -75,6 +78,7 @@ class EntryDetailWidget extends ConsumerWidget {
               itemId,
               linkedFrom: linkedFrom,
               parentTags: parentTags,
+              link: link,
             ),
           ],
         ),
@@ -87,6 +91,7 @@ class EntryDetailsContent extends ConsumerWidget {
   const EntryDetailsContent(
     this.itemId, {
     this.linkedFrom,
+    this.link,
     this.parentTags,
     super.key,
   });
@@ -94,6 +99,8 @@ class EntryDetailsContent extends ConsumerWidget {
   final String itemId;
 
   final JournalEntity? linkedFrom;
+  final EntryLink? link;
+
   final Set<String>? parentTags;
 
   @override
@@ -127,6 +134,7 @@ class EntryDetailsContent extends ConsumerWidget {
           entryId: itemId,
           inLinkedEntries: linkedFrom != null,
           linkedFromId: linkedFrom?.meta.id,
+          link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
         item.maybeMap(

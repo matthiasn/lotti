@@ -13,9 +13,6 @@ part 'checklist_controller.g.dart';
 
 @riverpod
 class ChecklistController extends _$ChecklistController {
-  ChecklistController() {
-    listen();
-  }
   final subscribedIds = <String>{};
   StreamSubscription<Set<String>>? _updateSubscription;
 
@@ -40,6 +37,8 @@ class ChecklistController extends _$ChecklistController {
     if (checklist != null) {
       subscribedIds.addAll(checklist.data.linkedChecklistItems);
     }
+
+    listen();
 
     return checklist;
   }

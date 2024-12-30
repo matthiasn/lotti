@@ -10,10 +10,6 @@ part 'journal_card_controller.g.dart';
 
 @riverpod
 class JournalCardController extends _$JournalCardController {
-  JournalCardController() {
-    listen();
-  }
-
   StreamSubscription<Set<String>>? _updateSubscription;
   final JournalDb _journalDb = getIt<JournalDb>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
@@ -34,6 +30,7 @@ class JournalCardController extends _$JournalCardController {
   Future<JournalEntity?> build({required String id}) async {
     ref.onDispose(() => _updateSubscription?.cancel());
     final entry = await _fetch();
+    listen();
     return entry;
   }
 

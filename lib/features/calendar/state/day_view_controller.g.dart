@@ -6,7 +6,7 @@ part of 'day_view_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dayViewControllerHash() => r'215a0aaf8bd878687c11438595e60b058ae4555c';
+String _$dayViewControllerHash() => r'aaedf7688ef98c511904f210e148161d79c7c084';
 
 /// See also [DayViewController].
 @ProviderFor(DayViewController)
