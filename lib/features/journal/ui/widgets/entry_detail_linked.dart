@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 
 class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
@@ -22,9 +23,11 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final provider = linkedEntriesControllerProvider(id: item.id);
     final entryLinks = ref.watch(provider).valueOrNull ?? [];
 
-    final includeHiddenProvider = includeHiddenControllerProvider(id: item.id);
-    final includeHiddenNotifier = ref.read(includeHiddenProvider.notifier);
-    final includeHidden = ref.watch(includeHiddenProvider);
+    if (entryLinks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final color = context.colorScheme.outline;
 
     return Column(
       children: [
@@ -33,20 +36,16 @@ class LinkedEntriesWidget extends ConsumerWidget {
           children: [
             Text(
               context.messages.journalLinkedEntriesLabel,
-              style: TextStyle(
-                color: context.colorScheme.outline,
-              ),
+              style: TextStyle(color: color),
             ),
-            const SizedBox(width: 40),
-            Text(
-              // TODO: l10n
-              'hidden:',
-              style: TextStyle(color: context.colorScheme.outline),
-            ),
-            Checkbox(
-              value: includeHidden,
-              onChanged: (value) {
-                includeHiddenNotifier.includeHidden = value ?? false;
+            IconButton(
+              icon: Icon(Icons.filter_list, color: color),
+              onPressed: () {
+                ModalUtils.showSinglePageModal(
+                  context: context,
+                  builder: (BuildContext _) =>
+                      LinkedFilterModalContent(entryId: item.id),
+                );
               },
             ),
           ],
@@ -68,6 +67,45 @@ class LinkedEntriesWidget extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class LinkedFilterModalContent extends ConsumerWidget {
+  const LinkedFilterModalContent({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = includeHiddenControllerProvider(id: entryId);
+    final notifier = ref.read(provider.notifier);
+    final includeHidden = ref.watch(provider);
+    final color = context.colorScheme.outline;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 50, left: 20, right: 20),
+      child: Row(
+        children: [
+          Text(
+            context.messages.journalLinkedEntriesHiddenLabel,
+            style: TextStyle(color: color),
+          ),
+          Checkbox(
+            value: includeHidden,
+            side: BorderSide(color: color),
+            onChanged: (value) {
+              notifier.includeHidden = value ?? false;
+            },
+          ),
+        ],
+      ),
     );
   }
 }
