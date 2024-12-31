@@ -8,6 +8,7 @@ import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -61,6 +62,7 @@ class ExtendedHeaderModal {
               entryId: entryId,
               link: link,
             ),
+          verticalModalSpacer,
         ],
       ),
     );

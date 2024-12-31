@@ -48,11 +48,17 @@ Future<void> processMatrixMessage({
       ) async {
         await saveJournalEntityJson(journalEntity);
         await journalDb.updateJournalEntity(journalEntity);
-        updateNotifications.notify(journalEntity.affectedIds);
+        updateNotifications.notify(
+          journalEntity.affectedIds,
+          fromSync: true,
+        );
       },
       entryLink: (EntryLink entryLink, SyncEntryStatus _) {
         journalDb.upsertEntryLink(entryLink);
-        updateNotifications.notify({entryLink.fromId, entryLink.toId});
+        updateNotifications.notify(
+          {entryLink.fromId, entryLink.toId},
+          fromSync: true,
+        );
       },
       entityDefinition: (
         EntityDefinition entityDefinition,
