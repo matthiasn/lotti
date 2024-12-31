@@ -40,7 +40,9 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
   @override
   void initState() {
     super.initState();
-    _healthImport.fetchHealthDataDelta(widget.chartConfig.healthType);
+    Future.delayed(Duration(milliseconds: 200 + Random().nextInt(100)), () {
+      _healthImport.fetchHealthDataDelta(widget.chartConfig.healthType);
+    });
   }
 
   @override
