@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -40,6 +41,10 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
   @override
   void initState() {
     super.initState();
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return;
+    }
+
     Future.delayed(Duration(milliseconds: 200 + Random().nextInt(100)), () {
       _healthImport.fetchHealthDataDelta(widget.chartConfig.healthType);
     });
