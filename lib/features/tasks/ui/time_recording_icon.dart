@@ -1,4 +1,3 @@
-import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
@@ -32,12 +31,9 @@ class TimeRecordingIcon extends StatelessWidget {
 
         return Padding(
           padding: padding,
-          child: AvatarGlow(
-            glowColor: context.colorScheme.error,
-            child: ColorIcon(
-              context.colorScheme.error,
-              size: 12,
-            ),
+          child: ColorIcon(
+            context.colorScheme.error,
+            size: 12,
           ),
         );
       },
@@ -51,12 +47,9 @@ class TimeRecordingIndicatorDot extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    return AvatarGlow(
-      glowColor: context.colorScheme.error,
-      child: ColorIcon(
-        context.colorScheme.error,
-        size: 12,
-      ),
+    return ColorIcon(
+      context.colorScheme.error,
+      size: 12,
     );
   }
 }
