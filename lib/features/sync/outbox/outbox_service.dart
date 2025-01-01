@@ -45,6 +45,7 @@ class OutboxService {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       final vectorClockService = getIt<VectorClockService>();
       final hostHash = await vectorClockService.getHostHash();
       final host = await vectorClockService.getHost();
