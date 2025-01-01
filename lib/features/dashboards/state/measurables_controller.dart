@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -54,7 +55,6 @@ class MeasurableChartDataController extends _$MeasurableChartDataController {
 
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  AggregationType? _aggregationType;
 
   void listen() {
     _updateSubscription =
@@ -69,11 +69,10 @@ class MeasurableChartDataController extends _$MeasurableChartDataController {
   }
 
   @override
-  Future<List<Observation>> build({
+  Future<List<JournalEntity>> build({
     required String measurableDataTypeId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-    AggregationType? dashboardDefinedAggregationType,
   }) async {
     ref
       ..onDispose(() {
@@ -81,28 +80,53 @@ class MeasurableChartDataController extends _$MeasurableChartDataController {
       })
       ..cacheFor(dashboardCacheDuration);
 
-    _aggregationType = ref
-        .watch(
-          aggregationTypeControllerProvider(
-            measurableDataTypeId: measurableDataTypeId,
-            dashboardDefinedAggregationType: dashboardDefinedAggregationType,
-          ),
-        )
-        .valueOrNull;
-
     final data = await _fetch();
     listen();
     return data;
   }
 
-  Future<List<Observation>> _fetch() async {
-    final measurements = await _journalDb.getMeasurementsByType(
+  Future<List<JournalEntity>> _fetch() async {
+    return _journalDb.getMeasurementsByType(
       type: measurableDataTypeId,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );
+  }
+}
 
-    final aggregationType = _aggregationType ?? AggregationType.dailySum;
+@riverpod
+class MeasurableObservationsController
+    extends _$MeasurableObservationsController {
+  @override
+  Future<List<Observation>> build({
+    required String measurableDataTypeId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    AggregationType? dashboardDefinedAggregationType,
+  }) async {
+    ref.cacheFor(dashboardCacheDuration);
+
+    final measurements = ref
+            .watch(
+              measurableChartDataControllerProvider(
+                measurableDataTypeId: measurableDataTypeId,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            )
+            .valueOrNull ??
+        [];
+
+    final aggregationType = ref
+            .watch(
+              aggregationTypeControllerProvider(
+                measurableDataTypeId: measurableDataTypeId,
+                dashboardDefinedAggregationType:
+                    dashboardDefinedAggregationType,
+              ),
+            )
+            .valueOrNull ??
+        AggregationType.dailySum;
 
     return switch (aggregationType) {
       AggregationType.none => aggregateMeasurementNone(measurements),

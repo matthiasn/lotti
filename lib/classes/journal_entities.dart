@@ -214,6 +214,11 @@ extension JournalEntityExtension on JournalEntity {
       ids.addAll(checklistItem.data.linkedChecklists);
     }
 
+    if (this is MeasurementEntry) {
+      final checklistItem = this as MeasurementEntry;
+      ids.add(checklistItem.data.dataTypeId);
+    }
+
     return ids;
   }
 }

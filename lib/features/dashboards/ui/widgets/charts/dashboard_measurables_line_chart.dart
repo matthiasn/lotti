@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart_info.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 

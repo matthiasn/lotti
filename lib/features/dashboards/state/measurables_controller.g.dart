@@ -7,7 +7,7 @@ part of 'measurables_controller.dart';
 // **************************************************************************
 
 String _$measurableDataTypeControllerHash() =>
-    r'2a28aa20dc0c5e0e19b11f342b11c8a977491008';
+    r'2692c821723c36f5b6c417c2cdfccf4de32f23fd';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -180,7 +180,7 @@ class _MeasurableDataTypeControllerProviderElement
 }
 
 String _$aggregationTypeControllerHash() =>
-    r'0e5ebfe61ed46efd31230fc91bd1f81226caeef7';
+    r'462b5e4da76a0147c2e3a33ca1d319fabb325e28';
 
 abstract class _$AggregationTypeController
     extends BuildlessAutoDisposeAsyncNotifier<AggregationType> {
@@ -357,20 +357,18 @@ class _AggregationTypeControllerProviderElement
 }
 
 String _$measurableChartDataControllerHash() =>
-    r'd1ac2d48447f5dd52b388e4fbfb13bc4d3f05797';
+    r'c0f67d690b9369db464f84616a1052a5d1423129';
 
 abstract class _$MeasurableChartDataController
-    extends BuildlessAutoDisposeAsyncNotifier<List<Observation>> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<JournalEntity>> {
   late final String measurableDataTypeId;
   late final DateTime rangeStart;
   late final DateTime rangeEnd;
-  late final AggregationType? dashboardDefinedAggregationType;
 
-  FutureOr<List<Observation>> build({
+  FutureOr<List<JournalEntity>> build({
     required String measurableDataTypeId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-    AggregationType? dashboardDefinedAggregationType,
   });
 }
 
@@ -381,7 +379,7 @@ const measurableChartDataControllerProvider =
 
 /// See also [MeasurableChartDataController].
 class MeasurableChartDataControllerFamily
-    extends Family<AsyncValue<List<Observation>>> {
+    extends Family<AsyncValue<List<JournalEntity>>> {
   /// See also [MeasurableChartDataController].
   const MeasurableChartDataControllerFamily();
 
@@ -390,13 +388,11 @@ class MeasurableChartDataControllerFamily
     required String measurableDataTypeId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-    AggregationType? dashboardDefinedAggregationType,
   }) {
     return MeasurableChartDataControllerProvider(
       measurableDataTypeId: measurableDataTypeId,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
-      dashboardDefinedAggregationType: dashboardDefinedAggregationType,
     );
   }
 
@@ -408,7 +404,6 @@ class MeasurableChartDataControllerFamily
       measurableDataTypeId: provider.measurableDataTypeId,
       rangeStart: provider.rangeStart,
       rangeEnd: provider.rangeEnd,
-      dashboardDefinedAggregationType: provider.dashboardDefinedAggregationType,
     );
   }
 
@@ -430,19 +425,17 @@ class MeasurableChartDataControllerFamily
 /// See also [MeasurableChartDataController].
 class MeasurableChartDataControllerProvider
     extends AutoDisposeAsyncNotifierProviderImpl<MeasurableChartDataController,
-        List<Observation>> {
+        List<JournalEntity>> {
   /// See also [MeasurableChartDataController].
   MeasurableChartDataControllerProvider({
     required String measurableDataTypeId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-    AggregationType? dashboardDefinedAggregationType,
   }) : this._internal(
           () => MeasurableChartDataController()
             ..measurableDataTypeId = measurableDataTypeId
             ..rangeStart = rangeStart
-            ..rangeEnd = rangeEnd
-            ..dashboardDefinedAggregationType = dashboardDefinedAggregationType,
+            ..rangeEnd = rangeEnd,
           from: measurableChartDataControllerProvider,
           name: r'measurableChartDataControllerProvider',
           debugGetCreateSourceHash:
@@ -455,10 +448,215 @@ class MeasurableChartDataControllerProvider
           measurableDataTypeId: measurableDataTypeId,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-          dashboardDefinedAggregationType: dashboardDefinedAggregationType,
         );
 
   MeasurableChartDataControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.measurableDataTypeId,
+    required this.rangeStart,
+    required this.rangeEnd,
+  }) : super.internal();
+
+  final String measurableDataTypeId;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+
+  @override
+  FutureOr<List<JournalEntity>> runNotifierBuild(
+    covariant MeasurableChartDataController notifier,
+  ) {
+    return notifier.build(
+      measurableDataTypeId: measurableDataTypeId,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+  }
+
+  @override
+  Override overrideWith(MeasurableChartDataController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: MeasurableChartDataControllerProvider._internal(
+        () => create()
+          ..measurableDataTypeId = measurableDataTypeId
+          ..rangeStart = rangeStart
+          ..rangeEnd = rangeEnd,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        measurableDataTypeId: measurableDataTypeId,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<MeasurableChartDataController,
+      List<JournalEntity>> createElement() {
+    return _MeasurableChartDataControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MeasurableChartDataControllerProvider &&
+        other.measurableDataTypeId == measurableDataTypeId &&
+        other.rangeStart == rangeStart &&
+        other.rangeEnd == rangeEnd;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, measurableDataTypeId.hashCode);
+    hash = _SystemHash.combine(hash, rangeStart.hashCode);
+    hash = _SystemHash.combine(hash, rangeEnd.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin MeasurableChartDataControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<List<JournalEntity>> {
+  /// The parameter `measurableDataTypeId` of this provider.
+  String get measurableDataTypeId;
+
+  /// The parameter `rangeStart` of this provider.
+  DateTime get rangeStart;
+
+  /// The parameter `rangeEnd` of this provider.
+  DateTime get rangeEnd;
+}
+
+class _MeasurableChartDataControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<
+        MeasurableChartDataController,
+        List<JournalEntity>> with MeasurableChartDataControllerRef {
+  _MeasurableChartDataControllerProviderElement(super.provider);
+
+  @override
+  String get measurableDataTypeId =>
+      (origin as MeasurableChartDataControllerProvider).measurableDataTypeId;
+  @override
+  DateTime get rangeStart =>
+      (origin as MeasurableChartDataControllerProvider).rangeStart;
+  @override
+  DateTime get rangeEnd =>
+      (origin as MeasurableChartDataControllerProvider).rangeEnd;
+}
+
+String _$measurableObservationsControllerHash() =>
+    r'dd0b11e9f3a0aa6e3b79e408b741c1b355dd49d6';
+
+abstract class _$MeasurableObservationsController
+    extends BuildlessAutoDisposeAsyncNotifier<List<Observation>> {
+  late final String measurableDataTypeId;
+  late final DateTime rangeStart;
+  late final DateTime rangeEnd;
+  late final AggregationType? dashboardDefinedAggregationType;
+
+  FutureOr<List<Observation>> build({
+    required String measurableDataTypeId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    AggregationType? dashboardDefinedAggregationType,
+  });
+}
+
+/// See also [MeasurableObservationsController].
+@ProviderFor(MeasurableObservationsController)
+const measurableObservationsControllerProvider =
+    MeasurableObservationsControllerFamily();
+
+/// See also [MeasurableObservationsController].
+class MeasurableObservationsControllerFamily
+    extends Family<AsyncValue<List<Observation>>> {
+  /// See also [MeasurableObservationsController].
+  const MeasurableObservationsControllerFamily();
+
+  /// See also [MeasurableObservationsController].
+  MeasurableObservationsControllerProvider call({
+    required String measurableDataTypeId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    AggregationType? dashboardDefinedAggregationType,
+  }) {
+    return MeasurableObservationsControllerProvider(
+      measurableDataTypeId: measurableDataTypeId,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+      dashboardDefinedAggregationType: dashboardDefinedAggregationType,
+    );
+  }
+
+  @override
+  MeasurableObservationsControllerProvider getProviderOverride(
+    covariant MeasurableObservationsControllerProvider provider,
+  ) {
+    return call(
+      measurableDataTypeId: provider.measurableDataTypeId,
+      rangeStart: provider.rangeStart,
+      rangeEnd: provider.rangeEnd,
+      dashboardDefinedAggregationType: provider.dashboardDefinedAggregationType,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'measurableObservationsControllerProvider';
+}
+
+/// See also [MeasurableObservationsController].
+class MeasurableObservationsControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<
+        MeasurableObservationsController, List<Observation>> {
+  /// See also [MeasurableObservationsController].
+  MeasurableObservationsControllerProvider({
+    required String measurableDataTypeId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    AggregationType? dashboardDefinedAggregationType,
+  }) : this._internal(
+          () => MeasurableObservationsController()
+            ..measurableDataTypeId = measurableDataTypeId
+            ..rangeStart = rangeStart
+            ..rangeEnd = rangeEnd
+            ..dashboardDefinedAggregationType = dashboardDefinedAggregationType,
+          from: measurableObservationsControllerProvider,
+          name: r'measurableObservationsControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$measurableObservationsControllerHash,
+          dependencies: MeasurableObservationsControllerFamily._dependencies,
+          allTransitiveDependencies:
+              MeasurableObservationsControllerFamily._allTransitiveDependencies,
+          measurableDataTypeId: measurableDataTypeId,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+          dashboardDefinedAggregationType: dashboardDefinedAggregationType,
+        );
+
+  MeasurableObservationsControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -478,7 +676,7 @@ class MeasurableChartDataControllerProvider
 
   @override
   FutureOr<List<Observation>> runNotifierBuild(
-    covariant MeasurableChartDataController notifier,
+    covariant MeasurableObservationsController notifier,
   ) {
     return notifier.build(
       measurableDataTypeId: measurableDataTypeId,
@@ -489,10 +687,10 @@ class MeasurableChartDataControllerProvider
   }
 
   @override
-  Override overrideWith(MeasurableChartDataController Function() create) {
+  Override overrideWith(MeasurableObservationsController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: MeasurableChartDataControllerProvider._internal(
+      override: MeasurableObservationsControllerProvider._internal(
         () => create()
           ..measurableDataTypeId = measurableDataTypeId
           ..rangeStart = rangeStart
@@ -512,14 +710,14 @@ class MeasurableChartDataControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<MeasurableChartDataController,
+  AutoDisposeAsyncNotifierProviderElement<MeasurableObservationsController,
       List<Observation>> createElement() {
-    return _MeasurableChartDataControllerProviderElement(this);
+    return _MeasurableObservationsControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is MeasurableChartDataControllerProvider &&
+    return other is MeasurableObservationsControllerProvider &&
         other.measurableDataTypeId == measurableDataTypeId &&
         other.rangeStart == rangeStart &&
         other.rangeEnd == rangeEnd &&
@@ -541,7 +739,7 @@ class MeasurableChartDataControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin MeasurableChartDataControllerRef
+mixin MeasurableObservationsControllerRef
     on AutoDisposeAsyncNotifierProviderRef<List<Observation>> {
   /// The parameter `measurableDataTypeId` of this provider.
   String get measurableDataTypeId;
@@ -556,24 +754,24 @@ mixin MeasurableChartDataControllerRef
   AggregationType? get dashboardDefinedAggregationType;
 }
 
-class _MeasurableChartDataControllerProviderElement
+class _MeasurableObservationsControllerProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<
-        MeasurableChartDataController,
-        List<Observation>> with MeasurableChartDataControllerRef {
-  _MeasurableChartDataControllerProviderElement(super.provider);
+        MeasurableObservationsController,
+        List<Observation>> with MeasurableObservationsControllerRef {
+  _MeasurableObservationsControllerProviderElement(super.provider);
 
   @override
   String get measurableDataTypeId =>
-      (origin as MeasurableChartDataControllerProvider).measurableDataTypeId;
+      (origin as MeasurableObservationsControllerProvider).measurableDataTypeId;
   @override
   DateTime get rangeStart =>
-      (origin as MeasurableChartDataControllerProvider).rangeStart;
+      (origin as MeasurableObservationsControllerProvider).rangeStart;
   @override
   DateTime get rangeEnd =>
-      (origin as MeasurableChartDataControllerProvider).rangeEnd;
+      (origin as MeasurableObservationsControllerProvider).rangeEnd;
   @override
   AggregationType? get dashboardDefinedAggregationType =>
-      (origin as MeasurableChartDataControllerProvider)
+      (origin as MeasurableObservationsControllerProvider)
           .dashboardDefinedAggregationType;
 }
 // ignore_for_file: type=lint
