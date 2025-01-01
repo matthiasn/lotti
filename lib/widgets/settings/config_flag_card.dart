@@ -31,6 +31,7 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: ListTile(
         contentPadding: const EdgeInsets.only(
           left: 24,
