@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'linked_from_entries_controller.g.dart';
@@ -31,7 +32,10 @@ class LinkedFromEntriesController extends _$LinkedFromEntriesController {
   Future<List<JournalEntity>> build({
     required String id,
   }) async {
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
+
     final res = await _fetch();
     watchedIds.add(id);
     listen();

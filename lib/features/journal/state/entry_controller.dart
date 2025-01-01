@@ -21,6 +21,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -117,7 +118,8 @@ class EntryController extends _$EntryController {
       })
       ..onDispose(() {
         taskTitleFocusNode.removeListener(taskTitleFocusNodeListener);
-      });
+      })
+      ..cacheFor(entryCacheDuration);
 
     final entry = await _fetch();
 

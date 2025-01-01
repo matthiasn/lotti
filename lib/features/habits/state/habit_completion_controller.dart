@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -41,7 +42,10 @@ class HabitCompletionController extends _$HabitCompletionController {
     _rangeStart = rangeStart;
     _rangeEnd = rangeEnd;
 
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
+
     final results = await _fetch();
     listen();
     return results;

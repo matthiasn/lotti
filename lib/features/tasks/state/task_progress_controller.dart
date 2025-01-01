@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_progress_controller.g.dart';
@@ -49,7 +50,9 @@ class TaskProgressController extends _$TaskProgressController {
     _subscribedIds.add(id);
     ref
       ..onDispose(() => _updateSubscription?.cancel())
-      ..onDispose(() => _timeServiceSubscription?.cancel());
+      ..onDispose(() => _timeServiceSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
+
     final progress = await _fetch();
     listen();
     return progress;
