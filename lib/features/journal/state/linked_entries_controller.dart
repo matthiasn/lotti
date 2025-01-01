@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'linked_entries_controller.g.dart';
@@ -32,7 +33,10 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   Future<List<EntryLink>> build({
     required String id,
   }) async {
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
+
     final includeHidden = ref.watch(includeHiddenControllerProvider(id: id));
     final res = await _fetch(includeHidden: includeHidden);
     watchedIds.add(id);

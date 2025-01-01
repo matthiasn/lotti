@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -55,7 +56,9 @@ class DayViewController extends _$DayViewController {
 
   @override
   Future<List<CalendarEventData<CalendarEvent>>> build() async {
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
     final data = await _fetch();
     listen();
     return data;
