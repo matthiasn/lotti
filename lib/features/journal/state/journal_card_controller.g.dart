@@ -7,7 +7,7 @@ part of 'journal_card_controller.dart';
 // **************************************************************************
 
 String _$journalCardControllerHash() =>
-    r'96273f7d25a9ef00661fc3f022079ffb01fce194';
+    r'a5b5f2c9866f0d07873b759e611946cbe28016ca';
 
 /// Copied from Dart SDK
 class _SystemHash {

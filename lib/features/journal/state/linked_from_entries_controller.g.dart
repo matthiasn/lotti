@@ -7,7 +7,7 @@ part of 'linked_from_entries_controller.dart';
 // **************************************************************************
 
 String _$linkedFromEntriesControllerHash() =>
-    r'da38ecc6b51947a559336ed804272bddf78d8e9b';
+    r'f0e539e16b539e4177fd402ed1150b391b3248f3';
 
 /// Copied from Dart SDK
 class _SystemHash {
