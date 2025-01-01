@@ -671,6 +671,15 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
+  Future<List<JournalEntity>> getMeasurementsByType({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await measurementsByType(type, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
+  }
+
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({
     required String habitId,
     required DateTime rangeStart,
