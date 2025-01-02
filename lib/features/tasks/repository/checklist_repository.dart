@@ -3,9 +3,9 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_repository.g.dart';
@@ -17,7 +17,7 @@ ChecklistRepository checklistRepository(Ref ref) {
 
 class ChecklistRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
   Future<JournalEntity?> createChecklist({
@@ -80,7 +80,7 @@ class ChecklistRepository {
 
       return newChecklist;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createChecklistEntry',
@@ -108,7 +108,7 @@ class ChecklistRepository {
 
       return newChecklistItem;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createChecklistEntry',
@@ -140,14 +140,14 @@ class ChecklistRepository {
 
           await _persistenceLogic.updateDbEntity(updatedChecklist);
         },
-        orElse: () async => _loggingDb.captureException(
+        orElse: () async => _loggingService.captureException(
           'not a checklist',
           domain: 'persistence_logic',
           subDomain: 'updateChecklist',
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateChecklist',
@@ -177,14 +177,14 @@ class ChecklistRepository {
 
           await _persistenceLogic.updateDbEntity(updatedChecklist);
         },
-        orElse: () async => _loggingDb.captureException(
+        orElse: () async => _loggingService.captureException(
           'not a checklist item',
           domain: 'persistence_logic',
           subDomain: 'updateChecklistItem',
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateChecklistItem',

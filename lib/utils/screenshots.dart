@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -44,7 +44,7 @@ Future<ImageData> takeScreenshotMac() async {
 
     return imageData;
   } catch (exception, stackTrace) {
-    getIt<LoggingDb>().captureException(
+    getIt<LoggingService>().captureException(
       exception,
       domain: 'SCREENSHOT',
       stackTrace: stackTrace,

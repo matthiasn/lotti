@@ -4,11 +4,11 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
 
@@ -40,7 +40,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   final _audioRecorder = AudioRecorder();
   StreamSubscription<Amplitude>? _amplitudeSub;
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   String? _linkedId;
   String? _language;
@@ -85,13 +85,13 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           );
         }
       } else {
-        _loggingDb.captureEvent(
+        _loggingService.captureEvent(
           'no audio recording permission',
           domain: 'recorder_cubit',
         );
       }
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'recorder_cubit',
         stackTrace: stackTrace,
@@ -116,7 +116,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         return entryId;
       }
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'recorder_cubit',
         stackTrace: stackTrace,
