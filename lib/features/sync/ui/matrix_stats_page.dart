@@ -12,7 +12,7 @@ SliverWoltModalSheetPage matrixStatsPage({
 }) {
   return WoltModalSheetPage(
     stickyActionBar: Padding(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      padding: WoltModalConfig.pagePadding,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -39,13 +39,12 @@ SliverWoltModalSheetPage matrixStatsPage({
     ),
     isTopBarLayerAlwaysVisible: true,
     trailingNavBarWidget: IconButton(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      padding: WoltModalConfig.pagePadding,
       icon: const Icon(Icons.close),
       onPressed: Navigator.of(context).pop,
     ),
     child: Padding(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding) +
-          const EdgeInsets.only(bottom: 80),
+      padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
       child: const IncomingStats(),
     ),
   );
