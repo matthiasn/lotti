@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/measurable_utils.dart';
+import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 
-class MeasurementSuggestions extends StatelessWidget {
+class MeasurementSuggestions extends ConsumerWidget {
   const MeasurementSuggestions({
     required this.measurableDataType,
     required this.saveMeasurement,
@@ -23,42 +21,42 @@ class MeasurementSuggestions extends StatelessWidget {
   }) saveMeasurement;
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<JournalEntity>>(
-      stream: getIt<JournalDb>().watchMeasurementsByType(
-        type: measurableDataType.id,
-        rangeStart: DateTime.now().subtract(const Duration(days: 90)),
-        rangeEnd: DateTime.now().add(const Duration(days: 1)),
-      ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<JournalEntity>> measurementsSnapshot,
-      ) {
-        final popularValues = rankedByPopularity(
-          measurements: measurementsSnapshot.data,
-        );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final popularValues = ref
+        .watch(
+          measurableSuggestionsControllerProvider(
+            measurableDataTypeId: measurableDataType.id,
+          ),
+        )
+        .valueOrNull;
 
-        return Wrap(
-          spacing: 5,
-          runSpacing: 5,
-          children: popularValues.map((num value) {
-            final regex = RegExp(r'([.]*0)(?!.*\d)');
-            final label = value.toDouble().toString().replaceAll(regex, '');
+    print(
+        'MeasurableSuggestionsWidget measurableDataTypeId: ${measurableDataType.id}');
+    print('MeasurableSuggestionsWidget popularValues: $popularValues');
 
-            void onPressed() => saveMeasurement(
-                  value: value,
-                  measurableDataType: measurableDataType,
-                  measurementTime: measurementTime,
-                );
+    if (popularValues == null) {
+      return const SizedBox.shrink();
+    }
 
-            return ActionChip(
-              onPressed: onPressed,
-              label: Text(label),
-              disabledColor: Theme.of(context).primaryColor,
+    return Wrap(
+      spacing: 5,
+      runSpacing: 5,
+      children: popularValues.map((num value) {
+        final regex = RegExp(r'([.]*0)(?!.*\d)');
+        final label = value.toDouble().toString().replaceAll(regex, '');
+
+        void onPressed() => saveMeasurement(
+              value: value,
+              measurableDataType: measurableDataType,
+              measurementTime: measurementTime,
             );
-          }).toList(),
+
+        return ActionChip(
+          onPressed: onPressed,
+          label: Text(label),
+          disabledColor: Theme.of(context).primaryColor,
         );
-      },
+      }).toList(),
     );
   }
 }

@@ -555,7 +555,7 @@ class _MeasurableChartDataControllerProviderElement
 }
 
 String _$measurableObservationsControllerHash() =>
-    r'dd0b11e9f3a0aa6e3b79e408b741c1b355dd49d6';
+    r'e60e9fd4ef2c1d232438fe7e73217923a0dd41e1';
 
 abstract class _$MeasurableObservationsController
     extends BuildlessAutoDisposeAsyncNotifier<List<Observation>> {
@@ -773,6 +773,161 @@ class _MeasurableObservationsControllerProviderElement
   AggregationType? get dashboardDefinedAggregationType =>
       (origin as MeasurableObservationsControllerProvider)
           .dashboardDefinedAggregationType;
+}
+
+String _$measurableSuggestionsControllerHash() =>
+    r'775f0746d67c96aa9831fe97415cabd8e6de1889';
+
+abstract class _$MeasurableSuggestionsController
+    extends BuildlessAutoDisposeAsyncNotifier<List<num>?> {
+  late final String measurableDataTypeId;
+
+  FutureOr<List<num>?> build({
+    required String measurableDataTypeId,
+  });
+}
+
+/// See also [MeasurableSuggestionsController].
+@ProviderFor(MeasurableSuggestionsController)
+const measurableSuggestionsControllerProvider =
+    MeasurableSuggestionsControllerFamily();
+
+/// See also [MeasurableSuggestionsController].
+class MeasurableSuggestionsControllerFamily
+    extends Family<AsyncValue<List<num>?>> {
+  /// See also [MeasurableSuggestionsController].
+  const MeasurableSuggestionsControllerFamily();
+
+  /// See also [MeasurableSuggestionsController].
+  MeasurableSuggestionsControllerProvider call({
+    required String measurableDataTypeId,
+  }) {
+    return MeasurableSuggestionsControllerProvider(
+      measurableDataTypeId: measurableDataTypeId,
+    );
+  }
+
+  @override
+  MeasurableSuggestionsControllerProvider getProviderOverride(
+    covariant MeasurableSuggestionsControllerProvider provider,
+  ) {
+    return call(
+      measurableDataTypeId: provider.measurableDataTypeId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'measurableSuggestionsControllerProvider';
+}
+
+/// See also [MeasurableSuggestionsController].
+class MeasurableSuggestionsControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<
+        MeasurableSuggestionsController, List<num>?> {
+  /// See also [MeasurableSuggestionsController].
+  MeasurableSuggestionsControllerProvider({
+    required String measurableDataTypeId,
+  }) : this._internal(
+          () => MeasurableSuggestionsController()
+            ..measurableDataTypeId = measurableDataTypeId,
+          from: measurableSuggestionsControllerProvider,
+          name: r'measurableSuggestionsControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$measurableSuggestionsControllerHash,
+          dependencies: MeasurableSuggestionsControllerFamily._dependencies,
+          allTransitiveDependencies:
+              MeasurableSuggestionsControllerFamily._allTransitiveDependencies,
+          measurableDataTypeId: measurableDataTypeId,
+        );
+
+  MeasurableSuggestionsControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.measurableDataTypeId,
+  }) : super.internal();
+
+  final String measurableDataTypeId;
+
+  @override
+  FutureOr<List<num>?> runNotifierBuild(
+    covariant MeasurableSuggestionsController notifier,
+  ) {
+    return notifier.build(
+      measurableDataTypeId: measurableDataTypeId,
+    );
+  }
+
+  @override
+  Override overrideWith(MeasurableSuggestionsController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: MeasurableSuggestionsControllerProvider._internal(
+        () => create()..measurableDataTypeId = measurableDataTypeId,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        measurableDataTypeId: measurableDataTypeId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<MeasurableSuggestionsController,
+      List<num>?> createElement() {
+    return _MeasurableSuggestionsControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MeasurableSuggestionsControllerProvider &&
+        other.measurableDataTypeId == measurableDataTypeId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, measurableDataTypeId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin MeasurableSuggestionsControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<List<num>?> {
+  /// The parameter `measurableDataTypeId` of this provider.
+  String get measurableDataTypeId;
+}
+
+class _MeasurableSuggestionsControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<
+        MeasurableSuggestionsController,
+        List<num>?> with MeasurableSuggestionsControllerRef {
+  _MeasurableSuggestionsControllerProviderElement(super.provider);
+
+  @override
+  String get measurableDataTypeId =>
+      (origin as MeasurableSuggestionsControllerProvider).measurableDataTypeId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

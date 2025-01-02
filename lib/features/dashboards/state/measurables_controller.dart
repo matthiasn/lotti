@@ -6,6 +6,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/utils/measurable_utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -141,12 +143,39 @@ class MeasurableObservationsController
           rangeEnd: rangeEnd,
         ),
       // TODO: implement average
-      AggregationType.dailyAvg => [],
+      AggregationType.dailyAvg => <Observation>[],
       AggregationType.hourlySum => aggregateSumByHour(
           measurements,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
         ),
     };
+  }
+}
+
+@riverpod
+class MeasurableSuggestionsController
+    extends _$MeasurableSuggestionsController {
+  @override
+  Future<List<num>?> build({
+    required String measurableDataTypeId,
+  }) async {
+    ref.cacheFor(dashboardCacheDuration);
+
+    final rangeStart =
+        DateTime.now().dayAtMidnight.subtract(const Duration(days: 90));
+    final rangeEnd = DateTime.now().dayAtMidnight.add(const Duration(days: 1));
+
+    return rankedByPopularity(
+      measurements: ref
+          .watch(
+            measurableChartDataControllerProvider(
+              measurableDataTypeId: measurableDataTypeId,
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+          )
+          .valueOrNull,
+    );
   }
 }

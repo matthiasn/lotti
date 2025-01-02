@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/get_it.dart';
@@ -38,24 +36,8 @@ void main() {
 
     testWidgets('summary is rendered with title', (tester) async {
       when(
-        () => mockJournalDb.watchMeasurableDataTypeById(measurableCoverage.id),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableCoverage,
-        ]),
-      );
-
-      when(
-        () => mockJournalDb.watchMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableCoverage.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredCoverageEntry],
-        ]),
-      );
+        () => mockJournalDb.getMeasurableDataTypeById(measurableCoverage.id),
+      ).thenAnswer((_) async => measurableCoverage);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
