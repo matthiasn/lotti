@@ -7,7 +7,7 @@ part of 'measurables_controller.dart';
 // **************************************************************************
 
 String _$measurableDataTypeControllerHash() =>
-    r'2692c821723c36f5b6c417c2cdfccf4de32f23fd';
+    r'766d72c5025d5834bcbb5db6d16305039305bff2';
 
 /// Copied from Dart SDK
 class _SystemHash {
