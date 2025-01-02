@@ -30,10 +30,6 @@ class MeasurementSuggestions extends ConsumerWidget {
         )
         .valueOrNull;
 
-    print(
-        'MeasurableSuggestionsWidget measurableDataTypeId: ${measurableDataType.id}');
-    print('MeasurableSuggestionsWidget popularValues: $popularValues');
-
     if (popularValues == null) {
       return const SizedBox.shrink();
     }

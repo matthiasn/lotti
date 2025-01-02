@@ -661,16 +661,6 @@ class JournalDb extends _$JournalDb {
     return res.map(measurableDataType).firstOrNull;
   }
 
-  Stream<List<JournalEntity>> watchMeasurementsByType({
-    required String type,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) {
-    return measurementsByType(type, rangeStart, rangeEnd)
-        .watch()
-        .map(entityStreamMapper);
-  }
-
   Future<List<JournalEntity>> getMeasurementsByType({
     required String type,
     required DateTime rangeStart,
