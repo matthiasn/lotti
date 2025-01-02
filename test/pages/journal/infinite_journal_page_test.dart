@@ -333,14 +333,12 @@ void main() {
       ).thenAnswer((_) => measurableChocolate);
 
       when(
-        () => mockJournalDb.watchMeasurementsByType(
+        () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           type: measurableChocolate.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
-      );
+      ).thenAnswer((_) async => []);
 
       when(
         () => mockJournalDb.getMeasurableDataTypeById(any()),
@@ -428,16 +426,6 @@ void main() {
           measurableCoverage.id,
         ),
       ).thenAnswer((_) => measurableCoverage);
-
-      when(
-        () => mockJournalDb.watchMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableCoverage.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
-      );
 
       when(
         () => mockJournalDb.getMeasurableDataTypeById(any()),
