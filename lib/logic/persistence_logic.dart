@@ -116,7 +116,11 @@ class PersistenceLogic {
           uuidV5Input: json.encode(data),
         ),
       );
-      await createDbEntity(journalEntity, shouldAddGeolocation: false);
+      await createDbEntity(
+        journalEntity,
+        shouldAddGeolocation: false,
+        addTags: false,
+      );
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -140,7 +144,12 @@ class PersistenceLogic {
           uuidV5Input: data.id,
         ),
       );
-      await createDbEntity(workout, shouldAddGeolocation: false);
+
+      await createDbEntity(
+        workout,
+        shouldAddGeolocation: false,
+        addTags: false,
+      );
 
       return workout;
     } catch (exception, stackTrace) {
@@ -365,6 +374,7 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     bool shouldAddGeolocation = true,
     bool enqueueSync = true,
+    bool addTags = true,
     String? linkedId,
   }) async {
     try {
@@ -388,11 +398,18 @@ class PersistenceLogic {
         ),
       );
 
-      final res = await _journalDb.updateJournalEntity(withTags);
+      final res = await _journalDb.updateJournalEntity(
+        withTags,
+        overwrite: false,
+      );
+
       _updateNotifications.notify(withTags.affectedIds);
 
       final saved = res != 0;
-      await _journalDb.addTagged(withTags);
+
+      if (addTags) {
+        await _journalDb.addTagged(withTags);
+      }
 
       if (saved && enqueueSync) {
         await outboxService.enqueueMessage(

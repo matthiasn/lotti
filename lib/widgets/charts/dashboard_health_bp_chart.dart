@@ -87,6 +87,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                   },
                   getDrawingVerticalLine: (value) => gridLine,
                 ),
+                clipData: const FlClipData.horizontal(),
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     tooltipMargin: isMobile ? 24 : 16,
