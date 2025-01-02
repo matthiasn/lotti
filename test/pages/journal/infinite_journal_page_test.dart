@@ -19,6 +19,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -85,6 +86,7 @@ void main() {
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<AsrService>(MockAsrService())

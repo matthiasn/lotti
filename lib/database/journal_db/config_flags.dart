@@ -77,6 +77,13 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableLoggingFlag,
+      description: 'Enable logging?',
+      status: false,
+    ),
+  );
   if (Platform.isMacOS) {
     await db.insertFlagIfNotExists(
       const ConfigFlag(

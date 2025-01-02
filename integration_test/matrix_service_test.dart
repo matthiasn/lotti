@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -114,6 +115,7 @@ void main() {
       getIt
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
@@ -140,7 +142,6 @@ void main() {
           dbName: 'Alice',
           deviceDisplayName: 'Alice',
           overriddenJournalDb: aliceDb,
-          overriddenLoggingDb: LoggingDb(inMemoryDatabase: true),
           overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
         );
 
@@ -167,7 +168,6 @@ void main() {
           dbName: 'Bob',
           deviceDisplayName: 'Bob',
           overriddenJournalDb: bobDb,
-          overriddenLoggingDb: LoggingDb(inMemoryDatabase: true),
           overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
         );
 

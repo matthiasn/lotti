@@ -67,6 +67,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Resend Attachments',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableLoggingFlag,
+    description: 'Enable logging?',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{

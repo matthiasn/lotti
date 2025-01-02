@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/list_extension.dart';
 import 'package:matrix/matrix.dart';
 
 Future<void> listenToTimelineEvents({
   required MatrixService service,
 }) async {
-  final loggingDb = getIt<LoggingDb>();
+  final loggingDb = getIt<LoggingService>();
 
   try {
     final previousTimeline = service.timeline;
@@ -60,10 +60,10 @@ Future<void> listenToTimelineEvents({
 Future<void> processNewTimelineEvents({
   required MatrixService service,
   JournalDb? overriddenJournalDb,
-  LoggingDb? overriddenLoggingDb,
+  LoggingService? overriddenLoggingService,
   SettingsDb? overriddenSettingsDb,
 }) async {
-  final loggingDb = overriddenLoggingDb ?? getIt<LoggingDb>();
+  final loggingService = overriddenLoggingService ?? getIt<LoggingService>();
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
@@ -78,7 +78,7 @@ Future<void> processNewTimelineEvents({
     );
 
     if (timeline == null) {
-      loggingDb.captureEvent(
+      loggingService.captureEvent(
         'Timeline is null',
         domain: 'MATRIX_SERVICE',
         subDomain: 'processNewTimelineEvents',
@@ -121,7 +121,7 @@ Future<void> processNewTimelineEvents({
           }
         }
       } catch (e, stackTrace) {
-        loggingDb.captureException(
+        loggingService.captureException(
           e,
           domain: 'MATRIX_SERVICE',
           subDomain: 'setReadMarker ${service.client.deviceName}',
@@ -130,7 +130,7 @@ Future<void> processNewTimelineEvents({
       }
     }
   } catch (e, stackTrace) {
-    loggingDb.captureException(
+    loggingService.captureException(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'listenToTimelineEvents ${service.client.deviceName}',

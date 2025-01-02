@@ -2,15 +2,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class TagsRepository {
-  static LoggingDb get _loggingDb => getIt<LoggingDb>();
   static JournalDb get _journalDb => getIt<JournalDb>();
   static TagsService get _tagsService => getIt<TagsService>();
   static PersistenceLogic get _persistenceLogic => getIt<PersistenceLogic>();
@@ -35,7 +34,7 @@ class TagsRepository {
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'addTags',
@@ -69,7 +68,7 @@ class TagsRepository {
         );
       }
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'addTagsWithLinked',
@@ -100,7 +99,7 @@ class TagsRepository {
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'removeTag',

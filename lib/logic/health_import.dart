@@ -10,9 +10,9 @@ import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
 
 class HealthImport {
@@ -214,7 +214,7 @@ class HealthImport {
           }
         }
       } catch (e) {
-        getIt<LoggingDb>().captureException(
+        getIt<LoggingService>().captureException(
           e,
           domain: 'HEALTH_IMPORT',
           subDomain: 'fetchHealthData',
