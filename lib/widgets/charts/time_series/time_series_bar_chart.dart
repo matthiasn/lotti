@@ -40,10 +40,6 @@ class TimeSeriesBarChart extends StatelessWidget {
       byDay[day] = observation;
     }
 
-    final minVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(min);
-    final maxVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(max);
-    final valRange = maxVal - minVal;
-
     final dataWithEmptyDays = inRange.map((day) {
       final observation = byDay[day] ?? Observation(DateTime.parse(day), 0);
       return observation;
@@ -162,8 +158,6 @@ class TimeSeriesBarChart extends StatelessWidget {
             show: true,
             border: Border.all(color: const Color(0xff37434d)),
           ),
-          minY: max(minVal - valRange * 0.2, 0),
-          maxY: maxVal + valRange * 0.2,
           barGroups: barGroups,
         ),
         //duration: Duration.zero,

@@ -219,6 +219,11 @@ extension JournalEntityExtension on JournalEntity {
       ids.add(checklistItem.data.dataTypeId);
     }
 
+    if (this is QuantitativeEntry) {
+      final checklistItem = this as QuantitativeEntry;
+      ids.add(checklistItem.data.dataType);
+    }
+
     return ids;
   }
 }

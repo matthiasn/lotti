@@ -1,5 +1,4 @@
 import 'dart:core';
-import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +24,6 @@ class TimeSeriesLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final minVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(min);
-    final maxVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(max);
-    final valRange = maxVal - minVal;
-
     final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
     final gridInterval = rangeInDays > 182
@@ -77,6 +72,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             getDrawingHorizontalLine: (value) => gridLine,
             getDrawingVerticalLine: (value) => gridLine,
           ),
+          clipData: const FlClipData.horizontal(),
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
               tooltipMargin: isMobile ? 24 : 16,
@@ -125,7 +121,6 @@ class TimeSeriesLineChart extends StatelessWidget {
             leftTitles: const AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: double.maxFinite,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 40,
               ),
@@ -137,17 +132,12 @@ class TimeSeriesLineChart extends StatelessWidget {
           ),
           minX: rangeStart.millisecondsSinceEpoch.toDouble(),
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
-          minY: max(minVal - valRange * 0.2, 0),
-          maxY: maxVal + valRange * 0.2,
           lineBarsData: [
             LineChartBarData(
               spots: spots,
-              isCurved: true,
-              curveSmoothness: 0.1,
               gradient: LinearGradient(
                 colors: gradientColors,
               ),
-              isStrokeCapRound: true,
               dotData: const FlDotData(
                 show: false,
               ),
