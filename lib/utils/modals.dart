@@ -22,8 +22,7 @@ class ModalUtils {
     Color? backgroundColor,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = true,
-    EdgeInsetsGeometry padding =
-        const EdgeInsets.all(WoltModalConfig.pagePadding),
+    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
   }) {
     final textTheme = context.textTheme;
     return WoltModalSheetPage(
@@ -34,7 +33,7 @@ class ModalUtils {
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
-              padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+              padding: WoltModalConfig.pagePadding,
               icon: const Icon(Icons.close),
               onPressed: Navigator.of(context).pop,
             )
