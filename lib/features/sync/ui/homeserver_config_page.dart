@@ -30,12 +30,12 @@ SliverWoltModalSheetPage homeServerConfigPage({
     ),
     isTopBarLayerAlwaysVisible: true,
     trailingNavBarWidget: IconButton(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      padding: WoltModalConfig.pagePadding,
       icon: const Icon(Icons.close),
       onPressed: Navigator.of(context).pop,
     ),
     child: Padding(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      padding: WoltModalConfig.pagePadding,
       child: HomeserverSettingsWidget(
         pageIndexNotifier: pageIndexNotifier,
       ),
@@ -56,7 +56,7 @@ class HomeserverConfigPageStickyActionBar extends ConsumerWidget {
     WidgetRef ref,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      padding: WoltModalConfig.pagePadding,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

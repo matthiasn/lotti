@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 
 class TranscriptionProgressModalContent extends StatelessWidget {
   const TranscriptionProgressModalContent({super.key});
@@ -33,14 +34,19 @@ class TranscriptionProgressModalContent extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.all(16),
-          child: MarkdownBody(
-            data: text,
-            styleSheet: MarkdownStyleSheet(
-              p: TextStyle(
-                color: hasError ? context.colorScheme.error : null,
+          padding: WoltModalConfig.pagePadding,
+          child: Column(
+            children: [
+              MarkdownBody(
+                data: text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: hasError ? context.colorScheme.error : null,
+                  ),
+                ),
               ),
-            ),
+              verticalModalSpacer,
+            ],
           ),
         );
       },

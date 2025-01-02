@@ -27,7 +27,7 @@ class TimeByCategoryChartCard extends ConsumerWidget {
               ),
               hasTopBarLayer: true,
               trailingNavBarWidget: IconButton(
-                padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+                padding: WoltModalConfig.pagePadding,
                 icon: const Icon(Icons.close),
                 onPressed: Navigator.of(modalSheetContext).pop,
               ),

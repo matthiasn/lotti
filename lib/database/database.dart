@@ -159,6 +159,7 @@ class JournalDb extends _$JournalDb {
   Future<int> updateJournalEntity(
     JournalEntity updated, {
     bool overrideComparison = false,
+    bool overwrite = true,
   }) async {
     var rowsAffected = 0;
     final dbEntity = toDbEntity(updated).copyWith(
@@ -166,6 +167,11 @@ class JournalDb extends _$JournalDb {
     );
 
     final existingDbEntity = await entityById(dbEntity.id);
+
+    if (existingDbEntity != null && !overwrite) {
+      return rowsAffected;
+    }
+
     if (existingDbEntity != null) {
       final existing = fromDbEntity(existingDbEntity);
       final status = await detectConflict(existing, updated);
@@ -694,6 +700,16 @@ class JournalDb extends _$JournalDb {
     return quantitativeByType(type, rangeStart, rangeEnd)
         .watch()
         .map(entityStreamMapper);
+  }
+
+  Future<List<JournalEntity>> getQuantitativeByType({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await quantitativeByType(type, rangeStart, rangeEnd).get();
+
+    return res.map(fromDbEntity).toList();
   }
 
   Future<QuantitativeEntry?> latestQuantitativeByType(String type) async {
