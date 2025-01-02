@@ -255,7 +255,7 @@ SPEC CHECKSUMS:
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_keyboard_visibility_temp_fork: 8a8809c4129e31d25fca77446e0f3fd548122ced
   flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
-  flutter_native_splash: e8a1e01082d97a8099d973f919f57904c925008a
+  flutter_native_splash: f71420956eb811e6d310720fee915f1d42852e7a
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
   flutter_olm: 7154e02866bd06d91e400e94f66d5e2a955de0b1
   flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
