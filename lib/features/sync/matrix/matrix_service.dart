@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -17,7 +16,6 @@ class MatrixService {
     this.deviceDisplayName,
     String? dbName,
     JournalDb? overriddenJournalDb,
-    LoggingDb? overriddenLoggingDb,
     SettingsDb? overriddenSettingsDb,
   })  : keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
@@ -31,7 +29,6 @@ class MatrixService {
         await processNewTimelineEvents(
           service: this,
           overriddenJournalDb: overriddenJournalDb,
-          overriddenLoggingDb: overriddenLoggingDb,
           overriddenSettingsDb: overriddenSettingsDb,
         );
       },

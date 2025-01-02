@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -68,13 +68,11 @@ Future<void> matrixConnect({
   required MatrixService service,
   required bool shouldAttemptLogin,
 }) async {
-  final loggingDb = getIt<LoggingDb>();
-
   try {
     final matrixConfig = service.matrixConfig;
 
     if (matrixConfig == null) {
-      loggingDb.captureEvent(
+      getIt<LoggingService>().captureEvent(
         configNotFound,
         domain: 'MATRIX_SERVICE',
         subDomain: 'login',
@@ -87,7 +85,7 @@ Future<void> matrixConnect({
       Uri.parse(matrixConfig.homeServer),
     );
 
-    loggingDb.captureEvent(
+    getIt<LoggingService>().captureEvent(
       'checkHomeserver $homeServerSummary',
       domain: 'MATRIX_SERVICE',
       subDomain: 'login',
@@ -109,7 +107,7 @@ Future<void> matrixConnect({
         initialDeviceDisplayName: initialDeviceDisplayName,
       );
 
-      loggingDb.captureEvent(
+      getIt<LoggingService>().captureEvent(
         'logged in, userId ${service.loginResponse?.userId},'
         ' deviceId  ${service.loginResponse?.deviceId}',
         domain: 'MATRIX_SERVICE',
@@ -124,7 +122,7 @@ Future<void> matrixConnect({
     }
   } catch (e, stackTrace) {
     debugPrint('$e');
-    loggingDb.captureException(
+    getIt<LoggingService>().captureException(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'login',

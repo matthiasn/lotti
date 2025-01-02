@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 
 class Maintenance {
@@ -184,7 +185,7 @@ class Maintenance {
     final file = await getDatabaseFile(fts5DbFileName);
     file.deleteSync();
 
-    getIt<LoggingDb>().captureEvent(
+    getIt<LoggingService>().captureEvent(
       'FTS5 database DELETED',
       domain: 'MAINTENANCE',
       subDomain: 'recreateFts5',
@@ -195,7 +196,7 @@ class Maintenance {
     try {
       await deleteFts5Db();
     } catch (e, stackTrace) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         e,
         domain: 'MAINTENANCE',
         subDomain: 'deleteFts5Db',
@@ -229,7 +230,7 @@ class Maintenance {
 
       final progress = entryCount > 0 ? completed / entryCount : 0;
 
-      getIt<LoggingDb>().captureEvent(
+      getIt<LoggingService>().captureEvent(
         'Progress: ${(progress * 100).floor()}%, $completed/$entryCount',
         domain: 'MAINTENANCE',
         subDomain: 'recreateFts5',

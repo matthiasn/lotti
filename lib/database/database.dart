@@ -11,9 +11,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'database.g.dart';
@@ -179,7 +179,7 @@ class JournalDb extends _$JournalDb {
           await resolveConflict(existingConflict);
         }
       } else {
-        getIt<LoggingDb>().captureEvent(
+        getIt<LoggingService>().captureEvent(
           EnumToString.convertToString(status),
           domain: 'JOURNAL_DB',
           subDomain: 'Conflict status',

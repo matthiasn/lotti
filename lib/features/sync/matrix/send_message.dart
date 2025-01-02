@@ -5,9 +5,9 @@ import 'dart:io';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -36,13 +36,13 @@ extension SendExtension on MatrixService {
     SyncMessage syncMessage, {
     String? myRoomId,
   }) async {
-    final loggingDb = getIt<LoggingDb>();
+    final loggingService = getIt<LoggingService>();
 
     final msg = json.encode(syncMessage);
     final roomId = myRoomId ?? syncRoomId;
 
     if (getUnverifiedDevices().isNotEmpty) {
-      loggingDb.captureException(
+      loggingService.captureException(
         'Unverified devices found',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
@@ -51,14 +51,14 @@ extension SendExtension on MatrixService {
     }
 
     if (roomId == null) {
-      loggingDb.captureEvent(
+      loggingService.captureEvent(
         configNotFound,
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
     }
 
-    loggingDb.captureEvent(
+    loggingService.captureEvent(
       'trying to send text message to $syncRoom',
       domain: 'MATRIX_SERVICE',
       subDomain: 'sendMatrixMsg',
@@ -73,7 +73,7 @@ extension SendExtension on MatrixService {
 
     incrementSentCount();
 
-    loggingDb.captureEvent(
+    loggingService.captureEvent(
       'sent text message to $syncRoom with event ID $eventId',
       domain: 'MATRIX_SERVICE',
       subDomain: 'sendMatrixMsg',
@@ -119,7 +119,7 @@ extension SendExtension on MatrixService {
     required String fullPath,
     required String relativePath,
   }) async {
-    final loggingDb = getIt<LoggingDb>()
+    final loggingDb = getIt<LoggingService>()
       ..captureEvent(
         'trying to send $relativePath file message to $syncRoom',
         domain: 'MATRIX_SERVICE',

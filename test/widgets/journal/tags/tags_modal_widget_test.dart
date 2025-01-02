@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -83,6 +84,7 @@ void main() {
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)

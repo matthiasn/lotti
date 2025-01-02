@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/measurable_utils.dart';
@@ -29,7 +30,8 @@ class MeasurableDataTypeController extends _$MeasurableDataTypeController {
   }
 
   Future<MeasurableDataType?> _fetch() async {
-    return _journalDb.getMeasurableDataTypeById(id);
+    final dataType = getIt<EntitiesCacheService>().getDataTypeById(id);
+    return dataType ?? await _journalDb.getMeasurableDataTypeById(id);
   }
 }
 

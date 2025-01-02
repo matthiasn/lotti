@@ -1,17 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
 Future<String?> joinMatrixRoom({
   required String roomId,
   required MatrixService service,
 }) async {
-  final loggingDb = getIt<LoggingDb>();
-
   try {
     final joinRes = await service.client.joinRoom(roomId).onError((
       error,
@@ -19,7 +17,7 @@ Future<String?> joinMatrixRoom({
     ) {
       debugPrint('MatrixService join error $error');
 
-      loggingDb.captureException(
+      getIt<LoggingService>().captureException(
         error,
         domain: 'MATRIX_SERVICE',
         subDomain: 'joinRoom',
@@ -34,7 +32,7 @@ Future<String?> joinMatrixRoom({
       ..syncRoom = syncRoom
       ..syncRoomId = roomId;
 
-    loggingDb.captureEvent(
+    getIt<LoggingService>().captureEvent(
       'joined $roomId $joinRes',
       domain: 'MATRIX_SERVICE',
       subDomain: 'joinRoom',
@@ -43,7 +41,7 @@ Future<String?> joinMatrixRoom({
     return joinRes;
   } catch (e, stackTrace) {
     debugPrint('$e');
-    loggingDb.captureException(
+    getIt<LoggingService>().captureException(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'joinRoom',

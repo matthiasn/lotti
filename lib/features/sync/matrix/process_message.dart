@@ -6,10 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 
@@ -24,7 +24,6 @@ Future<void> processMatrixMessage({
   JournalDb? overriddenJournalDb,
 }) async {
   final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
-  final loggingDb = getIt<LoggingDb>();
   final message = event.text;
   final updateNotifications = getIt<UpdateNotifications>();
 
@@ -35,7 +34,7 @@ Future<void> processMatrixMessage({
       json.decode(decoded) as Map<String, dynamic>,
     );
 
-    loggingDb.captureEvent(
+    getIt<LoggingService>().captureEvent(
       'processing ${event.originServerTs} ${event.eventId}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'processMessage',
@@ -74,7 +73,7 @@ Future<void> processMatrixMessage({
       },
     );
   } catch (e, stackTrace) {
-    loggingDb.captureException(
+    getIt<LoggingService>().captureException(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'processMessage',

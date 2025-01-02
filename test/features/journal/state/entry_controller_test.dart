@@ -19,6 +19,7 @@ import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -88,6 +89,7 @@ void main() {
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<OutboxService>(OutboxService())
         ..registerSingleton<TimeService>(mockTimeService)

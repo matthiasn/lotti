@@ -28,6 +28,7 @@ class FlagsPage extends StatelessWidget {
           recordLocationFlag,
           allowInvalidCertFlag,
           enableTooltipFlag,
+          enableLoggingFlag,
           releaseHideLinkedEntries,
           enableMatrixFlag,
           resendAttachments,
