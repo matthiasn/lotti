@@ -2,14 +2,13 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -50,30 +49,20 @@ void main() {
         'chart is rendered with measurement entry, aggregation sum by day',
         (tester) async {
       when(
-        () => mockJournalDb.watchMeasurementsByType(
+        () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           type: measurableChocolate.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementChocolateEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
 
       when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableChocolate.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableChocolate,
-        ]),
-      );
+        () => mockJournalDb.getMeasurableDataTypeById(measurableChocolate.id),
+      ).thenAnswer((_) async => measurableChocolate);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DashboardMeasurablesChart(
+          MeasurablesBarChart(
             dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
@@ -95,32 +84,26 @@ void main() {
         'chart is rendered with measurement entry, aggregation sum by hour',
         (tester) async {
       when(
-        () => mockJournalDb.watchMeasurementsByType(
+        () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           type: measurableChocolate.id,
         ),
       ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementChocolateEntry],
-        ]),
+        (_) async => [testMeasurementChocolateEntry],
       );
 
       when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableChocolate.id,
-        ),
+        () => mockJournalDb.getMeasurableDataTypeById(measurableChocolate.id),
       ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableChocolate.copyWith(
-            aggregationType: AggregationType.hourlySum,
-          ),
-        ]),
+        (_) async => measurableChocolate.copyWith(
+          aggregationType: AggregationType.hourlySum,
+        ),
       );
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DashboardMeasurablesChart(
+          MeasurablesBarChart(
             dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
@@ -141,30 +124,19 @@ void main() {
     testWidgets('chart is rendered with measurement entry, aggregation none',
         (tester) async {
       when(
-        () => mockJournalDb.watchMeasurementsByType(
+        () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           type: measurableCoverage.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredCoverageEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
 
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableCoverage.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableCoverage,
-        ]),
-      );
+      when(() => mockJournalDb.getMeasurableDataTypeById(measurableCoverage.id))
+          .thenAnswer((_) async => measurableCoverage);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DashboardMeasurablesChart(
+          MeasurablesBarChart(
             dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
@@ -187,26 +159,15 @@ void main() {
         'chart is rendered with measurement entry, aggregation daily max',
         (tester) async {
       when(
-        () => mockJournalDb.watchMeasurementsByType(
+        () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           type: measurablePullUps.id,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredPullUpsEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
 
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurablePullUps.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurablePullUps,
-        ]),
-      );
+      when(() => mockJournalDb.getMeasurableDataTypeById(measurablePullUps.id))
+          .thenAnswer((_) async => measurablePullUps);
 
       final delegate = BeamerDelegate(
         locationBuilder: RoutesLocationBuilder(
@@ -220,7 +181,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BeamerProvider(
             routerDelegate: delegate,
-            child: DashboardMeasurablesChart(
+            child: MeasurablesBarChart(
               dashboardId: 'dashboardId',
               rangeStart: DateTime(2022),
               rangeEnd: DateTime(2023),

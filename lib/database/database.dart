@@ -661,14 +661,13 @@ class JournalDb extends _$JournalDb {
     return res.map(measurableDataType).firstOrNull;
   }
 
-  Stream<List<JournalEntity>> watchMeasurementsByType({
+  Future<List<JournalEntity>> getMeasurementsByType({
     required String type,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) {
-    return measurementsByType(type, rangeStart, rangeEnd)
-        .watch()
-        .map(entityStreamMapper);
+  }) async {
+    final res = await measurementsByType(type, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
   }
 
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({

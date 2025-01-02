@@ -210,6 +210,8 @@ class PersistenceLogic {
         shouldAddGeolocation: shouldAddGeolocation,
       );
 
+      _updateNotifications.notify({measurementEntry.data.dataTypeId});
+
       return measurementEntry;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(

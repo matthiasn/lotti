@@ -54,14 +54,12 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchMeasurementsByType(
+        () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
-      );
+      ).thenAnswer((_) async => []);
 
       when(
         () => mockJournalDb.getMeasurableDataTypeById(any()),
@@ -92,7 +90,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        makeTestableWidget(
+        makeTestableWidgetWithScaffold(
           BeamerProvider(
             routerDelegate: delegate,
             child: Material(
@@ -147,7 +145,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        makeTestableWidget(
+        makeTestableWidgetWithScaffold(
           ConstrainedBox(
             constraints: const BoxConstraints(
               maxHeight: 600,
