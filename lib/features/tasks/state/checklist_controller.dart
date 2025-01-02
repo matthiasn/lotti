@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_controller.g.dart';
@@ -31,7 +32,10 @@ class ChecklistController extends _$ChecklistController {
   @override
   Future<Checklist?> build({required String id}) async {
     subscribedIds.add(id);
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
+
     final checklist = await _fetch();
 
     if (checklist != null) {

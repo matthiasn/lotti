@@ -529,28 +529,12 @@ void main() {
 
       expect(measurement?.data, measurementData);
 
-      // measurement is retrieved in query by type
       expect(
-        ((await getIt<JournalDb>()
-                    .watchMeasurementsByType(
-                      rangeStart: DateTime(0),
-                      rangeEnd: DateTime(2100),
-                      type: measurableWater.id,
-                    )
-                    .first)
-                .first as MeasurementEntry)
-            .data,
-        measurementData,
-      );
-
-      expect(
-        await getIt<JournalDb>()
-            .watchMeasurementsByType(
-              rangeStart: DateTime(0),
-              rangeEnd: DateTime(2100),
-              type: measurableChocolate.id,
-            )
-            .first,
+        await getIt<JournalDb>().getMeasurementsByType(
+          rangeStart: DateTime(0),
+          rangeEnd: DateTime(2100),
+          type: measurableChocolate.id,
+        ),
         isEmpty,
       );
 

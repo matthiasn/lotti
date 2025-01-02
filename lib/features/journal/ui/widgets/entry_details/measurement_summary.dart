@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class MeasurementSummary extends StatelessWidget {
@@ -40,7 +40,7 @@ class MeasurementSummary extends StatelessWidget {
               maxHeight: 120,
             ),
           if (showChart)
-            DashboardMeasurablesChart(
+            MeasurablesBarChart(
               dashboardId: null,
               rangeStart: getRangeStart(context: context),
               rangeEnd: getRangeEnd(),

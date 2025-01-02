@@ -9,6 +9,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
@@ -52,7 +53,10 @@ class TimeByCategoryController extends _$TimeByCategoryController {
 
   @override
   Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      ..cacheFor(entryCacheDuration);
+
     final timeSpanDays = ref.watch(timeFrameControllerProvider);
     final data = await _fetch(timeSpanDays);
     listen();

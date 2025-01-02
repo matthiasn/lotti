@@ -7,7 +7,7 @@ part of 'task_progress_controller.dart';
 // **************************************************************************
 
 String _$taskProgressControllerHash() =>
-    r'd02448e4f5688d01de310d56da6bf4547863fdeb';
+    r'14b1bf9311d65ca30761fa46697f2defa61620db';
 
 /// Copied from Dart SDK
 class _SystemHash {
