@@ -8,10 +8,10 @@ import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 
 class AsrService {
@@ -96,7 +96,7 @@ class AsrService {
       return;
     }
 
-    getIt<LoggingDb>().captureEvent(
+    getIt<LoggingService>().captureEvent(
       'transcribing $audioFilePath',
       domain: 'ASR',
       subDomain: 'transcribe',
@@ -182,7 +182,7 @@ class AsrService {
     dynamic exception, {
     String subdomain = 'transcribe',
   }) {
-    getIt<LoggingDb>().captureException(
+    getIt<LoggingService>().captureException(
       exception,
       domain: 'ASR',
       subDomain: subdomain,

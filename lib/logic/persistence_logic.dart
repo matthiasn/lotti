@@ -13,11 +13,11 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -34,7 +34,7 @@ class PersistenceLogic {
   JournalDb get _journalDb => getIt<JournalDb>();
   VectorClockService get _vectorClockService => getIt<VectorClockService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  LoggingDb get _loggingDb => getIt<LoggingDb>();
+  LoggingService get _loggingService => getIt<LoggingService>();
   final OutboxService outboxService = getIt<OutboxService>();
   final uuid = const Uuid();
   DeviceLocation? location;
@@ -119,7 +119,7 @@ class PersistenceLogic {
       await createDbEntity(journalEntity, shouldAddGeolocation: false);
       return journalEntity;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createQuantitativeEntry',
@@ -144,7 +144,7 @@ class PersistenceLogic {
 
       return workout;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createWorkoutEntry',
@@ -171,7 +171,7 @@ class PersistenceLogic {
 
       await createDbEntity(journalEntity, linkedId: linkedId);
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createSurveyEntry',
@@ -214,7 +214,7 @@ class PersistenceLogic {
 
       return measurementEntry;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createMeasurementEntry',
@@ -259,7 +259,7 @@ class PersistenceLogic {
 
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createMeasurementEntry',
@@ -293,7 +293,7 @@ class PersistenceLogic {
 
       return task;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createTaskEntry',
@@ -322,7 +322,7 @@ class PersistenceLogic {
 
       return journalEvent;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createEventEntry',
@@ -418,7 +418,7 @@ class PersistenceLogic {
 
       return saved;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createDbEntity',
@@ -496,7 +496,7 @@ class PersistenceLogic {
         );
       }
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntityText',
@@ -529,14 +529,14 @@ class PersistenceLogic {
             ),
           );
         },
-        orElse: () async => _loggingDb.captureException(
+        orElse: () async => _loggingService.captureException(
           'not a task',
           domain: 'persistence_logic',
           subDomain: 'updateTask',
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateTask',
@@ -568,14 +568,14 @@ class PersistenceLogic {
             ),
           );
         },
-        orElse: () async => _loggingDb.captureException(
+        orElse: () async => _loggingService.captureException(
           'not an event',
           domain: 'persistence_logic',
           subDomain: 'updateEvent',
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateEvent',
@@ -606,7 +606,7 @@ class PersistenceLogic {
         );
       }
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'addGeolocation',
@@ -631,7 +631,7 @@ class PersistenceLogic {
         journalEntity.copyWith(meta: await updateMetadata(metadata)),
       );
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntity',
@@ -674,7 +674,7 @@ class PersistenceLogic {
 
       return true;
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateDbEntity',

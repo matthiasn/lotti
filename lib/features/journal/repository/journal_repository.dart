@@ -7,11 +7,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -44,7 +44,7 @@ class JournalRepository {
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateCategoryId',
@@ -78,7 +78,7 @@ class JournalRepository {
 
       await getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'deleteJournalEntity',
@@ -113,7 +113,7 @@ class JournalRepository {
       );
       await persistenceLogic.updateDbEntity(updated);
     } catch (exception, stackTrace) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateJournalEntityDate',
@@ -141,7 +141,7 @@ class JournalRepository {
 
       return journalEntity;
     } catch (exception, stackTrace) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createTextEntry',
@@ -175,7 +175,7 @@ class JournalRepository {
       );
       return journalEntity;
     } catch (exception, stackTrace) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createImageEntry',

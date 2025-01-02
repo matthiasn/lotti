@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/utils/file_utils.dart';
 
 part 'logging_db.g.dart';
 
@@ -38,91 +36,8 @@ class LoggingDb extends _$LoggingDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> _logAsync(LogEntry logEntry) async {
+  Future<int> log(LogEntry logEntry) async {
     return into(logEntries).insert(logEntry);
-  }
-
-  void log(LogEntry logEntry) {
-    unawaited(_logAsync(logEntry));
-  }
-
-  Future<void> _captureEventAsync(
-    dynamic event, {
-    required String domain,
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) async {
-    log(
-      LogEntry(
-        id: uuid.v1(),
-        createdAt: DateTime.now().toIso8601String(),
-        domain: domain,
-        subDomain: subDomain,
-        message: event.toString(),
-        level: level.name.toUpperCase(),
-        type: type.name.toUpperCase(),
-      ),
-    );
-  }
-
-  void captureEvent(
-    dynamic event, {
-    required String domain,
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) {
-    unawaited(
-      _captureEventAsync(
-        event,
-        domain: domain,
-        subDomain: subDomain,
-        level: level,
-        type: type,
-      ),
-    );
-  }
-
-  Future<void> _captureExceptionAsync(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) async {
-    log(
-      LogEntry(
-        id: uuid.v1(),
-        createdAt: DateTime.now().toIso8601String(),
-        domain: domain,
-        subDomain: subDomain,
-        message: exception.toString(),
-        stacktrace: stackTrace.toString(),
-        level: level.name.toUpperCase(),
-        type: type.name.toUpperCase(),
-      ),
-    );
-  }
-
-  void captureException(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) {
-    debugPrint('EXCEPTION $domain $subDomain $exception $stackTrace');
-    _captureExceptionAsync(
-      exception,
-      domain: domain,
-      subDomain: subDomain,
-      stackTrace: stackTrace,
-      level: level,
-      type: type,
-    );
   }
 
   Stream<List<LogEntry>> watchLogEntryById(String id) {

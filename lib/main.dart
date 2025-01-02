@@ -11,6 +11,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -20,7 +21,10 @@ import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   await runZonedGuarded(() async {
-    getIt.registerSingleton<LoggingDb>(LoggingDb());
+    getIt
+      ..registerSingleton<LoggingDb>(LoggingDb())
+      ..registerSingleton<LoggingService>(LoggingService());
+
     // ignore: deprecated_member_use
     FlutterQuillExtensions.useSuperClipboardPlugin();
 
@@ -47,7 +51,7 @@ Future<void> main() async {
     await registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
-      getIt<LoggingDb>().captureException(
+      getIt<LoggingService>().captureException(
         details.exception,
         domain: 'MAIN',
         subDomain: details.library,
@@ -56,7 +60,7 @@ Future<void> main() async {
 
     runApp(ProviderScope(child: MyBeamerApp()));
   }, (Object error, StackTrace stackTrace) {
-    getIt<LoggingDb>().captureException(
+    getIt<LoggingService>().captureException(
       error,
       domain: 'MAIN',
       subDomain: 'runZonedGuarded',

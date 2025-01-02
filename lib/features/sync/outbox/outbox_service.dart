@@ -7,12 +7,12 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -23,7 +23,7 @@ class OutboxService {
   OutboxService() {
     _startRunner();
   }
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final LoggingService _loggingService = getIt<LoggingService>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
 
   late ClientRunner<int> _clientRunner;
@@ -115,7 +115,7 @@ class OutboxService {
       }
       unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
@@ -138,7 +138,7 @@ class OutboxService {
       if (unprocessed.isNotEmpty) {
         final nextPending = unprocessed.first;
 
-        _loggingDb.captureEvent(
+        _loggingService.captureEvent(
           'trying ${nextPending.subject} ',
           domain: 'OUTBOX',
           subDomain: 'sendNext()',
@@ -162,13 +162,13 @@ class OutboxService {
             await enqueueNextSendRequest();
           }
 
-          _loggingDb.captureEvent(
+          _loggingService.captureEvent(
             '${nextPending.subject} done',
             domain: 'OUTBOX',
             subDomain: 'sendNext()',
           );
         } catch (e, stackTrace) {
-          getIt<LoggingDb>().captureException(
+          getIt<LoggingService>().captureException(
             e,
             domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg',
@@ -191,7 +191,7 @@ class OutboxService {
         }
       }
     } catch (exception, stackTrace) {
-      _loggingDb.captureException(
+      _loggingService.captureException(
         exception,
         domain: 'OUTBOX',
         subDomain: 'sendNext',
@@ -207,7 +207,7 @@ class OutboxService {
     unawaited(
       Future<void>.delayed(delay).then((_) {
         _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
-        _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
+        _loggingService.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
       }),
     );
   }
