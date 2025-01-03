@@ -5214,23 +5214,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> quantitativeByTypes(
-      List<String?> subtypes, DateTime rangeStart, DateTime rangeEnd) {
-    var $arrayStartIndex = 3;
-    final expandedsubtypes = $expandVar($arrayStartIndex, subtypes.length);
-    $arrayStartIndex += subtypes.length;
-    return customSelect(
-        'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype IN ($expandedsubtypes) AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE ORDER BY date_from DESC',
-        variables: [
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd),
-          for (var $ in subtypes) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
-  }
-
   Selectable<JournalDbEntity> workouts(DateTime rangeStart, DateTime rangeEnd) {
     return customSelect(
         'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE ORDER BY date_from DESC',
