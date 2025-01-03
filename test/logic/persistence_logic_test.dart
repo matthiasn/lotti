@@ -493,20 +493,6 @@ void main() {
             ?.data,
         testWeightEntry.data,
       );
-
-      // workout is retrieved on workout watch stream
-      expect(
-        ((await getIt<JournalDb>()
-                    .watchQuantitativeByType(
-                      rangeStart: DateTime(0),
-                      rangeEnd: DateTime(2100),
-                      type: 'HealthDataType.WEIGHT',
-                    )
-                    .first)
-                .first as QuantitativeEntry)
-            .data,
-        testWeightEntry.data,
-      );
     });
 
     test('create and retrieve measurement entry', () async {

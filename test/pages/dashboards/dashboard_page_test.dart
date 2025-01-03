@@ -93,16 +93,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchQuantitativeByType(
-          type: any(named: 'type'),
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
-
-      when(
         () => mockHealthImport.fetchHealthDataDelta(any()),
       ).thenAnswer((_) async {});
 

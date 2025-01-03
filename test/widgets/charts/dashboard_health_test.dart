@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -29,16 +28,12 @@ void main() {
 
     testWidgets('weight chart is rendered', (tester) async {
       when(
-        () => mockJournalDb.watchQuantitativeByType(
+        () => mockJournalDb.getQuantitativeByType(
           type: testWeightEntry.data.dataType,
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWeightEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testWeightEntry]);
 
       when(
         () => mockHealthImport
