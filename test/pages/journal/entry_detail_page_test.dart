@@ -160,14 +160,6 @@ void main() {
       ).thenAnswer((_) async {});
 
       when(
-        () => mockJournalDb.watchQuantitativeByType(
-          type: testWeightEntry.data.dataType,
-          rangeEnd: any(named: 'rangeEnd'),
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).thenAnswer((_) => Stream<List<JournalEntity>>.fromIterable([]));
-
-      when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
       ).thenAnswer(
         (_) async => [testTextEntry],

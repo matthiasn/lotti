@@ -692,16 +692,6 @@ class JournalDb extends _$JournalDb {
     return habitCompletionsInRange(rangeStart).watch().map(entityStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchQuantitativeByType({
-    required String type,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) {
-    return quantitativeByType(type, rangeStart, rangeEnd)
-        .watch()
-        .map(entityStreamMapper);
-  }
-
   Future<List<JournalEntity>> getQuantitativeByType({
     required String type,
     required DateTime rangeStart,
