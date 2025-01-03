@@ -589,10 +589,9 @@ class JournalDb extends _$JournalDb {
     return countImportFlagEntries().watch().map((event) => event.first);
   }
 
-  Stream<int> watchInProgressTasksCount() {
-    return countInProgressTasks(['IN PROGRESS']).watch().map((event) {
-      return event.first;
-    });
+  Future<int> getInProgressTasksCount() async {
+    final res = await countInProgressTasks(['IN PROGRESS']).get();
+    return res.first;
   }
 
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {

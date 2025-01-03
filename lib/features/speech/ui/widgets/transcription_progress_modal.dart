@@ -36,6 +36,7 @@ class TranscriptionProgressModalContent extends StatelessWidget {
         return Padding(
           padding: WoltModalConfig.pagePadding,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               MarkdownBody(
                 data: text,
