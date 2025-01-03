@@ -79,8 +79,7 @@ void main() {
       when(() => mockSettingsDb.itemByKey(any()))
           .thenAnswer((_) => Future(() => null));
 
-      when(mockJournalDb.watchInProgressTasksCount)
-          .thenAnswer((_) => Stream<int>.fromIterable([42]));
+      when(mockJournalDb.getInProgressTasksCount).thenAnswer((_) async => 42);
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
