@@ -417,15 +417,6 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT 1;
 
-quantitativeByTypes:
-SELECT * FROM journal
-  WHERE type = 'QuantitativeEntry'
-  AND subtype IN :subtypes
-  AND date_from >= :rangeStart
-  AND date_to <= :rangeEnd
-  AND deleted = false
-  ORDER BY date_from DESC;
-
 workouts:
 SELECT * FROM journal
   WHERE type = 'WorkoutEntry'
