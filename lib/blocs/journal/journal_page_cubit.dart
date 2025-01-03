@@ -196,6 +196,13 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     emitState();
   }
 
+  void selectedAllCategories() {
+    _selectedCategoryIds = {};
+    persistTasksFilter();
+    refreshQuery();
+    emitState();
+  }
+
   void toggleTaskAsListView() {
     taskAsListView = !taskAsListView;
     emitState();
