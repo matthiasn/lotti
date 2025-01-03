@@ -69,21 +69,25 @@ void main() {
 
     testWidgets('BP chart is rendered', (tester) async {
       when(
-        () => mockJournalDb.watchQuantitativeByTypes(
-          types: [
-            'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-            'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-          ],
+        () => mockJournalDb.getQuantitativeByType(
+          type: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) {
-        return Stream<List<JournalEntity>>.fromIterable([
-          [
-            testBpSystolicEntry,
-            testBpDiastolicEntry,
-          ]
-        ]);
+      ).thenAnswer((_) async {
+        return [testBpSystolicEntry];
+      });
+
+      when(
+        () => mockJournalDb.getQuantitativeByType(
+          type: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async {
+        return [
+          testBpDiastolicEntry,
+        ];
       });
 
       const bpType = 'BLOOD_PRESSURE';
@@ -113,90 +117,5 @@ void main() {
         findsOneWidget,
       );
     });
-
-    // testWidgets('BMI chart is rendered', (tester) async {
-    //   when(
-    //     () => mockJournalDb.watchQuantitativeByType(
-    //       type: testHeightEntry.data.dataType,
-    //       rangeEnd: any(named: 'rangeEnd'),
-    //       rangeStart: any(named: 'rangeStart'),
-    //     ),
-    //   ).thenAnswer(
-    //     (_) => Stream<List<JournalEntity>>.fromIterable([
-    //       [testHeightEntry],
-    //     ]),
-    //   );
-    //
-    //   when(
-    //     () => mockJournalDb.watchQuantitativeByType(
-    //       type: testWeightEntry.data.dataType,
-    //       rangeEnd: any(named: 'rangeEnd'),
-    //       rangeStart: any(named: 'rangeStart'),
-    //     ),
-    //   ).thenAnswer(
-    //     (_) => Stream<List<JournalEntity>>.fromIterable([
-    //       [
-    //         testWeightEntry,
-    //         testWeightEntry2,
-    //       ]
-    //     ]),
-    //   );
-    //
-    //   when(
-    //     () => mockJournalDb.watchQuantitativeByTypes(
-    //       types: [
-    //         'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-    //         'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-    //       ],
-    //       rangeEnd: any(named: 'rangeEnd'),
-    //       rangeStart: any(named: 'rangeStart'),
-    //     ),
-    //   ).thenAnswer((_) {
-    //     return Stream<List<JournalEntity>>.fromIterable([
-    //       [
-    //         testBpSystolicEntry,
-    //         testBpDiastolicEntry,
-    //       ]
-    //     ]);
-    //   });
-    //
-    //   const healthType = 'BODY_MASS_INDEX';
-    //
-    //   when(
-    //     () => mockHealthImport.fetchHealthDataDelta(healthType),
-    //   ).thenAnswer((_) async {});
-    //
-    //   when(
-    //     () => mockHealthImport.fetchHealthData(
-    //       dateFrom: any(named: 'dateFrom'),
-    //       dateTo: any(named: 'dateTo'),
-    //       types: any(named: 'types'),
-    //     ),
-    //   ).thenAnswer((_) async {});
-    //
-    //   await tester.pumpWidget(
-    //     makeTestableWidgetWithScaffold(
-    //       DashboardHealthChart(
-    //         rangeStart: DateTime(2022),
-    //         rangeEnd: DateTime(2023),
-    //         chartConfig: const DashboardHealthItem(
-    //           color: '#0000FF',
-    //           healthType: healthType,
-    //         ),
-    //       ),
-    //     ),
-    //   );
-    //
-    //   await tester.pumpAndSettle();
-    //
-    //   // chart displays expected title
-    //   expect(
-    //     find.text('Weight vs. Body Mass Index'),
-    //     findsOneWidget,
-    //   );
-    //
-    //   // chart displays expected min and max weights
-    //   expect(find.text('94.5 kg - 99.2 kg'), findsOneWidget);
-    // });
   });
 }
