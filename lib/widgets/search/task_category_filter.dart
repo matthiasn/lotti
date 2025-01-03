@@ -71,6 +71,12 @@ class _TaskCategoryFilterState extends State<TaskCategoryFilter> {
                   selectedColor: Colors.grey,
                   isSelected: state.selectedCategoryIds.contains(''),
                 ),
+                FilterChoiceChip(
+                  onTap: cubit.selectedAllCategories,
+                  label: context.messages.taskCategoryAllLabel,
+                  selectedColor: Colors.grey,
+                  isSelected: state.selectedCategoryIds.isEmpty,
+                ),
                 if (!_showAll)
                   FilterChoiceChip(
                     onTap: () => setState(() {
