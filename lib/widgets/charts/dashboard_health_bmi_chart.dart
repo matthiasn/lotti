@@ -1,113 +1,18 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
-import 'package:health/health.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
-
-class DashboardHealthBmiChart extends StatefulWidget {
-  const DashboardHealthBmiChart({
-    required this.chartConfig,
-    required this.rangeStart,
-    required this.rangeEnd,
-    super.key,
-  });
-
-  final DashboardHealthItem chartConfig;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-
-  @override
-  State<DashboardHealthBmiChart> createState() =>
-      _DashboardHealthBmiChartState();
-}
-
-class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
-  _DashboardHealthBmiChartState() {
-    final now = DateTime.now();
-    _healthImport.fetchHealthData(
-      dateFrom: now.subtract(const Duration(days: 3650)),
-      dateTo: now,
-      types: [HealthDataType.HEIGHT],
-    );
-  }
-
-  final JournalDb _db = getIt<JournalDb>();
-  final HealthImport _healthImport = getIt<HealthImport>();
-
-  @override
-  Widget build(BuildContext context) {
-    const weightType = 'HealthDataType.WEIGHT';
-
-    return StreamBuilder<List<JournalEntity>>(
-      stream: _db.watchQuantitativeByType(
-        type: 'HealthDataType.HEIGHT',
-        rangeStart: DateTime(2010),
-        rangeEnd: DateTime.now(),
-      ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<JournalEntity>> snapshot,
-      ) {
-        final heightEntry = snapshot.data?.first as QuantitativeEntry?;
-        final height = heightEntry?.data.value;
-
-        if (height == null) {
-          return const CircularProgressIndicator();
-        }
-
-        return StreamBuilder<List<JournalEntity>>(
-          stream: _db.watchQuantitativeByType(
-            type: weightType,
-            rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
-          ),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<JournalEntity>> snapshot,
-          ) {
-            if (snapshot.data == null) {
-              return const CircularProgressIndicator();
-            }
-
-            final items = snapshot.data ?? [];
-            final weightData = aggregateNone(items, weightType);
-
-            final minInRange = findMin(weightData);
-            final maxInRange = findMax(weightData);
-
-            return DashboardChart(
-              chart: TimeSeriesLineChart(
-                data: weightData,
-                rangeStart: widget.rangeStart,
-                rangeEnd: widget.rangeEnd,
-              ),
-              chartHeader: BmiChartInfoWidget(
-                widget.chartConfig,
-                height: height,
-                minInRange: minInRange,
-                maxInRange: maxInRange,
-              ),
-              height: 320,
-              overlay: const BmiRangeLegend(),
-            );
-          },
-        );
-      },
-    );
-  }
-}
 
 class BmiRangeLegend extends StatelessWidget {
   const BmiRangeLegend({
@@ -176,24 +81,38 @@ class BmiRangeLegend extends StatelessWidget {
   }
 }
 
-class BmiChartInfoWidget extends StatelessWidget {
+class BmiChartInfoWidget extends ConsumerWidget {
   const BmiChartInfoWidget(
     this.chartConfig, {
-    required this.height,
     required this.minInRange,
     required this.maxInRange,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
-  final num? height;
   final num minInRange;
   final num maxInRange;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
+
+    final heightEntries = ref
+            .watch(
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.HEIGHT',
+                rangeStart: DateTime(0),
+                rangeEnd: DateTime.now(),
+              ),
+            )
+            .valueOrNull ??
+        [];
+
+    final heightEntry = heightEntries.firstOrNull as QuantitativeEntry?;
+    // TODO: use, or remove entire chart
+    // ignore: unused_local_variable
+    final height = heightEntry?.data.value;
 
     return Positioned(
       top: 0,
@@ -224,6 +143,50 @@ class BmiChartInfoWidget extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class DashboardHealthBmiChart extends ConsumerWidget {
+  const DashboardHealthBmiChart({
+    required this.chartConfig,
+    required this.rangeStart,
+    required this.rangeEnd,
+    super.key,
+  });
+
+  final DashboardHealthItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weightData = ref
+            .watch(
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.WEIGHT',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            )
+            .valueOrNull ??
+        [];
+
+    final minInRange = findMin(weightData);
+    final maxInRange = findMax(weightData);
+    return DashboardChart(
+      chart: TimeSeriesLineChart(
+        data: weightData,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+      chartHeader: BmiChartInfoWidget(
+        chartConfig,
+        minInRange: minInRange,
+        maxInRange: maxInRange,
+      ),
+      height: 320,
+      overlay: const BmiRangeLegend(),
     );
   }
 }
