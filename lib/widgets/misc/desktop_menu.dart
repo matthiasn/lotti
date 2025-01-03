@@ -16,6 +16,7 @@ class DesktopMenuWrapper extends StatelessWidget {
   });
 
   final JournalDb _db = getIt<JournalDb>();
+
   final Widget child;
 
   @override

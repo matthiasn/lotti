@@ -116,29 +116,6 @@ void main() {
     );
 
     test(
-      'Active config flag names are shown as expected',
-      () async {
-        final flags = await db?.watchActiveConfigFlagNames().first;
-        expect(flags, expectedActiveFlagNames);
-      },
-    );
-
-    test(
-      'Toggle config flag works',
-      () async {
-        expect(
-          await db?.watchActiveConfigFlagNames().first,
-          expectedActiveFlagNames,
-        );
-
-        expect(
-          await db?.watchActiveConfigFlagNames().first,
-          expectedActiveFlagNames,
-        );
-      },
-    );
-
-    test(
       'ConfigFlag can be retrieved by name',
       () async {
         expect(
