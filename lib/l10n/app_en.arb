@@ -329,6 +329,7 @@
   "syncAssistantStatusValid": "Account is valid.",
   "taskCategoryLabel": "Task category:",
   "taskCategoryUnassignedLabel": "unassigned",
+  "taskCategoryAllLabel": "all",
   "taskDueLabel": "Task due:",
   "taskEditHint": "Edit Task",
   "taskEstimateLabel": "Estimated time:",
