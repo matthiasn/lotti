@@ -347,32 +347,6 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Stream<List<JournalEntity>> watchJournalEntitiesByTag({
-    required String tagId,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-    int limit = 1000,
-  }) {
-    return filteredByTaggedWithId(
-      tagId,
-      rangeStart,
-      rangeEnd,
-      limit,
-    ).watch().map(entityStreamMapper);
-  }
-
-  Stream<List<JournalEntity>> watchJournalByTagIds({
-    required String match,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) {
-    return filteredByTagMatch(
-      '%$match%',
-      rangeStart,
-      rangeEnd,
-    ).watch().map(entityStreamMapper);
-  }
-
   Future<List<JournalEntity>> getTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
@@ -478,29 +452,11 @@ class JournalDb extends _$JournalDb {
     return res.length;
   }
 
-  Stream<List<JournalEntity>> watchLinkedEntities({
-    required String linkedFrom,
-  }) {
-    return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
-  }
-
   FutureOr<List<String>> getSortedLinkedEntityIds(
     List<String> linkedIds,
   ) async {
     final dbEntities = await journalEntitiesByIds(linkedIds).get();
     return dbEntities.map((dbEntity) => dbEntity.id).toList();
-  }
-
-  // Returns stream with a sorted list of items IDs linked to from the
-  // provided item id.
-  Stream<List<String>> watchLinkedEntityIds(
-    String linkedFrom, {
-    bool includeHidden = false,
-  }) {
-    return linkedJournalEntityIds(
-      linkedFrom,
-      includeHidden ? [false, true] : [false],
-    ).watch().asyncMap(getSortedLinkedEntityIds);
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
@@ -514,18 +470,6 @@ class JournalDb extends _$JournalDb {
   }) async {
     final dbEntities = await sortedInRange(rangeStart, rangeEnd).get();
     return dbEntities.map(fromDbEntity).toList();
-  }
-
-  Stream<List<JournalEntity>> watchLinkedToEntities({
-    required String linkedTo,
-  }) {
-    return linkedToJournalEntities(linkedTo).watch().map(entityStreamMapper);
-  }
-
-  Stream<List<JournalEntity>> watchFlaggedImport({
-    int limit = 1000,
-  }) {
-    return entriesFlaggedImport(limit).watch().map(entityStreamMapper);
   }
 
   Stream<int> watchJournalCount() {
@@ -646,9 +590,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<int> watchInProgressTasksCount() {
-    return countInProgressTasks(['IN PROGRESS'])
-        .watch()
-        .map((event) => event.first);
+    return countInProgressTasks(['IN PROGRESS']).watch().map((event) {
+      return event.first;
+    });
   }
 
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
@@ -795,16 +739,6 @@ class JournalDb extends _$JournalDb {
     return (await matchingTagEntities('%$match%', inactive, limit).get())
         .map(fromTagDbEntity)
         .toList();
-  }
-
-  Stream<List<TagEntity>> watchMatchingTags(
-    String match, {
-    int limit = 10,
-    bool inactive = false,
-  }) {
-    return matchingTagEntities('%$match%', inactive, limit).watch().map(
-          (dbEntities) => dbEntities.map(fromTagDbEntity).toList(),
-        );
   }
 
   Future<int> resolveConflict(Conflict conflict) {

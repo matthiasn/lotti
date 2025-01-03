@@ -338,35 +338,6 @@ void main() {
         addedTagIds: [testStoryTag.id],
       );
 
-      // expect tagged entry in journal by tag query
-      expect(
-        (await getIt<JournalDb>()
-                .watchJournalEntitiesByTag(
-                  tagId: testTagId,
-                  rangeStart: DateTime(0),
-                  rangeEnd: DateTime(2100),
-                )
-                .first)
-            .map((entity) => entity.meta.id)
-            .toSet()
-            .contains(task.meta.id),
-        true,
-      );
-
-      expect(
-        (await getIt<JournalDb>()
-                .watchJournalEntitiesByTag(
-                  tagId: testTagId,
-                  rangeStart: DateTime(0),
-                  rangeEnd: DateTime(2100),
-                )
-                .first)
-            .map((entity) => entity.meta.id)
-            .toSet()
-            .contains(comment?.meta.id),
-        true,
-      );
-
       await getIt<PersistenceLogic>().updateJournalEntityText(
         comment!.meta.id,
         const EntryText(
@@ -375,35 +346,12 @@ void main() {
         comment.meta.dateTo,
       );
 
-      // expect linked comment entry to appear in stream
-      final linked = await getIt<JournalDb>()
-          .watchLinkedEntities(linkedFrom: task.meta.id)
-          .first;
-
-      expect(linked.first.entryText?.plainText, updatedTestText);
-      expect(linked.first.meta.tagIds?.toSet(), {testTagId});
-
       expect(
         (await getIt<JournalDb>().getLinkedEntities(task.meta.id))
             .first
             .entryText,
         (await getIt<JournalDb>().journalEntityById(comment.meta.id))
             ?.entryText,
-      );
-
-      expect(
-        (await getIt<JournalDb>()
-                .watchLinkedToEntities(linkedTo: comment.meta.id)
-                .first)
-            .first
-            .entryText,
-        (await getIt<JournalDb>().journalEntityById(task.meta.id))?.entryText,
-      );
-
-      // linked ids can be watched
-      expect(
-        await getIt<JournalDb>().watchLinkedEntityIds(task.meta.id).first,
-        [comment.meta.id],
       );
 
       expect(await getIt<JournalDb>().watchTaggedCount().first, 2);

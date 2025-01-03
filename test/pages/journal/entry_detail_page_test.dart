@@ -106,46 +106,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchLinkedEntityIds(testTextEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<List<String>>.fromIterable([]),
-      );
-
-      when(
-        () => mockJournalDb.watchLinkedEntityIds(testTask.meta.id),
-      ).thenAnswer(
-        (_) => Stream<List<String>>.fromIterable([]),
-      );
-
-      when(
-        () => mockJournalDb.watchLinkedEntityIds(testWeightEntry.meta.id),
-      ).thenAnswer(
-        (_) => Stream<List<String>>.fromIterable([]),
-      );
-
-      when(
-        () => mockJournalDb.watchLinkedToEntities(
-          linkedTo: testTextEntry.meta.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
-
-      when(
-        () => mockJournalDb.watchLinkedToEntities(linkedTo: testTask.meta.id),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
-
-      when(
-        () => mockJournalDb.watchLinkedToEntities(
-          linkedTo: testWeightEntry.meta.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
-
-      when(
         () => mockEditorStateService.getUnsavedStream(
           any(),
           any(),
