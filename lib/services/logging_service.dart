@@ -86,9 +86,6 @@ class LoggingService {
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,
   }) {
-    if (!_enableLogging) {
-      return;
-    }
     debugPrint('EXCEPTION $domain $subDomain $exception $stackTrace');
     _captureExceptionAsync(
       exception,
