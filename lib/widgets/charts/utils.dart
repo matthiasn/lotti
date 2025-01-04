@@ -211,10 +211,6 @@ DateTime getEndOfToday() {
   return DateTime(now.year, now.month, now.day, 23, 59, 59);
 }
 
-DateTime getStartOfDay(DateTime dt) {
-  return DateTime(dt.year, dt.month, dt.day);
-}
-
 String padLeft(num value) {
   return value.toString().padLeft(2, '0');
 }

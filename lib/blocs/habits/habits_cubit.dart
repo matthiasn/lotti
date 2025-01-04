@@ -79,9 +79,8 @@ class HabitsCubit extends Cubit<HabitsState> {
   void startWatching() {
     _completionsStream = _journalDb
         .watchHabitCompletionsInRange(
-          rangeStart: getStartOfDay(
-            DateTime.now().subtract(const Duration(days: 180)),
-          ),
+          rangeStart:
+              DateTime.now().dayAtMidnight.subtract(const Duration(days: 180)),
         )
         .throttleTime(
           const Duration(seconds: 5),

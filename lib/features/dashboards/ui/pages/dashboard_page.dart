@@ -6,8 +6,8 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -47,8 +47,10 @@ class _DashboardPageState extends State<DashboardPage> {
     // final rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
     final rangeStart =
-        getStartOfDay(DateTime.now().subtract(Duration(days: timeSpanDays)));
-    final rangeEnd = getEndOfToday();
+        DateTime.now().subtract(Duration(days: timeSpanDays)).dayAtMidnight;
+    final rangeEnd = DateTime.now()
+        .dayAtMidnight
+        .add(const Duration(hours: 23, minutes: 59, seconds: 59));
 
     if (dashboard == null) {
       beamToNamed('/dashboards');
