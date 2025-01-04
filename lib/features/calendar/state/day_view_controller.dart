@@ -25,7 +25,7 @@ part 'day_view_controller.g.dart';
 @riverpod
 class DayViewController extends _$DayViewController {
   StreamSubscription<Set<String>>? _updateSubscription;
-  bool _isVisible = true;
+  bool _isVisible = false;
 
   void listen() {
     _updateSubscription = getIt<UpdateNotifications>()
