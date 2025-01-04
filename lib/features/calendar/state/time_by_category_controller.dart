@@ -20,7 +20,7 @@ part 'time_by_category_controller.g.dart';
 @riverpod
 class TimeByCategoryController extends _$TimeByCategoryController {
   StreamSubscription<Set<String>>? _updateSubscription;
-  bool _isVisible = true;
+  bool _isVisible = false;
 
   void listen() {
     _updateSubscription = getIt<UpdateNotifications>()
