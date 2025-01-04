@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -26,13 +25,6 @@ void main() {
 
       when(mockJournalDb.watchCountImportFlagEntries)
           .thenAnswer((_) => Stream<int>.fromIterable([0]));
-
-      when(
-        () => mockJournalDb.sortedJournalEntities(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => <JournalEntity>[]);
 
       when(
         () => mockJournalDb.linksForEntryIds(any()),

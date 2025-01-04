@@ -464,11 +464,12 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  Future<List<JournalEntity>> sortedJournalEntities({
+  Future<List<JournalEntity>> sortedTextEntries({
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
-    final dbEntities = await sortedInRange(rangeStart, rangeEnd).get();
+    final dbEntities =
+        await sortedTextEntriesInRange(rangeStart, rangeEnd).get();
     return dbEntities.map(fromDbEntity).toList();
   }
 

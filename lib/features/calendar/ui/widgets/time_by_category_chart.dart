@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphic/graphic.dart';
 import 'package:lotti/features/calendar/state/day_view_controller.dart';
 import 'package:lotti/features/calendar/state/time_by_category_controller.dart';
-import 'package:lotti/features/calendar/ui/time_by_category_chart_legend.dart';
+import 'package:lotti/features/calendar/ui/widgets/time_by_category_chart_legend.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';

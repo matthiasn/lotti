@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
+import 'package:lotti/features/calendar/state/time_by_category_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
@@ -37,7 +38,8 @@ class DayViewController extends _$DayViewController {
         )
         .listen((_) async {
       if (_isVisible) {
-        final latest = await _fetch();
+        final timeSpanDays = ref.read(timeFrameControllerProvider);
+        final latest = await _fetch(timeSpanDays: timeSpanDays);
         state = AsyncData(latest);
       }
     });
@@ -56,23 +58,25 @@ class DayViewController extends _$DayViewController {
 
   @override
   Future<List<CalendarEventData<CalendarEvent>>> build() async {
+    final timeSpanDays = ref.watch(timeFrameControllerProvider);
+
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
-    final data = await _fetch();
+    final data = await _fetch(timeSpanDays: timeSpanDays);
     listen();
     return data;
   }
 
   Future<List<CalendarEventData<CalendarEvent>>> _fetch({
-    int timeSpanDays = 90,
+    int timeSpanDays = 30,
   }) async {
     final now = DateTime.now();
     final db = getIt<JournalDb>();
     final data = <CalendarEventData<CalendarEvent>>[];
     final start = now.dayAtMidnight.subtract(Duration(days: timeSpanDays));
 
-    final items = await db.sortedJournalEntities(
+    final items = await db.sortedTextEntries(
       rangeStart: start,
       rangeEnd: now.add(const Duration(days: 1)).dayAtMidnight,
     );
