@@ -219,7 +219,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<HabitDefinition> _openHabits = [];
   List<HabitDefinition> _openNow = [];
-  bool _isVisible = true;
+  bool _isVisible = false;
   List<HabitDefinition> _pendingLater = [];
   List<HabitDefinition> _completed = [];
   List<JournalEntity> _habitCompletions = [];
