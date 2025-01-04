@@ -14,7 +14,7 @@ class UpdateNotifications {
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (fromSync) {
       _affectedIdsFromSync.addAll(affectedIds);
-      _fromSyncTimer ??= Timer(const Duration(seconds: 5), () {
+      _fromSyncTimer ??= Timer(const Duration(seconds: 2), () {
         if (_affectedIdsFromSync.isNotEmpty) {
           _controller.add({..._affectedIdsFromSync});
           _affectedIdsFromSync.clear();
@@ -34,3 +34,7 @@ class UpdateNotifications {
     }
   }
 }
+
+const habitCompletionNotification = 'HABIT_COMPLETION';
+const textEntryNotification = 'TEXT_ENTRY';
+const taskNotification = 'TASK';

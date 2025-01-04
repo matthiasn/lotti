@@ -689,10 +689,6 @@ class PersistenceLogic {
 
       await getIt<NotificationService>().updateBadge();
 
-      if (journalEntity is Task) {
-        _updateNotifications.notify({'TASK'});
-      }
-
       return true;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
