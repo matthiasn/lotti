@@ -8,6 +8,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:research_package/model.dart';
 
 part 'journal_entities.freezed.dart';
@@ -199,7 +200,9 @@ extension JournalEntityExtension on JournalEntity {
 
     if (this is HabitCompletionEntry) {
       final habitCompletion = this as HabitCompletionEntry;
-      ids.add(habitCompletion.data.habitId);
+      ids
+        ..add(habitCompletion.data.habitId)
+        ..add(habitCompletionNotification);
     }
 
     if (this is Checklist) {
@@ -222,6 +225,14 @@ extension JournalEntityExtension on JournalEntity {
     if (this is QuantitativeEntry) {
       final checklistItem = this as QuantitativeEntry;
       ids.add(checklistItem.data.dataType);
+    }
+
+    if (this is Task) {
+      ids.add(taskNotification);
+    }
+
+    if (this is JournalEntry) {
+      ids.add(textEntryNotification);
     }
 
     return ids;

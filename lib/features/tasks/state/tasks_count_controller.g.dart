@@ -7,7 +7,7 @@ part of 'tasks_count_controller.dart';
 // **************************************************************************
 
 String _$tasksCountControllerHash() =>
-    r'e4d5084015ac95ecdf5a0f218fb0886816c43052';
+    r'dbded98a52efaec979fae59daec7efe28bb504a4';
 
 /// See also [TasksCountController].
 @ProviderFor(TasksCountController)

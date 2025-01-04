@@ -9,7 +9,7 @@ part 'tasks_count_controller.g.dart';
 
 @Riverpod(keepAlive: true)
 class TasksCountController extends _$TasksCountController {
-  final subscribedIds = <String>{'TASK'};
+  final subscribedIds = <String>{taskNotification};
   StreamSubscription<Set<String>>? _updateSubscription;
 
   void listen() {
