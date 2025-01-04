@@ -249,9 +249,10 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
-sortedInRange:
+sortedTextEntriesInRange:
 SELECT * FROM journal
-  WHERE deleted = false
+  WHERE type = 'JournalEntry' AND
+  deleted = false
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
   ORDER BY date_from DESC;

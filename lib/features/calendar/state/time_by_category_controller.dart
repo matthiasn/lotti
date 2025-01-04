@@ -75,7 +75,7 @@ class TimeByCategoryController extends _$TimeByCategoryController {
       data[day] = <CategoryDefinition?, Duration>{};
     });
 
-    final items = await db.sortedJournalEntities(
+    final items = await db.sortedTextEntries(
       rangeStart: start,
       rangeEnd: now.add(const Duration(days: 1)).dayAtMidnight,
     );
