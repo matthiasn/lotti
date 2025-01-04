@@ -23,6 +23,8 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   bool _isVisible = false;
 
   void listen() {
+    final subscribedIds = <String>{textEntryNotification};
+
     _updateSubscription = getIt<UpdateNotifications>()
         .updateStream
         .throttleTime(
@@ -30,8 +32,8 @@ class TimeByCategoryController extends _$TimeByCategoryController {
           leading: false,
           trailing: true,
         )
-        .listen((_) async {
-      if (_isVisible) {
+        .listen((affectedIds) async {
+      if (affectedIds.intersection(subscribedIds).isNotEmpty && _isVisible) {
         final timeSpanDays = ref.read(timeFrameControllerProvider);
         final latest = await _fetch(timeSpanDays);
         state = AsyncData(latest);

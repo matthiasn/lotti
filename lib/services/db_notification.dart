@@ -34,3 +34,7 @@ class UpdateNotifications {
     }
   }
 }
+
+const habitCompletionNotification = 'HABIT_COMPLETION';
+const textEntryNotification = 'TEXT_ENTRY';
+const taskNotification = 'TASK';

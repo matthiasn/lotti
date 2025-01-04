@@ -630,10 +630,11 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
-  Stream<List<JournalEntity>> watchHabitCompletionsInRange({
+  Future<List<JournalEntity>> getHabitCompletionsInRange({
     required DateTime rangeStart,
-  }) {
-    return habitCompletionsInRange(rangeStart).watch().map(entityStreamMapper);
+  }) async {
+    final res = await habitCompletionsInRange(rangeStart).get();
+    return res.map(fromDbEntity).toList();
   }
 
   Future<List<JournalEntity>> getQuantitativeByType({

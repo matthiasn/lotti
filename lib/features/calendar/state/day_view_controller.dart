@@ -29,6 +29,8 @@ class DayViewController extends _$DayViewController {
   bool _isVisible = false;
 
   void listen() {
+    final subscribedIds = <String>{textEntryNotification};
+
     _updateSubscription = getIt<UpdateNotifications>()
         .updateStream
         .throttleTime(
@@ -36,8 +38,8 @@ class DayViewController extends _$DayViewController {
           leading: false,
           trailing: true,
         )
-        .listen((_) async {
-      if (_isVisible) {
+        .listen((affectedIds) async {
+      if (affectedIds.intersection(subscribedIds).isNotEmpty && _isVisible) {
         final timeSpanDays = ref.read(timeFrameControllerProvider);
         final latest = await _fetch(timeSpanDays: timeSpanDays);
         state = AsyncData(latest);
