@@ -11,6 +11,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -44,9 +45,9 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
         builder: (context, HabitsState state) {
           final timeSpanDays = state.timeSpanDays;
 
-          final rangeStart = getStartOfDay(
-            DateTime.now().subtract(Duration(days: timeSpanDays - 1)),
-          );
+          final rangeStart = DateTime.now()
+              .dayAtMidnight
+              .subtract(Duration(days: timeSpanDays - 1));
 
           final rangeEnd = getEndOfToday();
           final showGaps = timeSpanDays < 180;

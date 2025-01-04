@@ -123,9 +123,8 @@ class _HabitDialogState extends State<HabitDialog> {
     }
     final timeSpanDays = isDesktop ? 30 : 14;
 
-    final rangeStart = getStartOfDay(
-      DateTime.now().subtract(Duration(days: timeSpanDays)),
-    );
+    final rangeStart =
+        DateTime.now().dayAtMidnight.subtract(Duration(days: timeSpanDays));
 
     final rangeEnd = getEndOfToday();
 
