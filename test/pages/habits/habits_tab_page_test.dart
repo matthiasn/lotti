@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -77,15 +76,12 @@ void main() {
       ).thenAnswer((_) async => []);
 
       when(
-        () => mockJournalDb.watchHabitCompletionsInRange(
+        () => mockJournalDb.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testHabitCompletionEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testHabitCompletionEntry]);
     });
+
     tearDown(getIt.reset);
 
     testWidgets('habits page is rendered', (tester) async {

@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -76,25 +77,32 @@ class HabitsCubit extends Cubit<HabitsState> {
     emitState();
   }
 
-  void startWatching() {
-    _completionsStream = _journalDb
-        .watchHabitCompletionsInRange(
-          rangeStart: getStartOfDay(
-            DateTime.now().subtract(const Duration(days: 180)),
-          ),
-        )
-        .throttleTime(
-          const Duration(seconds: 5),
-          trailing: true,
-          leading: true,
-        );
+  Future<void> startWatching() async {
+    await fetchHabitCompletions();
+    final subscribedIds = <String>{habitCompletionNotification};
 
-    _completionsSubscription = _completionsStream.listen((habitCompletions) {
-      _habitCompletions = habitCompletions;
-      if (_isVisible) {
+    _updateSubscription = getIt<UpdateNotifications>()
+        .updateStream
+        .throttleTime(
+          const Duration(milliseconds: 200),
+          leading: false,
+          trailing: true,
+        )
+        .listen((affectedIds) async {
+      if (affectedIds.intersection(subscribedIds).isNotEmpty) {
+        await fetchHabitCompletions();
         determineHabitSuccessByDays();
       }
     });
+  }
+
+  Future<void> fetchHabitCompletions() async {
+    final rangeStart = DateTime.now().dayAtMidnight.subtract(
+          const Duration(days: 180),
+        );
+    _habitCompletions = await _journalDb.getHabitCompletionsInRange(
+      rangeStart: rangeStart,
+    );
   }
 
   void determineHabitSuccessByDays() {
@@ -211,7 +219,6 @@ class HabitsCubit extends Cubit<HabitsState> {
 
     _shortStreakCount = shortStreakCount;
     _longStreakCount = longStreakCount;
-
     emitState();
   }
 
@@ -310,9 +317,7 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   late final Stream<List<HabitDefinition>> _definitionsStream;
   late final StreamSubscription<List<HabitDefinition>> _definitionsSubscription;
-
-  late Stream<List<JournalEntity>> _completionsStream;
-  late final StreamSubscription<List<JournalEntity>> _completionsSubscription;
+  late final StreamSubscription<Set<String>>? _updateSubscription;
 
   void emitState() {
     emit(
@@ -373,7 +378,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   @override
   Future<void> close() async {
     await _definitionsSubscription.cancel();
-    await _completionsSubscription.cancel();
+    await _updateSubscription?.cancel();
     await super.close();
   }
 }

@@ -5,7 +5,7 @@ import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/day_view_controller.dart';
-import 'package:lotti/features/calendar/ui/time_by_category_chart_card.dart';
+import 'package:lotti/features/calendar/ui/widgets/time_by_category_chart_card.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
