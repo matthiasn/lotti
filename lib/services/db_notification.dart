@@ -14,7 +14,7 @@ class UpdateNotifications {
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (fromSync) {
       _affectedIdsFromSync.addAll(affectedIds);
-      _fromSyncTimer ??= Timer(const Duration(seconds: 2), () {
+      _fromSyncTimer ??= Timer(const Duration(seconds: 1), () {
         if (_affectedIdsFromSync.isNotEmpty) {
           _controller.add({..._affectedIdsFromSync});
           _affectedIdsFromSync.clear();
