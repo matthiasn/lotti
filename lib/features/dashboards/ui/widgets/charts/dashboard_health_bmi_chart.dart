@@ -5,15 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/state/health_bmi_data.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
+import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_data.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_config.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 
 class BmiRangeLegend extends StatelessWidget {
   const BmiRangeLegend({

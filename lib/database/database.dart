@@ -670,6 +670,14 @@ class JournalDb extends _$JournalDb {
     return workouts(rangeStart, rangeEnd).watch().map(entityStreamMapper);
   }
 
+  Future<List<JournalEntity>> getWorkouts({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await workouts(rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
+  }
+
   Stream<List<Conflict>> watchConflicts(
     ConflictStatus status, {
     int limit = 1000,

@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';

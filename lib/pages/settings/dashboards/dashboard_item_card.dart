@@ -2,12 +2,12 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
-import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardItemCard extends StatelessWidget {

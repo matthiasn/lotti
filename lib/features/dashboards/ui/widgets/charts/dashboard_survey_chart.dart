@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/survey_chart_controller.dart';
+import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_data.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/time_series/time_series_multiline_chart.dart';
 
 class DashboardSurveyChart extends ConsumerWidget {
   const DashboardSurveyChart({

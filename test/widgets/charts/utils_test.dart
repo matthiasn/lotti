@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
+import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 void main() {
