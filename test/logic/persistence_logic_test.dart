@@ -419,12 +419,10 @@ void main() {
 
       // workout is retrieved on workout watch stream
       expect(
-        ((await getIt<JournalDb>()
-                    .watchWorkouts(
-                      rangeStart: DateTime(0),
-                      rangeEnd: DateTime(2100),
-                    )
-                    .first)
+        ((await getIt<JournalDb>().getWorkouts(
+          rangeStart: DateTime(0),
+          rangeEnd: DateTime(2100),
+        ))
                 .first as WorkoutEntry)
             .data,
         workoutData,

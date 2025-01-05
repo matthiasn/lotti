@@ -73,14 +73,14 @@ void main() {
         (_) => Stream<DashboardDefinition>.fromIterable([testDashboardConfig]),
       );
 
-      when(
-        () => mockJournalDb.watchWorkouts(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
+      // when(
+      //   () => mockJournalDb.watchWorkouts(
+      //     rangeStart: any(named: 'rangeStart'),
+      //     rangeEnd: any(named: 'rangeEnd'),
+      //   ),
+      // ).thenAnswer(
+      //   (_) => Stream<List<JournalEntity>>.fromIterable([]),
+      // );
 
       when(
         () => mockHealthImport.fetchHealthDataDelta(any()),

@@ -663,13 +663,6 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
-  Stream<List<JournalEntity>> watchWorkouts({
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) {
-    return workouts(rangeStart, rangeEnd).watch().map(entityStreamMapper);
-  }
-
   Future<List<JournalEntity>> getWorkouts({
     required DateTime rangeStart,
     required DateTime rangeEnd,
