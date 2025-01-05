@@ -1,35 +1,49 @@
 import 'dart:core';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-class TimeSeriesMultiLineChart extends StatelessWidget {
-  const TimeSeriesMultiLineChart({
-    required this.lineBarsData,
+class TimeSeriesBarChart extends StatelessWidget {
+  const TimeSeriesBarChart({
+    required this.data,
     required this.rangeStart,
     required this.rangeEnd,
-    required this.minVal,
-    required this.maxVal,
+    required this.colorByValue,
     this.unit = '',
+    this.valueInHours = false,
     super.key,
   });
 
-  final List<LineChartBarData> lineBarsData;
+  final List<Observation> data;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final num minVal;
-  final num maxVal;
   final String unit;
+  final bool valueInHours;
+  final ColorByValue colorByValue;
 
   @override
   Widget build(BuildContext context) {
-    final valRange = maxVal - minVal;
+    final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
+
+    final byDay = <String, Observation>{};
+    for (final observation in data) {
+      final day = observation.dateTime.ymd;
+      byDay[day] = observation;
+    }
+
+    final dataWithEmptyDays = inRange.map((day) {
+      final observation = byDay[day] ?? Observation(DateTime.parse(day), 0);
+      return observation;
+    });
 
     final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
@@ -41,10 +55,36 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                 ? 7
                 : 1;
 
-    Widget bottomTitleWidgets(double value, TitleMeta meta) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final barsWidth =
+        (screenWidth - 150 - rangeInDays - screenWidth * 0.1) / rangeInDays;
+
+    final barGroups = dataWithEmptyDays
+        .sortedBy((observation) => observation.dateTime)
+        .map((observation) {
+      return BarChartGroupData(
+        x: observation.dateTime.millisecondsSinceEpoch,
+        barRods: [
+          BarChartRodData(
+            toY: observation.value.toDouble(),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(1),
+              topRight: Radius.circular(1),
+            ),
+            color: colorByValue(observation),
+            width: max(barsWidth, 1),
+          ),
+        ],
+      );
+    }).toList();
+
+    Widget bottomTitleWidgets(
+      double value,
+      TitleMeta meta,
+    ) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
       if (ymd.day == 1 ||
-          (rangeInDays < 90 && ymd.day == 15) ||
+          (rangeInDays < 92 && ymd.day == 15) ||
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
@@ -60,8 +100,9 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
         top: 20,
         right: 20,
       ),
-      child: LineChart(
-        LineChartData(
+      child: BarChart(
+        BarChartData(
+          groupsSpace: 5,
           gridData: FlGridData(
             show: false,
             horizontalInterval: double.maxFinite,
@@ -70,8 +111,8 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
             getDrawingHorizontalLine: (value) => gridLine,
             getDrawingVerticalLine: (value) => gridLine,
           ),
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
               tooltipMargin: isMobile ? 24 : 16,
               tooltipPadding: const EdgeInsets.symmetric(
                 horizontal: 8,
@@ -80,27 +121,17 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
               getTooltipColor: (_) =>
                   Theme.of(context).primaryColor.desaturate(),
               tooltipRoundedRadius: 8,
-              getTooltipItems: (List<LineBarSpot> spots) {
-                return spots.map((spot) {
-                  return LineTooltipItem(
-                    '',
-                    TextStyle(
-                      fontSize: fontSizeSmall,
-                      fontWeight: FontWeight.w300,
-                      color: context.colorScheme.onPrimary,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '${spot.y.toInt()} $unit\n',
-                        style: chartTooltipStyleBold,
-                      ),
-                      TextSpan(
-                        text: chartDateFormatterFull(spot.x),
-                        style: chartTooltipStyle,
-                      ),
-                    ],
-                  );
-                }).toList();
+              getTooltipItem: (groupData, timestamp, rodData, foo) {
+                final formatted = valueInHours
+                    ? hoursToHhMm(rodData.toY)
+                    : NumberFormat('#,###').format(rodData.toY);
+                return BarTooltipItem(
+                  '$formatted $unit\n'
+                  '${chartDateFormatterYMD(groupData.x)}',
+                  chartTooltipStyleBold.copyWith(
+                    color: context.colorScheme.onPrimary,
+                  ),
+                );
               },
             ),
           ),
@@ -118,7 +149,6 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
             leftTitles: const AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: double.maxFinite,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 40,
               ),
@@ -128,13 +158,9 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
             show: true,
             border: Border.all(color: const Color(0xff37434d)),
           ),
-          minX: rangeStart.millisecondsSinceEpoch.toDouble(),
-          maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
-          minY: max(minVal - valRange * 0.2, 0),
-          maxY: maxVal + valRange * 0.2,
-          lineBarsData: lineBarsData,
+          barGroups: barGroups,
         ),
-        duration: Duration.zero,
+        //duration: Duration.zero,
       ),
     );
   }

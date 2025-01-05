@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/db_notification.dart';
