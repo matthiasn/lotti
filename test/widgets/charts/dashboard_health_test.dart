@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';

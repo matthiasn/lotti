@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HealthSummary extends StatelessWidget {
