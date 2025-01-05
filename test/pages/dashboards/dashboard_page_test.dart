@@ -74,16 +74,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchSurveysByType(
-          type: any(named: 'type'),
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
-
-      when(
         () => mockJournalDb.watchWorkouts(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),

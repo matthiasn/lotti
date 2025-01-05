@@ -654,14 +654,13 @@ class JournalDb extends _$JournalDb {
     return fromDbEntity(dbEntities.first) as WorkoutEntry;
   }
 
-  Stream<List<JournalEntity>> watchSurveysByType({
+  Future<List<JournalEntity>> getSurveyCompletionsByType({
     required String type,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) {
-    return surveysByType(type, rangeStart, rangeEnd)
-        .watch()
-        .map(entityStreamMapper);
+  }) async {
+    final res = await surveysByType(type, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
   }
 
   Stream<List<JournalEntity>> watchWorkouts({

@@ -235,6 +235,10 @@ extension JournalEntityExtension on JournalEntity {
       ids.add(textEntryNotification);
     }
 
+    if (this is SurveyEntry) {
+      ids.add(surveyNotification);
+    }
+
     return ids;
   }
 }
