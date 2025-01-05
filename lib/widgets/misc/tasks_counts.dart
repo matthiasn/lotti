@@ -58,8 +58,8 @@ class TasksCountWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: _db.watchTaskCount(status),
+    return FutureBuilder<int>(
+      future: _db.getTasksCount(statuses: [status]),
       builder: (
         BuildContext context,
         AsyncSnapshot<int> snapshot,
@@ -85,8 +85,8 @@ class FlaggedCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: getIt<JournalDb>().watchCountImportFlagEntries(),
+    return FutureBuilder<int>(
+      future: getIt<JournalDb>().getCountImportFlagEntries(),
       builder: (
         BuildContext context,
         AsyncSnapshot<int> snapshot,

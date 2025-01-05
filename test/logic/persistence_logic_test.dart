@@ -193,8 +193,8 @@ void main() {
       verify(mockNotificationService.updateBadge).called(1);
 
       // expect correct task by status counts in streams
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 1);
-      expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 1);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
 
       // expect task lists by status in streams
       expect(
@@ -267,8 +267,11 @@ void main() {
       // TODO: why is this failing suddenly?
       //verify(mockNotificationService.updateBadge).called(1);
       expect(await getIt<JournalDb>().getWipCount(), 1);
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
-      expect(await getIt<JournalDb>().watchTaskCount('IN PROGRESS').first, 1);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
+      expect(
+        await getIt<JournalDb>().getTasksCount(statuses: ['IN PROGRESS']),
+        1,
+      );
 
       // update task with status 'DONE'
       await getIt<PersistenceLogic>().updateTask(
@@ -287,8 +290,8 @@ void main() {
       //verify(mockNotificationService.updateBadge).called(1);
 
       // expect task counts by status to be updated
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
-      expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 1);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 1);
 
       // create test tag
       final testTagId = uuid.v1();
@@ -388,8 +391,8 @@ void main() {
       await JournalRepository().deleteJournalEntity(task.meta.id);
       expect(await getIt<JournalDb>().watchJournalCount().first, 2);
       expect(await getIt<JournalDb>().getJournalCount(), 2);
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
-      expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
 
       await getIt<JournalDb>().purgeDeleted(backup: false);

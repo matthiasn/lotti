@@ -73,13 +73,10 @@ void main() {
         (_) => Stream<bool>.fromIterable([true]),
       );
 
-      when(mockJournalDb.watchCountImportFlagEntries)
-          .thenAnswer((_) => Stream<int>.fromIterable([42]));
-
       when(() => mockSettingsDb.itemByKey(any()))
           .thenAnswer((_) => Future(() => null));
 
-      when(mockJournalDb.getInProgressTasksCount).thenAnswer((_) async => 42);
+      when(mockJournalDb.getTasksCount).thenAnswer((_) async => 42);
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
