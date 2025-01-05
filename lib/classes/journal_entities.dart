@@ -198,41 +198,48 @@ extension JournalEntityExtension on JournalEntity {
   Set<String> get affectedIds {
     final ids = <String>{id};
 
-    if (this is HabitCompletionEntry) {
-      final habitCompletion = this as HabitCompletionEntry;
-      ids
-        ..add(habitCompletion.data.habitId)
-        ..add(habitCompletionNotification);
-    }
+    switch (this) {
+      case final HabitCompletionEntry habitCompletion:
+        ids
+          ..add(habitCompletion.data.habitId)
+          ..add(habitCompletionNotification);
 
-    if (this is Checklist) {
-      final checklist = this as Checklist;
-      ids
-        ..addAll(checklist.data.linkedChecklistItems)
-        ..addAll(checklist.data.linkedTasks);
-    }
+      case final Checklist checklist:
+        ids
+          ..addAll(checklist.data.linkedChecklistItems)
+          ..addAll(checklist.data.linkedTasks);
 
-    if (this is ChecklistItem) {
-      final checklistItem = this as ChecklistItem;
-      ids.addAll(checklistItem.data.linkedChecklists);
-    }
+      case final ChecklistItem checklistItem:
+        ids.addAll(checklistItem.data.linkedChecklists);
 
-    if (this is MeasurementEntry) {
-      final checklistItem = this as MeasurementEntry;
-      ids.add(checklistItem.data.dataTypeId);
-    }
+      case final QuantitativeEntry quantitative:
+        ids.add(quantitative.data.dataType);
 
-    if (this is QuantitativeEntry) {
-      final checklistItem = this as QuantitativeEntry;
-      ids.add(checklistItem.data.dataType);
-    }
+      case SurveyEntry():
+        ids.add(surveyNotification);
 
-    if (this is Task) {
-      ids.add(taskNotification);
-    }
+      case JournalEvent():
+        ids.add(eventNotification);
 
-    if (this is JournalEntry) {
-      ids.add(textEntryNotification);
+      case JournalImage():
+        ids.add(imageNotification);
+
+      case JournalAudio():
+        ids.add(audioNotification);
+
+      case Task():
+        ids.add(taskNotification);
+
+      case JournalEntry():
+        ids.add(textEntryNotification);
+
+      case final WorkoutEntry workout:
+        ids
+          ..add(workoutNotification)
+          ..add(workout.data.workoutType);
+
+      case final MeasurementEntry measurement:
+        ids.add(measurement.data.dataTypeId);
     }
 
     return ids;

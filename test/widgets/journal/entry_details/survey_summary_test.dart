@@ -30,16 +30,12 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchSurveysByType(
+        () => mockJournalDb.getSurveyCompletionsByType(
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
           type: any(named: 'type'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testSurveyEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testSurveyEntry]);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(SurveySummary(testSurveyEntry)),

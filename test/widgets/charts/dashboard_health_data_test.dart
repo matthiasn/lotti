@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/charts/dashboard_health_config.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 void addDiscreteQuantEntity({

@@ -209,14 +209,6 @@ class JournalDb extends _$JournalDb {
     return res.firstOrNull;
   }
 
-  Stream<JournalEntity?> watchEntityById(String id) {
-    final res = (select(journal)..where((t) => t.id.equals(id)))
-        .watch()
-        .map(entityStreamMapper)
-        .map((entities) => entities.isNotEmpty ? entities.first : null);
-    return res;
-  }
-
   Future<Conflict?> conflictById(String id) async {
     final res = await (select(conflicts)..where((t) => t.id.equals(id))).get();
     if (res.isNotEmpty) {
@@ -473,21 +465,8 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  Stream<int> watchJournalCount() {
-    return countJournalEntries().watch().map((List<int> res) => res.first);
-  }
-
-  Stream<int> watchTaskCount(String status) {
-    return _selectTasks(
-      starredStatuses: [true, false],
-      taskStatuses: [status],
-      categoryIds: [''],
-      limit: 100000,
-    ).watch().map((res) => res.length);
-  }
-
-  Stream<int> watchTaggedCount() {
-    return countTagged().watch().map((List<int> res) => res.first);
+  Future<int> getTaggedCount() async {
+    return (await countTagged().get()).first;
   }
 
   Future<int> getJournalCount() async {
@@ -586,12 +565,10 @@ class JournalDb extends _$JournalDb {
     return res.first;
   }
 
-  Stream<int> watchCountImportFlagEntries() {
-    return countImportFlagEntries().watch().map((event) => event.first);
-  }
-
-  Future<int> getInProgressTasksCount() async {
-    final res = await countInProgressTasks(['IN PROGRESS']).get();
+  Future<int> getTasksCount({
+    List<String> statuses = const ['IN PROGRESS'],
+  }) async {
+    final res = await countInProgressTasks(statuses).get();
     return res.first;
   }
 
@@ -665,21 +642,21 @@ class JournalDb extends _$JournalDb {
     return fromDbEntity(dbEntities.first) as WorkoutEntry;
   }
 
-  Stream<List<JournalEntity>> watchSurveysByType({
+  Future<List<JournalEntity>> getSurveyCompletionsByType({
     required String type,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) {
-    return surveysByType(type, rangeStart, rangeEnd)
-        .watch()
-        .map(entityStreamMapper);
+  }) async {
+    final res = await surveysByType(type, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
   }
 
-  Stream<List<JournalEntity>> watchWorkouts({
+  Future<List<JournalEntity>> getWorkouts({
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) {
-    return workouts(rangeStart, rangeEnd).watch().map(entityStreamMapper);
+  }) async {
+    final res = await workouts(rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
   }
 
   Stream<List<Conflict>> watchConflicts(

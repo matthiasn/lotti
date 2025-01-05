@@ -185,16 +185,11 @@ void main() {
           await getIt<JournalDb>().journalEntityById(task!.meta.id) as Task?;
       expect(testTask?.entryText?.plainText, testTaskText);
 
-      // expect to get created task in watch stream
-      final testTaskFromStream =
-          await getIt<JournalDb>().watchEntityById(task.meta.id).first as Task?;
-      expect(testTaskFromStream?.entryText?.plainText, testTaskText);
-
       verify(mockNotificationService.updateBadge).called(1);
 
       // expect correct task by status counts in streams
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 1);
-      expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 1);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
 
       // expect task lists by status in streams
       expect(
@@ -267,8 +262,11 @@ void main() {
       // TODO: why is this failing suddenly?
       //verify(mockNotificationService.updateBadge).called(1);
       expect(await getIt<JournalDb>().getWipCount(), 1);
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
-      expect(await getIt<JournalDb>().watchTaskCount('IN PROGRESS').first, 1);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
+      expect(
+        await getIt<JournalDb>().getTasksCount(statuses: ['IN PROGRESS']),
+        1,
+      );
 
       // update task with status 'DONE'
       await getIt<PersistenceLogic>().updateTask(
@@ -287,8 +285,8 @@ void main() {
       //verify(mockNotificationService.updateBadge).called(1);
 
       // expect task counts by status to be updated
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
-      expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 1);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 1);
 
       // create test tag
       final testTagId = uuid.v1();
@@ -354,7 +352,7 @@ void main() {
             ?.entryText,
       );
 
-      expect(await getIt<JournalDb>().watchTaggedCount().first, 2);
+      expect(await getIt<JournalDb>().getTaggedCount(), 2);
 
       // remove tags and expect them to be empty
       await TagsRepository.removeTag(
@@ -362,7 +360,7 @@ void main() {
         tagId: testTagId,
       );
 
-      expect(await getIt<JournalDb>().watchTaggedCount().first, 1);
+      expect(await getIt<JournalDb>().getTaggedCount(), 1);
 
       expect(
         (await getIt<JournalDb>().journalEntityById(comment.meta.id))
@@ -371,8 +369,6 @@ void main() {
         isEmpty,
       );
 
-      // expect three entries to be in database
-      expect(await getIt<JournalDb>().watchJournalCount().first, 3);
       expect(await getIt<JournalDb>().getJournalCount(), 3);
 
       // unlink comment from task
@@ -386,10 +382,9 @@ void main() {
 
       // delete task and expect counts to be updated
       await JournalRepository().deleteJournalEntity(task.meta.id);
-      expect(await getIt<JournalDb>().watchJournalCount().first, 2);
       expect(await getIt<JournalDb>().getJournalCount(), 2);
-      expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
-      expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
+      expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
 
       await getIt<JournalDb>().purgeDeleted(backup: false);
@@ -416,12 +411,10 @@ void main() {
 
       // workout is retrieved on workout watch stream
       expect(
-        ((await getIt<JournalDb>()
-                    .watchWorkouts(
-                      rangeStart: DateTime(0),
-                      rangeEnd: DateTime(2100),
-                    )
-                    .first)
+        ((await getIt<JournalDb>().getWorkouts(
+          rangeStart: DateTime(0),
+          rangeEnd: DateTime(2100),
+        ))
                 .first as WorkoutEntry)
             .data,
         workoutData,

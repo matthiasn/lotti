@@ -16,8 +16,8 @@ class MaintenancePage extends StatelessWidget {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
 
-    return StreamBuilder<int>(
-      stream: db.watchTaggedCount(),
+    return FutureBuilder<int>(
+      future: db.getTaggedCount(),
       builder: (
         BuildContext context,
         AsyncSnapshot<int> snapshot,

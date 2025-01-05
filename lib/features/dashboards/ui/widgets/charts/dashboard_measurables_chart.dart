@@ -6,9 +6,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart_info.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/charts/time_series/time_series_bar_chart.dart';
-import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class MeasurablesBarChart extends ConsumerWidget {

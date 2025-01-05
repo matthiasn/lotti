@@ -38,3 +38,8 @@ class UpdateNotifications {
 const habitCompletionNotification = 'HABIT_COMPLETION';
 const textEntryNotification = 'TEXT_ENTRY';
 const taskNotification = 'TASK';
+const surveyNotification = 'SURVEY';
+const eventNotification = 'EVENT';
+const audioNotification = 'AUDIO';
+const imageNotification = 'IMAGE';
+const workoutNotification = 'WORKOUT';
