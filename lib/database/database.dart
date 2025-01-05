@@ -209,14 +209,6 @@ class JournalDb extends _$JournalDb {
     return res.firstOrNull;
   }
 
-  Stream<JournalEntity?> watchEntityById(String id) {
-    final res = (select(journal)..where((t) => t.id.equals(id)))
-        .watch()
-        .map(entityStreamMapper)
-        .map((entities) => entities.isNotEmpty ? entities.first : null);
-    return res;
-  }
-
   Future<Conflict?> conflictById(String id) async {
     final res = await (select(conflicts)..where((t) => t.id.equals(id))).get();
     if (res.isNotEmpty) {
@@ -473,12 +465,8 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  Stream<int> watchJournalCount() {
-    return countJournalEntries().watch().map((List<int> res) => res.first);
-  }
-
-  Stream<int> watchTaggedCount() {
-    return countTagged().watch().map((List<int> res) => res.first);
+  Future<int> getTaggedCount() async {
+    return (await countTagged().get()).first;
   }
 
   Future<int> getJournalCount() async {

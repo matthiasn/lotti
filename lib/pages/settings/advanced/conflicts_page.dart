@@ -166,8 +166,8 @@ class ConflictDetailRoute extends StatelessWidget {
         final conflict = data.first;
         final fromSync = fromSerialized(conflict.serialized);
 
-        return StreamBuilder<JournalEntity?>(
-          stream: db.watchEntityById(conflict.id),
+        return FutureBuilder<JournalEntity?>(
+          future: db.journalEntityById(conflict.id),
           builder: (
             BuildContext context,
             AsyncSnapshot<JournalEntity?> snapshot,

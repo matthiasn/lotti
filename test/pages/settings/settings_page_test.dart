@@ -19,8 +19,7 @@ void main() {
 
   group('SettingsPage Widget Tests - ', () {
     setUp(() {
-      when(mockJournalDb.watchJournalCount)
-          .thenAnswer((_) => Stream<int>.fromIterable([n]));
+      when(mockJournalDb.getJournalCount).thenAnswer((_) async => n);
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
