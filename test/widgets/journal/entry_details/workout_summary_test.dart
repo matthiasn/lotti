@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/get_it.dart';
@@ -29,15 +28,11 @@ void main() {
     testWidgets('summary with workout chart for running distance is rendered',
         (tester) async {
       when(
-        () => mockJournalDb.watchWorkouts(
+        () => mockJournalDb.getWorkouts(
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWorkoutRunning],
-        ]),
-      );
+      ).thenAnswer((_) async => [testWorkoutRunning]);
 
       when(mockHealthImport.getWorkoutsHealthDataDelta)
           .thenAnswer((_) async {});
