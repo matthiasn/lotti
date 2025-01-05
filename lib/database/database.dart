@@ -477,15 +477,6 @@ class JournalDb extends _$JournalDb {
     return countJournalEntries().watch().map((List<int> res) => res.first);
   }
 
-  Stream<int> watchTaskCount(String status) {
-    return _selectTasks(
-      starredStatuses: [true, false],
-      taskStatuses: [status],
-      categoryIds: [''],
-      limit: 100000,
-    ).watch().map((res) => res.length);
-  }
-
   Stream<int> watchTaggedCount() {
     return countTagged().watch().map((List<int> res) => res.first);
   }
@@ -586,12 +577,10 @@ class JournalDb extends _$JournalDb {
     return res.first;
   }
 
-  Stream<int> watchCountImportFlagEntries() {
-    return countImportFlagEntries().watch().map((event) => event.first);
-  }
-
-  Future<int> getInProgressTasksCount() async {
-    final res = await countInProgressTasks(['IN PROGRESS']).get();
+  Future<int> getTasksCount({
+    List<String> statuses = const ['IN PROGRESS'],
+  }) async {
+    final res = await countInProgressTasks(statuses).get();
     return res.first;
   }
 

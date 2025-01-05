@@ -23,8 +23,7 @@ void main() {
       when(mockJournalDb.watchJournalCount)
           .thenAnswer((_) => Stream<int>.fromIterable([n]));
 
-      when(mockJournalDb.watchCountImportFlagEntries)
-          .thenAnswer((_) => Stream<int>.fromIterable([0]));
+      when(mockJournalDb.getCountImportFlagEntries).thenAnswer((_) async => 0);
 
       when(
         () => mockJournalDb.linksForEntryIds(any()),
@@ -40,10 +39,8 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(
-        () => mockJournalDb.watchTaskCount(any()),
-      ).thenAnswer(
-        (_) => Stream<int>.fromIterable([10]),
-      );
+        () => mockJournalDb.getTasksCount(statuses: any(named: 'statuses')),
+      ).thenAnswer((_) async => 10);
     });
     tearDown(getIt.reset);
 

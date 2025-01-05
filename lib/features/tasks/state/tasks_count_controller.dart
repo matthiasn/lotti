@@ -34,6 +34,6 @@ class TasksCountController extends _$TasksCountController {
   }
 
   Future<int> _fetch() async {
-    return getIt<JournalDb>().getInProgressTasksCount();
+    return getIt<JournalDb>().getTasksCount();
   }
 }
