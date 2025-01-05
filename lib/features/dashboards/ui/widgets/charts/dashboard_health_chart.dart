@@ -4,15 +4,15 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
+import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
-import 'package:lotti/widgets/charts/dashboard_health_bp_chart.dart';
-import 'package:lotti/widgets/charts/dashboard_health_config.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
-import 'package:lotti/widgets/charts/time_series/time_series_bar_chart.dart';
-import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HealthChartInfoWidget extends StatelessWidget {

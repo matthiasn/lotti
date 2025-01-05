@@ -1,21 +1,19 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math';
 
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
+import 'package:lotti/features/dashboards/state/workout_data.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'health_chart_controller.g.dart';
+part 'workout_chart_controller.g.dart';
 
 @riverpod
-class HealthChartDataController extends _$HealthChartDataController {
+class WorkoutChartDataController extends _$WorkoutChartDataController {
   final JournalDb _journalDb = getIt<JournalDb>();
 
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -24,7 +22,7 @@ class HealthChartDataController extends _$HealthChartDataController {
   void listen() {
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(healthDataType)) {
+      if (affectedIds.contains(workoutNotification)) {
         final latest = await _fetch();
         if (latest != state.value) {
           state = AsyncData(latest);
@@ -35,7 +33,6 @@ class HealthChartDataController extends _$HealthChartDataController {
 
   @override
   Future<List<JournalEntity>> build({
-    required String healthDataType,
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
@@ -51,8 +48,7 @@ class HealthChartDataController extends _$HealthChartDataController {
   }
 
   Future<List<JournalEntity>> _fetch() async {
-    return _journalDb.getQuantitativeByType(
-      type: healthDataType,
+    return _journalDb.getWorkouts(
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );
@@ -60,18 +56,10 @@ class HealthChartDataController extends _$HealthChartDataController {
 }
 
 @riverpod
-class HealthObservationsController extends _$HealthObservationsController {
-  HealthObservationsController() {
-    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
-      Future.delayed(Duration(milliseconds: 500 + Random().nextInt(500)), () {
-        getIt<HealthImport>().fetchHealthDataDelta(healthDataType);
-      });
-    }
-  }
-
+class WorkoutObservationsController extends _$WorkoutObservationsController {
   @override
   Future<List<Observation>> build({
-    required String healthDataType,
+    required DashboardItem chartConfig,
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
@@ -79,8 +67,7 @@ class HealthObservationsController extends _$HealthObservationsController {
 
     final items = ref
             .watch(
-              healthChartDataControllerProvider(
-                healthDataType: healthDataType,
+              workoutChartDataControllerProvider(
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
               ),
@@ -88,6 +75,14 @@ class HealthObservationsController extends _$HealthObservationsController {
             .valueOrNull ??
         [];
 
-    return aggregateByType(items, healthDataType);
+    return aggregateWorkoutDailySum(
+      items,
+      // type casting is necessary because an issue in riverpod otherwise
+      // generating InvalidType, also see
+      // https://github.com/rrousselGit/riverpod/issues/2920
+      chartConfig: chartConfig as DashboardWorkoutItem,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
   }
 }

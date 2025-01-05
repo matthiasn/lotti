@@ -3,9 +3,9 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 Color colorByValueAndType(

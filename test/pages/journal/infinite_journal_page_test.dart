@@ -61,8 +61,7 @@ void main() {
         measurableChocolate,
       ]);
 
-      when(mockJournalDb.watchJournalCount)
-          .thenAnswer((_) => Stream<int>.fromIterable([1]));
+      when(mockJournalDb.getJournalCount).thenAnswer((_) async => 1);
 
       mockPersistenceLogic = MockPersistenceLogic();
 
@@ -73,13 +72,10 @@ void main() {
         (_) => Stream<bool>.fromIterable([true]),
       );
 
-      when(mockJournalDb.watchCountImportFlagEntries)
-          .thenAnswer((_) => Stream<int>.fromIterable([42]));
-
       when(() => mockSettingsDb.itemByKey(any()))
           .thenAnswer((_) => Future(() => null));
 
-      when(mockJournalDb.getInProgressTasksCount).thenAnswer((_) async => 42);
+      when(mockJournalDb.getTasksCount).thenAnswer((_) async => 42);
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())

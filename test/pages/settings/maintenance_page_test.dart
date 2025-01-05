@@ -16,12 +16,9 @@ void main() {
 
   group('MaintenancePage Widget Tests - ', () {
     setUp(() {
-      when(mockJournalDb.watchTaggedCount)
-          .thenAnswer((_) => Stream<int>.fromIterable([1]));
+      when(mockJournalDb.getTaggedCount).thenAnswer((_) async => 1);
 
-      when(
-        mockJournalDb.watchConfigFlags,
-      ).thenAnswer(
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
       );
 

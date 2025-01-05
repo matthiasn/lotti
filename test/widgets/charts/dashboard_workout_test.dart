@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -30,15 +29,11 @@ void main() {
     testWidgets('workout chart for running distance is rendered',
         (tester) async {
       when(
-        () => mockJournalDb.watchWorkouts(
+        () => mockJournalDb.getWorkouts(
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWorkoutRunning],
-        ]),
-      );
+      ).thenAnswer((_) async => [testWorkoutRunning]);
 
       when(mockHealthImport.getWorkoutsHealthDataDelta)
           .thenAnswer((_) async {});
@@ -69,15 +64,11 @@ void main() {
 
     testWidgets('workout chart for running energy is rendered', (tester) async {
       when(
-        () => mockJournalDb.watchWorkouts(
+        () => mockJournalDb.getWorkouts(
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWorkoutRunning],
-        ]),
-      );
+      ).thenAnswer((_) async => [testWorkoutRunning]);
 
       when(mockHealthImport.getWorkoutsHealthDataDelta)
           .thenAnswer((_) async {});
@@ -109,15 +100,11 @@ void main() {
     testWidgets('workout chart for running duration is rendered',
         (tester) async {
       when(
-        () => mockJournalDb.watchWorkouts(
+        () => mockJournalDb.getWorkouts(
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWorkoutRunning],
-        ]),
-      );
+      ).thenAnswer((_) async => [testWorkoutRunning]);
 
       when(mockHealthImport.getWorkoutsHealthDataDelta)
           .thenAnswer((_) async {});
