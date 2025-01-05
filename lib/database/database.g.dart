@@ -4627,6 +4627,18 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_journal_geohash_int ON journal (geohash_int)');
   late final Index idxJournalCategory = Index('idx_journal_category',
       'CREATE INDEX idx_journal_category ON journal (category)');
+  late final Index idxJournalComposite = Index('idx_journal_composite',
+      'CREATE INDEX idx_journal_composite ON journal (type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+  late final Index idxJournalHabitCompletions = Index(
+      'idx_journal_habit_completions',
+      'CREATE INDEX idx_journal_habit_completions ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, date_to COLLATE BINARY ASC, date_to COLLATE BINARY DESC)');
+  late final Index idxJournalHabitCompletions2 = Index(
+      'idx_journal_habit_completions2',
+      'CREATE INDEX idx_journal_habit_completions2 ON journal (type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, created_at COLLATE BINARY ASC)');
+  late final Index idxJournalLinked = Index('idx_journal_linked',
+      'CREATE INDEX idx_journal_linked ON journal (id COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+  late final Index idxJournalFilteredTasks = Index('idx_journal_filtered_tasks',
+      'CREATE INDEX idx_journal_filtered_tasks ON journal (type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, task COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -4685,6 +4697,12 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_linked_entries_type ON linked_entries (type)');
   late final Index idxLinkedEntriesHidden = Index('idx_linked_entries_hidden',
       'CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden)');
+  late final Index idxLinkedEntriesFromIdHidden = Index(
+      'idx_linked_entries_from_id_hidden',
+      'CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
+  late final Index idxLinkedEntriesToIdHidden = Index(
+      'idx_linked_entries_to_id_hidden',
+      'CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
   Selectable<ConfigFlag> listConfigFlags() {
     return customSelect('SELECT * FROM config_flags',
         variables: [],
@@ -5590,6 +5608,11 @@ abstract class _$JournalDb extends GeneratedDatabase {
         idxJournalGeohashString,
         idxJournalGeohashInt,
         idxJournalCategory,
+        idxJournalComposite,
+        idxJournalHabitCompletions,
+        idxJournalHabitCompletions2,
+        idxJournalLinked,
+        idxJournalFilteredTasks,
         conflicts,
         measurableTypes,
         habitDefinitions,
@@ -5618,7 +5641,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
         idxLinkedEntriesFromId,
         idxLinkedEntriesToId,
         idxLinkedEntriesType,
-        idxLinkedEntriesHidden
+        idxLinkedEntriesHidden,
+        idxLinkedEntriesFromIdHidden,
+        idxLinkedEntriesToIdHidden
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(

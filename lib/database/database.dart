@@ -42,7 +42,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration {
@@ -87,6 +87,18 @@ class JournalDb extends _$JournalDb {
             debugPrint('Add timestamps in linked_entries table, with index');
             await m.addColumn(linkedEntries, linkedEntries.createdAt);
             await m.addColumn(linkedEntries, linkedEntries.updatedAt);
+          }();
+        }
+
+        if (from < 24) {
+          await () async {
+            debugPrint('Adding composite indices');
+            await m.createIndex(idxJournalComposite);
+            await m.createIndex(idxJournalHabitCompletions);
+            await m.createIndex(idxJournalHabitCompletions2);
+            await m.createIndex(idxJournalLinked);
+            await m.createIndex(idxLinkedEntriesFromIdHidden);
+            await m.createIndex(idxLinkedEntriesToIdHidden);
           }();
         }
       },

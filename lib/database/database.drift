@@ -39,6 +39,12 @@ CREATE INDEX idx_journal_geohash_string ON journal (geohash_string);
 CREATE INDEX idx_journal_geohash_int ON journal (geohash_int);
 CREATE INDEX idx_journal_category ON journal (category);
 
+CREATE INDEX idx_journal_composite ON journal(type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_habit_completions ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, date_to COLLATE BINARY ASC, date_to COLLATE BINARY DESC);
+CREATE INDEX idx_journal_habit_completions2 ON journal(type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, created_at COLLATE BINARY ASC);
+CREATE INDEX idx_journal_linked ON journal(id COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_filtered_tasks ON journal(type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, task COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
   created_at DATETIME NOT NULL,
@@ -168,6 +174,9 @@ CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id);
 CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id);
 CREATE INDEX idx_linked_entries_type ON linked_entries (type);
 CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden);
+
+CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
+CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:

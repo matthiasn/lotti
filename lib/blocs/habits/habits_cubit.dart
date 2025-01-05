@@ -13,7 +13,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class HabitsCubit extends Cubit<HabitsState> {
@@ -79,18 +78,12 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   Future<void> startWatching() async {
     await fetchHabitCompletions();
-    final subscribedIds = <String>{habitCompletionNotification};
 
-    _updateSubscription = getIt<UpdateNotifications>()
-        .updateStream
-        .throttleTime(
-          const Duration(milliseconds: 200),
-          leading: false,
-          trailing: true,
-        )
-        .listen((affectedIds) async {
-      if (affectedIds.intersection(subscribedIds).isNotEmpty) {
+    _updateSubscription =
+        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+      if (affectedIds.contains(habitCompletionNotification)) {
         await fetchHabitCompletions();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
         determineHabitSuccessByDays();
       }
     });
@@ -98,7 +91,7 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   Future<void> fetchHabitCompletions() async {
     final rangeStart = DateTime.now().dayAtMidnight.subtract(
-          const Duration(days: 180),
+          Duration(days: _timeSpanDays),
         );
     _habitCompletions = await _journalDb.getHabitCompletionsInRange(
       rangeStart: rangeStart,
@@ -253,8 +246,10 @@ class HabitsCubit extends Cubit<HabitsState> {
   var _timeSpanDays = isDesktop ? 14 : 7;
   var _selectedInfoYmd = '';
 
-  void setTimeSpan(int timeSpanDays) {
+  Future<void> setTimeSpan(int timeSpanDays) async {
     _timeSpanDays = timeSpanDays;
+    await fetchHabitCompletions();
+    determineHabitSuccessByDays();
     emitState();
   }
 
