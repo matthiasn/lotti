@@ -61,8 +61,7 @@ void main() {
         measurableChocolate,
       ]);
 
-      when(mockJournalDb.watchJournalCount)
-          .thenAnswer((_) => Stream<int>.fromIterable([1]));
+      when(mockJournalDb.getJournalCount).thenAnswer((_) async => 1);
 
       mockPersistenceLogic = MockPersistenceLogic();
 

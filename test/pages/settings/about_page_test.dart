@@ -20,8 +20,7 @@ void main() {
 
   group('SettingsPage Widget Tests - ', () {
     setUpAll(() {
-      when(mockJournalDb.watchJournalCount)
-          .thenAnswer((_) => Stream<int>.fromIterable([n]));
+      when(mockJournalDb.getJournalCount).thenAnswer((_) async => n);
 
       when(mockJournalDb.getCountImportFlagEntries).thenAnswer((_) async => 0);
 

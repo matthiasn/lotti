@@ -19,9 +19,6 @@ class _AboutPageState extends State<AboutPage> {
   String version = '';
   String buildNumber = '';
 
-  final JournalDb _db = getIt<JournalDb>();
-  late Stream<int> countStream;
-
   Future<void> getVersions() async {
     if (!(isWindows && isTestEnv)) {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -36,13 +33,12 @@ class _AboutPageState extends State<AboutPage> {
   void initState() {
     super.initState();
     getVersions();
-    countStream = _db.watchJournalCount();
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: countStream,
+    return FutureBuilder<int>(
+      future: getIt<JournalDb>().getJournalCount(),
       builder: (
         BuildContext context,
         AsyncSnapshot<int> snapshot,
