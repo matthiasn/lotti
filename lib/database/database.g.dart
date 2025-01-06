@@ -4597,48 +4597,20 @@ abstract class _$JournalDb extends GeneratedDatabase {
   _$JournalDb.connect(DatabaseConnection c) : super.connect(c);
   $JournalDbManager get managers => $JournalDbManager(this);
   late final Journal journal = Journal(this);
-  late final Index idxJournalCreatedAt = Index('idx_journal_created_at',
-      'CREATE INDEX idx_journal_created_at ON journal (created_at)');
-  late final Index idxJournalUpdatedAt = Index('idx_journal_updated_at',
-      'CREATE INDEX idx_journal_updated_at ON journal (updated_at)');
-  late final Index idxJournalDateFrom = Index('idx_journal_date_from',
-      'CREATE INDEX idx_journal_date_from ON journal (date_from DESC)');
-  late final Index idxJournalDateTo = Index('idx_journal_date_to',
-      'CREATE INDEX idx_journal_date_to ON journal (date_to)');
-  late final Index idxJournalDeleted = Index('idx_journal_deleted',
-      'CREATE INDEX idx_journal_deleted ON journal (deleted)');
-  late final Index idxJournalStarred = Index('idx_journal_starred',
-      'CREATE INDEX idx_journal_starred ON journal (starred)');
-  late final Index idxJournalPrivate = Index('idx_journal_private',
-      'CREATE INDEX idx_journal_private ON journal (private)');
-  late final Index idxJournalTask = Index(
-      'idx_journal_task', 'CREATE INDEX idx_journal_task ON journal (task)');
-  late final Index idxJournalTaskStatus = Index('idx_journal_task_status',
-      'CREATE INDEX idx_journal_task_status ON journal (task_status)');
-  late final Index idxJournalFlag = Index(
-      'idx_journal_flag', 'CREATE INDEX idx_journal_flag ON journal (flag)');
-  late final Index idxJournalType = Index(
-      'idx_journal_type', 'CREATE INDEX idx_journal_type ON journal (type)');
-  late final Index idxJournalSubtype = Index('idx_journal_subtype',
-      'CREATE INDEX idx_journal_subtype ON journal (subtype)');
-  late final Index idxJournalGeohashString = Index('idx_journal_geohash_string',
-      'CREATE INDEX idx_journal_geohash_string ON journal (geohash_string)');
-  late final Index idxJournalGeohashInt = Index('idx_journal_geohash_int',
-      'CREATE INDEX idx_journal_geohash_int ON journal (geohash_int)');
-  late final Index idxJournalCategory = Index('idx_journal_category',
-      'CREATE INDEX idx_journal_category ON journal (category)');
-  late final Index idxJournalComposite = Index('idx_journal_composite',
-      'CREATE INDEX idx_journal_composite ON journal (type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
-  late final Index idxJournalHabitCompletions = Index(
-      'idx_journal_habit_completions',
-      'CREATE INDEX idx_journal_habit_completions ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, date_to COLLATE BINARY ASC, date_to COLLATE BINARY DESC)');
-  late final Index idxJournalHabitCompletions2 = Index(
-      'idx_journal_habit_completions2',
-      'CREATE INDEX idx_journal_habit_completions2 ON journal (type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, created_at COLLATE BINARY ASC)');
-  late final Index idxJournalLinked = Index('idx_journal_linked',
-      'CREATE INDEX idx_journal_linked ON journal (id COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
-  late final Index idxJournalFilteredTasks = Index('idx_journal_filtered_tasks',
-      'CREATE INDEX idx_journal_filtered_tasks ON journal (type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, task COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+  late final Index idxJournalDateFromAsc = Index('idx_journal_date_from_asc',
+      'CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC)');
+  late final Index idxJournalDateFromDesc = Index('idx_journal_date_from_desc',
+      'CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC)');
+  late final Index idxJournalDateToAsc = Index('idx_journal_date_to_asc',
+      'CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC)');
+  late final Index idxJournalDateToDesc = Index('idx_journal_date_to_desc',
+      'CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC)');
+  late final Index idxJournalTab = Index('idx_journal_tab',
+      'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+  late final Index idxJournalTasks = Index('idx_journal_tasks',
+      'CREATE INDEX idx_journal_tasks ON journal (type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+  late final Index idxJournalTypeSubtype = Index('idx_journal_type_subtype',
+      'CREATE INDEX idx_journal_type_subtype ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -5197,7 +5169,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> habitCompletionsInRange(DateTime rangeStart) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND deleted = FALSE ORDER BY created_at ASC',
+        'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND deleted = FALSE ORDER BY date_from ASC',
         variables: [
           Variable<DateTime>(rangeStart)
         ],
@@ -5593,26 +5565,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
         journal,
-        idxJournalCreatedAt,
-        idxJournalUpdatedAt,
-        idxJournalDateFrom,
-        idxJournalDateTo,
-        idxJournalDeleted,
-        idxJournalStarred,
-        idxJournalPrivate,
-        idxJournalTask,
-        idxJournalTaskStatus,
-        idxJournalFlag,
-        idxJournalType,
-        idxJournalSubtype,
-        idxJournalGeohashString,
-        idxJournalGeohashInt,
-        idxJournalCategory,
-        idxJournalComposite,
-        idxJournalHabitCompletions,
-        idxJournalHabitCompletions2,
-        idxJournalLinked,
-        idxJournalFilteredTasks,
+        idxJournalDateFromAsc,
+        idxJournalDateFromDesc,
+        idxJournalDateToAsc,
+        idxJournalDateToDesc,
+        idxJournalTab,
+        idxJournalTasks,
+        idxJournalTypeSubtype,
         conflicts,
         measurableTypes,
         habitDefinitions,
