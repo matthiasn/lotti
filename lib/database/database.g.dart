@@ -4606,7 +4606,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxJournalDateToDesc = Index('idx_journal_date_to_desc',
       'CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC)');
   late final Index idxJournalTab = Index('idx_journal_tab',
-      'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+      'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Index idxJournalTasks = Index('idx_journal_tasks',
       'CREATE INDEX idx_journal_tasks ON journal (type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
   late final Index idxJournalTypeSubtype = Index('idx_journal_type_subtype',
