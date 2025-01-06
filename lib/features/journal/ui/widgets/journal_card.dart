@@ -17,9 +17,12 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/events/event_status.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -253,7 +256,19 @@ class _JournalCardState extends ConsumerState<JournalCard> {
               );
             },
             checklist: (_) => LeadingIcon(MdiIcons.checkAll),
-            checklistItem: (_) => LeadingIcon(MdiIcons.check),
+            checklistItem: (item) {
+              final categoryId = item.meta.categoryId;
+              final category =
+                  getIt<EntitiesCacheService>().getCategoryById(categoryId);
+              return LeadingIcon(
+                item.data.isChecked
+                    ? MdiIcons.check
+                    : MdiIcons.checkboxBlankOutline,
+                color: category != null
+                    ? colorFromCssHex(category.color)
+                    : context.colorScheme.outline,
+              );
+            },
             quantitative: (_) => LeadingIcon(MdiIcons.heart),
             measurement: (_) => LeadingIcon(MdiIcons.numeric),
             habitCompletion: (habitCompletion) =>
