@@ -35,8 +35,11 @@ class ChecklistRepository {
         return null;
       }
 
+      final categoryId = task.meta.categoryId;
+      final meta = await _persistenceLogic.createMetadata();
+
       final newChecklist = Checklist(
-        meta: await _persistenceLogic.createMetadata(),
+        meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistData(
           title: task.data.title,
           linkedChecklistItems: [],
@@ -64,6 +67,7 @@ class ChecklistRepository {
           final checklistItem = await createChecklistItem(
             checklistId: newChecklist.meta.id,
             title: item.title,
+            categoryId: newChecklist.meta.categoryId,
           );
           if (checklistItem != null) {
             createdIds.add(checklistItem.id);
@@ -93,10 +97,12 @@ class ChecklistRepository {
   Future<ChecklistItem?> createChecklistItem({
     required String checklistId,
     required String title,
+    required String? categoryId,
   }) async {
     try {
+      final meta = await _persistenceLogic.createMetadata();
       final newChecklistItem = ChecklistItem(
-        meta: await _persistenceLogic.createMetadata(),
+        meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistItemData(
           title: title,
           isChecked: false,
