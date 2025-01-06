@@ -96,15 +96,6 @@ fluttium_docs:
 	cp ./screenshots/* ~/github/lotti-docs/images/${LOTTI_VERSION}/
 	cd ~/github/lotti-docs/ && git pull && git add . && git commit -m ${LOTTI_VERSION} && git push
 
-.PHONY: migrate_db
-migrate_db:
-	@dart pub get
-	@echo "Running database migration..."
-	@tput setaf 1
-	@echo "Rename drift_schema_v_REPLACE_ME.json when done!!!"
-	@tput sgr0
-	dart run drift_dev schema dump lib/database/database.dart drift_schemas/drift_schema_v_REPLACE_ME.json
-
 .PHONY: bundle
 bundle:
 	$(FLUTTER_CMD) build bundle
