@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 class ChecklistWidget extends StatefulWidget {
@@ -14,6 +17,7 @@ class ChecklistWidget extends StatefulWidget {
     required this.completionRate,
     required this.id,
     required this.updateItemOrder,
+    this.onDelete,
     super.key,
   });
 
@@ -25,6 +29,7 @@ class ChecklistWidget extends StatefulWidget {
   final Future<void> Function(List<String> linkedChecklistItems)
       updateItemOrder;
   final double completionRate;
+  final VoidCallback? onDelete;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -101,20 +106,64 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         crossFadeState:
             _isEditing ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: LinearProgressIndicator(
-            minHeight: 5,
-            color: successColor,
-            backgroundColor: successColor.desaturate().withAlpha(77),
-            value: widget.completionRate,
-            semanticsLabel: 'Checklist progress',
-          ),
-        ),
-      ),
       children: [
+        Row(
+          children: [
+            const SizedBox(width: 20),
+            Flexible(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  minHeight: 5,
+                  color: successColor,
+                  backgroundColor: successColor.desaturate().withAlpha(77),
+                  value: widget.completionRate,
+                  semanticsLabel: 'Checklist progress',
+                ),
+              ),
+            ),
+            if (_isEditing)
+              IconButton(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  MdiIcons.trashCanOutline,
+                  size: 20,
+                  color: context.colorScheme.outline,
+                ),
+                onPressed: () async {
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text(context.messages.checklistDelete),
+                        content: Text(
+                          context.messages.checklistItemDeleteWarning,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: Text(
+                              context.messages.checklistItemDeleteCancel,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: Text(
+                              context.messages.checklistItemDeleteConfirm,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (result ?? false) {
+                    widget.onDelete?.call();
+                  }
+                },
+              ),
+            const SizedBox(width: 15),
+          ],
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 20,
