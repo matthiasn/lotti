@@ -23,27 +23,14 @@ CREATE TABLE journal (
   PRIMARY KEY (id)
 ) as JournalDbEntity;
 
-CREATE INDEX idx_journal_created_at ON journal (created_at);
-CREATE INDEX idx_journal_updated_at ON journal (updated_at);
-CREATE INDEX idx_journal_date_from ON journal (date_from DESC);
-CREATE INDEX idx_journal_date_to ON journal (date_to);
-CREATE INDEX idx_journal_deleted ON journal (deleted);
-CREATE INDEX idx_journal_starred ON journal (starred);
-CREATE INDEX idx_journal_private ON journal (private);
-CREATE INDEX idx_journal_task ON journal (task);
-CREATE INDEX idx_journal_task_status ON journal (task_status);
-CREATE INDEX idx_journal_flag ON journal (flag);
-CREATE INDEX idx_journal_type ON journal (type);
-CREATE INDEX idx_journal_subtype ON journal (subtype);
-CREATE INDEX idx_journal_geohash_string ON journal (geohash_string);
-CREATE INDEX idx_journal_geohash_int ON journal (geohash_int);
-CREATE INDEX idx_journal_category ON journal (category);
+CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC);
+CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC);
+CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
+CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
 
-CREATE INDEX idx_journal_composite ON journal(type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
-CREATE INDEX idx_journal_habit_completions ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, date_to COLLATE BINARY ASC, date_to COLLATE BINARY DESC);
-CREATE INDEX idx_journal_habit_completions2 ON journal(type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY ASC, date_from COLLATE BINARY DESC, created_at COLLATE BINARY ASC);
-CREATE INDEX idx_journal_linked ON journal(id COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
-CREATE INDEX idx_journal_filtered_tasks ON journal(type COLLATE BINARY ASC, private COLLATE BINARY ASC, starred COLLATE BINARY ASC, private COLLATE BINARY ASC, deleted COLLATE BINARY ASC, task COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_tasks ON journal(type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_type_subtype ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -408,7 +395,7 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND date_from >= :rangeStart
   AND deleted = false
-  ORDER BY created_at ASC;
+  ORDER BY date_from ASC;
 
 quantitativeByType:
 SELECT * FROM journal
