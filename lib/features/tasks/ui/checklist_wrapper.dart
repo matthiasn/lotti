@@ -47,9 +47,13 @@ class ChecklistWrapper extends ConsumerWidget {
           title: checklist.data.title,
           itemIds: checklist.data.linkedChecklistItems,
           onTitleSave: notifier.updateTitle,
-          onCreateChecklistItem: notifier.createChecklistItem,
+          onCreateChecklistItem: (title) => notifier.createChecklistItem(
+            title,
+            categoryId: checklist.meta.categoryId,
+          ),
           updateItemOrder: notifier.updateItemOrder,
           completionRate: completionRate,
+          onDelete: ref.read(provider.notifier).delete,
         ),
       ),
     );

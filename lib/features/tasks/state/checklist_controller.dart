@@ -137,7 +137,10 @@ class ChecklistController extends _$ChecklistController {
     }
   }
 
-  Future<String?> createChecklistItem(String? title) async {
+  Future<String?> createChecklistItem(
+    String? title, {
+    required String? categoryId,
+  }) async {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null && title != null) {
@@ -145,6 +148,7 @@ class ChecklistController extends _$ChecklistController {
           await ref.read(checklistRepositoryProvider).createChecklistItem(
                 title: title,
                 checklistId: current.id,
+                categoryId: categoryId,
               );
 
       if (created != null) {
