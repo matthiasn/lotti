@@ -42,7 +42,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration {
@@ -70,7 +70,6 @@ class JournalDb extends _$JournalDb {
           await () async {
             debugPrint('Add category_id in journal table, with index');
             await m.addColumn(journal, journal.category);
-            await m.createIndex(idxJournalCategory);
           }();
         }
 
@@ -93,12 +92,17 @@ class JournalDb extends _$JournalDb {
         if (from < 24) {
           await () async {
             debugPrint('Adding composite indices');
-            await m.createIndex(idxJournalComposite);
-            await m.createIndex(idxJournalHabitCompletions);
-            await m.createIndex(idxJournalHabitCompletions2);
-            await m.createIndex(idxJournalLinked);
             await m.createIndex(idxLinkedEntriesFromIdHidden);
             await m.createIndex(idxLinkedEntriesToIdHidden);
+          }();
+        }
+
+        if (from < 25) {
+          await () async {
+            debugPrint('Adding composite indices');
+            await m.createIndex(idxJournalTab);
+            await m.createIndex(idxJournalTasks);
+            await m.createIndex(idxJournalTypeSubtype);
           }();
         }
       },

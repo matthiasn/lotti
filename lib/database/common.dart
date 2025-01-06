@@ -62,7 +62,7 @@ class LogInterceptor extends QueryInterceptor {
       final duration = stopwatch.elapsedMilliseconds;
       if (duration > 100) {
         debugPrint(
-          '$startTime ${description.truncate(300)} => took $duration ms',
+          '$startTime ${description.truncate(500)} => took $duration ms',
         );
       }
 
