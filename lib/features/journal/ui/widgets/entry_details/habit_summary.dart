@@ -11,6 +11,7 @@ class HabitSummary extends StatelessWidget {
   HabitSummary(
     this.habitCompletion, {
     this.paddingLeft = 0,
+    this.paddingBottom = 0,
     this.showIcon = false,
     this.showText = true,
     super.key,
@@ -19,6 +20,7 @@ class HabitSummary extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
   final HabitCompletionEntry habitCompletion;
   final double paddingLeft;
+  final double paddingBottom;
   final bool showText;
   final bool showIcon;
 
@@ -39,7 +41,11 @@ class HabitSummary extends StatelessWidget {
         }
 
         return Padding(
-          padding: EdgeInsets.only(top: 5, left: paddingLeft),
+          padding: EdgeInsets.only(
+            top: 5,
+            left: paddingLeft,
+            bottom: paddingBottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -53,9 +59,11 @@ class HabitSummary extends StatelessWidget {
                         size: 30,
                       ),
                     ),
-                  EntryTextWidget(
-                    'Habit completed: ${habitDefinition.name}',
-                    padding: EdgeInsets.zero,
+                  Flexible(
+                    child: EntryTextWidget(
+                      'Habit completed: ${habitDefinition.name}',
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
                 ],
               ),
