@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/workout_data.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -14,6 +15,10 @@ part 'workout_chart_controller.g.dart';
 
 @riverpod
 class WorkoutChartDataController extends _$WorkoutChartDataController {
+  WorkoutChartDataController() {
+    getIt<HealthImport>().getWorkoutsHealthDataDelta();
+  }
+
   final JournalDb _journalDb = getIt<JournalDb>();
 
   StreamSubscription<Set<String>>? _updateSubscription;
