@@ -20,6 +20,7 @@ class EntryTextWidget extends StatelessWidget {
       child: Text(
         text,
         maxLines: maxLines,
+        softWrap: true,
         style: monospaceTextStyle.copyWith(
           fontWeight: FontWeight.w300,
         ),

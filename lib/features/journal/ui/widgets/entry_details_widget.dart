@@ -162,6 +162,7 @@ class EntryDetailsContent extends ConsumerWidget {
           habitCompletion: (habit) => HabitSummary(
             habit,
             paddingLeft: 10,
+            paddingBottom: 5,
             showIcon: true,
             showText: false,
           ),
