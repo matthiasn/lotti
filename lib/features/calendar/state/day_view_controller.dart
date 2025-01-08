@@ -78,7 +78,7 @@ class DayViewController extends _$DayViewController {
     final data = <CalendarEventData<CalendarEvent>>[];
     final start = now.dayAtMidnight.subtract(Duration(days: timeSpanDays));
 
-    final items = await db.sortedTextEntries(
+    final items = await db.sortedCalendarEntries(
       rangeStart: start,
       rangeEnd: now.add(const Duration(days: 1)).dayAtMidnight,
     );
