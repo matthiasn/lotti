@@ -255,7 +255,6 @@ class _JournalCardState extends ConsumerState<JournalCard> {
                     : errorColor.withAlpha(102),
               );
             },
-            checklist: (_) => LeadingIcon(MdiIcons.checkAll),
             checklistItem: (item) {
               final categoryId = item.meta.categoryId;
               final category =
@@ -264,6 +263,17 @@ class _JournalCardState extends ConsumerState<JournalCard> {
                 item.data.isChecked
                     ? MdiIcons.check
                     : MdiIcons.checkboxBlankOutline,
+                color: category != null
+                    ? colorFromCssHex(category.color)
+                    : context.colorScheme.outline,
+              );
+            },
+            checklist: (checklist) {
+              final categoryId = checklist.meta.categoryId;
+              final category =
+                  getIt<EntitiesCacheService>().getCategoryById(categoryId);
+              return LeadingIcon(
+                MdiIcons.checkAll,
                 color: category != null
                     ? colorFromCssHex(category.color)
                     : context.colorScheme.outline,
