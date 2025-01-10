@@ -47,7 +47,7 @@ extension SendExtension on MatrixService {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
-      return;
+      throw Exception('Unverified Matrix devices found');
     }
 
     if (roomId == null) {
@@ -56,6 +56,7 @@ extension SendExtension on MatrixService {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
+      throw Exception(configNotFound);
     }
 
     loggingService.captureEvent(
@@ -70,6 +71,10 @@ extension SendExtension on MatrixService {
       parseCommands: false,
       parseMarkdown: false,
     );
+
+    if (eventId == null) {
+      throw Exception('Failed sending text message');
+    }
 
     incrementSentCount();
 
@@ -133,6 +138,10 @@ extension SendExtension on MatrixService {
       ),
       extraContent: {'relativePath': relativePath},
     );
+
+    if (eventId == null) {
+      throw Exception('Failed sending file');
+    }
 
     incrementSentCount();
 
