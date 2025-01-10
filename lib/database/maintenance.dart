@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 
@@ -293,5 +294,84 @@ class Maintenance {
         }
       }
     }
+  }
+
+  Future<void> addCategoriesToChecklists() async {
+    await createDbBackup(journalDbFileName);
+
+    var taskCount = 0;
+    var tasksWithCategoriesCount = 0;
+    var updatedChecklistsCount = 0;
+    var updatedChecklistItemsCount = 0;
+
+    final allCategoryIds = getIt<EntitiesCacheService>()
+        .sortedCategories
+        .map((e) => e.id)
+        .toList();
+
+    final tasks = await _db.getTasks(
+      taskStatuses: [
+        'OPEN',
+        'GROOMED',
+        'IN PROGRESS',
+        'BLOCKED',
+        'ON HOLD',
+        'DONE',
+        'REJECTED',
+      ],
+      starredStatuses: [true, false],
+      categoryIds: allCategoryIds,
+      limit: 100000,
+    );
+
+    for (final task in tasks) {
+      taskCount++;
+      if (task is Task) {
+        final categoryId = task.categoryId;
+
+        if (categoryId != null) {
+          tasksWithCategoriesCount++;
+
+          final checklistIds = task.data.checklistIds ?? [];
+
+          for (final checklistId in checklistIds) {
+            final checklist = await _db.journalEntityById(checklistId);
+            if (checklist != null && checklist is Checklist) {
+              if (checklist.categoryId == null) {
+                await persistenceLogic.updateJournalEntity(
+                  checklist,
+                  checklist.meta.copyWith(categoryId: categoryId),
+                );
+                updatedChecklistsCount++;
+              }
+
+              final checklistItemIds = checklist.data.linkedChecklistItems;
+
+              for (final checklistItemId in checklistItemIds) {
+                final checklistItem =
+                    await _db.journalEntityById(checklistItemId);
+                if (checklistItem != null &&
+                    checklistItem is ChecklistItem &&
+                    checklistItem.categoryId == null) {
+                  await persistenceLogic.updateJournalEntity(
+                    checklistItem,
+                    checklistItem.meta.copyWith(categoryId: categoryId),
+                  );
+                  updatedChecklistItemsCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    getIt<LoggingService>().captureEvent(
+      'Tasks: $taskCount, tasks with categories: $tasksWithCategoriesCount, \n'
+      'Updated checklists: $updatedChecklistsCount, \n'
+      'Updated checklist items: $updatedChecklistItemsCount.',
+      domain: 'MAINTENANCE',
+      subDomain: 'addCategoriesToChecklists',
+    );
   }
 }
