@@ -193,6 +193,7 @@ class JournalEntity with _$JournalEntity {
 
 extension JournalEntityExtension on JournalEntity {
   String get id => meta.id;
+  String? get categoryId => meta.categoryId;
   bool get isDeleted => meta.deletedAt != null;
 
   Set<String> get affectedIds {

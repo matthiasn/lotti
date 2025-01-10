@@ -159,6 +159,7 @@
   "maintenanceReprocessSync": "Reprocess sync messages",
   "maintenanceResetHostId": "Reset Host ID",
   "maintenanceReSync": "Re-sync messages",
+  "maintenanceAssignCategoriesToChecklists": "Assign categories to checklists",
   "maintenanceStories": "Assign stories from parent entries",
   "maintenanceSyncCategories": "Sync categories",
   "maintenanceSyncDefinitions": "Sync tags, measurables, dashboards, habits",
