@@ -56,7 +56,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
             final link = entryLinks.elementAt(index);
             final toId = link.toId;
 
-            return EntryDetailWidget(
+            return EntryDetailsWidget(
               key: Key('${item.id}-$toId'),
               itemId: toId,
               popOnDelete: false,

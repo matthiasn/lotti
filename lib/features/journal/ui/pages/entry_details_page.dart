@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -73,13 +76,15 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
-                  EntryDetailWidget(
+                  EntryDetailsWidget(
                     itemId: widget.itemId,
                     popOnDelete: true,
                     showTaskDetails: true,
                   ),
                   LinkedEntriesWidget(item),
                   LinkedFromEntriesWidget(item),
+                  if (item is ChecklistItem) LinkedFromChecklistWidget(item),
+                  if (item is Checklist) LinkedFromTaskWidget(item),
                 ],
               ).animate().fadeIn(
                     duration: const Duration(
