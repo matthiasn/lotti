@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/tasks/ui/consts.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
