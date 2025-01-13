@@ -15,13 +15,13 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
-import 'package:lotti/features/tasks/ui/checklist_item_wrapper.dart';
-import 'package:lotti/features/tasks/ui/checklist_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
-class EntryDetailWidget extends ConsumerWidget {
-  const EntryDetailWidget({
+class EntryDetailsWidget extends ConsumerWidget {
+  const EntryDetailsWidget({
     required this.itemId,
     required this.popOnDelete,
     super.key,

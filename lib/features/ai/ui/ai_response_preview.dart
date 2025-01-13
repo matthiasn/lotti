@@ -5,7 +5,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/ai/state/ollama_prompt.dart';
 import 'package:lotti/features/ai/state/ollama_prompt_checklist.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/features/tasks/ui/checklist_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 
 class AiResponsePreview extends ConsumerWidget {
   const AiResponsePreview({super.key});
