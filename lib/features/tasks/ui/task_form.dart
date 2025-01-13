@@ -7,7 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/tasks/ui/checklists_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
