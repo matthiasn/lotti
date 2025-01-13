@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.555+2826
+version: 0.9.556+2827
 
 msix_config:
   display_name: LottiApp
@@ -22,8 +22,8 @@ dependencies:
   audio_video_progress_bar: ^2.0.1
   auto_size_text: ^3.0.0
   beamer: ^1.5.2
-  bloc: ^8.0.1
-  bloc_test: ^9.0.1
+  bloc: ^9.0.0
+  bloc_test: ^10.0.0
   cached_network_image: ^3.2.0
   calendar_view: ^1.2.0
   collection: ^1.18.0
@@ -50,7 +50,7 @@ dependencies:
     sdk: flutter
 
   flutter_animate: ^4.1.1+1
-  flutter_bloc: ^8.0.0
+  flutter_bloc: ^9.0.0
   flutter_colorpicker: ^1.1.0
   flutter_dotenv: ^5.1.0
   flutter_fadein: ^2.0.0
