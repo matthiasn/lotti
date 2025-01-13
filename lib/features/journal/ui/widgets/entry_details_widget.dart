@@ -20,8 +20,8 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
-class EntryDetailWidget extends ConsumerWidget {
-  const EntryDetailWidget({
+class EntryDetailsWidget extends ConsumerWidget {
+  const EntryDetailsWidget({
     required this.itemId,
     required this.popOnDelete,
     super.key,
