@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/tasks/ui/consts.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 // ignore: avoid_positional_boolean_parameters

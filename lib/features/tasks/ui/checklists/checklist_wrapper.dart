@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
-import 'package:lotti/features/tasks/ui/checklist_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class ChecklistWrapper extends ConsumerWidget {
