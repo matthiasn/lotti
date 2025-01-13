@@ -19,16 +19,9 @@ class LinkedFromTaskWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final task = ref
-        .watch(
-          entryControllerProvider(
-            id: item.data.linkedTasks.first,
-          ),
-        )
-        .value
-        ?.entry;
+    final linkedTasks = item.data.linkedTasks;
 
-    if (task == null) {
+    if (linkedTasks.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -38,7 +31,18 @@ class LinkedFromTaskWidget extends ConsumerWidget {
           context.messages.journalLinkedFromLabel,
           style: TextStyle(color: context.colorScheme.outline),
         ),
-        JournalCard(item: task),
+        ...linkedTasks.map(
+          (id) {
+            final task =
+                ref.watch(entryControllerProvider(id: id)).value?.entry;
+
+            if (task == null) {
+              return const SizedBox.shrink();
+            }
+
+            return JournalCard(item: task);
+          },
+        ),
       ],
     );
   }

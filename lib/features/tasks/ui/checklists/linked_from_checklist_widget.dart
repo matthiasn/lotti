@@ -19,15 +19,9 @@ class LinkedFromChecklistWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final checklist = ref
-        .watch(
-          checklistControllerProvider(
-            id: item.data.linkedChecklists.first,
-          ),
-        )
-        .value;
+    final linkedChecklists = item.data.linkedChecklists;
 
-    if (checklist == null) {
+    if (linkedChecklists.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -37,7 +31,18 @@ class LinkedFromChecklistWidget extends ConsumerWidget {
           context.messages.journalLinkedFromLabel,
           style: TextStyle(color: context.colorScheme.outline),
         ),
-        JournalCard(item: checklist),
+        ...linkedChecklists.map(
+          (id) {
+            final checklist =
+                ref.watch(checklistControllerProvider(id: id)).value;
+
+            if (checklist == null) {
+              return const SizedBox.shrink();
+            }
+
+            return JournalCard(item: checklist);
+          },
+        ),
       ],
     );
   }
