@@ -23,10 +23,7 @@ Future<void> listenToTimelineEvents({
 
     service.timeline = await service.syncRoom?.getTimeline(
       onNewEvent: () {
-        final clientRunner = service.clientRunner;
-        if (clientRunner.queueSize < 5) {
-          service.clientRunner.enqueueRequest(null);
-        }
+        service.clientRunner.enqueueRequest(null);
       },
     );
 

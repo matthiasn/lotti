@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -22,6 +23,18 @@ import 'package:lotti/utils/image_utils.dart';
 class OutboxService {
   OutboxService() {
     _startRunner();
+
+    Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> result) {
+      if ({
+        ConnectivityResult.wifi,
+        ConnectivityResult.mobile,
+        ConnectivityResult.ethernet,
+      }.intersection(result.toSet()).isNotEmpty) {
+        _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+      }
+    });
   }
   final LoggingService _loggingService = getIt<LoggingService>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();

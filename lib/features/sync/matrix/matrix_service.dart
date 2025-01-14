@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -46,6 +47,18 @@ class MatrixService {
     keyVerificationStream = keyVerificationController.stream;
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
+
+    Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> result) {
+      if ({
+        ConnectivityResult.wifi,
+        ConnectivityResult.mobile,
+        ConnectivityResult.ethernet,
+      }.intersection(result.toSet()).isNotEmpty) {
+        clientRunner.enqueueRequest(null);
+      }
+    });
   }
 
   void publishIncomingRunnerState() {

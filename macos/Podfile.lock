@@ -1,6 +1,9 @@
 PODS:
   - audio_session (0.0.1):
     - FlutterMacOS
+  - connectivity_plus (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - device_info_plus (0.0.1):
     - FlutterMacOS
   - ffmpeg-kit-macos-https (6.0)
@@ -92,6 +95,7 @@ PODS:
 
 DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
+  - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/darwin`)
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
   - ffmpeg_kit_flutter (from `Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter/macos`)
   - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
@@ -133,6 +137,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   audio_session:
     :path: Flutter/ephemeral/.symlinks/plugins/audio_session/macos
+  connectivity_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus/darwin
   device_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
   ffmpeg_kit_flutter:
@@ -194,6 +200,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
+  connectivity_plus: 18382e7311ba19efcaee94442b23b32507b20695
   device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
   ffmpeg-kit-macos-https: 60de703db964ccca7fd0d4d1611f4c102a8139cc
   ffmpeg_kit_flutter: 5bd75928cf88ec177cea410b027681e4bfe09452
