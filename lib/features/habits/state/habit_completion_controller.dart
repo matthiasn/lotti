@@ -66,12 +66,11 @@ class HabitCompletionController extends _$HabitCompletionController {
       return [];
     }
 
-    final results = habitResultsByDay(
+    return habitResultsByDay(
       entities,
       habitDefinition: habitDefinition,
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
     );
-    return results;
   }
 }
