@@ -42,10 +42,14 @@ List<HabitResult> habitResultsByDay(
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
+  final rangeStartAtMidnight = rangeStart.dayAtMidnight;
+  final rangeEndAtMidnight = rangeEnd.dayAtMidnight;
+
   final resultsByDay = <String, HabitResult>{};
-  final range = rangeEnd.difference(rangeStart);
+  final range =
+      rangeEndAtMidnight.dayAtMidnight.difference(rangeStartAtMidnight);
   final dayStrings = List<String>.generate(range.inDays + 1, (days) {
-    final day = rangeStart.add(Duration(days: days));
+    final day = rangeStartAtMidnight.add(Duration(days: days));
     return day.ymd;
   });
 
