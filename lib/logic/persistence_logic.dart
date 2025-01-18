@@ -541,7 +541,7 @@ class PersistenceLogic {
           await updateDbEntity(
             task.copyWith(
               meta: await updateMetadata(journalEntity.meta),
-              entryText: entryText,
+              entryText: entryText ?? task.entryText,
               data: taskData,
             ),
           );
