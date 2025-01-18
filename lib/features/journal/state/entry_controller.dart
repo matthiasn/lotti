@@ -181,7 +181,6 @@ class EntryController extends _$EntryController {
       formKey.currentState?.save();
       final formData = formKey.currentState?.value ?? {};
       final title = formData['title'] as String?;
-      final status = formData['status'] as String?;
 
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
@@ -189,8 +188,6 @@ class EntryController extends _$EntryController {
         taskData: task.data.copyWith(
           title: title ?? task.data.title,
           estimate: estimate ?? task.data.estimate,
-          status:
-              status != null ? taskStatusFromString(status) : task.data.status,
         ),
       );
     }
@@ -231,6 +228,22 @@ class EntryController extends _$EntryController {
       controller: controller,
     );
     setDirty(value: false);
+    await HapticFeedback.heavyImpact();
+  }
+
+  Future<void> updateTaskStatus(String? status) async {
+    final task = state.value?.entry;
+
+    if (task is Task) {
+      await _persistenceLogic.updateTask(
+        journalEntityId: id,
+        taskData: task.data.copyWith(
+          status:
+              status != null ? taskStatusFromString(status) : task.data.status,
+        ),
+      );
+    }
+
     await HapticFeedback.heavyImpact();
   }
 
