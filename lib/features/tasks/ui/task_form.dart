@@ -114,11 +114,12 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                         name: 'status',
                         borderRadius: BorderRadius.circular(10),
                         elevation: 2,
-                        onChanged: (dynamic _) => save(),
+                        onChanged: notifier.updateTaskStatus,
                         decoration: inputDecoration(
                           labelText: 'Status:',
                           themeData: Theme.of(context),
                         ),
+                        key: Key('task_status_dropdown_${taskData.status}'),
                         initialValue: taskData.status.map(
                               open: (_) => 'OPEN',
                               groomed: (_) => 'GROOMED',
