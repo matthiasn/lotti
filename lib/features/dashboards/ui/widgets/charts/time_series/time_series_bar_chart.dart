@@ -12,7 +12,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-class TimeSeriesBarChart extends StatelessWidget {
+class TimeSeriesBarChart extends StatefulWidget {
   const TimeSeriesBarChart({
     required this.data,
     required this.rangeStart,
@@ -31,11 +31,31 @@ class TimeSeriesBarChart extends StatelessWidget {
   final ColorByValue colorByValue;
 
   @override
+  State<TimeSeriesBarChart> createState() => _TimeSeriesBarChartState();
+}
+
+class _TimeSeriesBarChartState extends State<TimeSeriesBarChart> {
+  late TransformationController _transformationController;
+
+  @override
+  void initState() {
+    _transformationController = TransformationController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
+    final inRange =
+        daysInRange(rangeStart: widget.rangeStart, rangeEnd: widget.rangeEnd);
 
     final byDay = <String, Observation>{};
-    for (final observation in data) {
+    for (final observation in widget.data) {
       final day = observation.dateTime.ymd;
       byDay[day] = observation;
     }
@@ -45,7 +65,7 @@ class TimeSeriesBarChart extends StatelessWidget {
       return observation;
     });
 
-    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
+    final rangeInDays = widget.rangeEnd.difference(widget.rangeStart).inDays;
 
     final gridInterval = rangeInDays > 182
         ? 30
@@ -71,7 +91,7 @@ class TimeSeriesBarChart extends StatelessWidget {
               topLeft: Radius.circular(1),
               topRight: Radius.circular(1),
             ),
-            color: colorByValue(observation),
+            color: widget.colorByValue(observation),
             width: max(barsWidth, 1),
           ),
         ],
@@ -88,7 +108,7 @@ class TimeSeriesBarChart extends StatelessWidget {
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
-          axisSide: meta.axisSide,
+          meta: meta,
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -101,6 +121,10 @@ class TimeSeriesBarChart extends StatelessWidget {
         right: 20,
       ),
       child: BarChart(
+        transformationConfig: FlTransformationConfig(
+          scaleAxis: FlScaleAxis.horizontal,
+          transformationController: _transformationController,
+        ),
         BarChartData(
           groupsSpace: 5,
           gridData: FlGridData(
@@ -122,11 +146,11 @@ class TimeSeriesBarChart extends StatelessWidget {
                   Theme.of(context).primaryColor.desaturate(),
               tooltipRoundedRadius: 8,
               getTooltipItem: (groupData, timestamp, rodData, foo) {
-                final formatted = valueInHours
+                final formatted = widget.valueInHours
                     ? hoursToHhMm(rodData.toY)
                     : NumberFormat('#,###').format(rodData.toY);
                 return BarTooltipItem(
-                  '$formatted $unit\n'
+                  '$formatted ${widget.unit}\n'
                   '${chartDateFormatterYMD(groupData.x)}',
                   chartTooltipStyleBold.copyWith(
                     color: context.colorScheme.onPrimary,
