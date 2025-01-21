@@ -76,7 +76,7 @@ class TimeByCategoryChartLegend extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CategoryColorIcon(categoryId, size: 20),
+                    CategoryColorIcon(categoryId),
                     const SizedBox(width: 10),
                     Text(
                       name,
