@@ -186,7 +186,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 240),
                       child: CategoryField(
-                        categoryId: widget.task.meta.categoryId,
+                        categoryId: widget.task.categoryId,
                         onSave: (category) {
                           notifier.updateCategoryId(category?.id);
                         },
