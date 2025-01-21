@@ -73,7 +73,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
           transformationConfig: FlTransformationConfig(
             scaleAxis: FlScaleAxis.horizontal,
             transformationController: transformationController,
-            maxScale: 20,
+            maxScale: maxScale,
           ),
           LineChartData(
             gridData: FlGridData(

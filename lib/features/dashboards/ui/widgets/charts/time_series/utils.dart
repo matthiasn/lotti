@@ -8,6 +8,7 @@ typedef ColorByValue = Color Function(Observation);
 
 const gridAlpha = 76;
 const labelOpacity = 0.5;
+const maxScale = 20.0;
 
 class ChartLabel extends StatelessWidget {
   const ChartLabel(this.text, {super.key});

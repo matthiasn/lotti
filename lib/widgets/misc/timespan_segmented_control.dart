@@ -5,7 +5,7 @@ class TimeSpanSegmentedControl extends StatelessWidget {
   const TimeSpanSegmentedControl({
     required this.timeSpanDays,
     required this.onValueChanged,
-    this.segments = const [14, 30, 90, 180],
+    this.segments = const [30, 90, 180, 365],
     super.key,
   });
 
