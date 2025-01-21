@@ -31,6 +31,20 @@ class _DashboardPageState extends State<DashboardPage> {
   bool zoomInProgress = false;
   int timeSpanDays = isDesktop ? 30 : 14;
 
+  late TransformationController _transformationController;
+
+  @override
+  void initState() {
+    _transformationController = TransformationController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final dashboard = getIt<EntitiesCacheService>().getDashboardById(
@@ -78,6 +92,7 @@ class _DashboardPageState extends State<DashboardPage> {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             dashboardId: widget.dashboardId,
+            transformationController: _transformationController,
           ),
         ],
       ),

@@ -15,6 +15,7 @@ class DashboardWidget extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     required this.dashboardId,
+    this.transformationController,
     super.key,
     this.showTitle = false,
   });
@@ -23,6 +24,7 @@ class DashboardWidget extends StatelessWidget {
   final DateTime rangeEnd;
   final String dashboardId;
   final bool showTitle;
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,7 @@ class DashboardWidget extends StatelessWidget {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             enableCreate: true,
+            transformationController: transformationController,
           );
         },
         healthChart: (DashboardHealthItem healthChart) {
@@ -51,6 +54,7 @@ class DashboardWidget extends StatelessWidget {
             chartConfig: healthChart,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
+            transformationController: transformationController,
           );
         },
         workoutChart: (DashboardWorkoutItem workoutChart) {
@@ -58,6 +62,7 @@ class DashboardWidget extends StatelessWidget {
             chartConfig: workoutChart,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
+            transformationController: transformationController,
           );
         },
         storyTimeChart: (DashboardStoryTimeItem storyChart) {
@@ -71,6 +76,7 @@ class DashboardWidget extends StatelessWidget {
             chartConfig: surveyChart,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
+            transformationController: transformationController,
           );
         },
         habitChart: (DashboardHabitItem habitItem) {

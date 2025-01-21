@@ -154,12 +154,14 @@ class DashboardHealthBmiChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    this.transformationController,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -181,6 +183,7 @@ class DashboardHealthBmiChart extends ConsumerWidget {
         data: weightData,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        transformationController: transformationController,
       ),
       chartHeader: BmiChartInfoWidget(
         chartConfig,

@@ -8,12 +8,13 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-class TimeSeriesLineChart extends StatefulWidget {
+class TimeSeriesLineChart extends StatelessWidget {
   const TimeSeriesLineChart({
     required this.data,
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
+    this.transformationController,
     super.key,
   });
 
@@ -21,29 +22,11 @@ class TimeSeriesLineChart extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
-
-  @override
-  State<TimeSeriesLineChart> createState() => _TimeSeriesLineChartState();
-}
-
-class _TimeSeriesLineChartState extends State<TimeSeriesLineChart> {
-  late TransformationController _transformationController;
-
-  @override
-  void initState() {
-    _transformationController = TransformationController();
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _transformationController.dispose();
-    super.dispose();
-  }
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
-    final rangeInDays = widget.rangeEnd.difference(widget.rangeStart).inDays;
+    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
     final gridInterval = rangeInDays > 182
         ? 30
@@ -53,7 +36,7 @@ class _TimeSeriesLineChartState extends State<TimeSeriesLineChart> {
                 ? 7
                 : 1;
 
-    final spots = widget.data
+    final spots = data
         .map(
           (item) => FlSpot(
             item.dateTime.millisecondsSinceEpoch.toDouble(),
@@ -84,7 +67,8 @@ class _TimeSeriesLineChartState extends State<TimeSeriesLineChart> {
       child: LineChart(
         transformationConfig: FlTransformationConfig(
           scaleAxis: FlScaleAxis.horizontal,
-          transformationController: _transformationController,
+          transformationController: transformationController,
+          maxScale: 20,
         ),
         LineChartData(
           gridData: FlGridData(
@@ -117,7 +101,7 @@ class _TimeSeriesLineChartState extends State<TimeSeriesLineChart> {
                     ),
                     children: [
                       TextSpan(
-                        text: '${spot.y.toInt()} ${widget.unit}\n',
+                        text: '${spot.y.toInt()} $unit\n',
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
@@ -153,8 +137,8 @@ class _TimeSeriesLineChartState extends State<TimeSeriesLineChart> {
             show: true,
             border: Border.all(color: const Color(0xff37434d)),
           ),
-          minX: widget.rangeStart.millisecondsSinceEpoch.toDouble(),
-          maxX: widget.rangeEnd.millisecondsSinceEpoch.toDouble(),
+          minX: rangeStart.millisecondsSinceEpoch.toDouble(),
+          maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
           lineBarsData: [
             LineChartBarData(
               spots: spots,
