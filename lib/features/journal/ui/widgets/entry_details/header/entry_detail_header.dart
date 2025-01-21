@@ -11,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
@@ -85,6 +86,12 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     link: widget.link,
                   ),
                 ),
+                const SizedBox(width: 20),
+                if (entry != null &&
+                    entry is! Task &&
+                    entry is! JournalEvent &&
+                    !widget.inLinkedEntries)
+                  CategoryColorIcon(entry.categoryId),
               ],
             ),
           ),
