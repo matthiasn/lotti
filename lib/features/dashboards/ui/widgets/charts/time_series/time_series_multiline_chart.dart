@@ -65,7 +65,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
       child: LineChart(
         transformationConfig: FlTransformationConfig(
           scaleAxis: FlScaleAxis.horizontal,
-          maxScale: 20,
+          maxScale: maxScale,
           transformationController: transformationController,
         ),
         LineChartData(

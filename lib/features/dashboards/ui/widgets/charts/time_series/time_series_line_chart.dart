@@ -68,7 +68,7 @@ class TimeSeriesLineChart extends StatelessWidget {
         transformationConfig: FlTransformationConfig(
           scaleAxis: FlScaleAxis.horizontal,
           transformationController: transformationController,
-          maxScale: 20,
+          maxScale: maxScale,
         ),
         LineChartData(
           gridData: FlGridData(

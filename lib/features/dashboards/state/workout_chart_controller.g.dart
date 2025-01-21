@@ -7,7 +7,7 @@ part of 'workout_chart_controller.dart';
 // **************************************************************************
 
 String _$workoutChartDataControllerHash() =>
-    r'bf9db8c47705e72f17997ec62d58ba5c540b5b83';
+    r'7e7bd9a96f705b02261f25a69607751065dc4777';
 
 /// Copied from Dart SDK
 class _SystemHash {
