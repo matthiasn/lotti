@@ -84,6 +84,10 @@ class MaintenancePage extends StatelessWidget {
                 title: context.messages.maintenanceAssignCategoriesToChecklists,
                 onTap: maintenance.addCategoriesToChecklists,
               ),
+              SettingsCard(
+                title: context.messages.maintenanceAssignCategoriesToLinkedFromTasks,
+                onTap: maintenance.addCategoriesToLinkedFromTasks,
+              ),
             ],
           ),
         );

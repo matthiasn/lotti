@@ -160,6 +160,7 @@
   "maintenanceResetHostId": "Reset Host ID",
   "maintenanceReSync": "Re-sync messages",
   "maintenanceAssignCategoriesToChecklists": "Assign categories to checklists",
+  "maintenanceAssignCategoriesToLinkedFromTasks": "Assign categories to entries linked from tasks",
   "maintenanceStories": "Assign stories from parent entries",
   "maintenanceSyncCategories": "Sync categories",
   "maintenanceSyncDefinitions": "Sync tags, measurables, dashboards, habits",

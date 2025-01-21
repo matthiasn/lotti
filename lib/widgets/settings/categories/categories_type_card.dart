@@ -55,7 +55,7 @@ class CategoriesTypeCard extends StatelessWidget {
 class ColorIcon extends StatelessWidget {
   const ColorIcon(
     this.color, {
-    this.size = 24.0,
+    this.size = 20.0,
     super.key,
   });
 
@@ -65,7 +65,7 @@ class ColorIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: BorderRadius.circular(size / 4),
       child: Container(
         height: size,
         width: size,
@@ -78,7 +78,7 @@ class ColorIcon extends StatelessWidget {
 class CategoryColorIcon extends StatelessWidget {
   const CategoryColorIcon(
     this.categoryId, {
-    this.size = 24.0,
+    this.size = 20.0,
     super.key,
   });
 
