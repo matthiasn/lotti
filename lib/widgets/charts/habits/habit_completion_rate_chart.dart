@@ -46,7 +46,7 @@ class HabitCompletionRateChart extends StatelessWidget
           }
 
           return SideTitleWidget(
-            axisSide: meta.axisSide,
+            meta: meta,
             child: ChartLabel(chartDateFormatter(ymd)),
           );
         }

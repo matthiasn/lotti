@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.559+2837
+version: 0.9.560+2838
 
 msix_config:
   display_name: LottiApp
@@ -45,7 +45,7 @@ dependencies:
   exif: ^3.0.1
 
   ffmpeg_kit_flutter: ^6.0.3
-  fl_chart: 0.70.0
+  fl_chart: ^0.70.2
   flex_color_scheme: ^8.0.1
   flutter:
     sdk: flutter

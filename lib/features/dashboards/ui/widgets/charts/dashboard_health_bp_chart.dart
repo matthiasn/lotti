@@ -57,7 +57,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
-          axisSide: meta.axisSide,
+          meta: meta,
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
