@@ -374,4 +374,59 @@ class Maintenance {
       subDomain: 'addCategoriesToChecklists',
     );
   }
+
+  Future<void> addCategoriesToLinkedFromTasks() async {
+    await createDbBackup(journalDbFileName);
+
+    var taskCount = 0;
+    var tasksWithCategoriesCount = 0;
+    var updatedEntriesCount = 0;
+
+    final allCategoryIds = getIt<EntitiesCacheService>()
+        .sortedCategories
+        .map((e) => e.id)
+        .toList();
+
+    final tasks = await _db.getTasks(
+      taskStatuses: [
+        'OPEN',
+        'GROOMED',
+        'IN PROGRESS',
+        'BLOCKED',
+        'ON HOLD',
+        'DONE',
+        'REJECTED',
+      ],
+      starredStatuses: [true, false],
+      categoryIds: allCategoryIds,
+      limit: 100000,
+    );
+
+    for (final task in tasks) {
+      taskCount++;
+      if (task is Task) {
+        final categoryId = task.categoryId;
+        if (categoryId != null) {
+          tasksWithCategoriesCount++;
+
+          for (final linked in await _db.getLinkedEntities(task.id)) {
+            if (linked.meta.categoryId == null) {
+              await persistenceLogic.updateJournalEntity(
+                linked,
+                linked.meta.copyWith(categoryId: categoryId),
+              );
+              updatedEntriesCount++;
+            }
+          }
+        }
+      }
+    }
+
+    getIt<LoggingService>().captureEvent(
+      'Tasks: $taskCount, tasks with categories: $tasksWithCategoriesCount, \n'
+      'Updated entries: $updatedEntriesCount, \n',
+      domain: 'MAINTENANCE',
+      subDomain: 'addCategoriesToLinkedFromTasks',
+    );
+  }
 }
