@@ -16,6 +16,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     required this.rangeEnd,
     required this.minVal,
     required this.maxVal,
+    this.transformationController,
     this.unit = '',
     super.key,
   });
@@ -26,6 +27,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   final num minVal;
   final num maxVal;
   final String unit;
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +63,11 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
         right: 20,
       ),
       child: LineChart(
+        transformationConfig: FlTransformationConfig(
+          scaleAxis: FlScaleAxis.horizontal,
+          maxScale: 20,
+          transformationController: transformationController,
+        ),
         LineChartData(
           gridData: FlGridData(
             show: false,

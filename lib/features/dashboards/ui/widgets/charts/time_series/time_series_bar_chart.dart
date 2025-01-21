@@ -12,7 +12,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-class TimeSeriesBarChart extends StatefulWidget {
+class TimeSeriesBarChart extends StatelessWidget {
   const TimeSeriesBarChart({
     required this.data,
     required this.rangeStart,
@@ -20,6 +20,7 @@ class TimeSeriesBarChart extends StatefulWidget {
     required this.colorByValue,
     this.unit = '',
     this.valueInHours = false,
+    this.transformationController,
     super.key,
   });
 
@@ -28,34 +29,16 @@ class TimeSeriesBarChart extends StatefulWidget {
   final DateTime rangeEnd;
   final String unit;
   final bool valueInHours;
+  final TransformationController? transformationController;
+
   final ColorByValue colorByValue;
 
   @override
-  State<TimeSeriesBarChart> createState() => _TimeSeriesBarChartState();
-}
-
-class _TimeSeriesBarChartState extends State<TimeSeriesBarChart> {
-  late TransformationController _transformationController;
-
-  @override
-  void initState() {
-    _transformationController = TransformationController();
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _transformationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final inRange =
-        daysInRange(rangeStart: widget.rangeStart, rangeEnd: widget.rangeEnd);
+    final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
 
     final byDay = <String, Observation>{};
-    for (final observation in widget.data) {
+    for (final observation in data) {
       final day = observation.dateTime.ymd;
       byDay[day] = observation;
     }
@@ -65,7 +48,7 @@ class _TimeSeriesBarChartState extends State<TimeSeriesBarChart> {
       return observation;
     });
 
-    final rangeInDays = widget.rangeEnd.difference(widget.rangeStart).inDays;
+    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
     final gridInterval = rangeInDays > 182
         ? 30
@@ -88,10 +71,10 @@ class _TimeSeriesBarChartState extends State<TimeSeriesBarChart> {
           BarChartRodData(
             toY: observation.value.toDouble(),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(1),
-              topRight: Radius.circular(1),
+              topLeft: Radius.circular(2),
+              topRight: Radius.circular(2),
             ),
-            color: widget.colorByValue(observation),
+            color: colorByValue(observation),
             width: max(barsWidth, 1),
           ),
         ],
@@ -123,7 +106,8 @@ class _TimeSeriesBarChartState extends State<TimeSeriesBarChart> {
       child: BarChart(
         transformationConfig: FlTransformationConfig(
           scaleAxis: FlScaleAxis.horizontal,
-          transformationController: _transformationController,
+          maxScale: 20,
+          transformationController: transformationController,
         ),
         BarChartData(
           groupsSpace: 5,
@@ -146,11 +130,11 @@ class _TimeSeriesBarChartState extends State<TimeSeriesBarChart> {
                   Theme.of(context).primaryColor.desaturate(),
               tooltipRoundedRadius: 8,
               getTooltipItem: (groupData, timestamp, rodData, foo) {
-                final formatted = widget.valueInHours
+                final formatted = valueInHours
                     ? hoursToHhMm(rodData.toY)
                     : NumberFormat('#,###').format(rodData.toY);
                 return BarTooltipItem(
-                  '$formatted ${widget.unit}\n'
+                  '$formatted $unit\n'
                   '${chartDateFormatterYMD(groupData.x)}',
                   chartTooltipStyleBold.copyWith(
                     color: context.colorScheme.onPrimary,
