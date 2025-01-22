@@ -498,10 +498,10 @@ packages:
     dependency: transitive
     description:
       name: dbus
-      sha256: "365c771ac3b0e58845f39ec6deebc76e3276aa9922b0cc60840712094d9047ac"
+      sha256: "79e0c23480ff85dc68de79e2cd6334add97e48f7f4865d17686dd6ea81a47e8c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.10"
+    version: "0.7.11"
   dcli:
     dependency: transitive
     description:
@@ -579,18 +579,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: af3941e4d544727b2eb80590eb64e9cb8d77cd68c7690265502ea6a2427aa621
+      sha256: "76f23535e19a9f2be92f954e74d8802e96f526e5195d7408c1a20f6659043941"
       url: "https://pub.dev"
     source: hosted
-    version: "2.23.1"
+    version: "2.24.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: fa98fdbb7303a1b5b2dc110cb516eda2253a5d291680f8cbc72b1af24099f7f9
+      sha256: d1d90b0d55b22de412b77186f3bf3179a4b7e2acc4c8fb3a7aaf28a01abc194b
       url: "https://pub.dev"
     source: hosted
-    version: "2.23.1"
+    version: "2.24.0"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -611,10 +611,10 @@ packages:
     dependency: "direct main"
     description:
       name: enum_to_string
-      sha256: bd9e83a33b754cb43a75b36a9af2a0b92a757bfd9847d2621ca0b1bed45f8e7a
+      sha256: d968a315531f577a9bbb88c25284d8963128ea4ee5d2ccfc6be97cb333ea675d
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.2.0"
   equatable:
     dependency: "direct main"
     description:
@@ -747,10 +747,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: c724234b05e378383e958f3e82ca84a3e1e3c06a0898462044dd8a24b1ee9864
+      sha256: "5276944c6ffc975ae796569a826c38a62d2abcf264e26b88fa6f482e107f4237"
       url: "https://pub.dev"
     source: hosted
-    version: "0.70.0"
+    version: "0.70.2"
   flex_color_scheme:
     dependency: "direct main"
     description:
@@ -934,10 +934,10 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_launcher_icons
-      sha256: "31cd0885738e87c72d6f055564d37fabcdacee743b396b78c7636c169cac64f5"
+      sha256: bfa04787c85d80ecb3f8777bde5fc10c3de809240c48fa061a2c2bf15ea5211c
       url: "https://pub.dev"
     source: hosted
-    version: "0.14.2"
+    version: "0.14.3"
   flutter_linkify:
     dependency: "direct main"
     description:
@@ -1355,10 +1355,10 @@ packages:
     dependency: transitive
     description:
       name: hotreloader
-      sha256: ed56fdc1f3a8ac924e717257621d09e9ec20e308ab6352a73a50a1d7a4d9158e
+      sha256: bc167a1163807b03bada490bfe2df25b0d744df359227880220a5cbd04e5734b
       url: "https://pub.dev"
     source: hosted
-    version: "4.2.0"
+    version: "4.3.0"
   html:
     dependency: transitive
     description:
@@ -1379,10 +1379,10 @@ packages:
     dependency: transitive
     description:
       name: http
-      sha256: b9c29a161230ee03d3ccf545097fccd9b87a5264228c5d348202e0f0c28f9010
+      sha256: fe7ab022b76f3034adc518fb6ea04a82387620e19977665ea18d30a1cf43442f
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.2"
+    version: "1.3.0"
   http_client_helper:
     dependency: transitive
     description:
@@ -2569,10 +2569,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_android
-      sha256: bf808be89fe9dc467475e982c1db6c2faf3d2acf54d526cd5ec37d86c99dbd84
+      sha256: "138b7bbbc7f59c56236e426c37afb8f78cbc57b094ac64c440e0bb90e380a4f5"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2"
   shared_preferences_foundation:
     dependency: transitive
     description:
@@ -2774,26 +2774,26 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: c284434c408d207863800341298cadfde23abe074a0f01b19c9d8cce4edb8eaa
+      sha256: "35d3726fe18ab1463403a5cc8d97dbc81f2a0b08082e8173851363fcc97b6627"
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.0"
+    version: "2.7.2"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "73016db8419f019e807b7a5e5fbf2a7bd45c165fed403b8e7681230f3a102785"
+      sha256: "50a7e3f294c741d3142eed0ff228e38498334e11e0ccb9d73e0496e005949e44"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.28"
+    version: "0.5.29"
   sqlparser:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: "4cad4b2c5f63dc9ea1a8dcffb58cf762322bea5dd8836870164a65e913bdae41"
+      sha256: "27dd0a9f0c02e22ac0eb42a23df9ea079ce69b52bb4a3b478d64e0ef34a263ee"
       url: "https://pub.dev"
     source: hosted
-    version: "0.40.0"
+    version: "0.41.0"
   stack_trace:
     dependency: transitive
     description:

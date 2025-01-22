@@ -14,6 +14,7 @@ class TimeSeriesLineChart extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
+    this.transformationController,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,7 @@ class TimeSeriesLineChart extends StatelessWidget {
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
-          axisSide: meta.axisSide,
+          meta: meta,
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -63,6 +65,11 @@ class TimeSeriesLineChart extends StatelessWidget {
         right: 20,
       ),
       child: LineChart(
+        transformationConfig: FlTransformationConfig(
+          scaleAxis: FlScaleAxis.horizontal,
+          transformationController: transformationController,
+          maxScale: maxScale,
+        ),
         LineChartData(
           gridData: FlGridData(
             show: false,
