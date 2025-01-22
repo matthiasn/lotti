@@ -64,7 +64,9 @@ class TimeSeriesBarChart extends ConsumerWidget {
     final barsWidth =
         (screenWidth - 150 - rangeInDays - screenWidth * 0.1) / rangeInDays;
 
-    final scale = ref.watch(barWidthControllerProvider);
+    final scale = transformationController != null
+        ? ref.watch(barWidthControllerProvider)
+        : 1.0;
 
     final barGroups = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
