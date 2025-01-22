@@ -17,12 +17,14 @@ class DashboardHealthBpChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    this.transformationController,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,7 +59,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
-          axisSide: meta.axisSide,
+          meta: meta,
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -68,6 +70,11 @@ class DashboardHealthBpChart extends ConsumerWidget {
       chart: Padding(
         padding: const EdgeInsets.only(top: 20, right: 20),
         child: LineChart(
+          transformationConfig: FlTransformationConfig(
+            scaleAxis: FlScaleAxis.horizontal,
+            transformationController: transformationController,
+            maxScale: maxScale,
+          ),
           LineChartData(
             gridData: FlGridData(
               horizontalInterval: 10,
@@ -139,6 +146,8 @@ class DashboardHealthBpChart extends ConsumerWidget {
                   interval: 10,
                   getTitlesWidget: leftTitleWidgets,
                   reservedSize: 30,
+                  minIncluded: false,
+                  maxIncluded: false,
                 ),
               ),
             ),
@@ -148,8 +157,6 @@ class DashboardHealthBpChart extends ConsumerWidget {
             ),
             minX: rangeStart.millisecondsSinceEpoch.toDouble(),
             maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
-            minY: 60,
-            maxY: 160,
             lineBarsData: [
               LineChartBarData(
                 spots: systolicData

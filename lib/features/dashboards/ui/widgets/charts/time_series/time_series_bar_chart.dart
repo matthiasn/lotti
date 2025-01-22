@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -12,7 +14,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-class TimeSeriesBarChart extends StatelessWidget {
+class TimeSeriesBarChart extends ConsumerWidget {
   const TimeSeriesBarChart({
     required this.data,
     required this.rangeStart,
@@ -20,6 +22,7 @@ class TimeSeriesBarChart extends StatelessWidget {
     required this.colorByValue,
     this.unit = '',
     this.valueInHours = false,
+    this.transformationController,
     super.key,
   });
 
@@ -28,10 +31,12 @@ class TimeSeriesBarChart extends StatelessWidget {
   final DateTime rangeEnd;
   final String unit;
   final bool valueInHours;
+  final TransformationController? transformationController;
+
   final ColorByValue colorByValue;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
 
     final byDay = <String, Observation>{};
@@ -59,6 +64,10 @@ class TimeSeriesBarChart extends StatelessWidget {
     final barsWidth =
         (screenWidth - 150 - rangeInDays - screenWidth * 0.1) / rangeInDays;
 
+    final scale = transformationController != null
+        ? ref.watch(barWidthControllerProvider)
+        : 1.0;
+
     final barGroups = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
         .map((observation) {
@@ -68,11 +77,11 @@ class TimeSeriesBarChart extends StatelessWidget {
           BarChartRodData(
             toY: observation.value.toDouble(),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(1),
-              topRight: Radius.circular(1),
+              topLeft: Radius.circular(2),
+              topRight: Radius.circular(2),
             ),
             color: colorByValue(observation),
-            width: max(barsWidth, 1),
+            width: max(barsWidth, 1) * scale,
           ),
         ],
       );
@@ -88,7 +97,7 @@ class TimeSeriesBarChart extends StatelessWidget {
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
-          axisSide: meta.axisSide,
+          meta: meta,
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -101,6 +110,11 @@ class TimeSeriesBarChart extends StatelessWidget {
         right: 20,
       ),
       child: BarChart(
+        transformationConfig: FlTransformationConfig(
+          scaleAxis: FlScaleAxis.horizontal,
+          maxScale: maxScale,
+          transformationController: transformationController,
+        ),
         BarChartData(
           groupsSpace: 5,
           gridData: FlGridData(

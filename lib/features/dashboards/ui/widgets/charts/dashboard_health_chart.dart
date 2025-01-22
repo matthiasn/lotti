@@ -53,12 +53,14 @@ class DashboardHealthChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    this.transformationController,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,6 +73,7 @@ class DashboardHealthChart extends ConsumerWidget {
         chartConfig: chartConfig,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        transformationController: transformationController,
       );
     }
 
@@ -79,6 +82,7 @@ class DashboardHealthChart extends ConsumerWidget {
         chartConfig: chartConfig,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        transformationController: transformationController,
       );
     }
 
@@ -101,6 +105,7 @@ class DashboardHealthChart extends ConsumerWidget {
               rangeEnd: rangeEnd,
               unit: healthType?.unit ?? '',
               valueInHours: healthType?.unit == 'h',
+              transformationController: transformationController,
               colorByValue: (Observation observation) => colorByValueAndType(
                 observation,
                 healthType,
@@ -110,6 +115,7 @@ class DashboardHealthChart extends ConsumerWidget {
               data: data,
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
+              transformationController: transformationController,
               unit: healthType?.unit ?? '',
             ),
       chartHeader: HealthChartInfoWidget(chartConfig),
