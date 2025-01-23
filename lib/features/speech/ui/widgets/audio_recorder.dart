@@ -19,9 +19,11 @@ class AudioRecorderWidget extends ConsumerWidget {
   const AudioRecorderWidget({
     super.key,
     this.linkedId,
+    this.categoryId,
   });
 
   final String? linkedId;
+  final String? categoryId;
 
   String formatDuration(String str) {
     return str.substring(0, str.length - 7);
@@ -31,7 +33,8 @@ class AudioRecorderWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (context, state) {
-        final cubit = context.read<AudioRecorderCubit>();
+        final cubit = context.read<AudioRecorderCubit>()
+          ..setCategoryId(categoryId);
 
         Future<void> stop() async {
           final entryId = await cubit.stop();

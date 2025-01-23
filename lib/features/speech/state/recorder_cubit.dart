@@ -43,6 +43,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   String? _linkedId;
+  String? _categoryId;
   String? _language;
   AudioNote? _audioNote;
 
@@ -110,6 +111,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           _audioNote!,
           language: _language,
           linkedId: _linkedId,
+          categoryId: _categoryId,
         );
         _linkedId = null;
         final entryId = journalAudio?.meta.id;
@@ -148,5 +150,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     await super.close();
     await _audioRecorder.dispose();
     await _amplitudeSub?.cancel();
+  }
+
+  // ignore: use_setters_to_change_properties
+  void setCategoryId(String? categoryId) {
+    _categoryId = categoryId;
   }
 }
