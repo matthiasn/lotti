@@ -4,6 +4,7 @@ import 'package:langchain/langchain.dart';
 import 'package:langchain_ollama/langchain_ollama.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -35,12 +36,12 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
         temperature: 3,
         system: 'The prompt is a markdown document describing a task, '
             'with logbook of the completion of the task. '
-            'Summarize the task, the achieved results, and the remaining steps. '
-            'Also give me summary of the learnings, if there are any, and '
-            'anything else that might be relevant to the task. '
-            'Keep it short and succinct. '
-            'Be slightly motivational, but not overly so. The goal is to get me '
-            'to finish the task.',
+            'Also, there might be checklist items with a status of either '
+            'COMPLETED or TO DO. '
+            'Summarize the task, the achieved results, and the remaining steps '
+            'that have not been completed yet. '
+            'Note that the logbook is in reverse chronological order. '
+            'Keep it short and succinct. ',
       ),
     );
 
@@ -51,8 +52,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       buffer.write(res.outputAsString);
       state = buffer.toString();
     });
-
-    //print(buffer);
   }
 }
 
@@ -71,6 +70,13 @@ class TaskMarkdownController extends _$TaskMarkdownController {
 
     buffer.writeln(entry.getMarkdown());
 
+    if (entry is Task) {
+      await addChecklistSection(
+        entry,
+        buffer: buffer,
+      );
+    }
+
     final linkedEntities = await _db.getLinkedEntities(id);
 
     for (final linked in linkedEntities) {
@@ -81,13 +87,69 @@ class TaskMarkdownController extends _$TaskMarkdownController {
 
     return buffer.toString();
   }
+
+  Future<void> addChecklistSection(
+    Task task, {
+    required StringBuffer buffer,
+  }) async {
+    final checklistIds = task.data.checklistIds ?? [];
+
+    if (checklistIds.isEmpty) {
+      return;
+    }
+
+    buffer
+      ..writeln('******')
+      ..writeln('Checklists:')
+      ..writeln();
+
+    for (final checklistId in checklistIds) {
+      final checklist = await _db.journalEntityById(checklistId);
+      if (checklist != null && checklist is Checklist) {
+        buffer
+          ..writeln(checklist.data.title)
+          ..writeln();
+
+        final checklistItemIds = checklist.data.linkedChecklistItems;
+        for (final checklistItemId in checklistItemIds) {
+          final checklistItem = await _db.journalEntityById(checklistItemId);
+          if (checklistItem != null && checklistItem is ChecklistItem) {
+            final data = checklistItem.data;
+            buffer
+              ..writeln(
+                '${data.isChecked ? 'COMPLETED' : 'TO DO'}: ${data.title}',
+              )
+              ..writeln();
+          }
+        }
+        buffer.writeln();
+      }
+    }
+
+    buffer
+      ..writeln('******')
+      ..writeln()
+      ..writeln();
+  }
 }
 
 extension EntryExtension on JournalEntity {
   String getMarkdown({int indentation = 0}) {
     final headline = maybeMap(
       event: (event) => 'Event: ${event.data.title}',
-      task: (task) => 'Task: ${task.data.title}',
+      task: (task) {
+        final status = task.data.status.map(
+          open: (_) => 'OPEN',
+          groomed: (_) => 'GROOMED',
+          started: (_) => 'STARTED',
+          inProgress: (_) => 'IN PROGRESS',
+          blocked: (_) => 'BLOCKED',
+          onHold: (_) => 'ON HOLD',
+          done: (_) => 'DONE',
+          rejected: (_) => 'REJECTED',
+        );
+        return 'Task: ${task.data.title} - Status: $status';
+      },
       orElse: () => null,
     );
 
@@ -117,6 +179,14 @@ extension EntryExtension on JournalEntity {
     buffer
       ..writeln('Date: $formattedDate')
       ..writeln();
+
+    final duration = entryDuration(this);
+
+    if (duration.inSeconds > 10) {
+      buffer
+        ..writeln('Time spent: ${formatDuration(duration)}')
+        ..writeln();
+    }
 
     if (categoryId != null) {
       final category =

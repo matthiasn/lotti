@@ -20,6 +20,7 @@ class AiTaskSummaryListTile extends ConsumerWidget {
       leading: const Icon(Icons.chat_rounded),
       title: Text(context.messages.aiAssistantSummarizeTask),
       onTap: () {
+        Navigator.of(context).pop();
         showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,

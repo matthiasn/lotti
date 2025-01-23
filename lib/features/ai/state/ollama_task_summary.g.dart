@@ -7,7 +7,7 @@ part of 'ollama_task_summary.dart';
 // **************************************************************************
 
 String _$aiTaskSummaryControllerHash() =>
-    r'f7e734e33365eede648a8e71a7777cec6075aa8d';
+    r'e537f7f1e4f1eb075474d2afd5166bceb413da32';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -175,7 +175,7 @@ class _AiTaskSummaryControllerProviderElement
 }
 
 String _$taskMarkdownControllerHash() =>
-    r'b749107dbc81d565f46161e2b9b0fe2889d3a8b3';
+    r'296aa4604f824034656ae71905133e095d988b06';
 
 abstract class _$TaskMarkdownController
     extends BuildlessAutoDisposeAsyncNotifier<String?> {
