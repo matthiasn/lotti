@@ -330,7 +330,7 @@
   "syncAssistantStatusSuccess": "Account is successfully configured.",
   "syncAssistantStatusTesting": "Testing IMAP connection...",
   "syncAssistantStatusValid": "Account is valid.",
-  "taskCategoryLabel": "Task category:",
+  "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",
   "taskCategoryAllLabel": "all",
   "taskDueLabel": "Task due:",
