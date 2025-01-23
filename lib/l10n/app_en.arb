@@ -22,6 +22,7 @@
   "addTaskTitle": "Add Task",
   "aiAssistantCreateChecklist": "Create checklist items",
   "aiAssistantRunPrompt": "Ask Llama3",
+  "aiAssistantSummarizeTask": "Summarize task",
   "aiAssistantTitle": "AI Assistant",
   "appBarBack": "Back",
   "cancelButton": "Cancel",
