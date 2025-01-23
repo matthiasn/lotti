@@ -29,11 +29,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-import '../../helpers/path_provider.dart';
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../utils/utils.dart';
-import '../../widget_test_utils.dart';
+import '../../../../helpers/path_provider.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../utils/utils.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -4,8 +4,8 @@ import 'package:lotti/features/journal/ui/widgets/tags/tag_widget.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../test_data/test_data.dart';
-import '../../../widget_test_utils.dart';
+import '../../../../../test_data/test_data.dart';
+import '../../../../../widget_test_utils.dart';
 
 class TestCallbackClass {
   void onTapRemove() {}
