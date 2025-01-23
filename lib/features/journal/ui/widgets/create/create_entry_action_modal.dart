@@ -16,13 +16,14 @@ class CreateEntryModal {
       title: context.messages.createEntryTitle,
       builder: (_) => Column(
         children: [
-          CreateEventListTile(linkedFromId),
+          CreateEventListTile(linkedFromId, categoryId: categoryId),
           CreateTaskListTile(linkedFromId, categoryId: categoryId),
-          CreateAudioRecordingListTile(linkedFromId),
+          CreateAudioRecordingListTile(linkedFromId, categoryId: categoryId),
           if (linkedFromId != null) CreateTimerListTile(linkedFromId),
-          CreateTextEntryListTile(linkedFromId),
-          ImportImageAssetsListTile(linkedFromId),
-          if (isMacOS) CreateScreenshotListTile(linkedFromId),
+          CreateTextEntryListTile(linkedFromId, categoryId: categoryId),
+          ImportImageAssetsListTile(linkedFromId, categoryId: categoryId),
+          if (isMacOS)
+            CreateScreenshotListTile(linkedFromId, categoryId: categoryId),
           verticalModalSpacer,
         ],
       ),

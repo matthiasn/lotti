@@ -317,6 +317,7 @@ class PersistenceLogic {
     required EventData data,
     required EntryText entryText,
     String? linkedId,
+    String? categoryId,
   }) async {
     try {
       final journalEvent = JournalEvent(
@@ -324,6 +325,7 @@ class PersistenceLogic {
         entryText: entryText,
         meta: await createMetadata(
           starred: true,
+          categoryId: categoryId,
         ),
       );
 
@@ -391,7 +393,7 @@ class PersistenceLogic {
       final withTags = journalEntity.copyWith(
         meta: journalEntity.meta.copyWith(
           private: linked?.meta.private,
-          categoryId: linked?.categoryId,
+          categoryId: journalEntity.categoryId ?? linked?.categoryId,
           tagIds: <String>{
             ...?journalEntity.meta.tagIds,
             ...storyTags,

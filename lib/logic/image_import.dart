@@ -13,6 +13,7 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 Future<void> importImageAssets(
   BuildContext context, {
   String? linkedId,
+  String? categoryId,
 }) async {
   final assets = await AssetPicker.pickAssets(
     context,
@@ -78,6 +79,7 @@ Future<void> importImageAssets(
         await JournalRepository.createImageEntry(
           imageData,
           linkedId: linkedId,
+          categoryId: categoryId,
         );
       }
     }
