@@ -17,6 +17,7 @@ class SpeechRepository {
     AudioNote audioNote, {
     required String? language,
     String? linkedId,
+    String? categoryId,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -45,6 +46,7 @@ class SpeechRepository {
           dateTo: dateTo,
           uuidV5Input: json.encode(audioData),
           flag: EntryFlag.import,
+          categoryId: categoryId,
         ),
       );
       await persistenceLogic.createDbEntity(journalEntity, linkedId: linkedId);

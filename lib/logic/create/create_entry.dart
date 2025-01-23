@@ -13,11 +13,13 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
-Future<JournalEntity?> createTextEntry({String? linkedId}) async {
+Future<JournalEntity?> createTextEntry(
+    {String? linkedId, String? categoryId,}) async {
   final entry = await JournalRepository.createTextEntry(
     const EntryText(plainText: ''),
     id: uuid.v1(),
     linkedId: linkedId,
+    categoryId: categoryId,
     started: DateTime.now(),
   );
 
@@ -68,7 +70,7 @@ Future<Task?> createTask({String? linkedId, String? categoryId}) async {
   return task;
 }
 
-Future<JournalEvent?> createEvent({String? linkedId}) =>
+Future<JournalEvent?> createEvent({String? linkedId, String? categoryId}) =>
     getIt<PersistenceLogic>().createEventEntry(
       data: const EventData(
         status: EventStatus.tentative,
@@ -77,9 +79,13 @@ Future<JournalEvent?> createEvent({String? linkedId}) =>
       ),
       entryText: const EntryText(plainText: ''),
       linkedId: linkedId,
+      categoryId: categoryId,
     );
 
-Future<JournalEntity?> createScreenshot({String? linkedId}) async {
+Future<JournalEntity?> createScreenshot({
+  String? linkedId,
+  String? categoryId,
+}) async {
   final persistenceLogic = getIt<PersistenceLogic>();
   final imageData = await takeScreenshotMac();
   final entry = await JournalRepository.createImageEntry(

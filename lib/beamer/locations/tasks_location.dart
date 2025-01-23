@@ -21,6 +21,7 @@ class TasksLocation extends BeamLocation<BeamState> {
 
     final entryId = state.pathParameters['entryId'];
     final linkedId = state.pathParameters['linkedId'];
+    final categoryId = state.queryParameters['categoryId'];
 
     return [
       const BeamPage(
@@ -36,7 +37,7 @@ class TasksLocation extends BeamLocation<BeamState> {
       if (pathContains('record_audio/'))
         BeamPage(
           key: ValueKey('record_audio-$linkedId'),
-          child: RecordAudioPage(linkedId: linkedId),
+          child: RecordAudioPage(linkedId: linkedId, categoryId: categoryId),
         ),
     ];
   }

@@ -11,10 +11,12 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class CreateTextEntryListTile extends StatelessWidget {
   const CreateTextEntryListTile(
     this.linkedFromId, {
+    this.categoryId,
     super.key,
   });
 
   final String? linkedFromId;
+  final String? categoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class CreateTextEntryListTile extends StatelessWidget {
       title: Text(context.messages.addActionAddText),
       onTap: () {
         Navigator.of(context).pop();
-        createTextEntry(linkedId: linkedFromId);
+        createTextEntry(linkedId: linkedFromId, categoryId: categoryId);
       },
     );
   }
@@ -32,10 +34,12 @@ class CreateTextEntryListTile extends StatelessWidget {
 class CreateScreenshotListTile extends StatelessWidget {
   const CreateScreenshotListTile(
     this.linkedFromId, {
+    this.categoryId,
     super.key,
   });
 
   final String? linkedFromId;
+  final String? categoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +47,7 @@ class CreateScreenshotListTile extends StatelessWidget {
       leading: Icon(MdiIcons.monitorScreenshot),
       title: Text(context.messages.addActionAddScreenshot),
       onTap: () {
-        createScreenshot(linkedId: linkedFromId);
+        createScreenshot(linkedId: linkedFromId, categoryId: categoryId);
         Navigator.of(context).pop();
       },
     );
@@ -77,10 +81,12 @@ class CreateTimerListTile extends ConsumerWidget {
 class CreateAudioRecordingListTile extends StatelessWidget {
   const CreateAudioRecordingListTile(
     this.linkedFromId, {
+    this.categoryId,
     super.key,
   });
 
   final String? linkedFromId;
+  final String? categoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -90,9 +96,15 @@ class CreateAudioRecordingListTile extends StatelessWidget {
       onTap: () {
         Navigator.of(context).pop();
         if (getIt<NavService>().isTasksTabActive()) {
-          beamToNamed('/tasks/$linkedFromId/record_audio/$linkedFromId');
+          beamToNamed(
+            '/tasks/$linkedFromId/record_audio/$linkedFromId?categoryId=$categoryId',
+            data: {'categoryId': categoryId},
+          );
         } else {
-          beamToNamed('/journal/$linkedFromId/record_audio/$linkedFromId');
+          beamToNamed(
+            '/journal/$linkedFromId/record_audio/$linkedFromId?categoryId=$categoryId',
+            data: {'categoryId': categoryId},
+          );
         }
       },
     );
@@ -133,10 +145,12 @@ class CreateTaskListTile extends StatelessWidget {
 class CreateEventListTile extends StatelessWidget {
   const CreateEventListTile(
     this.linkedFromId, {
+    this.categoryId,
     super.key,
   });
 
   final String? linkedFromId;
+  final String? categoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +162,7 @@ class CreateEventListTile extends StatelessWidget {
 
         final event = await createEvent(
           linkedId: linkedFromId,
+          categoryId: categoryId,
         );
 
         if (event != null) {
@@ -161,10 +176,12 @@ class CreateEventListTile extends StatelessWidget {
 class ImportImageAssetsListTile extends StatelessWidget {
   const ImportImageAssetsListTile(
     this.linkedFromId, {
+    this.categoryId,
     super.key,
   });
 
   final String? linkedFromId;
+  final String? categoryId;
 
   @override
   Widget build(BuildContext context) {

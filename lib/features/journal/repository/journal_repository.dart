@@ -128,13 +128,17 @@ class JournalRepository {
     required DateTime started,
     required String id,
     String? linkedId,
+    String? categoryId,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
       final journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
-        meta: await persistenceLogic.createMetadata(dateFrom: started),
+        meta: await persistenceLogic.createMetadata(
+          dateFrom: started,
+          categoryId: categoryId,
+        ),
       );
 
       await persistenceLogic.createDbEntity(journalEntity, linkedId: linkedId);
@@ -154,6 +158,7 @@ class JournalRepository {
   static Future<JournalEntity?> createImageEntry(
     ImageData imageData, {
     String? linkedId,
+    String? categoryId,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -165,6 +170,7 @@ class JournalRepository {
           dateTo: imageData.capturedAt,
           uuidV5Input: json.encode(imageData),
           flag: EntryFlag.import,
+          categoryId: categoryId,
         ),
         geolocation: imageData.geolocation,
       );
