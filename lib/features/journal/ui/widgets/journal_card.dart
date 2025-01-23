@@ -56,14 +56,27 @@ class JournalCardTitle extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                item is JournalEvent
-                    ? dfShort.format(item.meta.dateFrom)
-                    : dfShorter.format(item.meta.dateFrom),
-                style: monospaceTextStyle,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item is JournalEvent
+                        ? dfShort.format(item.meta.dateFrom)
+                        : dfShorter.format(item.meta.dateFrom),
+                    style: monospaceTextStyle,
+                  ),
+                  if (item is! ChecklistItem &&
+                      item is! Checklist &&
+                      item is! HabitCompletionEntry &&
+                      item is! MeasurementEntry &&
+                      item is! WorkoutEntry &&
+                      item is! QuantitativeEntry &&
+                      item is! SurveyEntry) ...[
+                    const SizedBox(width: 20),
+                    CategoryColorIcon(item.meta.categoryId),
+                  ],
+                ],
               ),
-              if (item is Task)
-                CategoryColorIcon((item as Task).meta.categoryId),
               if (item is Task) TaskStatusWidget(item as Task),
               Row(
                 children: [
