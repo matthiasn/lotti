@@ -429,4 +429,35 @@ class Maintenance {
       subDomain: 'addCategoriesToLinkedFromTasks',
     );
   }
+
+  Future<void> addCategoriesToLinked() async {
+    await createDbBackup(journalDbFileName);
+
+    final count = await _db.getJournalCount();
+    const pageSize = 100;
+    final pages = (count / pageSize).ceil();
+
+    for (var page = 0; page <= pages; page++) {
+      final dbEntities =
+          await _db.orderedJournal(pageSize, page * pageSize).get();
+
+      final entries = entityStreamMapper(dbEntities);
+      for (final entry in entries) {
+        final categoryId = entry.categoryId;
+
+        if (categoryId != null) {
+          final linkedEntities = await _db.getLinkedEntities(entry.meta.id);
+
+          for (final linked in linkedEntities) {
+            if (linked.categoryId == null) {
+              await persistenceLogic.updateJournalEntity(
+                linked,
+                linked.meta.copyWith(categoryId: categoryId),
+              );
+            }
+          }
+        }
+      }
+    }
+  }
 }
