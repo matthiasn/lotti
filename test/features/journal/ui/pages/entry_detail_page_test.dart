@@ -24,10 +24,10 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../helpers/path_provider.dart';
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../widget_test_utils.dart';
+import '../../../../helpers/path_provider.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

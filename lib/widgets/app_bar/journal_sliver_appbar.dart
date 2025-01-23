@@ -7,6 +7,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
+import 'package:lotti/widgets/search/task_category_filter.dart';
 import 'package:lotti/widgets/search/task_filter_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -40,8 +41,10 @@ class JournalSliverAppBar extends StatelessWidget {
                       onChanged: cubit.setSearchString,
                     ),
                   ),
-                  if (showTasks) const TaskFilterIcon(),
-                  if (!showTasks) const JournalFilterIcon(),
+                  if (showTasks)
+                    const TaskFilterIcon()
+                  else
+                    const JournalFilterIcon(),
                 ],
               ),
             ],
@@ -136,10 +139,13 @@ class JournalFilterIcon extends StatelessWidget {
               );
             },
             builder: (_) => const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 JournalFilter(),
                 SizedBox(height: 10),
                 EntryTypeFilter(),
+                SizedBox(height: 10),
+                TaskCategoryFilter(),
               ],
             ),
           );

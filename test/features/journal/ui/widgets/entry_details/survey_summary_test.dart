@@ -8,8 +8,8 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.d
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
+import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

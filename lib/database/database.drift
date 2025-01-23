@@ -187,6 +187,19 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+filteredJournalByCategories:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND private IN :privateStatuses
+  AND flag IN :flaggedStatuses
+  AND category IN :categories
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
 filteredJournalIds:
 SELECT id FROM journal
   WHERE type IN :types

@@ -251,6 +251,7 @@ class JournalDb extends _$JournalDb {
     required List<bool> privateStatuses,
     required List<int> flaggedStatuses,
     required List<String>? ids,
+    Set<String>? categoryIds,
     int limit = 500,
     int offset = 0,
   }) async {
@@ -259,6 +260,7 @@ class JournalDb extends _$JournalDb {
       starredStatuses: starredStatuses,
       privateStatuses: privateStatuses,
       flaggedStatuses: flaggedStatuses,
+      categoryIds: categoryIds?.toList(),
       ids: ids,
       limit: limit,
       offset: offset,
@@ -299,6 +301,7 @@ class JournalDb extends _$JournalDb {
     required List<bool> privateStatuses,
     required List<int> flaggedStatuses,
     required List<String>? ids,
+    required List<String>? categoryIds,
     int limit = 500,
     int offset = 0,
   }) {
@@ -309,6 +312,16 @@ class JournalDb extends _$JournalDb {
         starredStatuses,
         privateStatuses,
         flaggedStatuses,
+        limit,
+        offset,
+      );
+    } else if (categoryIds != null) {
+      return filteredJournalByCategories(
+        types,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        categoryIds,
         limit,
         offset,
       );

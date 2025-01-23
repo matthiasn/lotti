@@ -358,6 +358,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
         flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
+        categoryIds:
+            _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
         limit: _pageSize,
         offset: pageKey,
       );
