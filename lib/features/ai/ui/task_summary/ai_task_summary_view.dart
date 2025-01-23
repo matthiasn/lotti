@@ -13,6 +13,7 @@ class AiTaskSummaryView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    const showInput = false;
     final markdown =
         ref.watch(taskMarkdownControllerProvider(id: id)).valueOrNull;
     final summary = ref.watch(aiTaskSummaryControllerProvider(id: id));
@@ -23,10 +24,16 @@ class AiTaskSummaryView extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MarkdownBody(data: summary),
-              const SizedBox(height: 200),
-              if (markdown != null) MarkdownBody(data: markdown),
+              MarkdownBody(
+                data: summary,
+              ),
+              // ignore: dead_code
+              if (showInput) ...[
+                const SizedBox(height: 200),
+                if (markdown != null) MarkdownBody(data: markdown),
+              ],
             ],
           ),
         ),
