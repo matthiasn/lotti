@@ -194,6 +194,7 @@ class ImportImageAssetsListTile extends StatelessWidget {
         importImageAssets(
           context,
           linkedId: linkedFromId,
+          categoryId: categoryId,
         );
       },
     );
