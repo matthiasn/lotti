@@ -11,7 +11,6 @@ class BarWidthController extends _$BarWidthController {
   }
 
   void updateScale(Matrix4 scale) {
-    final scaleX = scale.row0.x;
-    state = scaleX.floorToDouble();
+    state = scale.row0.x;
   }
 }
