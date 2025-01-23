@@ -13,15 +13,22 @@ class AiTaskSummaryView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary =
-        ref.watch(aiTaskSummaryControllerProvider(id: id)).value ?? '';
+    final markdown =
+        ref.watch(taskMarkdownControllerProvider(id: id)).valueOrNull;
+    final summary = ref.watch(aiTaskSummaryControllerProvider(id: id));
 
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600),
-          child: MarkdownBody(data: summary),
+          child: Column(
+            children: [
+              MarkdownBody(data: summary),
+              const SizedBox(height: 200),
+              if (markdown != null) MarkdownBody(data: markdown),
+            ],
+          ),
         ),
       ),
     );
