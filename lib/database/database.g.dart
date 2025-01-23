@@ -4728,6 +4728,45 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> filteredJournalByCategories(
+      List<String> types,
+      List<bool> starredStatuses,
+      List<bool> privateStatuses,
+      List<int> flaggedStatuses,
+      List<String> categories,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedprivateStatuses =
+        $expandVar($arrayStartIndex, privateStatuses.length);
+    $arrayStartIndex += privateStatuses.length;
+    final expandedflaggedStatuses =
+        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    $arrayStartIndex += flaggedStatuses.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
+    return customSelect(
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        variables: [
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in privateStatuses) Variable<bool>($),
+          for (var $ in flaggedStatuses) Variable<int>($),
+          for (var $ in categories) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<String> filteredJournalIds(
       List<String> types,
       List<bool> starredStatuses,
