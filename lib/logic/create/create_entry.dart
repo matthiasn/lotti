@@ -13,8 +13,10 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
-Future<JournalEntity?> createTextEntry(
-    {String? linkedId, String? categoryId,}) async {
+Future<JournalEntity?> createTextEntry({
+  String? linkedId,
+  String? categoryId,
+}) async {
   final entry = await JournalRepository.createTextEntry(
     const EntryText(plainText: ''),
     id: uuid.v1(),
@@ -91,6 +93,7 @@ Future<JournalEntity?> createScreenshot({
   final entry = await JournalRepository.createImageEntry(
     imageData,
     linkedId: linkedId,
+    categoryId: categoryId,
   );
 
   if (entry != null) {
