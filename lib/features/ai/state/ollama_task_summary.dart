@@ -13,8 +13,8 @@ part 'ollama_task_summary.g.dart';
 @riverpod
 class AiTaskSummaryController extends _$AiTaskSummaryController {
   @override
-  Future<String> build({required String id}) async {
-    unawaited(summarizeEntry());
+  String build({required String id}) {
+    summarizeEntry();
     return '';
   }
 
@@ -23,7 +23,7 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       taskMarkdownControllerProvider(id: id).future,
     );
 
-    state = const AsyncValue.data('');
+    state = '';
 
     if (markdown == null) {
       return;
@@ -33,13 +33,12 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       defaultOptions: const OllamaOptions(
         model: 'llama3.2-vision:latest', // TODO: make configurable
         temperature: 3,
-        system:
-            'The prompt is a markdown document describing a task that needs to '
-            'be completed, with comments added as the task has been completed, '
-            'as a journal or logbook of the completion of the task. '
+        system: 'The prompt is a markdown document describing a task, '
+            'with logbook of the completion of the task. '
             'Summarize the task, the achieved results, and the remaining steps. '
-            'Also give me summary of the learnings, possible conflicts along the '
-            'way, and suggestions to overcome those. '
+            'Also give me summary of the learnings, if there are any, and '
+            'anything else that might be relevant to the task. '
+            'Keep it short and succinct. '
             'Be slightly motivational, but not overly so. The goal is to get me '
             'to finish the task.',
       ),
@@ -50,7 +49,7 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
     final buffer = StringBuffer();
     await llm.stream(prompt).forEach((res) {
       buffer.write(res.outputAsString);
-      state = AsyncValue.data(buffer.toString());
+      state = buffer.toString();
     });
 
     //print(buffer);

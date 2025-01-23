@@ -7,7 +7,7 @@ part of 'ollama_task_summary.dart';
 // **************************************************************************
 
 String _$aiTaskSummaryControllerHash() =>
-    r'15327064f042ff711abcdd6cee5da8466694ef93';
+    r'f7e734e33365eede648a8e71a7777cec6075aa8d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$AiTaskSummaryController
-    extends BuildlessAutoDisposeAsyncNotifier<String> {
+    extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
 
-  FutureOr<String> build({
+  String build({
     required String id,
   });
 }
@@ -44,7 +44,7 @@ abstract class _$AiTaskSummaryController
 const aiTaskSummaryControllerProvider = AiTaskSummaryControllerFamily();
 
 /// See also [AiTaskSummaryController].
-class AiTaskSummaryControllerFamily extends Family<AsyncValue<String>> {
+class AiTaskSummaryControllerFamily extends Family<String> {
   /// See also [AiTaskSummaryController].
   const AiTaskSummaryControllerFamily();
 
@@ -83,8 +83,7 @@ class AiTaskSummaryControllerFamily extends Family<AsyncValue<String>> {
 
 /// See also [AiTaskSummaryController].
 class AiTaskSummaryControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<AiTaskSummaryController,
-        String> {
+    extends AutoDisposeNotifierProviderImpl<AiTaskSummaryController, String> {
   /// See also [AiTaskSummaryController].
   AiTaskSummaryControllerProvider({
     required String id,
@@ -115,7 +114,7 @@ class AiTaskSummaryControllerProvider
   final String id;
 
   @override
-  FutureOr<String> runNotifierBuild(
+  String runNotifierBuild(
     covariant AiTaskSummaryController notifier,
   ) {
     return notifier.build(
@@ -140,7 +139,7 @@ class AiTaskSummaryControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<AiTaskSummaryController, String>
+  AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
       createElement() {
     return _AiTaskSummaryControllerProviderElement(this);
   }
@@ -161,15 +160,14 @@ class AiTaskSummaryControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin AiTaskSummaryControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<String> {
+mixin AiTaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
 class _AiTaskSummaryControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<AiTaskSummaryController,
-        String> with AiTaskSummaryControllerRef {
+    extends AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
+    with AiTaskSummaryControllerRef {
   _AiTaskSummaryControllerProviderElement(super.provider);
 
   @override
