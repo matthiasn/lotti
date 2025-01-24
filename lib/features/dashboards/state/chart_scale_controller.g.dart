@@ -7,7 +7,7 @@ part of 'chart_scale_controller.dart';
 // **************************************************************************
 
 String _$barWidthControllerHash() =>
-    r'975094ae3bc8bb5a765a2bb4625dd16bbb8f4b96';
+    r'1f0d03f0671b76de97cc89a7a6bb81cc3f335482';
 
 /// See also [BarWidthController].
 @ProviderFor(BarWidthController)
