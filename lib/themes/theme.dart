@@ -209,12 +209,7 @@ ThemeData withOverrides(ThemeData themeData) {
     hoverColor: Colors.transparent,
     cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(inputBorderRadius),
-        side: BorderSide(
-          color: themeData.colorScheme.outline.withAlpha(100),
-        ),
-      ),
+      color: themeData.colorScheme.surfaceContainerHigh,
     ),
     sliderTheme: themeData.sliderTheme.copyWith(
       activeTrackColor: themeData.colorScheme.secondary,
