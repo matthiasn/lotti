@@ -1,12 +1,11 @@
 import 'dart:async';
 
-import 'package:langchain/langchain.dart';
-import 'package:langchain_ollama/langchain_ollama.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:ollama/ollama.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ollama_task_summary.g.dart';
@@ -30,28 +29,28 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       return;
     }
 
-    final llm = Ollama(
-      defaultOptions: const OllamaOptions(
-        model: 'llama3.2-vision:latest', // TODO: make configurable
-        temperature: 3,
-        system: 'The prompt is a markdown document describing a task, '
-            'with logbook of the completion of the task. '
-            'Also, there might be checklist items with a status of either '
-            'COMPLETED or TO DO. '
-            'Summarize the task, the achieved results, and the remaining steps '
-            'that have not been completed yet. '
-            'Note that the logbook is in reverse chronological order. '
-            'Keep it short and succinct. ',
-      ),
+    const systemPrompt = 'The prompt is a markdown document describing a task, '
+        'with logbook of the completion of the task. '
+        'Also, there might be checklist items with a status of either '
+        'COMPLETED or TO DO. '
+        'Summarize the task, the achieved results, and the remaining steps '
+        'that have not been completed yet. '
+        'Note that the logbook is in reverse chronological order. '
+        'Keep it short and succinct. ';
+
+    final llm = Ollama();
+    final buffer = StringBuffer();
+
+    final stream = llm.generate(
+      markdown,
+      model: 'llama3.2-vision:latest', // TODO: make configurable
+      system: systemPrompt,
     );
 
-    final prompt = PromptValue.string(markdown);
-
-    final buffer = StringBuffer();
-    await llm.stream(prompt).forEach((res) {
-      buffer.write(res.outputAsString);
+    await for (final chunk in stream) {
+      buffer.write(chunk.text);
       state = buffer.toString();
-    });
+    }
   }
 }
 

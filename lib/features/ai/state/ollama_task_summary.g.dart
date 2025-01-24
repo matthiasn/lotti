@@ -7,7 +7,7 @@ part of 'ollama_task_summary.dart';
 // **************************************************************************
 
 String _$aiTaskSummaryControllerHash() =>
-    r'e537f7f1e4f1eb075474d2afd5166bceb413da32';
+    r'812f36f50ae58d65bd17066d6e40289c0bb11e27';
 
 /// Copied from Dart SDK
 class _SystemHash {
