@@ -6,17 +6,24 @@ import 'package:lotti/features/ai/state/ollama_task_summary.dart';
 class AiTaskSummaryView extends ConsumerWidget {
   const AiTaskSummaryView({
     required this.id,
+    required this.processImages,
     super.key,
   });
 
   final String id;
+  final bool processImages;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const showInput = false;
     final markdown =
         ref.watch(taskMarkdownControllerProvider(id: id)).valueOrNull;
-    final summary = ref.watch(aiTaskSummaryControllerProvider(id: id));
+    final summary = ref.watch(
+      aiTaskSummaryControllerProvider(
+        id: id,
+        processImages: processImages,
+      ),
+    );
 
     return SingleChildScrollView(
       child: Padding(
