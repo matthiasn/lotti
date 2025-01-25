@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:ollama/ollama.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -12,13 +15,20 @@ part 'ollama_task_summary.g.dart';
 
 @riverpod
 class AiTaskSummaryController extends _$AiTaskSummaryController {
+  final JournalDb _db = getIt<JournalDb>();
+
   @override
-  String build({required String id}) {
+  String build({
+    required String id,
+    required bool processImages,
+  }) {
     summarizeEntry();
     return '';
   }
 
   Future<void> summarizeEntry() async {
+    final entry = await _db.journalEntityById(id);
+
     final markdown = await ref.read(
       taskMarkdownControllerProvider(id: id).future,
     );
@@ -40,17 +50,34 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
 
     final llm = Ollama();
     final buffer = StringBuffer();
+    final images =
+        processImages && entry is Task ? await getImages(entry) : null;
 
     final stream = llm.generate(
       markdown,
       model: 'llama3.2-vision:latest', // TODO: make configurable
       system: systemPrompt,
+      images: images,
     );
 
     await for (final chunk in stream) {
       buffer.write(chunk.text);
       state = buffer.toString();
     }
+  }
+
+  Future<List<String>> getImages(Task task) async {
+    final linkedEntities = await _db.getLinkedEntities(id);
+    final imageEntries = linkedEntities.whereType<JournalImage>();
+    final base64Images = <String>[];
+
+    for (final imageEntry in imageEntries) {
+      final fullPath = getFullImagePath(imageEntry);
+      final bytes = await File(fullPath).readAsBytes();
+      base64Images.add(base64Encode(bytes));
+    }
+
+    return base64Images;
   }
 }
 
