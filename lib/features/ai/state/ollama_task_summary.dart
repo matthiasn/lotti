@@ -45,6 +45,9 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
         'COMPLETED or TO DO. '
         'Summarize the task, the achieved results, and the remaining steps '
         'that have not been completed yet. '
+        'If there are images, include their content in the summary. '
+        'Consider that the content of the images, likely screenshots, '
+        'are related to the completion of the task. '
         'Note that the logbook is in reverse chronological order. '
         'Keep it short and succinct. ';
 
@@ -74,7 +77,8 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
     for (final imageEntry in imageEntries) {
       final fullPath = getFullImagePath(imageEntry);
       final bytes = await File(fullPath).readAsBytes();
-      base64Images.add(base64Encode(bytes));
+      final base64String = base64Encode(bytes);
+      base64Images.add(base64String);
     }
 
     return base64Images;
