@@ -27,12 +27,12 @@ class AiPopUpMenu extends StatelessWidget {
         title: context.messages.aiAssistantTitle,
         builder: (_) => Column(
           children: [
-            if (journalEntity != null && journalEntity is Task)
-              AiTaskSummaryListTile(
-                journalEntity: journalEntity,
-                linkedFromId: linkedFromId,
-                processImages: true,
-              ),
+            // if (journalEntity != null && journalEntity is Task)
+            //   AiTaskSummaryListTile(
+            //     journalEntity: journalEntity,
+            //     linkedFromId: linkedFromId,
+            //     processImages: true,
+            //   ),
             if (journalEntity != null && journalEntity is Task)
               AiTaskSummaryListTile(
                 journalEntity: journalEntity,
