@@ -1,25 +1,34 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
-import 'package:langchain/langchain.dart';
-import 'package:langchain_ollama/langchain_ollama.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/image_utils.dart';
+import 'package:ollama/ollama.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ollama_task_summary.g.dart';
 
 @riverpod
 class AiTaskSummaryController extends _$AiTaskSummaryController {
+  final JournalDb _db = getIt<JournalDb>();
+
   @override
-  String build({required String id}) {
+  String build({
+    required String id,
+    required bool processImages,
+  }) {
     summarizeEntry();
     return '';
   }
 
   Future<void> summarizeEntry() async {
+    final entry = await _db.journalEntityById(id);
+
     final markdown = await ref.read(
       taskMarkdownControllerProvider(id: id).future,
     );
@@ -30,28 +39,49 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       return;
     }
 
-    final llm = Ollama(
-      defaultOptions: const OllamaOptions(
-        model: 'llama3.2-vision:latest', // TODO: make configurable
-        temperature: 3,
-        system: 'The prompt is a markdown document describing a task, '
-            'with logbook of the completion of the task. '
-            'Also, there might be checklist items with a status of either '
-            'COMPLETED or TO DO. '
-            'Summarize the task, the achieved results, and the remaining steps '
-            'that have not been completed yet. '
-            'Note that the logbook is in reverse chronological order. '
-            'Keep it short and succinct. ',
-      ),
+    const systemPrompt = 'The prompt is a markdown document describing a task, '
+        'with logbook of the completion of the task. '
+        'Also, there might be checklist items with a status of either '
+        'COMPLETED or TO DO. '
+        'Summarize the task, the achieved results, and the remaining steps '
+        'that have not been completed yet. '
+        'If there are images, include their content in the summary. '
+        'Consider that the content of the images, likely screenshots, '
+        'are related to the completion of the task. '
+        'Note that the logbook is in reverse chronological order. '
+        'Keep it short and succinct. ';
+
+    final llm = Ollama();
+    final buffer = StringBuffer();
+    final images =
+        processImages && entry is Task ? await getImages(entry) : null;
+
+    final stream = llm.generate(
+      markdown,
+      model: 'llama3.2-vision:latest', // TODO: make configurable
+      system: systemPrompt,
+      images: images,
     );
 
-    final prompt = PromptValue.string(markdown);
-
-    final buffer = StringBuffer();
-    await llm.stream(prompt).forEach((res) {
-      buffer.write(res.outputAsString);
+    await for (final chunk in stream) {
+      buffer.write(chunk.text);
       state = buffer.toString();
-    });
+    }
+  }
+
+  Future<List<String>> getImages(Task task) async {
+    final linkedEntities = await _db.getLinkedEntities(id);
+    final imageEntries = linkedEntities.whereType<JournalImage>();
+    final base64Images = <String>[];
+
+    for (final imageEntry in imageEntries) {
+      final fullPath = getFullImagePath(imageEntry);
+      final bytes = await File(fullPath).readAsBytes();
+      final base64String = base64Encode(bytes);
+      base64Images.add(base64String);
+    }
+
+    return base64Images;
   }
 }
 

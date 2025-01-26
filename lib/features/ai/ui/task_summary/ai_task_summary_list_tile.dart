@@ -7,18 +7,24 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class AiTaskSummaryListTile extends ConsumerWidget {
   const AiTaskSummaryListTile({
     required this.journalEntity,
+    required this.processImages,
     this.linkedFromId,
     super.key,
   });
 
   final JournalEntity journalEntity;
   final String? linkedFromId;
+  final bool processImages;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
       leading: const Icon(Icons.chat_rounded),
-      title: Text(context.messages.aiAssistantSummarizeTask),
+      title: Text(
+        processImages
+            ? context.messages.aiAssistantSummarizeTaskWithImages
+            : context.messages.aiAssistantSummarizeTask,
+      ),
       onTap: () {
         Navigator.of(context).pop();
         showModalBottomSheet<void>(
@@ -26,6 +32,7 @@ class AiTaskSummaryListTile extends ConsumerWidget {
           isScrollControlled: true,
           builder: (BuildContext context) => AiTaskSummaryView(
             id: journalEntity.id,
+            processImages: processImages,
           ),
         );
       },
