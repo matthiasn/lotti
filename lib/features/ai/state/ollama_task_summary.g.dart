@@ -7,7 +7,7 @@ part of 'ollama_task_summary.dart';
 // **************************************************************************
 
 String _$aiTaskSummaryControllerHash() =>
-    r'e537f7f1e4f1eb075474d2afd5166bceb413da32';
+    r'89f4b03fe8670d9b701786e56f0e96b74a235930';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,9 +33,11 @@ class _SystemHash {
 abstract class _$AiTaskSummaryController
     extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
+  late final bool processImages;
 
   String build({
     required String id,
+    required bool processImages,
   });
 }
 
@@ -51,9 +53,11 @@ class AiTaskSummaryControllerFamily extends Family<String> {
   /// See also [AiTaskSummaryController].
   AiTaskSummaryControllerProvider call({
     required String id,
+    required bool processImages,
   }) {
     return AiTaskSummaryControllerProvider(
       id: id,
+      processImages: processImages,
     );
   }
 
@@ -63,6 +67,7 @@ class AiTaskSummaryControllerFamily extends Family<String> {
   ) {
     return call(
       id: provider.id,
+      processImages: provider.processImages,
     );
   }
 
@@ -87,8 +92,11 @@ class AiTaskSummaryControllerProvider
   /// See also [AiTaskSummaryController].
   AiTaskSummaryControllerProvider({
     required String id,
+    required bool processImages,
   }) : this._internal(
-          () => AiTaskSummaryController()..id = id,
+          () => AiTaskSummaryController()
+            ..id = id
+            ..processImages = processImages,
           from: aiTaskSummaryControllerProvider,
           name: r'aiTaskSummaryControllerProvider',
           debugGetCreateSourceHash:
@@ -99,6 +107,7 @@ class AiTaskSummaryControllerProvider
           allTransitiveDependencies:
               AiTaskSummaryControllerFamily._allTransitiveDependencies,
           id: id,
+          processImages: processImages,
         );
 
   AiTaskSummaryControllerProvider._internal(
@@ -109,9 +118,11 @@ class AiTaskSummaryControllerProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
+    required this.processImages,
   }) : super.internal();
 
   final String id;
+  final bool processImages;
 
   @override
   String runNotifierBuild(
@@ -119,6 +130,7 @@ class AiTaskSummaryControllerProvider
   ) {
     return notifier.build(
       id: id,
+      processImages: processImages,
     );
   }
 
@@ -127,13 +139,16 @@ class AiTaskSummaryControllerProvider
     return ProviderOverride(
       origin: this,
       override: AiTaskSummaryControllerProvider._internal(
-        () => create()..id = id,
+        () => create()
+          ..id = id
+          ..processImages = processImages,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         id: id,
+        processImages: processImages,
       ),
     );
   }
@@ -146,13 +161,16 @@ class AiTaskSummaryControllerProvider
 
   @override
   bool operator ==(Object other) {
-    return other is AiTaskSummaryControllerProvider && other.id == id;
+    return other is AiTaskSummaryControllerProvider &&
+        other.id == id &&
+        other.processImages == processImages;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, processImages.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -163,6 +181,9 @@ class AiTaskSummaryControllerProvider
 mixin AiTaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
+
+  /// The parameter `processImages` of this provider.
+  bool get processImages;
 }
 
 class _AiTaskSummaryControllerProviderElement
@@ -172,6 +193,9 @@ class _AiTaskSummaryControllerProviderElement
 
   @override
   String get id => (origin as AiTaskSummaryControllerProvider).id;
+  @override
+  bool get processImages =>
+      (origin as AiTaskSummaryControllerProvider).processImages;
 }
 
 String _$taskMarkdownControllerHash() =>
