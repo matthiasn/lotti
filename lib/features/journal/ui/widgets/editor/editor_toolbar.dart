@@ -35,6 +35,7 @@ class ToolbarWidget extends ConsumerWidget {
           multiRowsDisplay: false,
           showColorButton: false,
           showFontFamily: false,
+          showUnderLineButton: false,
           showBackgroundColorButton: false,
           showSubscript: false,
           showSuperscript: false,
