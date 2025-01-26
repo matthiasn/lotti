@@ -122,13 +122,19 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
               showHalfHours: true,
               heightPerMinute: _heightPerMinute,
               keepScrollOffset: true,
-              initialDay: DateTime.now(),
               headerStyle: HeaderStyle(
                 headerTextStyle: chartTitleStyleMonospace.copyWith(
                   fontWeight: FontWeight.w400,
+                  color: context.colorScheme.primary,
                 ),
                 decoration: BoxDecoration(
-                  color: context.colorScheme.primaryContainer,
+                  color: context.colorScheme.surfaceContainer,
+                ),
+                leftIconConfig: IconDataConfig(
+                  color: context.colorScheme.primary,
+                ),
+                rightIconConfig: IconDataConfig(
+                  color: context.colorScheme.primary,
                 ),
               ),
               dateStringBuilder: (date, {DateTime? secondaryDate}) => date.ymwd,
