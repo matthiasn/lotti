@@ -45,11 +45,13 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
         'COMPLETED or TO DO. '
         'Summarize the task, the achieved results, and the remaining steps '
         'that have not been completed yet. '
+        'Note any learnings or insights that can be drawn from the task, if any. '
         'If there are images, include their content in the summary. '
         'Consider that the content of the images, likely screenshots, '
         'are related to the completion of the task. '
         'Note that the logbook is in reverse chronological order. '
-        'Keep it short and succinct. ';
+        'Keep it short and succinct. '
+        'Calculate total time spent on the task. ';
 
     final llm = Ollama();
     final buffer = StringBuffer();
@@ -58,8 +60,11 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
 
     final stream = llm.generate(
       markdown,
-      model: 'llama3.2-vision:latest', // TODO: make configurable
+      model: 'deepseek-r1:14b', // TODO: make configurable
       system: systemPrompt,
+      options: ModelOptions(
+        temperature: 0.6,
+      ),
       images: images,
     );
 
@@ -112,6 +117,7 @@ class TaskMarkdownController extends _$TaskMarkdownController {
     for (final linked in linkedEntities) {
       buffer
         ..writeln('******')
+        ..writeln('Linked:')
         ..writeln(linked.getMarkdown(indentation: 1));
     }
 

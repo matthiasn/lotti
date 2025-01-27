@@ -209,7 +209,7 @@ ThemeData withOverrides(ThemeData themeData) {
     hoverColor: Colors.transparent,
     cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
-      color: themeData.colorScheme.surfaceContainerHigh,
+      color: themeData.colorScheme.surfaceContainer,
     ),
     sliderTheme: themeData.sliderTheme.copyWith(
       activeTrackColor: themeData.colorScheme.secondary,
