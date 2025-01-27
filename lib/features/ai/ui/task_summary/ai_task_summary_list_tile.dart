@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/modals.dart';
 
 class AiTaskSummaryListTile extends ConsumerWidget {
   const AiTaskSummaryListTile({
@@ -27,10 +28,10 @@ class AiTaskSummaryListTile extends ConsumerWidget {
       ),
       onTap: () {
         Navigator.of(context).pop();
-        showModalBottomSheet<void>(
+        ModalUtils.showSinglePageModal(
           context: context,
-          isScrollControlled: true,
-          builder: (BuildContext context) => AiTaskSummaryView(
+          title: context.messages.aiAssistantTitle,
+          builder: (_) => AiTaskSummaryView(
             id: journalEntity.id,
             processImages: processImages,
           ),
