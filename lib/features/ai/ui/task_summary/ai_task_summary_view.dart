@@ -35,6 +35,7 @@ class AiTaskSummaryView extends ConsumerWidget {
             children: [
               MarkdownBody(
                 data: summary,
+                selectable: true,
               ),
               // ignore: dead_code
               if (showInput) ...[
