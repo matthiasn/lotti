@@ -203,6 +203,10 @@ class JournalCardTitle extends StatelessWidget {
                   ],
                 );
               },
+              aiResponse: (AiResponseEntry aiResponse) => TextViewerWidget(
+                entryText: aiResponse.entryText,
+                maxHeight: maxHeight,
+              ),
               workout: (workout) => WorkoutSummary(
                 workout,
                 showChart: false,
@@ -296,6 +300,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
             measurement: (_) => LeadingIcon(MdiIcons.numeric),
             habitCompletion: (habitCompletion) =>
                 HabitCompletionColorIcon(habitCompletion.data.habitId),
+            aiResponse: (_) => const Icon(Icons.assistant),
             orElse: () => null,
           ),
           title: JournalCardTitle(

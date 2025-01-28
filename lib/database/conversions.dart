@@ -68,6 +68,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       journalAudio: (_) => 'JournalAudio',
       task: (_) => 'Task',
       event: (_) => 'JournalEvent',
+      aiResponse: (_) => 'AiResponse',
       checklist: (_) => 'Checklist',
       checklistItem: (_) => 'ChecklistItem',
       quantitative: (_) => 'QuantitativeEntry',

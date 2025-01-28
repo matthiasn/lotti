@@ -5474,6 +5474,265 @@ abstract class _MeasurementData implements MeasurementData {
       throw _privateConstructorUsedError;
 }
 
+AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) {
+  return _AiResponseData.fromJson(json);
+}
+
+/// @nodoc
+mixin _$AiResponseData {
+  String get model => throw _privateConstructorUsedError;
+  String get systemMessage => throw _privateConstructorUsedError;
+  String get prompt => throw _privateConstructorUsedError;
+  String get thoughts => throw _privateConstructorUsedError;
+  String get response => throw _privateConstructorUsedError;
+  double? get temperature => throw _privateConstructorUsedError;
+
+  /// Serializes this AiResponseData to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of AiResponseData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $AiResponseDataCopyWith<AiResponseData> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AiResponseDataCopyWith<$Res> {
+  factory $AiResponseDataCopyWith(
+          AiResponseData value, $Res Function(AiResponseData) then) =
+      _$AiResponseDataCopyWithImpl<$Res, AiResponseData>;
+  @useResult
+  $Res call(
+      {String model,
+      String systemMessage,
+      String prompt,
+      String thoughts,
+      String response,
+      double? temperature});
+}
+
+/// @nodoc
+class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
+    implements $AiResponseDataCopyWith<$Res> {
+  _$AiResponseDataCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of AiResponseData
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? model = null,
+    Object? systemMessage = null,
+    Object? prompt = null,
+    Object? thoughts = null,
+    Object? response = null,
+    Object? temperature = freezed,
+  }) {
+    return _then(_value.copyWith(
+      model: null == model
+          ? _value.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      systemMessage: null == systemMessage
+          ? _value.systemMessage
+          : systemMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      prompt: null == prompt
+          ? _value.prompt
+          : prompt // ignore: cast_nullable_to_non_nullable
+              as String,
+      thoughts: null == thoughts
+          ? _value.thoughts
+          : thoughts // ignore: cast_nullable_to_non_nullable
+              as String,
+      response: null == response
+          ? _value.response
+          : response // ignore: cast_nullable_to_non_nullable
+              as String,
+      temperature: freezed == temperature
+          ? _value.temperature
+          : temperature // ignore: cast_nullable_to_non_nullable
+              as double?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$AiResponseDataImplCopyWith<$Res>
+    implements $AiResponseDataCopyWith<$Res> {
+  factory _$$AiResponseDataImplCopyWith(_$AiResponseDataImpl value,
+          $Res Function(_$AiResponseDataImpl) then) =
+      __$$AiResponseDataImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String model,
+      String systemMessage,
+      String prompt,
+      String thoughts,
+      String response,
+      double? temperature});
+}
+
+/// @nodoc
+class __$$AiResponseDataImplCopyWithImpl<$Res>
+    extends _$AiResponseDataCopyWithImpl<$Res, _$AiResponseDataImpl>
+    implements _$$AiResponseDataImplCopyWith<$Res> {
+  __$$AiResponseDataImplCopyWithImpl(
+      _$AiResponseDataImpl _value, $Res Function(_$AiResponseDataImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of AiResponseData
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? model = null,
+    Object? systemMessage = null,
+    Object? prompt = null,
+    Object? thoughts = null,
+    Object? response = null,
+    Object? temperature = freezed,
+  }) {
+    return _then(_$AiResponseDataImpl(
+      model: null == model
+          ? _value.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      systemMessage: null == systemMessage
+          ? _value.systemMessage
+          : systemMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      prompt: null == prompt
+          ? _value.prompt
+          : prompt // ignore: cast_nullable_to_non_nullable
+              as String,
+      thoughts: null == thoughts
+          ? _value.thoughts
+          : thoughts // ignore: cast_nullable_to_non_nullable
+              as String,
+      response: null == response
+          ? _value.response
+          : response // ignore: cast_nullable_to_non_nullable
+              as String,
+      temperature: freezed == temperature
+          ? _value.temperature
+          : temperature // ignore: cast_nullable_to_non_nullable
+              as double?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AiResponseDataImpl implements _AiResponseData {
+  const _$AiResponseDataImpl(
+      {required this.model,
+      required this.systemMessage,
+      required this.prompt,
+      required this.thoughts,
+      required this.response,
+      this.temperature});
+
+  factory _$AiResponseDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiResponseDataImplFromJson(json);
+
+  @override
+  final String model;
+  @override
+  final String systemMessage;
+  @override
+  final String prompt;
+  @override
+  final String thoughts;
+  @override
+  final String response;
+  @override
+  final double? temperature;
+
+  @override
+  String toString() {
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, temperature: $temperature)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AiResponseDataImpl &&
+            (identical(other.model, model) || other.model == model) &&
+            (identical(other.systemMessage, systemMessage) ||
+                other.systemMessage == systemMessage) &&
+            (identical(other.prompt, prompt) || other.prompt == prompt) &&
+            (identical(other.thoughts, thoughts) ||
+                other.thoughts == thoughts) &&
+            (identical(other.response, response) ||
+                other.response == response) &&
+            (identical(other.temperature, temperature) ||
+                other.temperature == temperature));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, model, systemMessage, prompt,
+      thoughts, response, temperature);
+
+  /// Create a copy of AiResponseData
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AiResponseDataImplCopyWith<_$AiResponseDataImpl> get copyWith =>
+      __$$AiResponseDataImplCopyWithImpl<_$AiResponseDataImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AiResponseDataImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _AiResponseData implements AiResponseData {
+  const factory _AiResponseData(
+      {required final String model,
+      required final String systemMessage,
+      required final String prompt,
+      required final String thoughts,
+      required final String response,
+      final double? temperature}) = _$AiResponseDataImpl;
+
+  factory _AiResponseData.fromJson(Map<String, dynamic> json) =
+      _$AiResponseDataImpl.fromJson;
+
+  @override
+  String get model;
+  @override
+  String get systemMessage;
+  @override
+  String get prompt;
+  @override
+  String get thoughts;
+  @override
+  String get response;
+  @override
+  double? get temperature;
+
+  /// Create a copy of AiResponseData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$AiResponseDataImplCopyWith<_$AiResponseDataImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) {
   return _WorkoutData.fromJson(json);
 }

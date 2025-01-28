@@ -17,6 +17,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     journalAudio: (_) => 'audio',
     journalEntry: (_) => 'text_entries',
     event: (_) => 'events',
+    aiResponse: (_) => 'ai_responses',
     journalImage: (_) => 'images',
     measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
@@ -40,6 +41,7 @@ String typeSuffix(JournalEntity journalEntity) {
     survey: (_) => 'survey',
     task: (_) => 'task',
     event: (_) => 'event',
+    aiResponse: (_) => 'ai_response',
     checklist: (_) => 'checklist',
     checklistItem: (_) => 'checklist_item',
   );

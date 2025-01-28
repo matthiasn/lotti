@@ -344,6 +344,30 @@ Map<String, dynamic> _$$MeasurementEntryImplToJson(
       'runtimeType': instance.$type,
     };
 
+_$AiResponseEntryImpl _$$AiResponseEntryImplFromJson(
+        Map<String, dynamic> json) =>
+    _$AiResponseEntryImpl(
+      meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+      data: AiResponseData.fromJson(json['data'] as Map<String, dynamic>),
+      entryText: json['entryText'] == null
+          ? null
+          : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$AiResponseEntryImplToJson(
+        _$AiResponseEntryImpl instance) =>
+    <String, dynamic>{
+      'meta': instance.meta,
+      'data': instance.data,
+      'entryText': instance.entryText,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };
+
 _$WorkoutEntryImpl _$$WorkoutEntryImplFromJson(Map<String, dynamic> json) =>
     _$WorkoutEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),

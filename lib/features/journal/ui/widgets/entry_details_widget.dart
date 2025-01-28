@@ -168,6 +168,7 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           journalEntry: (_) => const SizedBox.shrink(),
           journalImage: (_) => const SizedBox.shrink(),
+          aiResponse: (_) => const SizedBox.shrink(),
           checklist: (checklist) => ChecklistWrapper(
             entryId: checklist.meta.id,
           ),

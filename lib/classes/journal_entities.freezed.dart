@@ -1554,6 +1554,8 @@ JournalEntity _$JournalEntityFromJson(Map<String, dynamic> json) {
       return QuantitativeEntry.fromJson(json);
     case 'measurement':
       return MeasurementEntry.fromJson(json);
+    case 'aiResponse':
+      return AiResponseEntry.fromJson(json);
     case 'workout':
       return WorkoutEntry.fromJson(json);
     case 'habitCompletion':
@@ -1601,6 +1603,9 @@ mixin _$JournalEntity {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -1641,6 +1646,9 @@ mixin _$JournalEntity {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -1681,6 +1689,9 @@ mixin _$JournalEntity {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -1704,6 +1715,7 @@ mixin _$JournalEntity {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -1720,6 +1732,7 @@ mixin _$JournalEntity {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -1736,6 +1749,7 @@ mixin _$JournalEntity {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -1974,6 +1988,9 @@ class _$JournalEntryImpl implements JournalEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -2017,6 +2034,9 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -2060,6 +2080,9 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -2089,6 +2112,7 @@ class _$JournalEntryImpl implements JournalEntry {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -2108,6 +2132,7 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -2127,6 +2152,7 @@ class _$JournalEntryImpl implements JournalEntry {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -2329,6 +2355,9 @@ class _$JournalImageImpl implements JournalImage {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -2372,6 +2401,9 @@ class _$JournalImageImpl implements JournalImage {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -2415,6 +2447,9 @@ class _$JournalImageImpl implements JournalImage {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -2444,6 +2479,7 @@ class _$JournalImageImpl implements JournalImage {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -2463,6 +2499,7 @@ class _$JournalImageImpl implements JournalImage {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -2482,6 +2519,7 @@ class _$JournalImageImpl implements JournalImage {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -2686,6 +2724,9 @@ class _$JournalAudioImpl implements JournalAudio {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -2729,6 +2770,9 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -2772,6 +2816,9 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -2801,6 +2848,7 @@ class _$JournalAudioImpl implements JournalAudio {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -2820,6 +2868,7 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -2839,6 +2888,7 @@ class _$JournalAudioImpl implements JournalAudio {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -3042,6 +3092,9 @@ class _$TaskImpl implements Task {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -3085,6 +3138,9 @@ class _$TaskImpl implements Task {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -3128,6 +3184,9 @@ class _$TaskImpl implements Task {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -3157,6 +3216,7 @@ class _$TaskImpl implements Task {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -3176,6 +3236,7 @@ class _$TaskImpl implements Task {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -3195,6 +3256,7 @@ class _$TaskImpl implements Task {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -3398,6 +3460,9 @@ class _$JournalEventImpl implements JournalEvent {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -3441,6 +3506,9 @@ class _$JournalEventImpl implements JournalEvent {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -3484,6 +3552,9 @@ class _$JournalEventImpl implements JournalEvent {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -3513,6 +3584,7 @@ class _$JournalEventImpl implements JournalEvent {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -3532,6 +3604,7 @@ class _$JournalEventImpl implements JournalEvent {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -3551,6 +3624,7 @@ class _$JournalEventImpl implements JournalEvent {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -3755,6 +3829,9 @@ class _$ChecklistItemImpl implements ChecklistItem {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -3798,6 +3875,9 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -3841,6 +3921,9 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -3870,6 +3953,7 @@ class _$ChecklistItemImpl implements ChecklistItem {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -3889,6 +3973,7 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -3908,6 +3993,7 @@ class _$ChecklistItemImpl implements ChecklistItem {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -4112,6 +4198,9 @@ class _$ChecklistImpl implements Checklist {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -4155,6 +4244,9 @@ class _$ChecklistImpl implements Checklist {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -4198,6 +4290,9 @@ class _$ChecklistImpl implements Checklist {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -4227,6 +4322,7 @@ class _$ChecklistImpl implements Checklist {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -4246,6 +4342,7 @@ class _$ChecklistImpl implements Checklist {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -4265,6 +4362,7 @@ class _$ChecklistImpl implements Checklist {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -4470,6 +4568,9 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -4513,6 +4614,9 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -4556,6 +4660,9 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -4585,6 +4692,7 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -4604,6 +4712,7 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -4623,6 +4732,7 @@ class _$QuantitativeEntryImpl implements QuantitativeEntry {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -4828,6 +4938,9 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -4871,6 +4984,9 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -4914,6 +5030,9 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -4943,6 +5062,7 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -4962,6 +5082,7 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -4981,6 +5102,7 @@ class _$MeasurementEntryImpl implements MeasurementEntry {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -5023,6 +5145,376 @@ abstract class MeasurementEntry implements JournalEntity {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MeasurementEntryImplCopyWith<_$MeasurementEntryImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$AiResponseEntryImplCopyWith<$Res>
+    implements $JournalEntityCopyWith<$Res> {
+  factory _$$AiResponseEntryImplCopyWith(_$AiResponseEntryImpl value,
+          $Res Function(_$AiResponseEntryImpl) then) =
+      __$$AiResponseEntryImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {Metadata meta,
+      AiResponseData data,
+      EntryText? entryText,
+      Geolocation? geolocation});
+
+  @override
+  $MetadataCopyWith<$Res> get meta;
+  $AiResponseDataCopyWith<$Res> get data;
+  @override
+  $EntryTextCopyWith<$Res>? get entryText;
+  @override
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class __$$AiResponseEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$AiResponseEntryImpl>
+    implements _$$AiResponseEntryImplCopyWith<$Res> {
+  __$$AiResponseEntryImplCopyWithImpl(
+      _$AiResponseEntryImpl _value, $Res Function(_$AiResponseEntryImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? meta = null,
+    Object? data = null,
+    Object? entryText = freezed,
+    Object? geolocation = freezed,
+  }) {
+    return _then(_$AiResponseEntryImpl(
+      meta: null == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Metadata,
+      data: null == data
+          ? _value.data
+          : data // ignore: cast_nullable_to_non_nullable
+              as AiResponseData,
+      entryText: freezed == entryText
+          ? _value.entryText
+          : entryText // ignore: cast_nullable_to_non_nullable
+              as EntryText?,
+      geolocation: freezed == geolocation
+          ? _value.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $AiResponseDataCopyWith<$Res> get data {
+    return $AiResponseDataCopyWith<$Res>(_value.data, (value) {
+      return _then(_value.copyWith(data: value));
+    });
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AiResponseEntryImpl implements AiResponseEntry {
+  const _$AiResponseEntryImpl(
+      {required this.meta,
+      required this.data,
+      this.entryText,
+      this.geolocation,
+      final String? $type})
+      : $type = $type ?? 'aiResponse';
+
+  factory _$AiResponseEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiResponseEntryImplFromJson(json);
+
+  @override
+  final Metadata meta;
+  @override
+  final AiResponseData data;
+  @override
+  final EntryText? entryText;
+  @override
+  final Geolocation? geolocation;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'JournalEntity.aiResponse(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AiResponseEntryImpl &&
+            (identical(other.meta, meta) || other.meta == meta) &&
+            (identical(other.data, data) || other.data == data) &&
+            (identical(other.entryText, entryText) ||
+                other.entryText == entryText) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, meta, data, entryText, geolocation);
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AiResponseEntryImplCopyWith<_$AiResponseEntryImpl> get copyWith =>
+      __$$AiResponseEntryImplCopyWithImpl<_$AiResponseEntryImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
+        journalEntry,
+    required TResult Function(Metadata meta, ImageData data,
+            EntryText? entryText, Geolocation? geolocation)
+        journalImage,
+    required TResult Function(Metadata meta, AudioData data,
+            EntryText? entryText, Geolocation? geolocation)
+        journalAudio,
+    required TResult Function(Metadata meta, TaskData data,
+            EntryText? entryText, Geolocation? geolocation)
+        task,
+    required TResult Function(Metadata meta, EventData data,
+            EntryText? entryText, Geolocation? geolocation)
+        event,
+    required TResult Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)
+        checklistItem,
+    required TResult Function(Metadata meta, ChecklistData data,
+            EntryText? entryText, Geolocation? geolocation)
+        checklist,
+    required TResult Function(Metadata meta, QuantitativeData data,
+            EntryText? entryText, Geolocation? geolocation)
+        quantitative,
+    required TResult Function(Metadata meta, MeasurementData data,
+            EntryText? entryText, Geolocation? geolocation)
+        measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
+        workout,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
+  }) {
+    return aiResponse(meta, data, entryText, geolocation);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+        journalEntry,
+    TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalImage,
+    TResult? Function(Metadata meta, AudioData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalAudio,
+    TResult? Function(Metadata meta, TaskData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        task,
+    TResult? Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
+    TResult? Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        checklistItem,
+    TResult? Function(Metadata meta, ChecklistData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        checklist,
+    TResult? Function(Metadata meta, QuantitativeData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        quantitative,
+    TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        workout,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
+  }) {
+    return aiResponse?.call(meta, data, entryText, geolocation);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+        journalEntry,
+    TResult Function(Metadata meta, ImageData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalImage,
+    TResult Function(Metadata meta, AudioData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        journalAudio,
+    TResult Function(Metadata meta, TaskData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        task,
+    TResult Function(Metadata meta, EventData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        event,
+    TResult Function(Metadata meta, ChecklistItemData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        checklistItem,
+    TResult Function(Metadata meta, ChecklistData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        checklist,
+    TResult Function(Metadata meta, QuantitativeData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        quantitative,
+    TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        workout,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
+    required TResult orElse(),
+  }) {
+    if (aiResponse != null) {
+      return aiResponse(meta, data, entryText, geolocation);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(JournalEntry value) journalEntry,
+    required TResult Function(JournalImage value) journalImage,
+    required TResult Function(JournalAudio value) journalAudio,
+    required TResult Function(Task value) task,
+    required TResult Function(JournalEvent value) event,
+    required TResult Function(ChecklistItem value) checklistItem,
+    required TResult Function(Checklist value) checklist,
+    required TResult Function(QuantitativeEntry value) quantitative,
+    required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
+    required TResult Function(WorkoutEntry value) workout,
+    required TResult Function(HabitCompletionEntry value) habitCompletion,
+    required TResult Function(SurveyEntry value) survey,
+  }) {
+    return aiResponse(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(JournalEntry value)? journalEntry,
+    TResult? Function(JournalImage value)? journalImage,
+    TResult? Function(JournalAudio value)? journalAudio,
+    TResult? Function(Task value)? task,
+    TResult? Function(JournalEvent value)? event,
+    TResult? Function(ChecklistItem value)? checklistItem,
+    TResult? Function(Checklist value)? checklist,
+    TResult? Function(QuantitativeEntry value)? quantitative,
+    TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
+    TResult? Function(WorkoutEntry value)? workout,
+    TResult? Function(HabitCompletionEntry value)? habitCompletion,
+    TResult? Function(SurveyEntry value)? survey,
+  }) {
+    return aiResponse?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(JournalEntry value)? journalEntry,
+    TResult Function(JournalImage value)? journalImage,
+    TResult Function(JournalAudio value)? journalAudio,
+    TResult Function(Task value)? task,
+    TResult Function(JournalEvent value)? event,
+    TResult Function(ChecklistItem value)? checklistItem,
+    TResult Function(Checklist value)? checklist,
+    TResult Function(QuantitativeEntry value)? quantitative,
+    TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
+    TResult Function(WorkoutEntry value)? workout,
+    TResult Function(HabitCompletionEntry value)? habitCompletion,
+    TResult Function(SurveyEntry value)? survey,
+    required TResult orElse(),
+  }) {
+    if (aiResponse != null) {
+      return aiResponse(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AiResponseEntryImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class AiResponseEntry implements JournalEntity {
+  const factory AiResponseEntry(
+      {required final Metadata meta,
+      required final AiResponseData data,
+      final EntryText? entryText,
+      final Geolocation? geolocation}) = _$AiResponseEntryImpl;
+
+  factory AiResponseEntry.fromJson(Map<String, dynamic> json) =
+      _$AiResponseEntryImpl.fromJson;
+
+  @override
+  Metadata get meta;
+  AiResponseData get data;
+  @override
+  EntryText? get entryText;
+  @override
+  Geolocation? get geolocation;
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$AiResponseEntryImplCopyWith<_$AiResponseEntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -5185,6 +5677,9 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -5228,6 +5723,9 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -5271,6 +5769,9 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -5300,6 +5801,7 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -5319,6 +5821,7 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -5338,6 +5841,7 @@ class _$WorkoutEntryImpl implements WorkoutEntry {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -5544,6 +6048,9 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -5587,6 +6094,9 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -5630,6 +6140,9 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -5659,6 +6172,7 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -5678,6 +6192,7 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -5697,6 +6212,7 @@ class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
@@ -5901,6 +6417,9 @@ class _$SurveyEntryImpl implements SurveyEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
+    required TResult Function(Metadata meta, AiResponseData data,
+            EntryText? entryText, Geolocation? geolocation)
+        aiResponse,
     required TResult Function(Metadata meta, WorkoutData data,
             EntryText? entryText, Geolocation? geolocation)
         workout,
@@ -5944,6 +6463,9 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult? Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -5987,6 +6509,9 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
+    TResult Function(Metadata meta, AiResponseData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        aiResponse,
     TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
             Geolocation? geolocation)?
         workout,
@@ -6016,6 +6541,7 @@ class _$SurveyEntryImpl implements SurveyEntry {
     required TResult Function(Checklist value) checklist,
     required TResult Function(QuantitativeEntry value) quantitative,
     required TResult Function(MeasurementEntry value) measurement,
+    required TResult Function(AiResponseEntry value) aiResponse,
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
@@ -6035,6 +6561,7 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult? Function(Checklist value)? checklist,
     TResult? Function(QuantitativeEntry value)? quantitative,
     TResult? Function(MeasurementEntry value)? measurement,
+    TResult? Function(AiResponseEntry value)? aiResponse,
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
@@ -6054,6 +6581,7 @@ class _$SurveyEntryImpl implements SurveyEntry {
     TResult Function(Checklist value)? checklist,
     TResult Function(QuantitativeEntry value)? quantitative,
     TResult Function(MeasurementEntry value)? measurement,
+    TResult Function(AiResponseEntry value)? aiResponse,
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
