@@ -164,7 +164,7 @@ class MeasurementData with _$MeasurementData {
 }
 
 @freezed
-class AiResponseData with _$MeasurementData {
+class AiResponseData with _$AiResponseData {
   const factory AiResponseData({
     required String model,
     required String systemMessage,

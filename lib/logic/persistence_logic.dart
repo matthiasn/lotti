@@ -313,6 +313,41 @@ class PersistenceLogic {
     return null;
   }
 
+  Future<AiResponseEntry?> createAiResponseEntry({
+    required AiResponseData data,
+    required EntryText entryText,
+    DateTime? dateFrom,
+    String? linkedId,
+    String? categoryId,
+  }) async {
+    try {
+      final aiResponse = AiResponseEntry(
+        data: data,
+        entryText: entryText,
+        meta: await createMetadata(
+          dateFrom: dateFrom ?? DateTime.now(),
+          dateTo: DateTime.now(),
+          uuidV5Input: json.encode(data),
+          categoryId: categoryId,
+          starred: true,
+        ),
+      );
+
+      await createDbEntity(aiResponse, linkedId: linkedId);
+
+      return aiResponse;
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createAiResponseEntry',
+        stackTrace: stackTrace,
+      );
+    }
+
+    return null;
+  }
+
   Future<JournalEvent?> createEventEntry({
     required EventData data,
     required EntryText entryText,
