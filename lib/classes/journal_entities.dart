@@ -166,6 +166,13 @@ class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = MeasurementEntry;
 
+  const factory JournalEntity.aiResponse({
+    required Metadata meta,
+    required AiResponseData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = AiResponseEntry;
+
   const factory JournalEntity.workout({
     required Metadata meta,
     required WorkoutData data,

@@ -401,6 +401,27 @@ Map<String, dynamic> _$$MeasurementDataImplToJson(
       'dataTypeId': instance.dataTypeId,
     };
 
+_$AiResponseDataImpl _$$AiResponseDataImplFromJson(Map<String, dynamic> json) =>
+    _$AiResponseDataImpl(
+      model: json['model'] as String,
+      systemMessage: json['systemMessage'] as String,
+      prompt: json['prompt'] as String,
+      thoughts: json['thoughts'] as String,
+      response: json['response'] as String,
+      temperature: (json['temperature'] as num?)?.toDouble(),
+    );
+
+Map<String, dynamic> _$$AiResponseDataImplToJson(
+        _$AiResponseDataImpl instance) =>
+    <String, dynamic>{
+      'model': instance.model,
+      'systemMessage': instance.systemMessage,
+      'prompt': instance.prompt,
+      'thoughts': instance.thoughts,
+      'response': instance.response,
+      'temperature': instance.temperature,
+    };
+
 _$WorkoutDataImpl _$$WorkoutDataImplFromJson(Map<String, dynamic> json) =>
     _$WorkoutDataImpl(
       dateFrom: DateTime.parse(json['dateFrom'] as String),
