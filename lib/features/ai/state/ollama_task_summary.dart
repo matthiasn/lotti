@@ -2,10 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:delta_markdown/delta_markdown.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:ollama/ollama.dart';
@@ -27,6 +31,7 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
   }
 
   Future<void> summarizeEntry() async {
+    final start = DateTime.now();
     final entry = await _db.journalEntityById(id);
 
     final markdown = await ref.read(
@@ -39,7 +44,8 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       return;
     }
 
-    const systemPrompt = 'The prompt is a markdown document describing a task, '
+    const systemMessage =
+        'The prompt is a markdown document describing a task, '
         'with logbook of the completion of the task. '
         'Also, there might be checklist items with a status of either '
         'COMPLETED or TO DO. '
@@ -58,12 +64,15 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
     final images =
         processImages && entry is Task ? await getImages(entry) : null;
 
+    const model = 'deepseek-r1:14b'; // TODO: make configurable
+    const temperature = 0.6;
+
     final stream = llm.generate(
       markdown,
-      model: 'deepseek-r1:14b', // TODO: make configurable
-      system: systemPrompt,
+      model: model,
+      system: systemMessage,
       options: ModelOptions(
-        temperature: 0.6,
+        temperature: temperature,
       ),
       images: images,
     );
@@ -72,6 +81,30 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       buffer.write(chunk.text);
       state = buffer.toString();
     }
+
+    final completeResponse = buffer.toString();
+    final [thoughts, response] = completeResponse.split('</think>');
+
+    final data = AiResponseData(
+      model: model,
+      temperature: temperature,
+      systemMessage: systemMessage,
+      prompt: markdown,
+      thoughts: thoughts.replaceAll('<think>', ''),
+      response: response,
+    );
+
+    await getIt<PersistenceLogic>().createAiResponseEntry(
+      data: data,
+      entryText: EntryText(
+        plainText: response,
+        markdown: response,
+        quill: markdownToDelta(response),
+      ),
+      dateFrom: start,
+      linkedId: id,
+      categoryId: entry?.categoryId,
+    );
   }
 
   Future<List<String>> getImages(Task task) async {
