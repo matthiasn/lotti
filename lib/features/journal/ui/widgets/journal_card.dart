@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/journal_card_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/card_image_widget.dart';
@@ -203,6 +204,10 @@ class JournalCardTitle extends StatelessWidget {
                   ],
                 );
               },
+              aiResponse: (AiResponseEntry aiResponse) => Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: GptMarkdown(aiResponse.data.response),
+              ),
               workout: (workout) => WorkoutSummary(
                 workout,
                 showChart: false,
@@ -296,6 +301,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
             measurement: (_) => LeadingIcon(MdiIcons.numeric),
             habitCompletion: (habitCompletion) =>
                 HabitCompletionColorIcon(habitCompletion.data.habitId),
+            aiResponse: (_) => const Icon(Icons.assistant),
             orElse: () => null,
           ),
           title: JournalCardTitle(
