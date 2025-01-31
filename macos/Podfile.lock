@@ -34,6 +34,7 @@ PODS:
   - irondash_engine_context (0.0.1):
     - FlutterMacOS
   - just_audio (0.0.1):
+    - Flutter
     - FlutterMacOS
   - location (0.0.1):
     - FlutterMacOS
@@ -107,7 +108,7 @@ DEPENDENCIES:
   - gal (from `Flutter/ephemeral/.symlinks/plugins/gal/darwin`)
   - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
   - irondash_engine_context (from `Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos`)
-  - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/macos`)
+  - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/darwin`)
   - location (from `Flutter/ephemeral/.symlinks/plugins/location/macos`)
   - media_kit_libs_macos_audio (from `Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos`)
   - media_kit_native_event_loop (from `Flutter/ephemeral/.symlinks/plugins/media_kit_native_event_loop/macos`)
@@ -162,7 +163,7 @@ EXTERNAL SOURCES:
   irondash_engine_context:
     :path: Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos
   just_audio:
-    :path: Flutter/ephemeral/.symlinks/plugins/just_audio/macos
+    :path: Flutter/ephemeral/.symlinks/plugins/just_audio/darwin
   location:
     :path: Flutter/ephemeral/.symlinks/plugins/location/macos
   media_kit_libs_macos_audio:
@@ -214,7 +215,7 @@ SPEC CHECKSUMS:
   HotKey: e96d8a2ddbf4591131e2bb3f54e69554d90cdca6
   hotkey_manager_macos: 1e2edb0c7ae4fe67108af44a9d3445de41404160
   irondash_engine_context: da62996ee25616d2f01bbeb85dc115d813359478
-  just_audio: 9b67ca7b97c61cfc9784ea23cd8cc55eb226d489
+  just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
   media_kit_libs_macos_audio: 3871782a4f3f84c77f04d7666c87800a781c24da
   media_kit_native_event_loop: 7321675377cb9ae8596a29bddf3a3d2b5e8792c5

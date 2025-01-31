@@ -170,7 +170,7 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           journalEntry: (_) => const SizedBox.shrink(),
           journalImage: (_) => const SizedBox.shrink(),
-          aiResponse: (aiResponse) => AiResponseSummary(aiResponse),
+          aiResponse: AiResponseSummary.new,
           checklist: (checklist) => ChecklistWrapper(
             entryId: checklist.meta.id,
           ),
