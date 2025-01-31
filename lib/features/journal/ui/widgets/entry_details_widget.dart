@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
@@ -144,6 +145,7 @@ class EntryDetailsContent extends ConsumerWidget {
           workout: (_) => const SizedBox.shrink(),
           checklist: (_) => const SizedBox.shrink(),
           checklistItem: (_) => const SizedBox.shrink(),
+          aiResponse: (_) => const SizedBox.shrink(),
           orElse: () {
             return EditorWidget(entryId: itemId);
           },
@@ -168,6 +170,7 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           journalEntry: (_) => const SizedBox.shrink(),
           journalImage: (_) => const SizedBox.shrink(),
+          aiResponse: AiResponseSummary.new,
           checklist: (checklist) => ChecklistWrapper(
             entryId: checklist.meta.id,
           ),

@@ -49,6 +49,7 @@ PODS:
     - Flutter
   - just_audio (0.0.1):
     - Flutter
+    - FlutterMacOS
   - libwebp (1.3.2):
     - libwebp/demux (= 1.3.2)
     - libwebp/mux (= 1.3.2)
@@ -148,7 +149,7 @@ DEPENDENCIES:
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - irondash_engine_context (from `.symlinks/plugins/irondash_engine_context/ios`)
-  - just_audio (from `.symlinks/plugins/just_audio/ios`)
+  - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
@@ -217,7 +218,7 @@ EXTERNAL SOURCES:
   irondash_engine_context:
     :path: ".symlinks/plugins/irondash_engine_context/ios"
   just_audio:
-    :path: ".symlinks/plugins/just_audio/ios"
+    :path: ".symlinks/plugins/just_audio/darwin"
   location:
     :path: ".symlinks/plugins/location/ios"
   media_kit_libs_ios_audio:
@@ -252,7 +253,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
-  audio_session: 088d2483ebd1dc43f51d253d4a1c517d9a2e7207
+  audio_session: 32a33910dd5bb35d54297e4b50006481071f196b
   connectivity_plus: 18382e7311ba19efcaee94442b23b32507b20695
   device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
   ffmpeg-kit-ios-https: f9c838aa5400a6c5ba12324c6b798f52197ba354
@@ -272,7 +273,7 @@ SPEC CHECKSUMS:
   image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   irondash_engine_context: 3458bf979b90d616ffb8ae03a150bafe2e860cc9
-  just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
+  just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   location: d5cf8598915965547c3f36761ae9cc4f4e87d22e
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d

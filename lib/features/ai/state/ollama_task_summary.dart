@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:ollama/ollama.dart';
@@ -27,6 +29,7 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
   }
 
   Future<void> summarizeEntry() async {
+    final start = DateTime.now();
     final entry = await _db.journalEntityById(id);
 
     final markdown = await ref.read(
@@ -39,27 +42,36 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       return;
     }
 
-    const systemPrompt = 'The prompt is a markdown document describing a task, '
+    const systemMessage =
+        'The prompt is a markdown document describing a task, '
         'with logbook of the completion of the task. '
         'Also, there might be checklist items with a status of either '
         'COMPLETED or TO DO. '
         'Summarize the task, the achieved results, and the remaining steps '
         'that have not been completed yet. '
+        'Note any learnings or insights that can be drawn from the task, if any. '
         'If there are images, include their content in the summary. '
         'Consider that the content of the images, likely screenshots, '
         'are related to the completion of the task. '
         'Note that the logbook is in reverse chronological order. '
-        'Keep it short and succinct. ';
+        'Keep it short and succinct. '
+        'Calculate total time spent on the task. ';
 
     final llm = Ollama();
     final buffer = StringBuffer();
     final images =
         processImages && entry is Task ? await getImages(entry) : null;
 
+    const model = 'deepseek-r1:8b'; // TODO: make configurable
+    const temperature = 0.6;
+
     final stream = llm.generate(
       markdown,
-      model: 'llama3.2-vision:latest', // TODO: make configurable
-      system: systemPrompt,
+      model: model,
+      system: systemMessage,
+      options: ModelOptions(
+        temperature: temperature,
+      ),
       images: images,
     );
 
@@ -67,6 +79,25 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       buffer.write(chunk.text);
       state = buffer.toString();
     }
+
+    final completeResponse = buffer.toString();
+    final [thoughts, response] = completeResponse.split('</think>');
+
+    final data = AiResponseData(
+      model: model,
+      temperature: temperature,
+      systemMessage: systemMessage,
+      prompt: markdown,
+      thoughts: thoughts.replaceAll('<think>', ''),
+      response: response,
+    );
+
+    await getIt<PersistenceLogic>().createAiResponseEntry(
+      data: data,
+      dateFrom: start,
+      linkedId: id,
+      categoryId: entry?.categoryId,
+    );
   }
 
   Future<List<String>> getImages(Task task) async {
@@ -112,6 +143,7 @@ class TaskMarkdownController extends _$TaskMarkdownController {
     for (final linked in linkedEntities) {
       buffer
         ..writeln('******')
+        ..writeln('Linked:')
         ..writeln(linked.getMarkdown(indentation: 1));
     }
 
@@ -198,8 +230,7 @@ extension EntryExtension on JournalEntity {
 
     if (headline != null) {
       buffer
-        ..writeln(headline)
-        ..writeln(indentation > 0 ? '-------' : '======')
+        ..writeln('${indentation > 0 ? '#' : '##'} $headline')
         ..writeln();
     }
 

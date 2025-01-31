@@ -164,6 +164,21 @@ class MeasurementData with _$MeasurementData {
 }
 
 @freezed
+class AiResponseData with _$AiResponseData {
+  const factory AiResponseData({
+    required String model,
+    required String systemMessage,
+    required String prompt,
+    required String thoughts,
+    required String response,
+    double? temperature,
+  }) = _AiResponseData;
+
+  factory AiResponseData.fromJson(Map<String, dynamic> json) =>
+      _$AiResponseDataFromJson(json);
+}
+
+@freezed
 class WorkoutData with _$WorkoutData {
   const factory WorkoutData({
     required DateTime dateFrom,
