@@ -315,7 +315,6 @@ class PersistenceLogic {
 
   Future<AiResponseEntry?> createAiResponseEntry({
     required AiResponseData data,
-    required EntryText entryText,
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
@@ -323,7 +322,6 @@ class PersistenceLogic {
     try {
       final aiResponse = AiResponseEntry(
         data: data,
-        entryText: entryText,
         meta: await createMetadata(
           dateFrom: dateFrom ?? DateTime.now(),
           dateTo: DateTime.now(),
