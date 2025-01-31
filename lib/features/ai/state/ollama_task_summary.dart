@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:delta_markdown/delta_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -64,7 +62,7 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
     final images =
         processImages && entry is Task ? await getImages(entry) : null;
 
-    const model = 'deepseek-r1:14b'; // TODO: make configurable
+    const model = 'deepseek-r1:8b'; // TODO: make configurable
     const temperature = 0.6;
 
     final stream = llm.generate(
@@ -96,11 +94,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
 
     await getIt<PersistenceLogic>().createAiResponseEntry(
       data: data,
-      entryText: EntryText(
-        plainText: response,
-        markdown: response,
-        quill: markdownToDelta(response),
-      ),
       dateFrom: start,
       linkedId: id,
       categoryId: entry?.categoryId,
@@ -237,8 +230,7 @@ extension EntryExtension on JournalEntity {
 
     if (headline != null) {
       buffer
-        ..writeln(headline)
-        ..writeln(indentation > 0 ? '-------' : '======')
+        ..writeln('${indentation > 0 ? '#' : '##'} $headline')
         ..writeln();
     }
 
