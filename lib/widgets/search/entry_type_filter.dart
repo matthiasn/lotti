@@ -100,7 +100,7 @@ class EntryTypeAllChip extends StatelessWidget {
   }
 }
 
-final entryTypeDisplayNames = {
+const entryTypeDisplayNames = {
   'Task': 'Task',
   'JournalEntry': 'Text',
   'JournalEvent': 'Event',
@@ -113,4 +113,5 @@ final entryTypeDisplayNames = {
   'QuantitativeEntry': 'Health',
   'Checklist': 'Checklist',
   'ChecklistItem': 'ChecklistItem',
+  'AiResponse': 'AI Response',
 };
