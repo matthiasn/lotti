@@ -373,7 +373,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 }
 
-final List<String> entryTypes = [
+const List<String> entryTypes = [
   'Task',
   'JournalEntry',
   'JournalEvent',
@@ -386,4 +386,5 @@ final List<String> entryTypes = [
   'QuantitativeEntry',
   'Checklist',
   'ChecklistItem',
+  'AiResponse',
 ];
