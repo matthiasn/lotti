@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
+import 'package:lotti/features/categories/ui/widgets/color_picker_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -107,6 +108,30 @@ class _CategorySelectionContentState
     super.dispose();
   }
 
+  Future<void> _showColorPicker(String categoryName) async {
+    if (!mounted) return;
+
+    await ModalUtils.showSinglePageModal(
+      context: context,
+      title: context.messages.createCategoryTitle,
+      builder: (BuildContext context) {
+        return ColorPickerModal(
+          onColorSelected: (color) async {
+            final repository = ref.read(categoriesRepositoryProvider);
+            final category = await repository.createCategory(
+              name: categoryName,
+              color: color,
+            );
+            widget.onCategorySelected(category);
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories = getIt<EntitiesCacheService>().sortedCategories;
@@ -137,17 +162,7 @@ class _CategorySelectionContentState
         ),
         if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
           SettingsCard(
-            onTap: () async {
-              final repository = ref.read(categoriesRepositoryProvider);
-              final category = await repository.createCategory(
-                name: searchQuery,
-                color: '#FF0000', // You might want to add color selection UI
-              );
-              widget.onCategorySelected(category);
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
+            onTap: () => _showColorPicker(searchQuery),
             title: searchQuery,
             leading: Icon(
               Icons.add_circle_outline,
