@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -82,7 +84,7 @@ class CategoryField extends StatelessWidget {
   }
 }
 
-class _CategorySelectionContent extends StatefulWidget {
+class _CategorySelectionContent extends ConsumerStatefulWidget {
   const _CategorySelectionContent({
     required this.onCategorySelected,
   });
@@ -90,11 +92,12 @@ class _CategorySelectionContent extends StatefulWidget {
   final CategoryCallback onCategorySelected;
 
   @override
-  State<_CategorySelectionContent> createState() =>
+  ConsumerState<_CategorySelectionContent> createState() =>
       _CategorySelectionContentState();
 }
 
-class _CategorySelectionContentState extends State<_CategorySelectionContent> {
+class _CategorySelectionContentState
+    extends ConsumerState<_CategorySelectionContent> {
   final searchController = TextEditingController();
   String searchQuery = '';
 
@@ -134,9 +137,16 @@ class _CategorySelectionContentState extends State<_CategorySelectionContent> {
         ),
         if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
           SettingsCard(
-            onTap: () {
-              debugPrint('Creating new category: $searchQuery');
-              // TODO: Implement category creation
+            onTap: () async {
+              final repository = ref.read(categoriesRepositoryProvider);
+              final category = await repository.createCategory(
+                name: searchQuery,
+                color: '#FF0000', // You might want to add color selection UI
+              );
+              widget.onCategorySelected(category);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
             title: searchQuery,
             leading: Icon(
