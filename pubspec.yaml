@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.566+2860
+version: 0.9.566+2861
 
 msix_config:
   display_name: LottiApp
@@ -137,6 +137,7 @@ dependencies:
       url: https://github.com/matthiasn/research.package
       ref: fc229b9d
 
+  riverpod: ^2.6.1
   riverpod_annotation: ^2.3.5
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
