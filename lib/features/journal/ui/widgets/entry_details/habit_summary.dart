@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 
 class HabitSummary extends StatelessWidget {
   HabitSummary(
