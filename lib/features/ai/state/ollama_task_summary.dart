@@ -5,12 +5,12 @@ import 'dart:io';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/repositories/ollama_repository.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:ollama/ollama.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ollama_task_summary.g.dart';
@@ -57,7 +57,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
         'Keep it short and succinct. '
         'Calculate total time spent on the task. ';
 
-    final llm = Ollama();
     final buffer = StringBuffer();
     final images =
         processImages && entry is Task ? await getImages(entry) : null;
@@ -65,15 +64,13 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
     const model = 'deepseek-r1:8b'; // TODO: make configurable
     const temperature = 0.6;
 
-    final stream = llm.generate(
-      markdown,
-      model: model,
-      system: systemMessage,
-      options: ModelOptions(
-        temperature: temperature,
-      ),
-      images: images,
-    );
+    final stream = ref.read(ollamaRepositoryProvider).generate(
+          markdown,
+          model: model,
+          system: systemMessage,
+          temperature: temperature,
+          images: images,
+        );
 
     await for (final chunk in stream) {
       buffer.write(chunk.text);
