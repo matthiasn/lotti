@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
+import 'package:lotti/utils/modals.dart';
+import 'package:lotti/utils/platform.dart';
 
 class SelectColorField extends StatefulWidget {
   const SelectColorField({
@@ -53,35 +55,21 @@ class _SelectColorFieldState extends State<SelectColorField> {
         : context.colorScheme.outline;
 
     Future<void> onTap() async {
-      await showModalBottomSheet<void>(
+      await ModalUtils.showSinglePageModal(
         context: context,
-        isScrollControlled: true,
-        builder: (BuildContext _) {
-          return Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 20,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ColorPicker(
-                    pickerColor: color,
-                    enableAlpha: false,
-                    labelTypes: const [],
-                    onColorChanged: widget.onColorChanged,
-                    pickerAreaBorderRadius: BorderRadius.circular(10),
-                  ),
-                ],
-              ),
-            ),
+        title: context.messages.createCategoryTitle,
+        builder: (BuildContext context) {
+          return ColorPicker(
+            pickerColor: color,
+            colorPickerWidth: isTestEnv ? 100 : 300,
+            enableAlpha: false,
+            labelTypes: const [],
+            onColorChanged: widget.onColorChanged,
+            pickerAreaBorderRadius: BorderRadius.circular(10),
           );
         },
       );
+
       controller.text = widget.hexColor ?? '';
     }
 

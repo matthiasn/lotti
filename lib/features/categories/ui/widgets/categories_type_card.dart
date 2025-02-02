@@ -97,24 +97,3 @@ class CategoryColorIcon extends StatelessWidget {
     );
   }
 }
-
-class HabitCompletionColorIcon extends StatelessWidget {
-  const HabitCompletionColorIcon(
-    this.habitId, {
-    this.size = 50.0,
-    super.key,
-  });
-
-  final String? habitId;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(habitId);
-
-    return CategoryColorIcon(
-      habitDefinition?.categoryId,
-      size: size,
-    );
-  }
-}
