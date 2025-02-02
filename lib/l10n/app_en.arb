@@ -23,7 +23,7 @@
   "aiAssistantCreateChecklist": "Create checklist items",
   "aiAssistantRunPrompt": "Ask Llama3",
   "aiAssistantSummarizeTask": "Summarize task",
-  "aiAssistantSummarizeTaskWithImages": "Summarize task with images",
+  "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantTitle": "AI Assistant",
   "appBarBack": "Back",
   "cancelButton": "Cancel",
