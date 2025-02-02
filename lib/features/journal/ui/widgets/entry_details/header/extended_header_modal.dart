@@ -62,6 +62,7 @@ class ExtendedHeaderModal {
               entryId: entryId,
               link: link,
             ),
+          CopyImageListTile(entryId: entryId),
           verticalModalSpacer,
         ],
       ),
