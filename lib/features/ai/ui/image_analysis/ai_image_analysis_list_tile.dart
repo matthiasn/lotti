@@ -19,7 +19,7 @@ class AiImageAnalysisListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
-      leading: const Icon(Icons.chat_rounded),
+      leading: const Icon(Icons.assistant),
       title: Text(
         context.messages.aiAssistantAnalyzeImage,
       ),
