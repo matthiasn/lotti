@@ -137,7 +137,6 @@ void main() {
     final provider = container.read(
       aiTaskSummaryControllerProvider(
         id: taskId,
-        processImages: false,
       ).notifier,
     );
 
@@ -178,7 +177,6 @@ void main() {
       final provider = container.read(
         aiTaskSummaryControllerProvider(
           id: taskId,
-          processImages: false,
         ).notifier,
       );
 

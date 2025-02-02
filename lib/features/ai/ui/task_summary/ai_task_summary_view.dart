@@ -6,12 +6,10 @@ import 'package:lotti/features/ai/state/ollama_task_summary.dart';
 class AiTaskSummaryView extends ConsumerWidget {
   const AiTaskSummaryView({
     required this.id,
-    required this.processImages,
     super.key,
   });
 
   final String id;
-  final bool processImages;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +19,6 @@ class AiTaskSummaryView extends ConsumerWidget {
     final summary = ref.watch(
       aiTaskSummaryControllerProvider(
         id: id,
-        processImages: processImages,
       ),
     );
 

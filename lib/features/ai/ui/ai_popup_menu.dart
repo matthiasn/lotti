@@ -30,7 +30,6 @@ class AiPopUpMenu extends StatelessWidget {
               AiTaskSummaryListTile(
                 journalEntity: journalEntity,
                 linkedFromId: linkedFromId,
-                processImages: false,
               ),
             if (journalEntity is! Task)
               AiChecklistListTile(
