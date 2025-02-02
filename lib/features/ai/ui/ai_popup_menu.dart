@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/checklist/ai_checklist_list_tile.dart';
-import 'package:lotti/features/ai/ui/prompt/ai_prompt_list_tile.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_list_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -27,22 +26,11 @@ class AiPopUpMenu extends StatelessWidget {
         title: context.messages.aiAssistantTitle,
         builder: (_) => Column(
           children: [
-            // if (journalEntity != null && journalEntity is Task)
-            //   AiTaskSummaryListTile(
-            //     journalEntity: journalEntity,
-            //     linkedFromId: linkedFromId,
-            //     processImages: true,
-            //   ),
             if (journalEntity != null && journalEntity is Task)
               AiTaskSummaryListTile(
                 journalEntity: journalEntity,
                 linkedFromId: linkedFromId,
                 processImages: false,
-              ),
-            if (journalEntity is! Task)
-              AiPromptListTile(
-                journalEntity: journalEntity,
-                linkedFromId: linkedFromId,
               ),
             if (journalEntity is! Task)
               AiChecklistListTile(
