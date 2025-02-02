@@ -5,6 +5,8 @@ import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
 import 'package:lotti/features/journal/state/journal_card_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -25,7 +27,6 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/events/event_status.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 const double iconSize = 18;

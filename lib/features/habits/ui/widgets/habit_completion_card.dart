@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 
 class HabitCompletionCard extends ConsumerStatefulWidget {
   const HabitCompletionCard({
