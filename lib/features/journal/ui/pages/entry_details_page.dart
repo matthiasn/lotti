@@ -1,3 +1,4 @@
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart'
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 
 class EntryDetailPage extends ConsumerStatefulWidget {
@@ -57,43 +59,52 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
       return const EmptyScaffoldWithTitle('');
     }
 
-    return Scaffold(
-      floatingActionButton: FloatingAddActionButton(
-        linkedFromId: item.meta.id,
-        categoryId: item.meta.categoryId,
-      ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          TaskSliverAppBar(entryId: widget.itemId),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 200,
-                left: 5,
-                right: 5,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  EntryDetailsWidget(
-                    itemId: widget.itemId,
-                    popOnDelete: true,
-                    showTaskDetails: true,
-                  ),
-                  LinkedEntriesWidget(item),
-                  LinkedFromEntriesWidget(item),
-                  if (item is ChecklistItem) LinkedFromChecklistWidget(item),
-                  if (item is Checklist) LinkedFromTaskWidget(item),
-                ],
-              ).animate().fadeIn(
-                    duration: const Duration(
-                      milliseconds: 100,
+    return DropTarget(
+      onDragDone: (data) {
+        importDroppedImages(
+          data: data,
+          linkedId: item.meta.id,
+          categoryId: item.meta.categoryId,
+        );
+      },
+      child: Scaffold(
+        floatingActionButton: FloatingAddActionButton(
+          linkedFromId: item.meta.id,
+          categoryId: item.meta.categoryId,
+        ),
+        body: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            TaskSliverAppBar(entryId: widget.itemId),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 200,
+                  left: 5,
+                  right: 5,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    EntryDetailsWidget(
+                      itemId: widget.itemId,
+                      popOnDelete: true,
+                      showTaskDetails: true,
                     ),
-                  ),
+                    LinkedEntriesWidget(item),
+                    LinkedFromEntriesWidget(item),
+                    if (item is ChecklistItem) LinkedFromChecklistWidget(item),
+                    if (item is Checklist) LinkedFromTaskWidget(item),
+                  ],
+                ).animate().fadeIn(
+                      duration: const Duration(
+                        milliseconds: 100,
+                      ),
+                    ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

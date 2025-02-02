@@ -543,6 +543,14 @@ packages:
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
+  desktop_drop:
+    dependency: "direct main"
+    description:
+      name: desktop_drop
+      sha256: "03abf1c0443afdd1d65cf8fa589a2f01c67a11da56bbb06f6ea1de79d5628e94"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   device_frame:
     dependency: transitive
     description:

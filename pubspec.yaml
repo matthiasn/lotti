@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.567+2865
+version: 0.9.567+2866
 
 msix_config:
   display_name: LottiApp
@@ -37,6 +37,7 @@ dependencies:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: ce9a6b6
 
+  desktop_drop: ^0.5.0
   device_info_plus: ^11.0.0
   drift: ^2.21.0
   easy_debounce: ^2.0.2+1
