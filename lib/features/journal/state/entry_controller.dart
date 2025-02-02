@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -440,6 +441,32 @@ class EntryController extends _$EntryController {
       final imageData = await File(fullPath).readAsBytes();
       item.add(Formats.png(imageData));
       await clipboard.write([item]);
+    }
+  }
+
+  Future<void> addTextToImage(String text) async {
+    final journalImage = state.value?.entry;
+    if (journalImage is JournalImage) {
+      final originalText = journalImage.entryText?.markdown ??
+          journalImage.entryText?.markdown ??
+          '';
+      final amendedText = '$originalText\n\n$text';
+
+      final quill = markdownToDelta(amendedText);
+      final controller = makeController(serializedQuill: quill)
+        ..readOnly = true;
+
+      final updatedEntryText = EntryText(
+        plainText: controller.document.toPlainText(),
+        markdown: amendedText,
+        quill: quill,
+      );
+
+      await _persistenceLogic.updateJournalEntityText(
+        id,
+        updatedEntryText,
+        journalImage.meta.dateFrom,
+      );
     }
   }
 
