@@ -141,4 +141,31 @@ void main() {
 
     expect(selectedCategory, equals(testCategory));
   });
+
+  testWidgets('shows create category option when search has no matches',
+      (tester) async {
+    when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
+    when(() => mockCacheService.sortedCategories).thenReturn([testCategory]);
+
+    await tester.pumpWidget(
+      createTestWidget(
+        onSave: (_) {},
+      ),
+    );
+
+    // Open the modal
+    await tester.tap(find.byType(TextField));
+    await tester.pumpAndSettle();
+
+    // Enter search text that doesn't match any existing category
+    await tester.enterText(
+      find.byType(TextField).at(1),
+      'New Category',
+    );
+    await tester.pumpAndSettle();
+
+    // Verify create category option is shown
+    expect(find.text('New Category'), findsNWidgets(2));
+    expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+  });
 }
