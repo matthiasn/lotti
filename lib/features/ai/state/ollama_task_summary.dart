@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/repositories/ollama_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
