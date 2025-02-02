@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
-import 'package:lotti/features/ai/ui/checklist/ai_checklist_list_tile.dart';
+import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_list_tile.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_list_tile.dart';
 
 import '../../../test_helper.dart';
@@ -61,18 +61,24 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AiTaskSummaryListTile), findsOneWidget);
-      expect(find.byType(AiChecklistListTile), findsNothing);
+      expect(find.byType(AiImageAnalysisListTile), findsNothing);
     });
 
-    testWidgets('shows AiChecklistListTile when entity is not Task',
+    testWidgets('shows AiImageAnalysisListTile when entity has image',
         (tester) async {
-      final journalEntry = JournalEntry(
+      final journalEntry = JournalImage(
         meta: Metadata(
           id: 'test-id',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
+        ),
+        data: ImageData(
+          capturedAt: DateTime.now(),
+          imageId: 'test-id',
+          imageFile: 'test-file',
+          imageDirectory: '',
         ),
       );
 
@@ -89,11 +95,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.assistant_rounded));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AiChecklistListTile), findsOneWidget);
+      expect(find.byType(AiImageAnalysisListTile), findsOneWidget);
       expect(find.byType(AiTaskSummaryListTile), findsNothing);
     });
 
-    testWidgets('shows AiChecklistListTile when journalEntity is null',
+    testWidgets('shows no AI options when journalEntity is null',
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
@@ -108,7 +114,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.assistant_rounded));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AiChecklistListTile), findsOneWidget);
+      expect(find.byType(AiImageAnalysisListTile), findsNothing);
       expect(find.byType(AiTaskSummaryListTile), findsNothing);
     });
   });
