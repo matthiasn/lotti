@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.567+2866
+version: 0.9.567+2867
 
 msix_config:
   display_name: LottiApp
@@ -147,6 +147,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
+  super_clipboard: ^0.8.24
   super_drag_and_drop: ^0.8.24
   timezone: ^0.10.0
   tinycolor2: ^3.0.0

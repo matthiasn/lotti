@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +23,10 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 part 'entry_controller.g.dart';
 
@@ -419,6 +422,25 @@ class EntryController extends _$EntryController {
       journalEntityId: id,
       tagId: tagId,
     );
+  }
+
+  Future<void> copyImage() async {
+    final entry = state.value?.entry;
+
+    if (entry is JournalImage) {
+      final fullPath = getFullImagePath(entry);
+
+      final clipboard = SystemClipboard.instance;
+
+      if (clipboard == null) {
+        return;
+      }
+
+      final item = DataWriterItem();
+      final imageData = await File(fullPath).readAsBytes();
+      item.add(Formats.png(imageData));
+      await clipboard.write([item]);
+    }
   }
 
   Future<void> updateChecklistOrder(List<String> checklistIds) async {

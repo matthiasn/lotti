@@ -149,6 +149,7 @@
   "journalToolbarSaveHint": "Save entry",
   "journalUnlinkConfirm": "YES, UNLINK ENTRY",
   "journalUnlinkHint": "Unlink",
+  "journalCopyImageLabel": "Copy image",
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
   "journalUnlinkText": "Unlink entry",
   "maintenanceCancelNotifications": "Cancel all notifications",

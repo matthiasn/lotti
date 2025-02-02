@@ -2883,7 +2883,7 @@ packages:
     source: hosted
     version: "0.3.5"
   super_clipboard:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: super_clipboard
       sha256: "4a6ae6dfaa282ec1f2bff750976f535517ed8ca842d5deae13985eb11c00ac1f"
