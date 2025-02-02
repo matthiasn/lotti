@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai/state/ollama_task_summary.dart';
 
 class AiTaskSummaryView extends ConsumerWidget {
@@ -13,9 +13,6 @@ class AiTaskSummaryView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const showInput = false;
-    final markdown =
-        ref.watch(taskMarkdownControllerProvider(id: id)).valueOrNull;
     final summary = ref.watch(
       aiTaskSummaryControllerProvider(
         id: id,
@@ -27,19 +24,8 @@ class AiTaskSummaryView extends ConsumerWidget {
         padding: const EdgeInsets.all(32),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MarkdownBody(
-                data: summary,
-                selectable: true,
-              ),
-              // ignore: dead_code
-              if (showInput) ...[
-                const SizedBox(height: 200),
-                if (markdown != null) MarkdownBody(data: markdown),
-              ],
-            ],
+          child: SelectionArea(
+            child: GptMarkdown(summary),
           ),
         ),
       ),
