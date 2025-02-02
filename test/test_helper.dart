@@ -13,7 +13,10 @@ Widget createTestApp(Widget child) {
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       body: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 800),
+        constraints: const BoxConstraints(
+          minHeight: 800,
+          minWidth: 800,
+        ),
         child: child,
       ),
     ),
