@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
-import 'package:lotti/features/categories/ui/widgets/color_picker_modal.dart';
+import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -115,17 +114,10 @@ class _CategorySelectionContentState
       context: context,
       title: context.messages.createCategoryTitle,
       builder: (BuildContext context) {
-        return ColorPickerModal(
-          onColorSelected: (color) async {
-            final repository = ref.read(categoriesRepositoryProvider);
-            final category = await repository.createCategory(
-              name: categoryName,
-              color: color,
-            );
+        return CategoryCreateModal(
+          initialName: categoryName,
+          onCategoryCreated: (category) {
             widget.onCategorySelected(category);
-            if (context.mounted) {
-              Navigator.pop(context);
-            }
           },
         );
       },
@@ -157,6 +149,11 @@ class _CategorySelectionContentState
               setState(() {
                 searchQuery = value;
               });
+            },
+            onSubmitted: (value) {
+              if (filteredCategories.isEmpty && value.isNotEmpty) {
+                _showColorPicker(value);
+              }
             },
           ),
         ),
