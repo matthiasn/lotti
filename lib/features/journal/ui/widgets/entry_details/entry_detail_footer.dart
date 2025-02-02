@@ -31,15 +31,18 @@ class EntryDetailFooter extends ConsumerWidget {
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            EntryDatetimeWidget(entryId: entry.meta.id),
-            DurationWidget(
-              item: entry,
-              linkedFrom: linkedFrom,
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.only(bottom: 5),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              EntryDatetimeWidget(entryId: entry.meta.id),
+              DurationWidget(
+                item: entry,
+                linkedFrom: linkedFrom,
+              ),
+            ],
+          ),
         ),
         Visibility(
           visible: entryState?.showMap ?? false,
