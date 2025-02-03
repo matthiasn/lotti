@@ -4,6 +4,7 @@
   "addActionAddEvent": "Event",
   "addActionAddMeasurable": "Measurable",
   "addActionAddPhotos": "Photo(s)",
+  "addActionAddImageFromClipboard": "Paste Image",
   "addActionAddScreenshot": "Screenshot",
   "addActionAddSurvey": "Fill Survey",
   "addActionAddTask": "Task",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_list_tile.dart';
+import 'package:lotti/features/journal/ui/widgets/create/paste_image_list_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
@@ -24,6 +25,7 @@ class CreateEntryModal {
           ImportImageAssetsListTile(linkedFromId, categoryId: categoryId),
           if (isMacOS)
             CreateScreenshotListTile(linkedFromId, categoryId: categoryId),
+          PasteImageListTile(linkedFromId, categoryId: categoryId),
           verticalModalSpacer,
         ],
       ),
