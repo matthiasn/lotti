@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/widgets.dart';
@@ -133,4 +134,36 @@ Future<void> importDroppedImages({
       categoryId: categoryId,
     );
   }
+}
+
+Future<void> importPastedImages({
+  required Uint8List data,
+  required String fileExtension,
+  String? linkedId,
+  String? categoryId,
+}) async {
+  final capturedAt = DateTime.now();
+  final id = uuid.v1();
+
+  final day = DateFormat('yyyy-MM-dd').format(capturedAt);
+  final relativePath = '/images/$day/';
+  final directory = await createAssetDirectory(relativePath);
+  final targetFileName = '$id.$fileExtension';
+  final targetFilePath = '$directory$targetFileName';
+
+  final file = File(targetFilePath);
+  await file.writeAsBytes(data);
+
+  final imageData = ImageData(
+    imageId: id,
+    imageFile: targetFileName,
+    imageDirectory: relativePath,
+    capturedAt: capturedAt,
+  );
+
+  await JournalRepository.createImageEntry(
+    imageData,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
 }
