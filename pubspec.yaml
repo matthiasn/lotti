@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.566+2864
+version: 0.9.567+2870
 
 msix_config:
   display_name: LottiApp
@@ -37,6 +37,7 @@ dependencies:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: ce9a6b6
 
+  desktop_drop: ^0.5.0
   device_info_plus: ^11.0.0
   drift: ^2.21.0
   easy_debounce: ^2.0.2+1
@@ -105,9 +106,9 @@ dependencies:
   langchain: ^0.7.7+1
   langchain_ollama: ^0.3.2
   latlong2: ^0.9.0
-  location: ^7.0.0
+  location: ^8.0.0
   material_design_icons_flutter: ^7.0.7096
-  matrix: ^0.36.0
+  matrix: ^0.37.0
   media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
   media_kit_libs_ios_audio: ^1.0.4
@@ -146,6 +147,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
+  super_clipboard: ^0.8.24
   super_drag_and_drop: ^0.8.24
   timezone: ^0.10.0
   tinycolor2: ^3.0.0
@@ -156,7 +158,7 @@ dependencies:
   week_of_year: ^2.0.0
   widgetbook: ^3.7.1
   window_manager: ^0.4.0
-  wolt_modal_sheet: ^0.10.0
+  wolt_modal_sheet: ^0.11.0
 
 dependency_overrides:
   device_info_plus: ^11.0.0

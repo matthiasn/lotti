@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -22,8 +24,10 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 part 'entry_controller.g.dart';
 
@@ -419,6 +423,51 @@ class EntryController extends _$EntryController {
       journalEntityId: id,
       tagId: tagId,
     );
+  }
+
+  Future<void> copyImage() async {
+    final entry = state.value?.entry;
+
+    if (entry is JournalImage) {
+      final fullPath = getFullImagePath(entry);
+
+      final clipboard = SystemClipboard.instance;
+
+      if (clipboard == null) {
+        return;
+      }
+
+      final item = DataWriterItem();
+      final imageData = await File(fullPath).readAsBytes();
+      item.add(Formats.png(imageData));
+      await clipboard.write([item]);
+    }
+  }
+
+  Future<void> addTextToImage(String text) async {
+    final journalImage = state.value?.entry;
+    if (journalImage is JournalImage) {
+      final originalText = journalImage.entryText?.markdown ??
+          journalImage.entryText?.markdown ??
+          '';
+      final amendedText = '$originalText\n\n$text';
+
+      final quill = markdownToDelta(amendedText);
+      final controller = makeController(serializedQuill: quill)
+        ..readOnly = true;
+
+      final updatedEntryText = EntryText(
+        plainText: controller.document.toPlainText(),
+        markdown: amendedText,
+        quill: quill,
+      );
+
+      await _persistenceLogic.updateJournalEntityText(
+        id,
+        updatedEntryText,
+        journalImage.meta.dateFrom,
+      );
+    }
   }
 
   Future<void> updateChecklistOrder(List<String> checklistIds) async {
