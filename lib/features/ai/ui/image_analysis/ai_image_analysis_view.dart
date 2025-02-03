@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/features/ai/state/ollama_task_summary.dart';
+import 'package:lotti/features/ai/state/ollama_image_analysis.dart';
 
-class AiTaskSummaryView extends ConsumerWidget {
-  const AiTaskSummaryView({
+class AiImageAnalysisView extends ConsumerWidget {
+  const AiImageAnalysisView({
     required this.id,
     super.key,
   });
@@ -14,9 +14,7 @@ class AiTaskSummaryView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(
-      aiTaskSummaryControllerProvider(
-        id: id,
-      ),
+      aiImageAnalysisControllerProvider(id: id),
     );
 
     return SingleChildScrollView(

@@ -1,16 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/repositories/ollama_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ollama_task_summary.g.dart';
@@ -22,7 +19,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
   @override
   String build({
     required String id,
-    required bool processImages,
   }) {
     summarizeEntry();
     return '';
@@ -58,8 +54,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
         'Calculate total time spent on the task. ';
 
     final buffer = StringBuffer();
-    final images =
-        processImages && entry is Task ? await getImages(entry) : null;
 
     const model = 'deepseek-r1:8b'; // TODO: make configurable
     const temperature = 0.6;
@@ -69,7 +63,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
           model: model,
           system: systemMessage,
           temperature: temperature,
-          images: images,
         );
 
     await for (final chunk in stream) {
@@ -95,21 +88,6 @@ class AiTaskSummaryController extends _$AiTaskSummaryController {
       linkedId: id,
       categoryId: entry?.categoryId,
     );
-  }
-
-  Future<List<String>> getImages(Task task) async {
-    final linkedEntities = await _db.getLinkedEntities(id);
-    final imageEntries = linkedEntities.whereType<JournalImage>();
-    final base64Images = <String>[];
-
-    for (final imageEntry in imageEntries) {
-      final fullPath = getFullImagePath(imageEntry);
-      final bytes = await File(fullPath).readAsBytes();
-      final base64String = base64Encode(bytes);
-      base64Images.add(base64String);
-    }
-
-    return base64Images;
   }
 }
 

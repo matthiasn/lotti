@@ -13,8 +13,8 @@ class OllamaRepository {
   Stream<CompletionChunk> generate(
     String prompt, {
     required String model,
-    required String system,
     required double temperature,
+    String? system,
     List<String>? images,
   }) {
     return _ollama.generate(
