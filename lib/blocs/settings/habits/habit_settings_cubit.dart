@@ -89,6 +89,27 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     emitState();
   }
 
+  void setAlertAtTime(DateTime? alertAtTime) {
+    _dirty = true;
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: HabitSchedule.daily(
+        requiredCompletions: 1,
+        alertAtTime: alertAtTime,
+      ),
+    );
+    emitState();
+  }
+
+  void clearAlertAtTime() {
+    _dirty = true;
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: const HabitSchedule.daily(
+        requiredCompletions: 1,
+      ),
+    );
+    emitState();
+  }
+
   Future<void> onSavePressed() async {
     state.formKey.currentState!.save();
     if (state.formKey.currentState!.validate()) {

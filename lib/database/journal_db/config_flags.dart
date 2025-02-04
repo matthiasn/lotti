@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:lotti/database/database.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -84,13 +82,11 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
-  if (Platform.isMacOS) {
-    await db.insertFlagIfNotExists(
-      const ConfigFlag(
-        name: enableNotificationsFlag,
-        description: 'Enable desktop notifications?',
-        status: false,
-      ),
-    );
-  }
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableNotificationsFlag,
+      description: 'Enable notifications?',
+      status: false,
+    ),
+  );
 }

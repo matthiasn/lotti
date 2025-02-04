@@ -9,6 +9,7 @@ class DateTimeField extends StatefulWidget {
     required this.dateTime,
     required this.labelText,
     required this.setDateTime,
+    this.clear,
     this.mode = CupertinoDatePickerMode.dateAndTime,
     super.key,
   });
@@ -16,6 +17,7 @@ class DateTimeField extends StatefulWidget {
   final DateTime? dateTime;
   final String labelText;
   final void Function(DateTime) setDateTime;
+  final void Function()? clear;
   final CupertinoDatePickerMode mode;
 
   @override
@@ -38,6 +40,13 @@ class _DateTimeFieldState extends State<DateTimeField> {
         labelText: widget.labelText,
         style: style,
         themeData: Theme.of(context),
+      ).copyWith(
+        suffixIcon: widget.clear != null
+            ? IconButton(
+                onPressed: widget.clear,
+                icon: const Icon(Icons.clear),
+              )
+            : null,
       ),
       style: style,
       readOnly: true,
