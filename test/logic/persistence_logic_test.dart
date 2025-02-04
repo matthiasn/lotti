@@ -39,6 +39,7 @@ void main() {
   final secureStorageMock = MockSecureStorage();
   setFakeDocumentsPath();
   registerFallbackValue(FakeJournalEntity());
+  registerFallbackValue(FakeHabitDefinition());
 
   final mockNotificationService = MockNotificationService();
   final mockUpdateNotifications = MockUpdateNotifications();
@@ -78,7 +79,19 @@ void main() {
         (_) => Stream<Set<String>>.fromIterable([]),
       );
 
-      when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});
+      when(
+        () => mockFts5Db.insertText(
+          any(),
+          removePrevious: true,
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockNotificationService.scheduleHabitNotification(
+          any(),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      ).thenAnswer((_) async {});
 
       when(
         () => mockNotificationService.showNotification(
@@ -137,11 +150,13 @@ void main() {
           testText,
         );
 
+        final updated = textEntry.copyWith(
+          entryText: const EntryText(plainText: updatedTestText),
+        );
+
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntity(
-          textEntry.copyWith(
-            entryText: const EntryText(plainText: updatedTestText),
-          ),
+          updated,
           textEntry.meta,
         );
 
@@ -152,6 +167,9 @@ void main() {
               ?.plainText,
           updatedTestText,
         );
+
+        verify(() => mockFts5Db.insertText(any(), removePrevious: true))
+            .called(1);
 
         // TODO: why is this failing suddenly?
         //verify(mockNotificationService.updateBadge).called(2);

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -25,6 +26,8 @@ import '../../../../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  registerFallbackValue(FakeMetadata());
+
   group('TagsModal Widget Tests -', () {
     final mockTagsService = MockTagsService();
     final mockEditorStateService = MockEditorStateService();
@@ -44,6 +47,13 @@ void main() {
         ]
       ]),
     );
+
+    when(
+      () => mockPersistenceLogic.updateMetadata(any()),
+    ).thenAnswer((_) async => testTextEntry.meta);
+
+    when(() => mockTagsService.getFilteredStoryTagIds(any()))
+        .thenAnswer((_) => <String>[]);
 
     when(mockTagsService.watchTags).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
@@ -97,6 +107,10 @@ void main() {
       ).thenAnswer((invocation) async => 1);
 
       when(
+        () => mockJournalDb.getLinkedEntities(any()),
+      ).thenAnswer((_) async => []);
+
+      when(
         () => mockVectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
         ),
@@ -126,7 +140,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TagsModal(
-            entryId: testTextEntryWithTags.meta.id,
+            entryId: testTextEntryWithTags.id,
           ),
         ),
       );
@@ -142,9 +156,13 @@ void main() {
       await tester.tap(copyIconFinder);
       await tester.pumpAndSettle();
 
+      verify(() => mockTagsService.setClipboard(any())).called(1);
+
       await tester.tap(pasteIconFinder);
       await tester.pumpAndSettle();
+
       verify(mockTagsService.getClipboard).called(1);
+      verify(() => mockPersistenceLogic.updateMetadata(any())).called(1);
     });
 
     testWidgets('select existing tag', (tester) async {
@@ -160,10 +178,14 @@ void main() {
       await tester.enterText(searchFieldFinder, 'some');
       await tester.pumpAndSettle();
 
+      verify(() => mockTagsService.getMatchingTags('some')).called(1);
+
       final tagFinder = find.text(testTag1.tag);
       expect(tagFinder, findsOneWidget);
       await tester.tap(tagFinder);
       await tester.pumpAndSettle();
+
+      verify(() => mockPersistenceLogic.updateMetadata(any())).called(1);
     });
 
     testWidgets('add new tag', (tester) async {
@@ -204,6 +226,9 @@ void main() {
       await tester.enterText(searchFieldFinder, newTag.tag);
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      verify(() => mockJournalDb.upsertTagEntity(any())).called(1);
+      verify(() => mockPersistenceLogic.updateMetadata(any())).called(1);
     });
 
     testWidgets('remove tag', (tester) async {
@@ -229,6 +254,11 @@ void main() {
       expect(closeIconFinder, findsNWidgets(2));
 
       await tester.tap(closeIconFinder.first);
+      await tester.pumpAndSettle();
+
+      verify(() => mockPersistenceLogic.updateMetadata(any())).called(1);
+
+      expect(find.byIcon(Icons.close_rounded), findsNWidgets(2));
     });
   });
 }
