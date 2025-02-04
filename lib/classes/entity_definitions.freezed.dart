@@ -34,7 +34,8 @@ mixin _$HabitSchedule {
   int get requiredCompletions => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int requiredCompletions, DateTime? showFrom)
+    required TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
         daily,
     required TResult Function(int requiredCompletions) weekly,
     required TResult Function(int requiredCompletions) monthly,
@@ -42,14 +43,18 @@ mixin _$HabitSchedule {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult? Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult? Function(int requiredCompletions)? weekly,
     TResult? Function(int requiredCompletions)? monthly,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult Function(int requiredCompletions)? weekly,
     TResult Function(int requiredCompletions)? monthly,
     required TResult orElse(),
@@ -131,7 +136,8 @@ abstract class _$$DailyHabitScheduleImplCopyWith<$Res>
       __$$DailyHabitScheduleImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int requiredCompletions, DateTime? showFrom});
+  $Res call(
+      {int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime});
 }
 
 /// @nodoc
@@ -149,6 +155,7 @@ class __$$DailyHabitScheduleImplCopyWithImpl<$Res>
   $Res call({
     Object? requiredCompletions = null,
     Object? showFrom = freezed,
+    Object? alertAtTime = freezed,
   }) {
     return _then(_$DailyHabitScheduleImpl(
       requiredCompletions: null == requiredCompletions
@@ -159,6 +166,10 @@ class __$$DailyHabitScheduleImplCopyWithImpl<$Res>
           ? _value.showFrom
           : showFrom // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      alertAtTime: freezed == alertAtTime
+          ? _value.alertAtTime
+          : alertAtTime // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -167,7 +178,10 @@ class __$$DailyHabitScheduleImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
   const _$DailyHabitScheduleImpl(
-      {required this.requiredCompletions, this.showFrom, final String? $type})
+      {required this.requiredCompletions,
+      this.showFrom,
+      this.alertAtTime,
+      final String? $type})
       : $type = $type ?? 'daily';
 
   factory _$DailyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
@@ -177,13 +191,15 @@ class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
   final int requiredCompletions;
   @override
   final DateTime? showFrom;
+  @override
+  final DateTime? alertAtTime;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'HabitSchedule.daily(requiredCompletions: $requiredCompletions, showFrom: $showFrom)';
+    return 'HabitSchedule.daily(requiredCompletions: $requiredCompletions, showFrom: $showFrom, alertAtTime: $alertAtTime)';
   }
 
   @override
@@ -194,12 +210,15 @@ class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
             (identical(other.requiredCompletions, requiredCompletions) ||
                 other.requiredCompletions == requiredCompletions) &&
             (identical(other.showFrom, showFrom) ||
-                other.showFrom == showFrom));
+                other.showFrom == showFrom) &&
+            (identical(other.alertAtTime, alertAtTime) ||
+                other.alertAtTime == alertAtTime));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, requiredCompletions, showFrom);
+  int get hashCode =>
+      Object.hash(runtimeType, requiredCompletions, showFrom, alertAtTime);
 
   /// Create a copy of HabitSchedule
   /// with the given fields replaced by the non-null parameter values.
@@ -213,34 +232,39 @@ class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int requiredCompletions, DateTime? showFrom)
+    required TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
         daily,
     required TResult Function(int requiredCompletions) weekly,
     required TResult Function(int requiredCompletions) monthly,
   }) {
-    return daily(requiredCompletions, showFrom);
+    return daily(requiredCompletions, showFrom, alertAtTime);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult? Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult? Function(int requiredCompletions)? weekly,
     TResult? Function(int requiredCompletions)? monthly,
   }) {
-    return daily?.call(requiredCompletions, showFrom);
+    return daily?.call(requiredCompletions, showFrom, alertAtTime);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult Function(int requiredCompletions)? weekly,
     TResult Function(int requiredCompletions)? monthly,
     required TResult orElse(),
   }) {
     if (daily != null) {
-      return daily(requiredCompletions, showFrom);
+      return daily(requiredCompletions, showFrom, alertAtTime);
     }
     return orElse();
   }
@@ -290,7 +314,8 @@ class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
 abstract class DailyHabitSchedule implements HabitSchedule {
   const factory DailyHabitSchedule(
       {required final int requiredCompletions,
-      final DateTime? showFrom}) = _$DailyHabitScheduleImpl;
+      final DateTime? showFrom,
+      final DateTime? alertAtTime}) = _$DailyHabitScheduleImpl;
 
   factory DailyHabitSchedule.fromJson(Map<String, dynamic> json) =
       _$DailyHabitScheduleImpl.fromJson;
@@ -298,6 +323,7 @@ abstract class DailyHabitSchedule implements HabitSchedule {
   @override
   int get requiredCompletions;
   DateTime? get showFrom;
+  DateTime? get alertAtTime;
 
   /// Create a copy of HabitSchedule
   /// with the given fields replaced by the non-null parameter values.
@@ -388,7 +414,8 @@ class _$WeeklyHabitScheduleImpl implements WeeklyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int requiredCompletions, DateTime? showFrom)
+    required TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
         daily,
     required TResult Function(int requiredCompletions) weekly,
     required TResult Function(int requiredCompletions) monthly,
@@ -399,7 +426,9 @@ class _$WeeklyHabitScheduleImpl implements WeeklyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult? Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult? Function(int requiredCompletions)? weekly,
     TResult? Function(int requiredCompletions)? monthly,
   }) {
@@ -409,7 +438,9 @@ class _$WeeklyHabitScheduleImpl implements WeeklyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult Function(int requiredCompletions)? weekly,
     TResult Function(int requiredCompletions)? monthly,
     required TResult orElse(),
@@ -562,7 +593,8 @@ class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int requiredCompletions, DateTime? showFrom)
+    required TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)
         daily,
     required TResult Function(int requiredCompletions) weekly,
     required TResult Function(int requiredCompletions) monthly,
@@ -573,7 +605,9 @@ class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult? Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult? Function(int requiredCompletions)? weekly,
     TResult? Function(int requiredCompletions)? monthly,
   }) {
@@ -583,7 +617,9 @@ class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int requiredCompletions, DateTime? showFrom)? daily,
+    TResult Function(
+            int requiredCompletions, DateTime? showFrom, DateTime? alertAtTime)?
+        daily,
     TResult Function(int requiredCompletions)? weekly,
     TResult Function(int requiredCompletions)? monthly,
     required TResult orElse(),

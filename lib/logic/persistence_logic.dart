@@ -266,6 +266,13 @@ class PersistenceLogic {
         shouldAddGeolocation: shouldAddGeolocation,
       );
 
+      if (habitDefinition != null) {
+        await getIt<NotificationService>().scheduleHabitNotification(
+          habitDefinition,
+          daysToAdd: 1,
+        );
+      }
+
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -763,16 +770,6 @@ class PersistenceLogic {
     if (dashboard.deletedAt != null) {
       await getIt<NotificationService>().cancelNotification(
         dashboard.id.hashCode,
-      );
-    }
-
-    if (dashboard.reviewAt != null && dashboard.deletedAt == null) {
-      await getIt<NotificationService>().scheduleNotification(
-        title: 'Time for a Dashboard Review!',
-        body: dashboard.name,
-        notifyAt: dashboard.reviewAt!,
-        notificationId: dashboard.id.hashCode,
-        deepLink: '/dashboards/${dashboard.id}',
       );
     }
 
