@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
@@ -110,6 +111,37 @@ class NotificationService {
             badgeNumber: badgeCount,
           ),
         ),
+      );
+    }
+  }
+
+  Future<void> scheduleHabitNotification(
+    HabitDefinition habitDefinition, {
+    int daysToAdd = 0,
+  }) async {
+    final alertAtTime = habitDefinition.habitSchedule.maybeMap(
+      daily: (d) => d.alertAtTime,
+      orElse: () => null,
+    );
+
+    if (alertAtTime != null) {
+      final notifyAt = DateTime.now()
+          .add(
+            Duration(days: daysToAdd),
+          )
+          .copyWith(
+            hour: alertAtTime.hour,
+            minute: alertAtTime.minute,
+            second: alertAtTime.second,
+          );
+
+      await getIt<NotificationService>().scheduleNotification(
+        title: habitDefinition.name,
+        body: habitDefinition.description,
+        showOnMobile: true,
+        showOnDesktop: false,
+        notifyAt: notifyAt,
+        notificationId: habitDefinition.id.hashCode,
       );
     }
   }

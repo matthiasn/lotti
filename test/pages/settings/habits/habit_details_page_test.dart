@@ -10,6 +10,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/habits/habit_create_page.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,10 +29,12 @@ void main() {
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
+  final mockNotificationService = MockNotificationService();
 
   group('HabitDetailsPage Widget Tests - ', () {
     setUpAll(() {
       registerFallbackValue(FakeDashboardDefinition());
+      registerFallbackValue(FakeHabitDefinition());
     });
 
     setUp(() {
@@ -45,6 +48,11 @@ void main() {
 
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
+      );
+
+      when(() => mockNotificationService.scheduleHabitNotification(any()))
+          .thenAnswer(
+        (_) => Future.value(),
       );
 
       when(mockJournalDb.watchDashboards).thenAnswer(
@@ -71,6 +79,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<TagsService>(mockTagsService);
     });
     tearDown(getIt.reset);

@@ -266,29 +266,10 @@ class PersistenceLogic {
         shouldAddGeolocation: shouldAddGeolocation,
       );
 
-      final alertAtTime = habitDefinition?.habitSchedule.maybeMap(
-        daily: (d) => d.alertAtTime,
-        orElse: () => null,
-      );
-
-      if (habitDefinition != null && alertAtTime != null) {
-        final notifyAt = DateTime.now()
-            .add(
-              const Duration(days: 1),
-            )
-            .copyWith(
-              hour: alertAtTime.hour,
-              minute: alertAtTime.minute,
-              second: alertAtTime.second,
-            );
-
-        await getIt<NotificationService>().scheduleNotification(
-          title: habitDefinition.name,
-          body: habitDefinition.description,
-          showOnMobile: true,
-          showOnDesktop: false,
-          notifyAt: notifyAt,
-          notificationId: habitDefinition.id.hashCode,
+      if (habitDefinition != null) {
+        await getIt<NotificationService>().scheduleHabitNotification(
+          habitDefinition,
+          daysToAdd: 1,
         );
       }
 
