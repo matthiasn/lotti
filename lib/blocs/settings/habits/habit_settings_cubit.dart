@@ -9,6 +9,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/settings/habits/habit_autocomplete_widget.dart';
 
@@ -131,6 +132,8 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
       await persistenceLogic.upsertEntityDefinition(dataType);
       _dirty = false;
       emitState();
+
+      await getIt<NotificationService>().scheduleHabitNotification(dataType);
 
       _maybePop();
     }
