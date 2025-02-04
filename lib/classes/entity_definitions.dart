@@ -13,6 +13,7 @@ class HabitSchedule with _$HabitSchedule {
   const factory HabitSchedule.daily({
     required int requiredCompletions,
     DateTime? showFrom,
+    DateTime? alertAtTime,
   }) = DailyHabitSchedule;
 
   const factory HabitSchedule.weekly({

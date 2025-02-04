@@ -13,6 +13,9 @@ _$DailyHabitScheduleImpl _$$DailyHabitScheduleImplFromJson(
       showFrom: json['showFrom'] == null
           ? null
           : DateTime.parse(json['showFrom'] as String),
+      alertAtTime: json['alertAtTime'] == null
+          ? null
+          : DateTime.parse(json['alertAtTime'] as String),
       $type: json['runtimeType'] as String?,
     );
 
@@ -21,6 +24,7 @@ Map<String, dynamic> _$$DailyHabitScheduleImplToJson(
     <String, dynamic>{
       'requiredCompletions': instance.requiredCompletions,
       'showFrom': instance.showFrom?.toIso8601String(),
+      'alertAtTime': instance.alertAtTime?.toIso8601String(),
       'runtimeType': instance.$type,
     };
 

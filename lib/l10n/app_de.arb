@@ -13,7 +13,7 @@
   "cancelButton": "Abbrechen",
   "categoryDeleteConfirm": "JA, KATEGORIE LÖSCHEN",
   "categoryDeleteQuestion": "Kategorie wirklich löschen?",
-  "configFlagEnableNotifications": "Desktop Notifications erlauben?",
+  "configFlagEnableNotifications": "Notifications erlauben?",
   "configFlagPrivate": "Private Einträge anzeigen?",
   "conflictsResolved": "gelöst",
   "conflictsUnresolved": "offen",

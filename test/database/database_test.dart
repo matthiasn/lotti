@@ -77,7 +77,7 @@ final expectedFlags = <ConfigFlag>{
 final expectedMacFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableNotificationsFlag,
-    description: 'Enable desktop notifications?',
+    description: 'Enable notifications?',
     status: false,
   ),
 };
