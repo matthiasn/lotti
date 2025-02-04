@@ -266,6 +266,32 @@ class PersistenceLogic {
         shouldAddGeolocation: shouldAddGeolocation,
       );
 
+      final alertAtTime = habitDefinition?.habitSchedule.maybeMap(
+        daily: (d) => d.alertAtTime,
+        orElse: () => null,
+      );
+
+      if (habitDefinition != null && alertAtTime != null) {
+        final notifyAt = DateTime.now()
+            .add(
+              const Duration(days: 1),
+            )
+            .copyWith(
+              hour: alertAtTime.hour,
+              minute: alertAtTime.minute,
+              second: alertAtTime.second,
+            );
+
+        await getIt<NotificationService>().scheduleNotification(
+          title: habitDefinition.name,
+          body: habitDefinition.description,
+          showOnMobile: true,
+          showOnDesktop: false,
+          notifyAt: notifyAt,
+          notificationId: habitDefinition.id.hashCode,
+        );
+      }
+
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -763,16 +789,6 @@ class PersistenceLogic {
     if (dashboard.deletedAt != null) {
       await getIt<NotificationService>().cancelNotification(
         dashboard.id.hashCode,
-      );
-    }
-
-    if (dashboard.reviewAt != null && dashboard.deletedAt == null) {
-      await getIt<NotificationService>().scheduleNotification(
-        title: 'Time for a Dashboard Review!',
-        body: dashboard.name,
-        notifyAt: dashboard.reviewAt!,
-        notificationId: dashboard.id.hashCode,
-        deepLink: '/dashboards/${dashboard.id}',
       );
     }
 
