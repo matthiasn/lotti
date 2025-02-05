@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -30,13 +30,8 @@ class TranscriptionProgressView extends StatelessWidget {
           subtitle: Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             color: context.colorScheme.inverseSurface.withAlpha(26),
-            child: MarkdownBody(
-              data: text,
-              styleSheet: MarkdownStyleSheet(
-                p: monospaceTextStyle.copyWith(
-                  color: hasError ? context.colorScheme.error : null,
-                ),
-              ),
+            child: SelectionArea(
+              child: GptMarkdown(text),
             ),
           ),
         );

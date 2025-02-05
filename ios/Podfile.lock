@@ -253,7 +253,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
-  audio_session: 32a33910dd5bb35d54297e4b50006481071f196b
+  audio_session: 19e9480dbdd4e5f6c4543826b2e8b0e4ab6145fe
   connectivity_plus: 18382e7311ba19efcaee94442b23b32507b20695
   device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
   ffmpeg-kit-ios-https: f9c838aa5400a6c5ba12324c6b798f52197ba354

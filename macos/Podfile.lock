@@ -205,7 +205,7 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
+  audio_session: 728ae3823d914f809c485d390274861a24b0904e
   connectivity_plus: 18382e7311ba19efcaee94442b23b32507b20695
   desktop_drop: 69eeff437544aa619c8db7f4481b3a65f7696898
   device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215

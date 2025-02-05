@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -38,13 +38,8 @@ class TranscriptionProgressModalContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MarkdownBody(
-                data: text,
-                styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(
-                    color: hasError ? context.colorScheme.error : null,
-                  ),
-                ),
+              SelectionArea(
+                child: GptMarkdown(text),
               ),
               verticalModalSpacer,
             ],
