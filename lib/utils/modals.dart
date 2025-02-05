@@ -26,7 +26,7 @@ class ModalUtils {
   }) {
     final textTheme = context.textTheme;
     return WoltModalSheetPage(
-      backgroundColor: context.colorScheme.surfaceContainerLow,
+      backgroundColor: context.colorScheme.surfaceContainerHigh,
       hasSabGradient: false,
       topBarTitle:
           title != null ? Text(title, style: textTheme.titleSmall) : null,
