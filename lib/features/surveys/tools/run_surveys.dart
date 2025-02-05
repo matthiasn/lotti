@@ -21,7 +21,7 @@ Future<void> runSurvey({
     pageListBuilder: (modalSheetContext) {
       return [
         ModalUtils.modalSheetPage(
-          context: modalSheetContext,
+          context: context,
           backgroundColor: themeData.canvasColor,
           isTopBarLayerAlwaysVisible: false,
           showCloseButton: false,
