@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'ollama_task_summary.dart';
+part of 'task_markdown_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$aiTaskSummaryControllerHash() =>
-    r'6253b67eb63b845c8c3bfb022acc4ba30331cc62';
+String _$taskMarkdownControllerHash() =>
+    r'0efef89904fd2f83c01c4a0e45101cb0b026260d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,36 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$AiTaskSummaryController
-    extends BuildlessAutoDisposeNotifier<String> {
+abstract class _$TaskMarkdownController
+    extends BuildlessAutoDisposeAsyncNotifier<String?> {
   late final String id;
 
-  String build({
+  FutureOr<String?> build({
     required String id,
   });
 }
 
-/// See also [AiTaskSummaryController].
-@ProviderFor(AiTaskSummaryController)
-const aiTaskSummaryControllerProvider = AiTaskSummaryControllerFamily();
+/// See also [TaskMarkdownController].
+@ProviderFor(TaskMarkdownController)
+const taskMarkdownControllerProvider = TaskMarkdownControllerFamily();
 
-/// See also [AiTaskSummaryController].
-class AiTaskSummaryControllerFamily extends Family<String> {
-  /// See also [AiTaskSummaryController].
-  const AiTaskSummaryControllerFamily();
+/// See also [TaskMarkdownController].
+class TaskMarkdownControllerFamily extends Family<AsyncValue<String?>> {
+  /// See also [TaskMarkdownController].
+  const TaskMarkdownControllerFamily();
 
-  /// See also [AiTaskSummaryController].
-  AiTaskSummaryControllerProvider call({
+  /// See also [TaskMarkdownController].
+  TaskMarkdownControllerProvider call({
     required String id,
   }) {
-    return AiTaskSummaryControllerProvider(
+    return TaskMarkdownControllerProvider(
       id: id,
     );
   }
 
   @override
-  AiTaskSummaryControllerProvider getProviderOverride(
-    covariant AiTaskSummaryControllerProvider provider,
+  TaskMarkdownControllerProvider getProviderOverride(
+    covariant TaskMarkdownControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -78,30 +78,31 @@ class AiTaskSummaryControllerFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'aiTaskSummaryControllerProvider';
+  String? get name => r'taskMarkdownControllerProvider';
 }
 
-/// See also [AiTaskSummaryController].
-class AiTaskSummaryControllerProvider
-    extends AutoDisposeNotifierProviderImpl<AiTaskSummaryController, String> {
-  /// See also [AiTaskSummaryController].
-  AiTaskSummaryControllerProvider({
+/// See also [TaskMarkdownController].
+class TaskMarkdownControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<TaskMarkdownController,
+        String?> {
+  /// See also [TaskMarkdownController].
+  TaskMarkdownControllerProvider({
     required String id,
   }) : this._internal(
-          () => AiTaskSummaryController()..id = id,
-          from: aiTaskSummaryControllerProvider,
-          name: r'aiTaskSummaryControllerProvider',
+          () => TaskMarkdownController()..id = id,
+          from: taskMarkdownControllerProvider,
+          name: r'taskMarkdownControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$aiTaskSummaryControllerHash,
-          dependencies: AiTaskSummaryControllerFamily._dependencies,
+                  : _$taskMarkdownControllerHash,
+          dependencies: TaskMarkdownControllerFamily._dependencies,
           allTransitiveDependencies:
-              AiTaskSummaryControllerFamily._allTransitiveDependencies,
+              TaskMarkdownControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  AiTaskSummaryControllerProvider._internal(
+  TaskMarkdownControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -114,8 +115,8 @@ class AiTaskSummaryControllerProvider
   final String id;
 
   @override
-  String runNotifierBuild(
-    covariant AiTaskSummaryController notifier,
+  FutureOr<String?> runNotifierBuild(
+    covariant TaskMarkdownController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -123,10 +124,10 @@ class AiTaskSummaryControllerProvider
   }
 
   @override
-  Override overrideWith(AiTaskSummaryController Function() create) {
+  Override overrideWith(TaskMarkdownController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: AiTaskSummaryControllerProvider._internal(
+      override: TaskMarkdownControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -139,14 +140,14 @@ class AiTaskSummaryControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
+  AutoDisposeAsyncNotifierProviderElement<TaskMarkdownController, String?>
       createElement() {
-    return _AiTaskSummaryControllerProviderElement(this);
+    return _TaskMarkdownControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is AiTaskSummaryControllerProvider && other.id == id;
+    return other is TaskMarkdownControllerProvider && other.id == id;
   }
 
   @override
@@ -160,18 +161,19 @@ class AiTaskSummaryControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin AiTaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
+mixin TaskMarkdownControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<String?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _AiTaskSummaryControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
-    with AiTaskSummaryControllerRef {
-  _AiTaskSummaryControllerProviderElement(super.provider);
+class _TaskMarkdownControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<TaskMarkdownController,
+        String?> with TaskMarkdownControllerRef {
+  _TaskMarkdownControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as AiTaskSummaryControllerProvider).id;
+  String get id => (origin as TaskMarkdownControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
