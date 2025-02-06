@@ -7,7 +7,7 @@ part of 'task_markdown_controller.dart';
 // **************************************************************************
 
 String _$taskMarkdownControllerHash() =>
-    r'0efef89904fd2f83c01c4a0e45101cb0b026260d';
+    r'483150e85debc3d6c46a9973922af1cdbc53aa5c';
 
 /// Copied from Dart SDK
 class _SystemHash {

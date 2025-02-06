@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -53,13 +52,18 @@ class AiTaskChecklistSummaryController
         'are related to the completion of the task. '
         'Note that the logbook is in reverse chronological order. '
         'Keep it short and succinct. '
-        'If there a TODOs that are mentioned in free text for which there are '
+        'If there a TODOs that are mentioned for which there are '
         'no checklist items yet then create checklist items for each of these TODOs, '
         'in the best order to complete it. '
-        'The checklist should be a list of items, in JSON format, as an array '
+        'The resulting checklist should be a list of items, in JSON format, as an array '
         'of objects, with each checklist item having a short title, which '
         'goes in the "title" field, and "isChecked" field of type boolean, '
-        'which is checked when the checklist item is completed. ';
+        'which is checked when the checklist item is completed. '
+        'Make an extra pass to check that checklist items from the input are not '
+        'mentioned in the summary, and if so, remove them from the checklist. '
+        'Do not make up checklist items, only use ones that are mentioned '
+        'in the input text, but not in the input JSON. Do an extra pass to take out '
+        'checklist items that are already passed in as JSON. ';
 
     final buffer = StringBuffer();
 
@@ -121,7 +125,5 @@ class AiTaskChecklistSummaryController
     state = state.copyWith(
       checklistItems: checklistItems,
     );
-
-    debugPrint(responseList.toString());
   }
 }
