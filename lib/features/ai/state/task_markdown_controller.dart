@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:intersperse/intersperse.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -55,35 +57,34 @@ class TaskMarkdownController extends _$TaskMarkdownController {
 
     buffer
       ..writeln('******')
-      ..writeln('Checklists:')
+      ..writeln('Checklist:')
+      ..writeln('```json')
       ..writeln();
+
+    final checklistItems = <ChecklistItemData>[];
 
     for (final checklistId in checklistIds) {
       final checklist = await _db.journalEntityById(checklistId);
       if (checklist != null && checklist is Checklist) {
-        buffer
-          ..writeln(checklist.data.title)
-          ..writeln();
-
         final checklistItemIds = checklist.data.linkedChecklistItems;
         for (final checklistItemId in checklistItemIds) {
           final checklistItem = await _db.journalEntityById(checklistItemId);
           if (checklistItem != null && checklistItem is ChecklistItem) {
             final data = checklistItem.data;
-            buffer
-              ..writeln(
-                '${data.isChecked ? 'COMPLETED' : 'TO DO'}: ${data.title}',
-              )
-              ..writeln();
+            checklistItems.add(data);
           }
         }
-        buffer.writeln();
+        buffer.writeln(
+          intersperse(
+            ',',
+            checklistItems.map((e) => '\n${e.toJson()}\n'),
+          ),
+        );
       }
     }
 
     buffer
-      ..writeln('******')
-      ..writeln()
+      ..writeln('```')
       ..writeln();
   }
 }
