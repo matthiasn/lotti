@@ -161,6 +161,7 @@
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenancePersistTaskCategories": "Persist task categories",
   "maintenancePurgeDeleted": "Purge deleted items",
+  "maintenancePurgeAudioModels": "Purge audio models",
   "maintenanceRecreateFts5": "Recreate full-text index",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceReprocessSync": "Reprocess sync messages",
