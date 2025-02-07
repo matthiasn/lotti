@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/common.dart';
@@ -15,6 +17,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart';
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
@@ -170,6 +174,11 @@ class Maintenance {
   Future<void> deleteEditorDb() async {
     final file = await getDatabaseFile(editorDbFileName);
     file.deleteSync();
+  }
+
+  Future<void> purgeAudioModels() async {
+    File(join(getDocumentsDirectory().path, 'huggingface'))
+        .deleteSync(recursive: true);
   }
 
   Future<void> deleteLoggingDb() async {
