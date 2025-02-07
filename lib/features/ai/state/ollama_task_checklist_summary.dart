@@ -40,34 +40,25 @@ class AiTaskChecklistSummaryController
     }
 
     const systemMessage =
-        'The prompt is a markdown document describing a task, '
-        'with logbook of the completion of the task. '
-        'Also, there might be checklist items with a status of either '
-        'COMPLETED or TO DO. '
-        'Summarize the task, the achieved results, and the remaining steps '
+        'The prompt is a markdown document describing a task, with the '
+        'logbook of the completion of the task, including transcripts of '
+        'audio recordings, and images, for example screenshots. '
+        'Also, there is a array of already defined and tracked checklist items, '
+        'as JSON. Your job is to find new TODOs that are not mentioned here yet, '
+        'but only in the logbook of the task. '
+        'This may be empty if the task has no checklist items yet. '
+        'Summarize the task and the achieved results, and the remaining steps '
         'that have not been completed yet. '
         'Note any learnings or insights that can be drawn from the task, if any. '
-        'If there are images, include their content in the summary. '
-        'Consider that the content of the images, likely screenshots, '
-        'are related to the completion of the task. '
         'Note that the logbook is in reverse chronological order. '
         'Keep it short and succinct. '
-        'If there a TODOs that are mentioned for which there are '
-        'no checklist items yet then create checklist items for each of these TODOs, '
-        'in the best order to complete it. '
-        'The resulting checklist should be a list of items, in JSON format, as an array '
-        'of objects, with each checklist item having a short title, which '
-        'goes in the "title" field, and "isChecked" field of type boolean, '
-        'which is checked when the checklist item is completed. '
-        'Make an extra pass to check that checklist items from the input are not '
-        'mentioned in the summary, and if so, remove them from the checklist. '
-        'Do not make up checklist items, only use ones that are mentioned '
-        'in the input text, but not in the input JSON. Do an extra pass to take out '
-        'checklist items that are already passed in as JSON. ';
+        'At the end of the response, add an unordered markdown list of '
+        'TODOs/checklist items that are new and not already tracked, where '
+        'each item is prefixed with the String "TODO: ". ';
 
     final buffer = StringBuffer();
 
-    const model = 'deepseek-r1:8b'; // TODO: make configurable
+    const model = 'deepseek-r1:14b'; // TODO: make configurable
     const temperature = 0.6;
 
     final stream = ref.read(ollamaRepositoryProvider).generate(
@@ -109,18 +100,19 @@ class AiTaskChecklistSummaryController
     );
 
     final match = exp.firstMatch(response);
+    print('match $match');
     final responseList = json.decode(match?.group(0) ?? '[]') as List<dynamic>;
+    print('responseList $responseList');
 
-    final checklistItems = responseList
-        .map(
-          (e) => ChecklistItemData(
-            // ignore: avoid_dynamic_calls
-            title: e['title'] as String,
-            isChecked: false,
-            linkedChecklists: [],
-          ),
-        )
-        .toList();
+    final checklistItems = responseList.map((e) {
+      print(e);
+      return ChecklistItemData(
+        // ignore: avoid_dynamic_calls
+        title: e['title'] as String,
+        isChecked: false,
+        linkedChecklists: [],
+      );
+    }).toList();
 
     state = state.copyWith(
       checklistItems: checklistItems,
