@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai/state/ollama_task_checklist_summary.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 
 class AiTaskSummaryView extends ConsumerWidget {
   const AiTaskSummaryView({
@@ -28,6 +29,13 @@ class AiTaskSummaryView extends ConsumerWidget {
             children: [
               SelectionArea(
                 child: GptMarkdown(state.summary ?? ''),
+              ),
+              ...?state.checklistItems?.map(
+                (checklistItem) => ChecklistItemWidget(
+                  title: checklistItem.title,
+                  isChecked: checklistItem.isChecked,
+                  onChanged: (checked) {},
+                ),
               ),
             ],
           ),

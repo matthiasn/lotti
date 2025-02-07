@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -36,10 +35,14 @@ class TaskMarkdownController extends _$TaskMarkdownController {
     final linkedEntities = await _db.getLinkedEntities(id);
 
     for (final linked in linkedEntities) {
-      buffer
-        ..writeln('******')
-        ..writeln('Linked:')
-        ..writeln(linked.getMarkdown(indentation: 1));
+      if (linked is JournalEntry ||
+          linked is JournalImage ||
+          linked is JournalAudio) {
+        buffer
+          ..writeln('******')
+          ..writeln('Linked:')
+          ..writeln(linked.getMarkdown(indentation: 1));
+      }
     }
 
     return buffer.toString();
@@ -59,7 +62,7 @@ class TaskMarkdownController extends _$TaskMarkdownController {
       ..writeln('******')
       ..writeln('Checklist:')
       ..writeln('```json')
-      ..writeln();
+      ..writeln('[');
 
     final checklistItems = <ChecklistItemData>[];
 
@@ -70,20 +73,16 @@ class TaskMarkdownController extends _$TaskMarkdownController {
         for (final checklistItemId in checklistItemIds) {
           final checklistItem = await _db.journalEntityById(checklistItemId);
           if (checklistItem != null && checklistItem is ChecklistItem) {
-            final data = checklistItem.data;
+            final data = checklistItem.data.copyWith(id: checklistItemId);
             checklistItems.add(data);
+            buffer.writeln('\n${data.toJson()},\n');
           }
         }
-        buffer.writeln(
-          intersperse(
-            ',',
-            checklistItems.map((e) => '\n${e.toJson()}\n'),
-          ),
-        );
       }
     }
 
     buffer
+      ..writeln(']')
       ..writeln('```')
       ..writeln();
   }
