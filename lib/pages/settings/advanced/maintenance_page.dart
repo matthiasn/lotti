@@ -65,6 +65,10 @@ class MaintenancePage extends StatelessWidget {
                 onTap: db.purgeDeleted,
               ),
               SettingsCard(
+                title: context.messages.maintenancePurgeAudioModels,
+                onTap: maintenance.purgeAudioModels,
+              ),
+              SettingsCard(
                 title: context.messages.maintenanceCancelNotifications,
                 onTap: () => getIt<NotificationService>().cancelAll(),
               ),
