@@ -14,7 +14,7 @@ class AiResponseSummary extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: GestureDetector(
         onDoubleTap: () {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             builder: (BuildContext _) {
               return AiResponseSummaryModalContent(aiResponse);

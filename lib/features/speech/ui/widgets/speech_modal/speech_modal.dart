@@ -26,7 +26,7 @@ class SpeechModalListTile extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void onTapAdd() => ModalUtils.showSinglePageModal(
+    void onTapAdd() => ModalUtils.showSinglePageModal<void>(
           context: context,
           title: context.messages.speechModalTitle,
           builder: (_) => Column(

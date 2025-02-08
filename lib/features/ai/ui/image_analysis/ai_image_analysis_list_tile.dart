@@ -30,7 +30,7 @@ class AiImageAnalysisListTile extends ConsumerWidget {
         ref.invalidate(provider);
         ref.read(provider.notifier).analyzeImage();
 
-        ModalUtils.showSinglePageModal(
+        ModalUtils.showSinglePageModal<void>(
           context: context,
           title: context.messages.aiAssistantTitle,
           builder: (_) => AiImageAnalysisView(

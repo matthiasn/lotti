@@ -68,7 +68,7 @@ class _ReSyncModalContentState extends State<ReSyncModalContent> {
 
 class ReSyncModal {
   static Future<void> show(BuildContext context) async {
-    await ModalUtils.showSinglePageModal(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: 'Re-sync entries',
       builder: (_) => const ReSyncModalContent(),

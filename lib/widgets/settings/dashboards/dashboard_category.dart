@@ -40,7 +40,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
         controller.text = category?.name ?? '';
 
         void onTap() {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.dashboardCategoryLabel,
             builder: (BuildContext _) {

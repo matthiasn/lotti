@@ -18,7 +18,7 @@ class TaskFilterIcon extends StatelessWidget {
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.tasksFilterTitle,
             builder: (_) => const Column(
