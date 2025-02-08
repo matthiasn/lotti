@@ -35,6 +35,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
             builder: (BuildContext _) {
               return EntryDateTimeModal(item: entry);
             },
+            navBarHeight: 20,
           );
         },
         child: Padding(
