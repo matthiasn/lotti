@@ -23,11 +23,13 @@ class ModalUtils {
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = true,
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
+    double? navBarHeight,
   }) {
     final textTheme = context.textTheme;
     return WoltModalSheetPage(
       backgroundColor: context.colorScheme.surfaceContainerHigh,
       hasSabGradient: false,
+      navBarHeight: navBarHeight,
       topBarTitle:
           title != null ? Text(title, style: textTheme.titleSmall) : null,
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
@@ -50,6 +52,8 @@ class ModalUtils {
     required Widget Function(BuildContext) builder,
     String? title,
     Widget Function(Widget)? modalDecorator,
+    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
+    double? navBarHeight,
   }) async {
     return WoltModalSheet.show<T>(
       context: context,
@@ -61,6 +65,8 @@ class ModalUtils {
             child: builder(modalSheetContext),
             isTopBarLayerAlwaysVisible: title != null,
             showCloseButton: title != null,
+            padding: padding,
+            navBarHeight: navBarHeight,
           ),
         ];
       },
