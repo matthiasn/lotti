@@ -12,7 +12,7 @@ class CreateEntryModal {
     required String? linkedFromId,
     required String? categoryId,
   }) async {
-    await ModalUtils.showSinglePageModal(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createEntryTitle,
       builder: (_) => Column(

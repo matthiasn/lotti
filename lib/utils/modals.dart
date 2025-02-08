@@ -45,13 +45,13 @@ class ModalUtils {
     );
   }
 
-  static Future<void> showSinglePageModal({
+  static Future<T?> showSinglePageModal<T>({
     required BuildContext context,
     required Widget Function(BuildContext) builder,
     String? title,
     Widget Function(Widget)? modalDecorator,
   }) async {
-    await WoltModalSheet.show<void>(
+    return WoltModalSheet.show<T>(
       context: context,
       pageListBuilder: (modalSheetContext) {
         return [

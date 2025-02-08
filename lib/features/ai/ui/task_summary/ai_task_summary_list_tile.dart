@@ -24,7 +24,7 @@ class AiTaskSummaryListTile extends ConsumerWidget {
       ),
       onTap: () {
         Navigator.of(context).pop();
-        ModalUtils.showSinglePageModal(
+        ModalUtils.showSinglePageModal<void>(
           context: context,
           title: context.messages.aiAssistantTitle,
           builder: (_) => AiTaskSummaryView(

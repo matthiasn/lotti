@@ -55,7 +55,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         : context.colorScheme.outline;
 
     Future<void> onTap() async {
-      await ModalUtils.showSinglePageModal(
+      await ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.createCategoryTitle,
         builder: (BuildContext context) {

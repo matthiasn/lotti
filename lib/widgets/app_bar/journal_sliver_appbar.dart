@@ -127,7 +127,7 @@ class JournalFilterIcon extends StatelessWidget {
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.journalSearchHint,
             modalDecorator: (child) {
