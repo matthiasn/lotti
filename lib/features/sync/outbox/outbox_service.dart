@@ -158,11 +158,16 @@ class OutboxService {
         );
 
         try {
-          await getIt<MatrixService>().sendMatrixMsg(
+          final success = await getIt<MatrixService>().sendMatrixMsg(
             SyncMessage.fromJson(
               json.decode(nextPending.message) as Map<String, dynamic>,
             ),
           );
+
+          if (!success) {
+            await enqueueNextSendRequest(delay: const Duration(seconds: 5));
+            return;
+          }
 
           await _syncDatabase.updateOutboxItem(
             OutboxCompanion(
