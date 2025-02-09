@@ -57,7 +57,7 @@ class TranscriptionProgressModalContent extends StatelessWidget {
 
 class TranscriptionProgressModal {
   static Future<void> show(BuildContext context) async {
-    await ModalUtils.showSinglePageModal(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.speechModalTranscriptionProgress,
       builder: (_) => const TranscriptionProgressModalContent(),

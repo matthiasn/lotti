@@ -41,7 +41,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
             IconButton(
               icon: Icon(Icons.filter_list, color: color),
               onPressed: () {
-                ModalUtils.showSinglePageModal(
+                ModalUtils.showSinglePageModal<void>(
                   context: context,
                   builder: (BuildContext _) =>
                       LinkedFilterModalContent(entryId: item.id),

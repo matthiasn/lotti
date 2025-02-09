@@ -29,7 +29,7 @@ class CategoryField extends StatelessWidget {
     final controller = TextEditingController()..text = category?.name ?? '';
 
     void onTap() {
-      ModalUtils.showSinglePageModal(
+      ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {
@@ -110,7 +110,7 @@ class _CategorySelectionContentState
   Future<void> _showColorPicker(String categoryName) async {
     if (!mounted) return;
 
-    await ModalUtils.showSinglePageModal(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createCategoryTitle,
       builder: (BuildContext context) {
