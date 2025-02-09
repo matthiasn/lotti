@@ -141,6 +141,7 @@ dependencies:
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
   share_plus: ^10.0.0
+  showcaseview: ^4.0.1
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
@@ -216,6 +217,7 @@ flutter:
     # from https://www.iconfinder.com/recepkutuk
     - assets/images/map/728975_location_map_marker_pin_place_icon.png
     - assets/images/tutorial/
+    - assets/images/manual/
 
   fonts:
     - family: Oswald

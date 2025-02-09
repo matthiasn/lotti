@@ -18,6 +18,7 @@ import 'package:lotti/pages/settings/habits/habit_create_page.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
 import 'package:lotti/pages/settings/habits/habits_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
+import 'package:lotti/pages/settings/manual_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
 import 'package:lotti/pages/settings/theming_page.dart';
+
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -60,6 +62,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
         '/settings/maintenance',
+        '/settings/manual',
       ];
 
   @override
@@ -221,6 +224,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-theming'),
           child: ThemingPage(),
+        ),
+      
+       if (pathContains('manual'))
+        const BeamPage(
+          key: ValueKey('settings-manual'),
+          child: ManualPage(),
         ),
 
       // Health Import

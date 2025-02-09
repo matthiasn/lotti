@@ -6,10 +6,13 @@ import 'package:lotti/themes/theme.dart';
 class TasksBadge extends ConsumerWidget {
   const TasksBadge({
     required this.child,
+    this.showcaseKey,
     super.key,
   });
 
   final Widget child;
+  final GlobalKey? showcaseKey;
+  
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,3 +26,4 @@ class TasksBadge extends ConsumerWidget {
     );
   }
 }
+
