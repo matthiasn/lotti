@@ -99,7 +99,7 @@ void main() {
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () {
-                    ModalUtils.showSinglePageModal(
+                    ModalUtils.showSinglePageModal<void>(
                       context: context,
                       title: 'Test Modal',
                       builder: (context) => const Text('Modal Content'),

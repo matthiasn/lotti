@@ -22,7 +22,7 @@ class ExtendedHeaderModal {
   }) async {
     final linkService = getIt<LinkService>();
 
-    await ModalUtils.showSinglePageModal(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.entryActions,
       builder: (context) => Column(

@@ -30,11 +30,12 @@ class EntryDatetimeWidget extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 5),
       child: GestureDetector(
         onTap: () {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             builder: (BuildContext _) {
               return EntryDateTimeModal(item: entry);
             },
+            navBarHeight: 20,
           );
         },
         child: Padding(

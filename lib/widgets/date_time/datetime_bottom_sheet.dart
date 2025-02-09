@@ -31,6 +31,25 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        CupertinoTheme(
+          data: CupertinoThemeData(
+            textTheme: CupertinoTextThemeData(
+              dateTimePickerTextStyle:
+                  context.textTheme.titleLarge?.withTabularFigures,
+            ),
+          ),
+          child: SizedBox(
+            height: 265,
+            child: CupertinoDatePicker(
+              initialDateTime: widget.initial,
+              mode: widget.mode,
+              use24hFormat: true,
+              onDateTimeChanged: (DateTime value) {
+                dateTime = value;
+              },
+            ),
+          ),
+        ),
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -59,25 +78,6 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
                 child: Text(context.messages.doneButton),
               ),
             ],
-          ),
-        ),
-        CupertinoTheme(
-          data: CupertinoThemeData(
-            textTheme: CupertinoTextThemeData(
-              dateTimePickerTextStyle:
-                  context.textTheme.titleLarge?.withTabularFigures,
-            ),
-          ),
-          child: SizedBox(
-            height: 265,
-            child: CupertinoDatePicker(
-              initialDateTime: widget.initial,
-              mode: widget.mode,
-              use24hFormat: true,
-              onDateTimeChanged: (DateTime value) {
-                dateTime = value;
-              },
-            ),
           ),
         ),
       ],
