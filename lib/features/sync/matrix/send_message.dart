@@ -32,7 +32,7 @@ extension SendExtension on MatrixService {
   /// Also updates some stats on sent message counts on the [MatrixService].
   /// The send function will terminate early (and thus refuse to send anything)
   /// when there are users with unverified device in the room.
-  Future<void> sendMatrixMsg(
+  Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
   }) async {
@@ -56,7 +56,7 @@ extension SendExtension on MatrixService {
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
-      throw Exception(configNotFound);
+      return false;
     }
 
     loggingService.captureEvent(
@@ -117,6 +117,7 @@ extension SendExtension on MatrixService {
         orElse: () {},
       );
     }
+    return true;
   }
 
   /// Sends a file attachment to the sync room.
