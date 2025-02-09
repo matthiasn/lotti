@@ -125,31 +125,39 @@ extension SendExtension on MatrixService {
     required String fullPath,
     required String relativePath,
   }) async {
-    final loggingDb = getIt<LoggingService>()
-      ..captureEvent(
+    try {
+      getIt<LoggingService>().captureEvent(
         'trying to send $relativePath file message to $syncRoom',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
 
-    final eventId = await syncRoom?.sendFileEvent(
-      MatrixFile(
-        bytes: await File(fullPath).readAsBytes(),
-        name: fullPath,
-      ),
-      extraContent: {'relativePath': relativePath},
-    );
+      final eventId = await syncRoom?.sendFileEvent(
+        MatrixFile(
+          bytes: await File(fullPath).readAsBytes(),
+          name: fullPath,
+        ),
+        extraContent: {'relativePath': relativePath},
+      );
 
-    if (eventId == null) {
-      throw Exception('Failed sending file');
+      if (eventId == null) {
+        throw Exception('Failed sending file');
+      }
+
+      incrementSentCount();
+
+      getIt<LoggingService>().captureEvent(
+        'sent $relativePath file message to $syncRoom, event ID $eventId',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+        stackTrace: stackTrace,
+      );
     }
-
-    incrementSentCount();
-
-    loggingDb.captureEvent(
-      'sent $relativePath file message to $syncRoom, event ID $eventId',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'sendMatrixMsg',
-    );
   }
 }
