@@ -13,36 +13,38 @@ class ManualPage extends StatelessWidget {
       title: 'Lotti Manual',
       showBackButton: true,
       child: Expanded(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const Center(
-                child: Text(
-                  '''
-          Lotti is a behavioral monitoring and journaling app that lets you keep track of anything you can measure. 
-          Measurements could, for example, include tracking exercises, plus imported data from Apple Health or the equivalent on Android. 
-          In terms of behavior, you can monitor habits, e.g. such that are related to measurables. 
-          This could be the intake of medication, numbers of repetitions of an exercise, 
-          the amount of water you drink, the amount of fiber you ingest, you name it. 
-          Anything you can imagine. If you create a habit, you can assign any dashboard you want, and then by 
-          the time you want to complete a habit, look at the data and determine at a quick glance of the 
-          conditions are indeed met for successful completion.
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              child: const Text(
+                '''
+                  Lotti is a behavioral monitoring and journaling app that lets you keep track of anything you can measure. 
+                  Measurements could, for example, include tracking exercises, plus imported data from Apple Health or the equivalent on Android. 
+                  In terms of behavior, you can monitor habits, e.g. such that are related to measurables. 
+                  This could be the intake of medication, numbers of repetitions of an exercise, 
+                  the amount of water you drink, the amount of fiber you ingest, you name it. 
+                  Anything you can imagine. If you create a habit, you can assign any dashboard you want, and then by 
+                  the time you want to complete a habit, look at the data and determine at a quick glance of the 
+                  conditions are indeed met for successful completion.
               ''',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(
-                height: 30,
-              ),
-              ManualIcons(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                icon1: Icons.check_circle_outlined,
-                icon2: Ionicons.book_outline,
-                iconFunc: SingleChildScrollView(
+            ),
+            const SizedBox(
+              height: 30,
+            ),
+            ManualIcons(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              icon1: Icons.check_circle_outlined,
+              icon2: Ionicons.book_outline,
+              iconFunc: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.65,
+                child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -61,7 +63,10 @@ class ManualPage extends StatelessWidget {
                       const SizedBox(
                         child: Text(
                           'The task interface helps you maintain control over your task entries while providing flexibility in how you organize and manage your personal information.',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -193,10 +198,9 @@ class ManualPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const SizedBox(
-                            width: 130,
+                            width: 110,
                             child: Text(
-                             '4. Category Management \n- Select existing or create new \n- Pick your color \n- e.g. House Chores'
-,
+                              '4. Category Management. \n- Select existing or create new \n- Pick your color \n- e.g. House Chores\n\n5. Color Picker \n- Choose custom colors \n- Personalize categories \n- Visual organization',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -207,9 +211,151 @@ class ManualPage extends StatelessWidget {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.red),
                             ),
-                            width: 110,
+                            width: 150,
                             child: Image.asset(
                               'assets/images/manual/setCate_icon.png',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red),
+                            ),
+                            width: 130,
+                            child: Image.asset(
+                              'assets/images/manual/taskNote_icon.png',
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 130,
+                            child: Text(
+                              '6. Smart Notes. \ne.g:\n - Bring reusable bags \n- Fresh produce section \n- Pantry essentials',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SizedBox(
+                            width: 130,
+                            child: Text(
+                              '7. Interactive Checklists. \ne.g: Oats, \nPineapple, \nTomatoes, \nPasta.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red),
+                            ),
+                            width: 130,
+                            child: Image.asset(
+                              'assets/images/manual/checklist_icon.png',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red),
+                            ),
+                            width: 130,
+                            child: Image.asset(
+                              'assets/images/manual/taskDate_stamp.png',
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 130,
+                            child: Text(
+                              '8. Duration Setting. \nSet your timeline with From/To dates.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red),
+                            ),
+                            width: 110,
+                            child: Image.asset(
+                              'assets/images/manual/addTask.png',
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 120,
+                            child: Text(
+                              'Quick Add Media.\n Your creative hub for rich content:',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SizedBox(
+                            width: 120,
+                            child: Text(
+                              '''
+  - Events : \nSchedule and track important occasions in your life
+
+  - Additional Tasks : Create quick action items linked to your entries
+
+  - Voice Notes : Record audio snippets for quick thoughts and reminders
+
+  - Time Stamps : \nMark exact moments with automatic or custom timing
+
+  - Text Entries : Document your ideas, reflections, and observations
+  
+  - Photos : \nCapture and store visual memories directly in your entries
+                                        ''',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            height: 400,
+                            padding: const EdgeInsets.all(9),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red),
+                            ),
+                            
+                            
+                            child: Image.asset(
+                              'assets/images/manual/addMedia.png',
+                              width: 125,
+                              
                             ),
                           ),
                         ],
@@ -217,71 +363,67 @@ class ManualPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                iconFunc2: const Column(
-                  children: [
-                    Icon(
-                      Ionicons.book_outline,
-                    ),
-                    Text('Logbook'),
-                  ],
-                ),
               ),
-              const SizedBox(
-                height: 30,
+              iconFunc2: const Column(
+                children: [
+                  Icon(
+                    Ionicons.book_outline,
+                  ),
+                  Text('Logbook'),
+                ],
               ),
-              const ManualIcons(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                icon1: Icons.calendar_month_outlined,
-                icon2: Icons.settings_outlined,
-                iconFunc: Column(
-                  children: [
-                    Icon(
-                      Icons.calendar_month_outlined,
-                    ),
-                    Text('Calendar'),
-                  ],
-                ),
-                iconFunc2: Column(
-                  children: [
-                    Icon(
-                      Icons.settings_outlined,
-                    ),
-                    Text('Settings'),
-                  ],
-                ),
+            ),
+            const SizedBox(
+              height: 30,
+            ),
+            const ManualIcons(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              icon1: Icons.calendar_month_outlined,
+              icon2: Icons.settings_outlined,
+              iconFunc: Column(
+                children: [
+                  Icon(
+                    Icons.calendar_month_outlined,
+                  ),
+                  Text('Calendar'),
+                ],
               ),
-              const SizedBox(
-                height: 30,
+              iconFunc2: Column(
+                children: [
+                  Icon(
+                    Icons.settings_outlined,
+                  ),
+                  Text('Settings'),
+                ],
               ),
-              ManualIcons(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                icon1: MdiIcons.checkboxMultipleMarkedOutline,
-                icon2: Ionicons.bar_chart_outline,
-                iconFunc: Column(
-                  children: [
-                    Icon(
-                      MdiIcons.checkboxMultipleMarkedOutline,
-                    ),
-                    const Text('Habits'),
-                  ],
-                ),
-                iconFunc2: const Column(
-                  children: [
-                    Icon(
-                      Ionicons.bar_chart_outline,
-                    ),
-                    Text('Dashboard'),
-                  ],
-                ),
+            ),
+            const SizedBox(
+              height: 30,
+            ),
+            ManualIcons(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              icon1: MdiIcons.checkboxMultipleMarkedOutline,
+              icon2: Ionicons.bar_chart_outline,
+              iconFunc: Column(
+                children: [
+                  Icon(
+                    MdiIcons.checkboxMultipleMarkedOutline,
+                  ),
+                  const Text('Habits'),
+                ],
               ),
-            ],
-          ),
+              iconFunc2: const Column(
+                children: [
+                  Icon(
+                    Ionicons.bar_chart_outline,
+                  ),
+                  Text('Dashboard'),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-
-
- 
