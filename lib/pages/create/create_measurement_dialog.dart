@@ -94,128 +94,120 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       return const SizedBox.shrink();
     }
 
-    return AlertDialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-      contentPadding: const EdgeInsets.only(
-        left: 30,
-        top: 20,
-        right: 10,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(20)),
-        side: BorderSide(
-          color: (context.textTheme.titleLarge?.color ?? Colors.black)
-              .withAlpha(127),
+    return Container(
+      width: 200,
+      color: Colors.pink,
+      child: AlertDialog(
+        backgroundColor: Colors.transparent,
+        actionsAlignment: MainAxisAlignment.end,
+        actionsPadding: const EdgeInsets.only(
+          left: 30,
+          right: 20,
+          bottom: 20,
         ),
-      ),
-      actionsAlignment: MainAxisAlignment.end,
-      actionsPadding: const EdgeInsets.only(
-        left: 30,
-        right: 20,
-        bottom: 20,
-      ),
-      actions: [
-        if (!dirty)
-          MeasurementSuggestions(
-            measurableDataType: dataType,
-            saveMeasurement: saveMeasurement,
-            measurementTime: measurementTime,
-          ),
-        if (dirty && validate())
-          TextButton(
-            key: const Key('measurement_save'),
-            onPressed: () => saveMeasurement(
+        actions: [
+          if (!dirty)
+            MeasurementSuggestions(
               measurableDataType: dataType,
+              saveMeasurement: saveMeasurement,
               measurementTime: measurementTime,
             ),
-            child: Text(
-              context.messages.addMeasurementSaveButton,
-              style: saveButtonStyle(
-                Theme.of(context),
+          if (dirty && validate())
+            TextButton(
+              key: const Key('measurement_save'),
+              onPressed: () => saveMeasurement(
+                measurableDataType: dataType,
+                measurementTime: measurementTime,
               ),
-            ),
-          )
-        else
-          const SizedBox.shrink(),
-      ],
-      content: FormBuilder(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        onChanged: () {
-          setState(() {
-            dirty = true;
-          });
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  dataType.displayName,
+              child: Text(
+                context.messages.addMeasurementSaveButton,
+                style: saveButtonStyle(
+                  Theme.of(context),
                 ),
-                IconButton(
-                  padding: const EdgeInsets.all(10),
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.pop(context, 'Close'),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            )
+          else
+            const SizedBox.shrink(),
+        ],
+        content: FormBuilder(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          onChanged: () {
+            setState(() {
+              dirty = true;
+            });
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (dataType.description.isNotEmpty)
-                    Text(
-                      dataType.description,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w300,
-                        fontSize: fontSizeSmall,
-                      ),
-                    ),
-                  inputSpacer,
-                  DateTimeField(
-                    dateTime: measurementTime,
-                    labelText: context.messages.addMeasurementDateLabel,
-                    setDateTime: (picked) {
-                      setState(() {
-                        measurementTime = picked;
-                      });
-                    },
+                  Text(
+                    dataType.displayName,
                   ),
-                  inputSpacer,
-                  FormBuilderTextField(
-                    initialValue: '',
-                    key: const Key('measurement_value_field'),
-                    decoration: createDialogInputDecoration(
-                      labelText: '${dataType.displayName} '
-                          '${dataType.unitName.isNotEmpty ? '[${dataType.unitName}] ' : ''}',
-                      themeData: Theme.of(context),
-                    ),
-                    validator: numericValidator(),
-                    name: 'value',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
+                  IconButton(
+                    padding: const EdgeInsets.all(10),
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context, 'Close'),
                   ),
-                  inputSpacer,
-                  FormBuilderTextField(
-                    initialValue: '',
-                    key: const Key('measurement_comment_field'),
-                    decoration: createDialogInputDecoration(
-                      labelText: context.messages.addMeasurementCommentLabel,
-                      themeData: Theme.of(context),
-                    ),
-                    keyboardAppearance: Theme.of(context).brightness,
-                    name: 'comment',
-                  ),
-                  inputSpacer,
                 ],
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (dataType.description.isNotEmpty)
+                      Text(
+                        dataType.description,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w300,
+                          fontSize: fontSizeSmall,
+                        ),
+                      ),
+                    inputSpacer,
+                    DateTimeField(
+                      dateTime: measurementTime,
+                      labelText: context.messages.addMeasurementDateLabel,
+                      setDateTime: (picked) {
+                        setState(() {
+                          measurementTime = picked;
+                        });
+                      },
+                    ),
+                    inputSpacer,
+                    FormBuilderTextField(
+                      initialValue: '',
+                      key: const Key('measurement_value_field'),
+                      decoration: createDialogInputDecoration(
+                        labelText: '${dataType.displayName} '
+                            '${dataType.unitName.isNotEmpty ? '[${dataType.unitName}] ' : ''}',
+                        themeData: Theme.of(context),
+                      ),
+                      validator: numericValidator(),
+                      name: 'value',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                    ),
+                    inputSpacer,
+                    FormBuilderTextField(
+                      initialValue: '',
+                      key: const Key('measurement_comment_field'),
+                      decoration: createDialogInputDecoration(
+                        labelText: context.messages.addMeasurementCommentLabel,
+                        themeData: Theme.of(context),
+                      ),
+                      keyboardAppearance: Theme.of(context).brightness,
+                      name: 'comment',
+                    ),
+                    inputSpacer,
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

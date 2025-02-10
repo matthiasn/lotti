@@ -54,6 +54,7 @@ class ModalUtils {
     Widget Function(Widget)? modalDecorator,
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
     double? navBarHeight,
+    WoltModalType Function(BuildContext)? modalTypeBuilder,
   }) async {
     return WoltModalSheet.show<T>(
       context: context,
@@ -70,9 +71,28 @@ class ModalUtils {
           ),
         ];
       },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      modalTypeBuilder: modalTypeBuilder ?? ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
       modalDecorator: modalDecorator,
+    );
+  }
+
+  static Future<T?> showSinglePageDialog<T>({
+    required BuildContext context,
+    required Widget Function(BuildContext) builder,
+    String? title,
+    Widget Function(Widget)? modalDecorator,
+    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
+    double? navBarHeight,
+  }) async {
+    return showSinglePageModal<T>(
+      context: context,
+      title: title,
+      builder: builder,
+      modalDecorator: modalDecorator,
+      padding: padding,
+      navBarHeight: navBarHeight,
+      modalTypeBuilder: (_) => WoltModalType.dialog(),
     );
   }
 }
