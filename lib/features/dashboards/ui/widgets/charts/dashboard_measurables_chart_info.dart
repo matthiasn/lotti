@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 
 class MeasurablesChartInfoWidget extends StatelessWidget {
   const MeasurablesChartInfoWidget(
@@ -24,13 +25,15 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Future<void> captureData() async {
-      await showDialog<void>(
+      await ModalUtils.showSinglePageModal<void>(
         context: context,
-        builder: (context) {
+        builder: (_) {
           return MeasurementDialog(
             measurableId: measurableDataType.id,
           );
         },
+        padding: EdgeInsets.zero,
+        navBarHeight: 5,
       );
     }
 
