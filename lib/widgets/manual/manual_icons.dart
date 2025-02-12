@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class ManualIcons extends StatelessWidget {
   const ManualIcons({
@@ -7,6 +8,7 @@ class ManualIcons extends StatelessWidget {
     required this.icon2,
     required this.iconFunc,
     required this.iconFunc2,
+    this.manualheader = const Row(mainAxisAlignment: MainAxisAlignment.center),
     super.key,
   });
 
@@ -15,6 +17,7 @@ class ManualIcons extends StatelessWidget {
   final IconData icon2;
   final Widget iconFunc;
   final Widget iconFunc2;
+  final Widget manualheader;
 
   @override
   Widget build(BuildContext context) {
@@ -24,72 +27,85 @@ class ManualIcons extends StatelessWidget {
         mainAxisAlignment: mainAxisAlignment,
         children: [
           GestureDetector(
-            onTap: () => showDialog<void>(
-              context: context,
-              builder: (BuildContext context) {
-                return Stack(
-                  children: [
-                    SingleChildScrollView(
-                      child: Positioned(
-                        top: MediaQuery.of(context).size.height *
-                            0.14, // 30% from top
-                        left: 20,
-                        right: 20,
-                        child: AlertDialog(
-                          title: iconFunc,
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: const Text('x'),
+            onTap: () {
+              WoltModalSheet.show<void>(
+                context: context,
+                modalTypeBuilder: (context) => WoltModalType.dialog(),
+                pageListBuilder: (context) {
+                  return [
+                    WoltModalSheetPage(
+                      hasSabGradient: false,
+                      stickyActionBar: const Padding(
+                        padding: EdgeInsets.all(10),
+                      ),
+                      child: Column(
+                        children: [
+                          ElevatedButton(
+                            onPressed: Navigator.of(context).pop,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: iconFunc,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                      topBarTitle: manualheader,
+                      isTopBarLayerAlwaysVisible: true,
+                      trailingNavBarWidget: IconButton(
+                        onPressed: Navigator.of(context).pop,
+                        icon: const Icon(Icons.close),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
+                  ];
+                },
+              );
+            },
             child: Icon(
               icon1,
               size: 35,
             ),
           ),
-          GestureDetector(
-            onTap: () => showDialog<void>(
-              context: context,
-              builder: (BuildContext context) {
-                return Stack(
-                  children: [
-                    Positioned(
-                      height: 100,
-                      top: MediaQuery.of(context).size.height *
-                          0.14, // % from top
-                      left: 20,
-                      right: 20,
-                      child: AlertDialog(
-                        title: iconFunc2,
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('x'),
+          
+           GestureDetector(
+            onTap: () {
+              WoltModalSheet.show<void>(
+                context: context,
+                modalTypeBuilder: (context) => WoltModalType.dialog(),
+                pageListBuilder: (context) {
+                  return [
+                    WoltModalSheetPage(
+                      hasSabGradient: false,
+                      stickyActionBar: const Padding(
+                        padding: EdgeInsets.all(10),
+                      ),
+                      child: Column(
+                        children: [
+                          ElevatedButton(
+                            onPressed: Navigator.of(context).pop,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: iconFunc2,
+                            ),
                           ),
                         ],
                       ),
+                     
+                      isTopBarLayerAlwaysVisible: true,
+                      trailingNavBarWidget: IconButton(
+                        onPressed: Navigator.of(context).pop,
+                        icon: const Icon(Icons.close),
+                      ),
                     ),
-                  ],
-                );
-              },
-            ),
+                  ];
+                },
+              );
+            },
             child: Icon(
               icon2,
               size: 35,
             ),
           ),
+          
         ],
       ),
     );

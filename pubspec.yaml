@@ -156,7 +156,7 @@ dependencies:
   week_of_year: ^2.0.0
   widgetbook: ^3.7.1
   window_manager: ^0.4.0
-  wolt_modal_sheet: ^0.10.0
+  wolt_modal_sheet: ^0.11.0
 
 dependency_overrides:
   device_info_plus: ^11.0.0
