@@ -1292,10 +1292,11 @@ packages:
   gpt_markdown:
     dependency: "direct main"
     description:
-      name: gpt_markdown
-      sha256: d584be500d93cd4e2ba0db9c50414c1b32f917451cd2d4f6ed95cc955b5eea66
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "5a19dc4"
+      resolved-ref: "5a19dc4feb34b23abe4b83bef079f30111e677d4"
+      url: "https://github.com/matthiasn/gpt_markdown"
+    source: git
     version: "1.0.8"
   graphic:
     dependency: "direct main"
