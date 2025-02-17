@@ -582,18 +582,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: ab4d0e7aa1793829b1dd8e72d71bbf0b53bf4ff84b184045d1ab71b0832e632e
+      sha256: "97d5832657d49f26e7a8e07de397ddc63790b039372878d5117af816d0fdb5cb"
       url: "https://pub.dev"
     source: hosted
-    version: "2.25.0"
+    version: "2.25.1"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: "6c559daf45dd9588eb88d8de7038b9826d404c2163850c6ebad008ba0ec1b9f7"
+      sha256: f1db88482dbb016b9bbddddf746d5d0a6938b156ff20e07320052981f97388cc
       url: "https://pub.dev"
     source: hosted
-    version: "2.25.1"
+    version: "2.25.2"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -734,10 +734,10 @@ packages:
     dependency: transitive
     description:
       name: file_selector_windows
-      sha256: "8f5d2f6590d51ecd9179ba39c64f722edc15226cc93dcc8698466ad36a4a85a4"
+      sha256: "320fcfb6f33caa90f0b58380489fc5ac05d99ee94b61aa96ec2bff0ba81d3c2b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.3+3"
+    version: "0.9.3+4"
   fixnum:
     dependency: transitive
     description:
@@ -758,10 +758,10 @@ packages:
     dependency: "direct main"
     description:
       name: flex_color_scheme
-      sha256: "09bea5d776f694c5a67f2229f2aa500cc7cce369322dc6500ab01cf9ad1b4e1a"
+      sha256: ae638050fceb35b6040a43cf67892f9b956022068e736284919d93322fdd4ba2
       url: "https://pub.dev"
     source: hosted
-    version: "8.1.0"
+    version: "8.1.1"
   flex_seed_scheme:
     dependency: transitive
     description:
@@ -1292,12 +1292,11 @@ packages:
   gpt_markdown:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "5a19dc4"
-      resolved-ref: "5a19dc4feb34b23abe4b83bef079f30111e677d4"
-      url: "https://github.com/matthiasn/gpt_markdown"
-    source: git
-    version: "1.0.8"
+      name: gpt_markdown
+      sha256: "55919f2665033bb1090b2d70677626a21ee00e725f8768cd32b0616bed0dec87"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.11"
   graphic:
     dependency: "direct main"
     description:
@@ -2746,42 +2745,42 @@ packages:
     dependency: "direct main"
     description:
       name: sqflite
-      sha256: "2d7299468485dca85efeeadf5d38986909c5eb0cd71fd3db2c2f000e6c9454bb"
+      sha256: e2297b1da52f127bc7a3da11439985d9b536f75070f3325e62ada69a5c585d03
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2"
   sqflite_android:
     dependency: transitive
     description:
       name: sqflite_android
-      sha256: "78f489aab276260cdd26676d2169446c7ecd3484bbd5fead4ca14f3ed4dd9ee3"
+      sha256: "2b3070c5fa881839f8b402ee4a39c1b4d561704d4ebbbcfb808a119bc2a1701b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.1"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: "761b9740ecbd4d3e66b8916d784e581861fd3c3553eda85e167bc49fdb68f709"
+      sha256: "84731e8bfd8303a3389903e01fb2141b6e59b5973cacbb0929021df08dddbe8b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.4+6"
+    version: "2.5.5"
   sqflite_common_ffi:
     dependency: "direct main"
     description:
       name: sqflite_common_ffi
-      sha256: "883dd810b2b49e6e8c3b980df1829ef550a94e3f87deab5d864917d27ca6bf36"
+      sha256: "1f3ef3888d3bfbb47785cc1dda0dc7dd7ebd8c1955d32a9e8e9dae1e38d1c4c1"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.4+4"
+    version: "2.3.5"
   sqflite_darwin:
     dependency: transitive
     description:
       name: sqflite_darwin
-      sha256: "22adfd9a2c7d634041e96d6241e6e1c8138ca6817018afc5d443fef91dcefa9c"
+      sha256: "279832e5cde3fe99e8571879498c9211f3ca6391b0d818df4e17d9fff5c6ccb3"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1+1"
+    version: "2.4.2"
   sqflite_platform_interface:
     dependency: transitive
     description:
@@ -2794,10 +2793,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: decd58236d7c59e01ae81b34ebd158e6a1b61e0ae5397fc428736eb91ab82808
+      sha256: "32b632dda27d664f85520093ed6f735ae5c49b5b75345afb8b19411bc59bb53d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.3"
+    version: "2.7.4"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -2906,10 +2905,10 @@ packages:
     dependency: transitive
     description:
       name: synchronized
-      sha256: "69fe30f3a8b04a0be0c15ae6490fc859a78ef4c43ae2dd5e8a623d45bfcf9225"
+      sha256: "0669c70faae6270521ee4f05bffd2919892d42d1276e6c495be80174b6bc0ef6"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0+3"
+    version: "3.3.1"
   system_info2:
     dependency: transitive
     description:
@@ -3306,10 +3305,10 @@ packages:
     dependency: "direct main"
     description:
       name: widgetbook
-      sha256: "8738bfa29cc314b68ac5068cb0d086a0ddf8db4e167d0e4d0f539e1ad1042949"
+      sha256: "43fb5d65e5617cae47aeb5b25d6c8c51ee44bb5296b9a72df7bd60dbc6c51877"
       url: "https://pub.dev"
     source: hosted
-    version: "3.10.2"
+    version: "3.11.0"
   win32:
     dependency: transitive
     description:
@@ -3383,5 +3382,5 @@ packages:
     source: hosted
     version: "2.3.9"
 sdks:
-  dart: ">=3.7.0-0 <4.0.0"
-  flutter: ">=3.27.0"
+  dart: ">=3.7.0 <4.0.0"
+  flutter: ">=3.29.0"
