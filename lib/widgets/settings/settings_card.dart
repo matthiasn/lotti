@@ -6,6 +6,7 @@ class SettingsCard extends StatelessWidget {
   const SettingsCard({
     required this.onTap,
     required this.title,
+    this.titleColor,
     super.key,
     this.semanticsLabel,
     this.subtitle,
@@ -26,6 +27,7 @@ class SettingsCard extends StatelessWidget {
   final Widget? trailing;
   final EdgeInsets? contentPadding;
   final Color? backgroundColor;
+  final Color? titleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,7 @@ class SettingsCard extends StatelessWidget {
         contentPadding: contentPadding,
         title: Text(
           title,
-          style: settingsCardTextStyle,
+          style: settingsCardTextStyle.copyWith(color: titleColor),
           semanticsLabel: semanticsLabel,
         ),
         subtitle: subtitle,
