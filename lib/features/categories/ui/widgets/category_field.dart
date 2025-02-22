@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -177,6 +179,42 @@ class _CategorySelectionContentState
             ),
           ),
       ],
+    );
+  }
+}
+
+class CategorySelectionIconButton extends ConsumerWidget {
+  const CategorySelectionIconButton({
+    required this.entry,
+    super.key,
+  });
+
+  final JournalEntity entry;
+
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = entryControllerProvider(id: entry.id);
+    final notifier = ref.read(provider.notifier);
+
+    return GestureDetector(
+      onTap: () {
+        ModalUtils.showSinglePageModal<void>(
+          context: context,
+          title: context.messages.habitCategoryLabel,
+          builder: (BuildContext _) {
+            return _CategorySelectionContent(
+              onCategorySelected: (category) {
+                notifier.updateCategoryId(category?.id);
+                Navigator.pop(context);
+              },
+            );
+          },
+        );
+      },
+      child: CategoryColorIcon(entry.categoryId),
     );
   }
 }
