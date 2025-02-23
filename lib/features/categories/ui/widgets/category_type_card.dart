@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class CategoriesTypeCard extends StatelessWidget {
-  const CategoriesTypeCard(
+class CategoryTypeCard extends StatelessWidget {
+  const CategoryTypeCard(
     this.categoryDefinition, {
-    required this.index,
+    required this.onTap,
     super.key,
   });
 
   final CategoryDefinition categoryDefinition;
-  final int index;
+  final void Function() onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SettingsNavCard(
-      path: '/settings/categories/${categoryDefinition.id}',
+    return SettingsCard(
+      onTap: onTap,
       title: categoryDefinition.name,
-      leading: ColorIcon(colorFromCssHex(categoryDefinition.color)),
+      leading: CategoryColorIcon(categoryDefinition.id),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -52,48 +51,21 @@ class CategoriesTypeCard extends StatelessWidget {
   }
 }
 
-class ColorIcon extends StatelessWidget {
-  const ColorIcon(
-    this.color, {
-    this.size = 20.0,
+class CategoryTypeNavCard extends StatelessWidget {
+  const CategoryTypeNavCard(
+    this.categoryDefinition, {
+    required this.index,
     super.key,
   });
 
-  final Color color;
-  final double size;
+  final CategoryDefinition categoryDefinition;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 4),
-      child: Container(
-        height: size,
-        width: size,
-        color: color,
-      ),
-    );
-  }
-}
-
-class CategoryColorIcon extends StatelessWidget {
-  const CategoryColorIcon(
-    this.categoryId, {
-    this.size = 20.0,
-    super.key,
-  });
-
-  final String? categoryId;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
-
-    return ColorIcon(
-      category != null
-          ? colorFromCssHex(category.color)
-          : context.colorScheme.outline.withAlpha(51),
-      size: size,
+    return CategoryTypeCard(
+      categoryDefinition,
+      onTap: () => beamToNamed('/settings/categories/${categoryDefinition.id}'),
     );
   }
 }
