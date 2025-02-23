@@ -38,65 +38,60 @@ class EditorWidget extends ConsumerWidget {
       focusNode.requestFocus();
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: Card(
-        key: ValueKey('$emptyTextSelectionControls $shouldShowEditorToolBar'),
-        color: shouldShowEditorToolBar
-            ? context.colorScheme.surface.brighten()
-            : Colors.transparent,
-        elevation: 0,
-        clipBehavior: Clip.hardEdge,
-        shape: RoundedRectangleBorder(
-          borderRadius:
-              const BorderRadius.all(Radius.circular(inputBorderRadius)),
-          side: BorderSide(
-            color: shouldShowEditorToolBar
-                ? context.colorScheme.outline.withAlpha(100)
-                : Colors.transparent,
-          ),
+    return Card(
+      color: shouldShowEditorToolBar
+          ? context.colorScheme.surface.brighten()
+          : Colors.transparent,
+      elevation: 0,
+      clipBehavior: Clip.hardEdge,
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            const BorderRadius.all(Radius.circular(inputBorderRadius)),
+        side: BorderSide(
+          color: shouldShowEditorToolBar
+              ? context.colorScheme.outline.withAlpha(100)
+              : Colors.transparent,
         ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: maxHeight,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (shouldShowEditorToolBar)
-                ToolbarWidget(
-                  controller: controller,
-                  entryId: entryId,
-                ),
-              Flexible(
-                child: QuillEditor(
-                  controller: controller,
-                  scrollController: ScrollController(),
-                  focusNode: focusNode,
-                  configurations: QuillEditorConfigurations(
-                    textSelectionThemeData: TextSelectionThemeData(
-                      cursorColor: context.colorScheme.onSurface,
-                      selectionColor:
-                          context.colorScheme.primary.withAlpha(127),
-                    ),
-                    autoFocus: shouldShowEditorToolBar,
-                    minHeight: minHeight,
-                    placeholder: context.messages.editorPlaceholder,
-                    padding: EdgeInsets.only(
-                      top: 8,
-                      bottom: 16,
-                      left: shouldShowEditorToolBar ? padding : 0,
-                      right: padding,
-                    ),
-                    keyboardAppearance: Theme.of(context).brightness,
-                    customStyles: customEditorStyles(
-                      themeData: Theme.of(context),
-                    ),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (shouldShowEditorToolBar)
+              ToolbarWidget(
+                controller: controller,
+                entryId: entryId,
+              ),
+            Flexible(
+              child: QuillEditor(
+                controller: controller,
+                scrollController: ScrollController(),
+                focusNode: focusNode,
+                configurations: QuillEditorConfigurations(
+                  textSelectionThemeData: TextSelectionThemeData(
+                    cursorColor: context.colorScheme.onSurface,
+                    selectionColor: context.colorScheme.primary.withAlpha(127),
+                  ),
+                  autoFocus: shouldShowEditorToolBar,
+                  minHeight: minHeight,
+                  placeholder: context.messages.editorPlaceholder,
+                  padding: EdgeInsets.only(
+                    top: 8,
+                    bottom: shouldShowEditorToolBar ? 16 : 0,
+                    left: shouldShowEditorToolBar ? padding : 0,
+                    right: padding,
+                  ),
+                  keyboardAppearance: Theme.of(context).brightness,
+                  customStyles: customEditorStyles(
+                    themeData: Theme.of(context),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

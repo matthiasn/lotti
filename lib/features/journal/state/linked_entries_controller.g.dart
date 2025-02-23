@@ -323,5 +323,154 @@ class _IncludeHiddenControllerProviderElement
   @override
   String get id => (origin as IncludeHiddenControllerProvider).id;
 }
+
+String _$newestLinkedIdControllerHash() =>
+    r'61d42af166607a4262d284b86caa40eec3caa728';
+
+abstract class _$NewestLinkedIdController
+    extends BuildlessAutoDisposeAsyncNotifier<String?> {
+  late final String? id;
+
+  FutureOr<String?> build({
+    required String? id,
+  });
+}
+
+/// See also [NewestLinkedIdController].
+@ProviderFor(NewestLinkedIdController)
+const newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily();
+
+/// See also [NewestLinkedIdController].
+class NewestLinkedIdControllerFamily extends Family<AsyncValue<String?>> {
+  /// See also [NewestLinkedIdController].
+  const NewestLinkedIdControllerFamily();
+
+  /// See also [NewestLinkedIdController].
+  NewestLinkedIdControllerProvider call({
+    required String? id,
+  }) {
+    return NewestLinkedIdControllerProvider(
+      id: id,
+    );
+  }
+
+  @override
+  NewestLinkedIdControllerProvider getProviderOverride(
+    covariant NewestLinkedIdControllerProvider provider,
+  ) {
+    return call(
+      id: provider.id,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'newestLinkedIdControllerProvider';
+}
+
+/// See also [NewestLinkedIdController].
+class NewestLinkedIdControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<NewestLinkedIdController,
+        String?> {
+  /// See also [NewestLinkedIdController].
+  NewestLinkedIdControllerProvider({
+    required String? id,
+  }) : this._internal(
+          () => NewestLinkedIdController()..id = id,
+          from: newestLinkedIdControllerProvider,
+          name: r'newestLinkedIdControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$newestLinkedIdControllerHash,
+          dependencies: NewestLinkedIdControllerFamily._dependencies,
+          allTransitiveDependencies:
+              NewestLinkedIdControllerFamily._allTransitiveDependencies,
+          id: id,
+        );
+
+  NewestLinkedIdControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+  }) : super.internal();
+
+  final String? id;
+
+  @override
+  FutureOr<String?> runNotifierBuild(
+    covariant NewestLinkedIdController notifier,
+  ) {
+    return notifier.build(
+      id: id,
+    );
+  }
+
+  @override
+  Override overrideWith(NewestLinkedIdController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: NewestLinkedIdControllerProvider._internal(
+        () => create()..id = id,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<NewestLinkedIdController, String?>
+      createElement() {
+    return _NewestLinkedIdControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is NewestLinkedIdControllerProvider && other.id == id;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin NewestLinkedIdControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<String?> {
+  /// The parameter `id` of this provider.
+  String? get id;
+}
+
+class _NewestLinkedIdControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<NewestLinkedIdController,
+        String?> with NewestLinkedIdControllerRef {
+  _NewestLinkedIdControllerProviderElement(super.provider);
+
+  @override
+  String? get id => (origin as NewestLinkedIdControllerProvider).id;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
