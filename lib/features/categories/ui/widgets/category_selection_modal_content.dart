@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -63,6 +63,12 @@ class CategorySelectionModalContentState
         )
         .toList();
 
+    final favoriteCategories =
+        categories.where((category) => category.favorite ?? false).toList();
+
+    final otherCategories =
+        categories.where((category) => !(category.favorite ?? false)).toList();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -96,14 +102,20 @@ class CategorySelectionModalContentState
               color: context.colorScheme.outline,
             ),
           )
-        else
-          ...filteredCategories.map(
-            (category) => SettingsCard(
+        else ...[
+          ...favoriteCategories.map(
+            (category) => CategoryTypeCard(
+              category,
               onTap: () => widget.onCategorySelected(category),
-              title: category.name,
-              leading: CategoryColorIcon(category.id),
             ),
           ),
+          ...otherCategories.map(
+            (category) => CategoryTypeCard(
+              category,
+              onTap: () => widget.onCategorySelected(category),
+            ),
+          ),
+        ],
         if (widget.initialCategoryId != null)
           SettingsCard(
             onTap: () => widget.onCategorySelected(null),
