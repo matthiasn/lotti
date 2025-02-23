@@ -39,7 +39,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.only(left: 10),
+          padding: const EdgeInsets.only(left: 5),
           child: Text(
             dfShorter.format(entry.meta.dateFrom),
             style: const TextStyle(
