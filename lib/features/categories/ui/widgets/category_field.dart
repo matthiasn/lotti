@@ -40,6 +40,7 @@ class CategoryField extends StatelessWidget {
               onSave(category);
               Navigator.pop(context);
             },
+            initialCategoryId: categoryId,
           );
         },
       );
@@ -89,9 +90,11 @@ class CategoryField extends StatelessWidget {
 class _CategorySelectionContent extends ConsumerStatefulWidget {
   const _CategorySelectionContent({
     required this.onCategorySelected,
+    this.initialCategoryId,
   });
 
   final CategoryCallback onCategorySelected;
+  final String? initialCategoryId;
 
   @override
   ConsumerState<_CategorySelectionContent> createState() =>
@@ -163,9 +166,10 @@ class _CategorySelectionContentState
           SettingsCard(
             onTap: () => _showColorPicker(searchQuery),
             title: searchQuery,
+            titleColor: context.colorScheme.outline,
             leading: Icon(
               Icons.add_circle_outline,
-              color: context.colorScheme.primary,
+              color: context.colorScheme.outline,
             ),
           )
         else
@@ -176,6 +180,16 @@ class _CategorySelectionContentState
               leading: ColorIcon(
                 colorFromCssHex(category.color),
               ),
+            ),
+          ),
+        if (widget.initialCategoryId != null)
+          SettingsCard(
+            onTap: () => widget.onCategorySelected(null),
+            title: 'clear',
+            titleColor: context.colorScheme.outline,
+            leading: Icon(
+              Icons.clear,
+              color: context.colorScheme.outline,
             ),
           ),
       ],
@@ -210,6 +224,7 @@ class CategorySelectionIconButton extends ConsumerWidget {
                 notifier.updateCategoryId(category?.id);
                 Navigator.pop(context);
               },
+              initialCategoryId: entry.categoryId,
             );
           },
         );

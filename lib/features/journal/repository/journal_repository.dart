@@ -40,6 +40,7 @@ class JournalRepository {
           meta: await persistenceLogic.updateMetadata(
             journalEntity.meta,
             categoryId: categoryId,
+            clearCategoryId: categoryId == null,
           ),
         ),
       );
