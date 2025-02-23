@@ -39,81 +39,74 @@ class AudioPlayerWidget extends ConsumerWidget {
         final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
         final cubit = context.read<AudioPlayerCubit>();
 
-        return Column(
+        return Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  iconSize: 32,
-                  tooltip: 'Play',
-                  color: (state.status == AudioPlayerStatus.playing && isActive)
-                      ? context.colorScheme.error
-                      : context.colorScheme.outline,
-                  onPressed: () {
-                    cubit
-                      ..setAudioNote(journalAudio)
-                      ..play();
-                  },
-                ),
-                IgnorePointer(
-                  ignoring: !isActive,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      IconButton(
-                        icon: const Icon(Icons.pause_rounded),
-                        iconSize: 32,
-                        tooltip: 'Pause',
-                        color: context.colorScheme.outline,
-                        onPressed: cubit.pause,
-                      ),
-                      IconButton(
-                        icon: Text(
-                          speedLabelMap[state.speed] ?? '1x',
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            fontWeight: FontWeight.bold,
-                            color: (state.speed != 1)
-                                ? context.colorScheme.error
-                                : context.colorScheme.outline,
-                          ),
-                        ),
-                        iconSize: 32,
-                        tooltip: 'Toggle speed',
-                        onPressed: () =>
-                            cubit.setSpeed(speedToggleMap[state.speed] ?? 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          children: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.play_arrow_rounded),
+              iconSize: 32,
+              tooltip: 'Play',
+              color: (state.status == AudioPlayerStatus.playing && isActive)
+                  ? context.colorScheme.error
+                  : context.colorScheme.outline,
+              onPressed: () {
+                cubit
+                  ..setAudioNote(journalAudio)
+                  ..play();
+              },
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 250,
-                  child: ProgressBar(
-                    progress: isActive ? state.progress : Duration.zero,
-                    total: journalAudio.data.duration,
-                    progressBarColor: Colors.red,
-                    baseBarColor: Colors.white.withAlpha(61),
-                    bufferedBarColor: Colors.white.withAlpha(61),
-                    thumbColor: Colors.white,
-                    barHeight: 3,
-                    thumbRadius: 5,
-                    onSeek: cubit.seek,
-                    timeLabelTextStyle: monospaceTextStyle.copyWith(
-                      color: context.colorScheme.outline,
+            IgnorePointer(
+              ignoring: !isActive,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  IconButton(
+                    icon: const Icon(Icons.pause_rounded),
+                    iconSize: 32,
+                    tooltip: 'Pause',
+                    color: context.colorScheme.outline,
+                    onPressed: cubit.pause,
+                  ),
+                  IconButton(
+                    icon: Text(
+                      speedLabelMap[state.speed] ?? '1x',
+                      style: TextStyle(
+                        fontFamily: 'Oswald',
+                        fontWeight: FontWeight.bold,
+                        color: (state.speed != 1)
+                            ? context.colorScheme.error
+                            : context.colorScheme.outline,
+                      ),
                     ),
+                    iconSize: 32,
+                    tooltip: 'Toggle speed',
+                    onPressed: () =>
+                        cubit.setSpeed(speedToggleMap[state.speed] ?? 1),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: 200,
+              child: Opacity(
+                opacity: isActive ? 1 : 0.4,
+                child: ProgressBar(
+                  progress: isActive ? state.progress : Duration.zero,
+                  total: journalAudio.data.duration,
+                  progressBarColor: Colors.red,
+                  baseBarColor: Colors.white.withAlpha(61),
+                  bufferedBarColor: Colors.white.withAlpha(61),
+                  thumbColor: Colors.white,
+                  barHeight: 3,
+                  thumbRadius: 5,
+                  onSeek: cubit.seek,
+                  timeLabelTextStyle: monospaceTextStyle.copyWith(
+                    color: context.colorScheme.outline,
                   ),
                 ),
-              ],
+              ),
             ),
           ],
         );
