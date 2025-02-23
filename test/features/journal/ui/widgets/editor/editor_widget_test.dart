@@ -53,7 +53,6 @@ void main() {
         makeTestableWidgetWithScaffold(
           EditorWidget(
             entryId: testTextEntry.meta.id,
-            autoFocus: true,
             key: key,
           ),
         ),

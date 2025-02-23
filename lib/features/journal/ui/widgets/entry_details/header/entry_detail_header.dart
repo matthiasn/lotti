@@ -6,8 +6,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -49,54 +49,58 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                if (entry is! JournalEvent)
-                  SwitchIconWidget(
-                    tooltip: context.messages.journalFavoriteTooltip,
-                    onPressed: notifier.toggleStarred,
-                    value: entry?.meta.starred ?? false,
-                    icon: Icons.star_outline_rounded,
-                    activeIcon: Icons.star_rounded,
-                    activeColor: starredGold,
-                  ),
+        Padding(
+          padding: const EdgeInsets.only(
+            top: 5,
+          ),
+          child: EntryDatetimeWidget(entryId: widget.entryId),
+        ),
+        const SizedBox.shrink(),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              if (entry is! JournalEvent)
                 SwitchIconWidget(
-                  tooltip: context.messages.journalFlaggedTooltip,
-                  onPressed: notifier.toggleFlagged,
-                  value: entry?.meta.flag == EntryFlag.import,
-                  icon: Icons.flag_outlined,
-                  activeIcon: Icons.flag,
-                  activeColor: context.colorScheme.error,
+                  tooltip: context.messages.journalFavoriteTooltip,
+                  onPressed: notifier.toggleStarred,
+                  value: entry?.meta.starred ?? false,
+                  icon: Icons.star_outline_rounded,
+                  activeIcon: Icons.star_rounded,
+                  activeColor: starredGold,
                 ),
-                if (isDesktop)
-                  AiPopUpMenu(
-                    journalEntity: entry,
-                    linkedFromId: widget.linkedFromId,
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.more_horiz),
-                  onPressed: () => ExtendedHeaderModal.show(
-                    context: context,
-                    entryId: id,
-                    inLinkedEntries: widget.inLinkedEntries,
-                    linkedFromId: widget.linkedFromId,
-                    link: widget.link,
-                  ),
+              SwitchIconWidget(
+                tooltip: context.messages.journalFlaggedTooltip,
+                onPressed: notifier.toggleFlagged,
+                value: entry?.meta.flag == EntryFlag.import,
+                icon: Icons.flag_outlined,
+                activeIcon: Icons.flag,
+                activeColor: context.colorScheme.error,
+              ),
+              if (isDesktop)
+                AiPopUpMenu(
+                  journalEntity: entry,
+                  linkedFromId: widget.linkedFromId,
                 ),
-                const SizedBox(width: 20),
-                if (entry != null &&
-                    entry is! Task &&
-                    entry is! JournalEvent &&
-                    !widget.inLinkedEntries)
-                  CategorySelectionIconButton(entry: entry),
-              ],
-            ),
+              IconButton(
+                icon: const Icon(Icons.more_horiz),
+                onPressed: () => ExtendedHeaderModal.show(
+                  context: context,
+                  entryId: id,
+                  inLinkedEntries: widget.inLinkedEntries,
+                  linkedFromId: widget.linkedFromId,
+                  link: widget.link,
+                ),
+              ),
+              const SizedBox(width: 20),
+              if (entry != null &&
+                  entry is! Task &&
+                  entry is! JournalEvent &&
+                  !widget.inLinkedEntries)
+                CategorySelectionIconButton(entry: entry),
+            ],
           ),
         ),
-        if (widget.inLinkedEntries) SaveButton(entryId: widget.entryId),
       ],
     );
   }

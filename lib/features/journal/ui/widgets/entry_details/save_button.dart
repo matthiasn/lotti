@@ -21,19 +21,16 @@ class SaveButton extends ConsumerWidget {
       curve: Curves.easeInOutQuint,
       opacity: unsaved ? 1 : 0,
       duration: const Duration(milliseconds: 500),
-      child: Padding(
-        padding: const EdgeInsets.only(right: 10),
-        child: TextButton(
-          onPressed: () {
-            ref.read(provider.notifier).save();
-            FocusManager.instance.primaryFocus?.unfocus();
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              context.messages.saveLabel,
-              style: saveButtonStyle(Theme.of(context)),
-            ),
+      child: TextButton(
+        onPressed: () {
+          ref.read(provider.notifier).save();
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            context.messages.saveLabel,
+            style: saveButtonStyle(Theme.of(context)),
           ),
         ),
       ),

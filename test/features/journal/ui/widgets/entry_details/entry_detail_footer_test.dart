@@ -6,7 +6,6 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -90,22 +89,6 @@ void main() {
       ).thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
       );
-    });
-
-    testWidgets('entry date is visible', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailFooter(
-            entryId: testTextEntry.meta.id,
-            linkedFrom: null,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final entryDateFromFinder =
-          find.text(dfShorter.format(testTextEntry.meta.dateFrom));
-      expect(entryDateFromFinder, findsOneWidget);
     });
 
     testWidgets('map is invisible when not set in cubit',
