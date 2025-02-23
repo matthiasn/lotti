@@ -15,13 +15,11 @@ class EditorWidget extends ConsumerWidget {
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 10,
-    this.autoFocus = false,
   });
 
   final String entryId;
   final double maxHeight;
   final double minHeight;
-  final bool autoFocus;
   final double padding;
 
   @override
@@ -36,15 +34,23 @@ class EditorWidget extends ConsumerWidget {
     final shouldShowEditorToolBar =
         entryState.value?.shouldShowEditorToolBar ?? false;
 
+    if (shouldShowEditorToolBar) {
+      focusNode.requestFocus();
+    }
+
     return Card(
-      color: context.colorScheme.surface.brighten(),
+      color: shouldShowEditorToolBar
+          ? context.colorScheme.surface.brighten()
+          : Colors.transparent,
       elevation: 0,
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(
         borderRadius:
             const BorderRadius.all(Radius.circular(inputBorderRadius)),
         side: BorderSide(
-          color: context.colorScheme.outline.withAlpha(100),
+          color: shouldShowEditorToolBar
+              ? context.colorScheme.outline.withAlpha(100)
+              : Colors.transparent,
         ),
       ),
       child: ConstrainedBox(
@@ -69,13 +75,13 @@ class EditorWidget extends ConsumerWidget {
                     cursorColor: context.colorScheme.onSurface,
                     selectionColor: context.colorScheme.primary.withAlpha(127),
                   ),
-                  autoFocus: autoFocus,
+                  autoFocus: shouldShowEditorToolBar,
                   minHeight: minHeight,
                   placeholder: context.messages.editorPlaceholder,
                   padding: EdgeInsets.only(
                     top: 8,
-                    bottom: 16,
-                    left: padding,
+                    bottom: shouldShowEditorToolBar ? 16 : 0,
+                    left: shouldShowEditorToolBar ? padding : 0,
                     right: padding,
                   ),
                   keyboardAppearance: Theme.of(context).brightness,

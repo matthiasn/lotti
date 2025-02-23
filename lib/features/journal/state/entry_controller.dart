@@ -41,6 +41,10 @@ class EntryController extends _$EntryController {
     _isFocused = focusNode.hasFocus;
     if (_isFocused) {
       _shouldShowEditorToolBar = true;
+    } else {
+      if (!_dirty) {
+        _shouldShowEditorToolBar = false;
+      }
     }
     emitState();
 
@@ -224,6 +228,10 @@ class EntryController extends _$EntryController {
           getIt<TimeService>().stop();
         });
       }
+
+      _shouldShowEditorToolBar = false;
+      focusNode.unfocus();
+      emitState();
     }
 
     await _editorStateService.entryWasSaved(

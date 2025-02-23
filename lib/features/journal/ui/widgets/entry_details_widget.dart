@@ -182,6 +182,7 @@ class EntryDetailsContent extends ConsumerWidget {
         EntryDetailFooter(
           entryId: itemId,
           linkedFrom: linkedFrom,
+          inLinkedEntries: linkedFrom != null,
         ),
       ],
     );
