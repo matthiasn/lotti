@@ -3,18 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
 class EntryDetailFooter extends ConsumerWidget {
   const EntryDetailFooter({
     required this.entryId,
     required this.linkedFrom,
+    this.inLinkedEntries = false,
     super.key,
   });
 
   final String entryId;
   final JournalEntity? linkedFrom;
+  final bool inLinkedEntries;
 
   @override
   Widget build(
@@ -36,11 +38,12 @@ class EntryDetailFooter extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              EntryDatetimeWidget(entryId: entry.meta.id),
+              const SizedBox(width: 100),
               DurationWidget(
                 item: entry,
                 linkedFrom: linkedFrom,
               ),
+              if (inLinkedEntries) SaveButton(entryId: entryId),
             ],
           ),
         ),
