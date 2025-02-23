@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -77,4 +78,25 @@ class IncludeHiddenController extends _$IncludeHiddenController {
   }
 
   bool get includeHidden => state;
+}
+
+@riverpod
+class NewestLinkedIdController extends _$NewestLinkedIdController {
+  @override
+  Future<String?> build({required String? id}) async {
+    if (id == null) {
+      return null;
+    }
+
+    final provider = linkedEntriesControllerProvider(id: id);
+    final entryLinks = ref.watch(provider).valueOrNull;
+
+    final newestLinkedId = entryLinks
+        ?.sortedBy((entryLink) => entryLink.createdAt)
+        .reversed
+        .firstOrNull
+        ?.toId;
+
+    return newestLinkedId;
+  }
 }
