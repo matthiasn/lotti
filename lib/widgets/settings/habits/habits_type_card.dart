@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';

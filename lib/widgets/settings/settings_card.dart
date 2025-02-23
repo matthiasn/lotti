@@ -76,20 +76,15 @@ class SettingsNavCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: backgroundColor,
-      child: ListTile(
-        contentPadding: contentPadding,
-        title: Text(
-          title,
-          semanticsLabel: semanticsLabel,
-          style: settingsCardTextStyle,
-        ),
-        subtitle: subtitle,
-        leading: leading,
-        trailing: trailing,
-        onTap: () => beamToNamed(path),
-      ),
+    return SettingsCard(
+      title: title,
+      leading: leading,
+      trailing: trailing,
+      backgroundColor: backgroundColor,
+      contentPadding: contentPadding,
+      onTap: () => beamToNamed(path),
+      subtitle: subtitle,
+      semanticsLabel: semanticsLabel,
     );
   }
 }

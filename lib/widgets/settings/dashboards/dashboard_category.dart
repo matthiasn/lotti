@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -54,7 +54,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       title: category.name,
-                      leading: ColorIcon(colorFromCssHex(category.color)),
+                      leading: CategoryColorIcon(category.id),
                     ),
                   ),
                 ],

@@ -5,7 +5,7 @@ import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
 import 'package:lotti/features/journal/state/journal_card_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/card_image_widget.dart';
