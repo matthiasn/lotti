@@ -77,35 +77,27 @@ class DurationWidget extends ConsumerWidget {
                 displayed: displayed,
               ),
               Visibility(
-                visible: isRecent && showRecordIcon,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Visibility(
-                      visible: !isRecording,
-                      child: IconButton(
-                        icon: const Icon(Icons.fiber_manual_record_sharp),
-                        iconSize: 20,
-                        tooltip: 'Record',
-                        color: context.colorScheme.error,
-                        onPressed: () {
-                          _timeService.start(item, linkedFrom);
-                        },
-                      ),
-                    ),
-                    Visibility(
-                      visible: isRecording,
-                      child: IconButton(
-                        icon: const Icon(Icons.stop),
-                        iconSize: 20,
-                        tooltip: 'Stop',
-                        color: labelColor,
-                        onPressed: () async {
-                          await saveFn(stopRecording: true);
-                        },
-                      ),
-                    ),
-                  ],
+                visible: isRecent && showRecordIcon && !isRecording,
+                child: IconButton(
+                  icon: const Icon(Icons.fiber_manual_record_sharp),
+                  iconSize: 20,
+                  tooltip: 'Record',
+                  color: context.colorScheme.error,
+                  onPressed: () {
+                    _timeService.start(item, linkedFrom);
+                  },
+                ),
+              ),
+              Visibility(
+                visible: isRecording,
+                child: IconButton(
+                  icon: const Icon(Icons.stop),
+                  iconSize: 20,
+                  tooltip: 'Stop',
+                  color: labelColor,
+                  onPressed: () async {
+                    await saveFn(stopRecording: true);
+                  },
                 ),
               ),
               const SizedBox(width: 15),
