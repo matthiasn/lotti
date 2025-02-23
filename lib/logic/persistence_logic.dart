@@ -91,6 +91,7 @@ class PersistenceLogic {
     DateTime? dateFrom,
     DateTime? dateTo,
     String? categoryId,
+    bool clearCategoryId = false,
     DateTime? deletedAt,
   }) async =>
       metadata.copyWith(
@@ -100,7 +101,7 @@ class PersistenceLogic {
         ),
         dateFrom: dateFrom ?? metadata.dateFrom,
         dateTo: dateTo ?? metadata.dateTo,
-        categoryId: categoryId ?? metadata.categoryId,
+        categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
         deletedAt: deletedAt ?? metadata.deletedAt,
       );
 
