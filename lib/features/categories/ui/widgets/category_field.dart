@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/ui/widgets/categories_type_card.dart';
-import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 typedef CategoryCallback = void Function(CategoryDefinition?);
 
@@ -35,7 +30,7 @@ class CategoryField extends StatelessWidget {
         context: context,
         title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {
-          return _CategorySelectionContent(
+          return CategorySelectionModalContent(
             onCategorySelected: (category) {
               onSave(category);
               Navigator.pop(context);
@@ -59,11 +54,7 @@ class CategoryField extends StatelessWidget {
         semanticsLabel: 'Select category',
         themeData: Theme.of(context),
       ).copyWith(
-        icon: ColorIcon(
-          category != null
-              ? colorFromCssHex(category.color)
-              : context.colorScheme.outline.withAlpha(51),
-        ),
+        icon: CategoryColorIcon(categoryId),
         suffixIcon: categoryUndefined
             ? null
             : GestureDetector(
@@ -83,153 +74,6 @@ class CategoryField extends StatelessWidget {
         border: InputBorder.none,
       ),
       style: style,
-    );
-  }
-}
-
-class _CategorySelectionContent extends ConsumerStatefulWidget {
-  const _CategorySelectionContent({
-    required this.onCategorySelected,
-    this.initialCategoryId,
-  });
-
-  final CategoryCallback onCategorySelected;
-  final String? initialCategoryId;
-
-  @override
-  ConsumerState<_CategorySelectionContent> createState() =>
-      _CategorySelectionContentState();
-}
-
-class _CategorySelectionContentState
-    extends ConsumerState<_CategorySelectionContent> {
-  final searchController = TextEditingController();
-  String searchQuery = '';
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _showColorPicker(String categoryName) async {
-    if (!mounted) return;
-
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.createCategoryTitle,
-      builder: (BuildContext context) {
-        return CategoryCreateModal(
-          initialName: categoryName,
-          onCategoryCreated: (category) {
-            widget.onCategorySelected(category);
-          },
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = getIt<EntitiesCacheService>().sortedCategories;
-    final filteredCategories = categories
-        .where(
-          (category) =>
-              category.name.toLowerCase().contains(searchQuery.toLowerCase()),
-        )
-        .toList();
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: context.messages.categorySearchPlaceholder,
-              prefixIcon: const Icon(Icons.search),
-            ),
-            onChanged: (value) {
-              setState(() {
-                searchQuery = value;
-              });
-            },
-            onSubmitted: (value) {
-              if (filteredCategories.isEmpty && value.isNotEmpty) {
-                _showColorPicker(value);
-              }
-            },
-          ),
-        ),
-        if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
-          SettingsCard(
-            onTap: () => _showColorPicker(searchQuery),
-            title: searchQuery,
-            titleColor: context.colorScheme.outline,
-            leading: Icon(
-              Icons.add_circle_outline,
-              color: context.colorScheme.outline,
-            ),
-          )
-        else
-          ...filteredCategories.map(
-            (category) => SettingsCard(
-              onTap: () => widget.onCategorySelected(category),
-              title: category.name,
-              leading: ColorIcon(
-                colorFromCssHex(category.color),
-              ),
-            ),
-          ),
-        if (widget.initialCategoryId != null)
-          SettingsCard(
-            onTap: () => widget.onCategorySelected(null),
-            title: 'clear',
-            titleColor: context.colorScheme.outline,
-            leading: Icon(
-              Icons.clear,
-              color: context.colorScheme.outline,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class CategorySelectionIconButton extends ConsumerWidget {
-  const CategorySelectionIconButton({
-    required this.entry,
-    super.key,
-  });
-
-  final JournalEntity entry;
-
-  @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    final provider = entryControllerProvider(id: entry.id);
-    final notifier = ref.read(provider.notifier);
-
-    return GestureDetector(
-      onTap: () {
-        ModalUtils.showSinglePageModal<void>(
-          context: context,
-          title: context.messages.habitCategoryLabel,
-          builder: (BuildContext _) {
-            return _CategorySelectionContent(
-              onCategorySelected: (category) {
-                notifier.updateCategoryId(category?.id);
-                Navigator.pop(context);
-              },
-              initialCategoryId: entry.categoryId,
-            );
-          },
-        );
-      },
-      child: CategoryColorIcon(entry.categoryId),
     );
   }
 }
