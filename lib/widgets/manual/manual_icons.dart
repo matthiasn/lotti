@@ -35,6 +35,7 @@ class ManualIcons extends StatelessWidget {
                   return [
                     WoltModalSheetPage(
                       hasSabGradient: false,
+                      useSafeArea: true,
                       stickyActionBar: const Padding(
                         padding: EdgeInsets.all(10),
                       ),
@@ -65,8 +66,7 @@ class ManualIcons extends StatelessWidget {
               size: 35,
             ),
           ),
-          
-           GestureDetector(
+          GestureDetector(
             onTap: () {
               WoltModalSheet.show<void>(
                 context: context,
@@ -75,9 +75,15 @@ class ManualIcons extends StatelessWidget {
                   return [
                     WoltModalSheetPage(
                       hasSabGradient: false,
-                      stickyActionBar: const Padding(
-                        padding: EdgeInsets.all(10),
+                      stickyActionBar: const Stack(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.all(10),
+                          ),
+                          Text('first'),
+                        ],
                       ),
+                      heroImage: Image.asset('assets/images/manual/addTask.png'),
                       child: Column(
                         children: [
                           ElevatedButton(
@@ -89,8 +95,11 @@ class ManualIcons extends StatelessWidget {
                           ),
                         ],
                       ),
-                     
                       isTopBarLayerAlwaysVisible: true,
+                      leadingNavBarWidget: IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.arrow_back),
+                      ),
                       trailingNavBarWidget: IconButton(
                         onPressed: Navigator.of(context).pop,
                         icon: const Icon(Icons.close),
@@ -105,7 +114,6 @@ class ManualIcons extends StatelessWidget {
               size: 35,
             ),
           ),
-          
         ],
       ),
     );

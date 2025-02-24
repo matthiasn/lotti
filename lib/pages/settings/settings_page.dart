@@ -61,10 +61,8 @@ class SettingsPage extends StatelessWidget {
               title: context.messages.settingsAdvancedTitle,
               path: '/settings/advanced',
             ),
-             SettingsNavCard(
-              title: context.messages.settingsManualTitle,
-              path: '/settings/manual',
-            ),
+            
+            const ManualList(),
            
           ],
         ),

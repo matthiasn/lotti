@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/manual/manual_icons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -9,10 +8,10 @@ class ManualPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverBoxAdapterPage(
-      title: 'Lotti Manual',
-      showBackButton: true,
-      child: Expanded(
+
+    
+      return Expanded(
+        
         child: Column(
           children: [
             Container(
@@ -21,16 +20,15 @@ class ManualPage extends StatelessWidget {
                 '''
 Lotti is a behavioral monitoring and journaling app that lets you keep track of anything you can measure. 
 Measurements could, for example, include tracking exercises, plus imported data from Apple Health or the equivalent on Android. 
-In terms of behavior, you can monitor habits, e.g. such that are related to measurables. 
-This could be the intake of medication, numbers of repetitions of an exercise, 
+In terms of behavior, you can monitor habits, e.g. such that are related to measurables. This could be the intake of medication, numbers of repetitions of an exercise, 
 the amount of water you drink, the amount of fiber you ingest, you name it. 
-Anything you can imagine. If you create a habit, you can assign any dashboard you want, and then by 
-the time you want to complete a habit, look at the data and determine at a quick glance of the 
-conditions are indeed met for successful completion.
+Anything you can imagine. 
+If you create a habit, you can assign any dashboard you want,and then by the time you want to complete a habit, look
+at the data and determine at a quick glance of the conditions are indeed met for successful completion.
               ''',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 15,
                 ),
                 textAlign: TextAlign.left,
               ),
@@ -482,7 +480,6 @@ conditions are indeed met for successful completion.
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
