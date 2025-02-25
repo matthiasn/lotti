@@ -60,6 +60,12 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
+              if (entry != null &&
+                  entry is! Task &&
+                  entry is! JournalEvent &&
+                  !widget.inLinkedEntries)
+                CategorySelectionIconButton(entry: entry),
+              const SizedBox(width: 10),
               if (entry is! JournalEvent)
                 SwitchIconWidget(
                   tooltip: context.messages.journalFavoriteTooltip,
@@ -92,12 +98,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   link: widget.link,
                 ),
               ),
-              const SizedBox(width: 20),
-              if (entry != null &&
-                  entry is! Task &&
-                  entry is! JournalEvent &&
-                  !widget.inLinkedEntries)
-                CategorySelectionIconButton(entry: entry),
             ],
           ),
         ),
