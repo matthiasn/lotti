@@ -63,11 +63,13 @@ class CategorySelectionModalContentState
         )
         .toList();
 
-    final favoriteCategories =
-        categories.where((category) => category.favorite ?? false).toList();
+    final favoriteCategories = filteredCategories
+        .where((category) => category.favorite ?? false)
+        .toList();
 
-    final otherCategories =
-        categories.where((category) => !(category.favorite ?? false)).toList();
+    final otherCategories = filteredCategories
+        .where((category) => !(category.favorite ?? false))
+        .toList();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
