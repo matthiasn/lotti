@@ -71,10 +71,6 @@ class EntryDetailsWidget extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            item.maybeMap(
-              journalImage: EntryImageWidget.new,
-              orElse: () => const SizedBox.shrink(),
-            ),
             EntryDetailsContent(
               itemId,
               linkedFrom: linkedFrom,
@@ -138,6 +134,10 @@ class EntryDetailsContent extends ConsumerWidget {
           link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
+        item.maybeMap(
+          journalImage: EntryImageWidget.new,
+          orElse: () => const SizedBox.shrink(),
+        ),
         item.maybeMap(
           task: (_) => const SizedBox.shrink(),
           event: (_) => const SizedBox.shrink(),
