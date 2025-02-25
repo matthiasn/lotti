@@ -317,7 +317,7 @@ final testTask = Task(
     ),
     title: 'Add tests for journal page',
     statusHistory: [],
-    dateTo: DateTime(2022, 7, 7, 11),
+    dateTo: DateTime(2022, 7, 7, 9),
     dateFrom: DateTime(2022, 7, 7, 9),
     estimate: const Duration(hours: 4),
   ),
