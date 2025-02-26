@@ -39,11 +39,15 @@ class EntryDetailFooter extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(width: 100),
-              DurationWidget(
-                item: entry,
-                linkedFrom: linkedFrom,
-              ),
-              if (inLinkedEntries) SaveButton(entryId: entryId),
+              if (entry is! Task)
+                DurationWidget(
+                  item: entry,
+                  linkedFrom: linkedFrom,
+                ),
+              if (inLinkedEntries)
+                SaveButton(entryId: entryId)
+              else
+                const SizedBox(width: 60),
             ],
           ),
         ),
