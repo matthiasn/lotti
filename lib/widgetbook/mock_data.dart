@@ -15,7 +15,7 @@ final checklistItem2 = ChecklistItem(
   meta: createMetadata(uuid.v4()),
   data: const ChecklistItemData(
     title: 'release iOS',
-    isChecked: false,
+    isChecked: true,
     linkedChecklists: [],
   ),
 );
@@ -24,6 +24,15 @@ final checklistItem3 = ChecklistItem(
   meta: createMetadata(uuid.v4()),
   data: const ChecklistItemData(
     title: 'release macOS',
+    isChecked: false,
+    linkedChecklists: [],
+  ),
+);
+
+final checklistItem4 = ChecklistItem(
+  meta: createMetadata(uuid.v4()),
+  data: const ChecklistItemData(
+    title: 'merge PR',
     isChecked: false,
     linkedChecklists: [],
   ),
