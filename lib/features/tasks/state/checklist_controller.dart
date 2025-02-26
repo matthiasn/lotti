@@ -184,7 +184,9 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
   ChecklistCompletionController();
 
   @override
-  Future<double> build({required String id}) async {
+  Future<({int completedCount, int totalCount})> build({
+    required String id,
+  }) async {
     final checklistData =
         ref.watch(checklistControllerProvider(id: id)).value?.data;
 
@@ -197,6 +199,24 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
     final totalCount = linkedChecklistItems.length;
     final completedCount =
         linkedChecklistItems.where((item) => item.data.isChecked).length;
+
+    return (
+      completedCount: completedCount,
+      totalCount: totalCount,
+    );
+  }
+}
+
+@riverpod
+class ChecklistCompletionRateController
+    extends _$ChecklistCompletionRateController {
+  ChecklistCompletionRateController();
+
+  @override
+  Future<double> build({required String id}) async {
+    final res = ref.watch(checklistCompletionControllerProvider(id: id)).value;
+    final totalCount = res?.totalCount ?? 0;
+    final completedCount = res?.completedCount ?? 0;
 
     return totalCount == 0 ? 0.0 : completedCount / totalCount;
   }

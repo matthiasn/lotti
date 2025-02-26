@@ -17,6 +17,8 @@ class ChecklistWidget extends StatefulWidget {
     required this.completionRate,
     required this.id,
     required this.updateItemOrder,
+    required this.totalCount,
+    required this.completedCount,
     this.onDelete,
     super.key,
   });
@@ -30,6 +32,8 @@ class ChecklistWidget extends StatefulWidget {
       updateItemOrder;
   final double completionRate;
   final VoidCallback? onDelete;
+  final int totalCount;
+  final int completedCount;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -81,25 +85,34 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             },
           ),
         ),
-        secondChild: Row(
+        secondChild: Column(
           children: [
-            Flexible(
-              child: Text(
-                widget.title,
-                softWrap: true,
-                maxLines: 3,
-              ),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    softWrap: true,
+                    maxLines: 3,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isEditing = !_isEditing;
+                    });
+                  },
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  _isEditing = !_isEditing;
-                });
-              },
+            ProgressBar(
+              completionRate: widget.completionRate,
+              totalCount: widget.totalCount,
+              completedCount: widget.completedCount,
             ),
           ],
         ),
@@ -110,18 +123,14 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
         Row(
           children: [
             const SizedBox(width: 20),
-            Flexible(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  minHeight: 5,
-                  color: successColor,
-                  backgroundColor: successColor.desaturate().withAlpha(77),
-                  value: widget.completionRate,
-                  semanticsLabel: 'Checklist progress',
+            if (_isEditing)
+              Flexible(
+                child: ProgressBar(
+                  completionRate: widget.completionRate,
+                  totalCount: widget.totalCount,
+                  completedCount: widget.completedCount,
                 ),
               ),
-            ),
             if (_isEditing)
               IconButton(
                 padding: EdgeInsets.zero,
@@ -208,6 +217,47 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                 key: Key('$itemId${widget.id}$index'),
               );
             },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ProgressBar extends StatelessWidget {
+  const ProgressBar({
+    required this.completionRate,
+    required this.completedCount,
+    required this.totalCount,
+    super.key,
+  });
+
+  final double completionRate;
+  final int completedCount;
+  final int totalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              minHeight: 5,
+              color: successColor,
+              backgroundColor: successColor.desaturate().withAlpha(77),
+              value: completionRate,
+              semanticsLabel: 'Checklist progress',
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '$completedCount/$totalCount',
+          style: TextStyle(
+            color: successColor,
+            fontSize: fontSizeMedium,
           ),
         ),
       ],
