@@ -87,7 +87,7 @@ dependencies:
   google_fonts: ^6.1.0
 
   #health: ^4.4.0
-  gpt_markdown: ^1.0.6
+  gpt_markdown: ^1.0.11
   graphic: ^2.3.0
   health:
     git:
