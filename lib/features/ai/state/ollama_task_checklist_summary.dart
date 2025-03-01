@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -52,7 +50,7 @@ class AiTaskChecklistSummaryController
         'Note any learnings or insights that can be drawn from the task, if any. '
         'Note that the logbook is in reverse chronological order. '
         'Keep it short and succinct. '
-        'At the end of the response, add an unordered markdown list of '
+        'At the end of the response, add a list of '
         'TODOs/checklist items that are new and not already tracked, where '
         'each item is prefixed with the String "TODO: ". ';
 
@@ -92,30 +90,6 @@ class AiTaskChecklistSummaryController
       dateFrom: start,
       linkedId: id,
       categoryId: entry?.categoryId,
-    );
-
-    final exp = RegExp(
-      r'(\[[^[]*\])',
-      multiLine: true,
-    );
-
-    final match = exp.firstMatch(response);
-    print('match $match');
-    final responseList = json.decode(match?.group(0) ?? '[]') as List<dynamic>;
-    print('responseList $responseList');
-
-    final checklistItems = responseList.map((e) {
-      print(e);
-      return ChecklistItemData(
-        // ignore: avoid_dynamic_calls
-        title: e['title'] as String,
-        isChecked: false,
-        linkedChecklists: [],
-      );
-    }).toList();
-
-    state = state.copyWith(
-      checklistItems: checklistItems,
     );
   }
 }
