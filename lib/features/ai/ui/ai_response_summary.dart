@@ -197,6 +197,7 @@ class _NewChecklistItemWidgetState
           onPressed: () {
             ref.read(checklistRepositoryProvider).createChecklist(
                   taskId: widget.linkedFromId,
+                  title: 'AI generated checklist',
                   items: checklistItems.where(_selected.contains).toList(),
                 );
 
