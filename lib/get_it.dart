@@ -11,7 +11,6 @@ import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
-import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -42,7 +41,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<TimeService>(TimeService())
     ..registerSingleton<OutboxService>(OutboxService())
     ..registerSingleton<MatrixService>(MatrixService())
-    ..registerSingleton<AiLogic>(AiLogic())
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(HealthImport())
