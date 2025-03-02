@@ -9,6 +9,7 @@ class ChecklistItemData with _$ChecklistItemData {
     required String title,
     required bool isChecked,
     required List<String> linkedChecklists,
+    String? id,
   }) = _ChecklistItemData;
 
   factory ChecklistItemData.fromJson(Map<String, dynamic> json) =>

@@ -23,6 +23,7 @@ class ChecklistRepository {
   Future<JournalEntity?> createChecklist({
     required String? taskId,
     List<ChecklistItemData>? items,
+    String? title,
   }) async {
     try {
       if (taskId == null) {
@@ -41,7 +42,7 @@ class ChecklistRepository {
       final newChecklist = Checklist(
         meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistData(
-          title: task.data.title,
+          title: title ?? task.data.title,
           linkedChecklistItems: [],
           linkedTasks: [task.id],
         ),
