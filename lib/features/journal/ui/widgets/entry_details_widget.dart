@@ -130,7 +130,7 @@ class EntryDetailsContent extends ConsumerWidget {
         EntryDetailHeader(
           entryId: itemId,
           inLinkedEntries: linkedFrom != null,
-          linkedFromId: linkedFrom?.meta.id,
+          linkedFromId: linkedFrom?.id,
           link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
@@ -170,7 +170,10 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           journalEntry: (_) => const SizedBox.shrink(),
           journalImage: (_) => const SizedBox.shrink(),
-          aiResponse: AiResponseSummary.new,
+          aiResponse: (aiResponse) => AiResponseSummary(
+            aiResponse,
+            linkedFromId: linkedFrom?.id,
+          ),
           checklist: (checklist) => ChecklistWrapper(
             entryId: checklist.meta.id,
           ),
