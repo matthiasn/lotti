@@ -19,7 +19,6 @@ import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -43,15 +42,10 @@ void main() {
 
   final mockNotificationService = MockNotificationService();
   final mockUpdateNotifications = MockUpdateNotifications();
-  final mockAiLogic = MockAiLogic();
   final mockFts5Db = MockFts5Db();
 
   group('Database Tests - ', () {
     var vcMockNext = '1';
-
-    when(() => mockAiLogic.embed(any())).thenAnswer(
-      (_) async {},
-    );
 
     setUpAll(() async {
       setFakeDocumentsPath();
@@ -106,7 +100,6 @@ void main() {
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
-        ..registerSingleton<AiLogic>(mockAiLogic)
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)

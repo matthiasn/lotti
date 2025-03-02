@@ -16,7 +16,6 @@ import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
-import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -121,8 +120,6 @@ class MockHealthImport extends Mock implements HealthImport {}
 class MockSecureStorage extends Mock implements SecureStorage {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockAiLogic extends Mock implements AiLogic {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 
