@@ -7,7 +7,7 @@ part of 'ollama_task_checklist_summary.dart';
 // **************************************************************************
 
 String _$aiTaskChecklistSummaryControllerHash() =>
-    r'c71e4d13a4ad5c4d99b8a3cdea3af76c35506fd1';
+    r'97360e0a49694226499e0497d689e07990dce820';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$AiTaskChecklistSummaryController
-    extends BuildlessAutoDisposeNotifier<SummaryChecklistState> {
+    extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
 
-  SummaryChecklistState build({
+  String build({
     required String id,
   });
 }
@@ -45,8 +45,7 @@ const aiTaskChecklistSummaryControllerProvider =
     AiTaskChecklistSummaryControllerFamily();
 
 /// See also [AiTaskChecklistSummaryController].
-class AiTaskChecklistSummaryControllerFamily
-    extends Family<SummaryChecklistState> {
+class AiTaskChecklistSummaryControllerFamily extends Family<String> {
   /// See also [AiTaskChecklistSummaryController].
   const AiTaskChecklistSummaryControllerFamily();
 
@@ -86,7 +85,7 @@ class AiTaskChecklistSummaryControllerFamily
 /// See also [AiTaskChecklistSummaryController].
 class AiTaskChecklistSummaryControllerProvider
     extends AutoDisposeNotifierProviderImpl<AiTaskChecklistSummaryController,
-        SummaryChecklistState> {
+        String> {
   /// See also [AiTaskChecklistSummaryController].
   AiTaskChecklistSummaryControllerProvider({
     required String id,
@@ -117,7 +116,7 @@ class AiTaskChecklistSummaryControllerProvider
   final String id;
 
   @override
-  SummaryChecklistState runNotifierBuild(
+  String runNotifierBuild(
     covariant AiTaskChecklistSummaryController notifier,
   ) {
     return notifier.build(
@@ -142,8 +141,8 @@ class AiTaskChecklistSummaryControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<AiTaskChecklistSummaryController,
-      SummaryChecklistState> createElement() {
+  AutoDisposeNotifierProviderElement<AiTaskChecklistSummaryController, String>
+      createElement() {
     return _AiTaskChecklistSummaryControllerProviderElement(this);
   }
 
@@ -164,14 +163,14 @@ class AiTaskChecklistSummaryControllerProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin AiTaskChecklistSummaryControllerRef
-    on AutoDisposeNotifierProviderRef<SummaryChecklistState> {
+    on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
 class _AiTaskChecklistSummaryControllerProviderElement
     extends AutoDisposeNotifierProviderElement<AiTaskChecklistSummaryController,
-        SummaryChecklistState> with AiTaskChecklistSummaryControllerRef {
+        String> with AiTaskChecklistSummaryControllerRef {
   _AiTaskChecklistSummaryControllerProviderElement(super.provider);
 
   @override

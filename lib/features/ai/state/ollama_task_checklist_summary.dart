@@ -4,7 +4,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
-import 'package:lotti/features/ai/state/summary_checklist_state.dart';
 import 'package:lotti/features/ai/state/task_markdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -18,11 +17,11 @@ class AiTaskChecklistSummaryController
   final JournalDb _db = getIt<JournalDb>();
 
   @override
-  SummaryChecklistState build({
+  String build({
     required String id,
   }) {
     summarizeEntry();
-    return const SummaryChecklistState();
+    return '';
   }
 
   Future<void> summarizeEntry() async {
@@ -68,9 +67,7 @@ class AiTaskChecklistSummaryController
 
     await for (final chunk in stream) {
       buffer.write(chunk.text);
-      state = state.copyWith(
-        summary: buffer.toString(),
-      );
+      state = buffer.toString();
     }
 
     final completeResponse = buffer.toString();

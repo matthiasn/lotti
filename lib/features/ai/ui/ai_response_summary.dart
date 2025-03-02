@@ -110,7 +110,8 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                         child: GptMarkdown(aiResponse.data.response),
                       ),
                       NewChecklistItemWidget(
-                          response: aiResponse.data.response),
+                        response: aiResponse.data.response,
+                      ),
                     ],
                   ),
                 ),
