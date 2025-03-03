@@ -39,7 +39,7 @@ class EntryDetailFooter extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(width: 100),
-              if (entry is! Task)
+               if (entry is JournalEntry)
                 DurationWidget(
                   item: entry,
                   linkedFrom: linkedFrom,
