@@ -1,0 +1,4 @@
+module Hub {
+header "Hub-Swift.h"
+export *
+}

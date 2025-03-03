@@ -1,0 +1,55 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TensorUtils-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TensorUtils-master.d",
+    "diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TensorUtils-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TensorUtils-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TensorUtils-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TensorUtils-master.swiftdeps"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/LogitsWarper/LogitsProcessor.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/LogitsProcessor.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/LogitsProcessor.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/LogitsProcessor.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/LogitsWarper/LogitsWarper.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/LogitsWarper.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/LogitsWarper.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/LogitsWarper.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/LogitsWarper/RepetitionPenaltyWarper.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/RepetitionPenaltyWarper.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/RepetitionPenaltyWarper.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/RepetitionPenaltyWarper.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/LogitsWarper/TemperatureLogitsWarper.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TemperatureLogitsWarper.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TemperatureLogitsWarper.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TemperatureLogitsWarper.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/LogitsWarper/TopKLogitsWarper.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TopKLogitsWarper.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TopKLogitsWarper.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TopKLogitsWarper.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/LogitsWarper/TopPLogitsWarper.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TopPLogitsWarper.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TopPLogitsWarper.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/TopPLogitsWarper.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/MLMultiArray+Utils.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/MLMultiArray+Utils.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/MLMultiArray+Utils.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/MLMultiArray+Utils.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/MLShapedArray+Utils.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/MLShapedArray+Utils.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/MLShapedArray+Utils.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/MLShapedArray+Utils.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/TensorUtils/Math.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/Math.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/Math.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/TensorUtils.build/Objects-normal/x86_64/Math.o"
+  }
+}

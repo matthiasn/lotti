@@ -1,0 +1,30 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-master.d",
+    "diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-master.swiftdeps"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Hub/Downloader.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Downloader.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Downloader.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Downloader.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Hub/Hub.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Hub/HubApi.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/HubApi.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/HubApi.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/HubApi.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/resource_bundle_accessor.o"
+  }
+}

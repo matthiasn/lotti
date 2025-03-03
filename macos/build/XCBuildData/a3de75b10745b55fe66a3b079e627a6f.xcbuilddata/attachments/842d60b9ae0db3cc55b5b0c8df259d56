@@ -1,0 +1,35 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/Runner-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/Runner-master.d",
+    "diagnostics" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/Runner-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/Runner-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/Runner-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/Runner-master.swiftdeps"
+  },
+  "/Users/gcj/lotti/darwin/WhisperKitRunner.swift" : {
+    "index-unit-output-path" : "/Runner.build/Release/Runner.build/Objects-normal/x86_64/WhisperKitRunner.o",
+    "llvm-bc" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/WhisperKitRunner.bc",
+    "object" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/WhisperKitRunner.o"
+  },
+  "/Users/gcj/lotti/macos/Flutter/GeneratedPluginRegistrant.swift" : {
+    "index-unit-output-path" : "/Runner.build/Release/Runner.build/Objects-normal/x86_64/GeneratedPluginRegistrant.o",
+    "llvm-bc" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/GeneratedPluginRegistrant.bc",
+    "object" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/GeneratedPluginRegistrant.o"
+  },
+  "/Users/gcj/lotti/macos/Runner/AppDelegate.swift" : {
+    "index-unit-output-path" : "/Runner.build/Release/Runner.build/Objects-normal/x86_64/AppDelegate.o",
+    "llvm-bc" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/AppDelegate.bc",
+    "object" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/AppDelegate.o"
+  },
+  "/Users/gcj/lotti/macos/Runner/MainFlutterWindow.swift" : {
+    "index-unit-output-path" : "/Runner.build/Release/Runner.build/Objects-normal/x86_64/MainFlutterWindow.o",
+    "llvm-bc" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/MainFlutterWindow.bc",
+    "object" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/MainFlutterWindow.o"
+  },
+  "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/Runner.build/Release/Runner.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/gcj/lotti/macos/build/Runner.build/Release/Runner.build/Objects-normal/x86_64/GeneratedAssetSymbols.o"
+  }
+}

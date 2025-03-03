@@ -1,0 +1,4 @@
+module Generation {
+header "Generation-Swift.h"
+export *
+}

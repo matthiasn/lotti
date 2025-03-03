@@ -35,19 +35,19 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Obtain location for journal entries</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Obtain location for journal entries</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Obtain location for journal entries</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Obtain location for journal entries</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record audio notes</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import photos and videos</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSMicrophoneUsageDescription</key>
-    <string>Record audio notes</string>
 </dict>
 </plist>
