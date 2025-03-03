@@ -15,11 +15,8 @@ class LatestAiSummary extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final latestSummary = ref
-        .watch(
-          latestSummaryControllerProvider(id: itemId),
-        )
-        .valueOrNull;
+    final latestSummary =
+        ref.watch(latestSummaryControllerProvider(id: itemId)).valueOrNull;
 
     if (latestSummary == null) {
       return const SizedBox.shrink();
@@ -29,9 +26,8 @@ class LatestAiSummary extends ConsumerWidget {
       children: [
         Text(
           'AI Summary',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.outline,
-              ),
+          style: context.textTheme.titleSmall
+              ?.copyWith(color: context.colorScheme.outline),
         ),
         const SizedBox(height: 10),
         EntryDetailsWidget(
