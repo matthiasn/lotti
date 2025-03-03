@@ -19,7 +19,7 @@ class ManualContentRow extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
-          isTopBarLayerAlwaysVisible: true,
+          isTopBarLayerAlwaysVisible: false,
           trailingNavBarWidget: IconButton(
             onPressed: Navigator.of(context).pop,
             icon: const Icon(Icons.close),
@@ -41,7 +41,7 @@ class ManualContentRow extends StatelessWidget {
     );
 
     final questionIcon = IconButton(
-      icon: const Icon(Icons.help_outline, color: Colors.blue, size: 24),
+      icon: const Icon(Icons.help_outline, color: Colors.blue, size: 26),
       onPressed: () => _showModalSheet(context),
     );
     return Padding(
