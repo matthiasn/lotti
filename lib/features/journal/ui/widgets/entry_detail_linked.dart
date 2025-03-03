@@ -36,7 +36,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
           children: [
             Text(
               context.messages.journalLinkedEntriesLabel,
-              style: TextStyle(color: color),
+              style: context.textTheme.titleSmall?.copyWith(color: color),
             ),
             IconButton(
               icon: Icon(Icons.filter_list, color: color),
