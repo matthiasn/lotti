@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/speech/ui/pages/record_audio_page.dart';
 import 'package:lotti/utils/uuid.dart';
 
+
 class TasksLocation extends BeamLocation<BeamState> {
   TasksLocation(RouteInformation super.routeInformation);
 

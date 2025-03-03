@@ -16,6 +16,8 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:showcaseview/showcaseview.dart';
+
 
 class EntryDetailPage extends ConsumerStatefulWidget {
   const EntryDetailPage({
@@ -33,6 +35,7 @@ class EntryDetailPage extends ConsumerStatefulWidget {
 
 class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
   final _scrollController = ScrollController();
+  final GlobalKey add = GlobalKey();
 
   @override
   void initState() {
@@ -47,8 +50,13 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
             ),
       );
 
+      WidgetsBinding.instance.addPostFrameCallback((timestamp) {
+      ShowCaseWidget.of(context).startShowCase([add]);
+    });
+
     super.initState();
   }
+
 
   @override
   Widget build(BuildContext context) {

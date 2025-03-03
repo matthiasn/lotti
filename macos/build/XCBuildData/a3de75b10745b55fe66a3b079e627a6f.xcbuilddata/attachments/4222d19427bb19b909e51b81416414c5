@@ -1,0 +1,20 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/Models-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/Models-master.d",
+    "diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/Models-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/Models-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/Models-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/Models-master.swiftdeps"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Models/LanguageModel.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/LanguageModel.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/LanguageModel.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/LanguageModel.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Models/LanguageModelTypes.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/LanguageModelTypes.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/LanguageModelTypes.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Models.build/Objects-normal/x86_64/LanguageModelTypes.o"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation-master.d",
+    "diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation-master.swiftdeps"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Generation/Generation.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/Generation.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Generation/GenerationConfig.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/GenerationConfig.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/GenerationConfig.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Generation.build/Objects-normal/x86_64/GenerationConfig.o"
+  }
+}

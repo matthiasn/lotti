@@ -1,0 +1,70 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizers-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizers-master.d",
+    "diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizers-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizers-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizers-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizers-master.swiftdeps"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/BPETokenizer.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/BPETokenizer.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/BPETokenizer.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/BPETokenizer.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/BertTokenizer.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/BertTokenizer.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/BertTokenizer.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/BertTokenizer.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/ByteEncoder.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/ByteEncoder.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/ByteEncoder.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/ByteEncoder.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/Decoder.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Decoder.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Decoder.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Decoder.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/Normalizer.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Normalizer.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Normalizer.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Normalizer.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/PostProcessor.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/PostProcessor.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/PostProcessor.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/PostProcessor.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/PreTokenizer.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/PreTokenizer.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/PreTokenizer.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/PreTokenizer.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/TokenLattice.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/TokenLattice.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/TokenLattice.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/TokenLattice.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/Tokenizer.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizer.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizer.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Tokenizer.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/Trie.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Trie.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Trie.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Trie.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/UnigramTokenizer.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/UnigramTokenizer.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/UnigramTokenizer.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/UnigramTokenizer.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/Sources/Tokenizers/Utils.swift" : {
+    "index-unit-output-path" : "/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Utils.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Utils.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/swift-transformers/build/swift-transformers.build/Release/Tokenizers.build/Objects-normal/x86_64/Utils.o"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "" : {
+    "const-values" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit-master.swiftconstvalues",
+    "dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit-master.d",
+    "diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit-master.dia",
+    "emit-module-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit-master-emit-module.dia",
+    "swift-dependencies" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit-master.swiftdeps"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Audio/AudioChunker.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioChunker.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioChunker.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioChunker.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Audio/AudioProcessor.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioProcessor.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioProcessor.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioProcessor.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Audio/AudioStreamTranscriber.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioStreamTranscriber.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioStreamTranscriber.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioStreamTranscriber.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Audio/EnergyVAD.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/EnergyVAD.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/EnergyVAD.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/EnergyVAD.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Audio/VoiceActivityDetector.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/VoiceActivityDetector.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/VoiceActivityDetector.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/VoiceActivityDetector.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/AudioEncoder.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioEncoder.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioEncoder.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/AudioEncoder.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Configurations.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Configurations.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Configurations.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Configurations.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/FeatureExtractor.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/FeatureExtractor.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/FeatureExtractor.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/FeatureExtractor.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Models.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Models.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Models.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Models.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/ResultWriter.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/ResultWriter.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/ResultWriter.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/ResultWriter.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Text/LogitsFilter.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/LogitsFilter.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/LogitsFilter.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/LogitsFilter.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Text/SegmentSeeker.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/SegmentSeeker.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/SegmentSeeker.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/SegmentSeeker.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Text/TokenSampler.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TokenSampler.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TokenSampler.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TokenSampler.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/TextDecoder.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TextDecoder.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TextDecoder.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TextDecoder.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/TranscribeTask.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TranscribeTask.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TranscribeTask.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/TranscribeTask.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Utils/Concurrency.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Concurrency.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Concurrency.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Concurrency.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/Utils/Utils.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Utils.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Utils.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/Utils.o"
+  },
+  "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/Sources/WhisperKit/Core/WhisperKit.swift" : {
+    "index-unit-output-path" : "/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit.o",
+    "llvm-bc" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit.bc",
+    "object" : "/Users/gcj/Library/Developer/Xcode/DerivedData/Runner-eiwaodcsghmkptfnpepmcuzctooh/SourcePackages/checkouts/whisperkit/build/whisperkit.build/Release/WhisperKit.build/Objects-normal/arm64/WhisperKit.o"
+  }
+}
