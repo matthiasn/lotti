@@ -12,10 +12,9 @@ class LatestSummaryController extends _$LatestSummaryController {
   Future<AiResponseEntry?> build({
     required String id,
   }) async {
-    final linked =
-        await ref.read(journalRepositoryProvider).getLinkedToEntities(
-              linkedTo: id,
-            );
+    final linked = await ref.read(journalRepositoryProvider).getLinkedEntities(
+          linkedTo: id,
+        );
 
     final latestAiEntry =
         linked.whereType<AiResponseEntry>().toList().firstOrNull;

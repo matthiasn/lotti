@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 class ChecklistsWidget extends ConsumerStatefulWidget {
@@ -37,21 +38,21 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
+    final color = context.colorScheme.outline;
 
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(context.messages.checklistsTitle),
-            Showcase(
-              key: _checklistKey,
-              description: 'Add a checklist',
-              child: IconButton(
-                tooltip: context.messages.addActionAddChecklist,
-                onPressed: () => createChecklist(task: widget.task, ref: ref),
-                icon: const Icon(Icons.add_rounded),
-              ),
+            Text(
+              context.messages.checklistsTitle,
+              style: context.textTheme.titleSmall?.copyWith(color: color),
+            ),
+            IconButton(
+              tooltip: context.messages.addActionAddChecklist,
+              onPressed: () => createChecklist(task: widget.task, ref: ref),
+              icon: Icon(Icons.add_rounded, color: color),
             ),
             IconButton(
               tooltip: context.messages.addActionAddChecklist,
@@ -60,7 +61,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                   _isEditing = !_isEditing;
                 });
               },
-              icon: const Icon(Icons.reorder),
+              icon: Icon(Icons.reorder, color: color),
             ),
             GestureDetector(
               onTap: () {
