@@ -33,8 +33,32 @@ class AiResponseSummary extends StatelessWidget {
             },
           );
         },
-        child: SelectionArea(
-          child: GptMarkdown(aiResponse.data.response),
+        child: ShaderMask(
+          shaderCallback: (rect) {
+            return const LinearGradient(
+              begin: Alignment.center,
+              end: Alignment.bottomCenter,
+              stops: [0.3, 1.0],
+              colors: [
+                Colors.black,
+                Colors.transparent,
+              ],
+            ).createShader(
+              Rect.fromLTRB(
+                0,
+                0,
+                rect.width,
+                rect.height,
+              ),
+            );
+          },
+          blendMode: BlendMode.dstIn,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: SelectionArea(
+              child: GptMarkdown(aiResponse.data.response),
+            ),
+          ),
         ),
       ),
     );
