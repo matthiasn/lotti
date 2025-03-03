@@ -21,6 +21,7 @@ class LinkedEntriesController extends _$LinkedEntriesController {
         _updateNotifications.updateStream.listen((affectedIds) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
         final includeHidden = ref.read(includeHiddenControllerProvider(id: id));
+
         _fetch(includeHidden: includeHidden).then((latest) {
           if (latest != state.value) {
             state = AsyncData(latest);
@@ -39,13 +40,17 @@ class LinkedEntriesController extends _$LinkedEntriesController {
       ..cacheFor(entryCacheDuration);
 
     final includeHidden = ref.watch(includeHiddenControllerProvider(id: id));
-    final res = await _fetch(includeHidden: includeHidden);
+    final res = await _fetch(
+      includeHidden: includeHidden,
+    );
     watchedIds.add(id);
     listen();
     return res;
   }
 
-  Future<List<EntryLink>> _fetch({required bool includeHidden}) async {
+  Future<List<EntryLink>> _fetch({
+    required bool includeHidden,
+  }) async {
     final res = await ref.read(journalRepositoryProvider).getLinksFromId(
           id,
           includeHidden: includeHidden,
@@ -78,6 +83,20 @@ class IncludeHiddenController extends _$IncludeHiddenController {
   }
 
   bool get includeHidden => state;
+}
+
+@riverpod
+class IncludeAiEntriesController extends _$IncludeAiEntriesController {
+  @override
+  bool build({required String id}) {
+    return false;
+  }
+
+  set includeAiEntries(bool value) {
+    state = value;
+  }
+
+  bool get includeAiEntries => state;
 }
 
 @riverpod

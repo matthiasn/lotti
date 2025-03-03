@@ -37,6 +37,7 @@ class LatestAiSummary extends ConsumerWidget {
         EntryDetailsWidget(
           itemId: latestSummary.id,
           popOnDelete: false,
+          showAiEntry: true,
         ),
       ],
     );
