@@ -91,6 +91,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                       itemId: widget.itemId,
                       popOnDelete: true,
                       showTaskDetails: true,
+                      showAiEntry: true,
                     ),
                     LatestAiSummary(itemId: widget.itemId),
                     LinkedEntriesWidget(item),
