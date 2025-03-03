@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -15,6 +18,15 @@ Future<void> importImageAssets(
   String? linkedId,
   String? categoryId,
 }) async {
+  final ps = await PhotoManager.requestPermissionExtend();
+  if (!ps.isAuth) {
+    return;
+  }
+
+  if (!context.mounted) {
+    return;
+  }
+
   final assets = await AssetPicker.pickAssets(
     context,
     pickerConfig: const AssetPickerConfig(
@@ -84,4 +96,74 @@ Future<void> importImageAssets(
       }
     }
   }
+}
+
+Future<void> importDroppedImages({
+  required DropDoneDetails data,
+  String? linkedId,
+  String? categoryId,
+}) async {
+  for (final file in data.files) {
+    final lastModified = await file.lastModified();
+    final id = uuid.v1();
+    final srcPath = file.path;
+    final fileExtension = file.name.split('.').last.toLowerCase();
+
+    if (!{'jpg', 'jpeg', 'png'}.contains(fileExtension)) {
+      return;
+    }
+
+    final day = DateFormat('yyyy-MM-dd').format(lastModified);
+    final relativePath = '/images/$day/';
+    final directory = await createAssetDirectory(relativePath);
+    final targetFileName = '$id.$fileExtension';
+    final targetFilePath = '$directory$targetFileName';
+
+    await File(srcPath).copy(targetFilePath);
+
+    final imageData = ImageData(
+      imageId: id,
+      imageFile: targetFileName,
+      imageDirectory: relativePath,
+      capturedAt: lastModified,
+    );
+
+    await JournalRepository.createImageEntry(
+      imageData,
+      linkedId: linkedId,
+      categoryId: categoryId,
+    );
+  }
+}
+
+Future<void> importPastedImages({
+  required Uint8List data,
+  required String fileExtension,
+  String? linkedId,
+  String? categoryId,
+}) async {
+  final capturedAt = DateTime.now();
+  final id = uuid.v1();
+
+  final day = DateFormat('yyyy-MM-dd').format(capturedAt);
+  final relativePath = '/images/$day/';
+  final directory = await createAssetDirectory(relativePath);
+  final targetFileName = '$id.$fileExtension';
+  final targetFilePath = '$directory$targetFileName';
+
+  final file = File(targetFilePath);
+  await file.writeAsBytes(data);
+
+  final imageData = ImageData(
+    imageId: id,
+    imageFile: targetFileName,
+    imageDirectory: relativePath,
+    capturedAt: capturedAt,
+  );
+
+  await JournalRepository.createImageEntry(
+    imageData,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
 }

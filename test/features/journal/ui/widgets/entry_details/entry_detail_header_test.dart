@@ -4,6 +4,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -215,5 +216,20 @@ void main() {
       // TODO: check that provider method is called instead
       // verify(entryCubit.toggleMapVisible).called(1);
     });
+  });
+
+  testWidgets('entry date is visible', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        EntryDetailHeader(
+          entryId: testTextEntry.meta.id,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final entryDateFromFinder =
+        find.text(dfShorter.format(testTextEntry.meta.dateFrom));
+    expect(entryDateFromFinder, findsOneWidget);
   });
 }

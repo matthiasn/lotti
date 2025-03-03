@@ -20,7 +20,6 @@ Client createMatrixClient({
       KeyVerificationMethod.emoji,
       KeyVerificationMethod.reciprocate,
     },
-    shareKeysWithUnverifiedDevices: false,
     sendTimelineEventTimeout: const Duration(minutes: 2),
     databaseBuilder: (_) async {
       final docDir = getIt<Directory>();

@@ -8,6 +8,7 @@ class SettingsCard extends StatelessWidget {
   const SettingsCard({
     required this.onTap,
     required this.title,
+    this.titleColor,
     super.key,
     this.semanticsLabel,
     this.subtitle,
@@ -28,6 +29,7 @@ class SettingsCard extends StatelessWidget {
   final Widget? trailing;
   final EdgeInsets? contentPadding;
   final Color? backgroundColor;
+  final Color? titleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class SettingsCard extends StatelessWidget {
         contentPadding: contentPadding,
         title: Text(
           title,
-          style: settingsCardTextStyle,
+          style: settingsCardTextStyle.copyWith(color: titleColor),
           semanticsLabel: semanticsLabel,
         ),
         subtitle: subtitle,
@@ -76,20 +78,15 @@ class SettingsNavCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: backgroundColor,
-      child: ListTile(
-        contentPadding: contentPadding,
-        title: Text(
-          title,
-          semanticsLabel: semanticsLabel,
-          style: settingsCardTextStyle,
-        ),
-        subtitle: subtitle,
-        leading: leading,
-        trailing: trailing,
-        onTap: () => beamToNamed(path),
-      ),
+    return SettingsCard(
+      title: title,
+      leading: leading,
+      trailing: trailing,
+      backgroundColor: backgroundColor,
+      contentPadding: contentPadding,
+      onTap: () => beamToNamed(path),
+      subtitle: subtitle,
+      semanticsLabel: semanticsLabel,
     );
   }
 }

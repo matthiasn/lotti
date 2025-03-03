@@ -30,15 +30,16 @@ class EntryDatetimeWidget extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 5),
       child: GestureDetector(
         onTap: () {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             builder: (BuildContext _) {
               return EntryDateTimeModal(item: entry);
             },
+            navBarHeight: 20,
           );
         },
         child: Padding(
-          padding: const EdgeInsets.only(left: 10),
+          padding: const EdgeInsets.only(left: 5),
           child: Text(
             dfShorter.format(entry.meta.dateFrom),
             style: const TextStyle(

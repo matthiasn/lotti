@@ -101,13 +101,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         top: 20,
         right: 10,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(20)),
-        side: BorderSide(
-          color: (context.textTheme.titleLarge?.color ?? Colors.black)
-              .withAlpha(127),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
       actionsAlignment: MainAxisAlignment.end,
       actionsPadding: const EdgeInsets.only(
         left: 30,

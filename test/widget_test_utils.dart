@@ -38,8 +38,12 @@ Widget makeTestableWidget2(Widget child) {
   );
 }
 
-Widget makeTestableWidgetWithScaffold(Widget child) {
+Widget makeTestableWidgetWithScaffold(
+  Widget child, {
+  List<Override> overrides = const [],
+}) {
   return ProviderScope(
+    overrides: overrides,
     child: MediaQuery(
       data: const MediaQueryData(),
       child: MaterialApp(

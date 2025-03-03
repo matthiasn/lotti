@@ -19,7 +19,6 @@ import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -39,18 +38,14 @@ void main() {
   final secureStorageMock = MockSecureStorage();
   setFakeDocumentsPath();
   registerFallbackValue(FakeJournalEntity());
+  registerFallbackValue(FakeHabitDefinition());
 
   final mockNotificationService = MockNotificationService();
   final mockUpdateNotifications = MockUpdateNotifications();
-  final mockAiLogic = MockAiLogic();
   final mockFts5Db = MockFts5Db();
 
   group('Database Tests - ', () {
     var vcMockNext = '1';
-
-    when(() => mockAiLogic.embed(any())).thenAnswer(
-      (_) async {},
-    );
 
     setUpAll(() async {
       setFakeDocumentsPath();
@@ -78,7 +73,19 @@ void main() {
         (_) => Stream<Set<String>>.fromIterable([]),
       );
 
-      when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});
+      when(
+        () => mockFts5Db.insertText(
+          any(),
+          removePrevious: true,
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockNotificationService.scheduleHabitNotification(
+          any(),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      ).thenAnswer((_) async {});
 
       when(
         () => mockNotificationService.showNotification(
@@ -93,7 +100,6 @@ void main() {
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
-        ..registerSingleton<AiLogic>(mockAiLogic)
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
@@ -137,11 +143,13 @@ void main() {
           testText,
         );
 
+        final updated = textEntry.copyWith(
+          entryText: const EntryText(plainText: updatedTestText),
+        );
+
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntity(
-          textEntry.copyWith(
-            entryText: const EntryText(plainText: updatedTestText),
-          ),
+          updated,
           textEntry.meta,
         );
 
@@ -152,6 +160,9 @@ void main() {
               ?.plainText,
           updatedTestText,
         );
+
+        verify(() => mockFts5Db.insertText(any(), removePrevious: true))
+            .called(1);
 
         // TODO: why is this failing suddenly?
         //verify(mockNotificationService.updateBadge).called(2);

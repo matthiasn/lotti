@@ -15,7 +15,6 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -54,7 +53,6 @@ void main() {
     final settingsDb = SettingsDb(inMemoryDatabase: true);
     final mockTimeService = MockTimeService();
     final mockJournalDb = MockJournalDb();
-    final mockAiLogic = MockAiLogic();
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockNavService = MockNavService();
     final mockNotificationService = MockNotificationService();
@@ -95,7 +93,6 @@ void main() {
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<VectorClockService>(VectorClockService())
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<AiLogic>(mockAiLogic)
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
         ..registerSingleton<EditorStateService>(EditorStateService());

@@ -2,7 +2,8 @@ PODS:
   - audio_session (0.0.1):
     - FlutterMacOS
   - connectivity_plus (0.0.1):
-    - Flutter
+    - FlutterMacOS
+  - desktop_drop (0.0.1):
     - FlutterMacOS
   - device_info_plus (0.0.1):
     - FlutterMacOS
@@ -65,21 +66,21 @@ PODS:
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
-  - sqlite3 (3.48.0):
-    - sqlite3/common (= 3.48.0)
-  - sqlite3/common (3.48.0)
-  - sqlite3/dbstatvtab (3.48.0):
+  - sqlite3 (3.49.1):
+    - sqlite3/common (= 3.49.1)
+  - sqlite3/common (3.49.1)
+  - sqlite3/dbstatvtab (3.49.1):
     - sqlite3/common
-  - sqlite3/fts5 (3.48.0):
+  - sqlite3/fts5 (3.49.1):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.48.0):
+  - sqlite3/perf-threadsafe (3.49.1):
     - sqlite3/common
-  - sqlite3/rtree (3.48.0):
+  - sqlite3/rtree (3.49.1):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
     - FlutterMacOS
-    - sqlite3 (~> 3.48.0)
+    - sqlite3 (~> 3.49.1)
     - sqlite3/dbstatvtab
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
@@ -96,7 +97,8 @@ PODS:
 
 DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
-  - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/darwin`)
+  - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos`)
+  - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
   - ffmpeg_kit_flutter (from `Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter/macos`)
   - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
@@ -139,7 +141,9 @@ EXTERNAL SOURCES:
   audio_session:
     :path: Flutter/ephemeral/.symlinks/plugins/audio_session/macos
   connectivity_plus:
-    :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus/darwin
+    :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos
+  desktop_drop:
+    :path: Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos
   device_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
   ffmpeg_kit_flutter:
@@ -200,41 +204,42 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  audio_session: 48ab6500f7a5e7c64363e206565a5dfe5a0c1441
-  connectivity_plus: 2256d3e20624a7749ed21653aafe291a46446fee
-  device_info_plus: 4fb280989f669696856f8b129e4a5e3cd6c48f76
+  audio_session: 728ae3823d914f809c485d390274861a24b0904e
+  connectivity_plus: 0a976dfd033b59192912fa3c6c7b54aab5093802
+  desktop_drop: 69eeff437544aa619c8db7f4481b3a65f7696898
+  device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
   ffmpeg-kit-macos-https: 60de703db964ccca7fd0d4d1611f4c102a8139cc
-  ffmpeg_kit_flutter: ba222540001fc4d9c90530e0f9d8dd7f15f64a97
-  file_selector_macos: 6280b52b459ae6c590af5d78fc35c7267a3c4b31
-  flutter_image_compress_macos: e68daf54bb4bf2144c580fd4d151c949cbf492f0
-  flutter_local_notifications: 13862b132e32eb858dea558a86d45d08daeacfe7
-  flutter_native_timezone: f3b0f832063127bd0ea2cecbf85c23a74307711b
-  flutter_secure_storage_macos: 7f45e30f838cf2659862a4e4e3ee1c347c2b3b54
+  ffmpeg_kit_flutter: 5bd75928cf88ec177cea410b027681e4bfe09452
+  file_selector_macos: cc3858c981fe6889f364731200d6232dac1d812d
+  flutter_image_compress_macos: c26c3c13ea0f28ae6dea4e139b3292e7729f99f1
+  flutter_local_notifications: 7062189aabf7f50938a7b8b6614ffa97656eb0bf
+  flutter_native_timezone: 3a4724189c47dea215bb3e168e555e18308d312c
+  flutter_secure_storage_macos: c2754d3483d20bb207bb9e5a14f1b8e771abcdb9
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  gal: baecd024ebfd13c441269ca7404792a7152fde89
+  gal: 6a522c75909f1244732d4596d11d6a2f86ff37a5
   HotKey: e96d8a2ddbf4591131e2bb3f54e69554d90cdca6
-  hotkey_manager_macos: a4317849af96d2430fa89944d3c58977ca089fbe
-  irondash_engine_context: 893c7d96d20ce361d7e996f39d360c4c2f9869ba
-  just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
-  location: c002b64375c0739e7afa30cbd0b675554830d208
-  media_kit_libs_macos_audio: 06f3cf88d6d89c7c3c87eae57689d1c6adb335b2
-  media_kit_native_event_loop: a5833d1e4d5bedb6f691e9909fa57f15f436f2c8
+  hotkey_manager_macos: 1e2edb0c7ae4fe67108af44a9d3445de41404160
+  irondash_engine_context: da62996ee25616d2f01bbeb85dc115d813359478
+  just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
+  location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
+  media_kit_libs_macos_audio: 3871782a4f3f84c77f04d7666c87800a781c24da
+  media_kit_native_event_loop: 7321675377cb9ae8596a29bddf3a3d2b5e8792c5
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
-  package_info_plus: f0052d280d17aa382b932f399edf32507174e870
-  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  photo_manager: d2fbcc0f2d82458700ee6256a15018210a81d413
-  quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
-  record_darwin: 30509266ae213af8afdb09a8ae7467cb64c1377e
-  screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
-  share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
-  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
-  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
-  sqlite3: 3da10a59910c809fb584a93aa46a3f05b785e12e
-  sqlite3_flutter_libs: c26d86af4ad88f1465dc4e07e6dc6931eef228e4
-  super_native_extensions: c2795d6d9aedf4a79fae25cb6160b71b50549189
-  url_launcher_macos: 0fba8ddabfc33ce0a9afe7c5fef5aab3d8d2d673
-  video_player_avfoundation: 2cef49524dd1f16c5300b9cd6efd9611ce03639b
-  window_manager: 1d01fa7ac65a6e6f83b965471b1a7fdd3f06166c
+  package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
+  quill_native_bridge_macos: 3a5f378bc757eb92825193853020b759b56cbb2c
+  record_darwin: a0d515a0ef78c440c123ea3ac76184c9927a94d6
+  screen_retriever_macos: 776e0fa5d42c6163d2bf772d22478df4b302b161
+  share_plus: 1fa619de8392a4398bfaf176d441853922614e89
+  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
+  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  sqlite3: fc1400008a9b3525f5914ed715a5d1af0b8f4983
+  sqlite3_flutter_libs: cc304edcb8e1d8c595d1b08c7aeb46a47691d9db
+  super_native_extensions: 85efee3a7495b46b04befcfc86ed12069264ebf3
+  url_launcher_macos: c82c93949963e55b228a30115bd219499a6fe404
+  video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
+  window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
 
 PODFILE CHECKSUM: d27d2dff46449102b264d388eab8371b0b96d784
 

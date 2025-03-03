@@ -7,7 +7,7 @@ part of 'ollama_task_summary.dart';
 // **************************************************************************
 
 String _$aiTaskSummaryControllerHash() =>
-    r'f941b13d8787e055675c11dd07b98b467dc9e014';
+    r'6253b67eb63b845c8c3bfb022acc4ba30331cc62';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,11 +33,9 @@ class _SystemHash {
 abstract class _$AiTaskSummaryController
     extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
-  late final bool processImages;
 
   String build({
     required String id,
-    required bool processImages,
   });
 }
 
@@ -53,11 +51,9 @@ class AiTaskSummaryControllerFamily extends Family<String> {
   /// See also [AiTaskSummaryController].
   AiTaskSummaryControllerProvider call({
     required String id,
-    required bool processImages,
   }) {
     return AiTaskSummaryControllerProvider(
       id: id,
-      processImages: processImages,
     );
   }
 
@@ -67,7 +63,6 @@ class AiTaskSummaryControllerFamily extends Family<String> {
   ) {
     return call(
       id: provider.id,
-      processImages: provider.processImages,
     );
   }
 
@@ -92,11 +87,8 @@ class AiTaskSummaryControllerProvider
   /// See also [AiTaskSummaryController].
   AiTaskSummaryControllerProvider({
     required String id,
-    required bool processImages,
   }) : this._internal(
-          () => AiTaskSummaryController()
-            ..id = id
-            ..processImages = processImages,
+          () => AiTaskSummaryController()..id = id,
           from: aiTaskSummaryControllerProvider,
           name: r'aiTaskSummaryControllerProvider',
           debugGetCreateSourceHash:
@@ -107,7 +99,6 @@ class AiTaskSummaryControllerProvider
           allTransitiveDependencies:
               AiTaskSummaryControllerFamily._allTransitiveDependencies,
           id: id,
-          processImages: processImages,
         );
 
   AiTaskSummaryControllerProvider._internal(
@@ -118,11 +109,9 @@ class AiTaskSummaryControllerProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
-    required this.processImages,
   }) : super.internal();
 
   final String id;
-  final bool processImages;
 
   @override
   String runNotifierBuild(
@@ -130,7 +119,6 @@ class AiTaskSummaryControllerProvider
   ) {
     return notifier.build(
       id: id,
-      processImages: processImages,
     );
   }
 
@@ -139,166 +127,6 @@ class AiTaskSummaryControllerProvider
     return ProviderOverride(
       origin: this,
       override: AiTaskSummaryControllerProvider._internal(
-        () => create()
-          ..id = id
-          ..processImages = processImages,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-        processImages: processImages,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
-      createElement() {
-    return _AiTaskSummaryControllerProviderElement(this);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is AiTaskSummaryControllerProvider &&
-        other.id == id &&
-        other.processImages == processImages;
-  }
-
-  @override
-  int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-    hash = _SystemHash.combine(hash, processImages.hashCode);
-
-    return _SystemHash.finish(hash);
-  }
-}
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin AiTaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
-  /// The parameter `id` of this provider.
-  String get id;
-
-  /// The parameter `processImages` of this provider.
-  bool get processImages;
-}
-
-class _AiTaskSummaryControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
-    with AiTaskSummaryControllerRef {
-  _AiTaskSummaryControllerProviderElement(super.provider);
-
-  @override
-  String get id => (origin as AiTaskSummaryControllerProvider).id;
-  @override
-  bool get processImages =>
-      (origin as AiTaskSummaryControllerProvider).processImages;
-}
-
-String _$taskMarkdownControllerHash() =>
-    r'0efef89904fd2f83c01c4a0e45101cb0b026260d';
-
-abstract class _$TaskMarkdownController
-    extends BuildlessAutoDisposeAsyncNotifier<String?> {
-  late final String id;
-
-  FutureOr<String?> build({
-    required String id,
-  });
-}
-
-/// See also [TaskMarkdownController].
-@ProviderFor(TaskMarkdownController)
-const taskMarkdownControllerProvider = TaskMarkdownControllerFamily();
-
-/// See also [TaskMarkdownController].
-class TaskMarkdownControllerFamily extends Family<AsyncValue<String?>> {
-  /// See also [TaskMarkdownController].
-  const TaskMarkdownControllerFamily();
-
-  /// See also [TaskMarkdownController].
-  TaskMarkdownControllerProvider call({
-    required String id,
-  }) {
-    return TaskMarkdownControllerProvider(
-      id: id,
-    );
-  }
-
-  @override
-  TaskMarkdownControllerProvider getProviderOverride(
-    covariant TaskMarkdownControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'taskMarkdownControllerProvider';
-}
-
-/// See also [TaskMarkdownController].
-class TaskMarkdownControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<TaskMarkdownController,
-        String?> {
-  /// See also [TaskMarkdownController].
-  TaskMarkdownControllerProvider({
-    required String id,
-  }) : this._internal(
-          () => TaskMarkdownController()..id = id,
-          from: taskMarkdownControllerProvider,
-          name: r'taskMarkdownControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$taskMarkdownControllerHash,
-          dependencies: TaskMarkdownControllerFamily._dependencies,
-          allTransitiveDependencies:
-              TaskMarkdownControllerFamily._allTransitiveDependencies,
-          id: id,
-        );
-
-  TaskMarkdownControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String id;
-
-  @override
-  FutureOr<String?> runNotifierBuild(
-    covariant TaskMarkdownController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
-  }
-
-  @override
-  Override overrideWith(TaskMarkdownController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: TaskMarkdownControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -311,14 +139,14 @@ class TaskMarkdownControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<TaskMarkdownController, String?>
+  AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
       createElement() {
-    return _TaskMarkdownControllerProviderElement(this);
+    return _AiTaskSummaryControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is TaskMarkdownControllerProvider && other.id == id;
+    return other is AiTaskSummaryControllerProvider && other.id == id;
   }
 
   @override
@@ -332,19 +160,18 @@ class TaskMarkdownControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin TaskMarkdownControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<String?> {
+mixin AiTaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _TaskMarkdownControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<TaskMarkdownController,
-        String?> with TaskMarkdownControllerRef {
-  _TaskMarkdownControllerProviderElement(super.provider);
+class _AiTaskSummaryControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<AiTaskSummaryController, String>
+    with AiTaskSummaryControllerRef {
+  _AiTaskSummaryControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as TaskMarkdownControllerProvider).id;
+  String get id => (origin as AiTaskSummaryControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

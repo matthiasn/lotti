@@ -22,7 +22,12 @@ class ChecklistWrapper extends ConsumerWidget {
     final checklist = ref.watch(provider).value;
 
     final completionRate =
+        ref.watch(checklistCompletionRateControllerProvider(id: entryId)).value;
+
+    final res =
         ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
+    final totalCount = res?.totalCount ?? 0;
+    final completedCount = res?.completedCount ?? 0;
 
     if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();
@@ -54,6 +59,8 @@ class ChecklistWrapper extends ConsumerWidget {
           updateItemOrder: notifier.updateItemOrder,
           completionRate: completionRate,
           onDelete: ref.read(provider.notifier).delete,
+          totalCount: totalCount,
+          completedCount: completedCount,
         ),
       ),
     );

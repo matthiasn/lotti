@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.566+2861
+version: 0.9.573+2901
 
 msix_config:
   display_name: LottiApp
@@ -37,6 +37,7 @@ dependencies:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: ce9a6b6
 
+  desktop_drop: ^0.5.0
   device_info_plus: ^11.0.0
   drift: ^2.21.0
   easy_debounce: ^2.0.2+1
@@ -69,7 +70,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  flutter_map: ^7.0.0
+  flutter_map: ^8.0.0
   flutter_markdown: ^0.7.1
   flutter_native_timezone: ^2.0.0
   flutter_olm: ^2.0.0
@@ -85,10 +86,10 @@ dependencies:
   get_it: ^8.0.2
   glass_kit: ^4.0.1
   google_fonts: ^6.1.0
-
-  #health: ^4.4.0
   gpt_markdown: ^1.0.11
   graphic: ^2.3.0
+
+  #health: ^4.4.0
   health:
     git:
       url: https://github.com/matthiasn/flutter-plugins
@@ -103,11 +104,10 @@ dependencies:
   jiffy: ^6.1.0
   json_annotation: ^4.8.1
   langchain: ^0.7.7+1
-  langchain_ollama: ^0.3.2
   latlong2: ^0.9.0
-  location: ^7.0.0
+  location: ^8.0.0
   material_design_icons_flutter: ^7.0.7096
-  matrix: ^0.36.0
+  matrix: ^0.38.0
   media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
   media_kit_libs_ios_audio: ^1.0.4
@@ -118,7 +118,6 @@ dependencies:
   meta: ^1.15.0
   multi_select_flutter: ^4.0.0
   ollama: ^1.0.4
-  ollama_dart: ^0.2.0
   package_info_plus: ^8.0.0
   path: ^1.8.1
   path_provider: ^2.0.12
@@ -137,15 +136,16 @@ dependencies:
       url: https://github.com/matthiasn/research.package
       ref: fc229b9d
 
+  riverpod: ^2.6.1
   riverpod_annotation: ^2.3.5
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
   share_plus: ^10.0.0
-  showcaseview: ^4.0.1
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
+  super_clipboard: ^0.8.24
   super_drag_and_drop: ^0.8.24
   timezone: ^0.10.0
   tinycolor2: ^3.0.0
@@ -166,10 +166,10 @@ dependency_overrides:
   web: ^1.0.0
 
 dev_dependencies:
-  analyzer: ^6.4.1
+  analyzer: ^7.3.0
   archive: ^3.3.0
   build_runner: ^2.3.0
-  dart_style: ^2.3.6
+  dart_style: ^3.0.1
   drift_dev: ^2.16.0
   flutter_launcher_icons: ^0.14.1
   flutter_lints: ^5.0.0
@@ -217,7 +217,6 @@ flutter:
     # from https://www.iconfinder.com/recepkutuk
     - assets/images/map/728975_location_map_marker_pin_place_icon.png
     - assets/images/tutorial/
-    - assets/images/manual/
 
   fonts:
     - family: Oswald

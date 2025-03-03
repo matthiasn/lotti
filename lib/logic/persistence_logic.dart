@@ -15,7 +15,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -91,6 +90,7 @@ class PersistenceLogic {
     DateTime? dateFrom,
     DateTime? dateTo,
     String? categoryId,
+    bool clearCategoryId = false,
     DateTime? deletedAt,
   }) async =>
       metadata.copyWith(
@@ -100,7 +100,7 @@ class PersistenceLogic {
         ),
         dateFrom: dateFrom ?? metadata.dateFrom,
         dateTo: dateTo ?? metadata.dateTo,
-        categoryId: categoryId ?? metadata.categoryId,
+        categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
         deletedAt: deletedAt ?? metadata.deletedAt,
       );
 
@@ -265,6 +265,13 @@ class PersistenceLogic {
         linkedId: linkedId,
         shouldAddGeolocation: shouldAddGeolocation,
       );
+
+      if (habitDefinition != null) {
+        await getIt<NotificationService>().scheduleHabitNotification(
+          habitDefinition,
+          daysToAdd: 1,
+        );
+      }
 
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
@@ -700,12 +707,6 @@ class PersistenceLogic {
     bool enqueueSync = true,
   }) async {
     try {
-      unawaited(
-        getIt<AiLogic>().embed(
-          journalEntity,
-        ),
-      );
-
       await _journalDb.updateJournalEntity(journalEntity);
       _updateNotifications.notify(journalEntity.affectedIds);
 
@@ -763,16 +764,6 @@ class PersistenceLogic {
     if (dashboard.deletedAt != null) {
       await getIt<NotificationService>().cancelNotification(
         dashboard.id.hashCode,
-      );
-    }
-
-    if (dashboard.reviewAt != null && dashboard.deletedAt == null) {
-      await getIt<NotificationService>().scheduleNotification(
-        title: 'Time for a Dashboard Review!',
-        body: dashboard.name,
-        notifyAt: dashboard.reviewAt!,
-        notificationId: dashboard.id.hashCode,
-        deepLink: '/dashboards/${dashboard.id}',
       );
     }
 

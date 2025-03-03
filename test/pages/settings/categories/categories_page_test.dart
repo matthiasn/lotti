@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/categories/categories_page.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -14,6 +15,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final mockJournalDb = MockJournalDb();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('Categories Page Widget Tests - ', () {
     setUp(() {
@@ -23,7 +25,9 @@ void main() {
         ]),
       );
 
-      getIt.registerSingleton<JournalDb>(mockJournalDb);
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
     });
     tearDown(getIt.reset);
 

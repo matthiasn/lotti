@@ -33,6 +33,8 @@ class HabitDetailsPage extends StatelessWidget {
         final cubit = context.read<HabitSettingsCubit>();
         final isDaily = item.habitSchedule is DailyHabitSchedule;
         final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
+        final alertAtTime =
+            item.habitSchedule.mapOrNull(daily: (d) => d.alertAtTime);
 
         return Scaffold(
           appBar: TitleAppBar(
@@ -114,13 +116,22 @@ class HabitDetailsPage extends StatelessWidget {
                         mode: CupertinoDatePickerMode.date,
                       ),
                       inputSpacer,
-                      if (isDaily)
+                      if (isDaily) ...[
                         DateTimeField(
                           dateTime: showFrom,
                           labelText: context.messages.habitShowFromLabel,
                           setDateTime: cubit.setShowFrom,
                           mode: CupertinoDatePickerMode.time,
                         ),
+                        inputSpacer,
+                        DateTimeField(
+                          dateTime: alertAtTime,
+                          labelText: context.messages.habitShowAlertAtLabel,
+                          setDateTime: cubit.setAlertAtTime,
+                          clear: cubit.clearAlertAtTime,
+                          mode: CupertinoDatePickerMode.time,
+                        ),
+                      ],
                     ],
                   ),
                 ),

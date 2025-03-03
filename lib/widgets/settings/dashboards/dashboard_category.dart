@@ -2,12 +2,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SelectDashboardCategoryWidget extends StatelessWidget {
@@ -40,7 +40,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
         controller.text = category?.name ?? '';
 
         void onTap() {
-          ModalUtils.showSinglePageModal(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.dashboardCategoryLabel,
             builder: (BuildContext _) {
@@ -54,7 +54,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       title: category.name,
-                      leading: ColorIcon(colorFromCssHex(category.color)),
+                      leading: CategoryColorIcon(category.id),
                     ),
                   ),
                 ],

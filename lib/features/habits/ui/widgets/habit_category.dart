@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
-import 'package:lotti/widgets/categories/category_field.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 
 class SelectCategoryWidget extends StatelessWidget {
   const SelectCategoryWidget({super.key});

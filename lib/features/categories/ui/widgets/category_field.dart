@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 typedef CategoryCallback = void Function(CategoryDefinition?);
 
@@ -27,28 +26,16 @@ class CategoryField extends StatelessWidget {
     final controller = TextEditingController()..text = category?.name ?? '';
 
     void onTap() {
-      ModalUtils.showSinglePageModal(
+      ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {
-          final categories = getIt<EntitiesCacheService>().sortedCategories;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...categories.map(
-                (category) => SettingsCard(
-                  onTap: () {
-                    onSave(category);
-                    Navigator.pop(context);
-                  },
-                  title: category.name,
-                  leading: ColorIcon(
-                    colorFromCssHex(category.color),
-                  ),
-                ),
-              ),
-            ],
+          return CategorySelectionModalContent(
+            onCategorySelected: (category) {
+              onSave(category);
+              Navigator.pop(context);
+            },
+            initialCategoryId: categoryId,
           );
         },
       );
@@ -67,11 +54,7 @@ class CategoryField extends StatelessWidget {
         semanticsLabel: 'Select category',
         themeData: Theme.of(context),
       ).copyWith(
-        icon: ColorIcon(
-          category != null
-              ? colorFromCssHex(category.color)
-              : context.colorScheme.outline.withAlpha(51),
-        ),
+        icon: CategoryColorIcon(categoryId),
         suffixIcon: categoryUndefined
             ? null
             : GestureDetector(
