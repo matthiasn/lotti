@@ -178,10 +178,10 @@ class _LatestSummaryControllerProviderElement
 }
 
 String _$checklistItemSuggestionsControllerHash() =>
-    r'2f82e39ea3c7100aad070c9554ed8660bf259539';
+    r'25040a3ed7b8f13edf2b044792f34464e98d3cdc';
 
 abstract class _$ChecklistItemSuggestionsController
-    extends BuildlessAutoDisposeAsyncNotifier<List<ChecklistItemData>> {
+    extends BuildlessAsyncNotifier<List<ChecklistItemData>> {
   late final String id;
 
   FutureOr<List<ChecklistItemData>> build({
@@ -235,8 +235,8 @@ class ChecklistItemSuggestionsControllerFamily
 
 /// See also [ChecklistItemSuggestionsController].
 class ChecklistItemSuggestionsControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<
-        ChecklistItemSuggestionsController, List<ChecklistItemData>> {
+    extends AsyncNotifierProviderImpl<ChecklistItemSuggestionsController,
+        List<ChecklistItemData>> {
   /// See also [ChecklistItemSuggestionsController].
   ChecklistItemSuggestionsControllerProvider({
     required String id,
@@ -292,7 +292,7 @@ class ChecklistItemSuggestionsControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<ChecklistItemSuggestionsController,
+  AsyncNotifierProviderElement<ChecklistItemSuggestionsController,
       List<ChecklistItemData>> createElement() {
     return _ChecklistItemSuggestionsControllerProviderElement(this);
   }
@@ -315,14 +315,13 @@ class ChecklistItemSuggestionsControllerProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin ChecklistItemSuggestionsControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<List<ChecklistItemData>> {
+    on AsyncNotifierProviderRef<List<ChecklistItemData>> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
 class _ChecklistItemSuggestionsControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<
-        ChecklistItemSuggestionsController,
+    extends AsyncNotifierProviderElement<ChecklistItemSuggestionsController,
         List<ChecklistItemData>> with ChecklistItemSuggestionsControllerRef {
   _ChecklistItemSuggestionsControllerProviderElement(super.provider);
 
