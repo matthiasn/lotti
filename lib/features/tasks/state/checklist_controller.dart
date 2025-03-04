@@ -78,8 +78,18 @@ class ChecklistController extends _$ChecklistController {
         ),
       );
 
-  Future<void> dropChecklistItem(Object? localData) async {
+  Future<void> dropChecklistItem(
+    Object? localData, {
+    String? categoryId,
+  }) async {
     if (localData != null && localData is Map && localData.isNotEmpty) {
+      if (localData['checklistItemTitle'] != null) {
+        return dropChecklistNewItem(
+          localData,
+          categoryId: categoryId,
+        );
+      }
+
       final droppedChecklistItemId = localData['checklistItemId'] as String;
       final fromChecklistId = localData['checklistId'] as String;
 
@@ -111,6 +121,35 @@ class ChecklistController extends _$ChecklistController {
       await ref
           .read(checklistControllerProvider(id: fromChecklistId).notifier)
           .unlinkItem(droppedChecklistItemId);
+    }
+  }
+
+  Future<void> dropChecklistNewItem(
+    Object? localData, {
+    String? categoryId,
+  }) async {
+    if (localData != null && localData is Map && localData.isNotEmpty) {
+      final checklistItemTitle = localData['checklistItemTitle'] as String?;
+
+      final createdItemId = await createChecklistItem(
+        checklistItemTitle,
+        categoryId: categoryId,
+      );
+
+      if (createdItemId == null) {
+        return;
+      }
+
+      await updateChecklist(
+        (checklist) => checklist.copyWith(
+          data: checklist.data.copyWith(
+            linkedChecklistItems: {
+              ...checklist.data.linkedChecklistItems,
+              createdItemId,
+            }.toList(),
+          ),
+        ),
+      );
     }
   }
 
