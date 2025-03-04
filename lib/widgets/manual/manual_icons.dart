@@ -83,7 +83,8 @@ class ManualIcons extends StatelessWidget {
                           Text('first'),
                         ],
                       ),
-                      heroImage: Image.asset('assets/images/manual/addTask.png'),
+                      heroImage:
+                          Image.asset('assets/images/manual/addTask.png'),
                       child: Column(
                         children: [
                           ElevatedButton(

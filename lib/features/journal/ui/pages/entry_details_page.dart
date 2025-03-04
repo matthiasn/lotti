@@ -16,7 +16,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:showcaseview/showcaseview.dart';
 
-
 class EntryDetailPage extends ConsumerStatefulWidget {
   const EntryDetailPage({
     required this.itemId,
@@ -48,13 +47,12 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
             ),
       );
 
-      WidgetsBinding.instance.addPostFrameCallback((timestamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timestamp) {
       ShowCaseWidget.of(context).startShowCase([add]);
     });
 
     super.initState();
   }
-
 
   @override
   Widget build(BuildContext context) {

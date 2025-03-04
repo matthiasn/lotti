@@ -71,7 +71,8 @@ class ManualPage extends ConsumerWidget {
                 Text('Calendar'),
               ],
             ),
-            iconFunc: Text('How to view daily/weekly/monthly behavioral patterns'),
+            iconFunc:
+                Text('How to view daily/weekly/monthly behavioral patterns'),
             iconFunc2: Column(
               children: [
                 Icon(

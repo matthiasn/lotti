@@ -12,7 +12,6 @@ class TasksBadge extends ConsumerWidget {
 
   final Widget child;
   final GlobalKey? showcaseKey;
-  
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,4 +25,3 @@ class TasksBadge extends ConsumerWidget {
     );
   }
 }
-

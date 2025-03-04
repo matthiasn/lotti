@@ -119,15 +119,16 @@ class ManualList extends StatelessWidget {
               return [
                 WoltModalSheetPage(
                   hasSabGradient: false,
-                  topBarTitle: const Text('Lotti Manual', style: settingsCardTextStyle,),
-      
+                  topBarTitle: const Text(
+                    'Lotti Manual',
+                    style: settingsCardTextStyle,
+                  ),
                   child: const ManualPage(),
-
                   isTopBarLayerAlwaysVisible: true,
-                      trailingNavBarWidget: IconButton(
-                        onPressed: Navigator.of(context).pop,
-                        icon: const Icon(Icons.close),
-                      ),
+                  trailingNavBarWidget: IconButton(
+                    onPressed: Navigator.of(context).pop,
+                    icon: const Icon(Icons.close),
+                  ),
                 ),
               ];
             },

@@ -61,9 +61,7 @@ class SettingsPage extends StatelessWidget {
               title: context.messages.settingsAdvancedTitle,
               path: '/settings/advanced',
             ),
-            
             const ManualList(),
-           
           ],
         ),
       ),

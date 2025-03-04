@@ -29,7 +29,6 @@ import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
 import 'package:lotti/pages/settings/theming_page.dart';
 
-
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
 
@@ -225,8 +224,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-theming'),
           child: ThemingPage(),
         ),
-      
-       if (pathContains('manual'))
+
+      if (pathContains('manual'))
         const BeamPage(
           key: ValueKey('settings-manual'),
           child: ManualPage(),

@@ -15,32 +15,30 @@ class TaskCard extends ConsumerWidget {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.65,
       child: SingleChildScrollView(
-        child:  Column(
-              children: [
-                SizedBox(
-                  child: Text(
-                    taskHeader,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        child: Column(
+          children: [
+            SizedBox(
+              child: Text(
+                taskHeader,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-                SizedBox(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ...manualContent
-                          .map((content) => ManualContentRow(content: content)),
-                      // Your remaining widgets...
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-         
+            SizedBox(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ...manualContent
+                      .map((content) => ManualContentRow(content: content)),
+                  // Your remaining widgets...
+                ],
+              ),
+            ),
+          ],
         ),
-      );
-   
+      ),
+    );
   }
 }
