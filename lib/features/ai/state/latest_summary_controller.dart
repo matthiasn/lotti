@@ -72,7 +72,7 @@ class ChecklistItemSuggestionsController
           final title = e.group(1);
           if (title != null) {
             return ChecklistItemData(
-              title: title.replaceAll(RegExp('[,"]'), ''),
+              title: title.replaceAll(RegExp('[-.,"]'), '').trim(),
               isChecked: false,
               linkedChecklists: [],
             );
