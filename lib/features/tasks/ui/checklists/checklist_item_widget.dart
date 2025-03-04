@@ -13,11 +13,13 @@ class ChecklistItemWidget extends StatefulWidget {
     this.onDelete,
     this.onTitleChange,
     this.showEditIcon = true,
+    this.readOnly = false,
     this.onEdit,
     super.key,
   });
 
   final String title;
+  final bool readOnly;
   final bool isChecked;
   final bool showEditIcon;
   final BoolCallback onChanged;
@@ -117,14 +119,16 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                 onPressed: widget.onEdit,
               )
             : null,
-        onChanged: (bool? value) {
-          final isChecked = value ?? false;
-          setState(() {
-            _isChecked = isChecked;
-          });
+        onChanged: widget.readOnly
+            ? null
+            : (bool? value) {
+                final isChecked = value ?? false;
+                setState(() {
+                  _isChecked = isChecked;
+                });
 
-          widget.onChanged(isChecked);
-        },
+                widget.onChanged(isChecked);
+              },
       ),
     );
   }
