@@ -25,7 +25,7 @@ class ChecklistSuggestionsWidget extends ConsumerWidget {
         )
         .valueOrNull;
 
-    if (checklistItems == null) {
+    if (checklistItems == null || checklistItems.isEmpty) {
       return const SizedBox.shrink();
     }
 
