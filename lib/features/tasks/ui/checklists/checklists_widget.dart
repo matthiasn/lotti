@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_suggestions_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -93,6 +94,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
             },
           ),
         ),
+        ChecklistSuggestionsWidget(itemId: item.id),
       ],
     );
   }
