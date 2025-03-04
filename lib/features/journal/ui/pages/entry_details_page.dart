@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/latest_ai_summary.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
@@ -90,7 +91,9 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                       itemId: widget.itemId,
                       popOnDelete: true,
                       showTaskDetails: true,
+                      showAiEntry: true,
                     ),
+                    LatestAiSummary(itemId: widget.itemId),
                     LinkedEntriesWidget(item),
                     LinkedFromEntriesWidget(item),
                     if (item is ChecklistItem) LinkedFromChecklistWidget(item),

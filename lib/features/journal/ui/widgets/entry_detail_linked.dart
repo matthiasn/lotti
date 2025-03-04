@@ -23,6 +23,9 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final provider = linkedEntriesControllerProvider(id: item.id);
     final entryLinks = ref.watch(provider).valueOrNull ?? [];
 
+    final includeAiEntries =
+        ref.watch(includeAiEntriesControllerProvider(id: item.id));
+
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -36,7 +39,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
           children: [
             Text(
               context.messages.journalLinkedEntriesLabel,
-              style: TextStyle(color: color),
+              style: context.textTheme.titleSmall?.copyWith(color: color),
             ),
             IconButton(
               icon: Icon(Icons.filter_list, color: color),
@@ -63,6 +66,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
               parentTags: item.meta.tagIds?.toSet(),
               linkedFrom: item,
               link: link,
+              showAiEntry: includeAiEntries,
             );
           },
         ),
@@ -86,23 +90,46 @@ class LinkedFilterModalContent extends ConsumerWidget {
   ) {
     final provider = includeHiddenControllerProvider(id: entryId);
     final notifier = ref.read(provider.notifier);
+    final provider2 = includeAiEntriesControllerProvider(id: entryId);
+    final notifier2 = ref.read(provider2.notifier);
     final includeHidden = ref.watch(provider);
+    final includeAiEntries = ref.watch(provider2);
     final color = context.colorScheme.outline;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 50, left: 20, right: 20),
-      child: Row(
+      child: Column(
         children: [
-          Text(
-            context.messages.journalLinkedEntriesHiddenLabel,
-            style: TextStyle(color: color),
+          Row(
+            children: [
+              Text(
+                context.messages.journalLinkedEntriesHiddenLabel,
+                style: TextStyle(color: color),
+              ),
+              Checkbox(
+                value: includeHidden,
+                side: BorderSide(color: color),
+                onChanged: (value) {
+                  notifier.includeHidden = value ?? false;
+                },
+              ),
+            ],
           ),
-          Checkbox(
-            value: includeHidden,
-            side: BorderSide(color: color),
-            onChanged: (value) {
-              notifier.includeHidden = value ?? false;
-            },
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text(
+                context.messages.journalLinkedEntriesAiLabel,
+                style: TextStyle(color: color),
+              ),
+              Checkbox(
+                value: includeAiEntries,
+                side: BorderSide(color: color),
+                onChanged: (value) {
+                  notifier2.includeAiEntries = value ?? false;
+                },
+              ),
+            ],
           ),
         ],
       ),
