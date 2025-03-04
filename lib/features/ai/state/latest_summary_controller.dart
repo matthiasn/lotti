@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -47,5 +48,39 @@ class LatestSummaryController extends _$LatestSummaryController {
         .getLinkedEntities(linkedTo: id);
 
     return linked.whereType<AiResponseEntry>().toList().firstOrNull;
+  }
+}
+
+@riverpod
+class ChecklistItemSuggestionsController
+    extends _$ChecklistItemSuggestionsController {
+  @override
+  Future<List<ChecklistItemData>> build({
+    required String id,
+  }) async {
+    final latestAiEntry =
+        await ref.watch(latestSummaryControllerProvider(id: id).future);
+
+    final exp = RegExp(
+      r'TODO:\s(.+)',
+      multiLine: true,
+    );
+
+    final checklistItems = exp
+        .allMatches(latestAiEntry?.data.response ?? '')
+        .map((e) {
+          final title = e.group(1);
+          if (title != null) {
+            return ChecklistItemData(
+              title: title.replaceAll(RegExp('[,"]'), ''),
+              isChecked: false,
+              linkedChecklists: [],
+            );
+          }
+        })
+        .nonNulls
+        .toList();
+
+    return checklistItems;
   }
 }

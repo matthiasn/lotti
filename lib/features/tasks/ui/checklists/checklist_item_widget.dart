@@ -12,12 +12,14 @@ class ChecklistItemWidget extends StatefulWidget {
     required this.onChanged,
     this.onDelete,
     this.onTitleChange,
+    this.showEditIcon = true,
     this.onEdit,
     super.key,
   });
 
   final String title;
   final bool isChecked;
+  final bool showEditIcon;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -86,17 +88,18 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                     maxLines: 3,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.edit,
-                    size: 20,
+                if (widget.showEditIcon)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.edit,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = !_isEditing;
+                      });
+                    },
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = !_isEditing;
-                    });
-                  },
-                ),
               ],
             ),
           ),

@@ -176,5 +176,158 @@ class _LatestSummaryControllerProviderElement
   @override
   String get id => (origin as LatestSummaryControllerProvider).id;
 }
+
+String _$checklistItemSuggestionsControllerHash() =>
+    r'2f82e39ea3c7100aad070c9554ed8660bf259539';
+
+abstract class _$ChecklistItemSuggestionsController
+    extends BuildlessAutoDisposeAsyncNotifier<List<ChecklistItemData>> {
+  late final String id;
+
+  FutureOr<List<ChecklistItemData>> build({
+    required String id,
+  });
+}
+
+/// See also [ChecklistItemSuggestionsController].
+@ProviderFor(ChecklistItemSuggestionsController)
+const checklistItemSuggestionsControllerProvider =
+    ChecklistItemSuggestionsControllerFamily();
+
+/// See also [ChecklistItemSuggestionsController].
+class ChecklistItemSuggestionsControllerFamily
+    extends Family<AsyncValue<List<ChecklistItemData>>> {
+  /// See also [ChecklistItemSuggestionsController].
+  const ChecklistItemSuggestionsControllerFamily();
+
+  /// See also [ChecklistItemSuggestionsController].
+  ChecklistItemSuggestionsControllerProvider call({
+    required String id,
+  }) {
+    return ChecklistItemSuggestionsControllerProvider(
+      id: id,
+    );
+  }
+
+  @override
+  ChecklistItemSuggestionsControllerProvider getProviderOverride(
+    covariant ChecklistItemSuggestionsControllerProvider provider,
+  ) {
+    return call(
+      id: provider.id,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'checklistItemSuggestionsControllerProvider';
+}
+
+/// See also [ChecklistItemSuggestionsController].
+class ChecklistItemSuggestionsControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<
+        ChecklistItemSuggestionsController, List<ChecklistItemData>> {
+  /// See also [ChecklistItemSuggestionsController].
+  ChecklistItemSuggestionsControllerProvider({
+    required String id,
+  }) : this._internal(
+          () => ChecklistItemSuggestionsController()..id = id,
+          from: checklistItemSuggestionsControllerProvider,
+          name: r'checklistItemSuggestionsControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$checklistItemSuggestionsControllerHash,
+          dependencies: ChecklistItemSuggestionsControllerFamily._dependencies,
+          allTransitiveDependencies: ChecklistItemSuggestionsControllerFamily
+              ._allTransitiveDependencies,
+          id: id,
+        );
+
+  ChecklistItemSuggestionsControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+  }) : super.internal();
+
+  final String id;
+
+  @override
+  FutureOr<List<ChecklistItemData>> runNotifierBuild(
+    covariant ChecklistItemSuggestionsController notifier,
+  ) {
+    return notifier.build(
+      id: id,
+    );
+  }
+
+  @override
+  Override overrideWith(ChecklistItemSuggestionsController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: ChecklistItemSuggestionsControllerProvider._internal(
+        () => create()..id = id,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<ChecklistItemSuggestionsController,
+      List<ChecklistItemData>> createElement() {
+    return _ChecklistItemSuggestionsControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ChecklistItemSuggestionsControllerProvider &&
+        other.id == id;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ChecklistItemSuggestionsControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<List<ChecklistItemData>> {
+  /// The parameter `id` of this provider.
+  String get id;
+}
+
+class _ChecklistItemSuggestionsControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<
+        ChecklistItemSuggestionsController,
+        List<ChecklistItemData>> with ChecklistItemSuggestionsControllerRef {
+  _ChecklistItemSuggestionsControllerProviderElement(super.provider);
+
+  @override
+  String get id => (origin as ChecklistItemSuggestionsControllerProvider).id;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
