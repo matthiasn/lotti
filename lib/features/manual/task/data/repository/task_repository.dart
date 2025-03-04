@@ -58,7 +58,7 @@ class TaskManualRepository {
       TaskManual(
         title: 'Category Management',
         steps:
-            '4. Category Management.(?) \n- Select existing or create new \n- Pick your color \n- e.g. House Chores\n\n5. Color Picker \n- Choose custom colors (?) \n- Personalize categories \n- Visual organization',
+            '4. Category Management.(?) \n- Select existing or create new \n- Pick your color \n- e.g. House Chores\n\n5. Color Picker \n- Choose custom color (?) \n- Personalize categories \n- Visual organization',
         imagePath: 'assets/images/manual/setCate_icon.png',
         imageFirst: false,
       ),
