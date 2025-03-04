@@ -153,10 +153,7 @@ class JournalCardTitle extends StatelessWidget {
                 surveyEntry,
                 showChart: false,
               ),
-              measurement: (measurementEntry) => MeasurementSummary(
-                measurementEntry,
-                showChart: false,
-              ),
+              measurement: MeasurementSummary.new,
               task: (Task task) {
                 final data = task.data;
                 return Column(

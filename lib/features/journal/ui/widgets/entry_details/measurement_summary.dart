@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
 class MeasurementSummary extends StatelessWidget {
   const MeasurementSummary(
     this.measurementEntry, {
-    this.showChart = true,
     super.key,
   });
 
   final MeasurementEntry measurementEntry;
-  final bool showChart;
 
   @override
   Widget build(BuildContext context) {
@@ -34,23 +30,19 @@ class MeasurementSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (measurementEntry.entryText?.plainText != null && !showChart)
+          if (measurementEntry.entryText?.plainText != null)
             TextViewerWidget(
               entryText: measurementEntry.entryText,
               maxHeight: 120,
             ),
-          if (showChart)
-            MeasurablesBarChart(
-              dashboardId: null,
-              rangeStart: getRangeStart(context: context),
-              rangeEnd: getRangeEnd(),
-              measurableDataTypeId: measurementEntry.data.dataTypeId,
+          Padding(
+            padding: const EdgeInsets.only(left: 5),
+            child: EntryTextWidget(
+              entryTextForMeasurable(data, dataType),
+              padding: EdgeInsets.zero,
             ),
-          const SizedBox(height: 8),
-          EntryTextWidget(
-            entryTextForMeasurable(data, dataType),
-            padding: EdgeInsets.zero,
           ),
+          const SizedBox(height: 10),
         ],
       ),
     );

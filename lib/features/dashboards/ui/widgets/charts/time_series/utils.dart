@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -29,7 +30,9 @@ class ChartLabel extends StatelessWidget {
 }
 
 Widget leftTitleWidgets(double value, TitleMeta meta) {
-  return ChartLabel(value.toInt().toString());
+  final formattedValue =
+      NumberFormat(value > 100 ? '####' : '####.#').format(value);
+  return ChartLabel(formattedValue);
 }
 
 final gridLine = FlLine(
