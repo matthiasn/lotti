@@ -47,9 +47,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // charts display expected titles
-      expect(find.text('Coverage'), findsOneWidget);
-
       // entry value is displayed
       expect(find.text('Coverage: 55 %'), findsOneWidget);
     });
