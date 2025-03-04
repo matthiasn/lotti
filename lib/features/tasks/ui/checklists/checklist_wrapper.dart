@@ -8,11 +8,13 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 class ChecklistWrapper extends ConsumerWidget {
   const ChecklistWrapper({
     required this.entryId,
+    this.categoryId,
     this.padding = EdgeInsets.zero,
     super.key,
   });
 
   final String entryId;
+  final String? categoryId;
   final EdgeInsets padding;
 
   @override
@@ -44,7 +46,10 @@ class ChecklistWrapper extends ConsumerWidget {
           final item = event.session.items.first;
           final localData = item.localData;
           if (localData != null) {
-            await notifier.dropChecklistItem(localData);
+            await notifier.dropChecklistItem(
+              localData,
+              categoryId: categoryId,
+            );
           }
         },
         child: ChecklistWidget(

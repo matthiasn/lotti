@@ -228,6 +228,13 @@ class JournalRepository {
     return items.map(fromDbEntity).toList();
   }
 
+  Future<List<JournalEntity>> getLinkedEntities({
+    required String linkedTo,
+  }) async {
+    final items = await getIt<JournalDb>().getLinkedEntities(linkedTo);
+    return items;
+  }
+
   Future<List<EntryLink>> getLinksFromId(
     String linkedFrom, {
     bool includeHidden = false,

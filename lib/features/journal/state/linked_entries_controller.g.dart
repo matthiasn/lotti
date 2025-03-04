@@ -324,6 +324,153 @@ class _IncludeHiddenControllerProviderElement
   String get id => (origin as IncludeHiddenControllerProvider).id;
 }
 
+String _$includeAiEntriesControllerHash() =>
+    r'8db4e5da7dbd6f9ba3da50fc5227a5e0e507708a';
+
+abstract class _$IncludeAiEntriesController
+    extends BuildlessAutoDisposeNotifier<bool> {
+  late final String id;
+
+  bool build({
+    required String id,
+  });
+}
+
+/// See also [IncludeAiEntriesController].
+@ProviderFor(IncludeAiEntriesController)
+const includeAiEntriesControllerProvider = IncludeAiEntriesControllerFamily();
+
+/// See also [IncludeAiEntriesController].
+class IncludeAiEntriesControllerFamily extends Family<bool> {
+  /// See also [IncludeAiEntriesController].
+  const IncludeAiEntriesControllerFamily();
+
+  /// See also [IncludeAiEntriesController].
+  IncludeAiEntriesControllerProvider call({
+    required String id,
+  }) {
+    return IncludeAiEntriesControllerProvider(
+      id: id,
+    );
+  }
+
+  @override
+  IncludeAiEntriesControllerProvider getProviderOverride(
+    covariant IncludeAiEntriesControllerProvider provider,
+  ) {
+    return call(
+      id: provider.id,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'includeAiEntriesControllerProvider';
+}
+
+/// See also [IncludeAiEntriesController].
+class IncludeAiEntriesControllerProvider
+    extends AutoDisposeNotifierProviderImpl<IncludeAiEntriesController, bool> {
+  /// See also [IncludeAiEntriesController].
+  IncludeAiEntriesControllerProvider({
+    required String id,
+  }) : this._internal(
+          () => IncludeAiEntriesController()..id = id,
+          from: includeAiEntriesControllerProvider,
+          name: r'includeAiEntriesControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$includeAiEntriesControllerHash,
+          dependencies: IncludeAiEntriesControllerFamily._dependencies,
+          allTransitiveDependencies:
+              IncludeAiEntriesControllerFamily._allTransitiveDependencies,
+          id: id,
+        );
+
+  IncludeAiEntriesControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+  }) : super.internal();
+
+  final String id;
+
+  @override
+  bool runNotifierBuild(
+    covariant IncludeAiEntriesController notifier,
+  ) {
+    return notifier.build(
+      id: id,
+    );
+  }
+
+  @override
+  Override overrideWith(IncludeAiEntriesController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: IncludeAiEntriesControllerProvider._internal(
+        () => create()..id = id,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeNotifierProviderElement<IncludeAiEntriesController, bool>
+      createElement() {
+    return _IncludeAiEntriesControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is IncludeAiEntriesControllerProvider && other.id == id;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin IncludeAiEntriesControllerRef on AutoDisposeNotifierProviderRef<bool> {
+  /// The parameter `id` of this provider.
+  String get id;
+}
+
+class _IncludeAiEntriesControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<IncludeAiEntriesController, bool>
+    with IncludeAiEntriesControllerRef {
+  _IncludeAiEntriesControllerProviderElement(super.provider);
+
+  @override
+  String get id => (origin as IncludeAiEntriesControllerProvider).id;
+}
+
 String _$newestLinkedIdControllerHash() =>
     r'61d42af166607a4262d284b86caa40eec3caa728';
 

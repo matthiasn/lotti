@@ -25,6 +25,7 @@ class EntryDetailsWidget extends ConsumerWidget {
   const EntryDetailsWidget({
     required this.itemId,
     required this.popOnDelete,
+    required this.showAiEntry,
     super.key,
     this.showTaskDetails = false,
     this.parentTags,
@@ -35,6 +36,7 @@ class EntryDetailsWidget extends ConsumerWidget {
   final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
+  final bool showAiEntry;
 
   final JournalEntity? linkedFrom;
   final EntryLink? link;
@@ -49,7 +51,9 @@ class EntryDetailsWidget extends ConsumerWidget {
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;
-    if (item == null || item.meta.deletedAt != null) {
+    if (item == null ||
+        item.meta.deletedAt != null ||
+        (item is AiResponseEntry && showAiEntry == false)) {
       return const SizedBox.shrink();
     }
 

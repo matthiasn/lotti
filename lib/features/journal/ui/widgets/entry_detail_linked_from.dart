@@ -30,9 +30,8 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
       children: [
         Text(
           context.messages.journalLinkedFromLabel,
-          style: TextStyle(
-            color: context.colorScheme.outline,
-          ),
+          style: context.textTheme.titleSmall
+              ?.copyWith(color: context.colorScheme.outline),
         ),
         ...List.generate(
           items.length,
