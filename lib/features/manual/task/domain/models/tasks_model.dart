@@ -7,8 +7,15 @@ class TaskManual {
     this.innerDetail,
   });
   final String title;
-  final String steps;
   final String? imagePath;
   final bool? imageFirst;
   final bool? innerDetail;
+  final List<StepDetail>? steps;
+  
+}
+class StepDetail {
+
+  StepDetail({required this.guideText, this.innerDetail = false});
+  final String guideText;
+  final bool innerDetail;
 }

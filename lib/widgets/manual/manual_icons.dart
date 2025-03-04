@@ -35,7 +35,6 @@ class ManualIcons extends StatelessWidget {
                   return [
                     WoltModalSheetPage(
                       hasSabGradient: false,
-                      useSafeArea: true,
                       stickyActionBar: const Padding(
                         padding: EdgeInsets.all(10),
                       ),

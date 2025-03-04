@@ -35,14 +35,16 @@ class ManualIcons extends StatelessWidget {
                   return [
                     WoltModalSheetPage(
                       hasSabGradient: false,
-                      useSafeArea: true,
+                      useSafeArea: false,
                       stickyActionBar: const Padding(
                         padding: EdgeInsets.all(10),
                       ),
                       child: Column(
                         children: [
                           ElevatedButton(
-                            onPressed: Navigator.of(context).pop,
+                            onPressed: () {
+                              Navigator.pop(context); // Fix the pop method
+                            },
                             child: SizedBox(
                               width: double.infinity,
                               child: iconFunc,
@@ -53,7 +55,9 @@ class ManualIcons extends StatelessWidget {
                       topBarTitle: manualheader,
                       isTopBarLayerAlwaysVisible: true,
                       trailingNavBarWidget: IconButton(
-                        onPressed: Navigator.of(context).pop,
+                        onPressed: () {
+                          Navigator.pop(context); // Proper pop method
+                        },
                         icon: const Icon(Icons.close),
                       ),
                     ),
@@ -83,12 +87,13 @@ class ManualIcons extends StatelessWidget {
                           Text('first'),
                         ],
                       ),
-                      heroImage:
-                          Image.asset('assets/images/manual/addTask.png'),
+                      heroImage: Image.asset('assets/images/manual/addTask.png'),
                       child: Column(
                         children: [
                           ElevatedButton(
-                            onPressed: Navigator.of(context).pop,
+                            onPressed: () {
+                              Navigator.pop(context); // Fix the pop method
+                            },
                             child: SizedBox(
                               width: double.infinity,
                               child: iconFunc2,
@@ -102,7 +107,9 @@ class ManualIcons extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back),
                       ),
                       trailingNavBarWidget: IconButton(
-                        onPressed: Navigator.of(context).pop,
+                        onPressed: () {
+                          Navigator.pop(context); // Proper pop method
+                        },
                         icon: const Icon(Icons.close),
                       ),
                     ),

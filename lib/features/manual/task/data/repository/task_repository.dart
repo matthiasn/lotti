@@ -5,101 +5,193 @@ class TaskManualRepository {
     return [
       TaskManual(
         title: 'Search.',
-        steps:
-            'Navigate through your tasks effortlessly with the search function.',
+        steps: [
+          StepDetail(
+            guideText:
+                'Navigate through your tasks effortlessly with the search function.',
+          ),
+        ],
         imagePath: 'assets/images/manual/src_icon.png',
         imageFirst: true,
       ),
       TaskManual(
         title: 'Filter',
-        steps: 'Organize your view by filtering tasks your way',
+        steps: [
+          StepDetail(
+            guideText: 'Organize your view by filtering tasks your way',
+          ),
+        ],
         imagePath: 'assets/images/manual/filter_icon1.png',
         imageFirst: false,
       ),
       TaskManual(
         title: 'Add task',
-        steps:
-            'Your gateway to task creation, revealing these powerful options:',
+        steps: [
+          StepDetail(
+            guideText:
+                'Your gateway to task creation, revealing these powerful options:',
+          ),
+        ],
         imagePath: 'assets/images/manual/addTask.png',
         imageFirst: true,
       ),
       TaskManual(
         title: 'Starred',
-        steps: '''
-* Mark standout tasks that deserve special attention.
-
-* Highlight tasks that need follow-up or special focus.
-
-* Actions for managing tasks (?).
-''',
+        steps: [
+          StepDetail(
+            guideText: 'Mark standout tasks that deserve special attention.',
+          ),
+          StepDetail(
+            guideText: 'Highlight tasks that need follow-up or special focus.',
+          ),
+          StepDetail(
+            guideText: 'Actions for managing tasks',
+            innerDetail: true,
+          ),
+        ],
         imagePath: 'assets/images/manual/starred_icon1.png',
         imageFirst: false,
         innerDetail: true,
       ),
       TaskManual(
         title: 'Task Name',
-        steps: '1. Task Name Field e.g. "Plan weekly grocery shopping".',
+        steps: [
+          StepDetail(
+            guideText:
+                '1. Task Name Field e.g. "Plan weekly grocery shopping".',
+          ),
+        ],
         imagePath: 'assets/images/manual/taskname_icon1.png',
         imageFirst: true,
       ),
       TaskManual(
         title: 'Time Estimate',
-        steps: '2. Time Estimate. e.g. 01:30 hours. (?)',
+        steps: [
+          StepDetail(
+            guideText: '2. Time Estimate. e.g. 01:30 hours.',
+          ),
+        ],
         imagePath: 'assets/images/manual/taskTime_stamp1.png',
         imageFirst: false,
       ),
       TaskManual(
         title: 'Status Tracker',
-        steps:
-            '3. Status Tracker Track progress: \nOpen → Groomed → In Progress → Complete (?)',
+        steps: [
+          StepDetail(
+            guideText: '3. Status Tracker Track progress:',
+          ),
+          StepDetail(
+            guideText: 'Open → Groomed → In Progress → Complete',
+            innerDetail: true,
+          ),
+        ],
         imagePath: 'assets/images/manual/task_status.png',
         imageFirst: true,
+        innerDetail: true,
       ),
       TaskManual(
         title: 'Category Management',
-        steps:
-            '4. Category Management.(?) \n- Select existing or create new \n- Pick your color \n- e.g. House Chores\n\n5. Color Picker \n- Choose custom color (?) \n- Personalize categories \n- Visual organization',
+        steps: [
+          StepDetail(
+            guideText:
+                '4. Category Management. \n- Select existing or create new \n- Pick your color \n- e.g. House Chores',
+          ),
+          StepDetail(
+            guideText:
+                '5. Color Picker \n- Choose custom color \n- Personalize categories \n- Visual organization',
+          ),
+        ],
         imagePath: 'assets/images/manual/setCate_icon.png',
         imageFirst: false,
+        innerDetail: true,
       ),
       TaskManual(
         title: 'Smart Notes',
-        steps: '6. Smart Notes.',
+        steps: [
+          StepDetail(
+            guideText: '6. Smart Notes.',
+          ),
+        ],
         imagePath: 'assets/images/manual/taskNote_icon1.png',
         imageFirst: true,
       ),
       TaskManual(
         title: 'Checklist',
-        steps:
-            '7. Interactive Checklists. (?) \ne.g: Oats, \nPineapple, \nTomatoes, \nPasta.',
+        steps: [
+          StepDetail(
+            guideText: '7. Interactive Checklists.',
+            innerDetail: true,
+          ),
+        ],
         imagePath: 'assets/images/manual/checklist_icon1.png',
         imageFirst: false,
+        innerDetail: true,
       ),
       TaskManual(
         title: 'Duration Setting',
-        steps:
-            '8. Duration Setting. (?) \nSet your timeline with From/To dates.',
+        steps: [
+          StepDetail(
+            guideText: '8. Duration Setting.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText: 'Set your timeline with From/To dates.',
+          ),
+        ],
         imagePath: 'assets/images/manual/taskDate_stamp1.png',
         imageFirst: true,
       ),
       TaskManual(
         title: 'Attachments',
-        steps: 'Quick Add Media.\n Your creative hub for rich content:',
+        steps: [
+          StepDetail(
+            guideText: 'Quick Add Media.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText: 'Your creative hub for rich content:',
+          ),
+        ],
         imagePath: 'assets/images/manual/addTask.png',
         imageFirst: false,
       ),
       TaskManual(
         title: 'Add Media',
-        steps: '''
-  + Events : \nSchedule and track important occasions in your life. (?)\n
-  + Additional Tasks : Create quick action items linked to your entries. (?)\n
-  + Voice Notes : Record audio snippets for quick thoughts and reminders. (?)\n
-  + Time Stamps : \nMark exact moments with automatic or custom timing. (?)\n
-  + Text Entries : Document your ideas, reflections, and observations. (?)\n
-  + Photos : \nCapture and store visual memories directly in your entries. (?)
-                                        ''',
+        steps: [
+          StepDetail(
+            guideText:
+                '+ Events : \nSchedule and track important occasions in your life.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText:
+                '+ Additional Tasks : Create quick action items linked to your entries.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText:
+                '+ Voice Notes : Record audio snippets for quick thoughts and reminders.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText:
+                '+ Time Stamps : \nMark exact moments with automatic or custom timing.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText:
+                '+ Text Entries : Document your ideas, reflections, and observations.',
+            innerDetail: true,
+          ),
+          StepDetail(
+            guideText:
+                '+ Photos : \nCapture and store visual memories directly in your entries.',
+            innerDetail: true,
+          ),
+        ],
         imagePath: 'assets/images/manual/addMedia1.png',
         imageFirst: true,
+        innerDetail: true,
       ),
     ];
   }
