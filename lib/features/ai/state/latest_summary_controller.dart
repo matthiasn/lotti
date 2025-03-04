@@ -51,9 +51,11 @@ class LatestSummaryController extends _$LatestSummaryController {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ChecklistItemSuggestionsController
     extends _$ChecklistItemSuggestionsController {
+  Set<String> alreadyCreated = {};
+
   @override
   Future<List<ChecklistItemData>> build({
     required String id,
@@ -79,8 +81,16 @@ class ChecklistItemSuggestionsController
           }
         })
         .nonNulls
+        .where((e) => !alreadyCreated.contains(e.title))
         .toList();
 
     return checklistItems;
+  }
+
+  void notifyCreatedChecklistItem({
+    required String title,
+  }) {
+    alreadyCreated.add(title);
+    ref.invalidateSelf();
   }
 }
