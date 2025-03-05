@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
@@ -24,9 +23,6 @@ Future<void> main() async {
     getIt
       ..registerSingleton<LoggingDb>(LoggingDb())
       ..registerSingleton<LoggingService>(LoggingService());
-
-    // ignore: deprecated_member_use
-    FlutterQuillExtensions.useSuperClipboardPlugin();
 
     WidgetsFlutterBinding.ensureInitialized();
     MediaKit.ensureInitialized();

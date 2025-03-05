@@ -25,9 +25,6 @@ PODS:
   - flutter_secure_storage_macos (6.1.3):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - gal (1.0.0):
-    - Flutter
-    - FlutterMacOS
   - HotKey (0.2.0)
   - hotkey_manager_macos (0.0.1):
     - FlutterMacOS
@@ -107,7 +104,6 @@ DEPENDENCIES:
   - flutter_native_timezone (from `Flutter/ephemeral/.symlinks/plugins/flutter_native_timezone/macos`)
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - gal (from `Flutter/ephemeral/.symlinks/plugins/gal/darwin`)
   - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
   - irondash_engine_context (from `Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/darwin`)
@@ -160,8 +156,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
-  gal:
-    :path: Flutter/ephemeral/.symlinks/plugins/gal/darwin
   hotkey_manager_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
   irondash_engine_context:
@@ -216,7 +210,6 @@ SPEC CHECKSUMS:
   flutter_native_timezone: 3a4724189c47dea215bb3e168e555e18308d312c
   flutter_secure_storage_macos: c2754d3483d20bb207bb9e5a14f1b8e771abcdb9
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  gal: 6a522c75909f1244732d4596d11d6a2f86ff37a5
   HotKey: e96d8a2ddbf4591131e2bb3f54e69554d90cdca6
   hotkey_manager_macos: 1e2edb0c7ae4fe67108af44a9d3445de41404160
   irondash_engine_context: da62996ee25616d2f01bbeb85dc115d813359478

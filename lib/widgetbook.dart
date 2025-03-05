@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
@@ -46,6 +47,7 @@ class WidgetbookApp extends StatelessWidget {
         themeMode: ThemeMode.dark,
         localizationsDelegates: const [
           AppLocalizations.delegate,
+          FlutterQuillLocalizations.delegate,
         ],
         home: Scaffold(
           body: child,

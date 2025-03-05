@@ -70,7 +70,7 @@ class EditorWidget extends ConsumerWidget {
                 controller: controller,
                 scrollController: ScrollController(),
                 focusNode: focusNode,
-                configurations: QuillEditorConfigurations(
+                config: QuillEditorConfig(
                   textSelectionThemeData: TextSelectionThemeData(
                     cursorColor: context.colorScheme.onSurface,
                     selectionColor: context.colorScheme.primary.withAlpha(127),
