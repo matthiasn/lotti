@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -274,40 +275,40 @@ class MyBeamerApp extends StatelessWidget {
               final updateActivity =
                   getIt<UserActivityService>().updateActivity;
 
-              return Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (event) => updateActivity(),
-                onPointerMove: (event) => updateActivity(),
-                onPointerPanZoomStart: (event) => updateActivity(),
-                onPointerPanZoomEnd: (event) => updateActivity(),
-                onPointerUp: (event) => updateActivity(),
-                onPointerSignal: (event) => updateActivity(),
-                onPointerPanZoomUpdate: (event) => updateActivity(),
-                child: TooltipVisibility(
-                  visible: themingSnapshot.enableTooltips,
-                  child: DesktopMenuWrapper(
-                    child: MaterialApp.router(
-                      supportedLocales: AppLocalizations.supportedLocales,
-                      theme: themingSnapshot.lightTheme,
-                      darkTheme: themingSnapshot.darkTheme,
-                      themeMode: themingSnapshot.themeMode,
-                      localizationsDelegates: const [
-                        AppLocalizations.delegate,
-                        FormBuilderLocalizations.delegate,
-                        GlobalMaterialLocalizations.delegate,
-                        GlobalWidgetsLocalizations.delegate,
-                        GlobalCupertinoLocalizations.delegate,
-                      ],
-                      debugShowCheckedModeBanner: false,
-                      routerDelegate: routerDelegate,
-                      routeInformationParser: BeamerParser(),
-                      backButtonDispatcher: BeamerBackButtonDispatcher(
-                        delegate: routerDelegate,
-                      ),
+            return Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (event) => updateActivity(),
+              onPointerMove: (event) => updateActivity(),
+              onPointerPanZoomStart: (event) => updateActivity(),
+              onPointerPanZoomEnd: (event) => updateActivity(),
+              onPointerUp: (event) => updateActivity(),
+              onPointerSignal: (event) => updateActivity(),
+              onPointerPanZoomUpdate: (event) => updateActivity(),
+              child: TooltipVisibility(
+                visible: themingSnapshot.enableTooltips,
+                child: DesktopMenuWrapper(
+                  child: MaterialApp.router(
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    theme: themingSnapshot.lightTheme,
+                    darkTheme: themingSnapshot.darkTheme,
+                    themeMode: themingSnapshot.themeMode,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      FormBuilderLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                      FlutterQuillLocalizations.delegate,
+                    ],
+                    debugShowCheckedModeBanner: false,
+                    routerDelegate: routerDelegate,
+                    routeInformationParser: BeamerParser(),
+                    backButtonDispatcher: BeamerBackButtonDispatcher(
+                      delegate: routerDelegate,
                     ),
                   ),
                 ),
-              );
+              ),);
             },
           ),
         ),

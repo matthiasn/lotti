@@ -28,7 +28,7 @@ class TextViewerWidget extends StatelessWidget {
         controller: controller,
         scrollController: ScrollController(),
         focusNode: FocusNode(),
-        configurations: QuillEditorConfigurations(
+        config: QuillEditorConfig(
           customStyles: customEditorStyles(themeData: Theme.of(context)),
         ),
       ),

@@ -533,8 +533,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: ce9a6b6
-      resolved-ref: ce9a6b6245ca24b988ef30491688073949a49c4a
+      ref: "131dbc1"
+      resolved-ref: "131dbc10c748a76617cc9a9c94251644f207c613"
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
@@ -1038,10 +1038,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "6274834823e61291c0cedee9dd7f73fc7836ea07a12596de8f5fa08598b5eb74"
+      sha256: "3765d057bb63e6e5b7d5aba7c8fb048ec1b38c8a3428ded8c22e57cf2682a580"
       url: "https://pub.dev"
     source: hosted
-    version: "10.8.5"
+    version: "11.0.0"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
@@ -1054,10 +1054,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill_extensions
-      sha256: e8ff79c2bbdbf57d3248ec07055ec54ef0c35e270659d6058efd42a0e0ae1286
+      sha256: "099dbaa962d14ac562eb028fd24d37670338352863044b7751fe642a2d2de938"
       url: "https://pub.dev"
     source: hosted
-    version: "10.8.5"
+    version: "11.0.0"
   flutter_rating:
     dependency: "direct main"
     description:
@@ -1201,22 +1201,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.0"
-  gal:
-    dependency: transitive
-    description:
-      name: gal
-      sha256: "2771519c8b29f784d5e27f4efc2667667eef51c6c47cccaa0435a8fe8aa208e4"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.1"
-  gal_linux:
-    dependency: transitive
-    description:
-      name: gal_linux
-      sha256: "0040d61843134cc5a93e4597080a86f2ba073217957e28b2a684b4d8b050873c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.2"
   geoclue:
     dependency: "direct main"
     description:
@@ -2235,10 +2219,10 @@ packages:
     dependency: transitive
     description:
       name: quill_native_bridge
-      sha256: "0b3200c57bb4f1f12d6c764648d42482891f20f12024c75fe3479cafc1e132c9"
+      sha256: bda0f0ad9bc160dcdd4bd2b378a7ae8bdb55c3d4b7301bf739d5e3b065ee5e82
       url: "https://pub.dev"
     source: hosted
-    version: "10.7.11"
+    version: "11.0.0"
   quill_native_bridge_android:
     dependency: transitive
     description:
@@ -2973,14 +2957,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
-  universal_html:
-    dependency: transitive
-    description:
-      name: universal_html
-      sha256: "56536254004e24d9d8cfdb7dbbf09b74cf8df96729f38a2f5c238163e3d58971"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.4"
   universal_io:
     dependency: transitive
     description:
@@ -3341,14 +3317,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.3"
-  youtube_explode_dart:
-    dependency: transitive
-    description:
-      name: youtube_explode_dart
-      sha256: "9f044feb602659392a7c7a160e74d373671c959373a199658d687fe18ba1ab07"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.9"
 sdks:
   dart: ">=3.7.0 <4.0.0"
   flutter: ">=3.29.0"
