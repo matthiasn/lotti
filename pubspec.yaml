@@ -137,6 +137,7 @@ dependencies:
       url: https://github.com/matthiasn/research.package
       ref: fc229b9d
 
+  riverpod: ^2.6.1
   riverpod_annotation: ^2.3.5
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
@@ -146,6 +147,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
+  super_clipboard: ^0.8.24
   super_drag_and_drop: ^0.8.24
   timezone: ^0.10.0
   tinycolor2: ^3.0.0
@@ -157,7 +159,7 @@ dependencies:
   widgetbook: ^3.7.1
   window_manager: ^0.4.0
   wolt_modal_sheet: ^0.11.0
-
+  
 dependency_overrides:
   device_info_plus: ^11.0.0
   get_it: ^8.0.2

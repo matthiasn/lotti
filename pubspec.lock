@@ -2446,7 +2446,7 @@ packages:
     source: hosted
     version: "1.0.5"
   riverpod:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: riverpod
       sha256: "59062512288d3056b2321804332a13ffdd1bf16df70dcc8e506e411280a72959"
@@ -2883,7 +2883,7 @@ packages:
     source: hosted
     version: "0.3.5"
   super_clipboard:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: super_clipboard
       sha256: "4a6ae6dfaa282ec1f2bff750976f535517ed8ca842d5deae13985eb11c00ac1f"

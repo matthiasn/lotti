@@ -16,7 +16,4 @@ class StepDetail {
   final String guideText;
   final bool innerDetail;
   final String? innerImagePath;
-
 }
-
-
