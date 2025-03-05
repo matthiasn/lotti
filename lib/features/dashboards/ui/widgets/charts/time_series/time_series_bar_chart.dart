@@ -138,7 +138,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
               getTooltipItem: (groupData, timestamp, rodData, foo) {
                 final formatted = valueInHours
                     ? hoursToHhMm(rodData.toY)
-                    : NumberFormat('#,###').format(rodData.toY);
+                    : NumberFormat('#,###.##').format(rodData.toY);
                 return BarTooltipItem(
                   '$formatted $unit\n'
                   '${chartDateFormatterYMD(groupData.x)}',
