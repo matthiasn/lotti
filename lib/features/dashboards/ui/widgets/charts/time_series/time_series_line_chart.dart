@@ -1,7 +1,9 @@
 import 'dart:core';
+import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -45,6 +47,10 @@ class TimeSeriesLineChart extends StatelessWidget {
         )
         .toList();
 
+    final spotValues = spots.map((spot) => spot.y).toList();
+    final minY = spotValues.isNotEmpty ? spotValues.reduce(min).floor() : 0;
+    final maxY = spotValues.isNotEmpty ? spotValues.reduce(max).ceil() : 1;
+
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
       if (ymd.day == 1 ||
@@ -60,10 +66,7 @@ class TimeSeriesLineChart extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 20,
-        right: 20,
-      ),
+      padding: const EdgeInsets.only(top: 20, right: 20),
       child: LineChart(
         transformationConfig: FlTransformationConfig(
           scaleAxis: FlScaleAxis.horizontal,
@@ -92,6 +95,9 @@ class TimeSeriesLineChart extends StatelessWidget {
               tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {
+                  final formattedValue =
+                      NumberFormat('#,###.##').format(spot.y);
+
                   return LineTooltipItem(
                     '',
                     TextStyle(
@@ -101,7 +107,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                     ),
                     children: [
                       TextSpan(
-                        text: '${spot.y.toInt()} $unit\n',
+                        text: '$formattedValue $unit\n',
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
@@ -130,6 +136,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 40,
+                interval: double.maxFinite,
               ),
             ),
           ),
@@ -139,6 +146,8 @@ class TimeSeriesLineChart extends StatelessWidget {
           ),
           minX: rangeStart.millisecondsSinceEpoch.toDouble(),
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
+          minY: minY - 1,
+          maxY: maxY + 1,
           lineBarsData: [
             LineChartBarData(
               spots: spots,

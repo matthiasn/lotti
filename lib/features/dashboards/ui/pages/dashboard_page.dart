@@ -9,7 +9,6 @@ import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -31,7 +30,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   double scale = 10;
   double horizontalPan = 0;
   bool zoomInProgress = false;
-  int timeSpanDays = isDesktop ? 30 : 14;
+  int timeSpanDays = 180;
 
   late TransformationController _transformationController;
 
@@ -80,6 +79,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           const SizedBox(height: 15),
           TimeSpanSegmentedControl(
             timeSpanDays: timeSpanDays,
+            segments: const [180, 365],
             onValueChanged: (int value) {
               setState(() {
                 timeSpanDays = value;
