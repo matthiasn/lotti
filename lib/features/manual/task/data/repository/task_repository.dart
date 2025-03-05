@@ -39,19 +39,18 @@ class TaskManualRepository {
         title: 'Starred',
         steps: [
           StepDetail(
-            guideText: 'Mark standout tasks that deserve special attention.',
+            guideText: 'Mark standout tasks that deserve special attention.\n',
           ),
           StepDetail(
-            guideText: 'Highlight tasks that need follow-up or special focus.',
+            guideText: 'Highlight tasks that need follow-up or special focus.\n',
           ),
           StepDetail(
             guideText: 'Actions for managing tasks',
-            innerDetail: true,
+            innerDetail: true, innerImagePath: 'assets/images/manual/action_opt1.png',
           ),
         ],
         imagePath: 'assets/images/manual/starred_icon1.png',
         imageFirst: false,
-        innerDetail: true,
       ),
       TaskManual(
         title: 'Task Name',
@@ -87,7 +86,6 @@ class TaskManualRepository {
         ],
         imagePath: 'assets/images/manual/task_status.png',
         imageFirst: true,
-        innerDetail: true,
       ),
       TaskManual(
         title: 'Category Management',
@@ -103,7 +101,6 @@ class TaskManualRepository {
         ],
         imagePath: 'assets/images/manual/setCate_icon.png',
         imageFirst: false,
-        innerDetail: true,
       ),
       TaskManual(
         title: 'Smart Notes',
@@ -125,7 +122,6 @@ class TaskManualRepository {
         ],
         imagePath: 'assets/images/manual/checklist_icon1.png',
         imageFirst: false,
-        innerDetail: true,
       ),
       TaskManual(
         title: 'Duration Setting',
@@ -191,7 +187,6 @@ class TaskManualRepository {
         ],
         imagePath: 'assets/images/manual/addMedia1.png',
         imageFirst: true,
-        innerDetail: true,
       ),
     ];
   }

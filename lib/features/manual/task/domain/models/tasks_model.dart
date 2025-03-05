@@ -4,18 +4,19 @@ class TaskManual {
     required this.steps,
     this.imagePath,
     this.imageFirst,
-    this.innerDetail,
   });
   final String title;
   final String? imagePath;
   final bool? imageFirst;
-  final bool? innerDetail;
   final List<StepDetail>? steps;
   
 }
 class StepDetail {
-
-  StepDetail({required this.guideText, this.innerDetail = false});
+  StepDetail({required this.guideText, this.innerDetail = false, this.innerImagePath,});
   final String guideText;
   final bool innerDetail;
+  final String? innerImagePath;
+
 }
+
+
