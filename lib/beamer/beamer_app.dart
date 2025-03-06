@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -215,6 +216,7 @@ class MyBeamerApp extends StatelessWidget {
                       GlobalMaterialLocalizations.delegate,
                       GlobalWidgetsLocalizations.delegate,
                       GlobalCupertinoLocalizations.delegate,
+                      FlutterQuillLocalizations.delegate,
                     ],
                     debugShowCheckedModeBanner: false,
                     routerDelegate: routerDelegate,
