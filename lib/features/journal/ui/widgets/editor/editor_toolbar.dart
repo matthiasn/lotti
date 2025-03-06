@@ -24,9 +24,9 @@ class ToolbarWidget extends ConsumerWidget {
 
     final toolbar = Material(
       elevation: 1,
-      child: QuillToolbar.simple(
+      child: QuillSimpleToolbar(
         controller: controller,
-        configurations: const QuillSimpleToolbarConfigurations(
+        config: const QuillSimpleToolbarConfig(
           toolbarSize: height,
           toolbarSectionSpacing: 0,
           toolbarIconAlignment: WrapAlignment.start,
