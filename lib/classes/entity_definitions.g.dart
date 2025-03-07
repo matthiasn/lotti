@@ -412,6 +412,7 @@ _$AiResponseDataImpl _$$AiResponseDataImplFromJson(Map<String, dynamic> json) =>
       prompt: json['prompt'] as String,
       thoughts: json['thoughts'] as String,
       response: json['response'] as String,
+      type: json['type'] as String?,
       temperature: (json['temperature'] as num?)?.toDouble(),
     );
 
@@ -423,6 +424,7 @@ Map<String, dynamic> _$$AiResponseDataImplToJson(
       'prompt': instance.prompt,
       'thoughts': instance.thoughts,
       'response': instance.response,
+      'type': instance.type,
       'temperature': instance.temperature,
     };
 
