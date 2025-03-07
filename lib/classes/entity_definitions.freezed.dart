@@ -5521,6 +5521,7 @@ mixin _$AiResponseData {
   String get prompt => throw _privateConstructorUsedError;
   String get thoughts => throw _privateConstructorUsedError;
   String get response => throw _privateConstructorUsedError;
+  String? get type => throw _privateConstructorUsedError;
   double? get temperature => throw _privateConstructorUsedError;
 
   /// Serializes this AiResponseData to a JSON map.
@@ -5545,6 +5546,7 @@ abstract class $AiResponseDataCopyWith<$Res> {
       String prompt,
       String thoughts,
       String response,
+      String? type,
       double? temperature});
 }
 
@@ -5568,6 +5570,7 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
     Object? prompt = null,
     Object? thoughts = null,
     Object? response = null,
+    Object? type = freezed,
     Object? temperature = freezed,
   }) {
     return _then(_value.copyWith(
@@ -5591,6 +5594,10 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
       temperature: freezed == temperature
           ? _value.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
@@ -5613,6 +5620,7 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
       String prompt,
       String thoughts,
       String response,
+      String? type,
       double? temperature});
 }
 
@@ -5634,6 +5642,7 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
     Object? prompt = null,
     Object? thoughts = null,
     Object? response = null,
+    Object? type = freezed,
     Object? temperature = freezed,
   }) {
     return _then(_$AiResponseDataImpl(
@@ -5657,6 +5666,10 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
       temperature: freezed == temperature
           ? _value.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
@@ -5674,6 +5687,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
       required this.prompt,
       required this.thoughts,
       required this.response,
+      this.type,
       this.temperature});
 
   factory _$AiResponseDataImpl.fromJson(Map<String, dynamic> json) =>
@@ -5690,11 +5704,13 @@ class _$AiResponseDataImpl implements _AiResponseData {
   @override
   final String response;
   @override
+  final String? type;
+  @override
   final double? temperature;
 
   @override
   String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, temperature: $temperature)';
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, type: $type, temperature: $temperature)';
   }
 
   @override
@@ -5710,6 +5726,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
                 other.thoughts == thoughts) &&
             (identical(other.response, response) ||
                 other.response == response) &&
+            (identical(other.type, type) || other.type == type) &&
             (identical(other.temperature, temperature) ||
                 other.temperature == temperature));
   }
@@ -5717,7 +5734,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, model, systemMessage, prompt,
-      thoughts, response, temperature);
+      thoughts, response, type, temperature);
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
@@ -5743,6 +5760,7 @@ abstract class _AiResponseData implements AiResponseData {
       required final String prompt,
       required final String thoughts,
       required final String response,
+      final String? type,
       final double? temperature}) = _$AiResponseDataImpl;
 
   factory _AiResponseData.fromJson(Map<String, dynamic> json) =
@@ -5758,6 +5776,8 @@ abstract class _AiResponseData implements AiResponseData {
   String get thoughts;
   @override
   String get response;
+  @override
+  String? get type;
   @override
   double? get temperature;
 
