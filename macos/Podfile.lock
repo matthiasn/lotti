@@ -202,7 +202,7 @@ SPEC CHECKSUMS:
   connectivity_plus: 0a976dfd033b59192912fa3c6c7b54aab5093802
   desktop_drop: 69eeff437544aa619c8db7f4481b3a65f7696898
   device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
-  ffmpeg-kit-macos-https: 60de703db964ccca7fd0d4d1611f4c102a8139cc
+  ffmpeg-kit-macos-https: 8fe9a5bdb2a42ecb2caf067522aa9a8ce386294e
   ffmpeg_kit_flutter: 5bd75928cf88ec177cea410b027681e4bfe09452
   file_selector_macos: cc3858c981fe6889f364731200d6232dac1d812d
   flutter_image_compress_macos: c26c3c13ea0f28ae6dea4e139b3292e7729f99f1

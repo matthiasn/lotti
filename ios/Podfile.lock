@@ -246,11 +246,19 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
+<<<<<<< HEAD
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   ffmpeg-kit-ios-https: ac1fbdb6095fc1595b446084a3447de2c6d78347
   ffmpeg_kit_flutter: 66a088989cd7aa07aa8cde7c93a2e4611753fea5
+=======
+  audio_session: 19e9480dbdd4e5f6c4543826b2e8b0e4ab6145fe
+  connectivity_plus: 2a701ffec2c0ae28a48cf7540e279787e77c447d
+  device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
+  ffmpeg-kit-ios-https: ac1fbdb6095fc1595b446084a3447de2c6d78347
+  ffmpeg_kit_flutter: b4ca70cac3fc1d8ac14cdc660754b60870358732
+>>>>>>> 9222f6a15 (chore: upgrade to Flutter 3.29.1 & dependencies)
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
 <<<<<<< HEAD
   flutter_health_fit: a3de34d7ef2daf1f29f60306584702a7e165f8b1
