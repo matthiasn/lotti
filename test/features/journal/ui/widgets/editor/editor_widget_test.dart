@@ -73,6 +73,7 @@ void main() {
           EditorWidget(entryId: testTextEntry.meta.id),
         ),
       );
+
       await tester.pumpAndSettle();
 
       final boldIconFinder = find.byIcon(Icons.format_bold);
