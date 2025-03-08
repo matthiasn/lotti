@@ -34,10 +34,6 @@ class EditorWidget extends ConsumerWidget {
     final shouldShowEditorToolBar =
         entryState.value?.shouldShowEditorToolBar ?? false;
 
-    if (shouldShowEditorToolBar) {
-      focusNode.requestFocus();
-    }
-
     return Card(
       color: shouldShowEditorToolBar
           ? context.colorScheme.surface.brighten()
@@ -75,7 +71,6 @@ class EditorWidget extends ConsumerWidget {
                     cursorColor: context.colorScheme.onSurface,
                     selectionColor: context.colorScheme.primary.withAlpha(127),
                   ),
-                  autoFocus: shouldShowEditorToolBar,
                   minHeight: minHeight,
                   placeholder: context.messages.editorPlaceholder,
                   padding: EdgeInsets.only(
