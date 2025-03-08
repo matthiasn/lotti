@@ -36,22 +36,23 @@ class AiTaskChecklistSummaryController
       return;
     }
 
-    const systemMessage =
-        'The prompt is a markdown document describing a task, with the '
-        'logbook of the completion of the task, including transcripts of '
-        'audio recordings, and images, for example screenshots. '
-        'Also, there is a array of already defined and tracked checklist items, '
-        'as JSON. Your job is to find new TODOs that are not mentioned here yet, '
-        'but only in the logbook of the task. '
-        'This may be empty if the task has no checklist items yet. '
-        'Summarize the task and the achieved results, and the remaining steps '
-        'that have not been completed yet. '
-        'Note any learnings or insights that can be drawn from the task, if any. '
-        'Note that the logbook is in reverse chronological order. '
-        'Keep it short and succinct. '
-        'At the end of the response, add a list of '
-        'TODOs/checklist items that are new and not already tracked, where '
-        'each item is prefixed with the String "TODO: ". ';
+    const systemMessage = '''
+        The prompt is a markdown document describing a task, with the 
+        logbook of the completion of the task, including transcripts of 
+        audio recordings, and images, for example screenshots. 
+        Also, there is a array of already defined and tracked checklist items, 
+        as JSON. Your job is to find new TODOs that are not mentioned here yet, 
+        but only in the logbook of the task. 
+        This may be empty if the task has no checklist items yet. 
+        Summarize the task and the achieved results, and the remaining steps 
+        that have not been completed yet. 
+        Note any learnings or insights that can be drawn from the task, if any. 
+        Note that the logbook is in reverse chronological order. 
+        Keep it short and succinct. 
+        At the end of the response, add a list of 
+        TODOs/checklist items that are new and not already tracked, where 
+        each item is prefixed with the String "TODO: ". 
+    ''';
 
     final buffer = StringBuffer();
 
@@ -80,6 +81,7 @@ class AiTaskChecklistSummaryController
       prompt: markdown,
       thoughts: thoughts.replaceAll('<think>', ''),
       response: response,
+      type: 'TaskSummary',
     );
 
     await getIt<PersistenceLogic>().createAiResponseEntry(
