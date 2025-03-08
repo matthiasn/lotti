@@ -321,11 +321,14 @@ class EntryController extends _$EntryController {
     }
   }
 
-  void setDirty({required bool value}) {
+  void setDirty({required bool value, bool requestFocus = true}) {
     if (_dirty == value) {
       return;
     }
     _dirty = value;
+    if (value && requestFocus) {
+      focusNode.requestFocus();
+    }
     emitState();
   }
 
