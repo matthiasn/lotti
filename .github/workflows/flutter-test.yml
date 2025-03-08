@@ -25,5 +25,8 @@ jobs:
         run: pod install
         working-directory: macos
       - name: Run Flutter tests
-        run: flutter test
-      - uses: codecov/codecov-action@v3
+        run: flutter test --coverage
+      - uses: codecov/codecov-action@v5
+        with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            slug: matthiasn/lotti
