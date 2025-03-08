@@ -71,7 +71,10 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                   maxLines: null,
                   style: Theme.of(context).textTheme.titleLarge,
                   name: 'title',
-                  onChanged: (_) => notifier.setDirty(value: true),
+                  onChanged: (_) => notifier.setDirty(
+                    value: true,
+                    requestFocus: false,
+                  ),
                 ),
                 inputSpacer,
                 Row(
