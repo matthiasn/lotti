@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
   final createdAt = entity.meta.createdAt;
+
   final subtype = entity.maybeMap(
     quantitative: (QuantitativeEntry entry) => entry.data.dataType,
     measurement: (MeasurementEntry entry) => entry.data.dataTypeId,
@@ -16,6 +17,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
         entry.data.taskResult.identifier.toLowerCase(),
     workout: (WorkoutEntry entry) => entry.data.workoutType,
     habitCompletion: (HabitCompletionEntry entry) => entry.data.habitId,
+    aiResponse: (AiResponseEntry entry) => entry.data.type,
     orElse: () => '',
   );
 
