@@ -42,6 +42,7 @@ class ChecklistWidget extends StatefulWidget {
 class _ChecklistWidgetState extends State<ChecklistWidget> {
   bool _isEditing = false;
   late List<String> _itemIds;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -179,6 +180,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             vertical: 10,
           ),
           child: TitleTextField(
+            focusNode: _focusNode,
             onSave: (title) async {
               final id = await widget.onCreateChecklistItem.call(title);
               setState(() {

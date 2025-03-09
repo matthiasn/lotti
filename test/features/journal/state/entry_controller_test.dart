@@ -505,8 +505,6 @@ void main() {
           ),
         ),
       );
-
-      notifier.focus();
     });
   });
 }
