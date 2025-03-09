@@ -183,7 +183,11 @@ class ConflictDetailRoute extends StatelessWidget {
               fromSync.meta.vectorClock,
             );
 
-            final withResolvedVectorClock = local.copyWith(
+            final localWithResolvedVectorClock = local.copyWith(
+              meta: local.meta.copyWith(vectorClock: merged),
+            );
+
+            final remoteWithResolvedVectorClock = fromSync.copyWith(
               meta: local.meta.copyWith(vectorClock: merged),
             );
 
@@ -201,7 +205,7 @@ class ConflictDetailRoute extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: IgnorePointer(
                         child: JournalCard(
-                          item: withResolvedVectorClock,
+                          item: localWithResolvedVectorClock,
                           maxHeight: 1000,
                         ),
                       ),
@@ -219,8 +223,8 @@ class ConflictDetailRoute extends StatelessWidget {
                           clipBehavior: Clip.antiAlias,
                           onPressed: () {
                             getIt<PersistenceLogic>().updateJournalEntity(
-                              withResolvedVectorClock,
-                              withResolvedVectorClock.meta,
+                              localWithResolvedVectorClock,
+                              localWithResolvedVectorClock.meta,
                             );
                             settingsBeamerDelegate.beamBack();
                           },
@@ -237,10 +241,28 @@ class ConflictDetailRoute extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: IgnorePointer(
                         child: JournalCard(
-                          item: fromSync,
+                          item: remoteWithResolvedVectorClock,
                           maxHeight: 1000,
                         ),
                       ),
+                    ),
+                    Row(
+                      children: [
+                        TextButton(
+                          clipBehavior: Clip.antiAlias,
+                          onPressed: () {
+                            getIt<PersistenceLogic>().updateJournalEntity(
+                              remoteWithResolvedVectorClock,
+                              remoteWithResolvedVectorClock.meta,
+                            );
+                            settingsBeamerDelegate.beamBack();
+                          },
+                          child: const Text(
+                            'Resolve with remote version',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -264,7 +286,7 @@ class ConflictDetailRoute extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      'Merged: ${withResolvedVectorClock.meta.vectorClock}',
+                      'Resolved with local: ${localWithResolvedVectorClock.meta.vectorClock}',
                       style: monospaceTextStyleSmall,
                     ),
                     const SizedBox(height: 5),
