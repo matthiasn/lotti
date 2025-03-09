@@ -68,8 +68,10 @@ class ChecklistItemSuggestionsController
       multiLine: true,
     );
 
+    final response = latestAiEntry?.data.response ?? '';
+
     final checklistItems = exp
-        .allMatches(latestAiEntry?.data.response ?? '')
+        .allMatches(response.replaceAll('*', ''))
         .map((e) {
           final title = e.group(1);
           if (title != null) {
