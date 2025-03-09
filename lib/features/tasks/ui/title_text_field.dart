@@ -9,6 +9,7 @@ class TitleTextField extends StatefulWidget {
   const TitleTextField({
     required this.onSave,
     this.onClear,
+    this.focusNode,
     this.clearOnSave = false,
     this.resetToInitialValue = false,
     this.initialValue,
@@ -22,6 +23,7 @@ class TitleTextField extends StatefulWidget {
   final String? semanticsLabel;
   final bool clearOnSave;
   final bool resetToInitialValue;
+  final FocusNode? focusNode;
 
   @override
   State<TitleTextField> createState() => _TitleTextFieldState();
@@ -54,6 +56,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
         _showClearButton = widget.resetToInitialValue;
         _dirty = false;
       });
+      widget.focusNode?.requestFocus();
     }
 
     void onClear() {
@@ -77,6 +80,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
           _showClearButton = value != widget.initialValue;
         });
       },
+      focusNode: widget.focusNode,
       decoration: inputDecoration(
         labelText: context.messages.checklistAddItem,
         semanticsLabel: widget.semanticsLabel,
