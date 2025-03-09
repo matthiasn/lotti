@@ -77,7 +77,10 @@ class _EventFormState extends ConsumerState<EventForm> {
                   maxLines: null,
                   style: const TextStyle(fontSize: fontSizeLarge),
                   name: 'title',
-                  onChanged: (_) => notifier.setDirty(value: true),
+                  onChanged: (_) => notifier.setDirty(
+                    value: true,
+                    requestFocus: false,
+                  ),
                 ),
                 inputSpacer,
                 Wrap(

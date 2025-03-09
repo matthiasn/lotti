@@ -363,10 +363,6 @@ class EntryController extends _$EntryController {
     }
   }
 
-  void focus() {
-    focusNode.requestFocus();
-  }
-
   Future<void> toggleFlagged() async {
     final item = await _journalDb.journalEntityById(id);
     if (item != null) {
