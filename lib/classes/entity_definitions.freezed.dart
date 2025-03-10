@@ -5521,6 +5521,8 @@ mixin _$AiResponseData {
   String get prompt => throw _privateConstructorUsedError;
   String get thoughts => throw _privateConstructorUsedError;
   String get response => throw _privateConstructorUsedError;
+  List<AiInputActionItemObject>? get suggestedActionItems =>
+      throw _privateConstructorUsedError;
   String? get type => throw _privateConstructorUsedError;
   double? get temperature => throw _privateConstructorUsedError;
 
@@ -5546,6 +5548,7 @@ abstract class $AiResponseDataCopyWith<$Res> {
       String prompt,
       String thoughts,
       String response,
+      List<AiInputActionItemObject>? suggestedActionItems,
       String? type,
       double? temperature});
 }
@@ -5570,6 +5573,7 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
     Object? prompt = null,
     Object? thoughts = null,
     Object? response = null,
+    Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
   }) {
@@ -5594,6 +5598,10 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
+      suggestedActionItems: freezed == suggestedActionItems
+          ? _value.suggestedActionItems
+          : suggestedActionItems // ignore: cast_nullable_to_non_nullable
+              as List<AiInputActionItemObject>?,
       type: freezed == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -5620,6 +5628,7 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
       String prompt,
       String thoughts,
       String response,
+      List<AiInputActionItemObject>? suggestedActionItems,
       String? type,
       double? temperature});
 }
@@ -5642,6 +5651,7 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
     Object? prompt = null,
     Object? thoughts = null,
     Object? response = null,
+    Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
   }) {
@@ -5666,6 +5676,10 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
+      suggestedActionItems: freezed == suggestedActionItems
+          ? _value._suggestedActionItems
+          : suggestedActionItems // ignore: cast_nullable_to_non_nullable
+              as List<AiInputActionItemObject>?,
       type: freezed == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -5687,8 +5701,10 @@ class _$AiResponseDataImpl implements _AiResponseData {
       required this.prompt,
       required this.thoughts,
       required this.response,
+      final List<AiInputActionItemObject>? suggestedActionItems,
       this.type,
-      this.temperature});
+      this.temperature})
+      : _suggestedActionItems = suggestedActionItems;
 
   factory _$AiResponseDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$AiResponseDataImplFromJson(json);
@@ -5703,6 +5719,17 @@ class _$AiResponseDataImpl implements _AiResponseData {
   final String thoughts;
   @override
   final String response;
+  final List<AiInputActionItemObject>? _suggestedActionItems;
+  @override
+  List<AiInputActionItemObject>? get suggestedActionItems {
+    final value = _suggestedActionItems;
+    if (value == null) return null;
+    if (_suggestedActionItems is EqualUnmodifiableListView)
+      return _suggestedActionItems;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   final String? type;
   @override
@@ -5710,7 +5737,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
 
   @override
   String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, type: $type, temperature: $temperature)';
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
   }
 
   @override
@@ -5726,6 +5753,8 @@ class _$AiResponseDataImpl implements _AiResponseData {
                 other.thoughts == thoughts) &&
             (identical(other.response, response) ||
                 other.response == response) &&
+            const DeepCollectionEquality()
+                .equals(other._suggestedActionItems, _suggestedActionItems) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.temperature, temperature) ||
                 other.temperature == temperature));
@@ -5733,8 +5762,16 @@ class _$AiResponseDataImpl implements _AiResponseData {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, model, systemMessage, prompt,
-      thoughts, response, type, temperature);
+  int get hashCode => Object.hash(
+      runtimeType,
+      model,
+      systemMessage,
+      prompt,
+      thoughts,
+      response,
+      const DeepCollectionEquality().hash(_suggestedActionItems),
+      type,
+      temperature);
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
@@ -5760,6 +5797,7 @@ abstract class _AiResponseData implements AiResponseData {
       required final String prompt,
       required final String thoughts,
       required final String response,
+      final List<AiInputActionItemObject>? suggestedActionItems,
       final String? type,
       final double? temperature}) = _$AiResponseDataImpl;
 
@@ -5776,6 +5814,8 @@ abstract class _AiResponseData implements AiResponseData {
   String get thoughts;
   @override
   String get response;
+  @override
+  List<AiInputActionItemObject>? get suggestedActionItems;
   @override
   String? get type;
   @override

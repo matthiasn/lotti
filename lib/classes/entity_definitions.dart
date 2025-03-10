@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'entity_definitions.freezed.dart';
@@ -172,6 +173,7 @@ class AiResponseData with _$AiResponseData {
     required String prompt,
     required String thoughts,
     required String response,
+    List<AiInputActionItemObject>? suggestedActionItems,
     String? type,
     double? temperature,
   }) = _AiResponseData;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_list_tile.dart';
+import 'package:lotti/features/ai/ui/task_summary/action_item_suggestions_list_tile.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_list_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -28,6 +29,11 @@ class AiPopUpMenu extends StatelessWidget {
           children: [
             if (journalEntity != null && journalEntity is Task)
               AiTaskSummaryListTile(
+                journalEntity: journalEntity,
+                linkedFromId: linkedFromId,
+              ),
+            if (journalEntity != null && journalEntity is Task)
+              ActionItemSuggestionsListTile(
                 journalEntity: journalEntity,
                 linkedFromId: linkedFromId,
               ),

@@ -64,7 +64,7 @@ class ChecklistItemSuggestionsController
         await ref.watch(latestSummaryControllerProvider(id: id).future);
 
     final exp = RegExp(
-      r'TODO:\s(.+)',
+      r'"title":\s(.+)',
       multiLine: true,
     );
 
