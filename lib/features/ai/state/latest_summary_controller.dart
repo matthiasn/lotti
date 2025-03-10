@@ -49,13 +49,31 @@ class LatestSummaryController extends _$LatestSummaryController {
 
     return linked.whereType<AiResponseEntry>().toList().firstOrNull;
   }
+
+  Future<void> removeActionItem({
+    required String title,
+  }) async {
+    final latestAiEntry = state.valueOrNull;
+
+    if (latestAiEntry == null) {
+      return;
+    }
+
+    final updated = latestAiEntry.copyWith(
+      data: latestAiEntry.data.copyWith(
+        suggestedActionItems: latestAiEntry.data.suggestedActionItems
+            ?.where((item) => item.title != title)
+            .toList(),
+      ),
+    );
+
+    state = AsyncData(updated);
+  }
 }
 
 @Riverpod(keepAlive: true)
 class ChecklistItemSuggestionsController
     extends _$ChecklistItemSuggestionsController {
-  Set<String> alreadyCreated = {};
-
   @override
   Future<List<ChecklistItemData>> build({
     required String id,
@@ -65,25 +83,25 @@ class ChecklistItemSuggestionsController
 
     final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
 
-    final checklistItems = suggestedActionItems
-        .map((item) {
-          final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
-          return ChecklistItemData(
-            title: title,
-            isChecked: item.completed,
-            linkedChecklists: [],
-          );
-        })
-        .where((e) => !alreadyCreated.contains(e.title))
-        .toList();
+    final checklistItems = suggestedActionItems.map((item) {
+      final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
+      return ChecklistItemData(
+        title: title,
+        isChecked: item.completed,
+        linkedChecklists: [],
+      );
+    }).toList();
 
     return checklistItems;
   }
 
-  void notifyCreatedChecklistItem({
-    required String title,
-  }) {
-    alreadyCreated.add(title);
-    ref.invalidateSelf();
+  void notifyCreatedChecklistItem({required String title}) {
+    final notifier = latestSummaryControllerProvider(id: id).notifier;
+    ref.read(notifier).removeActionItem(title: title);
+  }
+
+  void removeActionItem({required String title}) {
+    final notifier = latestSummaryControllerProvider(id: id).notifier;
+    ref.read(notifier).removeActionItem(title: title);
   }
 }

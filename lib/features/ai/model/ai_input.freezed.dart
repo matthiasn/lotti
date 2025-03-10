@@ -326,7 +326,6 @@ mixin _$AiActionItem {
   bool get completed => throw _privateConstructorUsedError;
   DateTime? get deadline => throw _privateConstructorUsedError;
   DateTime? get completionDate => throw _privateConstructorUsedError;
-  ActionItemStatus? get status => throw _privateConstructorUsedError;
 
   /// Serializes this AiActionItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -348,8 +347,7 @@ abstract class $AiActionItemCopyWith<$Res> {
       {String title,
       bool completed,
       DateTime? deadline,
-      DateTime? completionDate,
-      ActionItemStatus? status});
+      DateTime? completionDate});
 }
 
 /// @nodoc
@@ -371,7 +369,6 @@ class _$AiActionItemCopyWithImpl<$Res, $Val extends AiActionItem>
     Object? completed = null,
     Object? deadline = freezed,
     Object? completionDate = freezed,
-    Object? status = freezed,
   }) {
     return _then(_value.copyWith(
       title: null == title
@@ -390,10 +387,6 @@ class _$AiActionItemCopyWithImpl<$Res, $Val extends AiActionItem>
           ? _value.completionDate
           : completionDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as ActionItemStatus?,
     ) as $Val);
   }
 }
@@ -410,8 +403,7 @@ abstract class _$$AiActionItemImplCopyWith<$Res>
       {String title,
       bool completed,
       DateTime? deadline,
-      DateTime? completionDate,
-      ActionItemStatus? status});
+      DateTime? completionDate});
 }
 
 /// @nodoc
@@ -431,7 +423,6 @@ class __$$AiActionItemImplCopyWithImpl<$Res>
     Object? completed = null,
     Object? deadline = freezed,
     Object? completionDate = freezed,
-    Object? status = freezed,
   }) {
     return _then(_$AiActionItemImpl(
       title: null == title
@@ -450,10 +441,6 @@ class __$$AiActionItemImplCopyWithImpl<$Res>
           ? _value.completionDate
           : completionDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as ActionItemStatus?,
     ));
   }
 }
@@ -465,8 +452,7 @@ class _$AiActionItemImpl implements _AiActionItem {
       {required this.title,
       required this.completed,
       this.deadline,
-      this.completionDate,
-      this.status});
+      this.completionDate});
 
   factory _$AiActionItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$AiActionItemImplFromJson(json);
@@ -479,12 +465,10 @@ class _$AiActionItemImpl implements _AiActionItem {
   final DateTime? deadline;
   @override
   final DateTime? completionDate;
-  @override
-  final ActionItemStatus? status;
 
   @override
   String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, deadline: $deadline, completionDate: $completionDate, status: $status)';
+    return 'AiActionItem(title: $title, completed: $completed, deadline: $deadline, completionDate: $completionDate)';
   }
 
   @override
@@ -498,14 +482,13 @@ class _$AiActionItemImpl implements _AiActionItem {
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
             (identical(other.completionDate, completionDate) ||
-                other.completionDate == completionDate) &&
-            (identical(other.status, status) || other.status == status));
+                other.completionDate == completionDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, title, completed, deadline, completionDate, status);
+  int get hashCode =>
+      Object.hash(runtimeType, title, completed, deadline, completionDate);
 
   /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
@@ -528,8 +511,7 @@ abstract class _AiActionItem implements AiActionItem {
       {required final String title,
       required final bool completed,
       final DateTime? deadline,
-      final DateTime? completionDate,
-      final ActionItemStatus? status}) = _$AiActionItemImpl;
+      final DateTime? completionDate}) = _$AiActionItemImpl;
 
   factory _AiActionItem.fromJson(Map<String, dynamic> json) =
       _$AiActionItemImpl.fromJson;
@@ -542,8 +524,6 @@ abstract class _AiActionItem implements AiActionItem {
   DateTime? get deadline;
   @override
   DateTime? get completionDate;
-  @override
-  ActionItemStatus? get status;
 
   /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.

@@ -19,8 +19,6 @@ class AiInputTaskObject with _$AiInputTaskObject {
       _$AiInputTaskObjectFromJson(json);
 }
 
-enum ActionItemStatus { suggested, used, discarded }
-
 @freezed
 class AiActionItem with _$AiActionItem {
   const factory AiActionItem({
@@ -28,7 +26,6 @@ class AiActionItem with _$AiActionItem {
     required bool completed,
     DateTime? deadline,
     DateTime? completionDate,
-    ActionItemStatus? status,
   }) = _AiActionItem;
 
   factory AiActionItem.fromJson(Map<String, dynamic> json) =>
