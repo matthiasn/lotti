@@ -7,7 +7,7 @@ part of 'latest_summary_controller.dart';
 // **************************************************************************
 
 String _$latestSummaryControllerHash() =>
-    r'440655e1ee0fe7017852c5430612279566096680';
+    r'664d66fb78947d1281abede898ba019b44439765';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -178,7 +178,7 @@ class _LatestSummaryControllerProviderElement
 }
 
 String _$checklistItemSuggestionsControllerHash() =>
-    r'8d4b8975a5f6357473729c73c3b01a1efc2b6d72';
+    r'db020f9a335942f7a16064d6a37754180fd65b0d';
 
 abstract class _$ChecklistItemSuggestionsController
     extends BuildlessAsyncNotifier<List<ChecklistItemData>> {

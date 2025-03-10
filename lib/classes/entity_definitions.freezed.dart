@@ -5521,7 +5521,7 @@ mixin _$AiResponseData {
   String get prompt => throw _privateConstructorUsedError;
   String get thoughts => throw _privateConstructorUsedError;
   String get response => throw _privateConstructorUsedError;
-  List<AiInputActionItemObject>? get suggestedActionItems =>
+  List<AiActionItem>? get suggestedActionItems =>
       throw _privateConstructorUsedError;
   String? get type => throw _privateConstructorUsedError;
   double? get temperature => throw _privateConstructorUsedError;
@@ -5548,7 +5548,7 @@ abstract class $AiResponseDataCopyWith<$Res> {
       String prompt,
       String thoughts,
       String response,
-      List<AiInputActionItemObject>? suggestedActionItems,
+      List<AiActionItem>? suggestedActionItems,
       String? type,
       double? temperature});
 }
@@ -5601,7 +5601,7 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
       suggestedActionItems: freezed == suggestedActionItems
           ? _value.suggestedActionItems
           : suggestedActionItems // ignore: cast_nullable_to_non_nullable
-              as List<AiInputActionItemObject>?,
+              as List<AiActionItem>?,
       type: freezed == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -5628,7 +5628,7 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
       String prompt,
       String thoughts,
       String response,
-      List<AiInputActionItemObject>? suggestedActionItems,
+      List<AiActionItem>? suggestedActionItems,
       String? type,
       double? temperature});
 }
@@ -5679,7 +5679,7 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
       suggestedActionItems: freezed == suggestedActionItems
           ? _value._suggestedActionItems
           : suggestedActionItems // ignore: cast_nullable_to_non_nullable
-              as List<AiInputActionItemObject>?,
+              as List<AiActionItem>?,
       type: freezed == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -5701,7 +5701,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
       required this.prompt,
       required this.thoughts,
       required this.response,
-      final List<AiInputActionItemObject>? suggestedActionItems,
+      final List<AiActionItem>? suggestedActionItems,
       this.type,
       this.temperature})
       : _suggestedActionItems = suggestedActionItems;
@@ -5719,9 +5719,9 @@ class _$AiResponseDataImpl implements _AiResponseData {
   final String thoughts;
   @override
   final String response;
-  final List<AiInputActionItemObject>? _suggestedActionItems;
+  final List<AiActionItem>? _suggestedActionItems;
   @override
-  List<AiInputActionItemObject>? get suggestedActionItems {
+  List<AiActionItem>? get suggestedActionItems {
     final value = _suggestedActionItems;
     if (value == null) return null;
     if (_suggestedActionItems is EqualUnmodifiableListView)
@@ -5797,7 +5797,7 @@ abstract class _AiResponseData implements AiResponseData {
       required final String prompt,
       required final String thoughts,
       required final String response,
-      final List<AiInputActionItemObject>? suggestedActionItems,
+      final List<AiActionItem>? suggestedActionItems,
       final String? type,
       final double? temperature}) = _$AiResponseDataImpl;
 
@@ -5815,7 +5815,7 @@ abstract class _AiResponseData implements AiResponseData {
   @override
   String get response;
   @override
-  List<AiInputActionItemObject>? get suggestedActionItems;
+  List<AiActionItem>? get suggestedActionItems;
   @override
   String? get type;
   @override

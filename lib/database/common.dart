@@ -45,7 +45,8 @@ LazyDatabase openDbConnection(
 
     final database = NativeDatabase.createInBackground(file);
 
-    return kDebugMode ? database.interceptWith(LogInterceptor()) : database;
+    return database;
+    //return kDebugMode ? database.interceptWith(LogInterceptor()) : database;
   });
 }
 

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/modals.dart';
 
-class AiTaskSummaryListTile extends ConsumerWidget {
+class AiTaskSummaryListTile extends StatelessWidget {
   const AiTaskSummaryListTile({
     required this.journalEntity,
     this.linkedFromId,
@@ -16,7 +15,7 @@ class AiTaskSummaryListTile extends ConsumerWidget {
   final String? linkedFromId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.chat_rounded),
       title: Text(

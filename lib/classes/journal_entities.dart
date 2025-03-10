@@ -238,6 +238,9 @@ extension JournalEntityExtension on JournalEntity {
       case Task():
         ids.add(taskNotification);
 
+      case AiResponseEntry():
+        ids.add(aiResponseNotification);
+
       case JournalEntry():
         ids.add(textEntryNotification);
 

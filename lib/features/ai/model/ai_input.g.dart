@@ -16,8 +16,7 @@ _$AiInputTaskObjectImpl _$$AiInputTaskObjectImplFromJson(
       timeSpent: Duration(microseconds: (json['timeSpent'] as num).toInt()),
       creationDate: DateTime.parse(json['creationDate'] as String),
       actionItems: (json['actionItems'] as List<dynamic>)
-          .map((e) =>
-              AiInputActionItemObject.fromJson(e as Map<String, dynamic>))
+          .map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       logEntries: (json['logEntries'] as List<dynamic>)
           .map((e) => AiInputLogEntryObject.fromJson(e as Map<String, dynamic>))
@@ -36,9 +35,8 @@ Map<String, dynamic> _$$AiInputTaskObjectImplToJson(
       'logEntries': instance.logEntries,
     };
 
-_$AiInputActionItemObjectImpl _$$AiInputActionItemObjectImplFromJson(
-        Map<String, dynamic> json) =>
-    _$AiInputActionItemObjectImpl(
+_$AiActionItemImpl _$$AiActionItemImplFromJson(Map<String, dynamic> json) =>
+    _$AiActionItemImpl(
       title: json['title'] as String,
       completed: json['completed'] as bool,
       deadline: json['deadline'] == null
@@ -49,8 +47,7 @@ _$AiInputActionItemObjectImpl _$$AiInputActionItemObjectImplFromJson(
           : DateTime.parse(json['completionDate'] as String),
     );
 
-Map<String, dynamic> _$$AiInputActionItemObjectImplToJson(
-        _$AiInputActionItemObjectImpl instance) =>
+Map<String, dynamic> _$$AiActionItemImplToJson(_$AiActionItemImpl instance) =>
     <String, dynamic>{
       'title': instance.title,
       'completed': instance.completed,
@@ -73,4 +70,18 @@ Map<String, dynamic> _$$AiInputLogEntryObjectImplToJson(
       'creationTimestamp': instance.creationTimestamp.toIso8601String(),
       'loggedDuration': instance.loggedDuration.inMicroseconds,
       'text': instance.text,
+    };
+
+_$AiInputActionItemsListImpl _$$AiInputActionItemsListImplFromJson(
+        Map<String, dynamic> json) =>
+    _$AiInputActionItemsListImpl(
+      items: (json['items'] as List<dynamic>)
+          .map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$$AiInputActionItemsListImplToJson(
+        _$AiInputActionItemsListImpl instance) =>
+    <String, dynamic>{
+      'items': instance.items,
     };
