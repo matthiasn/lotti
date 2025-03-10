@@ -63,26 +63,17 @@ class ChecklistItemSuggestionsController
     final latestAiEntry =
         await ref.watch(latestSummaryControllerProvider(id: id).future);
 
-    final exp = RegExp(
-      r'"title":\s(.+)',
-      multiLine: true,
-    );
+    final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
 
-    final response = latestAiEntry?.data.response ?? '';
-
-    final checklistItems = exp
-        .allMatches(response.replaceAll('*', ''))
-        .map((e) {
-          final title = e.group(1);
-          if (title != null) {
-            return ChecklistItemData(
-              title: title.replaceAll(RegExp('[-.,"*]'), '').trim(),
-              isChecked: false,
-              linkedChecklists: [],
-            );
-          }
+    final checklistItems = suggestedActionItems
+        .map((item) {
+          final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
+          return ChecklistItemData(
+            title: title,
+            isChecked: item.completed,
+            linkedChecklists: [],
+          );
         })
-        .nonNulls
         .where((e) => !alreadyCreated.contains(e.title))
         .toList();
 

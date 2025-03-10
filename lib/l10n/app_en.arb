@@ -35,7 +35,7 @@
   "createCategoryTitle": "Create Category:",
   "checklistAddItem": "Add a new item",
   "checklistItemDelete": "Delete checklist item?",
-  "checklistItemDrag": "Drag into checklist to add",
+  "checklistItemDrag": "Drag suggestions into checklist",
   "checklistDelete": "Delete checklist?",
   "checklistItemDeleteCancel": "Cancel",
   "checklistItemDeleteConfirm": "Confirm",
