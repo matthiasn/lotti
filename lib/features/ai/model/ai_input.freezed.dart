@@ -25,8 +25,7 @@ mixin _$AiInputTaskObject {
   Duration get estimatedDuration => throw _privateConstructorUsedError;
   Duration get timeSpent => throw _privateConstructorUsedError;
   DateTime get creationDate => throw _privateConstructorUsedError;
-  List<AiInputActionItemObject> get actionItems =>
-      throw _privateConstructorUsedError;
+  List<AiActionItem> get actionItems => throw _privateConstructorUsedError;
   List<AiInputLogEntryObject> get logEntries =>
       throw _privateConstructorUsedError;
 
@@ -52,7 +51,7 @@ abstract class $AiInputTaskObjectCopyWith<$Res> {
       Duration estimatedDuration,
       Duration timeSpent,
       DateTime creationDate,
-      List<AiInputActionItemObject> actionItems,
+      List<AiActionItem> actionItems,
       List<AiInputLogEntryObject> logEntries});
 }
 
@@ -103,7 +102,7 @@ class _$AiInputTaskObjectCopyWithImpl<$Res, $Val extends AiInputTaskObject>
       actionItems: null == actionItems
           ? _value.actionItems
           : actionItems // ignore: cast_nullable_to_non_nullable
-              as List<AiInputActionItemObject>,
+              as List<AiActionItem>,
       logEntries: null == logEntries
           ? _value.logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
@@ -126,7 +125,7 @@ abstract class _$$AiInputTaskObjectImplCopyWith<$Res>
       Duration estimatedDuration,
       Duration timeSpent,
       DateTime creationDate,
-      List<AiInputActionItemObject> actionItems,
+      List<AiActionItem> actionItems,
       List<AiInputLogEntryObject> logEntries});
 }
 
@@ -175,7 +174,7 @@ class __$$AiInputTaskObjectImplCopyWithImpl<$Res>
       actionItems: null == actionItems
           ? _value._actionItems
           : actionItems // ignore: cast_nullable_to_non_nullable
-              as List<AiInputActionItemObject>,
+              as List<AiActionItem>,
       logEntries: null == logEntries
           ? _value._logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
@@ -193,7 +192,7 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
       required this.estimatedDuration,
       required this.timeSpent,
       required this.creationDate,
-      required final List<AiInputActionItemObject> actionItems,
+      required final List<AiActionItem> actionItems,
       required final List<AiInputLogEntryObject> logEntries})
       : _actionItems = actionItems,
         _logEntries = logEntries;
@@ -211,9 +210,9 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
   final Duration timeSpent;
   @override
   final DateTime creationDate;
-  final List<AiInputActionItemObject> _actionItems;
+  final List<AiActionItem> _actionItems;
   @override
-  List<AiInputActionItemObject> get actionItems {
+  List<AiActionItem> get actionItems {
     if (_actionItems is EqualUnmodifiableListView) return _actionItems;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_actionItems);
@@ -287,7 +286,7 @@ abstract class _AiInputTaskObject implements AiInputTaskObject {
           required final Duration estimatedDuration,
           required final Duration timeSpent,
           required final DateTime creationDate,
-          required final List<AiInputActionItemObject> actionItems,
+          required final List<AiActionItem> actionItems,
           required final List<AiInputLogEntryObject> logEntries}) =
       _$AiInputTaskObjectImpl;
 
@@ -305,7 +304,7 @@ abstract class _AiInputTaskObject implements AiInputTaskObject {
   @override
   DateTime get creationDate;
   @override
-  List<AiInputActionItemObject> get actionItems;
+  List<AiActionItem> get actionItems;
   @override
   List<AiInputLogEntryObject> get logEntries;
 
@@ -317,53 +316,53 @@ abstract class _AiInputTaskObject implements AiInputTaskObject {
       throw _privateConstructorUsedError;
 }
 
-AiInputActionItemObject _$AiInputActionItemObjectFromJson(
-    Map<String, dynamic> json) {
-  return _AiInputActionItemObject.fromJson(json);
+AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) {
+  return _AiActionItem.fromJson(json);
 }
 
 /// @nodoc
-mixin _$AiInputActionItemObject {
+mixin _$AiActionItem {
   String get title => throw _privateConstructorUsedError;
   bool get completed => throw _privateConstructorUsedError;
   DateTime? get deadline => throw _privateConstructorUsedError;
   DateTime? get completionDate => throw _privateConstructorUsedError;
+  ActionItemStatus? get status => throw _privateConstructorUsedError;
 
-  /// Serializes this AiInputActionItemObject to a JSON map.
+  /// Serializes this AiActionItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-  /// Create a copy of AiInputActionItemObject
+  /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AiInputActionItemObjectCopyWith<AiInputActionItemObject> get copyWith =>
+  $AiActionItemCopyWith<AiActionItem> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $AiInputActionItemObjectCopyWith<$Res> {
-  factory $AiInputActionItemObjectCopyWith(AiInputActionItemObject value,
-          $Res Function(AiInputActionItemObject) then) =
-      _$AiInputActionItemObjectCopyWithImpl<$Res, AiInputActionItemObject>;
+abstract class $AiActionItemCopyWith<$Res> {
+  factory $AiActionItemCopyWith(
+          AiActionItem value, $Res Function(AiActionItem) then) =
+      _$AiActionItemCopyWithImpl<$Res, AiActionItem>;
   @useResult
   $Res call(
       {String title,
       bool completed,
       DateTime? deadline,
-      DateTime? completionDate});
+      DateTime? completionDate,
+      ActionItemStatus? status});
 }
 
 /// @nodoc
-class _$AiInputActionItemObjectCopyWithImpl<$Res,
-        $Val extends AiInputActionItemObject>
-    implements $AiInputActionItemObjectCopyWith<$Res> {
-  _$AiInputActionItemObjectCopyWithImpl(this._value, this._then);
+class _$AiActionItemCopyWithImpl<$Res, $Val extends AiActionItem>
+    implements $AiActionItemCopyWith<$Res> {
+  _$AiActionItemCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of AiInputActionItemObject
+  /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -372,6 +371,7 @@ class _$AiInputActionItemObjectCopyWithImpl<$Res,
     Object? completed = null,
     Object? deadline = freezed,
     Object? completionDate = freezed,
+    Object? status = freezed,
   }) {
     return _then(_value.copyWith(
       title: null == title
@@ -390,37 +390,39 @@ class _$AiInputActionItemObjectCopyWithImpl<$Res,
           ? _value.completionDate
           : completionDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as ActionItemStatus?,
     ) as $Val);
   }
 }
 
 /// @nodoc
-abstract class _$$AiInputActionItemObjectImplCopyWith<$Res>
-    implements $AiInputActionItemObjectCopyWith<$Res> {
-  factory _$$AiInputActionItemObjectImplCopyWith(
-          _$AiInputActionItemObjectImpl value,
-          $Res Function(_$AiInputActionItemObjectImpl) then) =
-      __$$AiInputActionItemObjectImplCopyWithImpl<$Res>;
+abstract class _$$AiActionItemImplCopyWith<$Res>
+    implements $AiActionItemCopyWith<$Res> {
+  factory _$$AiActionItemImplCopyWith(
+          _$AiActionItemImpl value, $Res Function(_$AiActionItemImpl) then) =
+      __$$AiActionItemImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
       {String title,
       bool completed,
       DateTime? deadline,
-      DateTime? completionDate});
+      DateTime? completionDate,
+      ActionItemStatus? status});
 }
 
 /// @nodoc
-class __$$AiInputActionItemObjectImplCopyWithImpl<$Res>
-    extends _$AiInputActionItemObjectCopyWithImpl<$Res,
-        _$AiInputActionItemObjectImpl>
-    implements _$$AiInputActionItemObjectImplCopyWith<$Res> {
-  __$$AiInputActionItemObjectImplCopyWithImpl(
-      _$AiInputActionItemObjectImpl _value,
-      $Res Function(_$AiInputActionItemObjectImpl) _then)
+class __$$AiActionItemImplCopyWithImpl<$Res>
+    extends _$AiActionItemCopyWithImpl<$Res, _$AiActionItemImpl>
+    implements _$$AiActionItemImplCopyWith<$Res> {
+  __$$AiActionItemImplCopyWithImpl(
+      _$AiActionItemImpl _value, $Res Function(_$AiActionItemImpl) _then)
       : super(_value, _then);
 
-  /// Create a copy of AiInputActionItemObject
+  /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -429,8 +431,9 @@ class __$$AiInputActionItemObjectImplCopyWithImpl<$Res>
     Object? completed = null,
     Object? deadline = freezed,
     Object? completionDate = freezed,
+    Object? status = freezed,
   }) {
-    return _then(_$AiInputActionItemObjectImpl(
+    return _then(_$AiActionItemImpl(
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
@@ -447,21 +450,26 @@ class __$$AiInputActionItemObjectImplCopyWithImpl<$Res>
           ? _value.completionDate
           : completionDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as ActionItemStatus?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AiInputActionItemObjectImpl implements _AiInputActionItemObject {
-  const _$AiInputActionItemObjectImpl(
+class _$AiActionItemImpl implements _AiActionItem {
+  const _$AiActionItemImpl(
       {required this.title,
       required this.completed,
       this.deadline,
-      this.completionDate});
+      this.completionDate,
+      this.status});
 
-  factory _$AiInputActionItemObjectImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiInputActionItemObjectImplFromJson(json);
+  factory _$AiActionItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiActionItemImplFromJson(json);
 
   @override
   final String title;
@@ -471,57 +479,60 @@ class _$AiInputActionItemObjectImpl implements _AiInputActionItemObject {
   final DateTime? deadline;
   @override
   final DateTime? completionDate;
+  @override
+  final ActionItemStatus? status;
 
   @override
   String toString() {
-    return 'AiInputActionItemObject(title: $title, completed: $completed, deadline: $deadline, completionDate: $completionDate)';
+    return 'AiActionItem(title: $title, completed: $completed, deadline: $deadline, completionDate: $completionDate, status: $status)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiInputActionItemObjectImpl &&
+            other is _$AiActionItemImpl &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.completed, completed) ||
                 other.completed == completed) &&
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
             (identical(other.completionDate, completionDate) ||
-                other.completionDate == completionDate));
+                other.completionDate == completionDate) &&
+            (identical(other.status, status) || other.status == status));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, title, completed, deadline, completionDate);
+  int get hashCode => Object.hash(
+      runtimeType, title, completed, deadline, completionDate, status);
 
-  /// Create a copy of AiInputActionItemObject
+  /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$AiInputActionItemObjectImplCopyWith<_$AiInputActionItemObjectImpl>
-      get copyWith => __$$AiInputActionItemObjectImplCopyWithImpl<
-          _$AiInputActionItemObjectImpl>(this, _$identity);
+  _$$AiActionItemImplCopyWith<_$AiActionItemImpl> get copyWith =>
+      __$$AiActionItemImplCopyWithImpl<_$AiActionItemImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AiInputActionItemObjectImplToJson(
+    return _$$AiActionItemImplToJson(
       this,
     );
   }
 }
 
-abstract class _AiInputActionItemObject implements AiInputActionItemObject {
-  const factory _AiInputActionItemObject(
+abstract class _AiActionItem implements AiActionItem {
+  const factory _AiActionItem(
       {required final String title,
       required final bool completed,
       final DateTime? deadline,
-      final DateTime? completionDate}) = _$AiInputActionItemObjectImpl;
+      final DateTime? completionDate,
+      final ActionItemStatus? status}) = _$AiActionItemImpl;
 
-  factory _AiInputActionItemObject.fromJson(Map<String, dynamic> json) =
-      _$AiInputActionItemObjectImpl.fromJson;
+  factory _AiActionItem.fromJson(Map<String, dynamic> json) =
+      _$AiActionItemImpl.fromJson;
 
   @override
   String get title;
@@ -531,13 +542,15 @@ abstract class _AiInputActionItemObject implements AiInputActionItemObject {
   DateTime? get deadline;
   @override
   DateTime? get completionDate;
+  @override
+  ActionItemStatus? get status;
 
-  /// Create a copy of AiInputActionItemObject
+  /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiInputActionItemObjectImplCopyWith<_$AiInputActionItemObjectImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  _$$AiActionItemImplCopyWith<_$AiActionItemImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(
@@ -732,5 +745,168 @@ abstract class _AiInputLogEntryObject implements AiInputLogEntryObject {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$AiInputLogEntryObjectImplCopyWith<_$AiInputLogEntryObjectImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+AiInputActionItemsList _$AiInputActionItemsListFromJson(
+    Map<String, dynamic> json) {
+  return _AiInputActionItemsList.fromJson(json);
+}
+
+/// @nodoc
+mixin _$AiInputActionItemsList {
+  List<AiActionItem> get items => throw _privateConstructorUsedError;
+
+  /// Serializes this AiInputActionItemsList to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of AiInputActionItemsList
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $AiInputActionItemsListCopyWith<AiInputActionItemsList> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AiInputActionItemsListCopyWith<$Res> {
+  factory $AiInputActionItemsListCopyWith(AiInputActionItemsList value,
+          $Res Function(AiInputActionItemsList) then) =
+      _$AiInputActionItemsListCopyWithImpl<$Res, AiInputActionItemsList>;
+  @useResult
+  $Res call({List<AiActionItem> items});
+}
+
+/// @nodoc
+class _$AiInputActionItemsListCopyWithImpl<$Res,
+        $Val extends AiInputActionItemsList>
+    implements $AiInputActionItemsListCopyWith<$Res> {
+  _$AiInputActionItemsListCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of AiInputActionItemsList
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? items = null,
+  }) {
+    return _then(_value.copyWith(
+      items: null == items
+          ? _value.items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<AiActionItem>,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$AiInputActionItemsListImplCopyWith<$Res>
+    implements $AiInputActionItemsListCopyWith<$Res> {
+  factory _$$AiInputActionItemsListImplCopyWith(
+          _$AiInputActionItemsListImpl value,
+          $Res Function(_$AiInputActionItemsListImpl) then) =
+      __$$AiInputActionItemsListImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({List<AiActionItem> items});
+}
+
+/// @nodoc
+class __$$AiInputActionItemsListImplCopyWithImpl<$Res>
+    extends _$AiInputActionItemsListCopyWithImpl<$Res,
+        _$AiInputActionItemsListImpl>
+    implements _$$AiInputActionItemsListImplCopyWith<$Res> {
+  __$$AiInputActionItemsListImplCopyWithImpl(
+      _$AiInputActionItemsListImpl _value,
+      $Res Function(_$AiInputActionItemsListImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of AiInputActionItemsList
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? items = null,
+  }) {
+    return _then(_$AiInputActionItemsListImpl(
+      items: null == items
+          ? _value._items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<AiActionItem>,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AiInputActionItemsListImpl implements _AiInputActionItemsList {
+  const _$AiInputActionItemsListImpl({required final List<AiActionItem> items})
+      : _items = items;
+
+  factory _$AiInputActionItemsListImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiInputActionItemsListImplFromJson(json);
+
+  final List<AiActionItem> _items;
+  @override
+  List<AiActionItem> get items {
+    if (_items is EqualUnmodifiableListView) return _items;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_items);
+  }
+
+  @override
+  String toString() {
+    return 'AiInputActionItemsList(items: $items)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AiInputActionItemsListImpl &&
+            const DeepCollectionEquality().equals(other._items, _items));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, const DeepCollectionEquality().hash(_items));
+
+  /// Create a copy of AiInputActionItemsList
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AiInputActionItemsListImplCopyWith<_$AiInputActionItemsListImpl>
+      get copyWith => __$$AiInputActionItemsListImplCopyWithImpl<
+          _$AiInputActionItemsListImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AiInputActionItemsListImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _AiInputActionItemsList implements AiInputActionItemsList {
+  const factory _AiInputActionItemsList(
+      {required final List<AiActionItem> items}) = _$AiInputActionItemsListImpl;
+
+  factory _AiInputActionItemsList.fromJson(Map<String, dynamic> json) =
+      _$AiInputActionItemsListImpl.fromJson;
+
+  @override
+  List<AiActionItem> get items;
+
+  /// Create a copy of AiInputActionItemsList
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$AiInputActionItemsListImplCopyWith<_$AiInputActionItemsListImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

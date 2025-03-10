@@ -11,7 +11,7 @@ class AiInputTaskObject with _$AiInputTaskObject {
     required Duration estimatedDuration,
     required Duration timeSpent,
     required DateTime creationDate,
-    required List<AiInputActionItemObject> actionItems,
+    required List<AiActionItem> actionItems,
     required List<AiInputLogEntryObject> logEntries,
   }) = _AiInputTaskObject;
 
@@ -19,17 +19,20 @@ class AiInputTaskObject with _$AiInputTaskObject {
       _$AiInputTaskObjectFromJson(json);
 }
 
+enum ActionItemStatus { suggested, used, discarded }
+
 @freezed
-class AiInputActionItemObject with _$AiInputActionItemObject {
-  const factory AiInputActionItemObject({
+class AiActionItem with _$AiActionItem {
+  const factory AiActionItem({
     required String title,
     required bool completed,
     DateTime? deadline,
     DateTime? completionDate,
-  }) = _AiInputActionItemObject;
+    ActionItemStatus? status,
+  }) = _AiActionItem;
 
-  factory AiInputActionItemObject.fromJson(Map<String, dynamic> json) =>
-      _$AiInputActionItemObjectFromJson(json);
+  factory AiActionItem.fromJson(Map<String, dynamic> json) =>
+      _$AiActionItemFromJson(json);
 }
 
 @freezed
@@ -42,4 +45,14 @@ class AiInputLogEntryObject with _$AiInputLogEntryObject {
 
   factory AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =>
       _$AiInputLogEntryObjectFromJson(json);
+}
+
+@freezed
+abstract class AiInputActionItemsList with _$AiInputActionItemsList {
+  const factory AiInputActionItemsList({
+    required List<AiActionItem> items,
+  }) = _AiInputActionItemsList;
+
+  factory AiInputActionItemsList.fromJson(Map<String, dynamic> json) =>
+      _$AiInputActionItemsListFromJson(json);
 }
