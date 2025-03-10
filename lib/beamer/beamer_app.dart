@@ -26,6 +26,7 @@ import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
@@ -37,6 +38,34 @@ class AppScreen extends StatefulWidget {
 class _AppScreenState extends State<AppScreen> {
   final navService = getIt<NavService>();
   final journalDb = getIt<JournalDb>();
+
+  final _fabShowcaseKey1 = GlobalKey();
+  final _fabShowcaseKey2 = GlobalKey();
+  final _fabShowcaseKey3 = GlobalKey();
+  final _fabShowcaseKey4 = GlobalKey();
+  final _fabShowcaseKey5 = GlobalKey();
+  final _fabShowcaseKey6 = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 900), () {
+        // Only show for tasks page
+        ShowCaseWidget.of(context).startShowCase(
+          [
+            _fabShowcaseKey1,
+            _fabShowcaseKey2,
+            _fabShowcaseKey3,
+            _fabShowcaseKey4,
+            _fabShowcaseKey5,
+            _fabShowcaseKey6,
+
+          ],
+        );
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,16 +124,25 @@ class _AppScreenState extends State<AppScreen> {
               createNavBarItem(
                 semanticLabel: 'Tasks Tab',
                 icon: TasksBadge(
+                  showcaseKey: _fabShowcaseKey1,
                   child: Icon(MdiIcons.checkboxMarkedCircleOutline),
                 ),
                 activeIcon: TasksBadge(
+                  showcaseKey: _fabShowcaseKey1,
                   child: Icon(MdiIcons.checkboxMarkedCircle),
                 ),
                 label: context.messages.navTabTitleTasks,
               ),
               createNavBarItem(
                 semanticLabel: 'Calendar Tab',
-                icon: const Icon(Ionicons.calendar_outline),
+                icon: Showcase(
+                  titleAlignment: Alignment.topCenter,
+                  tooltipPosition: TooltipPosition.top,
+                  key: _fabShowcaseKey2,
+                  description:
+                      'This is the calendar view. You can add events to your calendar here.',
+                  child: const Icon(Ionicons.calendar_outline),
+                ),
                 activeIcon: OutboxBadgeIcon(
                   icon: const Icon(Ionicons.calendar),
                 ),
@@ -112,26 +150,54 @@ class _AppScreenState extends State<AppScreen> {
               ),
               createNavBarItem(
                 semanticLabel: 'Habits Tab',
-                icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                icon: Showcase(
+                  titleAlignment: Alignment.topCenter,
+                  tooltipPosition: TooltipPosition.top,
+                  key: _fabShowcaseKey3,
+                  description:
+                      'This is the habits view. You can add habits here.',
+                  child: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                ),
                 activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
                 label: context.messages.navTabTitleHabits,
               ),
               createNavBarItem(
                 semanticLabel: 'Dashboards Tab',
-                icon: const Icon(Ionicons.bar_chart_outline),
+                icon: Showcase(
+                  titleAlignment: Alignment.topCenter,
+                  tooltipPosition: TooltipPosition.top,
+                  key: _fabShowcaseKey4,
+                  description:
+                      'This is the insights view. You can see your insights here.',
+                  child: const Icon(Ionicons.bar_chart_outline),
+                ),
                 activeIcon: const Icon(Ionicons.bar_chart),
                 label: context.messages.navTabTitleInsights,
               ),
               createNavBarItem(
                 semanticLabel: 'Logbook Tab',
-                icon: const Icon(Ionicons.book_outline),
+                icon: Showcase(
+                  titleAlignment: Alignment.topCenter,
+                  tooltipPosition: TooltipPosition.top,
+                  key: _fabShowcaseKey5,
+                  description:
+                      'This is the logbook view. You can log your activities here.',
+                  child: const Icon(Ionicons.book_outline),
+                ),
                 activeIcon: const Icon(Ionicons.book),
                 label: context.messages.navTabTitleJournal,
               ),
               createNavBarItem(
                 semanticLabel: 'Settings Tab',
-                icon: OutboxBadgeIcon(
-                  icon: const Icon(Ionicons.settings_outline),
+                icon: Showcase(
+                  titleAlignment: Alignment.topCenter,
+                  tooltipPosition: TooltipPosition.top,
+                  key: _fabShowcaseKey6,
+                  description:
+                      'This is the settings view. You can change your settings here.',
+                  child: OutboxBadgeIcon(
+                    icon: const Icon(Ionicons.settings_outline),
+                  ),
                 ),
                 activeIcon: OutboxBadgeIcon(
                   icon: const Icon(Ionicons.settings),
@@ -159,74 +225,77 @@ class MyBeamerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<OutboxCubit>(
-            lazy: false,
-            create: (BuildContext context) => OutboxCubit(),
-          ),
-          BlocProvider<AudioRecorderCubit>(
-            create: (BuildContext context) => AudioRecorderCubit(),
-          ),
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-          ),
-          BlocProvider<ThemingCubit>(
-            create: (BuildContext context) => ThemingCubit(),
-          ),
-        ],
-        child: BlocBuilder<ThemingCubit, ThemingState>(
-          builder: (context, themingSnapshot) {
-            if (themingSnapshot.darkTheme == null) {
-              return const MaterialApp(
-                home: EmptyScaffoldWithTitle(
-                  '...',
-                  body: CircularProgressIndicator(),
-                ),
-              );
-            }
+    return ShowCaseWidget(
+      builder: (context) => GestureDetector(
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<OutboxCubit>(
+              lazy: false,
+              create: (BuildContext context) => OutboxCubit(),
+            ),
+            BlocProvider<AudioRecorderCubit>(
+              create: (BuildContext context) => AudioRecorderCubit(),
+            ),
+            BlocProvider<AudioPlayerCubit>(
+              create: (BuildContext context) => AudioPlayerCubit(),
+            ),
+            BlocProvider<ThemingCubit>(
+              create: (BuildContext context) => ThemingCubit(),
+            ),
+          ],
+          child: BlocBuilder<ThemingCubit, ThemingState>(
+            builder: (context, themingSnapshot) {
+              if (themingSnapshot.darkTheme == null) {
+                return const MaterialApp(
+                  home: EmptyScaffoldWithTitle(
+                    '...',
+                    body: CircularProgressIndicator(),
+                  ),
+                );
+              }
 
-            final updateActivity = getIt<UserActivityService>().updateActivity;
+              final updateActivity =
+                  getIt<UserActivityService>().updateActivity;
 
-            return Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (event) => updateActivity(),
-              onPointerMove: (event) => updateActivity(),
-              onPointerPanZoomStart: (event) => updateActivity(),
-              onPointerPanZoomEnd: (event) => updateActivity(),
-              onPointerUp: (event) => updateActivity(),
-              onPointerSignal: (event) => updateActivity(),
-              onPointerPanZoomUpdate: (event) => updateActivity(),
-              child: TooltipVisibility(
-                visible: themingSnapshot.enableTooltips,
-                child: DesktopMenuWrapper(
-                  child: MaterialApp.router(
-                    supportedLocales: AppLocalizations.supportedLocales,
-                    theme: themingSnapshot.lightTheme,
-                    darkTheme: themingSnapshot.darkTheme,
-                    themeMode: themingSnapshot.themeMode,
-                    localizationsDelegates: const [
-                      AppLocalizations.delegate,
-                      FormBuilderLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
-                    ],
-                    debugShowCheckedModeBanner: false,
-                    routerDelegate: routerDelegate,
-                    routeInformationParser: BeamerParser(),
-                    backButtonDispatcher: BeamerBackButtonDispatcher(
-                      delegate: routerDelegate,
+              return Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (event) => updateActivity(),
+                onPointerMove: (event) => updateActivity(),
+                onPointerPanZoomStart: (event) => updateActivity(),
+                onPointerPanZoomEnd: (event) => updateActivity(),
+                onPointerUp: (event) => updateActivity(),
+                onPointerSignal: (event) => updateActivity(),
+                onPointerPanZoomUpdate: (event) => updateActivity(),
+                child: TooltipVisibility(
+                  visible: themingSnapshot.enableTooltips,
+                  child: DesktopMenuWrapper(
+                    child: MaterialApp.router(
+                      supportedLocales: AppLocalizations.supportedLocales,
+                      theme: themingSnapshot.lightTheme,
+                      darkTheme: themingSnapshot.darkTheme,
+                      themeMode: themingSnapshot.themeMode,
+                      localizationsDelegates: const [
+                        AppLocalizations.delegate,
+                        FormBuilderLocalizations.delegate,
+                        GlobalMaterialLocalizations.delegate,
+                        GlobalWidgetsLocalizations.delegate,
+                        GlobalCupertinoLocalizations.delegate,
+                      ],
+                      debugShowCheckedModeBanner: false,
+                      routerDelegate: routerDelegate,
+                      routeInformationParser: BeamerParser(),
+                      backButtonDispatcher: BeamerBackButtonDispatcher(
+                        delegate: routerDelegate,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

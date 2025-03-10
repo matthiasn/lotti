@@ -2,6 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
+import 'package:showcaseview/showcaseview.dart';
+
 
 class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
@@ -12,6 +14,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
     required this.floatingActionButton,
     this.initialSearchTerm,
     this.searchCallback,
+    
     super.key,
   });
 
@@ -30,6 +33,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
 class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   String match = '';
 
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +43,8 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
         match = '${widget.initialSearchTerm}';
       }
     });
+
+    
   }
 
   Future<void> onQueryChanged(String query) async {
@@ -107,22 +113,33 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
 class FloatingAddIcon extends StatelessWidget {
   const FloatingAddIcon({
     required this.createFn,
+    required this.showcaseKey, 
     this.semanticLabel,
     super.key,
   });
 
   final void Function() createFn;
   final String? semanticLabel;
+  final GlobalKey showcaseKey;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(5),
-      child: FloatingActionButton(
-        onPressed: createFn,
-        child: Icon(
-          Icons.add_rounded,
-          semanticLabel: semanticLabel,
+      child: Showcase(
+        title: 'Create a new entry!',
+         titleTextStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        descTextStyle: const TextStyle(fontSize: 14, color: Colors.white),
+        titleAlignment: Alignment.topCenter,
+        tooltipPosition: TooltipPosition.top,
+        key: showcaseKey,
+        description: 'Tap here to create a new entry!',
+        child: FloatingActionButton(
+          onPressed: createFn,
+          child: Icon(
+            Icons.add_rounded,
+            semanticLabel: semanticLabel,
+          ),
         ),
       ),
     );

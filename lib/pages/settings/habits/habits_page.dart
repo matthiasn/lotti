@@ -29,6 +29,7 @@ class HabitsPage extends StatelessWidget {
         return DefinitionsListPage<HabitDefinition>(
           stream: getIt<JournalDb>().watchHabitDefinitions(),
           floatingActionButton: FloatingAddIcon(
+            showcaseKey: GlobalKey(),
             createFn: () => beamToNamed('/settings/habits/create'),
             semanticLabel: 'Add Habit',
           ),

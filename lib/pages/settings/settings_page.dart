@@ -4,11 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
+import 'package:showcaseview/showcaseview.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({
+    
+    
     super.key,
   });
+
+  
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  final GlobalKey showcaseKey1 = GlobalKey();
+
+  @override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback(
+    (_) => ShowCaseWidget.of(context).startShowCase([showcaseKey1]),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +78,16 @@ class SettingsPage extends StatelessWidget {
                 title: context.messages.settingsSpeechTitle,
                 path: '/settings/speech_settings',
               ),
-            SettingsNavCard(
-              title: context.messages.settingsAdvancedTitle,
-              path: '/settings/advanced',
-            ),
+
+           Showcase(
+                    key: showcaseKey1,
+                    description: 'Learn more about this app.',
+                    child: SettingsNavCard(
+                      title: context.messages.settingsAboutTitle,
+                      path: '/settings/advanced/about',
+                    ),
+                  ),
+           
           ],
         ),
       ),

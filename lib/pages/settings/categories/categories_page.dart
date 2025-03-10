@@ -15,6 +15,7 @@ class CategoriesPage extends StatelessWidget {
     return DefinitionsListPage<CategoryDefinition>(
       stream: getIt<JournalDb>().watchCategories(),
       floatingActionButton: FloatingAddIcon(
+        showcaseKey: GlobalKey(),
         createFn: () => beamToNamed('/settings/categories/create'),
         semanticLabel: 'Add Category',
       ),

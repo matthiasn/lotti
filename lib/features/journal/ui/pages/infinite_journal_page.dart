@@ -15,9 +15,10 @@ import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class InfiniteJournalPage extends StatelessWidget {
+class InfiniteJournalPage extends StatefulWidget {
   const InfiniteJournalPage({
     required this.showTasks,
     super.key,
@@ -28,9 +29,24 @@ class InfiniteJournalPage extends StatelessWidget {
   final bool showTasks;
 
   @override
+  State<InfiniteJournalPage> createState() => _InfiniteJournalPageState();
+}
+
+class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
+  final _fabShowcaseKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ShowCaseWidget.of(context).startShowCase([_fabShowcaseKey]);
+    });
+  }
+  
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<JournalPageCubit>(
-      create: (BuildContext context) => JournalPageCubit(showTasks: showTasks),
+      create: (BuildContext context) => JournalPageCubit(showTasks: widget.showTasks),
       child: Scaffold(
         floatingActionButton: BlocBuilder<JournalPageCubit, JournalPageState>(
           builder: (context, snapshot) {
@@ -39,8 +55,9 @@ class InfiniteJournalPage extends StatelessWidget {
                 ? selectedCategoryIds.first
                 : null;
 
-            return showTasks
+            return widget.showTasks
                 ? FloatingAddIcon(
+                  showcaseKey: _fabShowcaseKey,
                     createFn: () async {
                       final task = await createTask(categoryId: categoryId);
                       if (task != null) {
@@ -54,7 +71,7 @@ class InfiniteJournalPage extends StatelessWidget {
           },
         ),
         body: InfiniteJournalPageBody(
-          showTasks: showTasks,
+          showTasks: widget.showTasks,
         ),
       ),
     );
