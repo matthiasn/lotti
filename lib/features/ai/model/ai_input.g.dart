@@ -45,7 +45,6 @@ _$AiActionItemImpl _$$AiActionItemImplFromJson(Map<String, dynamic> json) =>
       completionDate: json['completionDate'] == null
           ? null
           : DateTime.parse(json['completionDate'] as String),
-      status: $enumDecodeNullable(_$ActionItemStatusEnumMap, json['status']),
     );
 
 Map<String, dynamic> _$$AiActionItemImplToJson(_$AiActionItemImpl instance) =>
@@ -54,14 +53,7 @@ Map<String, dynamic> _$$AiActionItemImplToJson(_$AiActionItemImpl instance) =>
       'completed': instance.completed,
       'deadline': instance.deadline?.toIso8601String(),
       'completionDate': instance.completionDate?.toIso8601String(),
-      'status': _$ActionItemStatusEnumMap[instance.status],
     };
-
-const _$ActionItemStatusEnumMap = {
-  ActionItemStatus.suggested: 'suggested',
-  ActionItemStatus.used: 'used',
-  ActionItemStatus.discarded: 'discarded',
-};
 
 _$AiInputLogEntryObjectImpl _$$AiInputLogEntryObjectImplFromJson(
         Map<String, dynamic> json) =>
