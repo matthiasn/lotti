@@ -52,6 +52,7 @@ class _AppScreenState extends State<AppScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 900), () {
         // Only show for tasks page
+        // ignore: use_build_context_synchronously
         ShowCaseWidget.of(context).startShowCase(
           [
             _fabShowcaseKey1,

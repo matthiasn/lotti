@@ -31,6 +31,7 @@ dependencies:
   country_flags: ^3.0.0
   crypto: ^3.0.1
   dart_geohash: ^2.0.1
+  showcaseview: ^4.0.1
 
   delta_markdown:
     git:
