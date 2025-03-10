@@ -9,6 +9,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/manual/widget/navbar_showcase.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_recording_indicator.dart';
@@ -136,13 +137,16 @@ class _AppScreenState extends State<AppScreen> {
               ),
               createNavBarItem(
                 semanticLabel: 'Calendar Tab',
-                icon: Showcase(
-                  titleAlignment: Alignment.topCenter,
-                  tooltipPosition: TooltipPosition.top,
-                  key: _fabShowcaseKey2,
-                  description:
-                      'This is the calendar view. You can add events to your calendar here.',
-                  child: const Icon(Ionicons.calendar_outline),
+                icon: NavbarShowcase(
+                  showcaseKey: _fabShowcaseKey2,
+                  description: const Text(
+                    'This is the calendar view. You can add events to your calendar hereeee.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  icon: const Icon(Ionicons.calendar_outline),
                 ),
                 activeIcon: OutboxBadgeIcon(
                   icon: const Icon(Ionicons.calendar),
@@ -151,54 +155,65 @@ class _AppScreenState extends State<AppScreen> {
               ),
               createNavBarItem(
                 semanticLabel: 'Habits Tab',
-                icon: Showcase(
-                  titleAlignment: Alignment.topCenter,
-                  tooltipPosition: TooltipPosition.top,
-                  key: _fabShowcaseKey3,
-                  description:
-                      'This is the habits view. You can add habits here.',
-                  child: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                icon:  NavbarShowcase(
+                  showcaseKey: _fabShowcaseKey3,
+                  description: const Text(
+                    'This is the habits view. You can add habits here.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
                 ),
                 activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
                 label: context.messages.navTabTitleHabits,
               ),
               createNavBarItem(
                 semanticLabel: 'Dashboards Tab',
-                icon: Showcase(
-                  titleAlignment: Alignment.topCenter,
-                  tooltipPosition: TooltipPosition.top,
-                  key: _fabShowcaseKey4,
-                  description:
-                      'This is the insights view. You can see your insights here.',
-                  child: const Icon(Ionicons.bar_chart_outline),
+                icon: NavbarShowcase(
+                  showcaseKey: _fabShowcaseKey4,
+                  description: const Text(
+                    'This is the insights view. You can see your insights here.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  icon: const Icon(Ionicons.bar_chart_outline),
                 ),
                 activeIcon: const Icon(Ionicons.bar_chart),
                 label: context.messages.navTabTitleInsights,
               ),
               createNavBarItem(
                 semanticLabel: 'Logbook Tab',
-                icon: Showcase(
-                  titleAlignment: Alignment.topCenter,
-                  tooltipPosition: TooltipPosition.top,
-                  key: _fabShowcaseKey5,
-                  description:
-                      'This is the logbook view. You can log your activities here.',
-                  child: const Icon(Ionicons.book_outline),
+                icon: NavbarShowcase(
+                  showcaseKey: _fabShowcaseKey5,
+                  description: const Text(
+                    'This is the logbook view. You can log your activities here.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  icon: const Icon(Ionicons.book),
                 ),
                 activeIcon: const Icon(Ionicons.book),
                 label: context.messages.navTabTitleJournal,
               ),
               createNavBarItem(
                 semanticLabel: 'Settings Tab',
-                icon: Showcase(
-                  titleAlignment: Alignment.topCenter,
-                  tooltipPosition: TooltipPosition.top,
-                  key: _fabShowcaseKey6,
-                  description:
-                      'This is the settings view. You can change your settings here.',
-                  child: OutboxBadgeIcon(
-                    icon: const Icon(Ionicons.settings_outline),
+                icon: NavbarShowcase(
+                  endNav: true,
+                  showcaseKey: _fabShowcaseKey6,
+                  description: const Text(
+                    'This is the settings view. You can change your settings here.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
+                  icon: const Icon(Ionicons.settings_outline),
                 ),
                 activeIcon: OutboxBadgeIcon(
                   icon: const Icon(Ionicons.settings),

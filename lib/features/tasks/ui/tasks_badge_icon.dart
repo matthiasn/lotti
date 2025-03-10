@@ -6,7 +6,7 @@ import 'package:showcaseview/showcaseview.dart';
 
 class TasksBadge extends ConsumerWidget {
   const TasksBadge({
-    required this.showcaseKey, 
+    required this.showcaseKey,
     required this.child,
     super.key,
   });
@@ -18,11 +18,48 @@ class TasksBadge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(tasksCountControllerProvider).valueOrNull ?? 0;
 
-    return Showcase(
-      titleAlignment: Alignment.topCenter,
+    return Showcase.withWidget(
       tooltipPosition: TooltipPosition.top,
+      overlayOpacity: 0.7,
       key: showcaseKey,
-      description: 'This is the badge that shows the number of tasks that are overdue.',
+      width: 300,
+      height: 100,
+      container: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '''
+      This badge tracks the number of overdue tasks but also serves as a central hub for task management. \nUsers can create tasks:
+      📝 Assign Names: Give each task a clear and descriptive name.
+      ''',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).dismiss();
+                  },
+                  child: const Text('close'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).next();
+                  },
+                  child: const Text('Next'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
       child: Badge(
         label: Text('$count', style: badgeStyle),
         isLabelVisible: count != 0,
