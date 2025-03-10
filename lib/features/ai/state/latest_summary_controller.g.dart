@@ -178,7 +178,7 @@ class _LatestSummaryControllerProviderElement
 }
 
 String _$checklistItemSuggestionsControllerHash() =>
-    r'7e314950ca49f3a68baebcdee0089586e1aa0ac4';
+    r'8d4b8975a5f6357473729c73c3b01a1efc2b6d72';
 
 abstract class _$ChecklistItemSuggestionsController
     extends BuildlessAsyncNotifier<List<ChecklistItemData>> {
