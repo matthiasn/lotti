@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,7 +18,7 @@ class LatestSummaryController extends _$LatestSummaryController {
 
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  final watchedIds = <String>{};
+  final watchedIds = <String>{aiResponseNotification};
 
   void listen() {
     _updateSubscription =
@@ -68,6 +69,13 @@ class LatestSummaryController extends _$LatestSummaryController {
     );
 
     state = AsyncData(updated);
+
+    await getIt<PersistenceLogic>().updateJournalEntity(
+      updated,
+      updated.meta,
+    );
+
+    ref.invalidateSelf();
   }
 }
 
