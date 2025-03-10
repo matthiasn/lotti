@@ -60,7 +60,7 @@ class _ChecklistSuggestionsWidgetState
                   child: Dismissible(
                     key: Key(checklistItem.title),
                     dismissThresholds: const {
-                      DismissDirection.endToStart: 0.25
+                      DismissDirection.endToStart: 0.25,
                     },
                     onDismissed: (_) {
                       notifier.removeActionItem(title: checklistItem.title);
