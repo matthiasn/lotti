@@ -22,8 +22,8 @@ AiInputTaskObject _$AiInputTaskObjectFromJson(Map<String, dynamic> json) {
 mixin _$AiInputTaskObject {
   String get title => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
-  Duration get estimatedDuration => throw _privateConstructorUsedError;
-  Duration get timeSpent => throw _privateConstructorUsedError;
+  String get estimatedDuration => throw _privateConstructorUsedError;
+  String get timeSpent => throw _privateConstructorUsedError;
   DateTime get creationDate => throw _privateConstructorUsedError;
   List<AiActionItem> get actionItems => throw _privateConstructorUsedError;
   List<AiInputLogEntryObject> get logEntries =>
@@ -48,8 +48,8 @@ abstract class $AiInputTaskObjectCopyWith<$Res> {
   $Res call(
       {String title,
       String status,
-      Duration estimatedDuration,
-      Duration timeSpent,
+      String estimatedDuration,
+      String timeSpent,
       DateTime creationDate,
       List<AiActionItem> actionItems,
       List<AiInputLogEntryObject> logEntries});
@@ -90,11 +90,11 @@ class _$AiInputTaskObjectCopyWithImpl<$Res, $Val extends AiInputTaskObject>
       estimatedDuration: null == estimatedDuration
           ? _value.estimatedDuration
           : estimatedDuration // ignore: cast_nullable_to_non_nullable
-              as Duration,
+              as String,
       timeSpent: null == timeSpent
           ? _value.timeSpent
           : timeSpent // ignore: cast_nullable_to_non_nullable
-              as Duration,
+              as String,
       creationDate: null == creationDate
           ? _value.creationDate
           : creationDate // ignore: cast_nullable_to_non_nullable
@@ -122,8 +122,8 @@ abstract class _$$AiInputTaskObjectImplCopyWith<$Res>
   $Res call(
       {String title,
       String status,
-      Duration estimatedDuration,
-      Duration timeSpent,
+      String estimatedDuration,
+      String timeSpent,
       DateTime creationDate,
       List<AiActionItem> actionItems,
       List<AiInputLogEntryObject> logEntries});
@@ -162,11 +162,11 @@ class __$$AiInputTaskObjectImplCopyWithImpl<$Res>
       estimatedDuration: null == estimatedDuration
           ? _value.estimatedDuration
           : estimatedDuration // ignore: cast_nullable_to_non_nullable
-              as Duration,
+              as String,
       timeSpent: null == timeSpent
           ? _value.timeSpent
           : timeSpent // ignore: cast_nullable_to_non_nullable
-              as Duration,
+              as String,
       creationDate: null == creationDate
           ? _value.creationDate
           : creationDate // ignore: cast_nullable_to_non_nullable
@@ -205,9 +205,9 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
   @override
   final String status;
   @override
-  final Duration estimatedDuration;
+  final String estimatedDuration;
   @override
-  final Duration timeSpent;
+  final String timeSpent;
   @override
   final DateTime creationDate;
   final List<AiActionItem> _actionItems;
@@ -283,8 +283,8 @@ abstract class _AiInputTaskObject implements AiInputTaskObject {
   const factory _AiInputTaskObject(
           {required final String title,
           required final String status,
-          required final Duration estimatedDuration,
-          required final Duration timeSpent,
+          required final String estimatedDuration,
+          required final String timeSpent,
           required final DateTime creationDate,
           required final List<AiActionItem> actionItems,
           required final List<AiInputLogEntryObject> logEntries}) =
@@ -298,9 +298,9 @@ abstract class _AiInputTaskObject implements AiInputTaskObject {
   @override
   String get status;
   @override
-  Duration get estimatedDuration;
+  String get estimatedDuration;
   @override
-  Duration get timeSpent;
+  String get timeSpent;
   @override
   DateTime get creationDate;
   @override
@@ -541,7 +541,7 @@ AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(
 /// @nodoc
 mixin _$AiInputLogEntryObject {
   DateTime get creationTimestamp => throw _privateConstructorUsedError;
-  Duration get loggedDuration => throw _privateConstructorUsedError;
+  String get loggedDuration => throw _privateConstructorUsedError;
   String get text => throw _privateConstructorUsedError;
 
   /// Serializes this AiInputLogEntryObject to a JSON map.
@@ -560,7 +560,7 @@ abstract class $AiInputLogEntryObjectCopyWith<$Res> {
           $Res Function(AiInputLogEntryObject) then) =
       _$AiInputLogEntryObjectCopyWithImpl<$Res, AiInputLogEntryObject>;
   @useResult
-  $Res call({DateTime creationTimestamp, Duration loggedDuration, String text});
+  $Res call({DateTime creationTimestamp, String loggedDuration, String text});
 }
 
 /// @nodoc
@@ -591,7 +591,7 @@ class _$AiInputLogEntryObjectCopyWithImpl<$Res,
       loggedDuration: null == loggedDuration
           ? _value.loggedDuration
           : loggedDuration // ignore: cast_nullable_to_non_nullable
-              as Duration,
+              as String,
       text: null == text
           ? _value.text
           : text // ignore: cast_nullable_to_non_nullable
@@ -609,7 +609,7 @@ abstract class _$$AiInputLogEntryObjectImplCopyWith<$Res>
       __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({DateTime creationTimestamp, Duration loggedDuration, String text});
+  $Res call({DateTime creationTimestamp, String loggedDuration, String text});
 }
 
 /// @nodoc
@@ -638,7 +638,7 @@ class __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>
       loggedDuration: null == loggedDuration
           ? _value.loggedDuration
           : loggedDuration // ignore: cast_nullable_to_non_nullable
-              as Duration,
+              as String,
       text: null == text
           ? _value.text
           : text // ignore: cast_nullable_to_non_nullable
@@ -661,7 +661,7 @@ class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
   @override
   final DateTime creationTimestamp;
   @override
-  final Duration loggedDuration;
+  final String loggedDuration;
   @override
   final String text;
 
@@ -707,7 +707,7 @@ class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
 abstract class _AiInputLogEntryObject implements AiInputLogEntryObject {
   const factory _AiInputLogEntryObject(
       {required final DateTime creationTimestamp,
-      required final Duration loggedDuration,
+      required final String loggedDuration,
       required final String text}) = _$AiInputLogEntryObjectImpl;
 
   factory _AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =
@@ -716,7 +716,7 @@ abstract class _AiInputLogEntryObject implements AiInputLogEntryObject {
   @override
   DateTime get creationTimestamp;
   @override
-  Duration get loggedDuration;
+  String get loggedDuration;
   @override
   String get text;
 
