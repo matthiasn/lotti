@@ -80,7 +80,7 @@ class ActionItemSuggestionsController
 
     final actionItems = checklistItems
         .map(
-          (item) => AiInputActionItemObject(
+          (item) => AiActionItem(
             title: item.title,
             completed: item.isChecked,
           ),
@@ -182,13 +182,20 @@ task details, then remove it from the response.
     final completeResponse = buffer.toString();
     final [thoughts, response] = completeResponse.split('</think>');
 
+    final exp = RegExp(r'\[(.|\n)*\]', multiLine: true);
+    final match = exp.firstMatch(response)?.group(0) ?? '[]';
+    final actionItemsJson = '{"items": $match}';
+    final decoded = jsonDecode(actionItemsJson) as Map<String, dynamic>;
+    final suggestedActionItems = AiInputActionItemsList.fromJson(decoded).items;
+
     final data = AiResponseData(
       model: model,
       temperature: temperature,
       systemMessage: '',
       prompt: prompt,
-      thoughts: thoughts.replaceAll('<think>', ''),
+      thoughts: thoughts,
       response: response,
+      suggestedActionItems: suggestedActionItems,
       type: 'ActionItemSuggestions',
     );
 
