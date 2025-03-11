@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,7 +18,7 @@ class LatestSummaryController extends _$LatestSummaryController {
 
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  final watchedIds = <String>{};
+  final watchedIds = <String>{aiResponseNotification};
 
   void listen() {
     _updateSubscription =
@@ -49,13 +50,38 @@ class LatestSummaryController extends _$LatestSummaryController {
 
     return linked.whereType<AiResponseEntry>().toList().firstOrNull;
   }
+
+  Future<void> removeActionItem({
+    required String title,
+  }) async {
+    final latestAiEntry = state.valueOrNull;
+
+    if (latestAiEntry == null) {
+      return;
+    }
+
+    final updated = latestAiEntry.copyWith(
+      data: latestAiEntry.data.copyWith(
+        suggestedActionItems: latestAiEntry.data.suggestedActionItems
+            ?.where((item) => item.title != title)
+            .toList(),
+      ),
+    );
+
+    state = AsyncData(updated);
+
+    await getIt<PersistenceLogic>().updateJournalEntity(
+      updated,
+      updated.meta,
+    );
+
+    ref.invalidateSelf();
+  }
 }
 
 @Riverpod(keepAlive: true)
 class ChecklistItemSuggestionsController
     extends _$ChecklistItemSuggestionsController {
-  Set<String> alreadyCreated = {};
-
   @override
   Future<List<ChecklistItemData>> build({
     required String id,
@@ -63,36 +89,27 @@ class ChecklistItemSuggestionsController
     final latestAiEntry =
         await ref.watch(latestSummaryControllerProvider(id: id).future);
 
-    final exp = RegExp(
-      r'"title":\s(.+)',
-      multiLine: true,
-    );
+    final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
 
-    final response = latestAiEntry?.data.response ?? '';
-
-    final checklistItems = exp
-        .allMatches(response.replaceAll('*', ''))
-        .map((e) {
-          final title = e.group(1);
-          if (title != null) {
-            return ChecklistItemData(
-              title: title.replaceAll(RegExp('[-.,"*]'), '').trim(),
-              isChecked: false,
-              linkedChecklists: [],
-            );
-          }
-        })
-        .nonNulls
-        .where((e) => !alreadyCreated.contains(e.title))
-        .toList();
+    final checklistItems = suggestedActionItems.map((item) {
+      final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
+      return ChecklistItemData(
+        title: title,
+        isChecked: item.completed,
+        linkedChecklists: [],
+      );
+    }).toList();
 
     return checklistItems;
   }
 
-  void notifyCreatedChecklistItem({
-    required String title,
-  }) {
-    alreadyCreated.add(title);
-    ref.invalidateSelf();
+  void notifyCreatedChecklistItem({required String title}) {
+    final notifier = latestSummaryControllerProvider(id: id).notifier;
+    ref.read(notifier).removeActionItem(title: title);
+  }
+
+  void removeActionItem({required String title}) {
+    final notifier = latestSummaryControllerProvider(id: id).notifier;
+    ref.read(notifier).removeActionItem(title: title);
   }
 }
