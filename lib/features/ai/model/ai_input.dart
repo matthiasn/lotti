@@ -8,8 +8,8 @@ class AiInputTaskObject with _$AiInputTaskObject {
   const factory AiInputTaskObject({
     required String title,
     required String status,
-    required Duration estimatedDuration,
-    required Duration timeSpent,
+    required String estimatedDuration,
+    required String timeSpent,
     required DateTime creationDate,
     required List<AiActionItem> actionItems,
     required List<AiInputLogEntryObject> logEntries,
@@ -36,7 +36,7 @@ class AiActionItem with _$AiActionItem {
 class AiInputLogEntryObject with _$AiInputLogEntryObject {
   const factory AiInputLogEntryObject({
     required DateTime creationTimestamp,
-    required Duration loggedDuration,
+    required String loggedDuration,
     required String text,
   }) = _AiInputLogEntryObject;
 
