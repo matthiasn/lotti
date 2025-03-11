@@ -36,6 +36,7 @@ class LatestSummaryController extends _$LatestSummaryController {
   @override
   Future<AiResponseEntry?> build({
     required String id,
+    required String aiResponseType,
   }) async {
     ref.onDispose(() => _updateSubscription?.cancel());
     watchedIds.add(id);
@@ -48,7 +49,10 @@ class LatestSummaryController extends _$LatestSummaryController {
         .read(journalRepositoryProvider)
         .getLinkedEntities(linkedTo: id);
 
-    return linked.whereType<AiResponseEntry>().toList().firstOrNull;
+    return linked
+        .whereType<AiResponseEntry>()
+        .where((element) => element.data.type == aiResponseType)
+        .firstOrNull;
   }
 
   Future<void> removeActionItem({
@@ -82,13 +86,16 @@ class LatestSummaryController extends _$LatestSummaryController {
 @Riverpod(keepAlive: true)
 class ChecklistItemSuggestionsController
     extends _$ChecklistItemSuggestionsController {
+  final aiResponseType = 'ActionItemSuggestions';
+
   @override
   Future<List<ChecklistItemData>> build({
     required String id,
   }) async {
-    final latestAiEntry =
-        await ref.watch(latestSummaryControllerProvider(id: id).future);
+    final provider =
+        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
 
+    final latestAiEntry = await ref.watch(provider.future);
     final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
 
     final checklistItems = suggestedActionItems.map((item) {
@@ -104,12 +111,14 @@ class ChecklistItemSuggestionsController
   }
 
   void notifyCreatedChecklistItem({required String title}) {
-    final notifier = latestSummaryControllerProvider(id: id).notifier;
-    ref.read(notifier).removeActionItem(title: title);
+    final provider =
+        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
+    ref.read(provider.notifier).removeActionItem(title: title);
   }
 
   void removeActionItem({required String title}) {
-    final notifier = latestSummaryControllerProvider(id: id).notifier;
-    ref.read(notifier).removeActionItem(title: title);
+    final provider =
+        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
+    ref.read(provider.notifier).removeActionItem(title: title);
   }
 }

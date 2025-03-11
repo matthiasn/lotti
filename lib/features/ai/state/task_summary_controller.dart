@@ -80,7 +80,7 @@ $jsonString
       prompt: prompt,
       thoughts: thoughts,
       response: response,
-      type: 'ActionItemSuggestions',
+      type: 'TaskSummary',
     );
 
     await getIt<PersistenceLogic>().createAiResponseEntry(
