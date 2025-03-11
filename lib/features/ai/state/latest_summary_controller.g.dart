@@ -7,7 +7,7 @@ part of 'latest_summary_controller.dart';
 // **************************************************************************
 
 String _$latestSummaryControllerHash() =>
-    r'664d66fb78947d1281abede898ba019b44439765';
+    r'd3c7694444204c35ca56497a5aa7677a9218f96e';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,9 +33,11 @@ class _SystemHash {
 abstract class _$LatestSummaryController
     extends BuildlessAutoDisposeAsyncNotifier<AiResponseEntry?> {
   late final String id;
+  late final String aiResponseType;
 
   FutureOr<AiResponseEntry?> build({
     required String id,
+    required String aiResponseType,
   });
 }
 
@@ -52,9 +54,11 @@ class LatestSummaryControllerFamily
   /// See also [LatestSummaryController].
   LatestSummaryControllerProvider call({
     required String id,
+    required String aiResponseType,
   }) {
     return LatestSummaryControllerProvider(
       id: id,
+      aiResponseType: aiResponseType,
     );
   }
 
@@ -64,6 +68,7 @@ class LatestSummaryControllerFamily
   ) {
     return call(
       id: provider.id,
+      aiResponseType: provider.aiResponseType,
     );
   }
 
@@ -89,8 +94,11 @@ class LatestSummaryControllerProvider
   /// See also [LatestSummaryController].
   LatestSummaryControllerProvider({
     required String id,
+    required String aiResponseType,
   }) : this._internal(
-          () => LatestSummaryController()..id = id,
+          () => LatestSummaryController()
+            ..id = id
+            ..aiResponseType = aiResponseType,
           from: latestSummaryControllerProvider,
           name: r'latestSummaryControllerProvider',
           debugGetCreateSourceHash:
@@ -101,6 +109,7 @@ class LatestSummaryControllerProvider
           allTransitiveDependencies:
               LatestSummaryControllerFamily._allTransitiveDependencies,
           id: id,
+          aiResponseType: aiResponseType,
         );
 
   LatestSummaryControllerProvider._internal(
@@ -111,9 +120,11 @@ class LatestSummaryControllerProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
+    required this.aiResponseType,
   }) : super.internal();
 
   final String id;
+  final String aiResponseType;
 
   @override
   FutureOr<AiResponseEntry?> runNotifierBuild(
@@ -121,6 +132,7 @@ class LatestSummaryControllerProvider
   ) {
     return notifier.build(
       id: id,
+      aiResponseType: aiResponseType,
     );
   }
 
@@ -129,13 +141,16 @@ class LatestSummaryControllerProvider
     return ProviderOverride(
       origin: this,
       override: LatestSummaryControllerProvider._internal(
-        () => create()..id = id,
+        () => create()
+          ..id = id
+          ..aiResponseType = aiResponseType,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         id: id,
+        aiResponseType: aiResponseType,
       ),
     );
   }
@@ -148,13 +163,16 @@ class LatestSummaryControllerProvider
 
   @override
   bool operator ==(Object other) {
-    return other is LatestSummaryControllerProvider && other.id == id;
+    return other is LatestSummaryControllerProvider &&
+        other.id == id &&
+        other.aiResponseType == aiResponseType;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, aiResponseType.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -166,6 +184,9 @@ mixin LatestSummaryControllerRef
     on AutoDisposeAsyncNotifierProviderRef<AiResponseEntry?> {
   /// The parameter `id` of this provider.
   String get id;
+
+  /// The parameter `aiResponseType` of this provider.
+  String get aiResponseType;
 }
 
 class _LatestSummaryControllerProviderElement
@@ -175,10 +196,13 @@ class _LatestSummaryControllerProviderElement
 
   @override
   String get id => (origin as LatestSummaryControllerProvider).id;
+  @override
+  String get aiResponseType =>
+      (origin as LatestSummaryControllerProvider).aiResponseType;
 }
 
 String _$checklistItemSuggestionsControllerHash() =>
-    r'db020f9a335942f7a16064d6a37754180fd65b0d';
+    r'85062592d19f73c9e0b02edce62a018e91462c53';
 
 abstract class _$ChecklistItemSuggestionsController
     extends BuildlessAsyncNotifier<List<ChecklistItemData>> {

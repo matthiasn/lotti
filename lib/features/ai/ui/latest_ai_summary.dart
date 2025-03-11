@@ -15,8 +15,12 @@ class LatestAiSummary extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final latestSummary =
-        ref.watch(latestSummaryControllerProvider(id: itemId)).valueOrNull;
+    final provider = latestSummaryControllerProvider(
+      id: itemId,
+      aiResponseType: 'TaskSummary',
+    );
+
+    final latestSummary = ref.watch(provider).valueOrNull;
 
     if (latestSummary == null) {
       return const SizedBox.shrink();
