@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -36,76 +34,7 @@ class ActionItemSuggestionsController
       return;
     }
 
-    final task = entry;
-
-    final timeSpent = ref
-            .read(taskProgressControllerProvider(id: task.id))
-            .valueOrNull
-            ?.progress ??
-        Duration.zero;
-
-    final logEntries = <AiInputLogEntryObject>[];
-    final linkedEntities = await _db.getLinkedEntities(id);
-
-    for (final linked in linkedEntities) {
-      if (linked is JournalEntry ||
-          linked is JournalImage ||
-          linked is JournalAudio) {
-        logEntries.add(
-          AiInputLogEntryObject(
-            creationTimestamp: linked.meta.dateFrom,
-            loggedDuration: entryDuration(linked),
-            text: linked.entryText?.plainText ?? '',
-          ),
-        );
-      }
-    }
-
-    final checklistIds = task.data.checklistIds ?? [];
-
-    final checklistItems = <ChecklistItemData>[];
-    for (final checklistId in checklistIds) {
-      final checklist = await _db.journalEntityById(checklistId);
-      if (checklist != null && checklist is Checklist) {
-        final checklistItemIds = checklist.data.linkedChecklistItems;
-        for (final checklistItemId in checklistItemIds) {
-          final checklistItem = await _db.journalEntityById(checklistItemId);
-          if (checklistItem != null && checklistItem is ChecklistItem) {
-            final data = checklistItem.data.copyWith(id: checklistItemId);
-            checklistItems.add(data);
-          }
-        }
-      }
-    }
-
-    final actionItems = checklistItems
-        .map(
-          (item) => AiActionItem(
-            title: item.title,
-            completed: item.isChecked,
-          ),
-        )
-        .toList();
-
-    final aiInput = AiInputTaskObject(
-      title: task.data.title,
-      status: task.data.status.map(
-        open: (_) => 'OPEN',
-        groomed: (_) => 'GROOMED',
-        started: (_) => 'STARTED',
-        inProgress: (_) => 'IN PROGRESS',
-        blocked: (_) => 'BLOCKED',
-        onHold: (_) => 'ON HOLD',
-        done: (_) => 'DONE',
-        rejected: (_) => 'REJECTED',
-      ),
-      creationDate: start,
-      actionItems: actionItems,
-      logEntries: logEntries,
-      estimatedDuration: task.data.estimate ?? Duration.zero,
-      timeSpent: timeSpent,
-    );
-
+    final aiInput = await ref.read(aiInputRepositoryProvider).generate(id);
     const encoder = JsonEncoder.withIndent('    ');
     final jsonString = encoder.convert(aiInput);
 
