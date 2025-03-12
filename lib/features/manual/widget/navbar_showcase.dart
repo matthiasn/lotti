@@ -20,7 +20,7 @@ class NavbarShowcase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Showcase.withWidget(
-      tooltipPosition: TooltipPosition.top,
+      tooltipPosition: TooltipPosition.bottom,
       overlayOpacity: 0.7,
       key: showcaseKey,
       width: 300,
@@ -37,6 +37,7 @@ class NavbarShowcase extends StatelessWidget {
             description,
             if (startNav)
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
                     onPressed: () {

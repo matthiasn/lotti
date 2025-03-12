@@ -34,10 +34,7 @@ class TasksBadge extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              '''
-      This badge tracks the number of overdue tasks but also serves as a central hub for task management. \nUsers can create tasks:
-      📝 Assign Names: Give each task a clear and descriptive name.
-      ''',
+              'This badge tracks the number of overdue tasks but also serves as a central hub for task management.',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
             ),
             Row(

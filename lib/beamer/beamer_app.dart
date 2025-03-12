@@ -40,29 +40,27 @@ class _AppScreenState extends State<AppScreen> {
   final navService = getIt<NavService>();
   final journalDb = getIt<JournalDb>();
 
-  final _fabShowcaseKey1 = GlobalKey();
-  final _fabShowcaseKey2 = GlobalKey();
-  final _fabShowcaseKey3 = GlobalKey();
-  final _fabShowcaseKey4 = GlobalKey();
-  final _fabShowcaseKey5 = GlobalKey();
-  final _fabShowcaseKey6 = GlobalKey();
+  final _taskBtnKey = GlobalKey();
+  final _calendarBtnKey = GlobalKey();
+  final _habitsBtnKey = GlobalKey();
+  final _dashboardBtnKey = GlobalKey();
+  final _logbookBtnKey = GlobalKey();
+  final _settingsBtnKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 900), () {
-        // Only show for tasks page
         // ignore: use_build_context_synchronously
         ShowCaseWidget.of(context).startShowCase(
           [
-            _fabShowcaseKey1,
-            _fabShowcaseKey2,
-            _fabShowcaseKey3,
-            _fabShowcaseKey4,
-            _fabShowcaseKey5,
-            _fabShowcaseKey6,
-
+            _taskBtnKey,
+            _calendarBtnKey,
+            _habitsBtnKey,
+            _dashboardBtnKey,
+            _logbookBtnKey,
+            _settingsBtnKey,
           ],
         );
       });
@@ -126,11 +124,11 @@ class _AppScreenState extends State<AppScreen> {
               createNavBarItem(
                 semanticLabel: 'Tasks Tab',
                 icon: TasksBadge(
-                  showcaseKey: _fabShowcaseKey1,
+                  showcaseKey: _taskBtnKey,
                   child: Icon(MdiIcons.checkboxMarkedCircleOutline),
                 ),
                 activeIcon: TasksBadge(
-                  showcaseKey: _fabShowcaseKey1,
+                  showcaseKey: _taskBtnKey,
                   child: Icon(MdiIcons.checkboxMarkedCircle),
                 ),
                 label: context.messages.navTabTitleTasks,
@@ -138,9 +136,9 @@ class _AppScreenState extends State<AppScreen> {
               createNavBarItem(
                 semanticLabel: 'Calendar Tab',
                 icon: NavbarShowcase(
-                  showcaseKey: _fabShowcaseKey2,
+                  showcaseKey: _calendarBtnKey,
                   description: const Text(
-                    'This is the calendar view. You can add events to your calendar hereeee.',
+                    'This is the calendar view. More on this coming soon.',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -155,10 +153,10 @@ class _AppScreenState extends State<AppScreen> {
               ),
               createNavBarItem(
                 semanticLabel: 'Habits Tab',
-                icon:  NavbarShowcase(
-                  showcaseKey: _fabShowcaseKey3,
+                icon: NavbarShowcase(
+                  showcaseKey: _habitsBtnKey,
                   description: const Text(
-                    'This is the habits view. You can add habits here.',
+                    'This is the habits view. More on this coming soon.',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -172,9 +170,9 @@ class _AppScreenState extends State<AppScreen> {
               createNavBarItem(
                 semanticLabel: 'Dashboards Tab',
                 icon: NavbarShowcase(
-                  showcaseKey: _fabShowcaseKey4,
+                  showcaseKey: _dashboardBtnKey,
                   description: const Text(
-                    'This is the insights view. You can see your insights here.',
+                    'This is the insights view. More on this coming soon.',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -188,9 +186,9 @@ class _AppScreenState extends State<AppScreen> {
               createNavBarItem(
                 semanticLabel: 'Logbook Tab',
                 icon: NavbarShowcase(
-                  showcaseKey: _fabShowcaseKey5,
+                  showcaseKey: _logbookBtnKey,
                   description: const Text(
-                    'This is the logbook view. You can log your activities here.',
+                    'This is the logbook view. More on this coming soon.',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -205,9 +203,9 @@ class _AppScreenState extends State<AppScreen> {
                 semanticLabel: 'Settings Tab',
                 icon: NavbarShowcase(
                   endNav: true,
-                  showcaseKey: _fabShowcaseKey6,
+                  showcaseKey: _settingsBtnKey,
                   description: const Text(
-                    'This is the settings view. You can change your settings here.',
+                    'This is the settings view. More on this coming soon.',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,

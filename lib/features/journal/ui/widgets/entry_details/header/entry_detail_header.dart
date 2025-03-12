@@ -8,10 +8,12 @@ import 'package:lotti/features/categories/ui/widgets/category_selection_icon_but
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
+import 'package:lotti/features/manual/widget/navbar_showcase.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
@@ -33,6 +35,9 @@ class EntryDetailHeader extends ConsumerStatefulWidget {
 
 class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   bool showAllIcons = false;
+  final _moreKey = GlobalKey();
+  final _flagMoreKey = GlobalKey();
+  final _starredKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -67,35 +72,74 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                 CategorySelectionIconButton(entry: entry),
               const SizedBox(width: 10),
               if (entry is! JournalEvent)
-                SwitchIconWidget(
-                  tooltip: context.messages.journalFavoriteTooltip,
-                  onPressed: notifier.toggleStarred,
-                  value: entry?.meta.starred ?? false,
-                  icon: Icons.star_outline_rounded,
-                  activeIcon: Icons.star_rounded,
-                  activeColor: starredGold,
+                NavbarShowcase(
+                  startNav: true,
+                  showcaseKey: _starredKey,
+                  description: const Text('Mark standout tasks that deserve special attention.'),
+                  icon: SwitchIconWidget(
+                    tooltip: context.messages.journalFavoriteTooltip,
+                    onPressed: notifier.toggleStarred,
+                    value: entry?.meta.starred ?? false,
+                    icon: Icons.star_outline_rounded,
+                    activeIcon: Icons.star_rounded,
+                    activeColor: starredGold,
+                  ),
                 ),
-              SwitchIconWidget(
-                tooltip: context.messages.journalFlaggedTooltip,
-                onPressed: notifier.toggleFlagged,
-                value: entry?.meta.flag == EntryFlag.import,
-                icon: Icons.flag_outlined,
-                activeIcon: Icons.flag,
-                activeColor: context.colorScheme.error,
-              ),
               if (isDesktop)
                 AiPopUpMenu(
                   journalEntity: entry,
                   linkedFromId: widget.linkedFromId,
                 ),
-              IconButton(
-                icon: const Icon(Icons.more_horiz),
-                onPressed: () => ExtendedHeaderModal.show(
-                  context: context,
-                  entryId: id,
-                  inLinkedEntries: widget.inLinkedEntries,
-                  linkedFromId: widget.linkedFromId,
-                  link: widget.link,
+              NavbarShowcase(
+                showcaseKey: _flagMoreKey,
+                description: const Text('Highlight tasks that need follow-up or special focus.'),
+                icon: SwitchIconWidget(
+                  tooltip: context.messages.journalFlaggedTooltip,
+                  onPressed: notifier.toggleFlagged,
+                  value: entry?.meta.flag == EntryFlag.import,
+                  icon: Icons.flag_outlined,
+                  activeIcon: Icons.flag,
+                  activeColor: context.colorScheme.error,
+                ),
+              ),
+              NavbarShowcase(
+                endNav: true,
+                showcaseKey: _moreKey,
+                description: const Text('The Actions Menu provides various options for managing and organizing your entries.'),
+                icon: IconButton(
+                  icon: const Icon(Icons.more_horiz),
+                  onPressed: () => ExtendedHeaderModal.show(
+                    context: context,
+                    entryId: id,
+                    inLinkedEntries: widget.inLinkedEntries,
+                    linkedFromId: widget.linkedFromId,
+                    link: widget.link,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  ShowCaseWidget.of(context).startShowCase(
+                    [
+                      _starredKey,
+                      _flagMoreKey,
+                      
+                      _moreKey,
+                    ],
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(10),
+                    ),
+                    border: Border.all(),
+                  ),
+                  child: const Icon(
+                    Icons.question_mark,
+                    size: 13,
+                    color: Colors.blue,
+                  ),
                 ),
               ),
             ],

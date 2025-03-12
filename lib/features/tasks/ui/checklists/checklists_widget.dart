@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ChecklistsWidget extends ConsumerStatefulWidget {
   const ChecklistsWidget({
@@ -23,6 +24,7 @@ class ChecklistsWidget extends ConsumerStatefulWidget {
 class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
   bool _isEditing = false;
   List<String>? _checklistIds;
+  final _checklistKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +44,14 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(context.messages.checklistsTitle),
-            IconButton(
-              tooltip: context.messages.addActionAddChecklist,
-              onPressed: () => createChecklist(task: widget.task, ref: ref),
-              icon: const Icon(Icons.add_rounded),
+            Showcase(
+              key: _checklistKey,
+              description: 'Add a checklist',
+              child: IconButton(
+                tooltip: context.messages.addActionAddChecklist,
+                onPressed: () => createChecklist(task: widget.task, ref: ref),
+                icon: const Icon(Icons.add_rounded),
+              ),
             ),
             IconButton(
               tooltip: context.messages.addActionAddChecklist,
@@ -55,6 +61,24 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                 });
               },
               icon: const Icon(Icons.reorder),
+            ),
+            GestureDetector(
+              onTap: () {
+                ShowCaseWidget.of(context).startShowCase([_checklistKey]);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(10),),
+                  border: Border.all(
+                   
+                  ),
+                ),
+                child: const Icon(
+                  Icons.question_mark,
+                  size: 13,
+                  color: Colors.blue,
+                ),
+              ),
             ),
           ],
         ),

@@ -33,13 +33,13 @@ class InfiniteJournalPage extends StatefulWidget {
 }
 
 class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
-  final _fabShowcaseKey = GlobalKey();
+  final _actionBtnKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ShowCaseWidget.of(context).startShowCase([_fabShowcaseKey]);
+      ShowCaseWidget.of(context).startShowCase([_actionBtnKey]);
     });
   }
   
@@ -57,7 +57,7 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
 
             return widget.showTasks
                 ? FloatingAddIcon(
-                  showcaseKey: _fabShowcaseKey,
+                  showcaseKey: _actionBtnKey,
                     createFn: () async {
                       final task = await createTask(categoryId: categoryId);
                       if (task != null) {
