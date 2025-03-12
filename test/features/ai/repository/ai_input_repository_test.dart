@@ -8,11 +8,38 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+
+// Mock for TaskProgressRepository
+class MockTaskProgressRepository extends Mock
+    implements TaskProgressRepository {
+  @override
+  TaskProgressState getTaskProgress({
+    required Map<String, Duration> durations,
+    Duration? estimate,
+  }) {
+    var progress = Duration.zero;
+    for (final duration in durations.values) {
+      progress = progress + duration;
+    }
+
+    return TaskProgressState(
+      progress: progress,
+      estimate: estimate ?? Duration.zero,
+    );
+  }
+}
+
+// Mock classes for parameters
+class FakeId extends Mock {
+  FakeId(this.value);
+  final String value;
+}
 
 // Create real implementations rather than mocks that can cause test issues
 class TestTaskProgressState implements TaskProgressState {
@@ -61,7 +88,13 @@ class TestAsyncValue<T> implements AsyncValue<T> {
 }
 
 class TestRef implements Ref {
+  TestRef(this._mockTaskProgressRepository) {
+    // Add the mock repository to the values map
+    _values[taskProgressRepositoryProvider] = _mockTaskProgressRepository;
+  }
   final Map<ProviderListenable<Object?>, Object> _values = {};
+  // Add a mock for the taskProgressRepositoryProvider
+  final TaskProgressRepository _mockTaskProgressRepository;
 
   void setTaskProgress(String taskId, Duration? progress) {
     final provider = taskProgressControllerProvider(id: taskId);
@@ -88,14 +121,23 @@ void main() {
   const taskId = 'task-123';
   final creationDate = DateTime(2023);
 
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(FakeId(taskId));
+    registerFallbackValue(<String, Duration>{});
+    registerFallbackValue(Duration.zero);
+  });
+
   group('AiInputRepository', () {
     late MockJournalDb mockDb;
+    late MockTaskProgressRepository mockTaskProgressRepository;
     late TestRef testRef;
     late AiInputRepository repository;
 
     setUp(() {
       mockDb = MockJournalDb();
-      testRef = TestRef();
+      mockTaskProgressRepository = MockTaskProgressRepository();
+      testRef = TestRef(mockTaskProgressRepository);
 
       // Register function for service locator
       getIt.registerSingleton<JournalDb>(mockDb);
@@ -104,6 +146,13 @@ void main() {
 
       // Set initial value to null
       testRef.setTaskProgress(taskId, null);
+
+      // Set default mock for taskProgressRepository if not overridden in tests
+      when(
+        () => mockTaskProgressRepository.getTaskProgressData(
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => (null, <String, Duration>{}));
     });
 
     tearDown(() {
@@ -141,6 +190,15 @@ void main() {
       const checklistItemId = 'checklist-item-123';
       const linkedEntryId = 'linked-entry-123';
       const statusId = 'status-123';
+
+      // Set up specific mock for the task progress repository for this test
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer(
+        (_) async => (
+          const Duration(minutes: 60), // estimate
+          {'entry1': const Duration(minutes: 45)}, // durations
+        ),
+      );
 
       // Mock the task
       final task = JournalEntity.task(
@@ -257,6 +315,15 @@ void main() {
       const taskTitle = 'Test Task';
       const statusId = 'status-123';
 
+      // Set up specific mock for the task progress repository for this test
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer(
+        (_) async => (
+          null, // null estimate
+          <String, Duration>{}, // empty durations
+        ),
+      );
+
       // Mock the task with no checklist ids and no estimate
       final task = JournalEntity.task(
         meta: Metadata(
@@ -311,6 +378,19 @@ void main() {
       const imageId = 'image-123';
       const audioId = 'audio-123';
       const statusId = 'status-123';
+
+      // Set up specific mock for the task progress repository for this test
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer(
+        (_) async => (
+          const Duration(minutes: 30), // estimate
+          {
+            'entry-123': const Duration(minutes: 15),
+            'image-123': const Duration(minutes: 30),
+            'audio-123': const Duration(minutes: 45),
+          }, // durations
+        ),
+      );
 
       // Mock the task
       final task = JournalEntity.task(
