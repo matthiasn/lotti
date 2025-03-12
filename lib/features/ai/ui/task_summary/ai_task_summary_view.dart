@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/features/ai/state/ollama_task_checklist_summary.dart';
+import 'package:lotti/features/ai/state/task_summary_controller.dart';
 
 class AiTaskSummaryView extends ConsumerWidget {
   const AiTaskSummaryView({
@@ -13,9 +13,7 @@ class AiTaskSummaryView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      aiTaskChecklistSummaryControllerProvider(id: id),
-    );
+    final state = ref.watch(taskSummaryControllerProvider(id: id));
 
     return SingleChildScrollView(
       child: Padding(

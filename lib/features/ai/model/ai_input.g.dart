@@ -11,9 +11,8 @@ _$AiInputTaskObjectImpl _$$AiInputTaskObjectImplFromJson(
     _$AiInputTaskObjectImpl(
       title: json['title'] as String,
       status: json['status'] as String,
-      estimatedDuration:
-          Duration(microseconds: (json['estimatedDuration'] as num).toInt()),
-      timeSpent: Duration(microseconds: (json['timeSpent'] as num).toInt()),
+      estimatedDuration: json['estimatedDuration'] as String,
+      timeSpent: json['timeSpent'] as String,
       creationDate: DateTime.parse(json['creationDate'] as String),
       actionItems: (json['actionItems'] as List<dynamic>)
           .map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
@@ -28,8 +27,8 @@ Map<String, dynamic> _$$AiInputTaskObjectImplToJson(
     <String, dynamic>{
       'title': instance.title,
       'status': instance.status,
-      'estimatedDuration': instance.estimatedDuration.inMicroseconds,
-      'timeSpent': instance.timeSpent.inMicroseconds,
+      'estimatedDuration': instance.estimatedDuration,
+      'timeSpent': instance.timeSpent,
       'creationDate': instance.creationDate.toIso8601String(),
       'actionItems': instance.actionItems,
       'logEntries': instance.logEntries,
@@ -59,8 +58,7 @@ _$AiInputLogEntryObjectImpl _$$AiInputLogEntryObjectImplFromJson(
         Map<String, dynamic> json) =>
     _$AiInputLogEntryObjectImpl(
       creationTimestamp: DateTime.parse(json['creationTimestamp'] as String),
-      loggedDuration:
-          Duration(microseconds: (json['loggedDuration'] as num).toInt()),
+      loggedDuration: json['loggedDuration'] as String,
       text: json['text'] as String,
     );
 
@@ -68,7 +66,7 @@ Map<String, dynamic> _$$AiInputLogEntryObjectImplToJson(
         _$AiInputLogEntryObjectImpl instance) =>
     <String, dynamic>{
       'creationTimestamp': instance.creationTimestamp.toIso8601String(),
-      'loggedDuration': instance.loggedDuration.inMicroseconds,
+      'loggedDuration': instance.loggedDuration,
       'text': instance.text,
     };
 
