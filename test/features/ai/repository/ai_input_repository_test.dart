@@ -2,15 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -34,6 +37,9 @@ class MockTaskProgressRepository extends Mock
     );
   }
 }
+
+// Mock for PersistenceLogic
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 // Mock classes for parameters
 class FakeId extends Mock {
@@ -126,21 +132,35 @@ void main() {
     registerFallbackValue(FakeId(taskId));
     registerFallbackValue(<String, Duration>{});
     registerFallbackValue(Duration.zero);
+    registerFallbackValue(
+      const AiResponseData(
+        model: 'test-model',
+        systemMessage: 'test-system-message',
+        prompt: 'test-prompt',
+        thoughts: 'test-thoughts',
+        response: 'test-response',
+      ),
+    );
+    registerFallbackValue(DateTime.now());
   });
 
   group('AiInputRepository', () {
     late MockJournalDb mockDb;
     late MockTaskProgressRepository mockTaskProgressRepository;
+    late MockPersistenceLogic mockPersistenceLogic;
     late TestRef testRef;
     late AiInputRepository repository;
 
     setUp(() {
       mockDb = MockJournalDb();
       mockTaskProgressRepository = MockTaskProgressRepository();
+      mockPersistenceLogic = MockPersistenceLogic();
       testRef = TestRef(mockTaskProgressRepository);
 
       // Register function for service locator
-      getIt.registerSingleton<JournalDb>(mockDb);
+      getIt
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       repository = AiInputRepository(testRef);
 
@@ -156,7 +176,9 @@ void main() {
     });
 
     tearDown(() {
-      getIt.unregister<JournalDb>();
+      getIt
+        ..unregister<JournalDb>()
+        ..unregister<PersistenceLogic>();
     });
 
     test('generate returns null when entity is not a Task', () async {
@@ -486,6 +508,180 @@ void main() {
       // Verify the audio entry
       expect(result.logEntries[2].text, 'Audio Transcription');
       expect(result.logEntries[2].loggedDuration, '00:45');
+    });
+
+    // Tests for getEntity method
+    group('getEntity', () {
+      test('returns entity when entity exists', () async {
+        // Arrange
+        final expectedEntity = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: 'Test Task',
+            status: TaskStatus.open(
+              id: 'status-123',
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            statusHistory: [],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => expectedEntity);
+
+        // Act
+        final result = await repository.getEntity(taskId);
+
+        // Assert
+        expect(result, equals(expectedEntity));
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+      });
+
+      test('returns null when entity does not exist', () async {
+        // Arrange
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await repository.getEntity(taskId);
+
+        // Assert
+        expect(result, isNull);
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+      });
+    });
+
+    // Tests for createAiResponseEntry method
+    group('createAiResponseEntry', () {
+      test(
+          'calls PersistenceLogic.createAiResponseEntry with correct parameters',
+          () async {
+        // Arrange
+        const testData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final testStart = DateTime(2023);
+        const testLinkedId = 'linked-123';
+        const testCategoryId = 'category-123';
+
+        when(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: any(named: 'data'),
+            dateFrom: any(named: 'dateFrom'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act
+        await repository.createAiResponseEntry(
+          data: testData,
+          start: testStart,
+          linkedId: testLinkedId,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        verify(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: testData,
+            dateFrom: testStart,
+            linkedId: testLinkedId,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+      });
+
+      test('handles optional parameters correctly', () async {
+        // Arrange
+        const testData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final testStart = DateTime(2023);
+
+        when(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: any(named: 'data'),
+            dateFrom: any(named: 'dateFrom'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act - omit optional parameters
+        await repository.createAiResponseEntry(
+          data: testData,
+          start: testStart,
+        );
+
+        // Assert
+        verify(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: testData,
+            dateFrom: testStart,
+          ),
+        ).called(1);
+      });
+
+      test('handles response with suggested action items', () async {
+        // Arrange
+        const testData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+          suggestedActionItems: [
+            AiActionItem(title: 'Action 1', completed: false),
+            AiActionItem(title: 'Action 2', completed: true),
+          ],
+          type: 'ActionItemSuggestions',
+        );
+
+        final testStart = DateTime(2023);
+
+        when(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: any(named: 'data'),
+            dateFrom: any(named: 'dateFrom'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act
+        await repository.createAiResponseEntry(
+          data: testData,
+          start: testStart,
+        );
+
+        // Assert
+        verify(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: testData,
+            dateFrom: testStart,
+          ),
+        ).called(1);
+      });
     });
   });
 }
