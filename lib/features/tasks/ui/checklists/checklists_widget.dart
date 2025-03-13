@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ChecklistsWidget extends ConsumerStatefulWidget {
   const ChecklistsWidget({
@@ -25,6 +26,7 @@ class ChecklistsWidget extends ConsumerStatefulWidget {
 class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
   bool _isEditing = false;
   List<String>? _checklistIds;
+  final _checklistKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -44,14 +46,15 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              context.messages.checklistsTitle,
-              style: context.textTheme.titleSmall?.copyWith(color: color),
-            ),
-            IconButton(
-              tooltip: context.messages.addActionAddChecklist,
-              onPressed: () => createChecklist(task: widget.task, ref: ref),
-              icon: Icon(Icons.add_rounded, color: color),
+            Text(context.messages.checklistsTitle),
+            Showcase(
+              key: _checklistKey,
+              description: 'Add a checklist',
+              child: IconButton(
+                tooltip: context.messages.addActionAddChecklist,
+                onPressed: () => createChecklist(task: widget.task, ref: ref),
+                icon: Icon(Icons.add_rounded, color: color),
+              ),
             ),
             IconButton(
               tooltip: context.messages.addActionAddChecklist,
@@ -61,6 +64,24 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                 });
               },
               icon: Icon(Icons.reorder, color: color),
+            ),
+            GestureDetector(
+              onTap: () {
+                ShowCaseWidget.of(context).startShowCase([_checklistKey]);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(10),),
+                  border: Border.all(
+                   
+                  ),
+                ),
+                child: const Icon(
+                  Icons.question_mark,
+                  size: 13,
+                  color: Colors.blue,
+                ),
+              ),
             ),
           ],
         ),

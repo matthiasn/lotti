@@ -15,6 +15,7 @@ class MeasurablesPage extends StatelessWidget {
     return DefinitionsListPage<MeasurableDataType>(
       stream: getIt<JournalDb>().watchMeasurableDataTypes(),
       floatingActionButton: FloatingAddIcon(
+        showcaseKey: GlobalKey(),
         createFn: () => beamToNamed('/settings/measurables/create'),
         semanticLabel: 'Add Measurable',
       ),
