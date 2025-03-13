@@ -2,17 +2,50 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+
+// Mock for TaskProgressRepository
+class MockTaskProgressRepository extends Mock
+    implements TaskProgressRepository {
+  @override
+  TaskProgressState getTaskProgress({
+    required Map<String, Duration> durations,
+    Duration? estimate,
+  }) {
+    var progress = Duration.zero;
+    for (final duration in durations.values) {
+      progress = progress + duration;
+    }
+
+    return TaskProgressState(
+      progress: progress,
+      estimate: estimate ?? Duration.zero,
+    );
+  }
+}
+
+// Mock for PersistenceLogic
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+// Mock classes for parameters
+class FakeId extends Mock {
+  FakeId(this.value);
+  final String value;
+}
 
 // Create real implementations rather than mocks that can cause test issues
 class TestTaskProgressState implements TaskProgressState {
@@ -61,7 +94,13 @@ class TestAsyncValue<T> implements AsyncValue<T> {
 }
 
 class TestRef implements Ref {
+  TestRef(this._mockTaskProgressRepository) {
+    // Add the mock repository to the values map
+    _values[taskProgressRepositoryProvider] = _mockTaskProgressRepository;
+  }
   final Map<ProviderListenable<Object?>, Object> _values = {};
+  // Add a mock for the taskProgressRepositoryProvider
+  final TaskProgressRepository _mockTaskProgressRepository;
 
   void setTaskProgress(String taskId, Duration? progress) {
     final provider = taskProgressControllerProvider(id: taskId);
@@ -88,26 +127,58 @@ void main() {
   const taskId = 'task-123';
   final creationDate = DateTime(2023);
 
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(FakeId(taskId));
+    registerFallbackValue(<String, Duration>{});
+    registerFallbackValue(Duration.zero);
+    registerFallbackValue(
+      const AiResponseData(
+        model: 'test-model',
+        systemMessage: 'test-system-message',
+        prompt: 'test-prompt',
+        thoughts: 'test-thoughts',
+        response: 'test-response',
+      ),
+    );
+    registerFallbackValue(DateTime.now());
+  });
+
   group('AiInputRepository', () {
     late MockJournalDb mockDb;
+    late MockTaskProgressRepository mockTaskProgressRepository;
+    late MockPersistenceLogic mockPersistenceLogic;
     late TestRef testRef;
     late AiInputRepository repository;
 
     setUp(() {
       mockDb = MockJournalDb();
-      testRef = TestRef();
+      mockTaskProgressRepository = MockTaskProgressRepository();
+      mockPersistenceLogic = MockPersistenceLogic();
+      testRef = TestRef(mockTaskProgressRepository);
 
       // Register function for service locator
-      getIt.registerSingleton<JournalDb>(mockDb);
+      getIt
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       repository = AiInputRepository(testRef);
 
       // Set initial value to null
       testRef.setTaskProgress(taskId, null);
+
+      // Set default mock for taskProgressRepository if not overridden in tests
+      when(
+        () => mockTaskProgressRepository.getTaskProgressData(
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => (null, <String, Duration>{}));
     });
 
     tearDown(() {
-      getIt.unregister<JournalDb>();
+      getIt
+        ..unregister<JournalDb>()
+        ..unregister<PersistenceLogic>();
     });
 
     test('generate returns null when entity is not a Task', () async {
@@ -141,6 +212,15 @@ void main() {
       const checklistItemId = 'checklist-item-123';
       const linkedEntryId = 'linked-entry-123';
       const statusId = 'status-123';
+
+      // Set up specific mock for the task progress repository for this test
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer(
+        (_) async => (
+          const Duration(minutes: 60), // estimate
+          {'entry1': const Duration(minutes: 45)}, // durations
+        ),
+      );
 
       // Mock the task
       final task = JournalEntity.task(
@@ -257,6 +337,15 @@ void main() {
       const taskTitle = 'Test Task';
       const statusId = 'status-123';
 
+      // Set up specific mock for the task progress repository for this test
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer(
+        (_) async => (
+          null, // null estimate
+          <String, Duration>{}, // empty durations
+        ),
+      );
+
       // Mock the task with no checklist ids and no estimate
       final task = JournalEntity.task(
         meta: Metadata(
@@ -311,6 +400,19 @@ void main() {
       const imageId = 'image-123';
       const audioId = 'audio-123';
       const statusId = 'status-123';
+
+      // Set up specific mock for the task progress repository for this test
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer(
+        (_) async => (
+          const Duration(minutes: 30), // estimate
+          {
+            'entry-123': const Duration(minutes: 15),
+            'image-123': const Duration(minutes: 30),
+            'audio-123': const Duration(minutes: 45),
+          }, // durations
+        ),
+      );
 
       // Mock the task
       final task = JournalEntity.task(
@@ -406,6 +508,180 @@ void main() {
       // Verify the audio entry
       expect(result.logEntries[2].text, 'Audio Transcription');
       expect(result.logEntries[2].loggedDuration, '00:45');
+    });
+
+    // Tests for getEntity method
+    group('getEntity', () {
+      test('returns entity when entity exists', () async {
+        // Arrange
+        final expectedEntity = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: 'Test Task',
+            status: TaskStatus.open(
+              id: 'status-123',
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            statusHistory: [],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => expectedEntity);
+
+        // Act
+        final result = await repository.getEntity(taskId);
+
+        // Assert
+        expect(result, equals(expectedEntity));
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+      });
+
+      test('returns null when entity does not exist', () async {
+        // Arrange
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await repository.getEntity(taskId);
+
+        // Assert
+        expect(result, isNull);
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+      });
+    });
+
+    // Tests for createAiResponseEntry method
+    group('createAiResponseEntry', () {
+      test(
+          'calls PersistenceLogic.createAiResponseEntry with correct parameters',
+          () async {
+        // Arrange
+        const testData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final testStart = DateTime(2023);
+        const testLinkedId = 'linked-123';
+        const testCategoryId = 'category-123';
+
+        when(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: any(named: 'data'),
+            dateFrom: any(named: 'dateFrom'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act
+        await repository.createAiResponseEntry(
+          data: testData,
+          start: testStart,
+          linkedId: testLinkedId,
+          categoryId: testCategoryId,
+        );
+
+        // Assert
+        verify(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: testData,
+            dateFrom: testStart,
+            linkedId: testLinkedId,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+      });
+
+      test('handles optional parameters correctly', () async {
+        // Arrange
+        const testData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final testStart = DateTime(2023);
+
+        when(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: any(named: 'data'),
+            dateFrom: any(named: 'dateFrom'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act - omit optional parameters
+        await repository.createAiResponseEntry(
+          data: testData,
+          start: testStart,
+        );
+
+        // Assert
+        verify(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: testData,
+            dateFrom: testStart,
+          ),
+        ).called(1);
+      });
+
+      test('handles response with suggested action items', () async {
+        // Arrange
+        const testData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+          suggestedActionItems: [
+            AiActionItem(title: 'Action 1', completed: false),
+            AiActionItem(title: 'Action 2', completed: true),
+          ],
+          type: 'ActionItemSuggestions',
+        );
+
+        final testStart = DateTime(2023);
+
+        when(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: any(named: 'data'),
+            dateFrom: any(named: 'dateFrom'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act
+        await repository.createAiResponseEntry(
+          data: testData,
+          start: testStart,
+        );
+
+        // Assert
+        verify(
+          () => mockPersistenceLogic.createAiResponseEntry(
+            data: testData,
+            dateFrom: testStart,
+          ),
+        ).called(1);
+      });
     });
   });
 }

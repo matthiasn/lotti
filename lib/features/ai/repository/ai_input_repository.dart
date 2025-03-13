@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,10 +19,28 @@ class AiInputRepository {
   final JournalDb _db = getIt<JournalDb>();
   final Ref ref;
 
+  Future<JournalEntity?> getEntity(String id) async {
+    return _db.journalEntityById(id);
+  }
+
+  Future<void> createAiResponseEntry({
+    required AiResponseData data,
+    required DateTime start,
+    String? linkedId,
+    String? categoryId,
+  }) async {
+    await getIt<PersistenceLogic>().createAiResponseEntry(
+      data: data,
+      dateFrom: start,
+      linkedId: linkedId,
+      categoryId: categoryId,
+    );
+  }
+
   Future<AiInputTaskObject?> generate(String id) async {
     final start = DateTime.now();
 
-    final entry = await _db.journalEntityById(id);
+    final entry = await getEntity(id);
 
     if (entry is! Task) {
       return null;
@@ -28,11 +48,17 @@ class AiInputRepository {
 
     final task = entry;
 
-    final timeSpent = ref
-            .read(taskProgressControllerProvider(id: task.id))
-            .valueOrNull
-            ?.progress ??
-        Duration.zero;
+    final progressRepository = ref.read(taskProgressRepositoryProvider);
+    final taskProgressData =
+        await progressRepository.getTaskProgressData(id: task.id);
+    final durations = taskProgressData?.$2 ?? {};
+
+    final timeSpent = progressRepository
+        .getTaskProgress(
+          durations: durations,
+          estimate: taskProgressData?.$1,
+        )
+        .progress;
 
     final logEntries = <AiInputLogEntryObject>[];
     final linkedEntities = await _db.getLinkedEntities(id);

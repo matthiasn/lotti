@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -74,51 +72,8 @@ class LatestSummaryController extends _$LatestSummaryController {
 
     state = AsyncData(updated);
 
-    await getIt<PersistenceLogic>().updateJournalEntity(
-      updated,
-      updated.meta,
-    );
+    await ref.read(journalRepositoryProvider).updateJournalEntity(updated);
 
     ref.invalidateSelf();
-  }
-}
-
-@Riverpod(keepAlive: true)
-class ChecklistItemSuggestionsController
-    extends _$ChecklistItemSuggestionsController {
-  final aiResponseType = 'ActionItemSuggestions';
-
-  @override
-  Future<List<ChecklistItemData>> build({
-    required String id,
-  }) async {
-    final provider =
-        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
-
-    final latestAiEntry = await ref.watch(provider.future);
-    final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
-
-    final checklistItems = suggestedActionItems.map((item) {
-      final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
-      return ChecklistItemData(
-        title: title,
-        isChecked: item.completed,
-        linkedChecklists: [],
-      );
-    }).toList();
-
-    return checklistItems;
-  }
-
-  void notifyCreatedChecklistItem({required String title}) {
-    final provider =
-        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
-    ref.read(provider.notifier).removeActionItem(title: title);
-  }
-
-  void removeActionItem({required String title}) {
-    final provider =
-        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
-    ref.read(provider.notifier).removeActionItem(title: title);
   }
 }

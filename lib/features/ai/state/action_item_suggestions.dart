@@ -3,12 +3,9 @@ import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'action_item_suggestions.g.dart';
@@ -16,8 +13,6 @@ part 'action_item_suggestions.g.dart';
 @riverpod
 class ActionItemSuggestionsController
     extends _$ActionItemSuggestionsController {
-  final JournalDb _db = getIt<JournalDb>();
-
   @override
   String build({
     required String id,
@@ -28,7 +23,7 @@ class ActionItemSuggestionsController
 
   Future<void> getActionItemSuggestion() async {
     final start = DateTime.now();
-    final entry = await _db.journalEntityById(id);
+    final entry = await ref.read(aiInputRepositoryProvider).getEntity(id);
 
     if (entry is! Task) {
       return;
@@ -128,11 +123,11 @@ task details, then remove it from the response.
       type: 'ActionItemSuggestions',
     );
 
-    await getIt<PersistenceLogic>().createAiResponseEntry(
-      data: data,
-      dateFrom: start,
-      linkedId: id,
-      categoryId: entry.categoryId,
-    );
+    await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
+          data: data,
+          start: start,
+          linkedId: id,
+          categoryId: entry.categoryId,
+        );
   }
 }

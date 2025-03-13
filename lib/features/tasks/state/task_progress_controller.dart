@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
@@ -59,37 +59,29 @@ class TaskProgressController extends _$TaskProgressController {
   }
 
   Future<TaskProgressState?> _fetch() async {
-    final task = await getIt<JournalDb>().journalEntityById(id);
+    final res = await ref
+        .read(taskProgressRepositoryProvider)
+        .getTaskProgressData(id: id);
 
-    if (task is! Task) {
+    _estimate = res?.$1;
+    final durations = res?.$2;
+
+    if (durations == null) {
       return null;
     }
 
-    _estimate = task.data.estimate;
-    final items = await getIt<JournalDb>().getLinkedEntities(id);
-    final linkedIds = items.map((item) => item.id).toList();
-    _subscribedIds.addAll(linkedIds);
+    _durations
+      ..clear()
+      ..addAll(durations);
 
-    _durations.clear();
-    for (final journalEntity in items) {
-      if (journalEntity is! Task) {
-        final duration = entryDuration(journalEntity);
-        _durations[journalEntity.meta.id] = duration;
-      }
-    }
+    _subscribedIds.addAll(durations.keys);
 
     return _getProgress();
   }
 
   TaskProgressState _getProgress() {
-    var progress = Duration.zero;
-    for (final duration in _durations.values) {
-      progress = progress + duration;
-    }
-
-    return TaskProgressState(
-      progress: progress,
-      estimate: _estimate ?? Duration.zero,
-    );
+    return ref
+        .read(taskProgressRepositoryProvider)
+        .getTaskProgress(durations: _durations, estimate: _estimate);
   }
 }
