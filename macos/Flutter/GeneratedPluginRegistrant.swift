@@ -5,6 +5,7 @@
 import FlutterMacOS
 import Foundation
 
+import app_local
 import audio_session
 import connectivity_plus
 import desktop_drop
@@ -36,6 +37,7 @@ import video_player_avfoundation
 import window_manager
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+  AppLangPlugin.register(with: registry.registrar(forPlugin: "AppLangPlugin"))
   AudioSessionPlugin.register(with: registry.registrar(forPlugin: "AudioSessionPlugin"))
   ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))
   DesktopDropPlugin.register(with: registry.registrar(forPlugin: "DesktopDropPlugin"))

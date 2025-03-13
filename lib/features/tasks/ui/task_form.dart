@@ -242,7 +242,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                                 themeData: Theme.of(context),
                               ),
                               key: Key(
-                                  'task_status_dropdown_${taskData.status}'),
+                                  'task_status_dropdown_${taskData.status}',),
                               initialValue: taskData.status.map(
                                     open: (_) => 'OPEN',
                                     groomed: (_) => 'GROOMED',

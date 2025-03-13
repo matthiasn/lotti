@@ -46,14 +46,15 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              context.messages.checklistsTitle,
-              style: context.textTheme.titleSmall?.copyWith(color: color),
-            ),
-            IconButton(
-              tooltip: context.messages.addActionAddChecklist,
-              onPressed: () => createChecklist(task: widget.task, ref: ref),
-              icon: Icon(Icons.add_rounded, color: color),
+            Text(context.messages.checklistsTitle),
+            Showcase(
+              key: _checklistKey,
+              description: 'Add a checklist',
+              child: IconButton(
+                tooltip: context.messages.addActionAddChecklist,
+                onPressed: () => createChecklist(task: widget.task, ref: ref),
+                icon: Icon(Icons.add_rounded, color: color),
+              ),
             ),
             IconButton(
               tooltip: context.messages.addActionAddChecklist,

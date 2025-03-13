@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
+  app_local:
+    dependency: "direct main"
+    description:
+      name: app_local
+      sha256: "3068ab19afe4528d1691ea0563611bdcde558fd8b8e434809049a35c102d1f2a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   arb_utils:
     dependency: "direct main"
     description:

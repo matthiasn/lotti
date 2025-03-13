@@ -247,6 +247,30 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  audio_session: 19e9480dbdd4e5f6c4543826b2e8b0e4ab6145fe
+  connectivity_plus: 2a701ffec2c0ae28a48cf7540e279787e77c447d
+  device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
+  ffmpeg-kit-ios-https: ac1fbdb6095fc1595b446084a3447de2c6d78347
+  ffmpeg_kit_flutter: b4ca70cac3fc1d8ac14cdc660754b60870358732
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
+  flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
+  flutter_keyboard_visibility_temp_fork: 8a8809c4129e31d25fca77446e0f3fd548122ced
+  flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
+  flutter_native_splash: f71420956eb811e6d310720fee915f1d42852e7a
+  flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
+  flutter_olm: 7154e02866bd06d91e400e94f66d5e2a955de0b1
+  flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
+  flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  health: 5a380c0f6c4f619535845992993964293962e99e
+  image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
+  integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
+  irondash_engine_context: 3458bf979b90d616ffb8ae03a150bafe2e860cc9
+  just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
+=======
+>>>>>>> e4b145f2625e493ebeb864bdc918f182b5a436c8
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
@@ -276,6 +300,7 @@ SPEC CHECKSUMS:
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
+<<<<<<< HEAD
 =======
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
@@ -292,6 +317,9 @@ SPEC CHECKSUMS:
   irondash_engine_context: 3458bf979b90d616ffb8ae03a150bafe2e860cc9
   just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
 >>>>>>> 0739e689b (chore: upgrade quill dependency)
+=======
+>>>>>>> feats/lotti
+>>>>>>> e4b145f2625e493ebeb864bdc918f182b5a436c8
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   location: 155caecf9da4f280ab5fe4a55f94ceccfab838f8
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
