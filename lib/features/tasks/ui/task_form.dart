@@ -332,7 +332,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                 const SizedBox(height: 20),
                 Showcase(
                   key: _taskCategoryKey,
-                  description: 'Select/Add a category for your task!',
+                  description: 'Select/Add a category for your task here!',
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
