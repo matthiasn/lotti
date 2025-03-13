@@ -47,7 +47,7 @@ class JournalRepository {
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
         exception,
-        domain: 'persistence_logic',
+        domain: 'JournalRepository',
         subDomain: 'updateCategoryId',
         stackTrace: stackTrace,
       );
@@ -81,13 +81,30 @@ class JournalRepository {
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
         exception,
-        domain: 'persistence_logic',
+        domain: 'JournalRepository',
         subDomain: 'deleteJournalEntity',
         stackTrace: stackTrace,
       );
     }
 
     return true;
+  }
+
+  Future<bool> updateJournalEntity(JournalEntity updated) async {
+    try {
+      return await getIt<PersistenceLogic>().updateJournalEntity(
+        updated,
+        updated.meta,
+      );
+    } catch (exception, stackTrace) {
+      getIt<LoggingService>().captureException(
+        exception,
+        domain: 'JournalRepository',
+        subDomain: 'updateJournalEntity',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
   }
 
   Future<bool> updateJournalEntityDate(
@@ -116,7 +133,7 @@ class JournalRepository {
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
         exception,
-        domain: 'persistence_logic',
+        domain: 'JournalRepository',
         subDomain: 'updateJournalEntityDate',
         stackTrace: stackTrace,
       );
@@ -148,7 +165,7 @@ class JournalRepository {
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
         exception,
-        domain: 'persistence_logic',
+        domain: 'JournalRepository',
         subDomain: 'createTextEntry',
         stackTrace: stackTrace,
       );
@@ -184,7 +201,7 @@ class JournalRepository {
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
         exception,
-        domain: 'persistence_logic',
+        domain: 'JournalRepository',
         subDomain: 'createImageEntry',
         stackTrace: stackTrace,
       );
