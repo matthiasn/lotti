@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'task_progress_controller.dart';
+part of 'checklist_suggestions_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$taskProgressControllerHash() =>
-    r'024b90c38fcec6227648261a467d902fc8c5a3b2';
+String _$checklistSuggestionsControllerHash() =>
+    r'a0184684f1e8fc65f4693a2401d1c51707a22825';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,37 +30,38 @@ class _SystemHash {
   }
 }
 
-abstract class _$TaskProgressController
-    extends BuildlessAutoDisposeAsyncNotifier<TaskProgressState?> {
+abstract class _$ChecklistSuggestionsController
+    extends BuildlessAsyncNotifier<List<ChecklistItemData>> {
   late final String id;
 
-  FutureOr<TaskProgressState?> build({
+  FutureOr<List<ChecklistItemData>> build({
     required String id,
   });
 }
 
-/// See also [TaskProgressController].
-@ProviderFor(TaskProgressController)
-const taskProgressControllerProvider = TaskProgressControllerFamily();
+/// See also [ChecklistSuggestionsController].
+@ProviderFor(ChecklistSuggestionsController)
+const checklistSuggestionsControllerProvider =
+    ChecklistSuggestionsControllerFamily();
 
-/// See also [TaskProgressController].
-class TaskProgressControllerFamily
-    extends Family<AsyncValue<TaskProgressState?>> {
-  /// See also [TaskProgressController].
-  const TaskProgressControllerFamily();
+/// See also [ChecklistSuggestionsController].
+class ChecklistSuggestionsControllerFamily
+    extends Family<AsyncValue<List<ChecklistItemData>>> {
+  /// See also [ChecklistSuggestionsController].
+  const ChecklistSuggestionsControllerFamily();
 
-  /// See also [TaskProgressController].
-  TaskProgressControllerProvider call({
+  /// See also [ChecklistSuggestionsController].
+  ChecklistSuggestionsControllerProvider call({
     required String id,
   }) {
-    return TaskProgressControllerProvider(
+    return ChecklistSuggestionsControllerProvider(
       id: id,
     );
   }
 
   @override
-  TaskProgressControllerProvider getProviderOverride(
-    covariant TaskProgressControllerProvider provider,
+  ChecklistSuggestionsControllerProvider getProviderOverride(
+    covariant ChecklistSuggestionsControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -79,31 +80,30 @@ class TaskProgressControllerFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'taskProgressControllerProvider';
+  String? get name => r'checklistSuggestionsControllerProvider';
 }
 
-/// See also [TaskProgressController].
-class TaskProgressControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<TaskProgressController,
-        TaskProgressState?> {
-  /// See also [TaskProgressController].
-  TaskProgressControllerProvider({
+/// See also [ChecklistSuggestionsController].
+class ChecklistSuggestionsControllerProvider extends AsyncNotifierProviderImpl<
+    ChecklistSuggestionsController, List<ChecklistItemData>> {
+  /// See also [ChecklistSuggestionsController].
+  ChecklistSuggestionsControllerProvider({
     required String id,
   }) : this._internal(
-          () => TaskProgressController()..id = id,
-          from: taskProgressControllerProvider,
-          name: r'taskProgressControllerProvider',
+          () => ChecklistSuggestionsController()..id = id,
+          from: checklistSuggestionsControllerProvider,
+          name: r'checklistSuggestionsControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$taskProgressControllerHash,
-          dependencies: TaskProgressControllerFamily._dependencies,
+                  : _$checklistSuggestionsControllerHash,
+          dependencies: ChecklistSuggestionsControllerFamily._dependencies,
           allTransitiveDependencies:
-              TaskProgressControllerFamily._allTransitiveDependencies,
+              ChecklistSuggestionsControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  TaskProgressControllerProvider._internal(
+  ChecklistSuggestionsControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -116,8 +116,8 @@ class TaskProgressControllerProvider
   final String id;
 
   @override
-  FutureOr<TaskProgressState?> runNotifierBuild(
-    covariant TaskProgressController notifier,
+  FutureOr<List<ChecklistItemData>> runNotifierBuild(
+    covariant ChecklistSuggestionsController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -125,10 +125,10 @@ class TaskProgressControllerProvider
   }
 
   @override
-  Override overrideWith(TaskProgressController Function() create) {
+  Override overrideWith(ChecklistSuggestionsController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: TaskProgressControllerProvider._internal(
+      override: ChecklistSuggestionsControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -141,14 +141,14 @@ class TaskProgressControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<TaskProgressController,
-      TaskProgressState?> createElement() {
-    return _TaskProgressControllerProviderElement(this);
+  AsyncNotifierProviderElement<ChecklistSuggestionsController,
+      List<ChecklistItemData>> createElement() {
+    return _ChecklistSuggestionsControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is TaskProgressControllerProvider && other.id == id;
+    return other is ChecklistSuggestionsControllerProvider && other.id == id;
   }
 
   @override
@@ -162,19 +162,19 @@ class TaskProgressControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin TaskProgressControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<TaskProgressState?> {
+mixin ChecklistSuggestionsControllerRef
+    on AsyncNotifierProviderRef<List<ChecklistItemData>> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _TaskProgressControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<TaskProgressController,
-        TaskProgressState?> with TaskProgressControllerRef {
-  _TaskProgressControllerProviderElement(super.provider);
+class _ChecklistSuggestionsControllerProviderElement
+    extends AsyncNotifierProviderElement<ChecklistSuggestionsController,
+        List<ChecklistItemData>> with ChecklistSuggestionsControllerRef {
+  _ChecklistSuggestionsControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as TaskProgressControllerProvider).id;
+  String get id => (origin as ChecklistSuggestionsControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

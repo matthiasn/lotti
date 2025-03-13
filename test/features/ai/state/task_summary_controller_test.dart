@@ -9,7 +9,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
-import 'package:lotti/features/ai/state/action_item_suggestions.dart';
+import 'package:lotti/features/ai/state/task_summary_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:ollama/ollama.dart';
 
@@ -39,7 +39,7 @@ void main() {
         prompt: 'test-prompt',
         thoughts: 'test-thoughts',
         response: 'test-response',
-        type: 'ActionItemSuggestions',
+        type: 'TaskSummary',
       ),
     );
     registerFallbackValue(DateTime.now());
@@ -62,7 +62,7 @@ void main() {
     container.dispose();
   });
 
-  group('ActionItemSuggestionsController', () {
+  group('TaskSummaryController', () {
     test(
         'build calls getActionItemSuggestion and returns empty string initially',
         () async {
@@ -109,24 +109,17 @@ void main() {
       // Set up mockOllamaRepository to return a stream of chunks
       final mockStream = Stream.fromIterable([
         CompletionChunk(
-          text: 'Thinking about suggestions</think>',
+          text: 'This is a test summary with ',
           model: 'deepseek-r1:14b',
           createdAt: DateTime.now(),
         ),
         CompletionChunk(
-          text: '''
-```json
-[
-  {
-    "title": "Create documentation",
-    "completed": false
-  },
-  {
-    "title": "Schedule review meeting",
-    "completed": false
-  }
-]
-```''',
+          text: 'some thoughts</think>',
+          model: 'deepseek-r1:14b',
+          createdAt: DateTime.now(),
+        ),
+        CompletionChunk(
+          text: 'This is the actual response',
           model: 'deepseek-r1:14b',
           createdAt: DateTime.now(),
         ),
@@ -154,7 +147,7 @@ void main() {
 
       // Act
       container.listen(
-        actionItemSuggestionsControllerProvider(id: taskId),
+        taskSummaryControllerProvider(id: taskId),
         (previous, next) => listener(previous, next),
         fireImmediately: true,
       );
@@ -174,10 +167,10 @@ void main() {
       ).called(1);
 
       final finalState =
-          container.read(actionItemSuggestionsControllerProvider(id: taskId));
+          container.read(taskSummaryControllerProvider(id: taskId));
       expect(
         finalState,
-        'Thinking about suggestions</think>```json\n[\n  {\n    "title": "Create documentation",\n    "completed": false\n  },\n  {\n    "title": "Schedule review meeting",\n    "completed": false\n  }\n]\n```',
+        'This is a test summary with some thoughts</think>This is the actual response',
       );
 
       verify(
@@ -209,7 +202,7 @@ void main() {
 
       // Act
       container.listen(
-        actionItemSuggestionsControllerProvider(id: taskId),
+        taskSummaryControllerProvider(id: taskId),
         (previous, next) => listener(previous, next),
         fireImmediately: true,
       );
@@ -230,11 +223,11 @@ void main() {
 
       // State should remain an empty string
       final finalState =
-          container.read(actionItemSuggestionsControllerProvider(id: taskId));
+          container.read(taskSummaryControllerProvider(id: taskId));
       expect(finalState, '');
     });
 
-    test('correctly parses JSON response with action items', () async {
+    test('correctly parses response with thoughts and content', () async {
       // Arrange
       final mockTask = JournalEntity.task(
         meta: Metadata(
@@ -246,7 +239,7 @@ void main() {
         ),
         data: TaskData(
           title: 'Test Task',
-          status: TaskStatus.inProgress(
+          status: TaskStatus.done(
             id: 'status-123',
             createdAt: creationDate,
             utcOffset: 0,
@@ -259,17 +252,17 @@ void main() {
 
       final mockAiInput = AiInputTaskObject(
         title: 'Test Task',
-        status: 'IN PROGRESS',
+        status: 'DONE',
         creationDate: creationDate,
         actionItems: [
-          const AiActionItem(title: 'Existing Item', completed: true),
+          const AiActionItem(title: 'Item 1', completed: true),
+          const AiActionItem(title: 'Item 2', completed: false),
         ],
         logEntries: [
           AiInputLogEntryObject(
             creationTimestamp: creationDate,
             loggedDuration: '01:30',
-            text:
-                'Worked on task implementation. Need to write tests and update documentation.',
+            text: 'Worked on task implementation',
           ),
         ],
         estimatedDuration: '02:00',
@@ -284,21 +277,11 @@ void main() {
       when(() => mockAiInputRepository.generate(taskId))
           .thenAnswer((_) async => mockAiInput);
 
-      // Create a response with JSON action items
-      const thoughts = 'I see several potential action items in the logs.';
-      const jsonResponse = '''
-```json
-[
-  {
-    "title": "Write tests",
-    "completed": false
-  },
-  {
-    "title": "Update documentation",
-    "completed": false
-  }
-]
-```''';
+      // Create a properly formatted response with thoughts and content
+      const thoughts =
+          'I need to summarize this task with insights and status.';
+      const response =
+          'You completed the task "Test Task" after spending 1:30 hours. All items except "Item 2" were completed.';
 
       // Set up mockOllamaRepository to return a stream of chunks
       final mockStream = Stream.fromIterable([
@@ -313,7 +296,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CompletionChunk(
-          text: jsonResponse,
+          text: response,
           model: 'deepseek-r1:14b',
           createdAt: DateTime.now(),
         ),
@@ -329,8 +312,7 @@ void main() {
         ),
       ).thenAnswer((_) => mockStream);
 
-      // Set up a capture for the AiResponseData
-      AiResponseData? capturedData;
+      // Mock the createAiResponseEntry method to complete successfully
       when(
         () => mockAiInputRepository.createAiResponseEntry(
           data: any(named: 'data'),
@@ -338,15 +320,11 @@ void main() {
           linkedId: any(named: 'linkedId'),
           categoryId: any(named: 'categoryId'),
         ),
-      ).thenAnswer((invocation) {
-        capturedData =
-            invocation.namedArguments[const Symbol('data')] as AiResponseData;
-        return Future<void>.value();
-      });
+      ).thenAnswer((_) async {});
 
       // Act
       container.listen(
-        actionItemSuggestionsControllerProvider(id: taskId),
+        taskSummaryControllerProvider(id: taskId),
         (previous, next) => listener(previous, next),
         fireImmediately: true,
       );
@@ -354,27 +332,20 @@ void main() {
       // Allow the async operations to complete
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Assert - verify createAiResponseEntry was called
+      // Assert
       verify(
         () => mockAiInputRepository.createAiResponseEntry(
           data: any(named: 'data'),
           start: any(named: 'start'),
-          linkedId: any(named: 'linkedId'),
+          linkedId: taskId,
           categoryId: any(named: 'categoryId'),
         ),
       ).called(1);
 
-      // Check the captured data
-      expect(capturedData, isNotNull);
-      expect(capturedData?.suggestedActionItems, isNotNull);
-      expect(capturedData?.suggestedActionItems, hasLength(2));
-      expect(capturedData?.suggestedActionItems?[0].title, 'Write tests');
-      expect(capturedData?.suggestedActionItems?[0].completed, false);
-      expect(
-        capturedData?.suggestedActionItems?[1].title,
-        'Update documentation',
-      );
-      expect(capturedData?.suggestedActionItems?[1].completed, false);
+      // Final state should be the complete response with thoughts and content
+      final finalState =
+          container.read(taskSummaryControllerProvider(id: taskId));
+      expect(finalState, '$thoughts</think>$response');
     });
 
     test('properly formats the prompt with JSON task data', () async {
@@ -425,7 +396,7 @@ void main() {
       // Set up mockOllamaRepository to return a simple stream
       final mockStream = Stream.fromIterable([
         CompletionChunk(
-          text: 'Thoughts</think>[]',
+          text: 'Response</think>Final',
           model: 'deepseek-r1:14b',
           createdAt: DateTime.now(),
         ),
@@ -452,7 +423,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       // Act
-      container.read(actionItemSuggestionsControllerProvider(id: taskId));
+      container.read(taskSummaryControllerProvider(id: taskId));
 
       // Allow the async operations to complete
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -471,103 +442,7 @@ void main() {
 
       // Check if the prompt contains the expected JSON string
       expect(actualPrompt, contains(expectedJsonString));
-      expect(actualPrompt, contains('Based on the provided task details'));
-      expect(actualPrompt, contains('identify potential action items'));
-    });
-
-    test('handles invalid JSON response gracefully', () async {
-      // Arrange
-      final mockTask = JournalEntity.task(
-        meta: Metadata(
-          id: taskId,
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: TaskData(
-          title: 'Test Task',
-          status: TaskStatus.open(
-            id: 'status-123',
-            createdAt: creationDate,
-            utcOffset: 0,
-          ),
-          statusHistory: [],
-          dateFrom: creationDate,
-          dateTo: creationDate,
-        ),
-      );
-
-      final mockAiInput = AiInputTaskObject(
-        title: 'Test Task',
-        status: 'OPEN',
-        creationDate: creationDate,
-        actionItems: [],
-        logEntries: [],
-        estimatedDuration: '00:00',
-        timeSpent: '00:00',
-      );
-
-      // Return a task when getEntity is called
-      when(() => mockAiInputRepository.getEntity(taskId))
-          .thenAnswer((_) async => mockTask);
-
-      // Return AI input when generate is called
-      when(() => mockAiInputRepository.generate(taskId))
-          .thenAnswer((_) async => mockAiInput);
-
-      // Set up mockOllamaRepository to return an invalid JSON response
-      final mockStream = Stream.fromIterable([
-        CompletionChunk(
-          text: 'Thoughts</think>No action items found.',
-          model: 'deepseek-r1:14b',
-          createdAt: DateTime.now(),
-        ),
-      ]);
-
-      when(
-        () => mockOllamaRepository.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          system: any(named: 'system'),
-          images: any(named: 'images'),
-        ),
-      ).thenAnswer((_) => mockStream);
-
-      // Mock the createAiResponseEntry method to complete successfully
-      when(
-        () => mockAiInputRepository.createAiResponseEntry(
-          data: any(named: 'data'),
-          start: any(named: 'start'),
-          linkedId: any(named: 'linkedId'),
-          categoryId: any(named: 'categoryId'),
-        ),
-      ).thenAnswer((_) async {});
-
-      // Act
-      container.listen(
-        actionItemSuggestionsControllerProvider(id: taskId),
-        (previous, next) => listener(previous, next),
-        fireImmediately: true,
-      );
-
-      // Allow the async operations to complete
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Assert
-      // Verify that createAiResponseEntry was called with empty suggestedActionItems
-      final capturedData = verify(
-        () => mockAiInputRepository.createAiResponseEntry(
-          data: captureAny(named: 'data'),
-          start: any(named: 'start'),
-          linkedId: any(named: 'linkedId'),
-          categoryId: any(named: 'categoryId'),
-        ),
-      ).captured.first as AiResponseData;
-
-      // Should have empty suggestedActionItems since no valid JSON was found
-      expect(capturedData.suggestedActionItems, isEmpty);
+      expect(actualPrompt, contains('Create a task summary as a TLDR;'));
     });
   });
 }
