@@ -142,6 +142,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                     ],
                   ),
                 ),
+               
                 inputSpacer,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -325,6 +326,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                         ],
                       ),
                     ),
+                  
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -346,6 +348,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                     ],
                   ),
                 ),
+               
                 const SizedBox(height: 20),
               ],
             ),
