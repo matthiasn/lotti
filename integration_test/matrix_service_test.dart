@@ -340,6 +340,8 @@ void main() {
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, n);
         debugPrint('Bob persisted $bobEntriesCount entries');
+
+        await Future<void>.delayed(const Duration(seconds: 5));
       },
       timeout: const Timeout(Duration(minutes: 15)),
     );
