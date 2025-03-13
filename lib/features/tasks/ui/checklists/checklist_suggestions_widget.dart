@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -25,8 +25,7 @@ class _ChecklistSuggestionsWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final provider =
-        checklistItemSuggestionsControllerProvider(id: widget.itemId);
+    final provider = checklistSuggestionsControllerProvider(id: widget.itemId);
     final notifier = ref.read(provider.notifier);
     final checklistItems = ref.watch(provider).valueOrNull;
 

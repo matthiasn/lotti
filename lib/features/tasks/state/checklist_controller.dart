@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
@@ -160,7 +160,7 @@ class ChecklistController extends _$ChecklistController {
 
       if (taskId != null) {
         final notifier =
-            checklistItemSuggestionsControllerProvider(id: taskId).notifier;
+            checklistSuggestionsControllerProvider(id: taskId).notifier;
         ref.read(notifier).notifyCreatedChecklistItem(
               title: checklistItemTitle,
             );

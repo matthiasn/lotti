@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'task_summary_controller.dart';
+part of 'checklist_suggestions_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$taskSummaryControllerHash() =>
-    r'4fd9250987796f7f286d5f1e1b7f0cb2bb46b0e0';
+String _$checklistSuggestionsControllerHash() =>
+    r'a0184684f1e8fc65f4693a2401d1c51707a22825';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,36 +30,38 @@ class _SystemHash {
   }
 }
 
-abstract class _$TaskSummaryController
-    extends BuildlessAutoDisposeNotifier<String> {
+abstract class _$ChecklistSuggestionsController
+    extends BuildlessAsyncNotifier<List<ChecklistItemData>> {
   late final String id;
 
-  String build({
+  FutureOr<List<ChecklistItemData>> build({
     required String id,
   });
 }
 
-/// See also [TaskSummaryController].
-@ProviderFor(TaskSummaryController)
-const taskSummaryControllerProvider = TaskSummaryControllerFamily();
+/// See also [ChecklistSuggestionsController].
+@ProviderFor(ChecklistSuggestionsController)
+const checklistSuggestionsControllerProvider =
+    ChecklistSuggestionsControllerFamily();
 
-/// See also [TaskSummaryController].
-class TaskSummaryControllerFamily extends Family<String> {
-  /// See also [TaskSummaryController].
-  const TaskSummaryControllerFamily();
+/// See also [ChecklistSuggestionsController].
+class ChecklistSuggestionsControllerFamily
+    extends Family<AsyncValue<List<ChecklistItemData>>> {
+  /// See also [ChecklistSuggestionsController].
+  const ChecklistSuggestionsControllerFamily();
 
-  /// See also [TaskSummaryController].
-  TaskSummaryControllerProvider call({
+  /// See also [ChecklistSuggestionsController].
+  ChecklistSuggestionsControllerProvider call({
     required String id,
   }) {
-    return TaskSummaryControllerProvider(
+    return ChecklistSuggestionsControllerProvider(
       id: id,
     );
   }
 
   @override
-  TaskSummaryControllerProvider getProviderOverride(
-    covariant TaskSummaryControllerProvider provider,
+  ChecklistSuggestionsControllerProvider getProviderOverride(
+    covariant ChecklistSuggestionsControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -78,30 +80,30 @@ class TaskSummaryControllerFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'taskSummaryControllerProvider';
+  String? get name => r'checklistSuggestionsControllerProvider';
 }
 
-/// See also [TaskSummaryController].
-class TaskSummaryControllerProvider
-    extends AutoDisposeNotifierProviderImpl<TaskSummaryController, String> {
-  /// See also [TaskSummaryController].
-  TaskSummaryControllerProvider({
+/// See also [ChecklistSuggestionsController].
+class ChecklistSuggestionsControllerProvider extends AsyncNotifierProviderImpl<
+    ChecklistSuggestionsController, List<ChecklistItemData>> {
+  /// See also [ChecklistSuggestionsController].
+  ChecklistSuggestionsControllerProvider({
     required String id,
   }) : this._internal(
-          () => TaskSummaryController()..id = id,
-          from: taskSummaryControllerProvider,
-          name: r'taskSummaryControllerProvider',
+          () => ChecklistSuggestionsController()..id = id,
+          from: checklistSuggestionsControllerProvider,
+          name: r'checklistSuggestionsControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$taskSummaryControllerHash,
-          dependencies: TaskSummaryControllerFamily._dependencies,
+                  : _$checklistSuggestionsControllerHash,
+          dependencies: ChecklistSuggestionsControllerFamily._dependencies,
           allTransitiveDependencies:
-              TaskSummaryControllerFamily._allTransitiveDependencies,
+              ChecklistSuggestionsControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  TaskSummaryControllerProvider._internal(
+  ChecklistSuggestionsControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -114,8 +116,8 @@ class TaskSummaryControllerProvider
   final String id;
 
   @override
-  String runNotifierBuild(
-    covariant TaskSummaryController notifier,
+  FutureOr<List<ChecklistItemData>> runNotifierBuild(
+    covariant ChecklistSuggestionsController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -123,10 +125,10 @@ class TaskSummaryControllerProvider
   }
 
   @override
-  Override overrideWith(TaskSummaryController Function() create) {
+  Override overrideWith(ChecklistSuggestionsController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: TaskSummaryControllerProvider._internal(
+      override: ChecklistSuggestionsControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -139,14 +141,14 @@ class TaskSummaryControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<TaskSummaryController, String>
-      createElement() {
-    return _TaskSummaryControllerProviderElement(this);
+  AsyncNotifierProviderElement<ChecklistSuggestionsController,
+      List<ChecklistItemData>> createElement() {
+    return _ChecklistSuggestionsControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is TaskSummaryControllerProvider && other.id == id;
+    return other is ChecklistSuggestionsControllerProvider && other.id == id;
   }
 
   @override
@@ -160,18 +162,19 @@ class TaskSummaryControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin TaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
+mixin ChecklistSuggestionsControllerRef
+    on AsyncNotifierProviderRef<List<ChecklistItemData>> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _TaskSummaryControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<TaskSummaryController, String>
-    with TaskSummaryControllerRef {
-  _TaskSummaryControllerProviderElement(super.provider);
+class _ChecklistSuggestionsControllerProviderElement
+    extends AsyncNotifierProviderElement<ChecklistSuggestionsController,
+        List<ChecklistItemData>> with ChecklistSuggestionsControllerRef {
+  _ChecklistSuggestionsControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as TaskSummaryControllerProvider).id;
+  String get id => (origin as ChecklistSuggestionsControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
