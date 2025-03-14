@@ -446,7 +446,13 @@ class PersistenceLogic {
         overwrite: false,
       );
 
-      _updateNotifications.notify(withTags.affectedIds);
+      final affectedIds = withTags.affectedIds;
+
+      if (linkedId != null) {
+        affectedIds.add(linkedId);
+      }
+
+      _updateNotifications.notify(affectedIds);
 
       final saved = res != 0;
 
