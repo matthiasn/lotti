@@ -6,6 +6,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -28,12 +30,16 @@ class ActionItemSuggestionsController
 
   Future<void> getActionItemSuggestion() async {
     final repository = ref.read(aiInputRepositoryProvider);
-    final suggestionsStatusNotifier =
-        ref.read(suggestionsStatusControllerProvider(id: id).notifier);
+    final suggestionsStatusNotifier = ref.read(
+      inferenceStatusControllerProvider(
+        id: id,
+        aiResponseType: actionItemSuggestions,
+      ).notifier,
+    );
 
     try {
       final start = DateTime.now();
-      suggestionsStatusNotifier.setStatus(SuggestionsInferenceStatus.running);
+      suggestionsStatusNotifier.setStatus(InferenceStatus.running);
       final entry = await repository.getEntity(id);
 
       if (entry is! Task) {
@@ -132,7 +138,7 @@ task details, then remove it from the response.
         thoughts: thoughts,
         response: response,
         suggestedActionItems: suggestedActionItems,
-        type: 'ActionItemSuggestions',
+        type: actionItemSuggestions,
       );
 
       await repository.createAiResponseEntry(
@@ -142,9 +148,9 @@ task details, then remove it from the response.
         categoryId: entry.categoryId,
       );
 
-      suggestionsStatusNotifier.setStatus(SuggestionsInferenceStatus.idle);
+      suggestionsStatusNotifier.setStatus(InferenceStatus.idle);
     } catch (e, stackTrace) {
-      suggestionsStatusNotifier.setStatus(SuggestionsInferenceStatus.error);
+      suggestionsStatusNotifier.setStatus(InferenceStatus.error);
       getIt<LoggingService>().captureException(
         e,
         domain: 'SuggestionsStatusController',
@@ -152,24 +158,5 @@ task details, then remove it from the response.
         stackTrace: stackTrace,
       );
     }
-  }
-}
-
-enum SuggestionsInferenceStatus {
-  idle,
-  running,
-  error,
-}
-
-@riverpod
-class SuggestionsStatusController extends _$SuggestionsStatusController {
-  @override
-  SuggestionsInferenceStatus build({required String id}) {
-    return SuggestionsInferenceStatus.idle;
-  }
-
-  // ignore: use_setters_to_change_properties
-  void setStatus(SuggestionsInferenceStatus status) {
-    state = status;
   }
 }

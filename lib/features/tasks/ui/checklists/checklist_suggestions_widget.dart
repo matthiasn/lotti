@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -22,7 +24,7 @@ class ChecklistSuggestionsWidget extends ConsumerStatefulWidget {
 
 class _ChecklistSuggestionsWidgetState
     extends ConsumerState<ChecklistSuggestionsWidget> {
-  final removedItems = <String>{};
+  Set<String> removedItems = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +32,14 @@ class _ChecklistSuggestionsWidgetState
     final notifier = ref.read(provider.notifier);
     final checklistItems = ref.watch(provider).valueOrNull;
 
-    final suggestionsInferenceStatus =
-        ref.watch(suggestionsStatusControllerProvider(id: widget.itemId));
+    final suggestionsInferenceStatus = ref.watch(
+      inferenceStatusControllerProvider(
+        id: widget.itemId,
+        aiResponseType: actionItemSuggestions,
+      ),
+    );
 
-    final isRunning =
-        suggestionsInferenceStatus == SuggestionsInferenceStatus.running;
+    final isRunning = suggestionsInferenceStatus == InferenceStatus.running;
 
     if (checklistItems == null) {
       return const SizedBox.shrink();
@@ -61,12 +66,35 @@ class _ChecklistSuggestionsWidgetState
               ),
             ],
           ),
-        if (!isRunning && checklistItems.isNotEmpty)
-          Text(
-            context.messages.checklistItemDrag,
-            style: context.textTheme.titleSmall?.copyWith(
-              color: context.colorScheme.outline,
-            ),
+        if (!isRunning)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                checklistItems.isEmpty
+                    ? context.messages.checklistNoSuggestionsTitle
+                    : context.messages.checklistSuggestionsTitle,
+                style: context.textTheme.titleSmall?.copyWith(
+                  color: context.colorScheme.outline,
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.refresh,
+                  color: context.colorScheme.outline,
+                ),
+                onPressed: () {
+                  setState(() => removedItems = <String>{});
+                  ref
+                      .read(
+                        actionItemSuggestionsControllerProvider(
+                          id: widget.itemId,
+                        ).notifier,
+                      )
+                      .getActionItemSuggestion();
+                },
+              ),
+            ],
           ),
         if (!isRunning)
           ...checklistItems
@@ -150,6 +178,17 @@ class _ChecklistSuggestionsWidgetState
                   ),
                 ),
               ),
+        if (!isRunning && checklistItems.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(
+              context.messages.checklistItemDrag,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.outline,
+                fontWeight: FontWeight.w100,
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -340,6 +340,10 @@ class PersistenceLogic {
 
       await createDbEntity(aiResponse, linkedId: linkedId);
 
+      if (linkedId != null) {
+        _updateNotifications.notify({linkedId});
+      }
+
       return aiResponse;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -446,14 +450,6 @@ class PersistenceLogic {
         overwrite: false,
       );
 
-      final affectedIds = withTags.affectedIds;
-
-      if (linkedId != null) {
-        affectedIds.add(linkedId);
-      }
-
-      _updateNotifications.notify(affectedIds);
-
       final saved = res != 0;
 
       if (addTags) {
@@ -475,6 +471,14 @@ class PersistenceLogic {
           toId: withTags.meta.id,
         );
       }
+
+      final affectedIds = withTags.affectedIds;
+
+      if (linkedId != null) {
+        affectedIds.add(linkedId);
+      }
+
+      _updateNotifications.notify(affectedIds);
 
       await getIt<NotificationService>().updateBadge();
 
