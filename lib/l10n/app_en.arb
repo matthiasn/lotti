@@ -36,6 +36,8 @@
   "checklistAddItem": "Add a new item",
   "checklistItemDelete": "Delete checklist item?",
   "checklistItemDrag": "Drag suggestions into checklist",
+  "checklistSuggestionsTitle": "Suggested Action Items",
+  "checklistNoSuggestionsTitle": "No suggested Action Items",
   "checklistSuggestionsRunning": "Thinking about untracked suggestions...",
   "checklistDelete": "Delete checklist?",
   "checklistItemDeleteCancel": "Cancel",

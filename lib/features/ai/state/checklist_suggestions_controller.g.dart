@@ -7,7 +7,7 @@ part of 'checklist_suggestions_controller.dart';
 // **************************************************************************
 
 String _$checklistSuggestionsControllerHash() =>
-    r'a0184684f1e8fc65f4693a2401d1c51707a22825';
+    r'4ba99006f8bd281759730da29a447b107189b91c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,7 +31,7 @@ class _SystemHash {
 }
 
 abstract class _$ChecklistSuggestionsController
-    extends BuildlessAsyncNotifier<List<ChecklistItemData>> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<ChecklistItemData>> {
   late final String id;
 
   FutureOr<List<ChecklistItemData>> build({
@@ -84,8 +84,9 @@ class ChecklistSuggestionsControllerFamily
 }
 
 /// See also [ChecklistSuggestionsController].
-class ChecklistSuggestionsControllerProvider extends AsyncNotifierProviderImpl<
-    ChecklistSuggestionsController, List<ChecklistItemData>> {
+class ChecklistSuggestionsControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<ChecklistSuggestionsController,
+        List<ChecklistItemData>> {
   /// See also [ChecklistSuggestionsController].
   ChecklistSuggestionsControllerProvider({
     required String id,
@@ -141,7 +142,7 @@ class ChecklistSuggestionsControllerProvider extends AsyncNotifierProviderImpl<
   }
 
   @override
-  AsyncNotifierProviderElement<ChecklistSuggestionsController,
+  AutoDisposeAsyncNotifierProviderElement<ChecklistSuggestionsController,
       List<ChecklistItemData>> createElement() {
     return _ChecklistSuggestionsControllerProviderElement(this);
   }
@@ -163,13 +164,14 @@ class ChecklistSuggestionsControllerProvider extends AsyncNotifierProviderImpl<
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin ChecklistSuggestionsControllerRef
-    on AsyncNotifierProviderRef<List<ChecklistItemData>> {
+    on AutoDisposeAsyncNotifierProviderRef<List<ChecklistItemData>> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
 class _ChecklistSuggestionsControllerProviderElement
-    extends AsyncNotifierProviderElement<ChecklistSuggestionsController,
+    extends AutoDisposeAsyncNotifierProviderElement<
+        ChecklistSuggestionsController,
         List<ChecklistItemData>> with ChecklistSuggestionsControllerRef {
   _ChecklistSuggestionsControllerProviderElement(super.provider);
 

@@ -1,21 +1,22 @@
 import 'dart:async';
 
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_suggestions_controller.g.dart';
 
-@Riverpod(keepAlive: true)
+@riverpod
 class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
-  final aiResponseType = 'ActionItemSuggestions';
-
   @override
   Future<List<ChecklistItemData>> build({
     required String id,
   }) async {
-    final provider =
-        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
+    final provider = latestSummaryControllerProvider(
+      id: id,
+      aiResponseType: actionItemSuggestions,
+    );
 
     final latestAiEntry = await ref.watch(provider.future);
     final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
@@ -33,14 +34,26 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
   }
 
   void notifyCreatedChecklistItem({required String title}) {
-    final provider =
-        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
+    final provider = latestSummaryControllerProvider(
+      id: id,
+      aiResponseType: actionItemSuggestions,
+    );
     ref.read(provider.notifier).removeActionItem(title: title);
   }
 
   void removeActionItem({required String title}) {
-    final provider =
-        latestSummaryControllerProvider(id: id, aiResponseType: aiResponseType);
+    final provider = latestSummaryControllerProvider(
+      id: id,
+      aiResponseType: actionItemSuggestions,
+    );
+    ref.read(provider.notifier).removeActionItem(title: title);
+  }
+
+  void clearActionItem({required String title}) {
+    final provider = latestSummaryControllerProvider(
+      id: id,
+      aiResponseType: actionItemSuggestions,
+    );
     ref.read(provider.notifier).removeActionItem(title: title);
   }
 }

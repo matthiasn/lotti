@@ -37,7 +37,9 @@ class LatestSummaryController extends _$LatestSummaryController {
     required String aiResponseType,
   }) async {
     ref.onDispose(() => _updateSubscription?.cancel());
-    watchedIds.add(id);
+    watchedIds
+      ..add(id)
+      ..add(aiResponseNotification);
     final latestAiEntry = await _fetch();
     return latestAiEntry;
   }
