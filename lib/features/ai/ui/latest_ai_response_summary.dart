@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 
@@ -23,6 +25,12 @@ class LatestAiResponseSummary extends ConsumerWidget {
         aiResponseType: aiResponseType,
       ),
     );
+
+    final inferenceStatus = ref.watch(
+      inferenceStatusControllerProvider(id: id, aiResponseType: taskSummary),
+    );
+
+    final isRunning = inferenceStatus == InferenceStatus.running;
 
     return latestSummaryAsync.when(
       loading: () => const Center(
