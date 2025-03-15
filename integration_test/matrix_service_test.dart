@@ -341,7 +341,7 @@ void main() {
         expect(bobEntriesCount, n);
         debugPrint('Bob persisted $bobEntriesCount entries');
 
-        await Future<void>.delayed(const Duration(seconds: 5));
+        await Future<void>.delayed(const Duration(seconds: 15));
       },
       timeout: const Timeout(Duration(minutes: 15)),
     );
