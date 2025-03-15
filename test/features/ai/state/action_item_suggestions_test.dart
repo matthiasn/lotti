@@ -1,3 +1,5 @@
+// ignore_for_file: inference_failure_on_function_invocation
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -10,12 +12,16 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:ollama/ollama.dart';
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockOllamaRepository extends Mock implements OllamaRepository {}
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -25,6 +31,7 @@ void main() {
   late ProviderContainer container;
   late MockAiInputRepository mockAiInputRepository;
   late MockOllamaRepository mockOllamaRepository;
+  late MockLoggingService mockLoggingService;
   late Listener<String> listener;
 
   const taskId = 'test-task-id';
@@ -48,7 +55,29 @@ void main() {
   setUp(() {
     mockAiInputRepository = MockAiInputRepository();
     mockOllamaRepository = MockOllamaRepository();
+    mockLoggingService = MockLoggingService();
     listener = Listener<String>();
+
+    // Register the MockLoggingService with GetIt
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+    // Setup mock behavior to avoid errors
+    when(
+      () => mockLoggingService.captureEvent(
+        any(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+
+    when(
+      () => mockLoggingService.captureException(
+        any(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     container = ProviderContainer(
       overrides: [
@@ -60,6 +89,8 @@ void main() {
 
   tearDown(() {
     container.dispose();
+    // Unregister the MockLoggingService from GetIt to clean up
+    getIt.unregister<LoggingService>();
   });
 
   group('ActionItemSuggestionsController', () {
@@ -568,6 +599,38 @@ void main() {
 
       // Should have empty suggestedActionItems since no valid JSON was found
       expect(capturedData.suggestedActionItems, isEmpty);
+    });
+
+    // Add a test to improve coverage: handling exceptions
+    test('handles exceptions gracefully', () async {
+      // Arrange
+      when(() => mockAiInputRepository.getEntity(taskId))
+          .thenThrow(Exception('Test exception'));
+
+      // Act
+      container.listen(
+        actionItemSuggestionsControllerProvider(id: taskId),
+        (previous, next) => listener(previous, next),
+        fireImmediately: true,
+      );
+
+      // Allow the async operations to complete
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Assert
+      verify(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      // State should remain an empty string
+      final finalState =
+          container.read(actionItemSuggestionsControllerProvider(id: taskId));
+      expect(finalState, '');
     });
   });
 }
