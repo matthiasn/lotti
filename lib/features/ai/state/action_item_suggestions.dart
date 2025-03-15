@@ -6,6 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'action_item_suggestions.g.dart';
@@ -17,23 +21,36 @@ class ActionItemSuggestionsController
   String build({
     required String id,
   }) {
-    getActionItemSuggestion();
+    Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
+      getActionItemSuggestion();
+    });
+
     return '';
   }
 
   Future<void> getActionItemSuggestion() async {
-    final start = DateTime.now();
-    final entry = await ref.read(aiInputRepositoryProvider).getEntity(id);
+    final repository = ref.read(aiInputRepositoryProvider);
+    final suggestionsStatusNotifier = ref.read(
+      inferenceStatusControllerProvider(
+        id: id,
+        aiResponseType: actionItemSuggestions,
+      ).notifier,
+    );
 
-    if (entry is! Task) {
-      return;
-    }
+    try {
+      final start = DateTime.now();
+      suggestionsStatusNotifier.setStatus(InferenceStatus.running);
+      final entry = await repository.getEntity(id);
 
-    final aiInput = await ref.read(aiInputRepositoryProvider).generate(id);
-    const encoder = JsonEncoder.withIndent('    ');
-    final jsonString = encoder.convert(aiInput);
+      if (entry is! Task) {
+        return;
+      }
 
-    final prompt = '''
+      final aiInput = await repository.generate(id);
+      const encoder = JsonEncoder.withIndent('    ');
+      final jsonString = encoder.convert(aiInput);
+
+      final prompt = '''
 **Prompt:**
 
 "Based on the provided task details and log entries, identify potential action items that are mentioned in
@@ -87,47 +104,59 @@ task details, then remove it from the response.
 ```
     ''';
 
-    final buffer = StringBuffer();
+      final buffer = StringBuffer();
 
-    const model = 'deepseek-r1:14b'; // TODO: make configurable
-    const temperature = 0.6;
+      const model = 'deepseek-r1:14b'; // TODO: make configurable
+      const temperature = 0.6;
 
-    final stream = ref.read(ollamaRepositoryProvider).generate(
-          prompt,
-          model: model,
-          temperature: temperature,
-        );
+      final stream = ref.read(ollamaRepositoryProvider).generate(
+            prompt,
+            model: model,
+            temperature: temperature,
+          );
 
-    await for (final chunk in stream) {
-      buffer.write(chunk.text);
-      state = buffer.toString();
+      await for (final chunk in stream) {
+        buffer.write(chunk.text);
+        state = buffer.toString();
+      }
+
+      final completeResponse = buffer.toString();
+      final [thoughts, response] = completeResponse.split('</think>');
+
+      final exp = RegExp(r'\[(.|\n)*\]', multiLine: true);
+      final match = exp.firstMatch(response)?.group(0) ?? '[]';
+      final actionItemsJson = '{"items": $match}';
+      final decoded = jsonDecode(actionItemsJson) as Map<String, dynamic>;
+      final suggestedActionItems =
+          AiInputActionItemsList.fromJson(decoded).items;
+
+      final data = AiResponseData(
+        model: model,
+        temperature: temperature,
+        systemMessage: '',
+        prompt: prompt,
+        thoughts: thoughts,
+        response: response,
+        suggestedActionItems: suggestedActionItems,
+        type: actionItemSuggestions,
+      );
+
+      await repository.createAiResponseEntry(
+        data: data,
+        start: start,
+        linkedId: id,
+        categoryId: entry.categoryId,
+      );
+
+      suggestionsStatusNotifier.setStatus(InferenceStatus.idle);
+    } catch (e, stackTrace) {
+      suggestionsStatusNotifier.setStatus(InferenceStatus.error);
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'SuggestionsStatusController',
+        subDomain: 'getActionItemSuggestion',
+        stackTrace: stackTrace,
+      );
     }
-
-    final completeResponse = buffer.toString();
-    final [thoughts, response] = completeResponse.split('</think>');
-
-    final exp = RegExp(r'\[(.|\n)*\]', multiLine: true);
-    final match = exp.firstMatch(response)?.group(0) ?? '[]';
-    final actionItemsJson = '{"items": $match}';
-    final decoded = jsonDecode(actionItemsJson) as Map<String, dynamic>;
-    final suggestedActionItems = AiInputActionItemsList.fromJson(decoded).items;
-
-    final data = AiResponseData(
-      model: model,
-      temperature: temperature,
-      systemMessage: '',
-      prompt: prompt,
-      thoughts: thoughts,
-      response: response,
-      suggestedActionItems: suggestedActionItems,
-      type: 'ActionItemSuggestions',
-    );
-
-    await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
-          data: data,
-          start: start,
-          linkedId: id,
-          categoryId: entry.categoryId,
-        );
   }
 }

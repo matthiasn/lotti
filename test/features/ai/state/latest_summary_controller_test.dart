@@ -221,8 +221,23 @@ void main() {
     // Trigger update notification
     updateStreamController.add({testId});
 
-    // Wait for the update to complete
-    await Future<void>.delayed(Duration.zero);
+    // Wait for the state to update with verification
+    var stateUpdated = false;
+    for (var i = 0; i < 10; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final currentState = container.read(
+        latestSummaryControllerProvider(
+          id: testId,
+          aiResponseType: testAiResponseType,
+        ),
+      );
+      if (currentState.value?.data.thoughts == 'updated-thoughts') {
+        stateUpdated = true;
+        break;
+      }
+    }
+
+    expect(stateUpdated, isTrue, reason: 'State did not update within timeout');
 
     // Assert
     verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))

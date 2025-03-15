@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'latest_summary_controller.dart';
+part of 'inference_status_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$latestSummaryControllerHash() =>
-    r'e3ecf880a04771d4bff9e1a5a4dc6498e979db9c';
+String _$inferenceStatusControllerHash() =>
+    r'7b6d14f4f9f60e17756a8aaa77f7f3dc0177a8a6';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,41 +30,40 @@ class _SystemHash {
   }
 }
 
-abstract class _$LatestSummaryController
-    extends BuildlessAutoDisposeAsyncNotifier<AiResponseEntry?> {
+abstract class _$InferenceStatusController
+    extends BuildlessAutoDisposeNotifier<InferenceStatus> {
   late final String id;
   late final String aiResponseType;
 
-  FutureOr<AiResponseEntry?> build({
+  InferenceStatus build({
     required String id,
     required String aiResponseType,
   });
 }
 
-/// See also [LatestSummaryController].
-@ProviderFor(LatestSummaryController)
-const latestSummaryControllerProvider = LatestSummaryControllerFamily();
+/// See also [InferenceStatusController].
+@ProviderFor(InferenceStatusController)
+const inferenceStatusControllerProvider = InferenceStatusControllerFamily();
 
-/// See also [LatestSummaryController].
-class LatestSummaryControllerFamily
-    extends Family<AsyncValue<AiResponseEntry?>> {
-  /// See also [LatestSummaryController].
-  const LatestSummaryControllerFamily();
+/// See also [InferenceStatusController].
+class InferenceStatusControllerFamily extends Family<InferenceStatus> {
+  /// See also [InferenceStatusController].
+  const InferenceStatusControllerFamily();
 
-  /// See also [LatestSummaryController].
-  LatestSummaryControllerProvider call({
+  /// See also [InferenceStatusController].
+  InferenceStatusControllerProvider call({
     required String id,
     required String aiResponseType,
   }) {
-    return LatestSummaryControllerProvider(
+    return InferenceStatusControllerProvider(
       id: id,
       aiResponseType: aiResponseType,
     );
   }
 
   @override
-  LatestSummaryControllerProvider getProviderOverride(
-    covariant LatestSummaryControllerProvider provider,
+  InferenceStatusControllerProvider getProviderOverride(
+    covariant InferenceStatusControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -84,35 +83,34 @@ class LatestSummaryControllerFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'latestSummaryControllerProvider';
+  String? get name => r'inferenceStatusControllerProvider';
 }
 
-/// See also [LatestSummaryController].
-class LatestSummaryControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<LatestSummaryController,
-        AiResponseEntry?> {
-  /// See also [LatestSummaryController].
-  LatestSummaryControllerProvider({
+/// See also [InferenceStatusController].
+class InferenceStatusControllerProvider extends AutoDisposeNotifierProviderImpl<
+    InferenceStatusController, InferenceStatus> {
+  /// See also [InferenceStatusController].
+  InferenceStatusControllerProvider({
     required String id,
     required String aiResponseType,
   }) : this._internal(
-          () => LatestSummaryController()
+          () => InferenceStatusController()
             ..id = id
             ..aiResponseType = aiResponseType,
-          from: latestSummaryControllerProvider,
-          name: r'latestSummaryControllerProvider',
+          from: inferenceStatusControllerProvider,
+          name: r'inferenceStatusControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$latestSummaryControllerHash,
-          dependencies: LatestSummaryControllerFamily._dependencies,
+                  : _$inferenceStatusControllerHash,
+          dependencies: InferenceStatusControllerFamily._dependencies,
           allTransitiveDependencies:
-              LatestSummaryControllerFamily._allTransitiveDependencies,
+              InferenceStatusControllerFamily._allTransitiveDependencies,
           id: id,
           aiResponseType: aiResponseType,
         );
 
-  LatestSummaryControllerProvider._internal(
+  InferenceStatusControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -127,8 +125,8 @@ class LatestSummaryControllerProvider
   final String aiResponseType;
 
   @override
-  FutureOr<AiResponseEntry?> runNotifierBuild(
-    covariant LatestSummaryController notifier,
+  InferenceStatus runNotifierBuild(
+    covariant InferenceStatusController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -137,10 +135,10 @@ class LatestSummaryControllerProvider
   }
 
   @override
-  Override overrideWith(LatestSummaryController Function() create) {
+  Override overrideWith(InferenceStatusController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: LatestSummaryControllerProvider._internal(
+      override: InferenceStatusControllerProvider._internal(
         () => create()
           ..id = id
           ..aiResponseType = aiResponseType,
@@ -156,14 +154,14 @@ class LatestSummaryControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<LatestSummaryController,
-      AiResponseEntry?> createElement() {
-    return _LatestSummaryControllerProviderElement(this);
+  AutoDisposeNotifierProviderElement<InferenceStatusController, InferenceStatus>
+      createElement() {
+    return _InferenceStatusControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is LatestSummaryControllerProvider &&
+    return other is InferenceStatusControllerProvider &&
         other.id == id &&
         other.aiResponseType == aiResponseType;
   }
@@ -180,8 +178,8 @@ class LatestSummaryControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin LatestSummaryControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<AiResponseEntry?> {
+mixin InferenceStatusControllerRef
+    on AutoDisposeNotifierProviderRef<InferenceStatus> {
   /// The parameter `id` of this provider.
   String get id;
 
@@ -189,16 +187,16 @@ mixin LatestSummaryControllerRef
   String get aiResponseType;
 }
 
-class _LatestSummaryControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<LatestSummaryController,
-        AiResponseEntry?> with LatestSummaryControllerRef {
-  _LatestSummaryControllerProviderElement(super.provider);
+class _InferenceStatusControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<InferenceStatusController,
+        InferenceStatus> with InferenceStatusControllerRef {
+  _InferenceStatusControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as LatestSummaryControllerProvider).id;
+  String get id => (origin as InferenceStatusControllerProvider).id;
   @override
   String get aiResponseType =>
-      (origin as LatestSummaryControllerProvider).aiResponseType;
+      (origin as InferenceStatusControllerProvider).aiResponseType;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
