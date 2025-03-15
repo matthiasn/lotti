@@ -40,8 +40,10 @@ their memory. Summarize the task, the achieved results, and the remaining steps
 that have not been completed yet, if any. Also note when the task is done. Note any 
 learnings or insights that can be drawn from the task, if anything is 
 significant. Talk to the user directly, instead of referring to them as "the user"
-or "they". Don't start with a greeting, get straight to the point. Keep it short 
-and succinct.
+or "they". Don't start with a greeting, don't repeat the task title, get straight 
+to the point. Keep it short and succinct. Assume the the task title is shown 
+directly above in the UI, so starting with the title is not necessary and would 
+feel redundant.
 
 **Task Details:**
 ```json
