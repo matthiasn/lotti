@@ -30,11 +30,18 @@ class ActionItemSuggestionsController
 
   Future<void> getActionItemSuggestion() async {
     final repository = ref.read(aiInputRepositoryProvider);
+    const aiResponseType = actionItemSuggestions;
     final suggestionsStatusNotifier = ref.read(
       inferenceStatusControllerProvider(
         id: id,
-        aiResponseType: actionItemSuggestions,
+        aiResponseType: aiResponseType,
       ).notifier,
+    );
+
+    getIt<LoggingService>().captureEvent(
+      'Starting action item suggestions for $id',
+      subDomain: 'getActionItemSuggestion',
+      domain: 'SuggestionsStatusController',
     );
 
     try {

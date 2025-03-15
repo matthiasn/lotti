@@ -4,9 +4,11 @@ import 'package:lotti/features/ai/state/action_item_suggestions.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/ui/task_summary/action_item_suggestions_view.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class ChecklistSuggestionsWidget extends ConsumerStatefulWidget {
@@ -45,6 +47,16 @@ class _ChecklistSuggestionsWidgetState
       return const SizedBox.shrink();
     }
 
+    void showThoughtsModal() {
+      ModalUtils.showSinglePageModal<void>(
+        context: context,
+        title: context.messages.aiAssistantThinking,
+        builder: (_) => ActionItemSuggestionsView(
+          id: widget.itemId,
+        ),
+      );
+    }
+
     return Column(
       children: [
         const SizedBox(height: 20),
@@ -59,10 +71,13 @@ class _ChecklistSuggestionsWidgetState
                 ),
               ),
               const SizedBox(width: 10),
-              const SizedBox(
+              SizedBox(
                 width: 15,
                 height: 15,
-                child: CircularProgressIndicator(),
+                child: GestureDetector(
+                  onTap: showThoughtsModal,
+                  child: const CircularProgressIndicator(),
+                ),
               ),
             ],
           ),
@@ -80,7 +95,9 @@ class _ChecklistSuggestionsWidgetState
               ),
               IconButton(
                 icon: Icon(
-                  Icons.refresh,
+                  checklistItems.isEmpty
+                      ? Icons.assistant_rounded
+                      : Icons.refresh,
                   color: context.colorScheme.outline,
                 ),
                 onPressed: () {
@@ -92,6 +109,7 @@ class _ChecklistSuggestionsWidgetState
                         ).notifier,
                       )
                       .getActionItemSuggestion();
+                  showThoughtsModal();
                 },
               ),
             ],
