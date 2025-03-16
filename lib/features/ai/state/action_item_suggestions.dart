@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'action_item_suggestions.g.dart';
@@ -21,6 +22,7 @@ class ActionItemSuggestionsController
   String build({
     required String id,
   }) {
+    ref.cacheFor(inferenceStateCacheDuration);
     Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
       getActionItemSuggestion();
     });

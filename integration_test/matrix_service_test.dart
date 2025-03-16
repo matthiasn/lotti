@@ -103,8 +103,7 @@ void main() {
       password: testPassword,
     );
 
-    const defaultDelay = 1;
-    const delayFactor = testSlowNetwork ? 3 : 1;
+    const defaultDelay = 5;
 
     setUpAll(() async {
       final tmpDir = await getTemporaryDirectory();
@@ -177,12 +176,12 @@ void main() {
 
         debugPrint('\n--- Alice invites Bob into room $roomId');
         await alice.inviteToSyncRoom(userId: bobUserName);
-        await waitSeconds(defaultDelay * delayFactor);
+        await waitSeconds(defaultDelay);
 
         final joinRes2 = await bob.joinRoom(roomId);
         debugPrint('Bob - room joined: $joinRes2');
         await bob.listenToTimeline();
-        await waitSeconds(defaultDelay * delayFactor);
+        await waitSeconds(defaultDelay);
 
         await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);
         await waitUntil(() => bob.getUnverifiedDevices().isNotEmpty);
@@ -200,7 +199,7 @@ void main() {
         final incomingKeyVerificationRunnerStream =
             bob.incomingKeyVerificationRunnerStream;
 
-        await waitSeconds(defaultDelay * 2 * delayFactor);
+        await waitSeconds(defaultDelay);
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -248,7 +247,7 @@ void main() {
           }),
         );
 
-        await waitSeconds(defaultDelay * delayFactor);
+        await waitSeconds(defaultDelay);
 
         debugPrint('\n--- Alice verifies Bob');
         await alice.verifyDevice(unverifiedAlice.first);
@@ -270,7 +269,7 @@ void main() {
         expect(alice.getUnverifiedDevices(), isEmpty);
         expect(bob.getUnverifiedDevices(), isEmpty);
 
-        await waitSeconds(defaultDelay * delayFactor);
+        await waitSeconds(defaultDelay);
 
         Future<void> sendTestMessage(
           int index, {
@@ -341,7 +340,7 @@ void main() {
         expect(bobEntriesCount, n);
         debugPrint('Bob persisted $bobEntriesCount entries');
 
-        await Future<void>.delayed(const Duration(seconds: 15));
+        await waitSeconds(defaultDelay);
       },
       timeout: const Timeout(Duration(minutes: 15)),
     );

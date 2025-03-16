@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -202,8 +204,13 @@ class _TaskFormState extends ConsumerState<TaskForm> {
             ),
           ),
         ),
+        const Divider(),
+        LatestAiResponseSummary(
+          id: entryId,
+          aiResponseType: taskSummary,
+        ),
+        const Divider(),
         EditorWidget(entryId: entryId),
-        const SizedBox(height: 10),
         ChecklistsWidget(entryId: entryId, task: widget.task),
         const SizedBox(height: 20),
       ],

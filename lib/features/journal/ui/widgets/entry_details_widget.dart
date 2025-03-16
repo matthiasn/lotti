@@ -177,6 +177,7 @@ class EntryDetailsContent extends ConsumerWidget {
           aiResponse: (aiResponse) => AiResponseSummary(
             aiResponse,
             linkedFromId: linkedFrom?.id,
+            fadeOut: true,
           ),
           checklist: (checklist) => ChecklistWrapper(
             entryId: checklist.meta.id,
