@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/state/action_item_suggestions.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -101,13 +100,6 @@ class _ChecklistSuggestionsWidgetState
                 ),
                 onPressed: () {
                   setState(() => removedItems = <String>{});
-                  ref
-                      .read(
-                        actionItemSuggestionsControllerProvider(
-                          id: widget.itemId,
-                        ).notifier,
-                      )
-                      .getActionItemSuggestion();
                   showThoughtsModal();
                 },
               ),

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
-import 'package:lotti/features/ai/state/task_summary_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -103,12 +102,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
                           : Icons.refresh,
                       color: context.colorScheme.outline,
                     ),
-                    onPressed: () {
-                      ref
-                          .read(taskSummaryControllerProvider(id: id).notifier)
-                          .getTaskSummary();
-                      showThoughtsModal();
-                    },
+                    onPressed: showThoughtsModal,
                   ),
                 ],
               ),
