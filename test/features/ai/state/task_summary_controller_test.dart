@@ -1,3 +1,5 @@
+// ignore_for_file: inference_failure_on_function_invocation
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -10,12 +12,16 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/task_summary_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:ollama/ollama.dart';
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockOllamaRepository extends Mock implements OllamaRepository {}
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -25,6 +31,7 @@ void main() {
   late ProviderContainer container;
   late MockAiInputRepository mockAiInputRepository;
   late MockOllamaRepository mockOllamaRepository;
+  late MockLoggingService mockLoggingService;
   late Listener<String> listener;
 
   const taskId = 'test-task-id';
@@ -48,7 +55,29 @@ void main() {
   setUp(() {
     mockAiInputRepository = MockAiInputRepository();
     mockOllamaRepository = MockOllamaRepository();
+    mockLoggingService = MockLoggingService();
     listener = Listener<String>();
+
+    // Register the MockLoggingService with GetIt
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+    // Setup mock behavior to avoid errors
+    when(
+      () => mockLoggingService.captureEvent(
+        any(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+
+    when(
+      () => mockLoggingService.captureException(
+        any(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     container = ProviderContainer(
       overrides: [
@@ -60,6 +89,8 @@ void main() {
 
   tearDown(() {
     container.dispose();
+    // Unregister the MockLoggingService from GetIt to clean up
+    getIt.unregister<LoggingService>();
   });
 
   group('TaskSummaryController', () {
@@ -443,6 +474,101 @@ void main() {
       // Check if the prompt contains the expected JSON string
       expect(actualPrompt, contains(expectedJsonString));
       expect(actualPrompt, contains('Create a task summary as a TLDR;'));
+    });
+
+    // Add a test to improve coverage: handling exceptions
+    test('handles exceptions gracefully', () async {
+      // Add a test for getTaskSummary method catching exceptions
+
+      // Create a new instance with a clean container and setup
+      final localMockAiInputRepository = MockAiInputRepository();
+      final localMockOllamaRepository = MockOllamaRepository();
+      final localMockLoggingService = MockLoggingService();
+
+      // Unregister and re-register with GetIt
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(localMockLoggingService);
+
+      when(
+        () => localMockLoggingService.captureEvent(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+
+      when(
+        () => localMockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      // Setup task mock correctly
+      final mockTask = JournalEntity.task(
+        meta: Metadata(
+          id: taskId,
+          dateFrom: creationDate,
+          dateTo: creationDate,
+          createdAt: creationDate,
+          updatedAt: creationDate,
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          status: TaskStatus.open(
+            id: 'status-123',
+            createdAt: creationDate,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: creationDate,
+          dateTo: creationDate,
+        ),
+      );
+
+      // Return a task successfully, but throw on generate
+      when(() => localMockAiInputRepository.getEntity(taskId))
+          .thenAnswer((_) async => mockTask);
+
+      when(() => localMockAiInputRepository.generate(taskId))
+          .thenThrow(Exception('Test exception'));
+
+      // New container with our mocks
+      final localContainer = ProviderContainer(
+        overrides: [
+          aiInputRepositoryProvider
+              .overrideWithValue(localMockAiInputRepository),
+          ollamaRepositoryProvider.overrideWithValue(localMockOllamaRepository),
+        ],
+      )
+
+        // Trigger the controller
+        ..read(taskSummaryControllerProvider(id: taskId));
+
+      // Allow the async operations to complete
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      // Verify exception was logged
+      verify(
+        () => localMockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      // Clean up
+      localContainer.dispose();
+      getIt
+        ..unregister<LoggingService>()
+
+        // Re-register the original mock for other tests
+        ..registerSingleton<LoggingService>(mockLoggingService);
     });
   });
 }
