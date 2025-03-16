@@ -70,13 +70,12 @@ class _ChecklistSuggestionsWidgetState
                   color: context.colorScheme.outline,
                 ),
               ),
-              const SizedBox(width: 10),
-              SizedBox(
-                width: 15,
-                height: 15,
-                child: GestureDetector(
-                  onTap: showThoughtsModal,
-                  child: const CircularProgressIndicator(),
+              IconButton(
+                onPressed: showThoughtsModal,
+                icon: const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
             ],
