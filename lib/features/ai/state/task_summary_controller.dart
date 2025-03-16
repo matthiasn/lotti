@@ -40,7 +40,7 @@ class TaskSummaryController extends _$TaskSummaryController {
 
     getIt<LoggingService>().captureEvent(
       'Starting task summary for $id',
-      subDomain: 'getActionItemSuggestion',
+      subDomain: 'getTaskSummary',
       domain: 'TaskSummaryController',
     );
 

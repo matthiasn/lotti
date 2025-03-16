@@ -18,4 +18,4 @@ extension CacheForExtension on Ref {
 
 const dashboardCacheDuration = Duration(minutes: 5);
 const entryCacheDuration = Duration(minutes: 1);
-const inferenceStateCacheDuration = Duration(minutes: 5);
+const inferenceStateCacheDuration = Duration(minutes: 2);
