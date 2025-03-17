@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 class AiResponseSummaryModalContent extends StatelessWidget {
   const AiResponseSummaryModalContent(
@@ -60,8 +61,17 @@ class AiResponseSummaryModalContent extends StatelessWidget {
               SingleChildScrollView(
                 child: Padding(
                   padding: padding,
-                  child: SelectionArea(
-                    child: GptMarkdown(aiResponse.data.prompt),
+                  child: GestureDetector(
+                    onDoubleTap: () {
+                      final clipboard = SystemClipboard.instance;
+                      final item = DataWriterItem();
+                      final data = aiResponse.data.prompt;
+                      item.add(Formats.plainText(data));
+                      clipboard?.write([item]);
+                    },
+                    child: SelectionArea(
+                      child: GptMarkdown(aiResponse.data.prompt),
+                    ),
                   ),
                 ),
               ),
