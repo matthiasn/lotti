@@ -38,8 +38,6 @@ class AiInputRepository {
   }
 
   Future<AiInputTaskObject?> generate(String id) async {
-    final start = DateTime.now();
-
     final entry = await getEntity(id);
 
     if (entry is! Task) {
@@ -115,7 +113,7 @@ class AiInputRepository {
         done: (_) => 'DONE',
         rejected: (_) => 'REJECTED',
       ),
-      creationDate: start,
+      creationDate: task.meta.createdAt,
       actionItems: actionItems,
       logEntries: logEntries,
       estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),

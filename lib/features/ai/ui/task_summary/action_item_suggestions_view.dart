@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions.dart';
+import 'package:lotti/themes/theme.dart';
 
 class ActionItemSuggestionsView extends ConsumerWidget {
   const ActionItemSuggestionsView({
@@ -18,14 +18,19 @@ class ActionItemSuggestionsView extends ConsumerWidget {
     );
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 250),
+      constraints: const BoxConstraints(maxHeight: 200),
       child: SingleChildScrollView(
         reverse: true,
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 600),
-            child: SelectionArea(child: GptMarkdown(state)),
+            child: Text(
+              state,
+              style: monospaceTextStyleSmall.copyWith(
+                fontWeight: FontWeight.w300,
+              ),
+            ),
           ),
         ),
       ),
