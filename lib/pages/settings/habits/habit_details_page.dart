@@ -122,6 +122,7 @@ class HabitDetailsPage extends StatelessWidget {
                           labelText: context.messages.habitShowFromLabel,
                           setDateTime: cubit.setShowFrom,
                           mode: CupertinoDatePickerMode.time,
+                          clear: cubit.clearShowFrom,
                         ),
                         inputSpacer,
                         DateTimeField(
