@@ -79,7 +79,7 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     emitState();
   }
 
-   void setShowFrom(DateTime? showFrom) {
+  void setShowFrom(DateTime? showFrom) {
     _dirty = true;
 
     final currentSchedule = _habitDefinition.habitSchedule;
@@ -89,15 +89,33 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
         requiredCompletions: daily.requiredCompletions,
         showFrom: showFrom,
         alertAtTime: daily.alertAtTime,
-
-    ),
-      
+      ),
       orElse: () => HabitSchedule.daily(
         requiredCompletions: 1,
         showFrom: showFrom,
       ),
     );
-     _habitDefinition = _habitDefinition.copyWith(habitSchedule: newSchedule);
+    _habitDefinition = _habitDefinition.copyWith(habitSchedule: newSchedule);
+    emitState();
+  }
+
+  void clearShowFrom() {
+    _dirty = true;
+
+    final currentSchedule = _habitDefinition.habitSchedule;
+
+    final newSchedule = currentSchedule.maybeMap(
+      daily: (daily) => HabitSchedule.daily(
+        requiredCompletions: daily.requiredCompletions,
+        alertAtTime: daily.alertAtTime,
+      ),
+      orElse: () => const HabitSchedule.daily(
+        requiredCompletions: 1,
+      ),
+    );
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: newSchedule,
+    );
     emitState();
   }
 
@@ -126,13 +144,12 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     _dirty = true;
 
     final currentSchedule = _habitDefinition.habitSchedule;
-    
+
     final newSchedule = currentSchedule.maybeMap(
       daily: (daily) => HabitSchedule.daily(
         requiredCompletions: daily.requiredCompletions,
-        alertAtTime: daily.showFrom,
+        showFrom: daily.showFrom,
       ),
-
       orElse: () => const HabitSchedule.daily(
         requiredCompletions: 1,
       ),
