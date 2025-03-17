@@ -81,32 +81,81 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
 
   void setShowFrom(DateTime? showFrom) {
     _dirty = true;
-    _habitDefinition = _habitDefinition.copyWith(
-      habitSchedule: HabitSchedule.daily(
+
+    final currentSchedule = _habitDefinition.habitSchedule;
+
+    final newSchedule = currentSchedule.maybeMap(
+      daily: (daily) => HabitSchedule.daily(
+        requiredCompletions: daily.requiredCompletions,
+        showFrom: showFrom,
+        alertAtTime: daily.alertAtTime,
+      ),
+      orElse: () => HabitSchedule.daily(
         requiredCompletions: 1,
         showFrom: showFrom,
       ),
+    );
+    _habitDefinition = _habitDefinition.copyWith(habitSchedule: newSchedule);
+    emitState();
+  }
+
+  void clearShowFrom() {
+    _dirty = true;
+
+    final currentSchedule = _habitDefinition.habitSchedule;
+
+    final newSchedule = currentSchedule.maybeMap(
+      daily: (daily) => HabitSchedule.daily(
+        requiredCompletions: daily.requiredCompletions,
+        alertAtTime: daily.alertAtTime,
+      ),
+      orElse: () => const HabitSchedule.daily(
+        requiredCompletions: 1,
+      ),
+    );
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: newSchedule,
     );
     emitState();
   }
 
   void setAlertAtTime(DateTime? alertAtTime) {
     _dirty = true;
-    _habitDefinition = _habitDefinition.copyWith(
-      habitSchedule: HabitSchedule.daily(
+
+    final currentSchedule = _habitDefinition.habitSchedule;
+    final newSchedule = currentSchedule.maybeMap(
+      daily: (daily) => HabitSchedule.daily(
+        requiredCompletions: daily.requiredCompletions,
+        showFrom: daily.showFrom,
+        alertAtTime: alertAtTime,
+      ),
+      orElse: () => HabitSchedule.daily(
         requiredCompletions: 1,
         alertAtTime: alertAtTime,
       ),
+    );
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: newSchedule,
     );
     emitState();
   }
 
   void clearAlertAtTime() {
     _dirty = true;
-    _habitDefinition = _habitDefinition.copyWith(
-      habitSchedule: const HabitSchedule.daily(
+
+    final currentSchedule = _habitDefinition.habitSchedule;
+
+    final newSchedule = currentSchedule.maybeMap(
+      daily: (daily) => HabitSchedule.daily(
+        requiredCompletions: daily.requiredCompletions,
+        showFrom: daily.showFrom,
+      ),
+      orElse: () => const HabitSchedule.daily(
         requiredCompletions: 1,
       ),
+    );
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: newSchedule,
     );
     emitState();
   }
