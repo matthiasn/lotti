@@ -200,5 +200,180 @@ class _LatestSummaryControllerProviderElement
   String get aiResponseType =>
       (origin as LatestSummaryControllerProvider).aiResponseType;
 }
+
+String _$isLatestSummaryOutdatedControllerHash() =>
+    r'4e8ac006c258a8688ee2b4fefc045539e05e06fd';
+
+abstract class _$IsLatestSummaryOutdatedController
+    extends BuildlessAutoDisposeAsyncNotifier<bool> {
+  late final String id;
+  late final String aiResponseType;
+
+  FutureOr<bool> build({
+    required String id,
+    required String aiResponseType,
+  });
+}
+
+/// See also [IsLatestSummaryOutdatedController].
+@ProviderFor(IsLatestSummaryOutdatedController)
+const isLatestSummaryOutdatedControllerProvider =
+    IsLatestSummaryOutdatedControllerFamily();
+
+/// See also [IsLatestSummaryOutdatedController].
+class IsLatestSummaryOutdatedControllerFamily extends Family<AsyncValue<bool>> {
+  /// See also [IsLatestSummaryOutdatedController].
+  const IsLatestSummaryOutdatedControllerFamily();
+
+  /// See also [IsLatestSummaryOutdatedController].
+  IsLatestSummaryOutdatedControllerProvider call({
+    required String id,
+    required String aiResponseType,
+  }) {
+    return IsLatestSummaryOutdatedControllerProvider(
+      id: id,
+      aiResponseType: aiResponseType,
+    );
+  }
+
+  @override
+  IsLatestSummaryOutdatedControllerProvider getProviderOverride(
+    covariant IsLatestSummaryOutdatedControllerProvider provider,
+  ) {
+    return call(
+      id: provider.id,
+      aiResponseType: provider.aiResponseType,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'isLatestSummaryOutdatedControllerProvider';
+}
+
+/// See also [IsLatestSummaryOutdatedController].
+class IsLatestSummaryOutdatedControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<
+        IsLatestSummaryOutdatedController, bool> {
+  /// See also [IsLatestSummaryOutdatedController].
+  IsLatestSummaryOutdatedControllerProvider({
+    required String id,
+    required String aiResponseType,
+  }) : this._internal(
+          () => IsLatestSummaryOutdatedController()
+            ..id = id
+            ..aiResponseType = aiResponseType,
+          from: isLatestSummaryOutdatedControllerProvider,
+          name: r'isLatestSummaryOutdatedControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$isLatestSummaryOutdatedControllerHash,
+          dependencies: IsLatestSummaryOutdatedControllerFamily._dependencies,
+          allTransitiveDependencies: IsLatestSummaryOutdatedControllerFamily
+              ._allTransitiveDependencies,
+          id: id,
+          aiResponseType: aiResponseType,
+        );
+
+  IsLatestSummaryOutdatedControllerProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+    required this.aiResponseType,
+  }) : super.internal();
+
+  final String id;
+  final String aiResponseType;
+
+  @override
+  FutureOr<bool> runNotifierBuild(
+    covariant IsLatestSummaryOutdatedController notifier,
+  ) {
+    return notifier.build(
+      id: id,
+      aiResponseType: aiResponseType,
+    );
+  }
+
+  @override
+  Override overrideWith(IsLatestSummaryOutdatedController Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: IsLatestSummaryOutdatedControllerProvider._internal(
+        () => create()
+          ..id = id
+          ..aiResponseType = aiResponseType,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+        aiResponseType: aiResponseType,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<IsLatestSummaryOutdatedController,
+      bool> createElement() {
+    return _IsLatestSummaryOutdatedControllerProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is IsLatestSummaryOutdatedControllerProvider &&
+        other.id == id &&
+        other.aiResponseType == aiResponseType;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, aiResponseType.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin IsLatestSummaryOutdatedControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<bool> {
+  /// The parameter `id` of this provider.
+  String get id;
+
+  /// The parameter `aiResponseType` of this provider.
+  String get aiResponseType;
+}
+
+class _IsLatestSummaryOutdatedControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<
+        IsLatestSummaryOutdatedController,
+        bool> with IsLatestSummaryOutdatedControllerRef {
+  _IsLatestSummaryOutdatedControllerProviderElement(super.provider);
+
+  @override
+  String get id => (origin as IsLatestSummaryOutdatedControllerProvider).id;
+  @override
+  String get aiResponseType =>
+      (origin as IsLatestSummaryOutdatedControllerProvider).aiResponseType;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -38,6 +38,7 @@
   "checklistItemDelete": "Delete checklist item?",
   "checklistItemDrag": "Drag suggestions into checklist",
   "checklistSuggestionsTitle": "Suggested Action Items",
+  "checklistSuggestionsOutdated": "Outdated",
   "checklistNoSuggestionsTitle": "No suggested Action Items",
   "aiTaskSummaryTitle": "AI Task Summary",
   "aiTaskNoSummaryTitle": "No AI Task Summary created yet",

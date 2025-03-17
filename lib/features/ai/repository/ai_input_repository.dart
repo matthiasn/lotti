@@ -115,7 +115,7 @@ class AiInputRepository {
         done: (_) => 'DONE',
         rejected: (_) => 'REJECTED',
       ),
-      creationDate: start,
+      creationDate: task.meta.createdAt,
       actionItems: actionItems,
       logEntries: logEntries,
       estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),
