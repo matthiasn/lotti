@@ -48,6 +48,8 @@ class AdvancedSettingsPage extends StatelessWidget {
               title: context.messages.settingsMaintenanceTitle,
               path: '/settings/advanced/maintenance',
             ),
+
+            
             SettingsNavCard(
               title: context.messages.settingsAboutTitle,
               path: '/settings/advanced/about',

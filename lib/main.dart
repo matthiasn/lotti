@@ -15,6 +15,7 @@ import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -54,7 +55,9 @@ Future<void> main() async {
       );
     };
 
-    runApp(ProviderScope(child: MyBeamerApp()));
+    runApp(ProviderScope(child: ShowCaseWidget(builder: (context) =>  MyBeamerApp())));
+
+
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingService>().captureException(
       error,
