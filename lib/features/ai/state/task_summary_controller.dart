@@ -67,7 +67,11 @@ significant. Talk to the user directly, instead of referring to them as "the use
 or "they". Don't start with a greeting, don't repeat the task title, get straight 
 to the point. Keep it short and succinct. Assume the the task title is shown 
 directly above in the UI, so starting with the title is not necessary and would 
-feel redundant.
+feel redundant. While staying succinct, give the output some structure and 
+organization. Use a bullet point list for the achieved results, and a numbered 
+list for the remaining steps. If there are any learnings or insights that can be 
+drawn from the task, include them in the output. If the task is done, end the 
+output with a concluding statement.
 
 **Task Details:**
 ```json
