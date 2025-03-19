@@ -32,6 +32,7 @@ class FlagsPage extends StatelessWidget {
           releaseHideLinkedEntries,
           enableMatrixFlag,
           resendAttachments,
+          useCloudInferenceFlag,
         };
 
         final filteredItems =

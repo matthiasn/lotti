@@ -84,6 +84,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: useCloudInferenceFlag,
+      description: 'Use Cloud Inference',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableNotificationsFlag,
       description: 'Enable notifications?',
       status: false,
