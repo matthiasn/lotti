@@ -54,7 +54,11 @@ Future<void> main() async {
       );
     };
 
-    runApp(ProviderScope(child: MyBeamerApp()));
+    runApp(
+      ProviderScope(
+        child: MyBeamerApp(),
+      ),
+    );
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingService>().captureException(
       error,
