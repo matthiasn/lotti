@@ -114,6 +114,7 @@ class _ChecklistSuggestionsWidgetState
                     final dragItem = DragItem(
                       localData: {
                         'checklistItemTitle': checklistItem.title,
+                        'checklistItemStatus': checklistItem.isChecked,
                       },
                     )..add(Formats.plainText(checklistItem.title));
                     return dragItem;

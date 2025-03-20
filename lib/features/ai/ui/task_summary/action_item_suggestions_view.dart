@@ -20,6 +20,7 @@ class ActionItemSuggestionsView extends ConsumerWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 250),
       child: SingleChildScrollView(
+        reverse: true,
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: ConstrainedBox(

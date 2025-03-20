@@ -68,6 +68,7 @@ class ChecklistRepository {
           final checklistItem = await createChecklistItem(
             checklistId: newChecklist.meta.id,
             title: item.title,
+            isChecked: item.isChecked,
             categoryId: newChecklist.meta.categoryId,
           );
           if (checklistItem != null) {
@@ -98,6 +99,7 @@ class ChecklistRepository {
   Future<ChecklistItem?> createChecklistItem({
     required String checklistId,
     required String title,
+    required bool isChecked,
     required String? categoryId,
   }) async {
     try {
@@ -106,7 +108,7 @@ class ChecklistRepository {
         meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistItemData(
           title: title,
-          isChecked: false,
+          isChecked: isChecked,
           linkedChecklists: [checklistId],
         ),
       );
