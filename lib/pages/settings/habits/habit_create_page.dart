@@ -4,6 +4,7 @@ import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class CreateHabitPage extends StatelessWidget {
   CreateHabitPage({super.key});
@@ -23,9 +24,14 @@ class CreateHabitPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<HabitSettingsCubit>(
-      create: (_) => HabitSettingsCubit(_habitDefinition, context: context),
-      child: const HabitDetailsPage(),
+    return ShowCaseWidget(
+      builder: (context) => BlocProvider<HabitSettingsCubit>(
+        create: (_) => HabitSettingsCubit(
+          _habitDefinition,
+          context: context,
+        ),
+        child: const HabitDetailsPage(),
+      ),
     );
   }
 }

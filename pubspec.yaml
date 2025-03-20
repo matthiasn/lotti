@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.581+2941
+version: 0.9.581+2942
 
 msix_config:
   display_name: LottiApp
@@ -142,6 +142,7 @@ dependencies:
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
   share_plus: ^10.0.0
+  showcaseview: ^4.0.1
   sleek_circular_slider: ^2.0.1
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
@@ -153,12 +154,14 @@ dependencies:
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
   uuid: ^4.3.3
+  vector_math: any
   visibility_detector: ^0.4.0+2
   wechat_assets_picker: ^9.0.0
   week_of_year: ^2.0.0
   widgetbook: ^3.7.1
   window_manager: ^0.4.0
   wolt_modal_sheet: ^0.11.0
+
 
 dependency_overrides:
   device_info_plus: ^11.0.0
