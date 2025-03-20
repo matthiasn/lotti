@@ -34,7 +34,6 @@ class CloudInferenceRepository {
         model: const ChatCompletionModel.modelId(
           'deepseek-ai/DeepSeek-R1-fast',
         ),
-        maxTokens: 8192,
         temperature: temperature,
         stream: true,
       ),
