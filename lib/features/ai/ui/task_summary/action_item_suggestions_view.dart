@@ -17,12 +17,15 @@ class ActionItemSuggestionsView extends ConsumerWidget {
       actionItemSuggestionsControllerProvider(id: id),
     );
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 600),
-          child: SelectionArea(child: GptMarkdown(state)),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 250),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600),
+            child: SelectionArea(child: GptMarkdown(state)),
+          ),
         ),
       ),
     );

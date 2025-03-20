@@ -3,14 +3,16 @@ import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'action_item_suggestions.g.dart';
@@ -22,7 +24,7 @@ class ActionItemSuggestionsController
   String build({
     required String id,
   }) {
-    ref.cacheFor(inferenceStateCacheDuration);
+    //ref.cacheFor(inferenceStateCacheDuration);
     Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
       getActionItemSuggestion();
     });
@@ -118,15 +120,35 @@ task details, then remove it from the response.
       const model = 'deepseek-r1:14b'; // TODO: make configurable
       const temperature = 0.6;
 
-      final stream = ref.read(ollamaRepositoryProvider).generate(
-            prompt,
-            model: model,
-            temperature: temperature,
-          );
+      final useCloudInference =
+          await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
 
-      await for (final chunk in stream) {
-        buffer.write(chunk.text);
-        state = buffer.toString();
+      if (useCloudInference) {
+        final config =
+            await ref.read(cloudInferenceRepositoryProvider).getConfig();
+
+        final stream = ref.read(cloudInferenceRepositoryProvider).generate(
+              prompt,
+              model: model,
+              temperature: temperature,
+              config: config,
+            );
+
+        await for (final chunk in stream) {
+          buffer.write(chunk.choices[0].delta.content);
+          state = buffer.toString();
+        }
+      } else {
+        final stream = ref.read(ollamaRepositoryProvider).generate(
+              prompt,
+              model: model,
+              temperature: temperature,
+            );
+
+        await for (final chunk in stream) {
+          buffer.write(chunk.text);
+          state = buffer.toString();
+        }
       }
 
       final completeResponse = buffer.toString();
