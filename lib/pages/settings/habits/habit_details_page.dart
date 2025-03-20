@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
+import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
@@ -45,23 +46,6 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ShowCaseWidget.of(context).startShowCase([
-          _habitNameKey,
-          _habitDescKey,
-          _habitCateKey,
-          _habitDashKey,
-          _habitPriorKey,
-          _habitPrivKey,
-          _habitArchKey,
-          _habitStartDateKey,
-          _habitShowFromTimeKey,
-          _habitAlertAtKey,
-          _habitDeleKey,
-        ]);
-      }
-    });
     return BlocBuilder<HabitSettingsCubit, HabitSettingsState>(
       builder: (context, HabitSettingsState state) {
         final item = state.habitDefinition;
@@ -88,6 +72,39 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                     ),
                   ),
                 ),
+              GestureDetector(
+                onTap: () {
+                  ShowCaseWidget.of(context).startShowCase([
+                    _habitNameKey,
+                    _habitDescKey,
+                    _habitCateKey,
+                    _habitDashKey,
+                    _habitPriorKey,
+                    _habitPrivKey,
+                    _habitArchKey,
+                    _habitStartDateKey,
+                    _habitShowFromTimeKey,
+                    _habitAlertAtKey,
+                    _habitDeleKey,
+                  ]);
+                },
+                child: Container(
+                  padding: const EdgeInsets.only(right: 19),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(10),
+                      ),
+                      border: Border.all(),
+                    ),
+                    child: const Icon(
+                      Icons.question_mark,
+                      size: 13,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           body: SingleChildScrollView(
@@ -100,55 +117,21 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                     onChanged: cubit.setDirty,
                     child: Column(
                       children: <Widget>[
-                        Showcase(
-                          key: _habitNameKey,
-                          description: 'Enter the name of the habit',
-                          disposeOnTap: false,
-                          onTargetClick: () {},
-                          disableDefaultTargetGestures: true,
-                          disableMovingAnimation: true,
-                          descriptionAlignment: Alignment.topRight,
-                          descriptionTextAlign: TextAlign.right,
-
-                          tooltipPosition: TooltipPosition.top,
-                          showArrow: false,
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              8,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.grey.withValues(),
-                              width: 0,
-                            ), // Soft border
-                          ),
-                          child: FormTextField(
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitNameKey,
+                          icon: FormTextField(
                             key: const Key('habit_name_field'),
                             initialValue: item.name,
                             labelText: context.messages.settingsHabitsNameLabel,
                             name: 'name',
                             semanticsLabel: 'Habit name field',
+                            hintText: 'Name our habit',
                           ),
                         ),
                         inputSpacer,
-                        Showcase(
-                          key: _habitDescKey,
-                          description: 'Enter the description of the habit',
-                          disposeOnTap: false,
-                          onTargetClick: () {},
-                          disableDefaultTargetGestures: true,
-                          disableMovingAnimation: true,
-                          tooltipPosition: TooltipPosition.top,
-                          showArrow: false,
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: FormTextField(
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitDescKey,
+                          icon: FormTextField(
                             key: const Key('habit_description_field'),
                             initialValue: item.description,
                             labelText:
@@ -159,71 +142,19 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         inputSpacer,
-                        Showcase(
-                          key: _habitCateKey,
-                          description: 'Choose the catgeory of your habit',
-                          disposeOnTap: false,
-                          onTargetClick: () {},
-                          disableDefaultTargetGestures: true,
-                          disableMovingAnimation: true,
-                          tooltipPosition: TooltipPosition.top,
-                          showArrow: false,
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: const SelectCategoryWidget(),
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitCateKey,
+                          icon: const SelectCategoryWidget(),
                         ),
                         inputSpacer,
-                        Showcase(
-                          key: _habitDashKey,
-                          description: 'Add a habit dashboard',
-                          disposeOnTap: false,
-                          onTargetClick: () {},
-                          disableDefaultTargetGestures: true,
-                          disableMovingAnimation: true,
-                          tooltipPosition: TooltipPosition.top,
-                          showArrow: false,
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: SelectDashboardWidget(),
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitDashKey,
+                          icon: SelectDashboardWidget(),
                         ),
                         inputSpacer,
-                        Showcase(
-                          tooltipPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          key: _habitPriorKey,
-                          description: 'tap to set the priority of your habit',
-                          disposeOnTap: false,
-                          onTargetClick: () {},
-                          disableDefaultTargetGestures: true,
-                          disableMovingAnimation: true,
-                          tooltipPosition: TooltipPosition.top,
-                          showArrow: false,
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: FormSwitch(
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitPriorKey,
+                          icon: FormSwitch(
                             name: 'priority',
                             key: const Key('habit_priority'),
                             semanticsLabel: 'Habit priority',
@@ -232,38 +163,18 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                             activeColor: starredGold,
                           ),
                         ),
-                        Showcase(
-                          key: _habitPrivKey,
-                          description: 'tap to set your habit to private',
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: FormSwitch(
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitPrivKey,
+                          icon: FormSwitch(
                             name: 'private',
                             initialValue: item.private,
                             title: context.messages.settingsHabitsPrivateLabel,
                             activeColor: context.colorScheme.error,
                           ),
                         ),
-                        Showcase(
-                          key: _habitArchKey,
-                          description: 'tap to archive your habit',
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: FormSwitch(
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitArchKey,
+                          icon: FormSwitch(
                             name: 'archived',
                             key: const Key('habit_archived'),
                             initialValue: !state.habitDefinition.active,
@@ -272,19 +183,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         inputSpacer,
-                        Showcase(
-                          key: _habitStartDateKey,
-                          description: 'set the date your habit starts',
-                          targetShapeBorder: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              50,
-                            ), // Adjust for softer rounding
-                            side: BorderSide(
-                              color: Colors.white.withValues(),
-                              width: 2,
-                            ), // Soft border
-                          ),
-                          child: DateTimeField(
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitStartDateKey,
+                          icon: DateTimeField(
                             dateTime: item.activeFrom,
                             labelText: context.messages.habitActiveFromLabel,
                             setDateTime: cubit.setActiveFrom,
@@ -293,19 +194,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         ),
                         inputSpacer,
                         if (isDaily) ...[
-                          Showcase(
-                            key: _habitShowFromTimeKey,
-                            description: 'set the time your habit starts',
-                            targetShapeBorder: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                50,
-                              ), // Adjust for softer rounding
-                              side: BorderSide(
-                                color: Colors.white.withValues(),
-                                width: 2,
-                              ), // Soft border
-                            ),
-                            child: DateTimeField(
+                          ShowcaseWithWidget(
+                            showcaseKey: _habitShowFromTimeKey,
+                            icon: DateTimeField(
                               dateTime: showFrom,
                               labelText: context.messages.habitShowFromLabel,
                               setDateTime: cubit.setShowFrom,
@@ -313,19 +204,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                             ),
                           ),
                           inputSpacer,
-                          Showcase(
-                            key: _habitAlertAtKey,
-                            description: 'set your habit reminder time',
-                            targetShapeBorder: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                50,
-                              ), // Adjust for softer rounding
-                              side: BorderSide(
-                                color: Colors.white.withValues(),
-                                width: 2,
-                              ), // Soft border
-                            ),
-                            child: DateTimeField(
+                          ShowcaseWithWidget(
+                            showcaseKey: _habitAlertAtKey,
+                            icon: DateTimeField(
                               dateTime: alertAtTime,
                               labelText: context.messages.habitShowAlertAtLabel,
                               setDateTime: cubit.setAlertAtTime,
@@ -347,19 +228,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                       children: [
                         Expanded(
                           child: IconButton(
-                            icon: Showcase(
-                              key: _habitDeleKey,
-                              description: 'tap to delete this habit',
-                              targetShapeBorder: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  50,
-                                ), // Adjust for softer rounding
-                                side: BorderSide(
-                                  color: Colors.white.withValues(),
-                                  width: 2,
-                                ), // Soft border
-                              ),
-                              child: Icon(MdiIcons.trashCanOutline),
+                            icon: ShowcaseWithWidget(
+                              showcaseKey: _habitDeleKey,
+                              icon: Icon(MdiIcons.trashCanOutline),
                             ),
                             iconSize: settingsIconSize,
                             tooltip:
