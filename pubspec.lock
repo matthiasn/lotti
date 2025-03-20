@@ -13,10 +13,10 @@ packages:
     dependency: transitive
     description:
       name: accessibility_tools
-      sha256: b49df78d786610d642f16787a84da737bcc4dd18533a9cb41cb35eb5ceee5e4c
+      sha256: "1ee3612b9439ca315f92dcc31c6a4828e95b96c1aa64ac3a7776c149722deca8"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.0"
+    version: "2.4.0"
   analyzer:
     dependency: "direct dev"
     description:
@@ -614,10 +614,10 @@ packages:
     dependency: "direct main"
     description:
       name: enum_to_string
-      sha256: d968a315531f577a9bbb88c25284d8963128ea4ee5d2ccfc6be97cb333ea675d
+      sha256: "93b75963d3b0c9f6a90c095b3af153e1feccb79f6f08282d3274ff8d9eea52bc"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "2.2.1"
   equatable:
     dependency: "direct main"
     description:
@@ -766,10 +766,10 @@ packages:
     dependency: transitive
     description:
       name: flex_seed_scheme
-      sha256: d3ba3c5c92d2d79d45e94b4c6c71d01fac3c15017da1545880c53864da5dfeb0
+      sha256: b06d8b367b84cbf7ca5c5603c858fa5edae88486c4e4da79ac1044d73b6c62ec
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.0"
+    version: "3.5.1"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -1054,10 +1054,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "30a85c53ef19dba5403d0f4b8030c0f22fd2d3614f115ff07004bdecbda2b8f6"
+      sha256: cdc3802700bf6718b8286ec6c999094f45abb885b5b3b65380f25d1b4369032d
       url: "https://pub.dev"
     source: hosted
-    version: "11.1.0"
+    version: "11.1.1"
   flutter_quill_delta_from_html:
     dependency: transitive
     description:
@@ -1277,10 +1277,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: "615c4b823832babb85cfd9cba3c6dc0ee73d9455df7124e9e69196cb14ed78be"
+      sha256: "98dbf7cd95d4ebe678ead0718761af5ed7358165b10a1c1bfe295dd367763b7e"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.15"
+    version: "1.0.16"
   graphic:
     dependency: "direct main"
     description:
@@ -1454,10 +1454,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_linux
-      sha256: "4ed1d9bb36f7cd60aa6e6cd479779cc56a4cb4e4de8f49d487b1aaad831300fa"
+      sha256: "34a65f6740df08bbbeb0a1abd8e6d32107941fd4868f67a507b25601651022c9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1+1"
+    version: "0.2.1+2"
   image_picker_macos:
     dependency: transitive
     description:
@@ -1795,10 +1795,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: d0da69e5ee8dfc1692c02e4b460a1bc136120f0dcf5e02cf604b23cd39d76903
+      sha256: "23e87bb625c53f06568ae3a68badf31e95fbfd0f97f8a6781b9685dd207c9add"
       url: "https://pub.dev"
     source: hosted
-    version: "0.38.0"
+    version: "0.38.1"
   media_kit:
     dependency: "direct main"
     description:

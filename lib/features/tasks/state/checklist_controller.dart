@@ -131,6 +131,8 @@ class ChecklistController extends _$ChecklistController {
   }) async {
     if (localData != null && localData is Map && localData.isNotEmpty) {
       final checklistItemTitle = localData['checklistItemTitle'] as String?;
+      final checklistItemStatus =
+          localData['checklistItemStatus'] as bool? ?? false;
 
       if (checklistItemTitle == null) {
         return;
@@ -138,6 +140,7 @@ class ChecklistController extends _$ChecklistController {
 
       final createdItemId = await createChecklistItem(
         checklistItemTitle,
+        isChecked: checklistItemStatus,
         categoryId: categoryId,
       );
 
@@ -194,6 +197,7 @@ class ChecklistController extends _$ChecklistController {
   Future<String?> createChecklistItem(
     String? title, {
     required String? categoryId,
+    required bool isChecked,
   }) async {
     final current = state.value;
     final data = current?.data;
@@ -201,6 +205,7 @@ class ChecklistController extends _$ChecklistController {
       final created =
           await ref.read(checklistRepositoryProvider).createChecklistItem(
                 title: title,
+                isChecked: isChecked,
                 checklistId: current.id,
                 categoryId: categoryId,
               );
