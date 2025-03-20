@@ -25,6 +25,7 @@ InputDecoration inputDecoration({
   String? labelText,
   String? semanticsLabel,
   Widget? suffixIcon,
+  String? hintText,
 }) {
   final inputBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(inputBorderRadius),
@@ -55,6 +56,7 @@ InputDecoration inputDecoration({
       labelText ?? '',
       semanticsLabel: semanticsLabel,
     ),
+    hintText: hintText,
   );
 }
 

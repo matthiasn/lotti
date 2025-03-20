@@ -12,12 +12,14 @@ class FormTextField extends StatelessWidget {
     super.key,
     this.fieldRequired = true,
     this.large = false,
+    this.hintText = '',
   });
 
   final String initialValue;
   final String? semanticsLabel;
   final String name;
   final String labelText;
+  final String hintText;
   final bool fieldRequired;
   final bool large;
 
@@ -37,6 +39,7 @@ class FormTextField extends StatelessWidget {
         labelText: labelText,
         semanticsLabel: semanticsLabel,
         themeData: Theme.of(context),
+        hintText: hintText,
       ),
     );
   }
