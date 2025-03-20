@@ -14,6 +14,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -83,7 +84,6 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService);
     });
     tearDown(getIt.reset);
-
     testWidgets('habit details page is displayed & updated', (tester) async {
       when(
         () => mockPersistenceLogic.upsertEntityDefinition(any()),
@@ -91,14 +91,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: BlocProvider(
-              create: (_) => HabitSettingsCubit(habitFlossing),
-              child: const HabitDetailsPage(),
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: BlocProvider(
+                create: (_) => HabitSettingsCubit(habitFlossing),
+                child: const HabitDetailsPage(),
+              ),
             ),
           ),
         ),
@@ -142,14 +144,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: BlocProvider(
-              create: (_) => HabitSettingsCubit(habitFlossing),
-              child: const HabitDetailsPage(),
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: BlocProvider(
+                create: (_) => HabitSettingsCubit(habitFlossing),
+                child: const HabitDetailsPage(),
+              ),
             ),
           ),
         ),

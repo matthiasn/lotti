@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
+import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
@@ -21,9 +22,27 @@ import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/settings/entity_detail_card.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 
-class HabitDetailsPage extends StatelessWidget {
+class HabitDetailsPage extends StatefulWidget {
   const HabitDetailsPage({super.key});
+
+  @override
+  State<HabitDetailsPage> createState() => _HabitDetailsPageState();
+}
+
+class _HabitDetailsPageState extends State<HabitDetailsPage> {
+  final _habitNameKey = GlobalKey();
+  final _habitDescKey = GlobalKey();
+  final _habitCateKey = GlobalKey();
+  final _habitDashKey = GlobalKey();
+  final _habitPriorKey = GlobalKey();
+  final _habitPrivKey = GlobalKey();
+  final _habitArchKey = GlobalKey();
+  final _habitStartDateKey = GlobalKey();
+  final _habitShowFromTimeKey = GlobalKey();
+  final _habitAlertAtKey = GlobalKey();
+  final _habitDeleKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -53,125 +72,198 @@ class HabitDetailsPage extends StatelessWidget {
                     ),
                   ),
                 ),
+              GestureDetector(
+                onTap: () {
+                  ShowCaseWidget.of(context).startShowCase([
+                    _habitNameKey,
+                    _habitDescKey,
+                    _habitCateKey,
+                    _habitDashKey,
+                    _habitPriorKey,
+                    _habitPrivKey,
+                    _habitArchKey,
+                    _habitStartDateKey,
+                    _habitShowFromTimeKey,
+                    _habitAlertAtKey,
+                    _habitDeleKey,
+                  ]);
+                },
+                child: Container(
+                  padding: const EdgeInsets.only(right: 19),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(10),
+                      ),
+                      border: Border.all(),
+                    ),
+                    child: const Icon(
+                      Icons.question_mark,
+                      size: 13,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          body: EntityDetailCard(
-            child: Column(
-              children: [
-                FormBuilder(
-                  key: state.formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  onChanged: cubit.setDirty,
-                  child: Column(
-                    children: <Widget>[
-                      FormTextField(
-                        key: const Key('habit_name_field'),
-                        initialValue: item.name,
-                        labelText: context.messages.settingsHabitsNameLabel,
-                        name: 'name',
-                        semanticsLabel: 'Habit name field',
-                        large: true,
-                      ),
-                      inputSpacer,
-                      FormTextField(
-                        key: const Key('habit_description_field'),
-                        initialValue: item.description,
-                        labelText:
-                            context.messages.settingsHabitsDescriptionLabel,
-                        fieldRequired: false,
-                        name: 'description',
-                        semanticsLabel: 'Habit description field',
-                      ),
-                      inputSpacer,
-                      const SelectCategoryWidget(),
-                      inputSpacer,
-                      SelectDashboardWidget(),
-                      inputSpacer,
-                      FormSwitch(
-                        name: 'priority',
-                        key: const Key('habit_priority'),
-                        semanticsLabel: 'Habit priority',
-                        initialValue: state.habitDefinition.priority,
-                        title: context.messages.habitPriorityLabel,
-                        activeColor: starredGold,
-                      ),
-                      FormSwitch(
-                        name: 'private',
-                        initialValue: item.private,
-                        title: context.messages.settingsHabitsPrivateLabel,
-                        activeColor: context.colorScheme.error,
-                      ),
-                      FormSwitch(
-                        name: 'archived',
-                        key: const Key('habit_archived'),
-                        initialValue: !state.habitDefinition.active,
-                        title: context.messages.habitArchivedLabel,
-                        activeColor: context.colorScheme.outline,
-                      ),
-                      inputSpacer,
-                      DateTimeField(
-                        dateTime: item.activeFrom,
-                        labelText: context.messages.habitActiveFromLabel,
-                        setDateTime: cubit.setActiveFrom,
-                        mode: CupertinoDatePickerMode.date,
-                      ),
-                      inputSpacer,
-                      if (isDaily) ...[
-                        DateTimeField(
-                          dateTime: showFrom,
-                          labelText: context.messages.habitShowFromLabel,
-                          setDateTime: cubit.setShowFrom,
-                          mode: CupertinoDatePickerMode.time,
-                          clear: cubit.clearShowFrom,
+          body: SingleChildScrollView(
+            child: EntityDetailCard(
+              child: Column(
+                children: [
+                  FormBuilder(
+                    key: state.formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    onChanged: cubit.setDirty,
+                    child: Column(
+                      children: <Widget>[
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitNameKey,
+                          icon: FormTextField(
+                            key: const Key('habit_name_field'),
+                            initialValue: item.name,
+                            labelText: context.messages.settingsHabitsNameLabel,
+                            name: 'name',
+                            semanticsLabel: 'Habit name field',
+                            hintText: 'Name our habit',
+                          ),
                         ),
                         inputSpacer,
-                        DateTimeField(
-                          dateTime: alertAtTime,
-                          labelText: context.messages.habitShowAlertAtLabel,
-                          setDateTime: cubit.setAlertAtTime,
-                          clear: cubit.clearAlertAtTime,
-                          mode: CupertinoDatePickerMode.time,
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitDescKey,
+                          icon: FormTextField(
+                            key: const Key('habit_description_field'),
+                            initialValue: item.description,
+                            labelText:
+                                context.messages.settingsHabitsDescriptionLabel,
+                            fieldRequired: false,
+                            name: 'description',
+                            semanticsLabel: 'Habit description field',
+                          ),
+                        ),
+                        inputSpacer,
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitCateKey,
+                          icon: const SelectCategoryWidget(),
+                        ),
+                        inputSpacer,
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitDashKey,
+                          icon: SelectDashboardWidget(),
+                        ),
+                        inputSpacer,
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitPriorKey,
+                          icon: FormSwitch(
+                            name: 'priority',
+                            key: const Key('habit_priority'),
+                            semanticsLabel: 'Habit priority',
+                            initialValue: state.habitDefinition.priority,
+                            title: context.messages.habitPriorityLabel,
+                            activeColor: starredGold,
+                          ),
+                        ),
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitPrivKey,
+                          icon: FormSwitch(
+                            name: 'private',
+                            initialValue: item.private,
+                            title: context.messages.settingsHabitsPrivateLabel,
+                            activeColor: context.colorScheme.error,
+                          ),
+                        ),
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitArchKey,
+                          icon: FormSwitch(
+                            name: 'archived',
+                            key: const Key('habit_archived'),
+                            initialValue: !state.habitDefinition.active,
+                            title: context.messages.habitArchivedLabel,
+                            activeColor: context.colorScheme.outline,
+                          ),
+                        ),
+                        inputSpacer,
+                        ShowcaseWithWidget(
+                          showcaseKey: _habitStartDateKey,
+                          icon: DateTimeField(
+                            dateTime: item.activeFrom,
+                            labelText: context.messages.habitActiveFromLabel,
+                            setDateTime: cubit.setActiveFrom,
+                            mode: CupertinoDatePickerMode.date,
+                          ),
+                        ),
+                        inputSpacer,
+                        if (isDaily) ...[
+                          ShowcaseWithWidget(
+                            showcaseKey: _habitShowFromTimeKey,
+                            icon: DateTimeField(
+                              dateTime: showFrom,
+                              labelText: context.messages.habitShowFromLabel,
+                              setDateTime: cubit.setShowFrom,
+                              mode: CupertinoDatePickerMode.time,
+                            ),
+                          ),
+                          inputSpacer,
+                          ShowcaseWithWidget(
+                            showcaseKey: _habitAlertAtKey,
+                            icon: DateTimeField(
+                              dateTime: alertAtTime,
+                              labelText: context.messages.habitShowAlertAtLabel,
+                              setDateTime: cubit.setAlertAtTime,
+                              clear: cubit.clearAlertAtTime,
+                              mode: CupertinoDatePickerMode.time,
+                            ),
+                          ),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: IconButton(
+                            icon: ShowcaseWithWidget(
+                              showcaseKey: _habitDeleKey,
+                              icon: Icon(MdiIcons.trashCanOutline),
+                            ),
+                            iconSize: settingsIconSize,
+                            tooltip:
+                                context.messages.settingsHabitsDeleteTooltip,
+                            color: context.colorScheme.outline,
+                            onPressed: () async {
+                              const deleteKey = 'deleteKey';
+                              final result = await showModalActionSheet<String>(
+                                context: context,
+                                title: context.messages.habitDeleteQuestion,
+                                actions: [
+                                  ModalSheetAction(
+                                    icon: Icons.warning,
+                                    label: context.messages.habitDeleteConfirm,
+                                    key: deleteKey,
+                                    isDestructiveAction: true,
+                                    isDefaultAction: true,
+                                  ),
+                                ],
+                              );
+
+                              if (result == deleteKey) {
+                                await cubit.delete();
+                              }
+                            },
+                          ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: Icon(MdiIcons.trashCanOutline),
-                        iconSize: settingsIconSize,
-                        tooltip: context.messages.settingsHabitsDeleteTooltip,
-                        color: context.colorScheme.outline,
-                        onPressed: () async {
-                          const deleteKey = 'deleteKey';
-                          final result = await showModalActionSheet<String>(
-                            context: context,
-                            title: context.messages.habitDeleteQuestion,
-                            actions: [
-                              ModalSheetAction(
-                                icon: Icons.warning,
-                                label: context.messages.habitDeleteConfirm,
-                                key: deleteKey,
-                                isDestructiveAction: true,
-                                isDefaultAction: true,
-                              ),
-                            ],
-                          );
-
-                          if (result == deleteKey) {
-                            await cubit.delete();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // const HabitAutocompleteWrapper(),
-              ],
+                  // const HabitAutocompleteWrapper(),
+                ],
+              ),
             ),
           ),
         );
@@ -203,12 +295,14 @@ class EditHabitPage extends StatelessWidget {
           return const EmptyScaffoldWithTitle('');
         }
 
-        return BlocProvider<HabitSettingsCubit>(
-          create: (_) => HabitSettingsCubit(
-            habitDefinition,
-            context: context,
+        return ShowCaseWidget(
+          builder: (context) => BlocProvider<HabitSettingsCubit>(
+            create: (_) => HabitSettingsCubit(
+              habitDefinition,
+              context: context,
+            ),
+            child: const HabitDetailsPage(),
           ),
-          child: const HabitDetailsPage(),
         );
       },
     );
