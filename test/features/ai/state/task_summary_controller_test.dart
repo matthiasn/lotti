@@ -8,12 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/task_summary_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:ollama/ollama.dart';
 
@@ -22,6 +24,8 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 class MockOllamaRepository extends Mock implements OllamaRepository {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockJournalDb extends Mock implements JournalDb {}
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -32,6 +36,7 @@ void main() {
   late MockAiInputRepository mockAiInputRepository;
   late MockOllamaRepository mockOllamaRepository;
   late MockLoggingService mockLoggingService;
+  late MockJournalDb mockJournalDb;
   late Listener<String> listener;
 
   const taskId = 'test-task-id';
@@ -56,10 +61,13 @@ void main() {
     mockAiInputRepository = MockAiInputRepository();
     mockOllamaRepository = MockOllamaRepository();
     mockLoggingService = MockLoggingService();
+    mockJournalDb = MockJournalDb();
     listener = Listener<String>();
 
-    // Register the MockLoggingService with GetIt
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    // Register the mocks with GetIt
+    getIt
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<JournalDb>(mockJournalDb);
 
     // Setup mock behavior to avoid errors
     when(
@@ -79,6 +87,10 @@ void main() {
       ),
     ).thenReturn(null);
 
+    // Mock getConfigFlag to return false for useCloudInferenceFlag
+    when(() => mockJournalDb.getConfigFlag(useCloudInferenceFlag))
+        .thenAnswer((_) async => false);
+
     container = ProviderContainer(
       overrides: [
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepository),
@@ -89,8 +101,10 @@ void main() {
 
   tearDown(() {
     container.dispose();
-    // Unregister the MockLoggingService from GetIt to clean up
-    getIt.unregister<LoggingService>();
+    // Unregister the mocks from GetIt to clean up
+    getIt
+      ..unregister<LoggingService>()
+      ..unregister<JournalDb>();
   });
 
   group('TaskSummaryController', () {

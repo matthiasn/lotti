@@ -15,12 +15,16 @@ class AiTaskSummaryView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(taskSummaryControllerProvider(id: id));
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 600),
-          child: SelectionArea(child: GptMarkdown(state)),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 250),
+      child: SingleChildScrollView(
+        reverse: true,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600),
+            child: SelectionArea(child: GptMarkdown(state)),
+          ),
         ),
       ),
     );

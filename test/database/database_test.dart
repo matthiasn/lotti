@@ -72,6 +72,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable logging?',
     status: false,
   ),
+  const ConfigFlag(
+    name: useCloudInferenceFlag,
+    description: 'Use Cloud Inference',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{
