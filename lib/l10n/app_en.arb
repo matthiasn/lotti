@@ -224,6 +224,7 @@
   "settingsHabitsSearchHint": "Search...",
   "settingsHabitsStoryLabel": "Habit completion story",
   "settingsHabitsTitle": "Habits",
+  "settingsHabitsDefinitionTitle": "Habit Definition",
   "settingsHabitsShowCaseNameTooltip": "Enter a clear and descriptive name for the habit.\nAvoid overly long names, and make it concise enough to identify the habit easily. \nExamples: 'Morning Jogs', 'Read Daily'.",
   "settingsHabitsShowCaseDescrTooltip": "Provide a brief and meaningful description of the habit. Include any relevant details or \ncontext to clearly define the habit's purpose and importance. \nExamples: 'Jog for 30 minutes every morning to boost fitness' or 'Read one chapter daily to improve knowledge and focus'",
   "settingsHabitsShowCaseCatTooltip": "Choose a category that best describes your habit or create a new one by selecting the [+] button.\nExamples: 'Health', 'Productivity', 'Exercise'.",

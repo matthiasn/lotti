@@ -21,16 +21,41 @@ class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    return TitleWidgetAppBar(
+      showBackButton: showBackButton,
+      actions: actions,
+      title: Text(
+        title,
+        style: appBarTextStyleNew,
+      ),
+    );
+  }
+}
+
+class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const TitleWidgetAppBar({
+    required this.title,
+    super.key,
+    this.showBackButton = true,
+    this.actions,
+  });
+
+  final Widget title;
+  final bool showBackButton;
+  final List<Widget>? actions;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
     return AppBar(
       actions: actions,
       automaticallyImplyLeading: false,
       scrolledUnderElevation: 10,
       titleSpacing: 0,
       leadingWidth: 100,
-      title: Text(
-        title,
-        style: appBarTextStyleNew,
-      ),
+      title: title,
       leading: showBackButton
           ? const BackWidget()
               .animate()
