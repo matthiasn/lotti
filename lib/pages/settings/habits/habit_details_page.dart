@@ -60,21 +60,8 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
           appBar: TitleAppBar(
             title: '',
             actions: [
-              if (state.dirty)
-                TextButton(
-                  key: const Key('habit_save'),
-                  onPressed: cubit.onSavePressed,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      context.messages.settingsHabitsSaveLabel,
-                      style: saveButtonStyle(Theme.of(context)),
-                      semanticsLabel: 'Save Habit',
-                    ),
-                  ),
-                ),
-              GestureDetector(
-                onTap: () {
+              IconButton(
+                onPressed: () {
                   ShowCaseWidget.of(context).startShowCase([
                     _habitNameKey,
                     _habitDescKey,
@@ -89,25 +76,23 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                     _habitDeleKey,
                   ]);
                 },
-                child: Container(
-                  padding: const EdgeInsets.only(
-                    right: 19,
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(10),
-                      ),
-                      border: Border.all(),
-                    ),
-                    child: const Icon(
-                      Icons.question_mark,
-                      size: 13,
-                      color: Colors.blue,
+                icon: const Icon(
+                  Icons.info_outline_rounded,
+                ),
+              ),
+              if (state.dirty)
+                TextButton(
+                  key: const Key('habit_save'),
+                  onPressed: cubit.onSavePressed,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      context.messages.settingsHabitsSaveLabel,
+                      style: saveButtonStyle(Theme.of(context)),
+                      semanticsLabel: 'Save Habit',
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           body: SingleChildScrollView(
