@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/state/action_item_suggestions.dart';
+import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
