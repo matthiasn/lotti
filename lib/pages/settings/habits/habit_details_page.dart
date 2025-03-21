@@ -57,29 +57,35 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
             item.habitSchedule.mapOrNull(daily: (d) => d.alertAtTime);
 
         return Scaffold(
-          appBar: TitleAppBar(
-            title: '',
-            actions: [
-              IconButton(
-                onPressed: () {
-                  ShowCaseWidget.of(context).startShowCase([
-                    _habitNameKey,
-                    _habitDescKey,
-                    _habitCateKey,
-                    _habitDashKey,
-                    _habitPriorKey,
-                    _habitPrivKey,
-                    _habitArchKey,
-                    _habitStartDateKey,
-                    _habitShowFromTimeKey,
-                    _habitAlertAtKey,
-                    _habitDeleKey,
-                  ]);
-                },
-                icon: const Icon(
-                  Icons.info_outline_rounded,
+          appBar: TitleWidgetAppBar(
+            title: Row(
+              children: [
+                Text(
+                  context.messages.settingsHabitsDefinitionTitle,
                 ),
-              ),
+                IconButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).startShowCase([
+                      _habitNameKey,
+                      _habitDescKey,
+                      _habitCateKey,
+                      _habitDashKey,
+                      _habitPriorKey,
+                      _habitPrivKey,
+                      _habitArchKey,
+                      _habitStartDateKey,
+                      _habitShowFromTimeKey,
+                      _habitAlertAtKey,
+                      _habitDeleKey,
+                    ]);
+                  },
+                  icon: const Icon(
+                    Icons.info_outline_rounded,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
               if (state.dirty)
                 TextButton(
                   key: const Key('habit_save'),
