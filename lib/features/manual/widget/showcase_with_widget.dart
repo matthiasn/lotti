@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 class ShowcaseWithWidget extends StatelessWidget {
@@ -20,6 +21,7 @@ class ShowcaseWithWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Showcase.withWidget(
+      targetBorderRadius: BorderRadius.circular(inputBorderRadius),
       tooltipPosition: TooltipPosition.bottom,
       disposeOnTap: false,
       onTargetClick: () {},
@@ -37,10 +39,10 @@ class ShowcaseWithWidget extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              margin: const EdgeInsets.only(left: 5),
+              margin: const EdgeInsets.only(left: 7),
               decoration: BoxDecoration(
                 color: const Color.fromRGBO(0, 0, 0, 0.6),
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(inputBorderRadius),
               ),
               child: description,
             ),
