@@ -178,7 +178,7 @@ class _ActionItemSuggestionsControllerProviderElement
 }
 
 String _$actionItemSuggestionsPromptControllerHash() =>
-    r'51624bf0d081dceaf98b12f34601d3223cb3b3d8';
+    r'b8971d11e12e8ec99b8976296c4e159c7b121bec';
 
 abstract class _$ActionItemSuggestionsPromptController
     extends BuildlessAutoDisposeAsyncNotifier<String?> {
