@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/task_summary_prompt.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -51,35 +51,19 @@ class TaskSummaryController extends _$TaskSummaryController {
     }
 
     try {
-      final aiInput = await ref.read(aiInputRepositoryProvider).generate(id);
       inferenceStatusNotifier.setStatus(InferenceStatus.running);
 
-      const encoder = JsonEncoder.withIndent('    ');
-      final jsonString = encoder.convert(aiInput);
+      ref.invalidate(
+        taskSummaryPromptControllerProvider(id: id),
+      );
 
-      final prompt = '''
-**Prompt:**
+      final prompt = await ref.read(
+        taskSummaryPromptControllerProvider(id: id).future,
+      );
 
-Create a task summary as a TLDR; for the provided task details and log entries. Imagine the
-user has not been involved in the task for a long time, and you want to refresh
-their memory. Summarize the task, the achieved results, and the remaining steps
-that have not been completed yet, if any. Also note when the task is done. Note any 
-learnings or insights that can be drawn from the task, if anything is 
-significant. Talk to the user directly, instead of referring to them as "the user"
-or "they". Don't start with a greeting, don't repeat the task title, get straight 
-to the point. Keep it short and succinct. Assume the the task title is shown 
-directly above in the UI, so starting with the title is not necessary and would 
-feel redundant. While staying succinct, give the output some structure and 
-organization. Use a bullet point list for the achieved results, and a numbered 
-list for the remaining steps. If there are any learnings or insights that can be 
-drawn from the task, include them in the output. If the task is done, end the 
-output with a concluding statement.
-
-**Task Details:**
-```json
-$jsonString
-```
-    ''';
+      if (prompt == null) {
+        return;
+      }
 
       final buffer = StringBuffer();
 

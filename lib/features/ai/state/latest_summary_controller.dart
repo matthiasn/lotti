@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/task_summary_prompt.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -96,8 +98,13 @@ class IsLatestSummaryOutdatedController
 
     final latestSummaryPrompt = latestSummary?.data.prompt;
 
-    final latestUnrealizedPrompt = await ref
-        .watch(actionItemSuggestionsPromptControllerProvider(id: id).future);
+    final latestUnrealizedPrompt = aiResponseType == taskSummary
+        ? await ref.watch(
+            taskSummaryPromptControllerProvider(id: id).future,
+          )
+        : await ref.watch(
+            actionItemSuggestionsPromptControllerProvider(id: id).future,
+          );
 
     if (latestSummaryPrompt == null) {
       return false;
