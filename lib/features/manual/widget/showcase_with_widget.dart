@@ -1,50 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 class ShowcaseWithWidget extends StatelessWidget {
   const ShowcaseWithWidget({
     required this.showcaseKey,
-    required this.icon,
+    required this.description,
+    required this.child,
     this.startNav = false,
     this.endNav = false,
     super.key,
   });
 
   final GlobalKey showcaseKey;
-  final Widget icon;
+  final Widget child;
   final bool startNav;
   final bool endNav;
+  final Widget description;
 
   @override
   Widget build(BuildContext context) {
     return Showcase.withWidget(
+      targetBorderRadius: BorderRadius.circular(inputBorderRadius),
       tooltipPosition: TooltipPosition.bottom,
       disposeOnTap: false,
       onTargetClick: () {},
       disableDefaultTargetGestures: true,
       disableMovingAnimation: true,
       overlayOpacity: 0.7,
+      tooltipActionConfig:
+          const TooltipActionConfig(gapBetweenContentAndAction: 50),
       key: showcaseKey,
-      width: 300,
-      height: 100,
+      width: 400,
+      height: 80,
       container: SizedBox(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              margin: const EdgeInsets.only(left: 7),
+              decoration: BoxDecoration(
+                color: const Color.fromRGBO(0, 0, 0, 0.6),
+                borderRadius: BorderRadius.circular(inputBorderRadius),
+              ),
+              child: description,
+            ),
             if (startNav)
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
-                      ShowCaseWidget.of(context).completed(showcaseKey);
+                      ShowCaseWidget.of(context).dismiss();
                     },
                     child: const Text(
                       'close',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).next();
                     },
@@ -59,7 +74,7 @@ class ShowcaseWithWidget extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).previous();
                     },
@@ -68,9 +83,9 @@ class ShowcaseWithWidget extends StatelessWidget {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
-                      ShowCaseWidget.of(context).completed(showcaseKey);
+                      ShowCaseWidget.of(context).dismiss();
                     },
                     child: const Text(
                       'close',
@@ -83,7 +98,7 @@ class ShowcaseWithWidget extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).previous();
                     },
@@ -92,7 +107,7 @@ class ShowcaseWithWidget extends StatelessWidget {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).next();
                     },
@@ -106,7 +121,10 @@ class ShowcaseWithWidget extends StatelessWidget {
           ],
         ),
       ),
-      child: icon,
+      child: Padding(
+        padding: const EdgeInsets.all(5),
+        child: child,
+      ),
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
+import 'package:lotti/features/manual/widget/showcase_text_style.dart';
 import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -56,8 +57,34 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
             item.habitSchedule.mapOrNull(daily: (d) => d.alertAtTime);
 
         return Scaffold(
-          appBar: TitleAppBar(
-            title: '',
+          appBar: TitleWidgetAppBar(
+            title: Row(
+              children: [
+                Text(
+                  context.messages.settingsHabitsDefinitionTitle,
+                ),
+                IconButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).startShowCase([
+                      _habitNameKey,
+                      _habitDescKey,
+                      _habitCateKey,
+                      _habitDashKey,
+                      _habitPriorKey,
+                      _habitPrivKey,
+                      _habitArchKey,
+                      _habitStartDateKey,
+                      _habitShowFromTimeKey,
+                      _habitAlertAtKey,
+                      _habitDeleKey,
+                    ]);
+                  },
+                  icon: const Icon(
+                    Icons.info_outline_rounded,
+                  ),
+                ),
+              ],
+            ),
             actions: [
               if (state.dirty)
                 TextButton(
@@ -72,43 +99,14 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                     ),
                   ),
                 ),
-              GestureDetector(
-                onTap: () {
-                  ShowCaseWidget.of(context).startShowCase([
-                    _habitNameKey,
-                    _habitDescKey,
-                    _habitCateKey,
-                    _habitDashKey,
-                    _habitPriorKey,
-                    _habitPrivKey,
-                    _habitArchKey,
-                    _habitStartDateKey,
-                    _habitShowFromTimeKey,
-                    _habitAlertAtKey,
-                    _habitDeleKey,
-                  ]);
-                },
-                child: Container(
-                  padding: const EdgeInsets.only(right: 19),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(10),
-                      ),
-                      border: Border.all(),
-                    ),
-                    child: const Icon(
-                      Icons.question_mark,
-                      size: 13,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
           body: SingleChildScrollView(
             child: EntityDetailCard(
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 20,
+                horizontal: 10,
+              ),
               child: Column(
                 children: [
                   FormBuilder(
@@ -118,20 +116,28 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                     child: Column(
                       children: <Widget>[
                         ShowcaseWithWidget(
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseNameTooltip,
+                          ),
+                          startNav: true,
                           showcaseKey: _habitNameKey,
-                          icon: FormTextField(
+                          child: FormTextField(
                             key: const Key('habit_name_field'),
                             initialValue: item.name,
                             labelText: context.messages.settingsHabitsNameLabel,
                             name: 'name',
                             semanticsLabel: 'Habit name field',
-                            hintText: 'Name our habit',
                           ),
                         ),
-                        inputSpacer,
+                        inputSpacerSmall,
                         ShowcaseWithWidget(
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseDescrTooltip,
+                          ),
                           showcaseKey: _habitDescKey,
-                          icon: FormTextField(
+                          child: FormTextField(
                             key: const Key('habit_description_field'),
                             initialValue: item.description,
                             labelText:
@@ -141,20 +147,29 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                             semanticsLabel: 'Habit description field',
                           ),
                         ),
-                        inputSpacer,
+                        inputSpacerSmall,
                         ShowcaseWithWidget(
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseCatTooltip,
+                          ),
                           showcaseKey: _habitCateKey,
-                          icon: const SelectCategoryWidget(),
+                          child: const SelectCategoryWidget(),
                         ),
-                        inputSpacer,
+                        inputSpacerSmall,
                         ShowcaseWithWidget(
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseDashTooltip,
+                          ),
                           showcaseKey: _habitDashKey,
-                          icon: SelectDashboardWidget(),
+                          child: SelectDashboardWidget(),
                         ),
-                        inputSpacer,
+                        inputSpacerSmall,
                         ShowcaseWithWidget(
+                          description: const Text('TODO'),
                           showcaseKey: _habitPriorKey,
-                          icon: FormSwitch(
+                          child: FormSwitch(
                             name: 'priority',
                             key: const Key('habit_priority'),
                             semanticsLabel: 'Habit priority',
@@ -164,8 +179,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         ShowcaseWithWidget(
+                          description: const Text('TODO'),
                           showcaseKey: _habitPrivKey,
-                          icon: FormSwitch(
+                          child: FormSwitch(
                             name: 'private',
                             initialValue: item.private,
                             title: context.messages.settingsHabitsPrivateLabel,
@@ -173,8 +189,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         ShowcaseWithWidget(
+                          description: const Text('TODO'),
                           showcaseKey: _habitArchKey,
-                          icon: FormSwitch(
+                          child: FormSwitch(
                             name: 'archived',
                             key: const Key('habit_archived'),
                             initialValue: !state.habitDefinition.active,
@@ -182,31 +199,34 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                             activeColor: context.colorScheme.outline,
                           ),
                         ),
-                        inputSpacer,
+                        inputSpacerSmall,
                         ShowcaseWithWidget(
+                          description: const Text('TODO'),
                           showcaseKey: _habitStartDateKey,
-                          icon: DateTimeField(
+                          child: DateTimeField(
                             dateTime: item.activeFrom,
                             labelText: context.messages.habitActiveFromLabel,
                             setDateTime: cubit.setActiveFrom,
                             mode: CupertinoDatePickerMode.date,
                           ),
                         ),
-                        inputSpacer,
+                        inputSpacerSmall,
                         if (isDaily) ...[
                           ShowcaseWithWidget(
+                            description: const Text('TODO'),
                             showcaseKey: _habitShowFromTimeKey,
-                            icon: DateTimeField(
+                            child: DateTimeField(
                               dateTime: showFrom,
                               labelText: context.messages.habitShowFromLabel,
                               setDateTime: cubit.setShowFrom,
                               mode: CupertinoDatePickerMode.time,
                             ),
                           ),
-                          inputSpacer,
+                          inputSpacerSmall,
                           ShowcaseWithWidget(
+                            description: const Text('TODO'),
                             showcaseKey: _habitAlertAtKey,
-                            icon: DateTimeField(
+                            child: DateTimeField(
                               dateTime: alertAtTime,
                               labelText: context.messages.habitShowAlertAtLabel,
                               setDateTime: cubit.setAlertAtTime,
@@ -229,8 +249,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         Expanded(
                           child: IconButton(
                             icon: ShowcaseWithWidget(
+                              description: const Text('TODO'),
+                              endNav: true,
                               showcaseKey: _habitDeleKey,
-                              icon: Icon(MdiIcons.trashCanOutline),
+                              child: Icon(MdiIcons.trashCanOutline),
                             ),
                             iconSize: settingsIconSize,
                             tooltip:
