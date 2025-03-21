@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'task_summary_controller.dart';
+part of 'task_summary_prompt.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$taskSummaryControllerHash() =>
-    r'edf8121d941e4abe235d638a5b8aae2835ba4715';
+String _$taskSummaryPromptControllerHash() =>
+    r'8e523a32766082535634ae528372c9e44b434eaa';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,36 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$TaskSummaryController
-    extends BuildlessAutoDisposeNotifier<String> {
+abstract class _$TaskSummaryPromptController
+    extends BuildlessAutoDisposeAsyncNotifier<String?> {
   late final String id;
 
-  String build({
+  FutureOr<String?> build({
     required String id,
   });
 }
 
-/// See also [TaskSummaryController].
-@ProviderFor(TaskSummaryController)
-const taskSummaryControllerProvider = TaskSummaryControllerFamily();
+/// See also [TaskSummaryPromptController].
+@ProviderFor(TaskSummaryPromptController)
+const taskSummaryPromptControllerProvider = TaskSummaryPromptControllerFamily();
 
-/// See also [TaskSummaryController].
-class TaskSummaryControllerFamily extends Family<String> {
-  /// See also [TaskSummaryController].
-  const TaskSummaryControllerFamily();
+/// See also [TaskSummaryPromptController].
+class TaskSummaryPromptControllerFamily extends Family<AsyncValue<String?>> {
+  /// See also [TaskSummaryPromptController].
+  const TaskSummaryPromptControllerFamily();
 
-  /// See also [TaskSummaryController].
-  TaskSummaryControllerProvider call({
+  /// See also [TaskSummaryPromptController].
+  TaskSummaryPromptControllerProvider call({
     required String id,
   }) {
-    return TaskSummaryControllerProvider(
+    return TaskSummaryPromptControllerProvider(
       id: id,
     );
   }
 
   @override
-  TaskSummaryControllerProvider getProviderOverride(
-    covariant TaskSummaryControllerProvider provider,
+  TaskSummaryPromptControllerProvider getProviderOverride(
+    covariant TaskSummaryPromptControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -78,30 +78,31 @@ class TaskSummaryControllerFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'taskSummaryControllerProvider';
+  String? get name => r'taskSummaryPromptControllerProvider';
 }
 
-/// See also [TaskSummaryController].
-class TaskSummaryControllerProvider
-    extends AutoDisposeNotifierProviderImpl<TaskSummaryController, String> {
-  /// See also [TaskSummaryController].
-  TaskSummaryControllerProvider({
+/// See also [TaskSummaryPromptController].
+class TaskSummaryPromptControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<TaskSummaryPromptController,
+        String?> {
+  /// See also [TaskSummaryPromptController].
+  TaskSummaryPromptControllerProvider({
     required String id,
   }) : this._internal(
-          () => TaskSummaryController()..id = id,
-          from: taskSummaryControllerProvider,
-          name: r'taskSummaryControllerProvider',
+          () => TaskSummaryPromptController()..id = id,
+          from: taskSummaryPromptControllerProvider,
+          name: r'taskSummaryPromptControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$taskSummaryControllerHash,
-          dependencies: TaskSummaryControllerFamily._dependencies,
+                  : _$taskSummaryPromptControllerHash,
+          dependencies: TaskSummaryPromptControllerFamily._dependencies,
           allTransitiveDependencies:
-              TaskSummaryControllerFamily._allTransitiveDependencies,
+              TaskSummaryPromptControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  TaskSummaryControllerProvider._internal(
+  TaskSummaryPromptControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -114,8 +115,8 @@ class TaskSummaryControllerProvider
   final String id;
 
   @override
-  String runNotifierBuild(
-    covariant TaskSummaryController notifier,
+  FutureOr<String?> runNotifierBuild(
+    covariant TaskSummaryPromptController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -123,10 +124,10 @@ class TaskSummaryControllerProvider
   }
 
   @override
-  Override overrideWith(TaskSummaryController Function() create) {
+  Override overrideWith(TaskSummaryPromptController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: TaskSummaryControllerProvider._internal(
+      override: TaskSummaryPromptControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -139,14 +140,14 @@ class TaskSummaryControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<TaskSummaryController, String>
+  AutoDisposeAsyncNotifierProviderElement<TaskSummaryPromptController, String?>
       createElement() {
-    return _TaskSummaryControllerProviderElement(this);
+    return _TaskSummaryPromptControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is TaskSummaryControllerProvider && other.id == id;
+    return other is TaskSummaryPromptControllerProvider && other.id == id;
   }
 
   @override
@@ -160,18 +161,19 @@ class TaskSummaryControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin TaskSummaryControllerRef on AutoDisposeNotifierProviderRef<String> {
+mixin TaskSummaryPromptControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<String?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _TaskSummaryControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<TaskSummaryController, String>
-    with TaskSummaryControllerRef {
-  _TaskSummaryControllerProviderElement(super.provider);
+class _TaskSummaryPromptControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<TaskSummaryPromptController,
+        String?> with TaskSummaryPromptControllerRef {
+  _TaskSummaryPromptControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as TaskSummaryControllerProvider).id;
+  String get id => (origin as TaskSummaryPromptControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
