@@ -200,21 +200,6 @@ formatted as a list of new `AiInputActionItemObject` instances, each containing 
 status. Ensure that only actions not already listed under `actionItems` are included in your suggestions.
 Provide these suggested action items in JSON format, adhering to the structure defined by the given classes."
 
-**Example Response:**
-
-```json
-[
-  {
-    "title": "Review project documentation",
-    "completed": false
-  },
-  {
-    "title": "Schedule team meeting for next week",
-    "completed": false
-  }
-]
-```
-
 **Task Details:**
 ```json
 $jsonString
