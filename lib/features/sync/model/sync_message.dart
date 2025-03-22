@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'sync_message.freezed.dart';
 part 'sync_message.g.dart';
@@ -12,7 +12,9 @@ enum SyncEntryStatus { initial, update }
 @freezed
 class SyncMessage with _$SyncMessage {
   const factory SyncMessage.journalEntity({
-    required JournalEntity journalEntity,
+    required String id,
+    required String jsonPath,
+    required VectorClock? vectorClock,
     required SyncEntryStatus status,
   }) = SyncJournalEntity;
 

@@ -61,10 +61,15 @@ class Maintenance {
       }
 
       final entries = entityStreamMapper(dbEntities);
+
       for (final entry in entries) {
+        final jsonPath = relativeEntityPath(entry);
+
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
-            journalEntity: entry,
+            id: entry.id,
+            vectorClock: entry.meta.vectorClock,
+            jsonPath: jsonPath,
             status: SyncEntryStatus.update,
           ),
         );
