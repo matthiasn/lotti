@@ -8,26 +8,37 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 class ChecklistWrapper extends ConsumerWidget {
   const ChecklistWrapper({
     required this.entryId,
+    required this.taskId,
     this.categoryId,
     this.padding = EdgeInsets.zero,
     super.key,
   });
 
   final String entryId;
+  final String taskId;
   final String? categoryId;
   final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = checklistControllerProvider(id: entryId);
+    final provider = checklistControllerProvider(id: entryId, taskId: taskId);
     final notifier = ref.read(provider.notifier);
     final checklist = ref.watch(provider).value;
 
-    final completionRate =
-        ref.watch(checklistCompletionRateControllerProvider(id: entryId)).value;
+    final completionRate = ref
+        .watch(
+          checklistCompletionRateControllerProvider(
+            id: entryId,
+            taskId: taskId,
+          ),
+        )
+        .value;
 
-    final res =
-        ref.watch(checklistCompletionControllerProvider(id: entryId)).value;
+    final res = ref
+        .watch(
+          checklistCompletionControllerProvider(id: entryId, taskId: taskId),
+        )
+        .value;
     final totalCount = res?.totalCount ?? 0;
     final completedCount = res?.completedCount ?? 0;
 
@@ -54,6 +65,7 @@ class ChecklistWrapper extends ConsumerWidget {
         },
         child: ChecklistWidget(
           id: checklist.id,
+          taskId: taskId,
           title: checklist.data.title,
           itemIds: checklist.data.linkedChecklistItems,
           onTitleSave: notifier.updateTitle,

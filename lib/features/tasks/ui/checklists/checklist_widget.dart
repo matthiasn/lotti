@@ -16,6 +16,7 @@ class ChecklistWidget extends StatefulWidget {
     required this.onCreateChecklistItem,
     required this.completionRate,
     required this.id,
+    required this.taskId,
     required this.updateItemOrder,
     required this.totalCount,
     required this.completedCount,
@@ -24,6 +25,8 @@ class ChecklistWidget extends StatefulWidget {
   });
 
   final String id;
+  final String taskId;
+
   final String title;
   final List<String> itemIds;
   final StringCallback onTitleSave;
@@ -215,6 +218,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
               final itemId = _itemIds.elementAt(index);
               return ChecklistItemWrapper(
                 itemId,
+                taskId: widget.taskId,
                 checklistId: widget.id,
                 key: Key('$itemId${widget.id}$index'),
               );
