@@ -167,7 +167,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         ),
                         inputSpacerSmall,
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCasePriorTooltip,
+                          ),
                           showcaseKey: _habitPriorKey,
                           child: FormSwitch(
                             name: 'priority',
@@ -179,7 +182,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCasePrivateTooltip,
+                          ),
                           showcaseKey: _habitPrivKey,
                           child: FormSwitch(
                             name: 'private',
@@ -189,7 +195,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseArchivedTooltip,
+                          ),
                           showcaseKey: _habitArchKey,
                           child: FormSwitch(
                             name: 'archived',
