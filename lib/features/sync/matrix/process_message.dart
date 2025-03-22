@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -42,10 +43,14 @@ Future<void> processMatrixMessage({
 
     await syncMessage.when(
       journalEntity: (
-        JournalEntity journalEntity,
+        String id,
+        String jsonPath,
+        VectorClock? vectorClock,
         SyncEntryStatus status,
       ) async {
-        await saveJournalEntityJson(journalEntity);
+        final docDir = getDocumentsDirectory();
+        final fullPath = '${docDir.path}$jsonPath';
+        final journalEntity = await readEntityFromJson(fullPath);
         await journalDb.updateJournalEntity(journalEntity);
         updateNotifications.notify(
           journalEntity.affectedIds,

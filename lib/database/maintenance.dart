@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -61,10 +61,15 @@ class Maintenance {
       }
 
       final entries = entityStreamMapper(dbEntities);
+
       for (final entry in entries) {
+        final jsonPath = relativeEntityPath(entry);
+
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
-            journalEntity: entry,
+            id: entry.id,
+            vectorClock: entry.meta.vectorClock,
+            jsonPath: jsonPath,
             status: SyncEntryStatus.update,
           ),
         );

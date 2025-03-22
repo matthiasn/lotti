@@ -9,10 +9,10 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -21,6 +21,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
@@ -459,7 +460,9 @@ class PersistenceLogic {
       if (saved && enqueueSync) {
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
-            journalEntity: withTags,
+            id: journalEntity.id,
+            vectorClock: withTags.meta.vectorClock,
+            jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.initial,
           ),
         );
@@ -732,7 +735,9 @@ class PersistenceLogic {
       if (enqueueSync) {
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
-            journalEntity: journalEntity,
+            id: journalEntity.id,
+            vectorClock: journalEntity.meta.vectorClock,
+            jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.update,
           ),
         );

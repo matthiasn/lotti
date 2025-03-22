@@ -8,12 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/send_message.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -111,6 +111,7 @@ void main() {
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
 
+      // Register essential dependencies
       getIt
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
@@ -121,21 +122,35 @@ void main() {
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<SecureStorage>(secureStorageMock);
 
-      await Future<void>.delayed(const Duration(seconds: 5));
+      // Ensure all GetIt instances are properly initialized
+      // Give time for any async initializations to complete
+      await Future<void>.delayed(const Duration(seconds: 2));
     });
 
     setUp(() {});
 
     tearDownAll(() async {
-      await getIt.reset();
+      // Ensure proper cleanup before resetting GetIt
+      try {
+        await aliceDb.close();
+        await bobDb.close();
+      } catch (e) {
+        debugPrint('Error during database cleanup: $e');
+      }
     });
 
-    tearDown(() async {});
+    tearDown(() async {
+      // Perform any per-test cleanup here
+    });
 
     test(
       'Create room & join',
       () async {
         debugPrint('\n--- Alice goes live');
+
+        // Make sure the GetIt dependencies are ready before creating MatrixService
+        await Future<void>.delayed(const Duration(seconds: 1));
+
         final alice = MatrixService(
           matrixConfig: config1,
           dbName: 'Alice',
@@ -143,6 +158,9 @@ void main() {
           overriddenJournalDb: aliceDb,
           overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
         );
+
+        // Allow time for constructor initialization to complete
+        await Future<void>.delayed(const Duration(seconds: 1));
 
         await alice.login();
         await alice.startKeyVerificationListener();
@@ -169,6 +187,9 @@ void main() {
           overriddenJournalDb: bobDb,
           overriddenSettingsDb: SettingsDb(inMemoryDatabase: true),
         );
+
+        // Allow time for constructor initialization to complete
+        await Future<void>.delayed(const Duration(seconds: 1));
 
         await bob.login();
         await bob.startKeyVerificationListener();
@@ -279,23 +300,31 @@ void main() {
           final id = const Uuid().v1();
           final now = DateTime.now();
 
+          final entity = JournalEntry(
+            meta: Metadata(
+              id: id,
+              createdAt: now,
+              dateFrom: now,
+              dateTo: now,
+              updatedAt: now,
+              starred: true,
+              vectorClock: VectorClock({deviceName: index}),
+            ),
+            entryText: EntryText(
+              plainText: 'Test from $deviceName #$index - $now',
+            ),
+          );
+
+          final jsonPath = relativeEntityPath(entity);
+
+          await saveJournalEntityJson(entity);
+
           await device.sendMatrixMsg(
             SyncMessage.journalEntity(
-              journalEntity: JournalEntry(
-                meta: Metadata(
-                  id: id,
-                  createdAt: now,
-                  dateFrom: now,
-                  dateTo: now,
-                  updatedAt: now,
-                  starred: true,
-                  vectorClock: VectorClock({deviceName: index}),
-                ),
-                entryText: EntryText(
-                  plainText: 'Test from $deviceName #$index - $now',
-                ),
-              ),
+              id: id,
               status: SyncEntryStatus.initial,
+              vectorClock: VectorClock({deviceName: index}),
+              jsonPath: jsonPath,
             ),
             myRoomId: roomId,
           );

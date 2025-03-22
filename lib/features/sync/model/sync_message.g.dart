@@ -9,8 +9,11 @@ part of 'sync_message.dart';
 _$SyncJournalEntityImpl _$$SyncJournalEntityImplFromJson(
         Map<String, dynamic> json) =>
     _$SyncJournalEntityImpl(
-      journalEntity:
-          JournalEntity.fromJson(json['journalEntity'] as Map<String, dynamic>),
+      id: json['id'] as String,
+      jsonPath: json['jsonPath'] as String,
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
@@ -18,7 +21,9 @@ _$SyncJournalEntityImpl _$$SyncJournalEntityImplFromJson(
 Map<String, dynamic> _$$SyncJournalEntityImplToJson(
         _$SyncJournalEntityImpl instance) =>
     <String, dynamic>{
-      'journalEntity': instance.journalEntity,
+      'id': instance.id,
+      'jsonPath': instance.jsonPath,
+      'vectorClock': instance.vectorClock,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };

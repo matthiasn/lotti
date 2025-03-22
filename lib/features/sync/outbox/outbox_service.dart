@@ -6,11 +6,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -73,7 +73,9 @@ class OutboxService {
       );
 
       if (syncMessage is SyncJournalEntity) {
-        final journalEntity = syncMessage.journalEntity;
+        final fullPath = '${docDir.path}${syncMessage.jsonPath}';
+        final journalEntity = await readEntityFromJson(fullPath);
+
         File? attachment;
         final localCounter = journalEntity.meta.vectorClock?.vclock[host];
 

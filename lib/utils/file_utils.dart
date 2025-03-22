@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -48,18 +49,22 @@ String typeSuffix(JournalEntity journalEntity) {
 }
 
 String entityPath(JournalEntity journalEntity, Directory docDir) {
+  return '${docDir.path}${relativeEntityPath(journalEntity)}';
+}
+
+String relativeEntityPath(JournalEntity journalEntity) {
   return journalEntity.maybeMap(
     journalImage: (JournalImage journalImage) =>
-        '${getFullImagePath(journalImage)}.json',
+        '${getRelativeImagePath(journalImage)}.json',
     journalAudio: (journalAudio) =>
-        '${AudioUtils.getAudioPath(journalAudio, docDir)}.json',
+        '${AudioUtils.getRelativeAudioPath(journalAudio)}.json',
     orElse: () {
       final df = DateFormat('yyyy-MM-dd');
       final dateSubFolder = df.format(journalEntity.meta.createdAt);
       final folder = folderForJournalEntity(journalEntity);
       final entityType = typeSuffix(journalEntity);
       final fileName = '${journalEntity.meta.id}.$entityType.json';
-      return '${docDir.path}/$folder/$dateSubFolder/$fileName';
+      return '/$folder/$dateSubFolder/$fileName';
     },
   );
 }
@@ -96,4 +101,14 @@ Future<Directory> findDocumentsDirectory() async {
   } else {
     return docDir;
   }
+}
+
+Future<JournalEntity> readEntityFromJson(String jsonPath) async {
+  final jsonString = await File(
+    join(getDocumentsDirectory().path, jsonPath),
+  ).readAsString();
+
+  return JournalEntity.fromJson(
+    jsonDecode(jsonString) as Map<String, dynamic>,
+  );
 }
