@@ -73,7 +73,9 @@ class OutboxService {
       );
 
       if (syncMessage is SyncJournalEntity) {
-        final journalEntity = syncMessage.journalEntity;
+        final fullPath = '${docDir.path}${syncMessage.jsonPath}';
+        final journalEntity = await readEntityFromJson(fullPath);
+
         File? attachment;
         final localCounter = journalEntity.meta.vectorClock?.vclock[host];
 

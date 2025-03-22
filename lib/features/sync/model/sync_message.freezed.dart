@@ -36,8 +36,8 @@ mixin _$SyncMessage {
   SyncEntryStatus get status => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            JournalEntity journalEntity, SyncEntryStatus status)
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -50,7 +50,8 @@ mixin _$SyncMessage {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -61,7 +62,8 @@ mixin _$SyncMessage {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
@@ -149,9 +151,11 @@ abstract class _$$SyncJournalEntityImplCopyWith<$Res>
       __$$SyncJournalEntityImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({JournalEntity journalEntity, SyncEntryStatus status});
-
-  $JournalEntityCopyWith<$Res> get journalEntity;
+  $Res call(
+      {String id,
+      String jsonPath,
+      VectorClock? vectorClock,
+      SyncEntryStatus status});
 }
 
 /// @nodoc
@@ -167,29 +171,29 @@ class __$$SyncJournalEntityImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? journalEntity = null,
+    Object? id = null,
+    Object? jsonPath = null,
+    Object? vectorClock = freezed,
     Object? status = null,
   }) {
     return _then(_$SyncJournalEntityImpl(
-      journalEntity: null == journalEntity
-          ? _value.journalEntity
-          : journalEntity // ignore: cast_nullable_to_non_nullable
-              as JournalEntity,
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      jsonPath: null == jsonPath
+          ? _value.jsonPath
+          : jsonPath // ignore: cast_nullable_to_non_nullable
+              as String,
+      vectorClock: freezed == vectorClock
+          ? _value.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as SyncEntryStatus,
     ));
-  }
-
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $JournalEntityCopyWith<$Res> get journalEntity {
-    return $JournalEntityCopyWith<$Res>(_value.journalEntity, (value) {
-      return _then(_value.copyWith(journalEntity: value));
-    });
   }
 }
 
@@ -197,14 +201,22 @@ class __$$SyncJournalEntityImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SyncJournalEntityImpl implements SyncJournalEntity {
   const _$SyncJournalEntityImpl(
-      {required this.journalEntity, required this.status, final String? $type})
+      {required this.id,
+      required this.jsonPath,
+      required this.vectorClock,
+      required this.status,
+      final String? $type})
       : $type = $type ?? 'journalEntity';
 
   factory _$SyncJournalEntityImpl.fromJson(Map<String, dynamic> json) =>
       _$$SyncJournalEntityImplFromJson(json);
 
   @override
-  final JournalEntity journalEntity;
+  final String id;
+  @override
+  final String jsonPath;
+  @override
+  final VectorClock? vectorClock;
   @override
   final SyncEntryStatus status;
 
@@ -213,7 +225,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
 
   @override
   String toString() {
-    return 'SyncMessage.journalEntity(journalEntity: $journalEntity, status: $status)';
+    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status)';
   }
 
   @override
@@ -221,14 +233,18 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$SyncJournalEntityImpl &&
-            (identical(other.journalEntity, journalEntity) ||
-                other.journalEntity == journalEntity) &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.jsonPath, jsonPath) ||
+                other.jsonPath == jsonPath) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
             (identical(other.status, status) || other.status == status));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, journalEntity, status);
+  int get hashCode =>
+      Object.hash(runtimeType, id, jsonPath, vectorClock, status);
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
@@ -242,8 +258,8 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            JournalEntity journalEntity, SyncEntryStatus status)
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -253,13 +269,14 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     required TResult Function(EntryLink entryLink, SyncEntryStatus status)
         entryLink,
   }) {
-    return journalEntity(this.journalEntity, status);
+    return journalEntity(id, jsonPath, vectorClock, status);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -267,13 +284,14 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
   }) {
-    return journalEntity?.call(this.journalEntity, status);
+    return journalEntity?.call(id, jsonPath, vectorClock, status);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
@@ -282,7 +300,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     required TResult orElse(),
   }) {
     if (journalEntity != null) {
-      return journalEntity(this.journalEntity, status);
+      return journalEntity(id, jsonPath, vectorClock, status);
     }
     return orElse();
   }
@@ -334,13 +352,17 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
 
 abstract class SyncJournalEntity implements SyncMessage {
   const factory SyncJournalEntity(
-      {required final JournalEntity journalEntity,
+      {required final String id,
+      required final String jsonPath,
+      required final VectorClock? vectorClock,
       required final SyncEntryStatus status}) = _$SyncJournalEntityImpl;
 
   factory SyncJournalEntity.fromJson(Map<String, dynamic> json) =
       _$SyncJournalEntityImpl.fromJson;
 
-  JournalEntity get journalEntity;
+  String get id;
+  String get jsonPath;
+  VectorClock? get vectorClock;
   @override
   SyncEntryStatus get status;
 
@@ -456,8 +478,8 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            JournalEntity journalEntity, SyncEntryStatus status)
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -473,7 +495,8 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -487,7 +510,8 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
@@ -666,8 +690,8 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            JournalEntity journalEntity, SyncEntryStatus status)
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -683,7 +707,8 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -697,7 +722,8 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
@@ -876,8 +902,8 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            JournalEntity journalEntity, SyncEntryStatus status)
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -893,7 +919,8 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -907,7 +934,8 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(JournalEntity journalEntity, SyncEntryStatus status)?
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,

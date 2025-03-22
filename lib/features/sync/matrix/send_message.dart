@@ -65,6 +65,18 @@ extension SendExtension on MatrixService {
       subDomain: 'sendMatrixMsg',
     );
 
+    await syncMessage.maybeMap(
+      journalEntity: (SyncJournalEntity syncJournalEntity) async {
+        final docDir = getDocumentsDirectory();
+        final fullPath = '${docDir.path}${syncJournalEntity.jsonPath}';
+        await sendFile(
+          fullPath: fullPath,
+          relativePath: syncJournalEntity.jsonPath,
+        );
+      },
+      orElse: () {},
+    );
+
     final eventId = await syncRoom?.sendTextEvent(
       base64.encode(utf8.encode(msg)),
       msgtype: syncMessageType,
@@ -87,7 +99,8 @@ extension SendExtension on MatrixService {
     final docDir = getDocumentsDirectory();
 
     if (syncMessage is SyncJournalEntity) {
-      final journalEntity = syncMessage.journalEntity;
+      final fullPath = '${docDir.path}${syncMessage.jsonPath}';
+      final journalEntity = await readEntityFromJson(fullPath);
 
       final shouldResendAttachments =
           await getIt<JournalDb>().getConfigFlag(resendAttachments);
