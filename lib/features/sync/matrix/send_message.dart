@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -65,6 +65,18 @@ extension SendExtension on MatrixService {
       subDomain: 'sendMatrixMsg',
     );
 
+    await syncMessage.maybeMap(
+      journalEntity: (SyncJournalEntity syncJournalEntity) async {
+        final docDir = getDocumentsDirectory();
+        final fullPath = '${docDir.path}${syncJournalEntity.jsonPath}';
+        await sendFile(
+          fullPath: fullPath,
+          relativePath: syncJournalEntity.jsonPath,
+        );
+      },
+      orElse: () {},
+    );
+
     final eventId = await syncRoom?.sendTextEvent(
       base64.encode(utf8.encode(msg)),
       msgtype: syncMessageType,
@@ -87,7 +99,8 @@ extension SendExtension on MatrixService {
     final docDir = getDocumentsDirectory();
 
     if (syncMessage is SyncJournalEntity) {
-      final journalEntity = syncMessage.journalEntity;
+      final fullPath = '${docDir.path}${syncMessage.jsonPath}';
+      final journalEntity = await readEntityFromJson(fullPath);
 
       final shouldResendAttachments =
           await getIt<JournalDb>().getConfigFlag(resendAttachments);
