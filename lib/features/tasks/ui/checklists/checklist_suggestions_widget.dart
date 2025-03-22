@@ -104,7 +104,7 @@ class _ChecklistSuggestionsWidgetState
               ),
               IconButton(
                 icon: Icon(
-                  checklistItems.isEmpty
+                  checklistItems.isEmpty && !isOutdated
                       ? Icons.assistant_rounded
                       : Icons.refresh,
                   color: context.colorScheme.outline,
