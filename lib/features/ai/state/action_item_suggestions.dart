@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
+import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -53,67 +54,17 @@ class ActionItemSuggestionsController
       suggestionsStatusNotifier.setStatus(InferenceStatus.running);
       final entry = await repository.getEntity(id);
 
-      if (entry is! Task) {
+      ref.invalidate(
+        actionItemSuggestionsPromptControllerProvider(id: id),
+      );
+
+      final prompt = await ref.read(
+        actionItemSuggestionsPromptControllerProvider(id: id).future,
+      );
+
+      if (entry is! Task || prompt == null) {
         return;
       }
-
-      final aiInput = await repository.generate(id);
-      const encoder = JsonEncoder.withIndent('    ');
-      final jsonString = encoder.convert(aiInput);
-
-      final prompt = '''
-**Prompt:**
-
-"Based on the provided task details and log entries, identify potential action items that are mentioned in
-the text of the logs but have not yet been captured as existing action items. These suggestions should be
-formatted as a list of new `AiInputActionItemObject` instances, each containing a title and completion
-status. Ensure that only actions not already listed under `actionItems` are included in your suggestions.
-Provide these suggested action items in JSON format, adhering to the structure defined by the given classes."
-
-**Example Response:**
-
-```json
-[
-  {
-    "title": "Review project documentation",
-    "completed": false
-  },
-  {
-    "title": "Schedule team meeting for next week",
-    "completed": false
-  }
-]
-```
-
-**Task Details:**
-```json
-$jsonString
-```
-
-Provide these suggested action items in JSON format, adhering to the structure 
-defined by the given classes.
-Double check that the returned JSON ONLY contains action items that are not 
-already listed under `actionItems` array in the task details. Do not simply
-return the example response, but the open action items you have found. If there 
-are none, return an empty array. Double check the items you want to return. If 
-any is very similar to an item already listed in the in actionItems array of the 
-task details, then remove it from the response. 
-
-**Example Response:**
-
-```json
-[
-  {
-    "title": "Review project documentation",
-    "completed": false
-  },
-  {
-    "title": "Schedule team meeting for next week",
-    "completed": true
-  }
-]
-```
-    ''';
 
       final buffer = StringBuffer();
 

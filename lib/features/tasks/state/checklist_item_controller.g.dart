@@ -7,7 +7,7 @@ part of 'checklist_item_controller.dart';
 // **************************************************************************
 
 String _$checklistItemControllerHash() =>
-    r'24609846d5df125cf2d69d34db8516a22808aad4';
+    r'8f2949c4c2e3cd13b65ae15ffc129509bb3c8941';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,9 +33,11 @@ class _SystemHash {
 abstract class _$ChecklistItemController
     extends BuildlessAutoDisposeAsyncNotifier<ChecklistItem?> {
   late final String id;
+  late final String? taskId;
 
   FutureOr<ChecklistItem?> build({
     required String id,
+    required String? taskId,
   });
 }
 
@@ -51,9 +53,11 @@ class ChecklistItemControllerFamily extends Family<AsyncValue<ChecklistItem?>> {
   /// See also [ChecklistItemController].
   ChecklistItemControllerProvider call({
     required String id,
+    required String? taskId,
   }) {
     return ChecklistItemControllerProvider(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -63,6 +67,7 @@ class ChecklistItemControllerFamily extends Family<AsyncValue<ChecklistItem?>> {
   ) {
     return call(
       id: provider.id,
+      taskId: provider.taskId,
     );
   }
 
@@ -88,8 +93,11 @@ class ChecklistItemControllerProvider
   /// See also [ChecklistItemController].
   ChecklistItemControllerProvider({
     required String id,
+    required String? taskId,
   }) : this._internal(
-          () => ChecklistItemController()..id = id,
+          () => ChecklistItemController()
+            ..id = id
+            ..taskId = taskId,
           from: checklistItemControllerProvider,
           name: r'checklistItemControllerProvider',
           debugGetCreateSourceHash:
@@ -100,6 +108,7 @@ class ChecklistItemControllerProvider
           allTransitiveDependencies:
               ChecklistItemControllerFamily._allTransitiveDependencies,
           id: id,
+          taskId: taskId,
         );
 
   ChecklistItemControllerProvider._internal(
@@ -110,9 +119,11 @@ class ChecklistItemControllerProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
+    required this.taskId,
   }) : super.internal();
 
   final String id;
+  final String? taskId;
 
   @override
   FutureOr<ChecklistItem?> runNotifierBuild(
@@ -120,6 +131,7 @@ class ChecklistItemControllerProvider
   ) {
     return notifier.build(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -128,13 +140,16 @@ class ChecklistItemControllerProvider
     return ProviderOverride(
       origin: this,
       override: ChecklistItemControllerProvider._internal(
-        () => create()..id = id,
+        () => create()
+          ..id = id
+          ..taskId = taskId,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         id: id,
+        taskId: taskId,
       ),
     );
   }
@@ -147,13 +162,16 @@ class ChecklistItemControllerProvider
 
   @override
   bool operator ==(Object other) {
-    return other is ChecklistItemControllerProvider && other.id == id;
+    return other is ChecklistItemControllerProvider &&
+        other.id == id &&
+        other.taskId == taskId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, taskId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -165,6 +183,9 @@ mixin ChecklistItemControllerRef
     on AutoDisposeAsyncNotifierProviderRef<ChecklistItem?> {
   /// The parameter `id` of this provider.
   String get id;
+
+  /// The parameter `taskId` of this provider.
+  String? get taskId;
 }
 
 class _ChecklistItemControllerProviderElement
@@ -174,6 +195,8 @@ class _ChecklistItemControllerProviderElement
 
   @override
   String get id => (origin as ChecklistItemControllerProvider).id;
+  @override
+  String? get taskId => (origin as ChecklistItemControllerProvider).taskId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

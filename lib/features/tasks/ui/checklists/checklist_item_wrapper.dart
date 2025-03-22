@@ -11,10 +11,12 @@ class ChecklistItemWrapper extends ConsumerWidget {
   const ChecklistItemWrapper(
     this.itemId, {
     required this.checklistId,
+    required this.taskId,
     super.key,
   });
 
   final String itemId;
+  final String taskId;
   final String checklistId;
 
   @override
@@ -22,7 +24,10 @@ class ChecklistItemWrapper extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = checklistItemControllerProvider(id: itemId);
+    final provider = checklistItemControllerProvider(
+      id: itemId,
+      taskId: taskId,
+    );
     final item = ref.watch(provider);
 
     return item.map(

@@ -714,11 +714,15 @@ class PersistenceLogic {
 
   Future<bool?> updateDbEntity(
     JournalEntity journalEntity, {
+    String? linkedId,
     bool enqueueSync = true,
   }) async {
     try {
       await _journalDb.updateJournalEntity(journalEntity);
-      _updateNotifications.notify(journalEntity.affectedIds);
+      _updateNotifications.notify({
+        ...journalEntity.affectedIds,
+        if (linkedId != null) linkedId,
+      });
 
       await getIt<Fts5Db>().insertText(
         journalEntity,

@@ -88,6 +88,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                 key: Key('$checklistId${widget.entryId}$index'),
                 entryId: checklistId,
                 categoryId: item.categoryId,
+                taskId: widget.task.id,
                 padding: _isEditing
                     ? const EdgeInsets.only(right: 40)
                     : EdgeInsets.zero,

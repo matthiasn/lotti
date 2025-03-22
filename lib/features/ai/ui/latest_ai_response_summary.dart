@@ -44,6 +44,16 @@ class LatestAiResponseSummary extends ConsumerWidget {
       );
     }
 
+    final isOutdated = ref
+            .watch(
+              isLatestSummaryOutdatedControllerProvider(
+                id: id,
+                aiResponseType: taskSummary,
+              ),
+            )
+            .valueOrNull ??
+        false;
+
     return latestSummaryAsync.when(
       loading: () => const Center(
         child: Padding(
@@ -104,6 +114,13 @@ class LatestAiResponseSummary extends ConsumerWidget {
                     ),
                     onPressed: showThoughtsModal,
                   ),
+                  if (isOutdated)
+                    Text(
+                      context.messages.checklistSuggestionsOutdated,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        color: Colors.red,
+                      ),
+                    ),
                 ],
               ),
             if (aiResponse != null)

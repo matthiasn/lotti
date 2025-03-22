@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'action_item_suggestions.dart';
+part of 'task_summary_prompt.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$actionItemSuggestionsControllerHash() =>
-    r'12cb834071bb63c18e05195ed9ec4e5ede7758dc';
+String _$taskSummaryPromptControllerHash() =>
+    r'8e523a32766082535634ae528372c9e44b434eaa';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,37 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$ActionItemSuggestionsController
-    extends BuildlessAutoDisposeNotifier<String> {
+abstract class _$TaskSummaryPromptController
+    extends BuildlessAutoDisposeAsyncNotifier<String?> {
   late final String id;
 
-  String build({
+  FutureOr<String?> build({
     required String id,
   });
 }
 
-/// See also [ActionItemSuggestionsController].
-@ProviderFor(ActionItemSuggestionsController)
-const actionItemSuggestionsControllerProvider =
-    ActionItemSuggestionsControllerFamily();
+/// See also [TaskSummaryPromptController].
+@ProviderFor(TaskSummaryPromptController)
+const taskSummaryPromptControllerProvider = TaskSummaryPromptControllerFamily();
 
-/// See also [ActionItemSuggestionsController].
-class ActionItemSuggestionsControllerFamily extends Family<String> {
-  /// See also [ActionItemSuggestionsController].
-  const ActionItemSuggestionsControllerFamily();
+/// See also [TaskSummaryPromptController].
+class TaskSummaryPromptControllerFamily extends Family<AsyncValue<String?>> {
+  /// See also [TaskSummaryPromptController].
+  const TaskSummaryPromptControllerFamily();
 
-  /// See also [ActionItemSuggestionsController].
-  ActionItemSuggestionsControllerProvider call({
+  /// See also [TaskSummaryPromptController].
+  TaskSummaryPromptControllerProvider call({
     required String id,
   }) {
-    return ActionItemSuggestionsControllerProvider(
+    return TaskSummaryPromptControllerProvider(
       id: id,
     );
   }
 
   @override
-  ActionItemSuggestionsControllerProvider getProviderOverride(
-    covariant ActionItemSuggestionsControllerProvider provider,
+  TaskSummaryPromptControllerProvider getProviderOverride(
+    covariant TaskSummaryPromptControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -79,31 +78,31 @@ class ActionItemSuggestionsControllerFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'actionItemSuggestionsControllerProvider';
+  String? get name => r'taskSummaryPromptControllerProvider';
 }
 
-/// See also [ActionItemSuggestionsController].
-class ActionItemSuggestionsControllerProvider
-    extends AutoDisposeNotifierProviderImpl<ActionItemSuggestionsController,
-        String> {
-  /// See also [ActionItemSuggestionsController].
-  ActionItemSuggestionsControllerProvider({
+/// See also [TaskSummaryPromptController].
+class TaskSummaryPromptControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<TaskSummaryPromptController,
+        String?> {
+  /// See also [TaskSummaryPromptController].
+  TaskSummaryPromptControllerProvider({
     required String id,
   }) : this._internal(
-          () => ActionItemSuggestionsController()..id = id,
-          from: actionItemSuggestionsControllerProvider,
-          name: r'actionItemSuggestionsControllerProvider',
+          () => TaskSummaryPromptController()..id = id,
+          from: taskSummaryPromptControllerProvider,
+          name: r'taskSummaryPromptControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$actionItemSuggestionsControllerHash,
-          dependencies: ActionItemSuggestionsControllerFamily._dependencies,
+                  : _$taskSummaryPromptControllerHash,
+          dependencies: TaskSummaryPromptControllerFamily._dependencies,
           allTransitiveDependencies:
-              ActionItemSuggestionsControllerFamily._allTransitiveDependencies,
+              TaskSummaryPromptControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  ActionItemSuggestionsControllerProvider._internal(
+  TaskSummaryPromptControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -116,8 +115,8 @@ class ActionItemSuggestionsControllerProvider
   final String id;
 
   @override
-  String runNotifierBuild(
-    covariant ActionItemSuggestionsController notifier,
+  FutureOr<String?> runNotifierBuild(
+    covariant TaskSummaryPromptController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -125,10 +124,10 @@ class ActionItemSuggestionsControllerProvider
   }
 
   @override
-  Override overrideWith(ActionItemSuggestionsController Function() create) {
+  Override overrideWith(TaskSummaryPromptController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ActionItemSuggestionsControllerProvider._internal(
+      override: TaskSummaryPromptControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -141,14 +140,14 @@ class ActionItemSuggestionsControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<ActionItemSuggestionsController, String>
+  AutoDisposeAsyncNotifierProviderElement<TaskSummaryPromptController, String?>
       createElement() {
-    return _ActionItemSuggestionsControllerProviderElement(this);
+    return _TaskSummaryPromptControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ActionItemSuggestionsControllerProvider && other.id == id;
+    return other is TaskSummaryPromptControllerProvider && other.id == id;
   }
 
   @override
@@ -162,19 +161,19 @@ class ActionItemSuggestionsControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin ActionItemSuggestionsControllerRef
-    on AutoDisposeNotifierProviderRef<String> {
+mixin TaskSummaryPromptControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<String?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _ActionItemSuggestionsControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<ActionItemSuggestionsController,
-        String> with ActionItemSuggestionsControllerRef {
-  _ActionItemSuggestionsControllerProviderElement(super.provider);
+class _TaskSummaryPromptControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<TaskSummaryPromptController,
+        String?> with TaskSummaryPromptControllerRef {
+  _TaskSummaryPromptControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as ActionItemSuggestionsControllerProvider).id;
+  String get id => (origin as TaskSummaryPromptControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/task_summary_prompt.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -73,9 +76,40 @@ class LatestSummaryController extends _$LatestSummaryController {
     );
 
     state = AsyncData(updated);
-
     await ref.read(journalRepositoryProvider).updateJournalEntity(updated);
-
     ref.invalidateSelf();
+  }
+}
+
+@riverpod
+class IsLatestSummaryOutdatedController
+    extends _$IsLatestSummaryOutdatedController {
+  @override
+  Future<bool> build({
+    required String id,
+    required String aiResponseType,
+  }) async {
+    final latestSummary = await ref.watch(
+      latestSummaryControllerProvider(
+        id: id,
+        aiResponseType: aiResponseType,
+      ).future,
+    );
+
+    final latestSummaryPrompt = latestSummary?.data.prompt;
+
+    final latestUnrealizedPrompt = aiResponseType == taskSummary
+        ? await ref.watch(
+            taskSummaryPromptControllerProvider(id: id).future,
+          )
+        : await ref.watch(
+            actionItemSuggestionsPromptControllerProvider(id: id).future,
+          );
+
+    if (latestSummaryPrompt == null) {
+      return false;
+    }
+
+    return latestSummaryPrompt != latestUnrealizedPrompt;
   }
 }
