@@ -7,7 +7,7 @@ part of 'checklist_controller.dart';
 // **************************************************************************
 
 String _$checklistControllerHash() =>
-    r'a19d3262d07da9d41626c4700560377484c64221';
+    r'7ff2321ec311b246a171d0804bdc7dff7e394449';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,9 +33,11 @@ class _SystemHash {
 abstract class _$ChecklistController
     extends BuildlessAutoDisposeAsyncNotifier<Checklist?> {
   late final String id;
+  late final String? taskId;
 
   FutureOr<Checklist?> build({
     required String id,
+    required String? taskId,
   });
 }
 
@@ -51,9 +53,11 @@ class ChecklistControllerFamily extends Family<AsyncValue<Checklist?>> {
   /// See also [ChecklistController].
   ChecklistControllerProvider call({
     required String id,
+    required String? taskId,
   }) {
     return ChecklistControllerProvider(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -63,6 +67,7 @@ class ChecklistControllerFamily extends Family<AsyncValue<Checklist?>> {
   ) {
     return call(
       id: provider.id,
+      taskId: provider.taskId,
     );
   }
 
@@ -87,8 +92,11 @@ class ChecklistControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   /// See also [ChecklistController].
   ChecklistControllerProvider({
     required String id,
+    required String? taskId,
   }) : this._internal(
-          () => ChecklistController()..id = id,
+          () => ChecklistController()
+            ..id = id
+            ..taskId = taskId,
           from: checklistControllerProvider,
           name: r'checklistControllerProvider',
           debugGetCreateSourceHash:
@@ -99,6 +107,7 @@ class ChecklistControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
           allTransitiveDependencies:
               ChecklistControllerFamily._allTransitiveDependencies,
           id: id,
+          taskId: taskId,
         );
 
   ChecklistControllerProvider._internal(
@@ -109,9 +118,11 @@ class ChecklistControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
+    required this.taskId,
   }) : super.internal();
 
   final String id;
+  final String? taskId;
 
   @override
   FutureOr<Checklist?> runNotifierBuild(
@@ -119,6 +130,7 @@ class ChecklistControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   ) {
     return notifier.build(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -127,13 +139,16 @@ class ChecklistControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
     return ProviderOverride(
       origin: this,
       override: ChecklistControllerProvider._internal(
-        () => create()..id = id,
+        () => create()
+          ..id = id
+          ..taskId = taskId,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         id: id,
+        taskId: taskId,
       ),
     );
   }
@@ -146,13 +161,16 @@ class ChecklistControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
 
   @override
   bool operator ==(Object other) {
-    return other is ChecklistControllerProvider && other.id == id;
+    return other is ChecklistControllerProvider &&
+        other.id == id &&
+        other.taskId == taskId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, taskId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -164,6 +182,9 @@ mixin ChecklistControllerRef
     on AutoDisposeAsyncNotifierProviderRef<Checklist?> {
   /// The parameter `id` of this provider.
   String get id;
+
+  /// The parameter `taskId` of this provider.
+  String? get taskId;
 }
 
 class _ChecklistControllerProviderElement
@@ -173,18 +194,22 @@ class _ChecklistControllerProviderElement
 
   @override
   String get id => (origin as ChecklistControllerProvider).id;
+  @override
+  String? get taskId => (origin as ChecklistControllerProvider).taskId;
 }
 
 String _$checklistCompletionControllerHash() =>
-    r'd796843fda52a555c99a80012d0c5cab4a839329';
+    r'b715730c9c85705d2554a2442df719d474b767ca';
 
 abstract class _$ChecklistCompletionController
     extends BuildlessAutoDisposeAsyncNotifier<
         ({int completedCount, int totalCount})> {
   late final String id;
+  late final String? taskId;
 
   FutureOr<({int completedCount, int totalCount})> build({
     required String id,
+    required String? taskId,
   });
 }
 
@@ -202,9 +227,11 @@ class ChecklistCompletionControllerFamily
   /// See also [ChecklistCompletionController].
   ChecklistCompletionControllerProvider call({
     required String id,
+    required String? taskId,
   }) {
     return ChecklistCompletionControllerProvider(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -214,6 +241,7 @@ class ChecklistCompletionControllerFamily
   ) {
     return call(
       id: provider.id,
+      taskId: provider.taskId,
     );
   }
 
@@ -239,8 +267,11 @@ class ChecklistCompletionControllerProvider
   /// See also [ChecklistCompletionController].
   ChecklistCompletionControllerProvider({
     required String id,
+    required String? taskId,
   }) : this._internal(
-          () => ChecklistCompletionController()..id = id,
+          () => ChecklistCompletionController()
+            ..id = id
+            ..taskId = taskId,
           from: checklistCompletionControllerProvider,
           name: r'checklistCompletionControllerProvider',
           debugGetCreateSourceHash:
@@ -251,6 +282,7 @@ class ChecklistCompletionControllerProvider
           allTransitiveDependencies:
               ChecklistCompletionControllerFamily._allTransitiveDependencies,
           id: id,
+          taskId: taskId,
         );
 
   ChecklistCompletionControllerProvider._internal(
@@ -261,9 +293,11 @@ class ChecklistCompletionControllerProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
+    required this.taskId,
   }) : super.internal();
 
   final String id;
+  final String? taskId;
 
   @override
   FutureOr<({int completedCount, int totalCount})> runNotifierBuild(
@@ -271,6 +305,7 @@ class ChecklistCompletionControllerProvider
   ) {
     return notifier.build(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -279,13 +314,16 @@ class ChecklistCompletionControllerProvider
     return ProviderOverride(
       origin: this,
       override: ChecklistCompletionControllerProvider._internal(
-        () => create()..id = id,
+        () => create()
+          ..id = id
+          ..taskId = taskId,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         id: id,
+        taskId: taskId,
       ),
     );
   }
@@ -298,13 +336,16 @@ class ChecklistCompletionControllerProvider
 
   @override
   bool operator ==(Object other) {
-    return other is ChecklistCompletionControllerProvider && other.id == id;
+    return other is ChecklistCompletionControllerProvider &&
+        other.id == id &&
+        other.taskId == taskId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, taskId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -316,6 +357,9 @@ mixin ChecklistCompletionControllerRef on AutoDisposeAsyncNotifierProviderRef<
     ({int completedCount, int totalCount})> {
   /// The parameter `id` of this provider.
   String get id;
+
+  /// The parameter `taskId` of this provider.
+  String? get taskId;
 }
 
 class _ChecklistCompletionControllerProviderElement
@@ -326,17 +370,22 @@ class _ChecklistCompletionControllerProviderElement
 
   @override
   String get id => (origin as ChecklistCompletionControllerProvider).id;
+  @override
+  String? get taskId =>
+      (origin as ChecklistCompletionControllerProvider).taskId;
 }
 
 String _$checklistCompletionRateControllerHash() =>
-    r'9913f84d9b1bd4500b1bdb772334d69796aed242';
+    r'59be08483780e4180f6751755a9734a2a80333e5';
 
 abstract class _$ChecklistCompletionRateController
     extends BuildlessAutoDisposeAsyncNotifier<double> {
   late final String id;
+  late final String? taskId;
 
   FutureOr<double> build({
     required String id,
+    required String? taskId,
   });
 }
 
@@ -354,9 +403,11 @@ class ChecklistCompletionRateControllerFamily
   /// See also [ChecklistCompletionRateController].
   ChecklistCompletionRateControllerProvider call({
     required String id,
+    required String? taskId,
   }) {
     return ChecklistCompletionRateControllerProvider(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -366,6 +417,7 @@ class ChecklistCompletionRateControllerFamily
   ) {
     return call(
       id: provider.id,
+      taskId: provider.taskId,
     );
   }
 
@@ -391,8 +443,11 @@ class ChecklistCompletionRateControllerProvider
   /// See also [ChecklistCompletionRateController].
   ChecklistCompletionRateControllerProvider({
     required String id,
+    required String? taskId,
   }) : this._internal(
-          () => ChecklistCompletionRateController()..id = id,
+          () => ChecklistCompletionRateController()
+            ..id = id
+            ..taskId = taskId,
           from: checklistCompletionRateControllerProvider,
           name: r'checklistCompletionRateControllerProvider',
           debugGetCreateSourceHash:
@@ -403,6 +458,7 @@ class ChecklistCompletionRateControllerProvider
           allTransitiveDependencies: ChecklistCompletionRateControllerFamily
               ._allTransitiveDependencies,
           id: id,
+          taskId: taskId,
         );
 
   ChecklistCompletionRateControllerProvider._internal(
@@ -413,9 +469,11 @@ class ChecklistCompletionRateControllerProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.id,
+    required this.taskId,
   }) : super.internal();
 
   final String id;
+  final String? taskId;
 
   @override
   FutureOr<double> runNotifierBuild(
@@ -423,6 +481,7 @@ class ChecklistCompletionRateControllerProvider
   ) {
     return notifier.build(
       id: id,
+      taskId: taskId,
     );
   }
 
@@ -431,13 +490,16 @@ class ChecklistCompletionRateControllerProvider
     return ProviderOverride(
       origin: this,
       override: ChecklistCompletionRateControllerProvider._internal(
-        () => create()..id = id,
+        () => create()
+          ..id = id
+          ..taskId = taskId,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         id: id,
+        taskId: taskId,
       ),
     );
   }
@@ -450,13 +512,16 @@ class ChecklistCompletionRateControllerProvider
 
   @override
   bool operator ==(Object other) {
-    return other is ChecklistCompletionRateControllerProvider && other.id == id;
+    return other is ChecklistCompletionRateControllerProvider &&
+        other.id == id &&
+        other.taskId == taskId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, id.hashCode);
+    hash = _SystemHash.combine(hash, taskId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -468,6 +533,9 @@ mixin ChecklistCompletionRateControllerRef
     on AutoDisposeAsyncNotifierProviderRef<double> {
   /// The parameter `id` of this provider.
   String get id;
+
+  /// The parameter `taskId` of this provider.
+  String? get taskId;
 }
 
 class _ChecklistCompletionRateControllerProviderElement
@@ -478,6 +546,9 @@ class _ChecklistCompletionRateControllerProviderElement
 
   @override
   String get id => (origin as ChecklistCompletionRateControllerProvider).id;
+  @override
+  String? get taskId =>
+      (origin as ChecklistCompletionRateControllerProvider).taskId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

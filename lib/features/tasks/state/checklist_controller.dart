@@ -31,7 +31,10 @@ class ChecklistController extends _$ChecklistController {
   }
 
   @override
-  Future<Checklist?> build({required String id}) async {
+  Future<Checklist?> build({
+    required String id,
+    required String? taskId,
+  }) async {
     subscribedIds.add(id);
     ref
       ..onDispose(() => _updateSubscription?.cancel())
@@ -100,8 +103,10 @@ class ChecklistController extends _$ChecklistController {
 
       await ref
           .read(
-            checklistItemControllerProvider(id: droppedChecklistItemId)
-                .notifier,
+            checklistItemControllerProvider(
+              id: droppedChecklistItemId,
+              taskId: taskId,
+            ).notifier,
           )
           .moveToChecklist(
             linkedChecklistId: droppedChecklistItemId,
@@ -120,7 +125,10 @@ class ChecklistController extends _$ChecklistController {
       );
 
       await ref
-          .read(checklistControllerProvider(id: fromChecklistId).notifier)
+          .read(
+            checklistControllerProvider(id: fromChecklistId, taskId: taskId)
+                .notifier,
+          )
           .unlinkItem(droppedChecklistItemId);
     }
   }
@@ -245,13 +253,30 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
   @override
   Future<({int completedCount, int totalCount})> build({
     required String id,
+    required String? taskId,
   }) async {
-    final checklistData =
-        ref.watch(checklistControllerProvider(id: id)).value?.data;
+    final checklistData = ref
+        .watch(
+          checklistControllerProvider(
+            id: id,
+            taskId: taskId,
+          ),
+        )
+        .value
+        ?.data;
 
     final linkedIds = checklistData?.linkedChecklistItems ?? <String>[];
     final linkedChecklistItems = linkedIds
-        .map((id) => ref.watch(checklistItemControllerProvider(id: id)).value)
+        .map(
+          (id) => ref
+              .watch(
+                checklistItemControllerProvider(
+                  id: id,
+                  taskId: taskId,
+                ),
+              )
+              .value,
+        )
         .nonNulls
         .where((item) => item.isDeleted == false)
         .toList();
@@ -272,8 +297,10 @@ class ChecklistCompletionRateController
   ChecklistCompletionRateController();
 
   @override
-  Future<double> build({required String id}) async {
-    final res = ref.watch(checklistCompletionControllerProvider(id: id)).value;
+  Future<double> build({required String id, required String? taskId}) async {
+    final res = ref
+        .watch(checklistCompletionControllerProvider(id: id, taskId: taskId))
+        .value;
     final totalCount = res?.totalCount ?? 0;
     final completedCount = res?.completedCount ?? 0;
 

@@ -169,6 +169,7 @@ class ChecklistRepository {
   Future<bool> updateChecklistItem({
     required String checklistItemId,
     required ChecklistItemData data,
+    required String? taskId,
   }) async {
     try {
       final journalEntity = await _journalDb.journalEntityById(checklistItemId);
@@ -184,7 +185,10 @@ class ChecklistRepository {
             data: data,
           );
 
-          await _persistenceLogic.updateDbEntity(updatedChecklist);
+          await _persistenceLogic.updateDbEntity(
+            updatedChecklist,
+            linkedId: taskId,
+          );
         },
         orElse: () async => _loggingService.captureException(
           'not a checklist item',
