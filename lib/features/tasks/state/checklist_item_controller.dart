@@ -28,7 +28,10 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   @override
-  Future<ChecklistItem?> build({required String id}) async {
+  Future<ChecklistItem?> build({
+    required String id,
+    required String? taskId,
+  }) async {
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
@@ -66,6 +69,7 @@ class ChecklistItemController extends _$ChecklistItemController {
       ref.read(checklistRepositoryProvider).updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
+            taskId: taskId,
           );
 
       state = AsyncData(updated);
@@ -83,6 +87,7 @@ class ChecklistItemController extends _$ChecklistItemController {
       ref.read(checklistRepositoryProvider).updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
+            taskId: taskId,
           );
 
       state = AsyncData(updated);
@@ -110,6 +115,7 @@ class ChecklistItemController extends _$ChecklistItemController {
       await ref.read(checklistRepositoryProvider).updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
+            taskId: taskId,
           );
 
       state = AsyncData(updated);

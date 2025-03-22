@@ -28,7 +28,7 @@ class TaskProgressRepository {
     final items = await getIt<JournalDb>().getLinkedEntities(id);
 
     for (final journalEntity in items) {
-      if (journalEntity is! Task) {
+      if (journalEntity is! Task && journalEntity is! AiResponseEntry) {
         final duration = entryDuration(journalEntity);
         durations[journalEntity.id] = duration;
       }

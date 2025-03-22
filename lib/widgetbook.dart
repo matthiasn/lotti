@@ -84,6 +84,7 @@ class WidgetbookApp extends StatelessWidget {
                           .getProviderOverride(
                             ChecklistItemControllerProvider(
                               id: checklistItem1.meta.id,
+                              taskId: null,
                             ),
                           )
                           .overrideWith(
@@ -97,6 +98,7 @@ class WidgetbookApp extends StatelessWidget {
                           .getProviderOverride(
                             ChecklistItemControllerProvider(
                               id: checklistItem2.meta.id,
+                              taskId: null,
                             ),
                           )
                           .overrideWith(
@@ -110,6 +112,7 @@ class WidgetbookApp extends StatelessWidget {
                           .getProviderOverride(
                             ChecklistItemControllerProvider(
                               id: checklistItem3.meta.id,
+                              taskId: null,
                             ),
                           )
                           .overrideWith(
@@ -123,6 +126,7 @@ class WidgetbookApp extends StatelessWidget {
                     child: ChecklistWidget(
                       id: '1',
                       title: 'Checklist',
+                      taskId: '12',
                       itemIds: [
                         checklistItem1.meta.id,
                         checklistItem2.meta.id,

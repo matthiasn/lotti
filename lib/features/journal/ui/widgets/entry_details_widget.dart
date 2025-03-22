@@ -181,10 +181,12 @@ class EntryDetailsContent extends ConsumerWidget {
           ),
           checklist: (checklist) => ChecklistWrapper(
             entryId: checklist.meta.id,
+            taskId: checklist.data.linkedTasks.first,
           ),
           checklistItem: (checklistItem) => ChecklistItemWrapper(
             checklistItem.id,
             checklistId: '',
+            taskId: '',
           ),
         ),
         EntryDetailFooter(
