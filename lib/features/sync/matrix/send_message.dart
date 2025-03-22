@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
