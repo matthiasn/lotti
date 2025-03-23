@@ -24,7 +24,7 @@ class UpdateNotifications {
     } else {
       _affectedIds.addAll(affectedIds);
 
-      _timer ??= Timer(const Duration(milliseconds: 50), () {
+      _timer ??= Timer(const Duration(milliseconds: 100), () {
         if (_affectedIds.isNotEmpty) {
           _controller.add({..._affectedIds});
           _affectedIds.clear();
