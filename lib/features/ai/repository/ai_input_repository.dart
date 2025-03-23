@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/repository/prompts.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -121,6 +125,28 @@ class AiInputRepository {
     );
 
     return aiInput;
+  }
+
+  Future<String?> buildPrompt({
+    required String id,
+    required String aiResponseType,
+  }) async {
+    final aiInput = await generate(id);
+
+    if (aiInput == null) {
+      return null;
+    }
+
+    const encoder = JsonEncoder.withIndent('    ');
+    final jsonString = encoder.convert(aiInput);
+
+    if (aiResponseType == taskSummary) {
+      return createTaskSummaryPrompt(jsonString);
+    }
+    if (aiResponseType == actionItemSuggestions) {
+      return createActionItemSuggestionsPrompt(jsonString);
+    }
+    return null;
   }
 }
 

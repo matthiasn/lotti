@@ -11,14 +11,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
 class Listener<T> extends Mock {
-  void call(T? previous, T next);
+  void call(T? previous, T? next);
 }
 
 void main() {
@@ -104,6 +104,27 @@ void main() {
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => mockAiInput);
 
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer(
+        (_) async => '''
+**Prompt:**
+{
+    "title": "Test Task",
+    "status": "OPEN",
+    "actionItems": [
+        {
+            "title": "Existing action item",
+            "completed": false
+        }
+    ]
+}
+''',
+      );
+
       // Act - Listen to the provider
       final future = container.read(
         actionItemSuggestionsPromptControllerProvider(id: testId).future,
@@ -120,7 +141,12 @@ void main() {
 
       // Assert
       verify(() => mockJournalRepository.getLinksFromId(testId)).called(1);
-      verify(() => mockAiInputRepository.generate(testId)).called(1);
+      verify(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).called(1);
 
       final state = container
           .read(actionItemSuggestionsPromptControllerProvider(id: testId));
@@ -135,6 +161,13 @@ void main() {
       // Arrange
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => null);
+
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer((_) async => null);
 
       // Act - Get the future first
       final future = container.read(
@@ -152,7 +185,12 @@ void main() {
 
       // Assert
       verify(() => mockJournalRepository.getLinksFromId(testId)).called(1);
-      verify(() => mockAiInputRepository.generate(testId)).called(1);
+      verify(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).called(1);
 
       final state = container
           .read(actionItemSuggestionsPromptControllerProvider(id: testId));
@@ -200,6 +238,28 @@ void main() {
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => mockAiInput);
 
+      // Initial prompt
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer(
+        (_) async => '''
+**Prompt:**
+{
+    "title": "Test Task",
+    "status": "OPEN",
+    "actionItems": [
+        {
+            "title": "Initial action item",
+            "completed": false
+        }
+    ]
+}
+''',
+      );
+
       // Act - initial load with future first
       final future = container.read(
         actionItemSuggestionsPromptControllerProvider(id: testId).future,
@@ -216,7 +276,12 @@ void main() {
 
       // Verify initial state
       verify(() => mockJournalRepository.getLinksFromId(testId)).called(1);
-      verify(() => mockAiInputRepository.generate(testId)).called(1);
+      verify(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).called(1);
 
       final initialState = container
           .read(actionItemSuggestionsPromptControllerProvider(id: testId));
@@ -230,6 +295,32 @@ void main() {
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => updatedMockAiInput);
 
+      // Updated prompt after notification
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer(
+        (_) async => '''
+**Prompt:**
+{
+    "title": "Test Task",
+    "status": "OPEN",
+    "actionItems": [
+        {
+            "title": "Initial action item",
+            "completed": false
+        },
+        {
+            "title": "New action item",
+            "completed": false
+        }
+    ]
+}
+''',
+      );
+
       // Simulate a notification for the task ID
       updateStreamController.add({testId});
 
@@ -237,7 +328,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Verify updated state
-      verify(() => mockAiInputRepository.generate(testId)).called(1);
+      verify(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).called(1);
 
       final updatedState = container
           .read(actionItemSuggestionsPromptControllerProvider(id: testId));
@@ -285,6 +381,28 @@ void main() {
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => mockAiInput);
 
+      // Initial prompt
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer(
+        (_) async => '''
+**Prompt:**
+{
+    "title": "Test Task",
+    "status": "OPEN",
+    "actionItems": [
+        {
+            "title": "Initial action item",
+            "completed": false
+        }
+    ]
+}
+''',
+      );
+
       // Act - initial load with future first
       final future = container.read(
         actionItemSuggestionsPromptControllerProvider(id: testId).future,
@@ -301,7 +419,12 @@ void main() {
 
       // Verify initial state
       verify(() => mockJournalRepository.getLinksFromId(testId)).called(1);
-      verify(() => mockAiInputRepository.generate(testId)).called(1);
+      verify(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).called(1);
 
       final initialState = container
           .read(actionItemSuggestionsPromptControllerProvider(id: testId));
@@ -318,6 +441,32 @@ void main() {
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => updatedMockAiInput);
 
+      // Updated prompt after notification
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer(
+        (_) async => '''
+**Prompt:**
+{
+    "title": "Test Task",
+    "status": "OPEN",
+    "actionItems": [
+        {
+            "title": "Initial action item",
+            "completed": false
+        },
+        {
+            "title": "Linked action item",
+            "completed": false
+        }
+    ]
+}
+''',
+      );
+
       // Simulate a notification for a linked ID
       updateStreamController.add({linkedIds[0]});
 
@@ -325,7 +474,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Verify updated state
-      verify(() => mockAiInputRepository.generate(testId)).called(1);
+      verify(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).called(1);
 
       final updatedState = container
           .read(actionItemSuggestionsPromptControllerProvider(id: testId));
@@ -347,6 +501,22 @@ void main() {
 
       when(() => mockAiInputRepository.generate(testId))
           .thenAnswer((_) async => mockAiInput);
+
+      when(
+        () => mockAiInputRepository.buildPrompt(
+          id: testId,
+          aiResponseType: any(named: 'aiResponseType'),
+        ),
+      ).thenAnswer(
+        (_) async => '''
+**Prompt:**
+{
+    "title": "Test Task",
+    "status": "OPEN",
+    "actionItems": []
+}
+''',
+      );
 
       // Create a scope to allow for proper disposal testing
       {
