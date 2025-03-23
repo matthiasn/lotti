@@ -42,7 +42,8 @@ Future<void> saveAttachment(Event event) async {
 
 Future<void> writeToFile(Uint8List? data, String filePath) async {
   if (data != null) {
-    await File(filePath).writeAsBytes(data);
+    final file = await File(filePath).create(recursive: true);
+    await file.writeAsBytes(data);
   } else {
     debugPrint('No bytes for $filePath');
     getIt<LoggingService>().captureEvent(
