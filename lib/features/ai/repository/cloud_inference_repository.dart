@@ -42,6 +42,47 @@ class CloudInferenceRepository {
     return res.asBroadcastStream();
   }
 
+  Stream<CreateChatCompletionStreamResponse> generateWithImages(
+    String prompt, {
+    required CloudInferenceConfig config,
+    required String model,
+    required double temperature,
+    required List<String> images,
+  }) {
+    final client = OpenAIClient(
+      baseUrl: config.baseUrl,
+      apiKey: config.apiKey,
+    );
+
+    final res = client.createChatCompletionStream(
+      request: CreateChatCompletionRequest(
+        messages: [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.parts(
+              [
+                ChatCompletionMessageContentPart.text(text: prompt),
+                ...images.map(
+                  (image) {
+                    return ChatCompletionMessageContentPart.image(
+                      imageUrl: ChatCompletionMessageImageUrl(
+                        url: 'data:image;base64,{$image}',
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+        model: ChatCompletionModel.modelId(model),
+        temperature: temperature,
+        stream: true,
+      ),
+    );
+
+    return res.asBroadcastStream();
+  }
+
   Future<CloudInferenceConfig> getConfig() async {
     final docDir = getDocumentsDirectory();
     final jsonFile = File(join(docDir.path, 'cloud_inference_config.json'));

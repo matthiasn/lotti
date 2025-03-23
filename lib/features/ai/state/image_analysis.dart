@@ -3,13 +3,17 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'ollama_image_analysis.g.dart';
+part 'image_analysis.g.dart';
 
 @riverpod
 class AiImageAnalysisController extends _$AiImageAnalysisController {
@@ -34,28 +38,54 @@ class AiImageAnalysisController extends _$AiImageAnalysisController {
 
     state = '';
 
-    const prompt =
-        'Describe the image in detail, including its content, style, and any '
-        'relevant information that can be gleaned from the image. '
-        'If the image is the screenshot of a website, then focus on the '
-        'content of the website. Do not make up names. ';
+    const prompt = '''
+        Describe the image in detail, including its content, style, and any 
+        relevant information that can be gleaned from the image.
+        If the image is the screenshot of a website, then focus on the
+        content of the website. Do not make up names.
+        ''';
 
     final buffer = StringBuffer();
     final image = await getImage(entry);
 
-    const model = 'llama3.2-vision:latest'; // TODO: make configurable
+    final useCloudInference =
+        await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
+
+    final model = useCloudInference
+        ? 'google/gemma-3-27b-it-fast'
+        : 'llama3.2-vision:latest';
+
     const temperature = 0.6;
 
-    final stream = ref.read(ollamaRepositoryProvider).generate(
-      prompt,
-      model: model,
-      temperature: temperature,
-      images: [image],
-    );
+    if (useCloudInference) {
+      final config =
+          await ref.read(cloudInferenceRepositoryProvider).getConfig();
 
-    await for (final chunk in stream) {
-      buffer.write(chunk.text);
-      state = buffer.toString();
+      final stream =
+          ref.read(cloudInferenceRepositoryProvider).generateWithImages(
+                prompt,
+                model: model,
+                temperature: temperature,
+                images: [image],
+                config: config,
+              );
+
+      await for (final chunk in stream) {
+        buffer.write(chunk.choices[0].delta.content);
+        state = buffer.toString();
+      }
+    } else {
+      final stream = ref.read(ollamaRepositoryProvider).generate(
+        prompt,
+        model: model,
+        temperature: temperature,
+        images: [image],
+      );
+
+      await for (final chunk in stream) {
+        buffer.write(chunk.text);
+        state = buffer.toString();
+      }
     }
 
     final completeResponse =

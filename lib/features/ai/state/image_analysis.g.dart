@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'ollama_image_analysis.dart';
+part of 'image_analysis.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
 String _$aiImageAnalysisControllerHash() =>
-    r'80002c653f807d3b7188555d03c24c4aa70408df';
+    r'ad20c9695be14476256d96a4b92b4dba6ddf0bdf';
 
 /// Copied from Dart SDK
 class _SystemHash {
