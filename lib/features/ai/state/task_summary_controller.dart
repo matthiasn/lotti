@@ -61,11 +61,14 @@ class TaskSummaryController extends _$TaskSummaryController {
 
       final buffer = StringBuffer();
 
-      const model = 'deepseek-r1:14b'; // TODO: make configurable
-      const temperature = 0.6;
-
       final useCloudInference =
           await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
+
+      final model = useCloudInference
+          ? 'deepseek-ai/DeepSeek-R1-fast'
+          : 'deepseek-r1:14b';
+
+      const temperature = 0.6;
 
       if (useCloudInference) {
         final config =

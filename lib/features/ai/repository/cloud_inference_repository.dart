@@ -31,11 +31,48 @@ class CloudInferenceRepository {
             content: ChatCompletionUserMessageContent.string(prompt),
           ),
         ],
-        model: const ChatCompletionModel.modelId(
-          'deepseek-ai/DeepSeek-R1-fast',
-        ),
+        model: ChatCompletionModel.modelId(model),
         temperature: temperature,
-        stream: true,
+      ),
+    );
+
+    return res.asBroadcastStream();
+  }
+
+  Stream<CreateChatCompletionStreamResponse> generateWithImages(
+    String prompt, {
+    required CloudInferenceConfig config,
+    required String model,
+    required double temperature,
+    required List<String> images,
+  }) {
+    final client = OpenAIClient(
+      baseUrl: config.baseUrl,
+      apiKey: config.apiKey,
+    );
+
+    final res = client.createChatCompletionStream(
+      request: CreateChatCompletionRequest(
+        messages: [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.parts(
+              [
+                ChatCompletionMessageContentPart.text(text: prompt),
+                ...images.map(
+                  (image) {
+                    return ChatCompletionMessageContentPart.image(
+                      imageUrl: ChatCompletionMessageImageUrl(
+                        url: 'data:image;base64,{$image}',
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+        model: ChatCompletionModel.modelId(model),
+        temperature: temperature,
       ),
     );
 

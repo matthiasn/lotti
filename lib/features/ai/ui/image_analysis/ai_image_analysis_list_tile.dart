@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/state/ollama_image_analysis.dart';
+import 'package:lotti/features/ai/state/image_analysis.dart';
 import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/modals.dart';
