@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/state/task_summary_prompt.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -22,7 +21,6 @@ class TaskSummaryController extends _$TaskSummaryController {
   String build({
     required String id,
   }) {
-    // ref.cacheFor(inferenceStateCacheDuration);
     Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
       getTaskSummary();
     });
@@ -53,13 +51,9 @@ class TaskSummaryController extends _$TaskSummaryController {
     try {
       inferenceStatusNotifier.setStatus(InferenceStatus.running);
 
-      ref.invalidate(
-        taskSummaryPromptControllerProvider(id: id),
-      );
-
-      final prompt = await ref.read(
-        taskSummaryPromptControllerProvider(id: id).future,
-      );
+      final prompt = await ref
+          .read(aiInputRepositoryProvider)
+          .buildPrompt(id: id, aiResponseType: taskSummary);
 
       if (prompt == null) {
         return;
