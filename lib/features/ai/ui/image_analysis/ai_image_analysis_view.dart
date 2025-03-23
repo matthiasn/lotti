@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/features/ai/state/ollama_image_analysis.dart';
+import 'package:lotti/features/ai/state/image_analysis.dart';
 
 class AiImageAnalysisView extends ConsumerWidget {
   const AiImageAnalysisView({
