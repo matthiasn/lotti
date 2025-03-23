@@ -21,9 +21,7 @@ class OllamaRepository {
       prompt,
       model: model,
       system: system,
-      options: ModelOptions(
-        temperature: temperature,
-      ),
+      options: ModelOptions(temperature: temperature),
       images: images,
     );
   }

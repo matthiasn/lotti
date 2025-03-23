@@ -31,11 +31,8 @@ class CloudInferenceRepository {
             content: ChatCompletionUserMessageContent.string(prompt),
           ),
         ],
-        model: const ChatCompletionModel.modelId(
-          'deepseek-ai/DeepSeek-R1-fast',
-        ),
+        model: ChatCompletionModel.modelId(model),
         temperature: temperature,
-        stream: true,
       ),
     );
 
@@ -76,7 +73,6 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
-        stream: true,
       ),
     );
 
