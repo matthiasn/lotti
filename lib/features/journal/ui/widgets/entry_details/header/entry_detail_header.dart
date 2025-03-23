@@ -11,7 +11,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 
 class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
@@ -83,11 +82,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                 activeIcon: Icons.flag,
                 activeColor: context.colorScheme.error,
               ),
-              if (isDesktop)
-                AiPopUpMenu(
-                  journalEntity: entry,
-                  linkedFromId: widget.linkedFromId,
-                ),
+              AiPopUpMenu(
+                journalEntity: entry,
+                linkedFromId: widget.linkedFromId,
+              ),
               IconButton(
                 icon: const Icon(Icons.more_horiz),
                 onPressed: () => ExtendedHeaderModal.show(
