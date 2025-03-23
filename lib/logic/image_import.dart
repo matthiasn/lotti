@@ -151,7 +151,7 @@ Future<void> importPastedImages({
   final targetFileName = '$id.$fileExtension';
   final targetFilePath = '$directory$targetFileName';
 
-  final file = File(targetFilePath);
+  final file = await File(targetFilePath).create(recursive: true);
   await file.writeAsBytes(data);
 
   final imageData = ImageData(
