@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
-import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -54,13 +53,9 @@ class ActionItemSuggestionsController
       suggestionsStatusNotifier.setStatus(InferenceStatus.running);
       final entry = await repository.getEntity(id);
 
-      ref.invalidate(
-        actionItemSuggestionsPromptControllerProvider(id: id),
-      );
-
-      final prompt = await ref.read(
-        actionItemSuggestionsPromptControllerProvider(id: id).future,
-      );
+      final prompt = await ref
+          .read(aiInputRepositoryProvider)
+          .buildPrompt(id: id, aiResponseType: aiResponseType);
 
       if (entry is! Task || prompt == null) {
         return;

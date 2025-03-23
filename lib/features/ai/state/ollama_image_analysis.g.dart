@@ -7,7 +7,7 @@ part of 'ollama_image_analysis.dart';
 // **************************************************************************
 
 String _$aiImageAnalysisControllerHash() =>
-    r'0d8410804b0c260380022bb2e1c1072e457fedda';
+    r'80002c653f807d3b7188555d03c24c4aa70408df';
 
 /// Copied from Dart SDK
 class _SystemHash {

@@ -683,5 +683,366 @@ void main() {
         ).called(1);
       });
     });
+
+    // Tests for buildPrompt method
+    group('buildPrompt', () {
+      test('returns formatted prompt for TaskSummary response type', () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const statusId = 'status-123';
+        const aiResponseType = 'TaskSummary';
+
+        // Mock the task
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.started(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+
+        // Set up specific mock for the task progress repository
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer(
+          (_) async => (
+            const Duration(minutes: 30), // estimate
+            {'entry1': const Duration(minutes: 15)}, // durations
+          ),
+        );
+
+        // Set up mocks
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.buildPrompt(
+          id: taskId,
+          aiResponseType: aiResponseType,
+        );
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result, contains('**Prompt:**'));
+        expect(result, contains('**Task Details:**'));
+        expect(result, contains('"title": "Test Task"'));
+        expect(result, contains('"status": "STARTED"'));
+        expect(result, contains('Create a task summary as a TLDR'));
+
+        // Verify calls
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns formatted prompt for ActionItemSuggestions response type',
+          () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const statusId = 'status-123';
+        const aiResponseType = 'ActionItemSuggestions';
+
+        // Mock the task
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.open(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+
+        // Set up specific mock for the task progress repository
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer(
+          (_) async => (
+            const Duration(minutes: 30), // estimate
+            {'entry1': const Duration(minutes: 15)}, // durations
+          ),
+        );
+
+        // Set up mocks
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.buildPrompt(
+          id: taskId,
+          aiResponseType: aiResponseType,
+        );
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result, contains('**Prompt:**'));
+        expect(result, contains('**Task Details:**'));
+        expect(result, contains('"title": "Test Task"'));
+        expect(result, contains('"status": "OPEN"'));
+        expect(
+          result,
+          contains('Based on the provided task details and log entries'),
+        );
+        expect(result, contains('**Example Response:**'));
+
+        // Verify calls
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns null for non-task entity', () async {
+        // Arrange
+        const aiResponseType = 'TaskSummary';
+
+        // Mock a non-task entity (journal entry)
+        when(() => mockDb.journalEntityById(taskId)).thenAnswer(
+          (_) async => JournalEntity.journalEntry(
+            meta: Metadata(
+              id: taskId,
+              dateFrom: creationDate,
+              dateTo: creationDate,
+              createdAt: creationDate,
+              updatedAt: creationDate,
+            ),
+            entryText: const EntryText(plainText: ''),
+          ),
+        );
+
+        // Act
+        final result = await repository.buildPrompt(
+          id: taskId,
+          aiResponseType: aiResponseType,
+        );
+
+        // Assert
+        expect(result, isNull);
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+      });
+
+      test('returns null for non-existent entity', () async {
+        // Arrange
+        const aiResponseType = 'TaskSummary';
+
+        // Mock non-existent entity
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await repository.buildPrompt(
+          id: taskId,
+          aiResponseType: aiResponseType,
+        );
+
+        // Assert
+        expect(result, isNull);
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+      });
+
+      test('returns null for unsupported aiResponseType', () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const statusId = 'status-123';
+        const aiResponseType = 'UnsupportedType';
+
+        // Mock the task
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.open(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+
+        // Set up specific mock for the task progress repository
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer(
+          (_) async => (
+            const Duration(minutes: 30), // estimate
+            {'entry1': const Duration(minutes: 15)}, // durations
+          ),
+        );
+
+        // Set up mocks
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.buildPrompt(
+          id: taskId,
+          aiResponseType: aiResponseType,
+        );
+
+        // Assert
+        expect(result, isNull);
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test(
+          'includes full task details in the prompt including action items and log entries',
+          () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const statusId = 'status-123';
+        const checklistId = 'checklist-123';
+        const checklistItemId = 'checklist-item-123';
+        const linkedEntryId = 'linked-entry-123';
+        const aiResponseType = 'TaskSummary';
+
+        // Set up specific mock for the task progress repository
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer(
+          (_) async => (
+            const Duration(minutes: 60), // estimate
+            {'entry1': const Duration(minutes: 45)}, // durations
+          ),
+        );
+
+        // Mock the task
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.inProgress(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            checklistIds: [checklistId],
+            estimate: const Duration(minutes: 60),
+          ),
+        );
+
+        // Mock the checklist
+        final checklist = JournalEntity.checklist(
+          meta: Metadata(
+            id: checklistId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: [checklistItemId],
+            linkedTasks: [taskId],
+          ),
+        );
+
+        // Mock the checklist item
+        final checklistItem = JournalEntity.checklistItem(
+          meta: Metadata(
+            id: checklistItemId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: const ChecklistItemData(
+            title: 'Test Checklist Item',
+            isChecked: true,
+            linkedChecklists: [checklistId],
+          ),
+        );
+
+        // Mock the linked entry
+        final linkedEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: linkedEntryId,
+            dateFrom: creationDate,
+            dateTo: creationDate.add(const Duration(minutes: 30)),
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          entryText: const EntryText(plainText: 'Test Journal Entry'),
+        );
+
+        // Set up mocks
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => [linkedEntry]);
+        when(() => mockDb.journalEntityById(checklistId))
+            .thenAnswer((_) async => checklist);
+        when(() => mockDb.journalEntityById(checklistItemId))
+            .thenAnswer((_) async => checklistItem);
+
+        // Act
+        final result = await repository.buildPrompt(
+          id: taskId,
+          aiResponseType: aiResponseType,
+        );
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result, contains('"title": "Test Task"'));
+        expect(result, contains('"status": "IN PROGRESS"'));
+        expect(result, contains('"estimatedDuration": "01:00"'));
+        expect(result, contains('"timeSpent": "00:45"'));
+
+        // Check action items in JSON
+        expect(result, contains('"title": "Test Checklist Item"'));
+        expect(result, contains('"completed": true'));
+
+        // Check log entries in JSON
+        expect(result, contains('"text": "Test Journal Entry"'));
+        expect(result, contains('"loggedDuration": "00:30"'));
+
+        // Verify calls
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
+        verify(() => mockDb.journalEntityById(checklistId)).called(1);
+        verify(() => mockDb.journalEntityById(checklistItemId)).called(1);
+      });
+    });
   });
 }
