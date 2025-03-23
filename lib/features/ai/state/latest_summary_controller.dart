@@ -77,7 +77,6 @@ class LatestSummaryController extends _$LatestSummaryController {
 
     state = AsyncData(updated);
     await ref.read(journalRepositoryProvider).updateJournalEntity(updated);
-    ref.invalidateSelf();
   }
 }
 

@@ -38,7 +38,7 @@ class AiImageAnalysisController extends _$AiImageAnalysisController {
         'Describe the image in detail, including its content, style, and any '
         'relevant information that can be gleaned from the image. '
         'If the image is the screenshot of a website, then focus on the '
-        'the content of the website. Do not make up names. ';
+        'content of the website. Do not make up names. ';
 
     final buffer = StringBuffer();
     final image = await getImage(entry);
