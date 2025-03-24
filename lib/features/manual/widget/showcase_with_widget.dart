@@ -9,6 +9,7 @@ class ShowcaseWithWidget extends StatelessWidget {
     required this.child,
     this.startNav = false,
     this.endNav = false,
+    this.isTooltipTop = false,
     super.key,
   });
 
@@ -17,17 +18,24 @@ class ShowcaseWithWidget extends StatelessWidget {
   final bool startNav;
   final bool endNav;
   final Widget description;
+  final bool isTooltipTop;
 
   @override
   Widget build(BuildContext context) {
     return Showcase.withWidget(
       targetBorderRadius: BorderRadius.circular(inputBorderRadius),
-      tooltipPosition: TooltipPosition.bottom,
+      tooltipPosition: isTooltipTop
+          ? TooltipPosition.top as TooltipPosition?
+          : TooltipPosition.bottom,
       disposeOnTap: false,
       onTargetClick: () {},
       disableDefaultTargetGestures: true,
       disableMovingAnimation: true,
+      onBarrierClick: () {
+        ShowCaseWidget.of(context).dismiss();
+      },
       overlayOpacity: 0.7,
+      enableAutoScroll: true,
       tooltipActionConfig:
           const TooltipActionConfig(gapBetweenContentAndAction: 50),
       key: showcaseKey,

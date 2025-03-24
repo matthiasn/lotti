@@ -167,7 +167,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         ),
                         inputSpacerSmall,
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCasePriorTooltip,
+                          ),
                           showcaseKey: _habitPriorKey,
                           child: FormSwitch(
                             name: 'priority',
@@ -179,7 +182,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCasePrivateTooltip,
+                          ),
                           showcaseKey: _habitPrivKey,
                           child: FormSwitch(
                             name: 'private',
@@ -189,7 +195,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                         ),
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseArchivedTooltip,
+                          ),
                           showcaseKey: _habitArchKey,
                           child: FormSwitch(
                             name: 'archived',
@@ -201,7 +210,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         ),
                         inputSpacerSmall,
                         ShowcaseWithWidget(
-                          description: const Text('TODO'),
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsHabitsShowCaseStarDateTooltip,
+                          ),
                           showcaseKey: _habitStartDateKey,
                           child: DateTimeField(
                             dateTime: item.activeFrom,
@@ -213,7 +225,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         inputSpacerSmall,
                         if (isDaily) ...[
                           ShowcaseWithWidget(
-                            description: const Text('TODO'),
+                            description: ShowcaseTextStyle(
+                              descriptionText: context.messages
+                                  .settingsHabitsShowCaseStartTimeTooltip,
+                            ),
                             showcaseKey: _habitShowFromTimeKey,
                             child: DateTimeField(
                               dateTime: showFrom,
@@ -224,7 +239,11 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                           inputSpacerSmall,
                           ShowcaseWithWidget(
-                            description: const Text('TODO'),
+                            isTooltipTop: true,
+                            description: ShowcaseTextStyle(
+                              descriptionText: context.messages
+                                  .settingsHabitsShowCaseAlertTimeTooltip,
+                            ),
                             showcaseKey: _habitAlertAtKey,
                             child: DateTimeField(
                               dateTime: alertAtTime,
@@ -249,7 +268,11 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         Expanded(
                           child: IconButton(
                             icon: ShowcaseWithWidget(
-                              description: const Text('TODO'),
+                              isTooltipTop: true,
+                              description: ShowcaseTextStyle(
+                                descriptionText: context.messages
+                                    .settingsHabitsShowCaseDelHabitTooltip,
+                              ),
                               endNav: true,
                               showcaseKey: _habitDeleKey,
                               child: Icon(MdiIcons.trashCanOutline),
