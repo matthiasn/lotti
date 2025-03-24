@@ -18,7 +18,9 @@ class AppTheme {
 const double inputBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
 
-const verticalModalSpacer = SizedBox(height: 30);
+const verticalModalSpacer = SizedBox(
+  height: 30,
+);
 
 InputDecoration inputDecoration({
   required ThemeData themeData,
@@ -27,15 +29,21 @@ InputDecoration inputDecoration({
   Widget? suffixIcon,
 }) {
   final inputBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(inputBorderRadius),
+    borderRadius: BorderRadius.circular(
+      inputBorderRadius,
+    ),
     borderSide: BorderSide(
       color: themeData.colorScheme.outline.withAlpha(100),
     ),
   );
 
   final errorBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(inputBorderRadius),
-    borderSide: BorderSide(color: themeData.colorScheme.error),
+    borderRadius: BorderRadius.circular(
+      inputBorderRadius,
+    ),
+    borderSide: BorderSide(
+      color: themeData.colorScheme.error,
+    ),
   );
 
   return InputDecoration(
@@ -43,7 +51,9 @@ InputDecoration inputDecoration({
     errorBorder: errorBorder,
     enabledBorder: inputBorder,
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(inputBorderRadius),
+      borderRadius: BorderRadius.circular(
+        inputBorderRadius,
+      ),
       borderSide: BorderSide(
         color: themeData.colorScheme.outline,
         width: 2,
@@ -72,15 +82,23 @@ InputDecoration createDialogInputDecoration({
     return decoration;
   } else {
     return decoration.copyWith(
-      labelStyle: TextStyle(color: style.color),
+      labelStyle: TextStyle(
+        color: style.color,
+      ),
     );
   }
 }
 
-const switchDecoration = InputDecoration(border: InputBorder.none);
+const switchDecoration = InputDecoration(
+  border: InputBorder.none,
+);
 
-const inputSpacer = SizedBox(height: 25);
-const inputSpacerSmall = SizedBox(height: 15);
+const inputSpacer = SizedBox(
+  height: 25,
+);
+const inputSpacerSmall = SizedBox(
+  height: 15,
+);
 
 TextStyle choiceChipTextStyle({
   required ThemeData themeData,
@@ -112,7 +130,9 @@ const transcriptHeaderStyle = TextStyle(
 const monospaceTextStyle = TextStyle(
   fontSize: fontSizeMedium,
   fontWeight: FontWeight.w500,
-  fontFeatures: [FontFeature.tabularFigures()],
+  fontFeatures: [
+    FontFeature.tabularFigures(),
+  ],
 );
 
 final monospaceTextStyleSmall = monospaceTextStyle.copyWith(
@@ -163,7 +183,9 @@ const chartTitleStyle = TextStyle(
 );
 
 final chartTitleStyleMonospace = chartTitleStyle.copyWith(
-  fontFeatures: [const FontFeature.tabularFigures()],
+  fontFeatures: [
+    const FontFeature.tabularFigures(),
+  ],
 );
 
 const habitTitleStyle = TextStyle(
@@ -194,7 +216,9 @@ const badgeStyle = TextStyle(
 
 const settingsIconSize = 24.0;
 
-const habitCompletionHeaderStyle = TextStyle(fontSize: 20);
+const habitCompletionHeaderStyle = TextStyle(
+  fontSize: 20,
+);
 
 TextStyle searchLabelStyle() => TextStyle(
       color: secondaryTextColor,
@@ -213,10 +237,16 @@ ThemeData withOverrides(ThemeData themeData) {
     ),
     sliderTheme: themeData.sliderTheme.copyWith(
       activeTrackColor: themeData.colorScheme.secondary,
-      inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(178),
+      inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(
+        178,
+      ),
       thumbColor: themeData.colorScheme.secondary,
-      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-      overlayColor: themeData.colorScheme.secondary.withAlpha(127),
+      thumbShape: const RoundSliderThumbShape(
+        enabledThumbRadius: 8,
+      ),
+      overlayColor: themeData.colorScheme.secondary.withAlpha(
+        127,
+      ),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
       clipBehavior: Clip.hardEdge,
@@ -233,7 +263,9 @@ ThemeData withOverrides(ThemeData themeData) {
         alignment: Alignment.center,
         visualDensity: VisualDensity.compact,
         textStyle: WidgetStateProperty.resolveWith(
-          (states) => const TextStyle(fontSize: fontSizeSmall),
+          (states) => const TextStyle(
+            fontSize: fontSizeSmall,
+          ),
         ),
         side: WidgetStateProperty.resolveWith((states) {
           return BorderSide(
@@ -242,28 +274,44 @@ ThemeData withOverrides(ThemeData themeData) {
         }),
         shape: WidgetStateProperty.resolveWith((states) {
           return RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(inputBorderRadius),
+            borderRadius: BorderRadius.circular(
+              inputBorderRadius,
+            ),
           );
         }),
         padding: WidgetStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(horizontal: 5);
+          return const EdgeInsets.symmetric(
+            horizontal: 5,
+          );
         }),
         enableFeedback: true,
       ),
     ),
-    chipTheme: const ChipThemeData(side: BorderSide.none),
+    chipTheme: const ChipThemeData(
+      side: BorderSide.none,
+    ),
     inputDecorationTheme: InputDecorationTheme(
       fillColor: themeData.primaryColor,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(inputBorderRadius),
-        borderSide: BorderSide(color: themeData.colorScheme.outline),
+        borderRadius: BorderRadius.circular(
+          inputBorderRadius,
+        ),
+        borderSide: BorderSide(
+          color: themeData.colorScheme.outline,
+        ),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(inputBorderRadius),
-        borderSide: BorderSide(color: themeData.colorScheme.error),
+        borderRadius: BorderRadius.circular(
+          inputBorderRadius,
+        ),
+        borderSide: BorderSide(
+          color: themeData.colorScheme.error,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderRadius: BorderRadius.circular(
+          inputBorderRadius,
+        ),
         borderSide: BorderSide(
           color: themeData.primaryColor,
           width: 2,
@@ -294,6 +342,9 @@ extension AppThemeExtension on BuildContext {
 }
 
 extension TextThemeExtension on TextStyle {
-  TextStyle get withTabularFigures =>
-      copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+  TextStyle get withTabularFigures => copyWith(
+        fontFeatures: const [
+          FontFeature.tabularFigures(),
+        ],
+      );
 }
