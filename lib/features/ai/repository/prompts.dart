@@ -58,6 +58,28 @@ list for the remaining steps. If there are any learnings or insights that can be
 drawn from the task, include them in the output. If the task is done, end the 
 output with a concluding statement.
 
+Try to use emojis instead of individual list item bullet points, e.g. ✅ for completed 
+items, or 💡for learnings, 🤯 for annoyances, etc. Use the emojis on the individual 
+list item, not on the headline for each list section.
+
+Example:
+Achieved results:
+✅ Completed step 1
+✅ Completed step 2
+✅ Completed step 3
+
+Remaining steps:
+1. Step 1
+2. Step 2
+3. Step 3
+
+Learnings:
+💡 Learned something interesting
+💡 Learned something else
+
+Annoyances:
+🤯 Annoyed by something
+
 **Task Details:**
 ```json
 $jsonString
