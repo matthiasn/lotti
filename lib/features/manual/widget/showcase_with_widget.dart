@@ -39,7 +39,7 @@ class ShowcaseWithWidget extends StatelessWidget {
       tooltipActionConfig:
           const TooltipActionConfig(gapBetweenContentAndAction: 50),
       key: showcaseKey,
-      width: 400,
+      width: MediaQuery.of(context).size.width * 0.90,
       height: 80,
       container: SizedBox(
         child: Column(
