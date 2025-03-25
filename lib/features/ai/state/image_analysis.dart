@@ -40,9 +40,9 @@ class AiImageAnalysisController extends _$AiImageAnalysisController {
     state = '';
 
     final prompt = '''
-Describe the image from $capturedAt in detail, including its content, style, and
-any relevant information that can be gleaned from the image.
-If the image is the screenshot of a website, then focus on the
+Describe the image from $capturedAt in detail, with particular focus on content,
+and any relevant information that can be gathered from the image.
+If the image is the screenshot of a website or app, then focus on the
 content of the website, not the style of the website. Do not make up names.
         ''';
 
