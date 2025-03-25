@@ -48,7 +48,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
             .watch(
               isLatestSummaryOutdatedControllerProvider(
                 id: id,
-                aiResponseType: taskSummary,
+                aiResponseType: aiResponseType,
               ),
             )
             .valueOrNull ??

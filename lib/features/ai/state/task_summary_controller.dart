@@ -31,12 +31,16 @@ class TaskSummaryController extends _$TaskSummaryController {
     final start = DateTime.now();
     final entry = await ref.read(aiInputRepositoryProvider).getEntity(id);
 
-    final inferenceStatusNotifier = ref.read(
-      inferenceStatusControllerProvider(
-        id: id,
-        aiResponseType: taskSummary,
-      ).notifier,
+    if (entry is! Task) {
+      return;
+    }
+
+    final inferenceStatusProvider = inferenceStatusControllerProvider(
+      id: id,
+      aiResponseType: taskSummary,
     );
+
+    final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier);
 
     getIt<LoggingService>().captureEvent(
       'Starting task summary for $id',
@@ -44,7 +48,10 @@ class TaskSummaryController extends _$TaskSummaryController {
       domain: 'TaskSummaryController',
     );
 
-    if (entry is! Task) {
+    final isRunning =
+        ref.read(inferenceStatusProvider) == InferenceStatus.running;
+
+    if (isRunning) {
       return;
     }
 
