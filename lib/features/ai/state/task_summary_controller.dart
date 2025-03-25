@@ -64,9 +64,8 @@ class TaskSummaryController extends _$TaskSummaryController {
       final useCloudInference =
           await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
 
-      final model = useCloudInference
-          ? 'deepseek-ai/DeepSeek-R1-fast'
-          : 'deepseek-r1:14b';
+      final model =
+          useCloudInference ? 'google/gemma-3-27b-it-fast' : 'gemma3:12b';
 
       const temperature = 0.6;
 
@@ -99,15 +98,17 @@ class TaskSummaryController extends _$TaskSummaryController {
       }
 
       final completeResponse = buffer.toString();
-      final [thoughts, response] = completeResponse.split('</think>');
+
+      // only required for reasoning models
+      // final [thoughts, response] = completeResponse.split('</think>');
 
       final data = AiResponseData(
         model: model,
         temperature: temperature,
         systemMessage: '',
         prompt: prompt,
-        thoughts: thoughts,
-        response: response,
+        thoughts: '',
+        response: completeResponse,
         type: 'TaskSummary',
       );
 
