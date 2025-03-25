@@ -13,7 +13,7 @@ class ShowcaseTextStyle extends StatelessWidget {
     return Text(
       descriptionText,
       style: const TextStyle(
-        color: Colors.white,
+        color: Colors.black,
         fontSize: 15,
         fontWeight: FontWeight.bold,
       ),
