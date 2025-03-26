@@ -77,6 +77,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Use Cloud Inference',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableAutoTaskTldrFlag,
+    description: 'Enable auto task TLDR',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{

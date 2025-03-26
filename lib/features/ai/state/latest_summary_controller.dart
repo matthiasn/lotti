@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/ai/state/task_summary_prompt.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -97,6 +99,13 @@ class IsLatestSummaryOutdatedController
       _timer ??= Timer.periodic(
         const Duration(seconds: 5),
         (timer) async {
+          final enableAutoTaskTldr =
+              await getIt<JournalDb>().getConfigFlag(enableAutoTaskTldrFlag);
+
+          if (!enableAutoTaskTldr) {
+            return;
+          }
+
           final isOutdated = await _checkOutdated();
 
           if (!isOutdated) {
