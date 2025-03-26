@@ -39,8 +39,8 @@ class ShowcaseWithWidget extends StatelessWidget {
       tooltipActionConfig:
           const TooltipActionConfig(gapBetweenContentAndAction: 50),
       key: showcaseKey,
-      width: 400,
-      height: 80,
+      width: MediaQuery.of(context).size.width * 0.90,
+      height: null,
       container: SizedBox(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -49,7 +49,7 @@ class ShowcaseWithWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               margin: const EdgeInsets.only(left: 7),
               decoration: BoxDecoration(
-                color: const Color.fromRGBO(0, 0, 0, 0.6),
+                color: context.colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(inputBorderRadius),
               ),
               child: description,
