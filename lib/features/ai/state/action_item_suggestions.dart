@@ -24,7 +24,6 @@ class ActionItemSuggestionsController
   String build({
     required String id,
   }) {
-    //ref.cacheFor(inferenceStateCacheDuration);
     Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
       getActionItemSuggestion();
     });

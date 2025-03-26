@@ -91,6 +91,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableAutoTaskTldrFlag,
+      description: 'Enable auto task TLDR',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableNotificationsFlag,
       description: 'Enable notifications?',
       status: false,

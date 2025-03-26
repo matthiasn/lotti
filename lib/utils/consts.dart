@@ -11,3 +11,4 @@ const attemptEmbedding = 'attempt_embedding';
 const releaseHideLinkedEntries = 'release_hide_linked_entries';
 const enableLoggingFlag = 'enable_logging';
 const useCloudInferenceFlag = 'use_cloud_inference';
+const enableAutoTaskTldrFlag = 'enable_auto_task_tldr';
