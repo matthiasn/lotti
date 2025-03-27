@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/categories/category_details_page.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -23,7 +24,9 @@ void main() {
 
   group('CategoryDetailsPage Widget Tests - ', () {
     setUpAll(() {
-      registerFallbackValue(FakeCategoryDefinition());
+      registerFallbackValue(
+        FakeCategoryDefinition(),
+      );
     });
 
     setUp(() {
@@ -55,12 +58,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: EditCategoryPage(
+                categoryId: categoryMindfulness.id,
+              ),
             ),
-            child: EditCategoryPage(categoryId: categoryMindfulness.id),
           ),
         ),
       );
