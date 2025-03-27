@@ -149,7 +149,9 @@ class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
                                 labelText: context
                                     .messages.settingsCategoriesNameLabel,
                                 semanticsLabel: 'Category name field',
-                                themeData: Theme.of(context),
+                                themeData: Theme.of(
+                                  context,
+                                ),
                               ),
                             ),
                           ),
@@ -233,7 +235,9 @@ class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
                             key: const Key(
                               'category_delete',
                             ),
-                            icon: Icon(MdiIcons.trashCanOutline),
+                            icon: Icon(
+                              MdiIcons.trashCanOutline,
+                            ),
                             iconSize: settingsIconSize,
                             tooltip:
                                 context.messages.settingsHabitsDeleteTooltip,
@@ -297,12 +301,14 @@ class EditCategoryPage extends StatelessWidget {
           return const EmptyScaffoldWithTitle('');
         }
 
-        return BlocProvider<CategorySettingsCubit>(
-          create: (_) => CategorySettingsCubit(
-            categoryDefinition,
-            context: context,
+        return ShowCaseWidget(
+          builder: (context) => BlocProvider<CategorySettingsCubit>(
+            create: (_) => CategorySettingsCubit(
+              categoryDefinition,
+              context: context,
+            ),
+            child: const CategoryDetailsPage(),
           ),
-          child: const CategoryDetailsPage(),
         );
       },
     );
