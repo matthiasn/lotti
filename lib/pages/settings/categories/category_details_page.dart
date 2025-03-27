@@ -56,29 +56,25 @@ class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
 
             return Scaffold(
               appBar: TitleWidgetAppBar(
-                title: Row(
-                  children: [
-                    Text(
-                      context.messages.settingsCategoriesDefinitionTitle,
+                title: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 70),
+                  child: IconButton(
+                    onPressed: () {
+                      ShowCaseWidget.of(context).startShowCase(
+                        [
+                          _categoryNameKey,
+                          _categoryPrivateFlagKey,
+                          _categoryActiveFlagKey,
+                          _categoryFavoriteFlagKey,
+                          _categoryColorPickerKey,
+                          _categoryDeleteKey,
+                        ],
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.info_outline_rounded,
                     ),
-                    IconButton(
-                      onPressed: () {
-                        ShowCaseWidget.of(context).startShowCase(
-                          [
-                            _categoryNameKey,
-                            _categoryPrivateFlagKey,
-                            _categoryActiveFlagKey,
-                            _categoryFavoriteFlagKey,
-                            _categoryColorPickerKey,
-                            _categoryDeleteKey,
-                          ],
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.info_outline_rounded,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 actions: [
                   if (state.dirty && state.valid)
