@@ -8,7 +8,7 @@ import '../../../../../../test_helper.dart';
 void main() {
   group('SwitchListTile', () {
     testWidgets('renders correctly when value is true', (tester) async {
-      bool valueChanged = false;
+      var valueChanged = false;
 
       await tester.pumpWidget(
         createTestApp(
