@@ -4,6 +4,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widg
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_items.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tag_add.dart';
+import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -21,6 +22,8 @@ class ExtendedHeaderModal {
     required EntryLink? link,
     required bool inLinkedEntries,
   }) async {
+    final pageIndexNotifier = ValueNotifier(0);
+
     final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.entryActions,
@@ -29,7 +32,15 @@ class ExtendedHeaderModal {
         linkedFromId: linkedFromId,
         inLinkedEntries: inLinkedEntries,
         link: link,
+        pageIndexNotifier: pageIndexNotifier,
       ),
+    );
+
+    final tagsModalPage = ModalUtils.modalSheetPage(
+      context: context,
+      title: context.messages.journalTagPlusHint,
+      child: TagsModal(entryId: entryId),
+      onTapBack: () => pageIndexNotifier.value = 0,
     );
 
     return WoltModalSheet.show<void>(
@@ -37,10 +48,12 @@ class ExtendedHeaderModal {
       pageListBuilder: (modalSheetContext) {
         return [
           initialModalPage,
+          tagsModalPage,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
+      pageIndexNotifier: pageIndexNotifier,
     );
   }
 }
@@ -51,12 +64,14 @@ class _InitialModalPageContent extends StatelessWidget {
     required this.linkedFromId,
     required this.inLinkedEntries,
     required this.link,
+    required this.pageIndexNotifier,
   });
 
   final String entryId;
   final String? linkedFromId;
   final bool inLinkedEntries;
   final EntryLink? link;
+  final ValueNotifier<int> pageIndexNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +89,10 @@ class _InitialModalPageContent extends StatelessWidget {
         ),
         SpeechModalListTile(entryId: entryId),
         ShareButtonListTile(entryId: entryId),
-        TagAddListTile(entryId: entryId),
+        TagAddListTile(
+          entryId: entryId,
+          pageIndexNotifier: pageIndexNotifier,
+        ),
         ListTile(
           leading: const Icon(Icons.add_link),
           title: Text(context.messages.journalLinkFromHint),

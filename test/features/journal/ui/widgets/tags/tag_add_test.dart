@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -67,7 +68,10 @@ void main() {
     testWidgets('Icon tap opens modal', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          TagAddListTile(entryId: testTextEntry.meta.id),
+          TagAddListTile(
+            entryId: testTextEntry.meta.id,
+            pageIndexNotifier: ValueNotifier(0),
+          ),
         ),
       );
 
