@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
@@ -60,48 +61,54 @@ class DurationWidget extends ConsumerWidget {
 
         final saveFn = ref.read(provider.notifier).save;
 
-        return Visibility(
-          visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Icon(
-                  MdiIcons.timerOutline,
-                  color: labelColor,
-                  size: 15,
+        return GestureDetector(
+          onTap: () => EntryDateTimeModal.show<void>(
+            entry: item,
+            context: context,
+          ),
+          child: Visibility(
+            visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Icon(
+                    MdiIcons.timerOutline,
+                    color: labelColor,
+                    size: 15,
+                  ),
                 ),
-              ),
-              FormattedTime(
-                labelColor: labelColor,
-                displayed: displayed,
-              ),
-              Visibility(
-                visible: isRecent && showRecordIcon && !isRecording,
-                child: IconButton(
-                  icon: const Icon(Icons.fiber_manual_record_sharp),
-                  iconSize: 20,
-                  tooltip: 'Record',
-                  color: context.colorScheme.error,
-                  onPressed: () {
-                    _timeService.start(item, linkedFrom);
-                  },
+                FormattedTime(
+                  labelColor: labelColor,
+                  displayed: displayed,
                 ),
-              ),
-              Visibility(
-                visible: isRecording,
-                child: IconButton(
-                  icon: const Icon(Icons.stop),
-                  iconSize: 20,
-                  tooltip: 'Stop',
-                  color: labelColor,
-                  onPressed: () async {
-                    await saveFn(stopRecording: true);
-                  },
+                Visibility(
+                  visible: isRecent && showRecordIcon && !isRecording,
+                  child: IconButton(
+                    icon: const Icon(Icons.fiber_manual_record_sharp),
+                    iconSize: 20,
+                    tooltip: 'Record',
+                    color: context.colorScheme.error,
+                    onPressed: () {
+                      _timeService.start(item, linkedFrom);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 15),
-            ],
+                Visibility(
+                  visible: isRecording,
+                  child: IconButton(
+                    icon: const Icon(Icons.stop),
+                    iconSize: 20,
+                    tooltip: 'Stop',
+                    color: labelColor,
+                    onPressed: () async {
+                      await saveFn(stopRecording: true);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 15),
+              ],
+            ),
           ),
         );
       },

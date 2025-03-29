@@ -241,6 +241,16 @@ class JournalDb extends _$JournalDb {
     return null;
   }
 
+  Stream<JournalEntity?> watchJournalEntityById(String id) {
+    final res = (select(journal)
+          ..where((t) => t.id.equals(id))
+          ..where((t) => t.deleted.equals(false)))
+        .watchSingleOrNull()
+        .map((dbEntity) => dbEntity != null ? fromDbEntity(dbEntity) : null);
+
+    return res;
+  }
+
   Future<List<String>> entryIdsByTagId(String tagId) async {
     return entryIdsForTagId(tagId).get();
   }
