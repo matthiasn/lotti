@@ -236,7 +236,7 @@ class _TagEditPageState extends State<TagEditPage> {
                       descriptionText:
                           context.messages.settingsTagsShowCaseTypeTooltip,
                     ),
-                    child: FormBuilderChoiceChip<String>(
+                    child: FormBuilderChoiceChips<String>(
                       name: 'type',
                       initialValue: widget.tagEntity.map(
                         genericTag: (_) => context.messages.settingsTagsTypeTag,
