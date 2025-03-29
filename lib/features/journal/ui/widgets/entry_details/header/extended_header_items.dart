@@ -66,7 +66,14 @@ class TogglePrivateListTile extends ConsumerWidget {
 
     return SwitchListTile(
       title: context.messages.journalPrivateTitle,
-      onPressed: notifier.togglePrivate,
+      onPressed: () async {
+        await notifier.togglePrivate();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+      },
       value: entry?.meta.private ?? false,
       icon: Icons.shield_outlined,
       activeIcon: Icons.shield,
@@ -150,7 +157,14 @@ class ToggleMapListTile extends ConsumerWidget {
       title: entryState.showMap
           ? context.messages.journalHideMapHint
           : context.messages.journalShowMapHint,
-      onPressed: notifier.toggleMapVisible,
+      onPressed: () {
+        notifier.toggleMapVisible();
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+      },
       value: entryState.showMap,
       icon: Icons.map_outlined,
       activeIcon: Icons.map,

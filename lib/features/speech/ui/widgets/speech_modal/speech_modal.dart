@@ -6,15 +6,16 @@ import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcribe_button.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/modals.dart';
 
 class SpeechModalListTile extends ConsumerWidget {
   const SpeechModalListTile({
     required this.entryId,
+    required this.pageIndexNotifier,
     super.key,
   });
 
   final String entryId;
+  final ValueNotifier<int> pageIndexNotifier;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,23 +27,36 @@ class SpeechModalListTile extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void onTapAdd() => ModalUtils.showSinglePageModal<void>(
-          context: context,
-          title: context.messages.speechModalTitle,
-          builder: (_) => Column(
-            children: [
-              const SizedBox(height: 20),
-              TranscribeButton(entryId: entryId),
-              LanguageDropdown(entryId: entryId),
-              TranscriptsList(entryId: entryId),
-            ],
-          ),
-        );
-
     return ListTile(
       leading: const Icon(Icons.transcribe_rounded),
       title: Text(context.messages.speechModalTitle),
-      onTap: onTapAdd,
+      onTap: () => pageIndexNotifier.value = 2,
+    );
+  }
+}
+
+class SpeechModalContent extends StatelessWidget {
+  const SpeechModalContent({
+    required this.entryId,
+    required this.navigateToProgressModal,
+    super.key,
+  });
+
+  final String entryId;
+  final void Function() navigateToProgressModal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        TranscribeButton(
+          entryId: entryId,
+          navigateToProgressModal: navigateToProgressModal,
+        ),
+        LanguageDropdown(entryId: entryId),
+        TranscriptsList(entryId: entryId),
+      ],
     );
   }
 }

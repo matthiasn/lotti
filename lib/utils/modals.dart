@@ -22,6 +22,7 @@ class ModalUtils {
     Color? backgroundColor,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = true,
+    void Function()? onTapBack,
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
     double? navBarHeight,
   }) {
@@ -33,6 +34,13 @@ class ModalUtils {
       topBarTitle:
           title != null ? Text(title, style: textTheme.titleSmall) : null,
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
+      leadingNavBarWidget: onTapBack != null
+          ? IconButton(
+              padding: WoltModalConfig.pagePadding,
+              icon: const Icon(Icons.arrow_back),
+              onPressed: onTapBack,
+            )
+          : null,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
               padding: WoltModalConfig.pagePadding,
