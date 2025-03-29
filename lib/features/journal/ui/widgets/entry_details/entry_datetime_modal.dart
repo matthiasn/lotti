@@ -14,6 +14,8 @@ class EntryDateTimeModal {
     required BuildContext context,
     required JournalEntity entry,
   }) async {
+    final pageIndexNotifier = ValueNotifier(0);
+
     return WoltModalSheet.show<T>(
       context: context,
       pageListBuilder: (modalSheetContext) {
@@ -29,6 +31,7 @@ class EntryDateTimeModal {
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
       barrierDismissible: true,
+      pageIndexNotifier: pageIndexNotifier,
     );
   }
 }
