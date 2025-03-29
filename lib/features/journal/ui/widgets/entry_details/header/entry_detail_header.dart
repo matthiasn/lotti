@@ -82,10 +82,11 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                 activeIcon: Icons.flag,
                 activeColor: context.colorScheme.error,
               ),
-              AiPopUpMenu(
-                journalEntity: entry,
-                linkedFromId: widget.linkedFromId,
-              ),
+              if (entry is Task || entry is JournalImage)
+                AiPopUpMenu(
+                  journalEntity: entry,
+                  linkedFromId: widget.linkedFromId,
+                ),
               IconButton(
                 icon: const Icon(Icons.more_horiz),
                 onPressed: () => ExtendedHeaderModal.show(
