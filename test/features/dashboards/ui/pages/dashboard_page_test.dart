@@ -20,10 +20,10 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../utils/utils.dart';
-import '../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../utils/utils.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +57,7 @@ void main() {
 
       when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([
-          {enableDashboardsPageFlag}
+          {enableDashboardsPageFlag},
         ]),
       );
 
