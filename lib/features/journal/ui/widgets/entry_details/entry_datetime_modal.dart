@@ -5,10 +5,36 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-class EntryDateTimeModal extends ConsumerStatefulWidget {
-  const EntryDateTimeModal({
+class EntryDateTimeModal {
+  static Future<T?> show<T>({
+    required BuildContext context,
+    required JournalEntity entry,
+  }) async {
+    return WoltModalSheet.show<T>(
+      context: context,
+      pageListBuilder: (modalSheetContext) {
+        return [
+          ModalUtils.modalSheetPage(
+            context: modalSheetContext,
+            child: EntryDateTimeModalContent(item: entry),
+            navBarHeight: 20,
+            isTopBarLayerAlwaysVisible: false,
+            showCloseButton: false,
+          ),
+        ];
+      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      barrierDismissible: true,
+    );
+  }
+}
+
+class EntryDateTimeModalContent extends ConsumerStatefulWidget {
+  const EntryDateTimeModalContent({
     required this.item,
     super.key,
     this.readOnly = false,
@@ -18,10 +44,12 @@ class EntryDateTimeModal extends ConsumerStatefulWidget {
   final bool readOnly;
 
   @override
-  ConsumerState<EntryDateTimeModal> createState() => _EntryDateTimeModalState();
+  ConsumerState<EntryDateTimeModalContent> createState() =>
+      _EntryDateTimeModalContentState();
 }
 
-class _EntryDateTimeModalState extends ConsumerState<EntryDateTimeModal> {
+class _EntryDateTimeModalContentState
+    extends ConsumerState<EntryDateTimeModalContent> {
   late DateTime dateFrom;
   late DateTime dateTo;
 

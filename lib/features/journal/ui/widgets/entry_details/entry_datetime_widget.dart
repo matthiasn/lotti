@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/utils/modals.dart';
 
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
@@ -29,15 +28,8 @@ class EntryDatetimeWidget extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
       child: GestureDetector(
-        onTap: () {
-          ModalUtils.showSinglePageModal<void>(
-            context: context,
-            builder: (BuildContext _) {
-              return EntryDateTimeModal(item: entry);
-            },
-            navBarHeight: 20,
-          );
-        },
+        onTap: () =>
+            EntryDateTimeModal.show<void>(entry: entry, context: context),
         child: Padding(
           padding: const EdgeInsets.only(left: 5),
           child: Text(
