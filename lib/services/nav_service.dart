@@ -3,28 +3,40 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
-
-const tasksIndex = 0;
-const calendarIndex = 1;
-const habitsIndex = 2;
-const dashboardsIndex = 3;
-const journalIndex = 4;
-const settingsIndex = 5;
 
 class NavService {
   NavService() {
     // TODO: fix and bring back
     // restoreRoute();
+
+    getIt<JournalDb>().watchActiveConfigFlagNames().forEach((configFlags) {
+      _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
+      _isDashboardsPageEnabled = configFlags.contains(enableDashboardsPageFlag);
+      _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
+    });
   }
+
+  bool _isHabitsPageEnabled = false;
+  bool _isDashboardsPageEnabled = false;
+  bool _isCalendarPageEnabled = false;
 
   String currentPath = '/habits';
   final indexStreamController = StreamController<int>.broadcast();
 
-  int index = tasksIndex;
+  final tasksIndex = 0;
+  // final calendarIndex = 1;
+  // final habitsIndex = 2;
+  // final dashboardsIndex = 3;
+  // final journalIndex = 4;
+  // final settingsIndex = 5;
+
+  int index = 0;
 
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
@@ -71,17 +83,34 @@ class NavService {
     emitState();
   }
 
-  BeamerDelegate delegateByIndex(int index) {
-    final beamerDelegates = <BeamerDelegate>[
-      tasksDelegate,
-      calendarDelegate,
-      habitsDelegate,
-      dashboardsDelegate,
-      journalDelegate,
-      settingsDelegate,
-    ];
+  List<BeamerDelegate> get beamerDelegates => <BeamerDelegate>[
+        tasksDelegate,
+        if (_isCalendarPageEnabled) calendarDelegate,
+        if (_isHabitsPageEnabled) habitsDelegate,
+        if (_isDashboardsPageEnabled) dashboardsDelegate,
+        journalDelegate,
+        settingsDelegate,
+      ];
 
+  BeamerDelegate delegateByIndex(int index) {
     return beamerDelegates[index];
+  }
+
+  int get calendarIndex => beamerDelegates.indexOf(calendarDelegate);
+  int get habitsIndex => beamerDelegates.indexOf(habitsDelegate);
+  int get dashboardsIndex => beamerDelegates.indexOf(dashboardsDelegate);
+  int get journalIndex => beamerDelegates.indexOf(journalDelegate);
+  int get settingsIndex => beamerDelegates.indexOf(settingsDelegate);
+
+  List<String> get availableTabs {
+    return [
+      'tasks',
+      'calendar',
+      'habits',
+      'dashboards',
+      'journal',
+      'settings',
+    ];
   }
 
   void setTabRoot(int newIndex) {

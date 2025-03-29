@@ -21,6 +21,9 @@ class FlagsPage extends StatelessWidget {
         final items = snapshot.data?.toList() ?? [];
 
         const displayedItems = {
+          enableHabitsPageFlag,
+          enableDashboardsPageFlag,
+          enableCalendarPageFlag,
           privateFlag,
           attemptEmbedding,
           enableNotificationsFlag,
@@ -29,7 +32,6 @@ class FlagsPage extends StatelessWidget {
           allowInvalidCertFlag,
           enableTooltipFlag,
           enableLoggingFlag,
-          releaseHideLinkedEntries,
           enableMatrixFlag,
           resendAttachments,
           useCloudInferenceFlag,
