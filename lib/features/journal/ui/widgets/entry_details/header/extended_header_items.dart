@@ -68,7 +68,7 @@ class TogglePrivateListTile extends ConsumerWidget {
       title: context.messages.journalPrivateTitle,
       onPressed: () async {
         await notifier.togglePrivate();
-        Future.delayed(const Duration(milliseconds: 600), () {
+        Future.delayed(const Duration(milliseconds: 300), () {
           if (context.mounted) {
             Navigator.of(context).pop();
           }
@@ -159,7 +159,7 @@ class ToggleMapListTile extends ConsumerWidget {
           : context.messages.journalShowMapHint,
       onPressed: () {
         notifier.toggleMapVisible();
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(milliseconds: 600), () {
           if (context.mounted) {
             Navigator.of(context).pop();
           }
