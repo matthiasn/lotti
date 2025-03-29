@@ -5,6 +5,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class CreateTagPage extends StatefulWidget {
   const CreateTagPage({
@@ -66,9 +67,11 @@ class _CreateTagPageState extends State<CreateTagPage> {
     if (_tagEntity == null) {
       return const EmptyScaffoldWithTitle('');
     }
-    return TagEditPage(
-      tagEntity: _tagEntity!,
-      newTag: true,
+    return ShowCaseWidget(
+      builder: (context) => TagEditPage(
+        tagEntity: _tagEntity!,
+        newTag: true,
+      ),
     );
   }
 }
