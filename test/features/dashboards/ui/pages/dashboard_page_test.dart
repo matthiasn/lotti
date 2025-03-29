@@ -17,6 +17,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -54,16 +55,22 @@ void main() {
       final mockTimeService = MockTimeService();
       final mockHealthImport = MockHealthImport();
 
+      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([
+          {enableDashboardsPageFlag}
+        ]),
+      );
+
       getIt
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
+        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(NavService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 

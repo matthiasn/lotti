@@ -21,6 +21,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
@@ -39,6 +40,24 @@ class _AppScreenState extends State<AppScreen> {
   final navService = getIt<NavService>();
   final journalDb = getIt<JournalDb>();
 
+  bool _isHabitsPageEnabled = true;
+  bool _isDashboardsPageEnabled = true;
+  bool _isCalendarPageEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    getIt<JournalDb>().watchActiveConfigFlagNames().forEach((configFlags) {
+      setState(() {
+        _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
+        _isDashboardsPageEnabled =
+            configFlags.contains(enableDashboardsPageFlag);
+        _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<int>(
@@ -54,9 +73,12 @@ class _AppScreenState extends State<AppScreen> {
                 index: index,
                 children: [
                   Beamer(routerDelegate: navService.tasksDelegate),
-                  Beamer(routerDelegate: navService.calendarDelegate),
-                  Beamer(routerDelegate: navService.habitsDelegate),
-                  Beamer(routerDelegate: navService.dashboardsDelegate),
+                  if (_isCalendarPageEnabled)
+                    Beamer(routerDelegate: navService.calendarDelegate),
+                  if (_isHabitsPageEnabled)
+                    Beamer(routerDelegate: navService.habitsDelegate),
+                  if (_isDashboardsPageEnabled)
+                    Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
@@ -103,26 +125,29 @@ class _AppScreenState extends State<AppScreen> {
                 ),
                 label: context.messages.navTabTitleTasks,
               ),
-              createNavBarItem(
-                semanticLabel: 'Calendar Tab',
-                icon: const Icon(Ionicons.calendar_outline),
-                activeIcon: OutboxBadgeIcon(
-                  icon: const Icon(Ionicons.calendar),
+              if (_isCalendarPageEnabled)
+                createNavBarItem(
+                  semanticLabel: 'Calendar Tab',
+                  icon: const Icon(Ionicons.calendar_outline),
+                  activeIcon: OutboxBadgeIcon(
+                    icon: const Icon(Ionicons.calendar),
+                  ),
+                  label: context.messages.navTabTitleCalendar,
                 ),
-                label: context.messages.navTabTitleCalendar,
-              ),
-              createNavBarItem(
-                semanticLabel: 'Habits Tab',
-                icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
-                activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                label: context.messages.navTabTitleHabits,
-              ),
-              createNavBarItem(
-                semanticLabel: 'Dashboards Tab',
-                icon: const Icon(Ionicons.bar_chart_outline),
-                activeIcon: const Icon(Ionicons.bar_chart),
-                label: context.messages.navTabTitleInsights,
-              ),
+              if (_isHabitsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: 'Habits Tab',
+                  icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                  activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
+                  label: context.messages.navTabTitleHabits,
+                ),
+              if (_isDashboardsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: 'Dashboards Tab',
+                  icon: const Icon(Ionicons.bar_chart_outline),
+                  activeIcon: const Icon(Ionicons.bar_chart),
+                  label: context.messages.navTabTitleInsights,
+                ),
               createNavBarItem(
                 semanticLabel: 'Logbook Tab',
                 icon: const Icon(Ionicons.book_outline),

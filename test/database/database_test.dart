@@ -53,11 +53,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: releaseHideLinkedEntries,
-    description: 'Release hiding linked entries',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableTooltipFlag,
     description: 'Enable Tooltips',
     status: true,
@@ -80,6 +75,21 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableAutoTaskTldrFlag,
     description: 'Enable auto task TLDR',
+    status: false,
+  ),
+  const ConfigFlag(
+    name: enableHabitsPageFlag,
+    description: 'Enable Habits Page?',
+    status: false,
+  ),
+  const ConfigFlag(
+    name: enableDashboardsPageFlag,
+    description: 'Enable Dashboards Page?',
+    status: false,
+  ),
+  const ConfigFlag(
+    name: enableCalendarPageFlag,
+    description: 'Enable Calendar Page?',
     status: false,
   ),
 };

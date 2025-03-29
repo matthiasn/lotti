@@ -30,6 +30,10 @@ void main() {
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final secureStorageMock = MockSecureStorage();
 
+      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([{}]),
+      );
+
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<SettingsDb>(settingsDb)

@@ -8,7 +8,10 @@ const enableMatrixFlag = 'enable_matrix';
 const enableTooltipFlag = 'enable_tooltip';
 const resendAttachments = 'resend_attachments';
 const attemptEmbedding = 'attempt_embedding';
-const releaseHideLinkedEntries = 'release_hide_linked_entries';
 const enableLoggingFlag = 'enable_logging';
 const useCloudInferenceFlag = 'use_cloud_inference';
 const enableAutoTaskTldrFlag = 'enable_auto_task_tldr';
+
+const enableHabitsPageFlag = 'enable_habits_page';
+const enableDashboardsPageFlag = 'enable_dashboards_page';
+const enableCalendarPageFlag = 'enable_calendar_page';
