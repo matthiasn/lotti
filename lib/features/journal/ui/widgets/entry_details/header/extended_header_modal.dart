@@ -43,12 +43,20 @@ class ExtendedHeaderModal {
       onTapBack: () => pageIndexNotifier.value = 0,
     );
 
+    final speechRecognitionModalPage = ModalUtils.modalSheetPage(
+      context: context,
+      title: context.messages.speechModalTitle,
+      child: SpeechModalContent(entryId: entryId),
+      onTapBack: () => pageIndexNotifier.value = 0,
+    );
+
     return WoltModalSheet.show<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
         return [
           initialModalPage,
           tagsModalPage,
+          speechRecognitionModalPage,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
@@ -87,7 +95,10 @@ class _InitialModalPageContent extends StatelessWidget {
           entryId: entryId,
           beamBack: !inLinkedEntries,
         ),
-        SpeechModalListTile(entryId: entryId),
+        SpeechModalListTile(
+          entryId: entryId,
+          pageIndexNotifier: pageIndexNotifier,
+        ),
         ShareButtonListTile(entryId: entryId),
         TagAddListTile(
           entryId: entryId,
