@@ -201,8 +201,6 @@ class NotificationService {
               )
             : null,
       ),
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.wallClockTime,
       matchDateTimeComponents: repeat ? DateTimeComponents.time : null,
       payload: deepLink,
       androidScheduleMode: AndroidScheduleMode.exact,

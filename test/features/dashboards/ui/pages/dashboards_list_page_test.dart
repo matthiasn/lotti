@@ -8,9 +8,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -662,18 +662,18 @@ packages:
     dependency: transitive
     description:
       name: fetch_api
-      sha256: "97f46c25b480aad74f7cc2ad7ccba2c5c6f08d008e68f95c1077286ce243d0e6"
+      sha256: "5198267e748828e3ac6199b7394dc60abba43ad8f6dd203e5351bd7bf3fd9efb"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "2.3.0"
   fetch_client:
     dependency: transitive
     description:
       name: fetch_client
-      sha256: "9666ee14536778474072245ed5cba07db81ae8eb5de3b7bf4a2d1e2c49696092"
+      sha256: ac87abcf7f71b509b1619b5cae7d23e4abd3912e2c17e542fdee9eac28e6829e
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   ffi:
     dependency: transitive
     description:
@@ -832,10 +832,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_form_builder
-      sha256: "375da52998c72f80dec9187bd93afa7ab202b89d5d066699368ff96d39fd4876"
+      sha256: aa3901466c70b69ae6c7f3d03fcbccaec5fde179d3fded0b10203144b546ad28
       url: "https://pub.dev"
     source: hosted
-    version: "9.7.0"
+    version: "10.0.1"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -961,26 +961,34 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_local_notifications
-      sha256: ef41ae901e7529e52934feba19ed82827b11baa67336829564aeab3129460610
+      sha256: d59eeafd6df92174b1d5f68fc9d66634c97ce2e7cfe2293476236547bb19bbbd
       url: "https://pub.dev"
     source: hosted
-    version: "18.0.1"
+    version: "19.0.0"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
       name: flutter_local_notifications_linux
-      sha256: "8f685642876742c941b29c32030f6f4f6dacd0e4eaecb3efbb187d6a3812ca01"
+      sha256: e3c277b2daab8e36ac5a6820536668d07e83851aeeb79c446e525a70710770a5
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.0"
+    version: "6.0.0"
   flutter_local_notifications_platform_interface:
     dependency: transitive
     description:
       name: flutter_local_notifications_platform_interface
-      sha256: "6c5b83c86bf819cdb177a9247a3722067dd8cc6313827ce7c77a4b238a26fd52"
+      sha256: "2569b973fc9d1f63a37410a9f7c1c552081226c597190cb359ef5d5762d1631c"
       url: "https://pub.dev"
     source: hosted
-    version: "8.0.0"
+    version: "9.0.0"
+  flutter_local_notifications_windows:
+    dependency: transitive
+    description:
+      name: flutter_local_notifications_windows
+      sha256: f8fc0652a601f83419d623c85723a3e82ad81f92b33eaa9bcc21ea1b94773e6e
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   flutter_localizations:
     dependency: "direct main"
     description: flutter

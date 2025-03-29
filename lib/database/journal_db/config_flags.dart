@@ -68,13 +68,7 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: releaseHideLinkedEntries,
-      description: 'Release hiding linked entries',
-      status: false,
-    ),
-  );
+
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: enableLoggingFlag,
@@ -100,6 +94,27 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: enableNotificationsFlag,
       description: 'Enable notifications?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableHabitsPageFlag,
+      description: 'Enable Habits Page?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableDashboardsPageFlag,
+      description: 'Enable Dashboards Page?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableCalendarPageFlag,
+      description: 'Enable Calendar Page?',
       status: false,
     ),
   );

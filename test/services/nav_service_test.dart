@@ -4,6 +4,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -23,6 +24,16 @@ void main() {
 
       when(() => secureStorageMock.writeValue(lastRouteKey, any()))
           .thenAnswer((_) async {});
+
+      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([
+          {
+            enableCalendarPageFlag,
+            enableHabitsPageFlag,
+            enableDashboardsPageFlag,
+          }
+        ]),
+      );
 
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
@@ -57,49 +68,49 @@ void main() {
       expect(navService.index, 0);
 
       beamToNamed('/settings');
-      expect(navService.index, settingsIndex);
+      expect(navService.index, navService.settingsIndex);
       expect(navService.currentPath, '/settings');
 
       beamToNamed('/settings/advanced');
-      expect(navService.index, settingsIndex);
+      expect(navService.index, navService.settingsIndex);
       expect(navService.currentPath, '/settings/advanced');
       navService.tapIndex(5);
       expect(navService.currentPath, '/settings');
 
       beamToNamed('/settings/advanced/maintenance');
-      expect(navService.index, settingsIndex);
+      expect(navService.index, navService.settingsIndex);
       expect(navService.currentPath, '/settings/advanced/maintenance');
 
       beamToNamed('/journal');
-      expect(navService.index, journalIndex);
+      expect(navService.index, navService.journalIndex);
       expect(navService.currentPath, '/journal');
       beamToNamed('/journal/some-id');
       expect(navService.currentPath, '/journal/some-id');
-      navService.tapIndex(journalIndex);
+      navService.tapIndex(navService.journalIndex);
       expect(navService.currentPath, '/journal');
 
       beamToNamed('/tasks');
-      expect(navService.index, tasksIndex);
+      expect(navService.index, navService.tasksIndex);
       expect(navService.currentPath, '/tasks');
       beamToNamed('/tasks/some-id');
       expect(navService.currentPath, '/tasks/some-id');
-      navService.tapIndex(tasksIndex);
+      navService.tapIndex(navService.tasksIndex);
       expect(navService.currentPath, '/tasks');
 
       beamToNamed('/calendar');
-      expect(navService.index, calendarIndex);
+      expect(navService.index, navService.calendarIndex);
       expect(navService.currentPath, '/calendar');
 
       beamToNamed('/dashboards');
-      expect(navService.index, dashboardsIndex);
+      expect(navService.index, navService.dashboardsIndex);
       expect(navService.currentPath, '/dashboards');
       beamToNamed('/dashboards/some-id');
       expect(navService.currentPath, '/dashboards/some-id');
-      navService.tapIndex(dashboardsIndex);
+      navService.tapIndex(navService.dashboardsIndex);
       expect(navService.currentPath, '/dashboards');
 
       beamToNamed('/habits');
-      expect(navService.index, habitsIndex);
+      expect(navService.index, navService.habitsIndex);
       expect(navService.currentPath, '/habits');
     });
   });

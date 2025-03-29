@@ -20,7 +20,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -149,9 +148,6 @@ void main() {
       when(
         () => mockJournalDb.getMeasurableDataTypeById(any()),
       ).thenAnswer((_) async => measurableWater);
-
-      when(() => mockJournalDb.getConfigFlag(releaseHideLinkedEntries))
-          .thenAnswer((_) async => true);
     });
     tearDown(getIt.reset);
 
