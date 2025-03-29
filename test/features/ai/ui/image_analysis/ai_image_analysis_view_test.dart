@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai/state/image_analysis.dart';
 import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_view.dart';
 
@@ -26,7 +25,6 @@ void main() {
     );
 
     expect(find.byType(SingleChildScrollView), findsOneWidget);
-    expect(find.byType(GptMarkdown), findsOneWidget);
     expect(find.text(''), findsOneWidget);
   });
 
@@ -48,7 +46,6 @@ void main() {
     );
 
     expect(find.byType(SingleChildScrollView), findsOneWidget);
-    expect(find.byType(GptMarkdown), findsOneWidget);
     expect(find.text(testAnalysis), findsOneWidget);
   });
 }

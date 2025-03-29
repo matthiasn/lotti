@@ -39,6 +39,7 @@ void main() {
         ProviderScope(
           child: AiImageAnalysisListTile(
             journalImage: mockJournalImage,
+            onTap: () {},
           ),
         ),
       ),
@@ -56,6 +57,7 @@ void main() {
           child: AiImageAnalysisListTile(
             journalImage: mockJournalImage,
             linkedFromId: 'linked-id',
+            onTap: () {},
           ),
         ),
       ),

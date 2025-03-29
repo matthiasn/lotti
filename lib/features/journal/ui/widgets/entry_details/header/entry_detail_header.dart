@@ -82,9 +82,9 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                 activeIcon: Icons.flag,
                 activeColor: context.colorScheme.error,
               ),
-              if (entry is Task || entry is JournalImage)
+              if (entry != null && entry is Task || entry is JournalImage)
                 AiPopUpMenu(
-                  journalEntity: entry,
+                  journalEntity: entry!,
                   linkedFromId: widget.linkedFromId,
                 ),
               IconButton(
