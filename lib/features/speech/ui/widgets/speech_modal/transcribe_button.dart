@@ -5,17 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
-import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class TranscribeButton extends ConsumerWidget {
   const TranscribeButton({
     required this.entryId,
+    required this.navigateToProgressModal,
     super.key,
   });
 
   final String entryId;
+  final void Function() navigateToProgressModal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,8 +38,7 @@ class TranscribeButton extends ConsumerWidget {
         final isQueueEmpty = getIt<AsrService>().enqueue(entry: item);
 
         if (await isQueueEmpty) {
-          if (!context.mounted) return;
-          await TranscriptionProgressModal.show(context);
+          navigateToProgressModal();
         }
 
         await Future<void>.delayed(

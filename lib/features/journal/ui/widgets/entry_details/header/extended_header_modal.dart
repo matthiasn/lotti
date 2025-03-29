@@ -6,6 +6,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_wid
 import 'package:lotti/features/journal/ui/widgets/tags/tag_add.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
@@ -46,7 +47,17 @@ class ExtendedHeaderModal {
     final speechRecognitionModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.speechModalTitle,
-      child: SpeechModalContent(entryId: entryId),
+      child: SpeechModalContent(
+        entryId: entryId,
+        navigateToProgressModal: () => pageIndexNotifier.value = 3,
+      ),
+      onTapBack: () => pageIndexNotifier.value = 0,
+    );
+
+    final transcriptionProgressModalPage = ModalUtils.modalSheetPage(
+      context: context,
+      title: context.messages.speechModalTranscriptionProgress,
+      child: const TranscriptionProgressModalContent(),
       onTapBack: () => pageIndexNotifier.value = 0,
     );
 
@@ -57,6 +68,7 @@ class ExtendedHeaderModal {
           initialModalPage,
           tagsModalPage,
           speechRecognitionModalPage,
+          transcriptionProgressModalPage,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,

@@ -38,17 +38,22 @@ class SpeechModalListTile extends ConsumerWidget {
 class SpeechModalContent extends StatelessWidget {
   const SpeechModalContent({
     required this.entryId,
+    required this.navigateToProgressModal,
     super.key,
   });
 
   final String entryId;
+  final void Function() navigateToProgressModal;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         const SizedBox(height: 20),
-        TranscribeButton(entryId: entryId),
+        TranscribeButton(
+          entryId: entryId,
+          navigateToProgressModal: navigateToProgressModal,
+        ),
         LanguageDropdown(entryId: entryId),
         TranscriptsList(entryId: entryId),
       ],
