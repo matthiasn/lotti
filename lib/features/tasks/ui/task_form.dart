@@ -6,15 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
-import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
-import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/features/tasks/ui/header/task_info_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 
 class TaskForm extends ConsumerStatefulWidget {
   const TaskForm(
@@ -39,7 +36,6 @@ class _TaskFormState extends ConsumerState<TaskForm> {
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
-    final save = notifier.save;
     final formKey = entryState?.formKey;
 
     if (entryState == null) {
@@ -79,39 +75,11 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                   ),
                 ),
                 inputSpacer,
+                TaskInfoRow(taskId: widget.task.id),
+                inputSpacer,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(
-                      width: 120,
-                      child: TextField(
-                        decoration: inputDecoration(
-                          labelText: context.messages.taskEstimateLabel,
-                          themeData: Theme.of(context),
-                        ),
-                        style: context.textTheme.titleMedium,
-                        readOnly: true,
-                        controller: TextEditingController(
-                          text:
-                              formatDuration(taskData.estimate).substring(0, 5),
-                        ),
-                        onTap: () async {
-                          final duration = await showModalBottomSheet<Duration>(
-                            context: context,
-                            builder: (context) {
-                              return DurationBottomSheet(taskData.estimate);
-                            },
-                          );
-                          if (duration != null) {
-                            await save(estimate: duration);
-                          }
-                        },
-                      ),
-                    ),
-                    TimeRecordingIcon(
-                      taskId: entryId,
-                      padding: const EdgeInsets.only(left: 10),
-                    ),
                     const Spacer(),
                     SizedBox(
                       width: 180,
@@ -180,21 +148,6 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 240),
-                      child: CategoryField(
-                        categoryId: widget.task.categoryId,
-                        onSave: (category) {
-                          notifier.updateCategoryId(category?.id);
-                        },
                       ),
                     ),
                   ],
