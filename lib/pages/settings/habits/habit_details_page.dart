@@ -58,32 +58,25 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
 
         return Scaffold(
           appBar: TitleWidgetAppBar(
-            title: Row(
-              children: [
-                Text(
-                  context.messages.settingsHabitsDefinitionTitle,
-                ),
-                IconButton(
-                  onPressed: () {
-                    ShowCaseWidget.of(context).startShowCase([
-                      _habitNameKey,
-                      _habitDescKey,
-                      _habitCateKey,
-                      _habitDashKey,
-                      _habitPriorKey,
-                      _habitPrivKey,
-                      _habitArchKey,
-                      _habitStartDateKey,
-                      _habitShowFromTimeKey,
-                      _habitAlertAtKey,
-                      _habitDeleKey,
-                    ]);
-                  },
-                  icon: const Icon(
-                    Icons.info_outline_rounded,
-                  ),
-                ),
-              ],
+            title: IconButton(
+              onPressed: () {
+                ShowCaseWidget.of(context).startShowCase([
+                  _habitNameKey,
+                  _habitDescKey,
+                  _habitCateKey,
+                  _habitDashKey,
+                  _habitPriorKey,
+                  _habitPrivKey,
+                  _habitArchKey,
+                  _habitStartDateKey,
+                  _habitShowFromTimeKey,
+                  _habitAlertAtKey,
+                  _habitDeleKey,
+                ]);
+              },
+              icon: const Icon(
+                Icons.info_outline_rounded,
+              ),
             ),
             actions: [
               if (state.dirty)
@@ -91,10 +84,16 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                   key: const Key('habit_save'),
                   onPressed: cubit.onSavePressed,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                    ),
                     child: Text(
                       context.messages.settingsHabitsSaveLabel,
-                      style: saveButtonStyle(Theme.of(context)),
+                      style: saveButtonStyle(
+                        Theme.of(
+                          context,
+                        ),
+                      ),
                       semanticsLabel: 'Save Habit',
                     ),
                   ),
@@ -138,7 +137,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           ),
                           showcaseKey: _habitDescKey,
                           child: FormTextField(
-                            key: const Key('habit_description_field'),
+                            key: const Key(
+                              'habit_description_field',
+                            ),
                             initialValue: item.description,
                             labelText:
                                 context.messages.settingsHabitsDescriptionLabel,
