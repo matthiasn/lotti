@@ -68,7 +68,6 @@ class TaskCategoryWidget extends StatelessWidget {
                   child: Text(
                     category?.name ?? '-',
                     style: context.textTheme.titleMedium,
-                    //overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
