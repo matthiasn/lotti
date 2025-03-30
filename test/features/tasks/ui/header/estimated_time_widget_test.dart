@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,12 +33,15 @@ class MockSaveCallback extends Mock {
   Future<void> call({Duration? estimate, bool stopRecording = false});
 }
 
+class MockTimeService extends Mock implements TimeService {}
+
 // Create a mock build context for testing
 class MockBuildContext extends Mock implements BuildContext {}
 
 void main() {
   late MockTask mockTask;
   late MockSaveCallback mockSave;
+  late MockTimeService mockTimeService;
 
   setUp(() {
     final taskData = TaskData(
@@ -54,6 +59,15 @@ void main() {
 
     mockTask = MockTask(taskData);
     mockSave = MockSaveCallback();
+    mockTimeService = MockTimeService();
+
+    // Register the mock TimeService in GetIt
+    getIt.registerSingleton<TimeService>(mockTimeService);
+
+    // Setup the mock responses
+    when(() => mockTimeService.getStream())
+        .thenAnswer((_) => Stream<JournalEntity?>.fromIterable([]));
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
 
     when(
       () => mockSave(
@@ -62,6 +76,8 @@ void main() {
       ),
     ).thenAnswer((_) async {});
   });
+
+  tearDown(getIt.reset);
 
   testWidgets('renders with task estimate', (tester) async {
     await tester.pumpWidget(
