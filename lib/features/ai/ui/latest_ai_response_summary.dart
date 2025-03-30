@@ -95,7 +95,6 @@ class LatestAiResponseSummary extends ConsumerWidget {
               ),
             if (!isRunning)
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     aiResponse == null

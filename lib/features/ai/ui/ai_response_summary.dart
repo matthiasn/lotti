@@ -22,48 +22,45 @@ class AiResponseSummary extends StatelessWidget {
       child: GptMarkdown(aiResponse.data.response),
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-      child: GestureDetector(
-        onDoubleTap: () {
-          ModalUtils.showSinglePageModal<void>(
-            context: context,
-            builder: (BuildContext _) {
-              return AiResponseSummaryModalContent(
-                aiResponse,
-                linkedFromId: linkedFromId,
-              );
-            },
-          );
-        },
-        child: fadeOut
-            ? ShaderMask(
-                shaderCallback: (rect) {
-                  return const LinearGradient(
-                    begin: Alignment.center,
-                    end: Alignment.bottomCenter,
-                    stops: [0.3, 1.0],
-                    colors: [
-                      Colors.black,
-                      Colors.transparent,
-                    ],
-                  ).createShader(
-                    Rect.fromLTRB(
-                      0,
-                      0,
-                      rect.width,
-                      rect.height,
-                    ),
-                  );
-                },
-                blendMode: BlendMode.dstIn,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: content,
-                ),
-              )
-            : content,
-      ),
+    return GestureDetector(
+      onDoubleTap: () {
+        ModalUtils.showSinglePageModal<void>(
+          context: context,
+          builder: (BuildContext _) {
+            return AiResponseSummaryModalContent(
+              aiResponse,
+              linkedFromId: linkedFromId,
+            );
+          },
+        );
+      },
+      child: fadeOut
+          ? ShaderMask(
+              shaderCallback: (rect) {
+                return const LinearGradient(
+                  begin: Alignment.center,
+                  end: Alignment.bottomCenter,
+                  stops: [0.3, 1.0],
+                  colors: [
+                    Colors.black,
+                    Colors.transparent,
+                  ],
+                ).createShader(
+                  Rect.fromLTRB(
+                    0,
+                    0,
+                    rect.width,
+                    rect.height,
+                  ),
+                );
+              },
+              blendMode: BlendMode.dstIn,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: content,
+              ),
+            )
+          : content,
     );
   }
 }
