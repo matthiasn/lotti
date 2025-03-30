@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/task_utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 class TaskStatusWidget extends StatelessWidget {
@@ -15,7 +14,7 @@ class TaskStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = taskColor(task.data.status) ?? Colors.grey;
+    final backgroundColor = task.data.status.color;
     final label = task.data.status.localizedLabel(context);
 
     return Chip(
