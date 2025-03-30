@@ -11,7 +11,7 @@ DefaultStyles customEditorStyles({
 
   return DefaultStyles(
     h1: DefaultTextBlockStyle(
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inclusiveSans(
         fontSize: fontSizeLarge,
         color: textColor,
       ),
@@ -21,7 +21,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     h2: DefaultTextBlockStyle(
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inclusiveSans(
         fontSize: 20,
         color: textColor,
       ),
@@ -31,7 +31,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     h3: DefaultTextBlockStyle(
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inclusiveSans(
         fontSize: 18,
         color: textColor,
       ),
@@ -41,7 +41,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     paragraph: DefaultTextBlockStyle(
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inclusiveSans(
         fontSize: fontSizeMedium,
         color: textColor,
       ),
@@ -51,7 +51,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     placeHolder: DefaultTextBlockStyle(
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inclusiveSans(
         fontSize: fontSizeMedium,
         color: textColor?.withAlpha(72),
       ),
@@ -60,7 +60,7 @@ DefaultStyles customEditorStyles({
       VerticalSpacing.zero,
       null,
     ),
-    bold: GoogleFonts.plusJakartaSans(
+    bold: GoogleFonts.inclusiveSans(
       fontSize: fontSizeMedium,
       color: textColor,
       fontWeight: FontWeight.w900,
@@ -74,7 +74,7 @@ DefaultStyles customEditorStyles({
       backgroundColor: codeBlockBackground,
     ),
     lists: DefaultListBlockStyle(
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inclusiveSans(
         fontSize: fontSizeMedium,
         color: textColor,
       ),

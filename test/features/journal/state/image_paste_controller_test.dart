@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -29,7 +30,8 @@ void main() {
   setUpAll(() async {
     setFakeDocumentsPath();
     getIt
-        .registerSingleton<Directory>(await getApplicationDocumentsDirectory());
+      ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true));
   });
 
   setUp(() {

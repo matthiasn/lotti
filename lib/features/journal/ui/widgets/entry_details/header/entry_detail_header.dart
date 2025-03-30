@@ -88,7 +88,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   linkedFromId: widget.linkedFromId,
                 ),
               IconButton(
-                icon: const Icon(Icons.more_horiz),
+                icon: Icon(
+                  Icons.more_horiz,
+                  color: context.colorScheme.outline,
+                ),
                 onPressed: () => ExtendedHeaderModal.show(
                   context: context,
                   entryId: id,
@@ -147,7 +150,10 @@ class SwitchIconWidget extends StatelessWidget {
                 activeIcon,
                 color: activeColor,
               )
-            : Icon(icon),
+            : Icon(
+                icon,
+                color: context.colorScheme.outline,
+              ),
       ),
     );
   }

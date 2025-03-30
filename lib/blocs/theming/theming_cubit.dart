@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -49,7 +50,7 @@ class ThemingCubit extends Cubit<ThemingState> {
     _lightTheme = withOverrides(
       FlexThemeData.light(
         scheme: scheme,
-        fontFamily: mainFont,
+        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
       ),
     );
   }
@@ -59,7 +60,7 @@ class ThemingCubit extends Cubit<ThemingState> {
     _darkTheme = withOverrides(
       FlexThemeData.dark(
         scheme: scheme,
-        fontFamily: mainFont,
+        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
       ),
     );
   }
