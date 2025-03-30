@@ -74,7 +74,7 @@ class JournalCardTitle extends StatelessWidget {
                       item is! QuantitativeEntry &&
                       item is! SurveyEntry) ...[
                     const SizedBox(width: 20),
-                    CategoryColorIcon(item.meta.categoryId),
+                    CategoryColorIcon(item.meta.categoryId, size: 12),
                   ],
                 ],
               ),

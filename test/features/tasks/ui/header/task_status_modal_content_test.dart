@@ -176,8 +176,11 @@ void main() {
         final chip = tester.widget<FilterChoiceChip>(
           find.widgetWithText(FilterChoiceChip, status),
         );
-        expect(chip.selectedColor, expectedColor,
-            reason: 'Color mismatch for status $status');
+        expect(
+          chip.selectedColor,
+          expectedColor,
+          reason: 'Color mismatch for status $status',
+        );
       }
     });
 

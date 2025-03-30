@@ -43,36 +43,33 @@ class TaskCategoryWidget extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.messages.taskCategoryLabel,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.outline,
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.taskCategoryLabel,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ColorIcon(
+                color,
+                size: 12,
               ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ColorIcon(
-                  color,
-                  size: 12,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  category?.name ?? '-',
-                  style: context.textTheme.titleMedium,
-                ),
-              ],
-            ),
-          ],
-        ),
+              const SizedBox(width: 10),
+              Text(
+                category?.name ?? '-',
+                style: context.textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -53,7 +53,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const SizedBox(height: 10),
+                const SizedBox(height: 5),
                 FormBuilderTextField(
                   autofocus: widget.focusOnTitle,
                   focusNode: notifier.taskTitleFocusNode,
@@ -74,89 +74,17 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                     requestFocus: false,
                   ),
                 ),
-                inputSpacer,
-                TaskInfoRow(taskId: widget.task.id),
-                inputSpacer,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Spacer(),
-                    SizedBox(
-                      width: 180,
-                      child: FormBuilderDropdown<String>(
-                        name: 'status',
-                        borderRadius: BorderRadius.circular(10),
-                        elevation: 2,
-                        onChanged: notifier.updateTaskStatus,
-                        decoration: inputDecoration(
-                          labelText: 'Status:',
-                          themeData: Theme.of(context),
-                        ),
-                        key: Key('task_status_dropdown_${taskData.status}'),
-                        initialValue: taskData.status.map(
-                              open: (_) => 'OPEN',
-                              groomed: (_) => 'GROOMED',
-                              started: (_) => 'STARTED',
-                              inProgress: (_) => 'IN PROGRESS',
-                              blocked: (_) => 'BLOCKED',
-                              onHold: (_) => 'ON HOLD',
-                              done: (_) => 'DONE',
-                              rejected: (_) => 'REJECTED',
-                            ) ??
-                            'OPEN',
-                        items: [
-                          DropdownMenuItem<String>(
-                            value: 'OPEN',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusOpen,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'GROOMED',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusGroomed,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'IN PROGRESS',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusInProgress,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'BLOCKED',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusBlocked,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'ON HOLD',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusOnHold,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'DONE',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusDone,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'REJECTED',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusRejected,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: TaskInfoRow(taskId: widget.task.id),
                 ),
                 const SizedBox(height: 10),
               ],
             ),
           ),
         ),
+        EditorWidget(entryId: entryId),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5),
           child: LatestAiResponseSummary(
@@ -165,7 +93,6 @@ class _TaskFormState extends ConsumerState<TaskForm> {
           ),
         ),
         const SizedBox(height: 10),
-        EditorWidget(entryId: entryId),
         ChecklistsWidget(entryId: entryId, task: widget.task),
         const SizedBox(height: 20),
       ],
