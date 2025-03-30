@@ -41,6 +41,7 @@ void main() {
           ActionItemSuggestionsListTile(
             journalEntity: mockTask,
             linkedFromId: 'linked-id',
+            onTap: null,
           ),
         ),
       );
@@ -56,6 +57,7 @@ void main() {
         createTestApp(
           AiTaskSummaryListTile(
             journalEntity: mockTask,
+            onTap: null,
           ),
         ),
       );
@@ -71,6 +73,7 @@ void main() {
           AiTaskSummaryListTile(
             journalEntity: mockTask,
             linkedFromId: 'linked-id',
+            onTap: () {},
           ),
         ),
       );

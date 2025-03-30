@@ -61,9 +61,7 @@ class _ChecklistSuggestionsWidgetState
       ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.aiAssistantThinking,
-        builder: (_) => ActionItemSuggestionsView(
-          id: widget.itemId,
-        ),
+        builder: (_) => ActionItemSuggestionsView(id: widget.itemId),
       );
     }
 

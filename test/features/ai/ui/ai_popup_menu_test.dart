@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_list_tile.dart';
 import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_list_tile.dart';
 
+import '../../../test_data/test_data.dart';
 import '../../../test_helper.dart';
 
 void main() {
@@ -13,8 +14,8 @@ void main() {
     testWidgets('renders AI assistant icon button', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          const AiPopUpMenu(
-            journalEntity: null,
+          AiPopUpMenu(
+            journalEntity: testTask,
             linkedFromId: null,
           ),
         ),
@@ -99,12 +100,12 @@ void main() {
       expect(find.byType(AiTaskSummaryListTile), findsNothing);
     });
 
-    testWidgets('shows no AI options when journalEntity is null',
+    testWidgets('shows no AI options when journalEntity is not Task or Image',
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          const AiPopUpMenu(
-            journalEntity: null,
+          AiPopUpMenu(
+            journalEntity: testAudioEntry,
             linkedFromId: null,
           ),
         ),

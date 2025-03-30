@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai/state/image_analysis.dart';
+import 'package:lotti/themes/theme.dart';
 
 class AiImageAnalysisView extends ConsumerWidget {
   const AiImageAnalysisView({
@@ -17,13 +17,20 @@ class AiImageAnalysisView extends ConsumerWidget {
       aiImageAnalysisControllerProvider(id: id),
     );
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 600),
-          child: SelectionArea(
-            child: GptMarkdown(summary),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 240),
+      child: SingleChildScrollView(
+        reverse: true,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600),
+            child: Text(
+              summary,
+              style: monospaceTextStyleSmall.copyWith(
+                fontWeight: FontWeight.w300,
+              ),
+            ),
           ),
         ),
       ),
