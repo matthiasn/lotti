@@ -2,6 +2,7 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
@@ -71,8 +72,7 @@ class AudioPlayerWidget extends ConsumerWidget {
                   IconButton(
                     icon: Text(
                       speedLabelMap[state.speed] ?? '1x',
-                      style: TextStyle(
-                        fontFamily: 'Oswald',
+                      style: GoogleFonts.oswald(
                         fontWeight: FontWeight.bold,
                         color: (state.speed != 1)
                             ? context.colorScheme.error

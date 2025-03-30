@@ -25,7 +25,10 @@ class AiPopUpMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final journalEntity = this.journalEntity;
     return IconButton(
-      icon: const Icon(Icons.assistant_rounded),
+      icon: Icon(
+        Icons.assistant_rounded,
+        color: context.colorScheme.outline,
+      ),
       onPressed: () => AiModal.show<void>(
         context: context,
         journalEntity: journalEntity,

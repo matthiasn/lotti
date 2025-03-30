@@ -17,14 +17,11 @@ class DurationWidget extends ConsumerWidget {
     required this.item,
     required this.linkedFrom,
     super.key,
-    this.style,
   });
 
   final TimeService _timeService = getIt<TimeService>();
   final JournalEntity item;
   final JournalEntity? linkedFrom;
-
-  final TextStyle? style;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,8 +53,9 @@ class DurationWidget extends ConsumerWidget {
           isRecording = true;
         }
 
-        final labelColor =
-            isRecording ? context.colorScheme.error : style?.color;
+        final labelColor = isRecording
+            ? context.colorScheme.error
+            : context.colorScheme.outline;
 
         final saveFn = ref.read(provider.notifier).save;
 
@@ -130,8 +128,8 @@ class FormattedTime extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       formatDuration(entryDuration(displayed)),
-      style: TextStyle(
-        fontFeatures: const [FontFeature.tabularFigures()],
+      style: context.textTheme.bodyMedium?.copyWith(
+        fontFeatures: [const FontFeature.tabularFigures()],
         color: labelColor,
       ),
     );
