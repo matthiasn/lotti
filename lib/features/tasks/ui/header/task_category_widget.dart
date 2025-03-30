@@ -58,10 +58,11 @@ class TaskCategoryWidget extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ColorIcon(
                   color,
-                  size: 15,
+                  size: 12,
                 ),
                 const SizedBox(width: 10),
                 Text(
