@@ -39,7 +39,7 @@ class CategorySelectionIconButton extends ConsumerWidget {
           },
         );
       },
-      child: CategoryColorIcon(entry.categoryId),
+      child: CategoryColorIcon(entry.categoryId, size: 12),
     );
   }
 }

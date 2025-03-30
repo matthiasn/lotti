@@ -45,31 +45,36 @@ class TaskCategoryWidget extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.messages.taskCategoryLabel,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.outline,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.messages.taskCategoryLabel,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.outline,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ColorIcon(
-                color,
-                size: 12,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                category?.name ?? '-',
-                style: context.textTheme.titleMedium,
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                ColorIcon(
+                  color,
+                  size: 12,
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    category?.name ?? '-',
+                    style: context.textTheme.titleMedium,
+                    //overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -45,12 +45,10 @@ class TaskStatusWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 90),
-            child: Text(
-              statusLabel,
-              style: context.textTheme.titleMedium?.copyWith(color: color),
-            ),
+          Text(
+            statusLabel,
+            softWrap: false,
+            style: context.textTheme.titleMedium?.copyWith(color: color),
           ),
         ],
       ),

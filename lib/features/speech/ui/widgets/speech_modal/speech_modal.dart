@@ -49,7 +49,6 @@ class SpeechModalContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 20),
         TranscribeButton(
           entryId: entryId,
           navigateToProgressModal: navigateToProgressModal,

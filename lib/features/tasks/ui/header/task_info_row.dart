@@ -14,11 +14,21 @@ class TaskInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        EstimatedTimeWrapper(taskId: taskId),
-        TaskStatusWrapper(taskId: taskId),
-        TaskCategoryWrapper(taskId: taskId),
+        Flexible(
+          flex: 2,
+          child: EstimatedTimeWrapper(taskId: taskId),
+        ),
+        Flexible(
+          flex: 4,
+          child: TaskCategoryWrapper(taskId: taskId),
+        ),
+        Container(
+          constraints: const BoxConstraints(minWidth: 90),
+          child: TaskStatusWrapper(taskId: taskId),
+        ),
       ],
     );
   }
