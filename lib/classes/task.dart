@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'task.freezed.dart';
@@ -144,4 +146,19 @@ TaskStatus taskStatusFromString(String status) {
     );
   }
   return newStatus;
+}
+
+extension TaskStatusExtension on TaskStatus {
+  String localizedLabel(BuildContext context) {
+    return switch (this) {
+      _TaskOpen() => context.messages.taskStatusOpen,
+      _TaskGroomed() => context.messages.taskStatusGroomed,
+      _TaskInProgress() => context.messages.taskStatusInProgress,
+      _TaskBlocked() => context.messages.taskStatusBlocked,
+      _TaskOnHold() => context.messages.taskStatusOnHold,
+      _TaskDone() => context.messages.taskStatusDone,
+      _TaskRejected() => context.messages.taskStatusRejected,
+      _ => 'Unknown',
+    };
+  }
 }
