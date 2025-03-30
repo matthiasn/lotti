@@ -16,7 +16,6 @@ class AppTheme {
 }
 
 const double inputBorderRadius = 10;
-const mainFont = 'PlusJakartaSans';
 
 const verticalModalSpacer = SizedBox(
   height: 30,
@@ -324,7 +323,6 @@ ThemeData withOverrides(ThemeData themeData) {
         textStyle: WidgetStateProperty.resolveWith((states) {
           return const TextStyle(
             fontSize: fontSizeMediumLarge,
-            fontFamily: mainFont,
           );
         }),
       ),

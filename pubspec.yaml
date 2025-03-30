@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.589+2970
+version: 0.9.590+2971
 
 msix_config:
   display_name: LottiApp
@@ -213,6 +213,14 @@ flutter:
   generate: true
   uses-material-design: true
 
+  fonts:
+    - family: Inconsolata
+      fonts:
+        - asset: assets/fonts/Inconsolata/Inconsolata-Regular.ttf
+    - family: InclusiveSans
+      fonts:
+        - asset: assets/fonts/InclusiveSans/InclusiveSans-Regular.ttf
+
   assets:
     - assets/icons/
     - assets/lang/
@@ -222,37 +230,6 @@ flutter:
     # from https://www.iconfinder.com/recepkutuk
     - assets/images/map/728975_location_map_marker_pin_place_icon.png
     - assets/images/tutorial/
-
-  fonts:
-    - family: Oswald
-      fonts:
-        - asset: assets/fonts/Oswald-ExtraLight.ttf
-        - asset: assets/fonts/Oswald-Light.ttf
-        - asset: assets/fonts/Oswald-Regular.ttf
-        - asset: assets/fonts/Oswald-Medium.ttf
-        - asset: assets/fonts/Oswald-SemiBold.ttf
-        - asset: assets/fonts/Oswald-Bold.ttf
-    - family: Inconsolata
-      fonts:
-        - asset: assets/fonts/Inconsolata/Inconsolata-Regular.ttf
-        - asset: assets/fonts/Inconsolata/Inconsolata-Light.ttf
-        - asset: assets/fonts/Inconsolata/Inconsolata-Medium.ttf
-    - family: PlusJakartaSans
-      fonts:
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Bold.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraBold.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraBoldItalic.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraLight.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraLightItalic.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Italic.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Light.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-LightItalic.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Medium.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-MediumItalic.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Regular.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.ttf
-        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.ttf
 
 flutter_native_splash:
   color: "#333333"

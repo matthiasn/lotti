@@ -46,11 +46,7 @@ class JournalCardTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 8,
-        bottom: 8,
-        left: 8,
-      ),
+      padding: const EdgeInsets.only(top: 5, bottom: 5),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +61,10 @@ class JournalCardTitle extends StatelessWidget {
                     item is JournalEvent
                         ? dfShort.format(item.meta.dateFrom)
                         : dfShorter.format(item.meta.dateFrom),
-                    style: monospaceTextStyle,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                      color: context.colorScheme.outline,
+                    ),
                   ),
                   if (item is! ChecklistItem &&
                       item is! Checklist &&
@@ -258,7 +257,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
     final errorColor = context.colorScheme.error;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
+      padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
       child: Card(
         child: ListTile(
           leading: updatedItem.maybeMap(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/themes/theme.dart';
 
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
@@ -34,8 +35,9 @@ class EntryDatetimeWidget extends ConsumerWidget {
           padding: const EdgeInsets.only(left: 5),
           child: Text(
             dfShorter.format(entry.meta.dateFrom),
-            style: const TextStyle(
-              fontFeatures: [FontFeature.tabularFigures()],
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontFeatures: [const FontFeature.tabularFigures()],
+              color: context.colorScheme.outline,
             ),
           ),
         ),
