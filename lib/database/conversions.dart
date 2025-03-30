@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
@@ -36,16 +37,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
   );
 
   final taskStatus = entity.maybeMap(
-    task: (task) => task.data.status.map(
-      open: (_) => 'OPEN',
-      groomed: (_) => 'GROOMED',
-      started: (_) => 'STARTED',
-      inProgress: (_) => 'IN PROGRESS',
-      blocked: (_) => 'BLOCKED',
-      onHold: (_) => 'ON HOLD',
-      done: (_) => 'DONE',
-      rejected: (_) => 'REJECTED',
-    ),
+    task: (task) => task.data.status.toDbString,
     orElse: () => '',
   );
 

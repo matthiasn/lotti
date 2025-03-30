@@ -15,14 +15,17 @@ class TaskStatusWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: taskId);
+    final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).valueOrNull;
-
     final task = entryState?.entry;
 
     if (task is! Task) {
       return const SizedBox.shrink();
     }
 
-    return TaskStatusWidget(task: task);
+    return TaskStatusWidget(
+      task: task,
+      onStatusChanged: notifier.updateTaskStatus,
+    );
   }
 }

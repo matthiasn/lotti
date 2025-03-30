@@ -162,6 +162,17 @@ extension TaskStatusExtension on TaskStatus {
     };
   }
 
+  String get toDbString => map(
+        open: (_) => 'OPEN',
+        groomed: (_) => 'GROOMED',
+        started: (_) => 'STARTED',
+        inProgress: (_) => 'IN PROGRESS',
+        blocked: (_) => 'BLOCKED',
+        onHold: (_) => 'ON HOLD',
+        done: (_) => 'DONE',
+        rejected: (_) => 'REJECTED',
+      );
+
   Color get color {
     return map(
       open: (_) => Colors.orange,
