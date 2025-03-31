@@ -8,6 +8,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
+import 'package:lotti/features/manual/widget/showcase_text_style.dart';
+import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -26,6 +28,7 @@ import 'package:lotti/widgets/settings/entity_detail_card.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
   const DashboardDefinitionPage({
@@ -43,10 +46,17 @@ class DashboardDefinitionPage extends StatefulWidget {
 }
 
 class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
+  final _dashboardNameKey = GlobalKey();
+  final _dashboardDescriptionKey = GlobalKey();
+  final _dashboardPrivateKey = GlobalKey();
+  final _dashboardActiveKey = GlobalKey();
+  final _dashboardCateKey = GlobalKey();
+
   final TagsService tagsService = getIt<TagsService>();
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
+
   bool dirty = false;
 
   late List<DashboardItem> dashboardItems;
@@ -308,8 +318,23 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
             }
 
             return Scaffold(
-              appBar: TitleAppBar(
-                title: '',
+              appBar: TitleWidgetAppBar(
+                title: IconButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).startShowCase(
+                      [
+                        _dashboardNameKey,
+                        _dashboardDescriptionKey,
+                        _dashboardPrivateKey,
+                        _dashboardActiveKey,
+                        _dashboardCateKey,
+                      ],
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.info_outline_rounded,
+                  ),
+                ),
                 actions: [
                   if (dirty)
                     TextButton(
@@ -340,42 +365,73 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       },
                       child: Column(
                         children: <Widget>[
-                          FormTextField(
-                            initialValue: widget.dashboard.name,
-                            labelText: context.messages.dashboardNameLabel,
-                            name: 'name',
-                            semanticsLabel: 'Dashboard - name field',
-                            key: const Key('dashboard_name_field'),
-                            large: true,
-                          ),
-                          inputSpacer,
-                          FormTextField(
-                            initialValue: widget.dashboard.description,
-                            labelText:
-                                context.messages.dashboardDescriptionLabel,
-                            name: 'description',
-                            semanticsLabel: 'Dashboard - description field',
-                            fieldRequired: false,
-                            key: const Key(
-                              'dashboard_description_field',
+                          ShowcaseWithWidget(
+                            startNav: true,
+                            showcaseKey: _dashboardNameKey,
+                            description: const ShowcaseTextStyle(
+                              descriptionText: 'TODO',
+                            ),
+                            child: FormTextField(
+                              initialValue: widget.dashboard.name,
+                              labelText: context.messages.dashboardNameLabel,
+                              name: 'name',
+                              semanticsLabel: 'Dashboard - name field',
+                              key: const Key('dashboard_name_field'),
+                              large: true,
                             ),
                           ),
                           inputSpacer,
-                          FormSwitch(
-                            name: 'private',
-                            initialValue: widget.dashboard.private,
-                            title: context.messages.dashboardPrivateLabel,
-                            activeColor: context.colorScheme.error,
+                          ShowcaseWithWidget(
+                            showcaseKey: _dashboardDescriptionKey,
+                            description: const ShowcaseTextStyle(
+                              descriptionText: 'TODO',
+                            ),
+                            child: FormTextField(
+                              initialValue: widget.dashboard.description,
+                              labelText:
+                                  context.messages.dashboardDescriptionLabel,
+                              name: 'description',
+                              semanticsLabel: 'Dashboard - description field',
+                              fieldRequired: false,
+                              key: const Key(
+                                'dashboard_description_field',
+                              ),
+                            ),
                           ),
-                          FormSwitch(
-                            name: 'active',
-                            initialValue: widget.dashboard.active,
-                            title: context.messages.dashboardActiveLabel,
-                            activeColor: starredGold,
+                          inputSpacer,
+                          ShowcaseWithWidget(
+                            showcaseKey: _dashboardPrivateKey,
+                            description: const ShowcaseTextStyle(
+                              descriptionText: 'TODO',
+                            ),
+                            child: FormSwitch(
+                              name: 'private',
+                              initialValue: widget.dashboard.private,
+                              title: context.messages.dashboardPrivateLabel,
+                              activeColor: context.colorScheme.error,
+                            ),
                           ),
-                          SelectDashboardCategoryWidget(
-                            setCategory: setCategory,
-                            categoryId: categoryId,
+                          ShowcaseWithWidget(
+                            showcaseKey: _dashboardActiveKey,
+                            description: const ShowcaseTextStyle(
+                              descriptionText: 'TODO',
+                            ),
+                            child: FormSwitch(
+                              name: 'active',
+                              initialValue: widget.dashboard.active,
+                              title: context.messages.dashboardActiveLabel,
+                              activeColor: starredGold,
+                            ),
+                          ),
+                          ShowcaseWithWidget(
+                            showcaseKey: _dashboardCateKey,
+                            description: const ShowcaseTextStyle(
+                              descriptionText: 'TODO',
+                            ),
+                            child: SelectDashboardCategoryWidget(
+                              setCategory: setCategory,
+                              categoryId: categoryId,
+                            ),
                           ),
                         ],
                       ),
