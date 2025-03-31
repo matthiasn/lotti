@@ -246,17 +246,18 @@ class EntryController extends _$EntryController {
   Future<void> updateTaskStatus(String? status) async {
     final task = state.value?.entry;
 
-    if (task is Task) {
+    if (task is Task &&
+        status != null &&
+        status != task.data.status.toDbString) {
       await _persistenceLogic.updateTask(
         journalEntityId: id,
         taskData: task.data.copyWith(
-          status:
-              status != null ? taskStatusFromString(status) : task.data.status,
+          status: taskStatusFromString(status),
         ),
       );
-    }
 
-    await HapticFeedback.heavyImpact();
+      await HapticFeedback.heavyImpact();
+    }
   }
 
   Future<void> updateRating(double stars) async {

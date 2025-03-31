@@ -75,7 +75,6 @@ class LatestAiResponseSummary extends ConsumerWidget {
           children: [
             if (isRunning)
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     context.messages.aiTaskSummaryRunning,
@@ -95,7 +94,6 @@ class LatestAiResponseSummary extends ConsumerWidget {
               ),
             if (!isRunning)
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     aiResponse == null

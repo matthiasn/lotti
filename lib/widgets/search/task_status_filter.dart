@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
@@ -56,16 +57,6 @@ class TaskStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizationLookup = {
-      'OPEN': context.messages.taskStatusOpen,
-      'GROOMED': context.messages.taskStatusGroomed,
-      'IN PROGRESS': context.messages.taskStatusInProgress,
-      'BLOCKED': context.messages.taskStatusBlocked,
-      'ON HOLD': context.messages.taskStatusOnHold,
-      'DONE': context.messages.taskStatusDone,
-      'REJECTED': context.messages.taskStatusRejected,
-    };
-
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
@@ -86,19 +77,10 @@ class TaskStatusChip extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final backgroundColor = switch (status) {
-          'OPEN' => Colors.orange,
-          'GROOMED' => Colors.lightGreenAccent,
-          'IN PROGRESS' => Colors.blue,
-          'BLOCKED' => Colors.red,
-          'ON HOLD' => Colors.red,
-          'DONE' => Colors.green,
-          'REJECTED' => Colors.red,
-          String() => Colors.grey,
-        };
+        final backgroundColor = taskColorFromStatusString(status);
 
         return FilterChoiceChip(
-          label: '${localizationLookup[status]}',
+          label: taskLabelFromStatusString(status, context),
           isSelected: isSelected,
           onTap: onTap,
           onLongPress: onLongPress,
