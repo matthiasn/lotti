@@ -38,11 +38,13 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.showBackButton = true,
     this.actions,
+    this.margin = const EdgeInsets.symmetric(horizontal: 70),
   });
 
   final Widget title;
   final bool showBackButton;
   final List<Widget>? actions;
+  final EdgeInsets margin;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -55,11 +57,16 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
       scrolledUnderElevation: 10,
       titleSpacing: 0,
       leadingWidth: 100,
-      title: title,
+      title: Container(
+        margin: margin,
+        child: title,
+      ),
       leading: showBackButton
-          ? const BackWidget()
-              .animate()
-              .fadeIn(duration: const Duration(seconds: 1))
+          ? const BackWidget().animate().fadeIn(
+                duration: const Duration(
+                  seconds: 1,
+                ),
+              )
           : Container(),
       centerTitle: true,
     );

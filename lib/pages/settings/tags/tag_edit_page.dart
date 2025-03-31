@@ -128,26 +128,19 @@ class _TagEditPageState extends State<TagEditPage> {
 
     return Scaffold(
       appBar: TitleWidgetAppBar(
-        title: Row(
-          children: [
-            const Text(
-              'Tags Definition',
-            ),
-            IconButton(
-              onPressed: () {
-                ShowCaseWidget.of(context).startShowCase([
-                  _tagNameKey,
-                  _tagPrivateKey,
-                  _tagHideKey,
-                  _tagTypeTagKey,
-                  _tagDeleteKey,
-                ]);
-              },
-              icon: const Icon(
-                Icons.info_outline_rounded,
-              ),
-            ),
-          ],
+        title: IconButton(
+          onPressed: () {
+            ShowCaseWidget.of(context).startShowCase([
+              _tagNameKey,
+              _tagPrivateKey,
+              _tagHideKey,
+              _tagTypeTagKey,
+              _tagDeleteKey,
+            ]);
+          },
+          icon: const Icon(
+            Icons.info_outline_rounded,
+          ),
         ),
         actions: [
           if (dirty)
