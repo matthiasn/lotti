@@ -6,15 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
-import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
-import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/features/tasks/ui/header/task_info_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 
 class TaskForm extends ConsumerStatefulWidget {
   const TaskForm(
@@ -39,7 +36,6 @@ class _TaskFormState extends ConsumerState<TaskForm> {
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
-    final save = notifier.save;
     final formKey = entryState?.formKey;
 
     if (entryState == null) {
@@ -57,7 +53,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const SizedBox(height: 10),
+                const SizedBox(height: 5),
                 FormBuilderTextField(
                   autofocus: widget.focusOnTitle,
                   focusNode: notifier.taskTitleFocusNode,
@@ -78,139 +74,25 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                     requestFocus: false,
                   ),
                 ),
-                inputSpacer,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: TextField(
-                        decoration: inputDecoration(
-                          labelText: context.messages.taskEstimateLabel,
-                          themeData: Theme.of(context),
-                        ),
-                        style: context.textTheme.titleMedium,
-                        readOnly: true,
-                        controller: TextEditingController(
-                          text:
-                              formatDuration(taskData.estimate).substring(0, 5),
-                        ),
-                        onTap: () async {
-                          final duration = await showModalBottomSheet<Duration>(
-                            context: context,
-                            builder: (context) {
-                              return DurationBottomSheet(taskData.estimate);
-                            },
-                          );
-                          if (duration != null) {
-                            await save(estimate: duration);
-                          }
-                        },
-                      ),
-                    ),
-                    TimeRecordingIcon(
-                      taskId: entryId,
-                      padding: const EdgeInsets.only(left: 10),
-                    ),
-                    const Spacer(),
-                    SizedBox(
-                      width: 180,
-                      child: FormBuilderDropdown<String>(
-                        name: 'status',
-                        borderRadius: BorderRadius.circular(10),
-                        elevation: 2,
-                        onChanged: notifier.updateTaskStatus,
-                        decoration: inputDecoration(
-                          labelText: 'Status:',
-                          themeData: Theme.of(context),
-                        ),
-                        key: Key('task_status_dropdown_${taskData.status}'),
-                        initialValue: taskData.status.map(
-                              open: (_) => 'OPEN',
-                              groomed: (_) => 'GROOMED',
-                              started: (_) => 'STARTED',
-                              inProgress: (_) => 'IN PROGRESS',
-                              blocked: (_) => 'BLOCKED',
-                              onHold: (_) => 'ON HOLD',
-                              done: (_) => 'DONE',
-                              rejected: (_) => 'REJECTED',
-                            ) ??
-                            'OPEN',
-                        items: [
-                          DropdownMenuItem<String>(
-                            value: 'OPEN',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusOpen,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'GROOMED',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusGroomed,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'IN PROGRESS',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusInProgress,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'BLOCKED',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusBlocked,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'ON HOLD',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusOnHold,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'DONE',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusDone,
-                            ),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'REJECTED',
-                            child: TaskStatusLabel(
-                              context.messages.taskStatusRejected,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: TaskInfoRow(taskId: widget.task.id),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 240),
-                      child: CategoryField(
-                        categoryId: widget.task.categoryId,
-                        onSave: (category) {
-                          notifier.updateCategoryId(category?.id);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
               ],
             ),
           ),
         ),
-        const Divider(),
-        LatestAiResponseSummary(
-          id: entryId,
-          aiResponseType: taskSummary,
-        ),
-        const Divider(),
         EditorWidget(entryId: entryId),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: LatestAiResponseSummary(
+            id: entryId,
+            aiResponseType: taskSummary,
+          ),
+        ),
+        const SizedBox(height: 10),
         ChecklistsWidget(entryId: entryId, task: widget.task),
         const SizedBox(height: 20),
       ],
