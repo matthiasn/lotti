@@ -493,12 +493,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: EditDashboardPage(dashboardId: testDashboardConfig.id),
             ),
-            child: EditDashboardPage(dashboardId: testDashboardConfig.id),
           ),
         ),
       );
