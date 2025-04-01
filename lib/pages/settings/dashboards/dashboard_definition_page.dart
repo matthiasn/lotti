@@ -746,8 +746,10 @@ class EditDashboardPage extends StatelessWidget {
           return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);
         }
 
-        return DashboardDefinitionPage(
-          dashboard: dashboard,
+        return ShowCaseWidget(
+          builder: (context) => DashboardDefinitionPage(
+            dashboard: dashboard,
+          ),
         );
       },
     );
