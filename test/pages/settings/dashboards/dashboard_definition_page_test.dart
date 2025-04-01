@@ -12,6 +12,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -85,14 +86,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: DashboardDefinitionPage(
-              dashboard: testDashboardConfig.copyWith(description: ''),
-              formKey: formKey,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig.copyWith(description: ''),
+                formKey: formKey,
+              ),
             ),
           ),
         ),
@@ -170,14 +173,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: DashboardDefinitionPage(
-              dashboard: testDashboardConfig,
-              formKey: formKey,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig,
+                formKey: formKey,
+              ),
             ),
           ),
         ),
@@ -258,14 +263,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: DashboardDefinitionPage(
-              dashboard: testDashboardConfig,
-              formKey: formKey,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig,
+                formKey: formKey,
+              ),
             ),
           ),
         ),
@@ -346,14 +353,16 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: DashboardDefinitionPage(
-              dashboard: testDashboardConfig,
-              formKey: formKey,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig,
+                formKey: formKey,
+              ),
             ),
           ),
         ),
