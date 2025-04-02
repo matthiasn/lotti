@@ -7,13 +7,6 @@ PODS:
     - FlutterMacOS
   - device_info_plus (0.0.1):
     - FlutterMacOS
-  - ffmpeg-kit-macos-https (6.0)
-  - ffmpeg_kit_flutter (6.0.3):
-    - ffmpeg_kit_flutter/https (= 6.0.3)
-    - FlutterMacOS
-  - ffmpeg_kit_flutter/https (6.0.3):
-    - ffmpeg-kit-macos-https (= 6.0)
-    - FlutterMacOS
   - file_selector_macos (0.0.1):
     - FlutterMacOS
   - flutter_image_compress_macos (1.0.0):
@@ -100,7 +93,6 @@ DEPENDENCIES:
   - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos`)
   - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
-  - ffmpeg_kit_flutter (from `Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter/macos`)
   - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
   - flutter_image_compress_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos`)
   - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
@@ -131,7 +123,6 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - ffmpeg-kit-macos-https
     - HotKey
     - OpenSSL-Universal
     - sqlite3
@@ -145,8 +136,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos
   device_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
-  ffmpeg_kit_flutter:
-    :path: Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter/macos
   file_selector_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos
   flutter_image_compress_macos:
@@ -205,8 +194,6 @@ SPEC CHECKSUMS:
   connectivity_plus: 4adf20a405e25b42b9c9f87feff8f4b6fde18a4e
   desktop_drop: e0b672a7d84c0a6cbc378595e82cdb15f2970a43
   device_info_plus: 4fb280989f669696856f8b129e4a5e3cd6c48f76
-  ffmpeg-kit-macos-https: 8fe9a5bdb2a42ecb2caf067522aa9a8ce386294e
-  ffmpeg_kit_flutter: ba222540001fc4d9c90530e0f9d8dd7f15f64a97
   file_selector_macos: 6280b52b459ae6c590af5d78fc35c7267a3c4b31
   flutter_image_compress_macos: e68daf54bb4bf2144c580fd4d151c949cbf492f0
   flutter_local_notifications: 4bf37a31afde695b56091b4ae3e4d9c7a7e6cda0
