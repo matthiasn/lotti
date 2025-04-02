@@ -61,7 +61,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         } else {
           final created = DateTime.now();
           final fileName =
-              '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
+              '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.m4a';
           final day = DateFormat('yyyy-MM-dd').format(created);
           final relativePath = '/audio/$day/';
           final directory = await createAssetDirectory(relativePath);

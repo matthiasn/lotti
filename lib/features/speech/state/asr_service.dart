@@ -3,8 +3,6 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -103,69 +101,52 @@ class AsrService {
     );
 
     final start = DateTime.now();
-    final wavPath = audioFilePath.replaceAll('.aac', '.wav');
-    final session = await FFmpegKit.execute(
-      '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
-    );
 
-    final returnCode = await session.getReturnCode();
+    try {
+      final result = await methodChannel.invokeMethod(
+        'transcribe',
+        {
+          'audioFilePath': audioFilePath,
+          'model': model,
+          'language': entry.data.language ?? '',
+        },
+      );
+      final finish = DateTime.now();
 
-    if (ReturnCode.isSuccess(returnCode)) {
-      try {
-        final result = await methodChannel.invokeMethod(
-          'transcribe',
-          {
-            'audioFilePath': wavPath,
-            'model': model,
-            'language': entry.data.language ?? '',
-          },
-        );
-        final finish = DateTime.now();
+      if (result != null && result is List<dynamic>) {
+        if (result.length == 3) {
+          final [language, model, text] = result.cast<String?>();
 
-        if (result != null && result is List<dynamic>) {
-          if (result.length == 3) {
-            final [language, model, text] = result.cast<String?>();
-
-            if (text == null) {
-              return;
-            }
-
-            final transcript = AudioTranscript(
-              created: DateTime.now(),
-              library: 'WhisperKit',
-              model: model ?? '-',
-              detectedLanguage: language ?? '-',
-              transcript: text.trim(),
-              processingTime: finish.difference(start),
-            );
-
-            await SpeechRepository.addAudioTranscript(
-              journalEntityId: entry.meta.id,
-              transcript: transcript,
-            );
-
-            progressController.add((text, TranscriptionStatus.done));
-          } else {
-            captureException(
-              result,
-              subdomain: 'Parse response length',
-            );
+          if (text == null) {
+            return;
           }
+
+          final transcript = AudioTranscript(
+            created: DateTime.now(),
+            library: 'WhisperKit',
+            model: model ?? '-',
+            detectedLanguage: language ?? '-',
+            transcript: text.trim(),
+            processingTime: finish.difference(start),
+          );
+
+          await SpeechRepository.addAudioTranscript(
+            journalEntityId: entry.meta.id,
+            transcript: transcript,
+          );
+
+          progressController.add((text, TranscriptionStatus.done));
+        } else {
+          captureException(
+            result,
+            subdomain: 'Parse response length',
+          );
         }
-      } on PlatformException catch (e) {
-        captureException(e);
       }
-    } else if (ReturnCode.isCancel(returnCode)) {
-      captureException(
-        returnCode,
-        subdomain: 'FFmpegKit cancelled',
-      );
-    } else {
-      captureException(
-        returnCode,
-        subdomain: 'FFmpegKit error',
-      );
+    } on PlatformException catch (e) {
+      captureException(e);
     }
+
     running = false;
   }
 
