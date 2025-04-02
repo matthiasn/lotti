@@ -195,7 +195,7 @@ class _TagEditPageState extends State<TagEditPage> {
                       large: true,
                     ),
                   ),
-                  inputSpacer,
+                  inputSpacerSmall,
                   ShowcaseWithWidget(
                     showcaseKey: _tagPrivateKey,
                     description: ShowcaseTextStyle(
@@ -222,7 +222,7 @@ class _TagEditPageState extends State<TagEditPage> {
                       activeColor: errorColor,
                     ),
                   ),
-                  inputSpacer,
+                  inputSpacerSmall,
                   ShowcaseWithWidget(
                     showcaseKey: _tagTypeTagKey,
                     description: ShowcaseTextStyle(
