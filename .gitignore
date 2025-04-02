@@ -54,8 +54,6 @@ app.*.map.json
 
 /coverage
 
-ios/Podfile.lock
-
 /config/mail.yaml
 local.properties
 
