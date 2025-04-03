@@ -67,7 +67,7 @@ class _ChecklistSuggestionsWidgetState
 
     return Column(
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         if (isRunning)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -90,8 +90,8 @@ class _ChecklistSuggestionsWidgetState
           ),
         if (!isRunning)
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(width: 5),
               Text(
                 checklistItems.isEmpty
                     ? context.messages.checklistNoSuggestionsTitle

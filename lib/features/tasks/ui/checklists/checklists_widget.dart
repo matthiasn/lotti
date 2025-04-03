@@ -42,8 +42,8 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(width: 5),
             Text(
               context.messages.checklistsTitle,
               style: context.textTheme.titleSmall?.copyWith(color: color),
@@ -53,15 +53,16 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               onPressed: () => createChecklist(task: widget.task, ref: ref),
               icon: Icon(Icons.add_rounded, color: color),
             ),
-            IconButton(
-              tooltip: context.messages.addActionAddChecklist,
-              onPressed: () {
-                setState(() {
-                  _isEditing = !_isEditing;
-                });
-              },
-              icon: Icon(Icons.reorder, color: color),
-            ),
+            if (checklistIds.length > 1)
+              IconButton(
+                tooltip: context.messages.addActionAddChecklist,
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                  });
+                },
+                icon: Icon(Icons.reorder, color: color),
+              ),
           ],
         ),
         ReorderableListView(
