@@ -92,22 +92,18 @@ class LatestAiResponseSummary extends ConsumerWidget {
                   ),
                 ],
               ),
-            if (!isRunning)
+            if (!isRunning && aiResponse != null)
               Row(
                 children: [
                   Text(
-                    aiResponse == null
-                        ? context.messages.aiTaskNoSummaryTitle
-                        : context.messages.aiTaskSummaryTitle,
+                    context.messages.aiTaskSummaryTitle,
                     style: context.textTheme.titleSmall?.copyWith(
                       color: context.colorScheme.outline,
                     ),
                   ),
                   IconButton(
                     icon: Icon(
-                      aiResponse == null
-                          ? Icons.assistant_rounded
-                          : Icons.refresh,
+                      Icons.refresh,
                       color: context.colorScheme.outline,
                     ),
                     onPressed: showThoughtsModal,

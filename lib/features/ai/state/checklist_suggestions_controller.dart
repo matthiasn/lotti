@@ -10,7 +10,7 @@ part 'checklist_suggestions_controller.g.dart';
 @riverpod
 class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
   @override
-  Future<List<ChecklistItemData>> build({
+  Future<List<ChecklistItemData>?> build({
     required String id,
   }) async {
     final provider = latestSummaryControllerProvider(
@@ -19,9 +19,9 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
     );
 
     final latestAiEntry = await ref.watch(provider.future);
-    final suggestedActionItems = latestAiEntry?.data.suggestedActionItems ?? [];
+    final suggestedActionItems = latestAiEntry?.data.suggestedActionItems;
 
-    final checklistItems = suggestedActionItems.map((item) {
+    final checklistItems = suggestedActionItems?.map((item) {
       final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
       return ChecklistItemData(
         title: title,

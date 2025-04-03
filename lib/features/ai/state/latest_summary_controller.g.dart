@@ -202,7 +202,7 @@ class _LatestSummaryControllerProviderElement
 }
 
 String _$isLatestSummaryOutdatedControllerHash() =>
-    r'4f22b7eb4fa4fc7290428445b29ae6b2a74d373d';
+    r'ce4cfb28f860e101160374434b83f4c4127db2a1';
 
 abstract class _$IsLatestSummaryOutdatedController
     extends BuildlessAutoDisposeAsyncNotifier<bool> {

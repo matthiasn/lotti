@@ -7,7 +7,7 @@ part of 'checklist_suggestions_controller.dart';
 // **************************************************************************
 
 String _$checklistSuggestionsControllerHash() =>
-    r'4ba99006f8bd281759730da29a447b107189b91c';
+    r'e728e2ffdf32d7a6d5b76f5aed2f3bd26f716d8e';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$ChecklistSuggestionsController
-    extends BuildlessAutoDisposeAsyncNotifier<List<ChecklistItemData>> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<ChecklistItemData>?> {
   late final String id;
 
-  FutureOr<List<ChecklistItemData>> build({
+  FutureOr<List<ChecklistItemData>?> build({
     required String id,
   });
 }
@@ -46,7 +46,7 @@ const checklistSuggestionsControllerProvider =
 
 /// See also [ChecklistSuggestionsController].
 class ChecklistSuggestionsControllerFamily
-    extends Family<AsyncValue<List<ChecklistItemData>>> {
+    extends Family<AsyncValue<List<ChecklistItemData>?>> {
   /// See also [ChecklistSuggestionsController].
   const ChecklistSuggestionsControllerFamily();
 
@@ -86,7 +86,7 @@ class ChecklistSuggestionsControllerFamily
 /// See also [ChecklistSuggestionsController].
 class ChecklistSuggestionsControllerProvider
     extends AutoDisposeAsyncNotifierProviderImpl<ChecklistSuggestionsController,
-        List<ChecklistItemData>> {
+        List<ChecklistItemData>?> {
   /// See also [ChecklistSuggestionsController].
   ChecklistSuggestionsControllerProvider({
     required String id,
@@ -117,7 +117,7 @@ class ChecklistSuggestionsControllerProvider
   final String id;
 
   @override
-  FutureOr<List<ChecklistItemData>> runNotifierBuild(
+  FutureOr<List<ChecklistItemData>?> runNotifierBuild(
     covariant ChecklistSuggestionsController notifier,
   ) {
     return notifier.build(
@@ -143,7 +143,7 @@ class ChecklistSuggestionsControllerProvider
 
   @override
   AutoDisposeAsyncNotifierProviderElement<ChecklistSuggestionsController,
-      List<ChecklistItemData>> createElement() {
+      List<ChecklistItemData>?> createElement() {
     return _ChecklistSuggestionsControllerProviderElement(this);
   }
 
@@ -164,7 +164,7 @@ class ChecklistSuggestionsControllerProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin ChecklistSuggestionsControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<List<ChecklistItemData>> {
+    on AutoDisposeAsyncNotifierProviderRef<List<ChecklistItemData>?> {
   /// The parameter `id` of this provider.
   String get id;
 }
@@ -172,7 +172,7 @@ mixin ChecklistSuggestionsControllerRef
 class _ChecklistSuggestionsControllerProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<
         ChecklistSuggestionsController,
-        List<ChecklistItemData>> with ChecklistSuggestionsControllerRef {
+        List<ChecklistItemData>?> with ChecklistSuggestionsControllerRef {
   _ChecklistSuggestionsControllerProviderElement(super.provider);
 
   @override
