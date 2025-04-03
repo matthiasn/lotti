@@ -7,6 +7,7 @@ import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -45,12 +46,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: MeasurableDetailsPage(dataType: measurableWater),
             ),
-            child: MeasurableDetailsPage(dataType: measurableWater),
           ),
         ),
       );
@@ -95,12 +98,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+          ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: MeasurableDetailsPage(dataType: measurableWater),
             ),
-            child: MeasurableDetailsPage(dataType: measurableWater),
           ),
         ),
       );
@@ -186,17 +191,30 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: EditMeasurablePage(measurableId: measurableWater.id),
+            child: EditMeasurablePage(
+              measurableId: measurableWater.id,
+            ),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('measurable_description_field'));
-      final saveButtonFinder = find.byKey(const Key('measurable_save'));
+      final nameFieldFinder = find.byKey(
+        const Key(
+          'measurable_name_field',
+        ),
+      );
+      final descriptionFieldFinder = find.byKey(
+        const Key(
+          'measurable_description_field',
+        ),
+      );
+      final saveButtonFinder = find.byKey(
+        const Key(
+          'measurable_save',
+        ),
+      );
 
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
