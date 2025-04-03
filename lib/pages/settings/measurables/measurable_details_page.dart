@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/manual/widget/showcase_text_style.dart';
+import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/settings/entity_detail_card.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class MeasurableDetailsPage extends StatefulWidget {
   const MeasurableDetailsPage({
@@ -31,6 +34,13 @@ class MeasurableDetailsPage extends StatefulWidget {
 }
 
 class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
+  final _measurableNameKey = GlobalKey();
+  final _measurableDescrKey = GlobalKey();
+  final _measurableUnitAbbrKey = GlobalKey();
+  final _measurablePrivateKey = GlobalKey();
+  final _measurableAggreTypeKey = GlobalKey();
+  final _measurableDeleteKey = GlobalKey();
+
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
@@ -66,8 +76,24 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     }
 
     return Scaffold(
-      appBar: TitleAppBar(
-        title: '',
+      appBar: TitleWidgetAppBar(
+        title: IconButton(
+          onPressed: () {
+            ShowCaseWidget.of(context).startShowCase(
+              [
+                _measurableNameKey,
+                _measurableDescrKey,
+                _measurableUnitAbbrKey,
+                _measurablePrivateKey,
+                _measurableAggreTypeKey,
+                _measurableDeleteKey,
+              ],
+            );
+          },
+          icon: const Icon(
+            Icons.info_outline_rounded,
+          ),
+        ),
         actions: [
           if (dirty)
             TextButton(
@@ -97,70 +123,106 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               },
               child: Column(
                 children: <Widget>[
-                  FormTextField(
-                    key: const Key('measurable_name_field'),
-                    initialValue: item.displayName,
-                    labelText: context.messages.settingsMeasurableNameLabel,
-                    name: 'displayName',
-                    semanticsLabel: 'Measurable - name field',
-                    large: true,
+                  ShowcaseWithWidget(
+                    startNav: true,
+                    showcaseKey: _measurableNameKey,
+                    description: ShowcaseTextStyle(
+                      descriptionText: context
+                          .messages.settingsMeasurableShowCaseNameTooltip,
+                    ),
+                    child: FormTextField(
+                      key: const Key('measurable_name_field'),
+                      initialValue: item.displayName,
+                      labelText: context.messages.settingsMeasurableNameLabel,
+                      name: 'displayName',
+                      semanticsLabel: 'Measurable - name field',
+                      large: true,
+                    ),
                   ),
-                  inputSpacer,
-                  FormTextField(
-                    key: const Key('measurable_description_field'),
-                    initialValue: item.description,
-                    labelText:
-                        context.messages.settingsMeasurableDescriptionLabel,
-                    fieldRequired: false,
-                    name: 'description',
-                    semanticsLabel: 'Measurable - description field',
-                  ),
-                  inputSpacer,
-                  FormTextField(
-                    initialValue: item.unitName,
-                    labelText: context.messages.settingsMeasurableUnitLabel,
-                    fieldRequired: false,
-                    name: 'unitName',
-                    semanticsLabel: 'Measurable - unit name field',
-                  ),
-                  inputSpacer,
-                  FormSwitch(
-                    name: 'private',
-                    initialValue: item.private,
-                    title: context.messages.settingsMeasurablePrivateLabel,
-                    activeColor: context.colorScheme.error,
-                  ),
-                  inputSpacer,
-                  FormBuilderDropdown(
-                    name: 'aggregationType',
-                    initialValue: item.aggregationType,
-                    decoration: inputDecoration(
+                  inputSpacerSmall,
+                  ShowcaseWithWidget(
+                    showcaseKey: _measurableDescrKey,
+                    description: ShowcaseTextStyle(
+                      descriptionText: context
+                          .messages.settingsMeasurableShowCaseDescrTooltip,
+                    ),
+                    child: FormTextField(
+                      key: const Key('measurable_description_field'),
+                      initialValue: item.description,
                       labelText:
-                          context.messages.settingsMeasurableAggregationLabel,
-                      suffixIcon: const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Icon(Icons.close_rounded),
-                      ),
-                      themeData: Theme.of(context),
+                          context.messages.settingsMeasurableDescriptionLabel,
+                      fieldRequired: false,
+                      name: 'description',
+                      semanticsLabel: 'Measurable - description field',
                     ),
-                    style: TextStyle(
-                      fontSize: 40,
-                      color: context.textTheme.titleLarge?.color,
+                  ),
+                  inputSpacerSmall,
+                  ShowcaseWithWidget(
+                    showcaseKey: _measurableUnitAbbrKey,
+                    description: ShowcaseTextStyle(
+                      descriptionText: context
+                          .messages.settingsMeasurableShowCaseUnitTooltip,
                     ),
-                    items: AggregationType.values.map((aggregationType) {
-                      return DropdownMenuItem(
-                        value: aggregationType,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Text(
-                            EnumToString.convertToString(
-                              aggregationType,
-                            ),
-                            style: context.textTheme.titleMedium,
-                          ),
+                    child: FormTextField(
+                      initialValue: item.unitName,
+                      labelText: context.messages.settingsMeasurableUnitLabel,
+                      fieldRequired: false,
+                      name: 'unitName',
+                      semanticsLabel: 'Measurable - unit name field',
+                    ),
+                  ),
+                  inputSpacerSmall,
+                  ShowcaseWithWidget(
+                    showcaseKey: _measurablePrivateKey,
+                    description: ShowcaseTextStyle(
+                      descriptionText: context
+                          .messages.settingsMeasurableShowCasePrivateTooltip,
+                    ),
+                    child: FormSwitch(
+                      name: 'private',
+                      initialValue: item.private,
+                      title: context.messages.settingsMeasurablePrivateLabel,
+                      activeColor: context.colorScheme.error,
+                    ),
+                  ),
+                  inputSpacerSmall,
+                  ShowcaseWithWidget(
+                    showcaseKey: _measurableAggreTypeKey,
+                    description: ShowcaseTextStyle(
+                      descriptionText: context
+                          .messages.settingsMeasurableShowCaseAggreTypeTooltip,
+                    ),
+                    child: FormBuilderDropdown(
+                      name: 'aggregationType',
+                      initialValue: item.aggregationType,
+                      decoration: inputDecoration(
+                        labelText:
+                            context.messages.settingsMeasurableAggregationLabel,
+                        suffixIcon: const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Icon(Icons.close_rounded),
                         ),
-                      );
-                    }).toList(),
+                        themeData: Theme.of(context),
+                      ),
+                      style: TextStyle(
+                        fontSize: 40,
+                        color: context.textTheme.titleLarge?.color,
+                      ),
+                      items: AggregationType.values.map((aggregationType) {
+                        return DropdownMenuItem(
+                          value: aggregationType,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              EnumToString.convertToString(
+                                aggregationType,
+                              ),
+                              style: context.textTheme.titleMedium,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ],
               ),
@@ -170,34 +232,43 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton(
-                    icon: Icon(MdiIcons.trashCanOutline),
-                    iconSize: settingsIconSize,
-                    tooltip: context.messages.settingsMeasurableDeleteTooltip,
-                    onPressed: () async {
-                      const deleteKey = 'deleteKey';
-                      final result = await showModalActionSheet<String>(
-                        context: context,
-                        title: context.messages.measurableDeleteQuestion,
-                        actions: [
-                          ModalSheetAction(
-                            icon: Icons.warning,
-                            label: context.messages.measurableDeleteConfirm,
-                            key: deleteKey,
-                            isDestructiveAction: true,
-                            isDefaultAction: true,
-                          ),
-                        ],
-                      );
-
-                      if (result == deleteKey) {
-                        await persistenceLogic.upsertEntityDefinition(
-                          item.copyWith(deletedAt: DateTime.now()),
+                  ShowcaseWithWidget(
+                    isTooltipTop: true,
+                    endNav: true,
+                    showcaseKey: _measurableDeleteKey,
+                    description: ShowcaseTextStyle(
+                      descriptionText:
+                          context.messages.settingsMeasurableShowCaseDelTooltip,
+                    ),
+                    child: IconButton(
+                      icon: Icon(MdiIcons.trashCanOutline),
+                      iconSize: settingsIconSize,
+                      tooltip: context.messages.settingsMeasurableDeleteTooltip,
+                      onPressed: () async {
+                        const deleteKey = 'deleteKey';
+                        final result = await showModalActionSheet<String>(
+                          context: context,
+                          title: context.messages.measurableDeleteQuestion,
+                          actions: [
+                            ModalSheetAction(
+                              icon: Icons.warning,
+                              label: context.messages.measurableDeleteConfirm,
+                              key: deleteKey,
+                              isDestructiveAction: true,
+                              isDefaultAction: true,
+                            ),
+                          ],
                         );
 
-                        maybePop();
-                      }
-                    },
+                        if (result == deleteKey) {
+                          await persistenceLogic.upsertEntityDefinition(
+                            item.copyWith(deletedAt: DateTime.now()),
+                          );
+
+                          maybePop();
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -232,8 +303,10 @@ class EditMeasurablePage extends StatelessWidget {
           return EmptyScaffoldWithTitle(context.messages.measurableNotFound);
         }
 
-        return MeasurableDetailsPage(
-          dataType: dataType,
+        return ShowCaseWidget(
+          builder: (context) => MeasurableDetailsPage(
+            dataType: dataType,
+          ),
         );
       },
     );
