@@ -27,6 +27,7 @@ import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
 import 'package:lotti/pages/settings/theming_page.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -218,9 +219,11 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Theming
       if (pathContains('theming'))
-        const BeamPage(
-          key: ValueKey('settings-theming'),
-          child: ThemingPage(),
+        BeamPage(
+          key: const ValueKey('settings-theming'),
+          child: ShowCaseWidget(
+            builder: (context) => const ThemingPage(),
+          ),
         ),
 
       // Health Import
