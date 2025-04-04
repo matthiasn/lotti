@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:siri_wave/siri_wave.dart';
 
-class AIRunningAnimation extends ConsumerStatefulWidget {
-  const AIRunningAnimation({
+class AiRunningAnimation extends ConsumerStatefulWidget {
+  const AiRunningAnimation({
     required this.height,
     required this.backgroundColor,
     super.key,
@@ -14,10 +14,10 @@ class AIRunningAnimation extends ConsumerStatefulWidget {
   final double height;
 
   @override
-  ConsumerState<AIRunningAnimation> createState() => _AIRunningAnimationState();
+  ConsumerState<AiRunningAnimation> createState() => _AIRunningAnimationState();
 }
 
-class _AIRunningAnimationState extends ConsumerState<AIRunningAnimation> {
+class _AIRunningAnimationState extends ConsumerState<AiRunningAnimation> {
   SiriWaveformController controller = IOS9SiriWaveformController();
 
   @override
@@ -69,7 +69,7 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return AIRunningAnimation(
+    return AiRunningAnimation(
       height: height,
       backgroundColor: backgroundColor,
     );
