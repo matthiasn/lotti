@@ -6,6 +6,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -33,6 +35,14 @@ class AiImageAnalysisController extends _$AiImageAnalysisController {
     if (entry is! JournalImage) {
       return;
     }
+
+    final inferenceStatusProvider = inferenceStatusControllerProvider(
+      id: id,
+      aiResponseType: imageAnalysis,
+    );
+
+    final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier)
+      ..setStatus(InferenceStatus.running);
 
     final capturedAt = entry.data.capturedAt.toIso8601String();
     await notifier.save();
@@ -87,6 +97,8 @@ content of the website, not the style of the website. Do not make up names.
         state = buffer.toString();
       }
     }
+
+    inferenceStatusNotifier.setStatus(InferenceStatus.idle);
 
     final completeResponse = '''
 ```
