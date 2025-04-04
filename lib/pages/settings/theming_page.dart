@@ -2,14 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
+import 'package:lotti/features/manual/widget/showcase_text_style.dart';
+import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
+import 'package:showcaseview/showcaseview.dart';
 
-class ThemingPage extends StatelessWidget {
+class ThemingPage extends StatefulWidget {
   const ThemingPage({super.key});
+
+  @override
+  State<ThemingPage> createState() => _ThemingPageState();
+}
+
+class _ThemingPageState extends State<ThemingPage> {
+  final _themeModeSelectorKey = GlobalKey();
+  final _lightThemeKey = GlobalKey();
+  final _darkThemeKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -44,57 +56,106 @@ class ThemingPage extends StatelessWidget {
         return SliverBoxAdapterPage(
           title: context.messages.settingsThemingTitle,
           showBackButton: true,
-          child: Card(
-            margin: const EdgeInsets.all(10),
-            child: Padding(
-              padding: const EdgeInsets.all(25),
-              child: Column(
-                children: [
-                  SegmentedButton<ThemeMode>(
-                    selected: {snapshot.themeMode ?? ThemeMode.system},
-                    showSelectedIcon: false,
-                    onSelectionChanged: cubit.onThemeSelectionChanged,
-                    segments: [
-                      segment(
-                        filter: ThemeMode.dark,
-                        icon: Icons.nightlight_outlined,
-                        activeIcon: Icons.nightlight,
-                        semanticLabel: context.messages.settingsThemingDark,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8, right: 8),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    onPressed: () {
+                      ShowCaseWidget.of(context).startShowCase([
+                        _themeModeSelectorKey,
+                        _lightThemeKey,
+                        _darkThemeKey,
+                      ]);
+                    },
+                    icon: const Icon(
+                      Icons.info_outline_rounded,
+                    ),
+                  ),
+                ),
+              ),
+              Card(
+                margin: const EdgeInsets.all(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(25),
+                  child: Column(
+                    children: [
+                      ShowcaseWithWidget(
+                        showcaseKey: _themeModeSelectorKey,
+                        startNav: true,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsThemingShowCaseModeTooltip,
+                        ),
+                        child: SegmentedButton<ThemeMode>(
+                          selected: {snapshot.themeMode ?? ThemeMode.system},
+                          showSelectedIcon: false,
+                          onSelectionChanged: cubit.onThemeSelectionChanged,
+                          segments: [
+                            segment(
+                              filter: ThemeMode.dark,
+                              icon: Icons.nightlight_outlined,
+                              activeIcon: Icons.nightlight,
+                              semanticLabel:
+                                  context.messages.settingsThemingDark,
+                            ),
+                            segment(
+                              filter: ThemeMode.system,
+                              icon: isMobile ? Icons.smartphone : Icons.laptop,
+                              activeIcon: isMobile
+                                  ? Icons.smartphone_outlined
+                                  : Icons.laptop_outlined,
+                              semanticLabel:
+                                  context.messages.settingsThemingAutomatic,
+                            ),
+                            segment(
+                              filter: ThemeMode.light,
+                              icon: Icons.wb_sunny_outlined,
+                              activeIcon: Icons.sunny,
+                              semanticLabel:
+                                  context.messages.settingsThemingLight,
+                            ),
+                          ],
+                        ),
                       ),
-                      segment(
-                        filter: ThemeMode.system,
-                        icon: isMobile ? Icons.smartphone : Icons.laptop,
-                        activeIcon: isMobile
-                            ? Icons.smartphone_outlined
-                            : Icons.laptop_outlined,
-                        semanticLabel:
-                            context.messages.settingsThemingAutomatic,
+                      const SizedBox(height: 25),
+                      ShowcaseWithWidget(
+                        showcaseKey: _lightThemeKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsThemingShowCaseLightTooltip,
+                        ),
+                        child: SelectTheme(
+                          setTheme: cubit.setLightTheme,
+                          labelText: context.messages.settingThemingLight,
+                          semanticsLabel: 'Select light theme',
+                          getSelected: (snapshot) =>
+                              snapshot.lightThemeName ?? '',
+                        ),
                       ),
-                      segment(
-                        filter: ThemeMode.light,
-                        icon: Icons.wb_sunny_outlined,
-                        activeIcon: Icons.sunny,
-                        semanticLabel: context.messages.settingsThemingLight,
+                      const SizedBox(height: 25),
+                      ShowcaseWithWidget(
+                        endNav: true,
+                        showcaseKey: _darkThemeKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsThemingShowCaseDarkTooltip,
+                        ),
+                        child: SelectTheme(
+                          setTheme: cubit.setDarkTheme,
+                          labelText: context.messages.settingThemingDark,
+                          semanticsLabel: 'Select dark theme',
+                          getSelected: (snapshot) =>
+                              snapshot.darkThemeName ?? '',
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 25),
-                  SelectTheme(
-                    setTheme: cubit.setLightTheme,
-                    labelText: context.messages.settingThemingLight,
-                    semanticsLabel: 'Select light theme',
-                    getSelected: (snapshot) => snapshot.lightThemeName ?? '',
-                  ),
-                  const SizedBox(height: 25),
-                  SelectTheme(
-                    setTheme: cubit.setDarkTheme,
-                    labelText: context.messages.settingThemingDark,
-                    semanticsLabel: 'Select dark theme',
-                    getSelected: (snapshot) => snapshot.darkThemeName ?? '',
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
