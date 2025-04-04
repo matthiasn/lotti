@@ -25,7 +25,12 @@ class ActionItemSuggestionsView extends ConsumerWidget {
           SingleChildScrollView(
             reverse: true,
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.only(
+                top: 10,
+                bottom: 55,
+                left: 20,
+                right: 20,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 600),
                 child: Text(
@@ -41,7 +46,7 @@ class ActionItemSuggestionsView extends ConsumerWidget {
             alignment: Alignment.bottomCenter,
             child: AIRunningAnimation(
               entryId: id,
-              height: 32,
+              height: 50,
               backgroundColor: Colors.transparent,
             ),
           ),

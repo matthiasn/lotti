@@ -25,7 +25,7 @@ class AiTaskSummaryView extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.only(
                 top: 10,
-                bottom: 40,
+                bottom: 55,
                 left: 20,
                 right: 20,
               ),
@@ -44,7 +44,7 @@ class AiTaskSummaryView extends ConsumerWidget {
             alignment: Alignment.bottomCenter,
             child: AIRunningAnimation(
               entryId: id,
-              height: 32,
+              height: 50,
               backgroundColor: Colors.transparent,
             ),
           ),

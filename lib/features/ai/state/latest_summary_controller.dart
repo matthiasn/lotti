@@ -106,7 +106,10 @@ class IsLatestSummaryOutdatedController
             return;
           }
 
-          final isOutdated = await _checkOutdated();
+          final isOutdated = await build(
+            id: id,
+            aiResponseType: aiResponseType,
+          );
 
           if (!isOutdated) {
             return;
@@ -129,11 +132,6 @@ class IsLatestSummaryOutdatedController
         },
       );
     }
-
-    return _checkOutdated();
-  }
-
-  Future<bool> _checkOutdated() async {
     final latestSummary = await ref.watch(
       latestSummaryControllerProvider(
         id: id,
@@ -144,10 +142,10 @@ class IsLatestSummaryOutdatedController
     final latestSummaryPrompt = latestSummary?.data.prompt;
 
     final latestUnrealizedPrompt = aiResponseType == taskSummary
-        ? await ref.read(
+        ? await ref.watch(
             taskSummaryPromptControllerProvider(id: id).future,
           )
-        : await ref.read(
+        : await ref.watch(
             actionItemSuggestionsPromptControllerProvider(id: id).future,
           );
 

@@ -117,7 +117,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                 child: AIRunningAnimation(
                   entryId: widget.itemId,
                   backgroundColor: context.colorScheme.surface,
-                  height: 44,
+                  height: 50,
                 ),
               ),
           ],
