@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/themes/theme.dart';
 
 // ignore: avoid_positional_boolean_parameters
 typedef BoolCallback = void Function(bool);
@@ -73,11 +74,9 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
               widget.onTitleChange?.call(title);
             },
             resetToInitialValue: true,
-            onClear: () {
-              setState(() {
-                _isEditing = false;
-              });
-            },
+            onCancel: () => setState(() {
+              _isEditing = false;
+            }),
           ),
           secondChild: SizedBox(
             width: double.infinity,
@@ -92,8 +91,9 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                 ),
                 if (widget.showEditIcon)
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.edit,
+                      color: context.colorScheme.outline,
                       size: 20,
                     ),
                     onPressed: () {

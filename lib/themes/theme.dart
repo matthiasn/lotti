@@ -63,6 +63,11 @@ InputDecoration inputDecoration({
     label: Text(
       labelText ?? '',
       semanticsLabel: semanticsLabel,
+      style: TextStyle(
+        fontSize: fontSizeMedium,
+        fontWeight: FontWeight.w300,
+        color: themeData.colorScheme.outline,
+      ),
     ),
   );
 }
