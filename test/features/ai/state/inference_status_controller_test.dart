@@ -149,4 +149,208 @@ void main() {
       );
     });
   });
+
+  group('InferenceRunningController', () {
+    const testId = 'test-id';
+    const responseType1 = 'TestSummary';
+    const responseType2 = 'TestAnalysis';
+    final responseTypes = {responseType1, responseType2};
+
+    test('initial state is false when no inference is running', () {
+      final state = container.read(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: responseTypes,
+        ),
+      );
+      expect(state, equals(false));
+    });
+
+    test('returns true when any inference is running', () {
+      // Set the first inference type to running
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType1,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      // Check that the running controller returns true
+      expect(
+        container.read(
+          inferenceRunningControllerProvider(
+            id: testId,
+            responseTypes: responseTypes,
+          ),
+        ),
+        equals(true),
+      );
+
+      // Set both to idle
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType1,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
+
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType2,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
+
+      // Check that the running controller returns false
+      expect(
+        container.read(
+          inferenceRunningControllerProvider(
+            id: testId,
+            responseTypes: responseTypes,
+          ),
+        ),
+        equals(false),
+      );
+
+      // Set the second inference type to running
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType2,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      // Check that the running controller returns true
+      expect(
+        container.read(
+          inferenceRunningControllerProvider(
+            id: testId,
+            responseTypes: responseTypes,
+          ),
+        ),
+        equals(true),
+      );
+    });
+
+    test('responds to changes in inference status', () {
+      final states = <bool>[];
+
+      container.listen(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: responseTypes,
+        ),
+        (previous, next) => states.add(next),
+        fireImmediately: true,
+      );
+
+      // Initially all inferences are idle
+      expect(states, equals([false]));
+
+      // Set first inference to running
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType1,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      // Allow the provider to update
+      // Need to explicitly read the value to trigger the update
+      container.read(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: responseTypes,
+        ),
+      );
+
+      expect(states, equals([false, true]));
+
+      // Set second inference to running as well
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType2,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      // Need to explicitly read the value to trigger the update
+      container.read(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: responseTypes,
+        ),
+      );
+
+      // Should still be true, but no new notification since the value didn't change
+      expect(states, equals([false, true]));
+
+      // Set first inference back to idle
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType1,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
+
+      // Need to explicitly read the value to trigger the update
+      container.read(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: responseTypes,
+        ),
+      );
+
+      // Should still be true because the second inference is still running
+      expect(states, equals([false, true]));
+
+      // Set second inference back to idle
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: responseType2,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
+
+      // Need to explicitly read the value to trigger the update
+      container.read(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: responseTypes,
+        ),
+      );
+
+      // Now should be false
+      expect(states, equals([false, true, false]));
+    });
+
+    test('works with empty response types set', () {
+      final emptyResponseTypes = <String>{};
+
+      final state = container.read(
+        inferenceRunningControllerProvider(
+          id: testId,
+          responseTypes: emptyResponseTypes,
+        ),
+      );
+
+      expect(state, equals(false));
+    });
+  });
 }

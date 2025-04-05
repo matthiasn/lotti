@@ -6,11 +6,9 @@ import 'package:siri_wave/siri_wave.dart';
 class AiRunningAnimation extends ConsumerStatefulWidget {
   const AiRunningAnimation({
     required this.height,
-    required this.backgroundColor,
     super.key,
   });
 
-  final Color backgroundColor;
   final double height;
 
   @override
@@ -22,16 +20,12 @@ class _AIRunningAnimationState extends ConsumerState<AiRunningAnimation> {
 
   @override
   Widget build(BuildContext context) {
-    controller.speed = 0.05;
-    controller.amplitude = 3.6;
+    controller.speed = 0.02;
+    controller.amplitude = 1;
 
-    return Container(
-      width: double.infinity,
-      color: widget.backgroundColor,
-      child: SiriWaveform.ios9(
-        controller: controller as IOS9SiriWaveformController,
-        options: IOS9SiriWaveformOptions(height: widget.height),
-      ),
+    return SiriWaveform.ios9(
+      controller: controller as IOS9SiriWaveformController,
+      options: IOS9SiriWaveformOptions(height: widget.height),
     );
   }
 }
@@ -52,26 +46,16 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final runningStatuses = responseTypes.map((responseType) {
-      final inferenceStatus = ref.watch(
-        inferenceStatusControllerProvider(
-          id: entryId,
-          aiResponseType: responseType,
-        ),
-      );
-
-      return inferenceStatus == InferenceStatus.running;
-    });
-
-    final isRunning = runningStatuses.contains(true);
+    final provider = inferenceRunningControllerProvider(
+      id: entryId,
+      responseTypes: responseTypes,
+    );
+    final isRunning = ref.watch(provider);
 
     if (!isRunning) {
       return const SizedBox.shrink();
     }
 
-    return AiRunningAnimation(
-      height: height,
-      backgroundColor: backgroundColor,
-    );
+    return AiRunningAnimation(height: height);
   }
 }
