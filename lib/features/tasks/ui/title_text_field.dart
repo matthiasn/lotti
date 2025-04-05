@@ -79,6 +79,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
     }
 
     return TextField(
+      style: context.textTheme.titleMedium,
       controller: _controller,
       onChanged: (value) {
         setState(() {
@@ -136,7 +137,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
       ),
       showCursor: true,
       minLines: 1,
-      maxLines: 3,
+      maxLines: 10,
       textInputAction: TextInputAction.done,
       onSubmitted: onSave,
     );
