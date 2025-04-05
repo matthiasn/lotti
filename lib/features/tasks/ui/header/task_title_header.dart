@@ -36,62 +36,66 @@ class _TaskTitleHeaderState extends ConsumerState<TaskTitleHeader> {
 
     final title = task.data.title;
 
-    return AnimatedCrossFade(
-      duration: checklistCrossFadeDuration,
-      firstChild: TitleTextField(
-        initialValue: title,
-        resetToInitialValue: true,
-        onSave: (newTitle) async {
-          await notifier.save(title: newTitle);
-          setState(() {
-            _isEditing = false;
-          });
-        },
-        autofocus: true,
-        focusNode: _titleFocusNode,
-        hintText: context.messages.taskNameHint,
-        onTapOutside: (_) => setState(() {
-          _isEditing = false;
-        }),
-        onCancel: () => setState(() {
-          _isEditing = false;
-        }),
-      ),
-      secondChild: Container(
+    return Material(
+      elevation: 2,
+      child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Row(
-          children: [
-            Flexible(
-              child: Text(
-                title,
-                softWrap: true,
-                style: context.textTheme.titleLarge,
+        color: Theme.of(context).appBarTheme.backgroundColor,
+        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 10),
+        child: AnimatedCrossFade(
+          duration: checklistCrossFadeDuration,
+          firstChild: TitleTextField(
+            initialValue: title,
+            resetToInitialValue: true,
+            onSave: (newTitle) async {
+              await notifier.save(title: newTitle);
+              setState(() {
+                _isEditing = false;
+              });
+            },
+            autofocus: true,
+            focusNode: _titleFocusNode,
+            hintText: context.messages.taskNameHint,
+            onTapOutside: (_) => setState(() {
+              _isEditing = false;
+            }),
+            onCancel: () => setState(() {
+              _isEditing = false;
+            }),
+          ),
+          secondChild: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  softWrap: true,
+                  style: context.textTheme.titleLarge,
+                ),
               ),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.edit,
-                color: context.colorScheme.outline,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  _isEditing = !_isEditing;
-                });
+              IconButton(
+                icon: Icon(
+                  Icons.edit,
+                  color: context.colorScheme.outline,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                  });
 
-                Future.delayed(
-                  const Duration(milliseconds: 100),
-                  _titleFocusNode.requestFocus,
-                );
-              },
-            ),
-          ],
+                  Future.delayed(
+                    const Duration(milliseconds: 100),
+                    _titleFocusNode.requestFocus,
+                  );
+                },
+              ),
+            ],
+          ),
+          crossFadeState: _isEditing || title.isEmpty
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
         ),
       ),
-      crossFadeState: _isEditing || title.isEmpty
-          ? CrossFadeState.showFirst
-          : CrossFadeState.showSecond,
     );
   }
 }

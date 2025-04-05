@@ -34,6 +34,7 @@ class TaskSliverAppBar extends ConsumerWidget {
     return SliverAppBar(
       leadingWidth: 100,
       titleSpacing: 0,
+      toolbarHeight: 45,
       scrolledUnderElevation: 0,
       elevation: 10,
       title: LinkedDuration(taskId: item.id),
