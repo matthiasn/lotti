@@ -253,10 +253,10 @@ packages:
     dependency: transitive
     description:
       name: carp_serializable
-      sha256: "39f7d315f49fecd4b7eddfa3c1a08b9416ae3c640dc888de5f798246bcc2d38e"
+      sha256: f039f8ea22e9437aef13fe7e9743c3761c76d401288dcb702eadd273c3e4dcef
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "2.0.1"
   characters:
     dependency: transitive
     description:
@@ -990,10 +990,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: e7bbc718adc9476aa14cfddc1ef048d2e21e4e8f18311aaac723266db9f9e7b5
+      sha256: "634622a3a826d67cb05c0e3e576d1812c430fa98404e95b60b131775c73d76ec"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6+2"
+    version: "0.7.7"
   flutter_math_fork:
     dependency: transitive
     description:
@@ -1563,10 +1563,10 @@ packages:
     dependency: "direct main"
     description:
       name: jiffy
-      sha256: e0aa66051bf3acca75475f72a7018b47084b4305918b93efffeeb195060d9da0
+      sha256: "9bafbfe6d97587048bf449165e050029e716a12438f54a3d39e7e3a256decdac"
       url: "https://pub.dev"
     source: hosted
-    version: "6.4.2"
+    version: "6.4.3"
   jovial_misc:
     dependency: transitive
     description:
@@ -2379,10 +2379,10 @@ packages:
     dependency: transitive
     description:
       name: record_web
-      sha256: ef6f5c7760f22d6785ee8d97a2133ff14cb839c65e525ad831eb7f891d83f592
+      sha256: "654c08113961051dcb5427e63f56315ba47c0752781ba990dac9313d0ec23c70"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.5"
+    version: "1.1.6"
   record_windows:
     dependency: transitive
     description:
@@ -3049,10 +3049,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_ios
-      sha256: "16a513b6c12bb419304e72ea0ae2ab4fed569920d1c7cb850263fe3acc824626"
+      sha256: "7f2022359d4c099eea7df3fdf739f7d3d3b9faf3166fb1dd390775176e0b76cb"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.2"
+    version: "6.3.3"
   url_launcher_linux:
     dependency: transitive
     description:
@@ -3289,10 +3289,18 @@ packages:
     dependency: "direct main"
     description:
       name: widgetbook
-      sha256: "43fb5d65e5617cae47aeb5b25d6c8c51ee44bb5296b9a72df7bd60dbc6c51877"
+      sha256: "0246372811ec3fec815352d6d292ffb84b88e63ba829b76b12d7e38d2304dcd5"
       url: "https://pub.dev"
     source: hosted
-    version: "3.11.0"
+    version: "3.12.0"
+  widgetbook_annotation:
+    dependency: transitive
+    description:
+      name: widgetbook_annotation
+      sha256: "21485481aff512177a4b12db78a3196c2eb32dee3580c7b7cb88789314856bcb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.3.1"
   win32:
     dependency: transitive
     description:
