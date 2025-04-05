@@ -90,7 +90,6 @@ class AiRunningAnimationWrapperCard extends ConsumerWidget {
       width: double.infinity,
       blur: 12,
       color: context.colorScheme.surface.withAlpha(128),
-      //borderColor: Colors.transparent,
       borderWidth: 0,
       child: Center(child: AiRunningAnimation(height: height)),
     );
