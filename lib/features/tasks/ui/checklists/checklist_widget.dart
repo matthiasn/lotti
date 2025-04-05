@@ -82,11 +82,9 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
               });
             },
             resetToInitialValue: true,
-            onClear: () {
-              setState(() {
-                _isEditing = false;
-              });
-            },
+            onCancel: () => setState(() {
+              _isEditing = false;
+            }),
           ),
         ),
         secondChild: Column(
@@ -101,8 +99,9 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.edit,
+                    color: context.colorScheme.outline,
                     size: 20,
                   ),
                   onPressed: () {

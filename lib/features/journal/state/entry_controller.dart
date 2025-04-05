@@ -178,6 +178,7 @@ class EntryController extends _$EntryController {
 
   Future<void> save({
     Duration? estimate,
+    String? title,
     bool stopRecording = false,
   }) async {
     final entry = state.value?.entry;
@@ -186,10 +187,6 @@ class EntryController extends _$EntryController {
     }
     if (entry is Task) {
       final task = entry;
-      formKey.currentState?.save();
-      final formData = formKey.currentState?.value ?? {};
-      final title = formData['title'] as String?;
-
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
         journalEntityId: id,
