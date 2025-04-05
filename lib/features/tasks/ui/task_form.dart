@@ -106,7 +106,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                     ],
                   ),
                 ),
-                crossFadeState: _isEditing
+                crossFadeState: _isEditing || title.isEmpty
                     ? CrossFadeState.showFirst
                     : CrossFadeState.showSecond,
               ),
