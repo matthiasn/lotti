@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -44,10 +45,11 @@ class ActionItemSuggestionsView extends ConsumerWidget {
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: AIRunningAnimation(
+            child: AiRunningAnimationWrapper(
               entryId: id,
               height: 50,
               backgroundColor: Colors.transparent,
+              responseTypes: const {actionItemSuggestions},
             ),
           ),
         ],

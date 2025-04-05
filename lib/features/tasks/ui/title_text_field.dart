@@ -8,22 +8,28 @@ typedef StringCallback = void Function(String?);
 class TitleTextField extends StatefulWidget {
   const TitleTextField({
     required this.onSave,
-    this.onClear,
+    this.onCancel,
     this.focusNode,
     this.clearOnSave = false,
     this.resetToInitialValue = false,
     this.initialValue,
     this.semanticsLabel,
+    this.hintText,
+    this.onTapOutside,
+    this.autofocus = false,
     super.key,
   });
 
   final String? initialValue;
   final StringCallback onSave;
-  final VoidCallback? onClear;
+  final VoidCallback? onCancel;
   final String? semanticsLabel;
   final bool clearOnSave;
   final bool resetToInitialValue;
+  final bool autofocus;
   final FocusNode? focusNode;
+  final String? hintText;
+  final void Function(PointerDownEvent)? onTapOutside;
 
   @override
   State<TitleTextField> createState() => _TitleTextFieldState();
@@ -59,13 +65,13 @@ class _TitleTextFieldState extends State<TitleTextField> {
       widget.focusNode?.requestFocus();
     }
 
-    void onClear() {
+    void onCancel() {
       if (widget.resetToInitialValue && initialValue != null) {
         _controller.text = initialValue;
       } else {
         _controller.clear();
       }
-      widget.onClear?.call();
+      widget.onCancel?.call();
       setState(() {
         _showClearButton = widget.resetToInitialValue;
         _dirty = false;
@@ -80,9 +86,15 @@ class _TitleTextFieldState extends State<TitleTextField> {
           _showClearButton = value != widget.initialValue;
         });
       },
+      autofocus: widget.autofocus,
       focusNode: widget.focusNode,
+      onTapOutside: (data) {
+        if (!_dirty) {
+          widget.onTapOutside?.call(data);
+        }
+      },
       decoration: inputDecoration(
-        labelText: context.messages.checklistAddItem,
+        labelText: widget.hintText ?? context.messages.checklistAddItem,
         semanticsLabel: widget.semanticsLabel,
         themeData: Theme.of(context),
       ).copyWith(
@@ -104,19 +116,21 @@ class _TitleTextFieldState extends State<TitleTextField> {
                 onPressed: () => onSave(_controller.text),
               ),
             ),
-            AnimatedOpacity(
-              curve: Curves.easeInOutQuint,
-              opacity: _showClearButton ? 1.0 : 0.0,
-              duration: checklistActionIconFadeDuration,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.cancel_outlined,
-                  size: 30,
-                  semanticLabel: 'discard changes',
+            if (widget.onCancel != null)
+              AnimatedOpacity(
+                curve: Curves.easeInOutQuint,
+                opacity: _showClearButton ? 1.0 : 0.0,
+                duration: checklistActionIconFadeDuration,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.cancel_outlined,
+                    color: context.colorScheme.outline,
+                    size: 30,
+                    semanticLabel: 'discard changes',
+                  ),
+                  onPressed: onCancel,
                 ),
-                onPressed: onClear,
               ),
-            ),
           ],
         ),
       ),

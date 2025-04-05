@@ -396,6 +396,7 @@
   "taskEditHint": "Edit Task",
   "taskEstimateLabel": "Estimate:",
   "taskNameLabel": "Task:",
+  "taskNameHint": "Enter a name for the task",
   "taskNotFound": "Task not found",
   "tasksFilterTitle": "Tasks Filter",
   "tasksSearchHint": "Search tasks...",

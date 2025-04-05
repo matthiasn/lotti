@@ -30,7 +30,7 @@ class ModalUtils {
     return WoltModalSheetPage(
       backgroundColor: context.colorScheme.surfaceContainer,
       hasSabGradient: false,
-      navBarHeight: navBarHeight,
+      navBarHeight: navBarHeight ?? 55,
       topBarTitle:
           title != null ? Text(title, style: textTheme.titleSmall) : null,
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,

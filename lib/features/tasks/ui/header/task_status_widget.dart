@@ -27,7 +27,10 @@ class TaskStatusWidget extends StatelessWidget {
         context: context,
         title: context.messages.taskStatusLabel,
         builder: (BuildContext _) {
-          return TaskStatusModalContent(task: task);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 40),
+            child: TaskStatusModalContent(task: task),
+          );
         },
       );
       onStatusChanged(newStatus);

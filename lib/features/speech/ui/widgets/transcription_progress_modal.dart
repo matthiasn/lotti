@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 
 class TranscriptionProgressModalContent extends StatelessWidget {
   const TranscriptionProgressModalContent({super.key});
@@ -34,7 +34,11 @@ class TranscriptionProgressModalContent extends StatelessWidget {
         }
 
         return Padding(
-          padding: WoltModalConfig.pagePadding,
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -47,6 +51,10 @@ class TranscriptionProgressModalContent extends StatelessWidget {
                 ),
               ),
               verticalModalSpacer,
+              const AiRunningAnimation(
+                height: 50,
+                backgroundColor: Colors.transparent,
+              ),
             ],
           ),
         );
