@@ -25,3 +25,25 @@ class InferenceStatusController extends _$InferenceStatusController {
     state = status;
   }
 }
+
+@riverpod
+class InferenceRunningController extends _$InferenceRunningController {
+  @override
+  bool build({
+    required String id,
+    required Set<String> responseTypes,
+  }) {
+    final runningStatuses = responseTypes.map((responseType) {
+      final inferenceStatus = ref.watch(
+        inferenceStatusControllerProvider(
+          id: id,
+          aiResponseType: responseType,
+        ),
+      );
+
+      return inferenceStatus == InferenceStatus.running;
+    });
+
+    return runningStatuses.contains(true);
+  }
+}

@@ -33,12 +33,7 @@ class ConfigFlagCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: ListTile(
-        contentPadding: const EdgeInsets.only(
-          left: 24,
-          top: 4,
-          bottom: 8,
-          right: 24,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -47,10 +42,10 @@ class ConfigFlagCard extends StatelessWidget {
               child: Text(
                 softWrap: true,
                 getLocalizedDescription(item),
-                style: settingsCardTextStyle,
+                style: context.textTheme.bodyLarge,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             CupertinoSwitch(
               value: item.status,
               activeTrackColor: context.colorScheme.error,
