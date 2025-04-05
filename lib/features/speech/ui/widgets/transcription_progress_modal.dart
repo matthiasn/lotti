@@ -51,10 +51,7 @@ class TranscriptionProgressModalContent extends StatelessWidget {
                 ),
               ),
               verticalModalSpacer,
-              const AiRunningAnimation(
-                height: 50,
-                backgroundColor: Colors.transparent,
-              ),
+              const AiRunningAnimation(height: 50),
             ],
           ),
         );

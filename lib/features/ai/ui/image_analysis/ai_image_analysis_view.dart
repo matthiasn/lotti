@@ -48,7 +48,6 @@ class AiImageAnalysisView extends ConsumerWidget {
             child: AiRunningAnimationWrapper(
               entryId: id,
               height: 50,
-              backgroundColor: Colors.transparent,
               responseTypes: const {imageAnalysis},
             ),
           ),
