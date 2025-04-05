@@ -18,7 +18,6 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/themes/theme.dart';
 
 class EntryDetailPage extends ConsumerStatefulWidget {
   const EntryDetailPage({
@@ -115,11 +114,14 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
             if (item is Task)
               Align(
                 alignment: Alignment.bottomCenter,
-                child: AiRunningAnimationWrapper(
+                child: AiRunningAnimationWrapperCard(
                   entryId: widget.itemId,
-                  backgroundColor: context.colorScheme.surface,
                   height: 50,
-                  responseTypes: const {taskSummary, actionItemSuggestions},
+                  responseTypes: const {
+                    taskSummary,
+                    actionItemSuggestions,
+                    imageAnalysis,
+                  },
                 ),
               ),
           ],
