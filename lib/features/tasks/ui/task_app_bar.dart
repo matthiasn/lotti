@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
 import 'package:lotti/features/journal/state/journal_card_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class TaskSliverAppBar extends ConsumerWidget {
@@ -41,6 +44,21 @@ class TaskSliverAppBar extends ConsumerWidget {
       leading: const BackWidget(),
       actions: [
         SaveButton(entryId: taskId),
+        AiPopUpMenu(journalEntity: item, linkedFromId: null),
+        IconButton(
+          icon: Icon(
+            Icons.more_horiz,
+            color: context.colorScheme.outline,
+          ),
+          onPressed: () => ExtendedHeaderModal.show(
+            context: context,
+            entryId: taskId,
+            linkedFromId: null,
+            link: null,
+            inLinkedEntries: false,
+          ),
+        ),
+        const SizedBox(width: 10),
       ],
       pinned: true,
       automaticallyImplyLeading: false,
