@@ -302,7 +302,7 @@ class PersistenceLogic {
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
           categoryId: categoryId,
-          starred: true,
+          starred: false,
         ),
       );
 
@@ -335,7 +335,7 @@ class PersistenceLogic {
           dateTo: DateTime.now(),
           uuidV5Input: json.encode(data),
           categoryId: categoryId,
-          starred: true,
+          starred: false,
         ),
       );
 

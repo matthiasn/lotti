@@ -46,40 +46,37 @@ class ChecklistWrapper extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: padding,
-      child: DropRegion(
-        formats: Formats.standardFormats,
-        onDropOver: (event) {
-          return DropOperation.move;
-        },
-        onPerformDrop: (event) async {
-          final item = event.session.items.first;
-          final localData = item.localData;
-          if (localData != null) {
-            await notifier.dropChecklistItem(
-              localData,
-              categoryId: categoryId,
-            );
-          }
-        },
-        child: ChecklistWidget(
-          id: checklist.id,
-          taskId: taskId,
-          title: checklist.data.title,
-          itemIds: checklist.data.linkedChecklistItems,
-          onTitleSave: notifier.updateTitle,
-          onCreateChecklistItem: (title) => notifier.createChecklistItem(
-            title,
-            isChecked: false,
-            categoryId: checklist.meta.categoryId,
-          ),
-          updateItemOrder: notifier.updateItemOrder,
-          completionRate: completionRate,
-          onDelete: ref.read(provider.notifier).delete,
-          totalCount: totalCount,
-          completedCount: completedCount,
+    return DropRegion(
+      formats: Formats.standardFormats,
+      onDropOver: (event) {
+        return DropOperation.move;
+      },
+      onPerformDrop: (event) async {
+        final item = event.session.items.first;
+        final localData = item.localData;
+        if (localData != null) {
+          await notifier.dropChecklistItem(
+            localData,
+            categoryId: categoryId,
+          );
+        }
+      },
+      child: ChecklistWidget(
+        id: checklist.id,
+        taskId: taskId,
+        title: checklist.data.title,
+        itemIds: checklist.data.linkedChecklistItems,
+        onTitleSave: notifier.updateTitle,
+        onCreateChecklistItem: (title) => notifier.createChecklistItem(
+          title,
+          isChecked: false,
+          categoryId: checklist.meta.categoryId,
         ),
+        updateItemOrder: notifier.updateItemOrder,
+        completionRate: completionRate,
+        onDelete: ref.read(provider.notifier).delete,
+        totalCount: totalCount,
+        completedCount: completedCount,
       ),
     );
   }

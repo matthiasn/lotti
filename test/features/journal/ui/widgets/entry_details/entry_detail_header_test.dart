@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -104,13 +105,24 @@ void main() {
     });
 
     testWidgets('tap flagged icon', (WidgetTester tester) async {
+      // Create a copy of testTextEntry with flag set to EntryFlag.import
+      final flaggedTextEntry = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+      );
+
+      // Mock the database to return the flagged entry
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => flaggedTextEntry);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
-      final flagIconFinder = find.byIcon(Icons.flag_outlined);
+
+      // Now the flag icon should be visible
+      final flagIconFinder = find.byIcon(Icons.flag);
       expect(flagIconFinder, findsOneWidget);
 
       await tester.tap(flagIconFinder);

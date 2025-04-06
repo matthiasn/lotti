@@ -13,6 +13,8 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
+import 'package:lotti/features/tasks/ui/header/task_info_row.dart';
+import 'package:lotti/features/tasks/ui/header/task_title_header.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -79,10 +81,26 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
             CustomScrollView(
               controller: _scrollController,
               slivers: [
-                TaskSliverAppBar(entryId: widget.itemId),
+                TaskSliverAppBar(taskId: widget.itemId),
+                if (item is Task)
+                  PinnedHeaderSliver(
+                    child: TaskTitleHeader(taskId: widget.itemId),
+                  ),
+                if (item is Task)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 10,
+                      ),
+                      child: TaskInfoRow(taskId: widget.itemId),
+                    ),
+                  ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(
+                      top: 8,
                       bottom: 200,
                       left: 5,
                       right: 5,

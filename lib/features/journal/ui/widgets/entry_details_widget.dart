@@ -18,7 +18,6 @@ import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
-import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
 class EntryDetailsWidget extends ConsumerWidget {
@@ -143,7 +142,7 @@ class EntryDetailsContent extends ConsumerWidget {
           orElse: () => const SizedBox.shrink(),
         ),
         item.maybeMap(
-          task: (_) => const SizedBox.shrink(),
+          //task: (_) => const SizedBox.shrink(),
           event: (_) => const SizedBox.shrink(),
           quantitative: (_) => const SizedBox.shrink(),
           workout: (_) => const SizedBox.shrink(),
@@ -160,10 +159,7 @@ class EntryDetailsContent extends ConsumerWidget {
           survey: SurveySummary.new,
           quantitative: HealthSummary.new,
           measurement: MeasurementSummary.new,
-          task: (task) => TaskForm(
-            task,
-            key: Key(task.meta.id),
-          ),
+          task: (task) => const SizedBox.shrink(),
           event: EventForm.new,
           habitCompletion: (habit) => HabitSummary(
             habit,

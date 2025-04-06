@@ -293,15 +293,36 @@ class EntryController extends _$EntryController {
     }
   }
 
+  // ignore: avoid_positional_boolean_parameters
+  void setMapVisible(bool value) {
+    final current = state.value;
+    if (current?.entry?.geolocation != null) {
+      state = AsyncData(
+        current?.copyWith(
+          showMap: value,
+        ),
+      );
+    }
+  }
+
   Future<void> toggleStarred() async {
     final item = await _journalDb.journalEntityById(id);
     if (item != null) {
       final prev = item.meta.starred ?? false;
       await _persistenceLogic.updateJournalEntity(
         item,
-        item.meta.copyWith(
-          starred: !prev,
-        ),
+        item.meta.copyWith(starred: !prev),
+      );
+    }
+  }
+
+  // ignore: avoid_positional_boolean_parameters
+  Future<void> setStarred(bool value) async {
+    final item = await _journalDb.journalEntityById(id);
+    if (item != null) {
+      await _persistenceLogic.updateJournalEntity(
+        item,
+        item.meta.copyWith(starred: value),
       );
     }
   }
@@ -312,9 +333,18 @@ class EntryController extends _$EntryController {
       final prev = item.meta.private ?? false;
       await _persistenceLogic.updateJournalEntity(
         item,
-        item.meta.copyWith(
-          private: !prev,
-        ),
+        item.meta.copyWith(private: !prev),
+      );
+    }
+  }
+
+  // ignore: avoid_positional_boolean_parameters
+  Future<void> setPrivate(bool value) async {
+    final item = await _journalDb.journalEntityById(id);
+    if (item != null) {
+      await _persistenceLogic.updateJournalEntity(
+        item,
+        item.meta.copyWith(private: value),
       );
     }
   }
@@ -371,6 +401,17 @@ class EntryController extends _$EntryController {
               ? EntryFlag.none
               : EntryFlag.import,
         ),
+      );
+    }
+  }
+
+  // ignore: avoid_positional_boolean_parameters
+  Future<void> setFlagged(bool value) async {
+    final item = await _journalDb.journalEntityById(id);
+    if (item != null) {
+      await _persistenceLogic.updateJournalEntity(
+        item,
+        item.meta.copyWith(flag: value ? EntryFlag.import : EntryFlag.none),
       );
     }
   }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_items.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/toggle_flagged_list_tile.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/toggle_private_list_tile.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/toggle_starred_list_tile.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tag_add.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
@@ -35,7 +38,9 @@ class InitialModalPageContent extends StatelessWidget {
 
     return Column(
       children: [
+        ToggleStarredListTile(entryId: entryId),
         TogglePrivateListTile(entryId: entryId),
+        ToggleFlaggedListTile(entryId: entryId),
         ToggleMapListTile(entryId: entryId),
         DeleteIconListTile(
           entryId: entryId,
