@@ -91,7 +91,6 @@ class _ChecklistSuggestionsWidgetState
         if (!isRunning)
           Row(
             children: [
-              const SizedBox(width: 5),
               Text(
                 checklistItems.isEmpty
                     ? context.messages.checklistNoSuggestionsTitle
