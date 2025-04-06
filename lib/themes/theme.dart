@@ -239,6 +239,9 @@ ThemeData withOverrides(ThemeData themeData) {
       clipBehavior: Clip.hardEdge,
       color: themeData.colorScheme.surfaceContainer,
     ),
+    appBarTheme: themeData.appBarTheme.copyWith(
+      backgroundColor: themeData.scaffoldBackgroundColor,
+    ),
     sliderTheme: themeData.sliderTheme.copyWith(
       activeTrackColor: themeData.colorScheme.secondary,
       inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(

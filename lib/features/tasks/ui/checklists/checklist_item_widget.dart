@@ -63,6 +63,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
             ),
       ),
       child: CheckboxListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
         title: AnimatedCrossFade(
           duration: checklistCrossFadeDuration,
           firstChild: TitleTextField(

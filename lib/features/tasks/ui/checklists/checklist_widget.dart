@@ -66,6 +66,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
       maintainState: true,
       key: ValueKey('${widget.id} ${widget.completionRate}'),
       initiallyExpanded: widget.completionRate < 1,
@@ -177,10 +178,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           ],
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: TitleTextField(
             focusNode: _focusNode,
             onSave: (title) async {

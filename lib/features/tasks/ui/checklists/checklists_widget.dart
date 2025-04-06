@@ -43,7 +43,6 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
       children: [
         Row(
           children: [
-            const SizedBox(width: 5),
             Text(
               context.messages.checklistsTitle,
               style: context.textTheme.titleSmall?.copyWith(color: color),

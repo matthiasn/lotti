@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_wrapper.dart';
+import 'package:lotti/features/tasks/ui/task_form.dart';
 
 class TaskInfoRow extends StatelessWidget {
   const TaskInfoRow({
@@ -13,22 +14,27 @@ class TaskInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        Flexible(
-          flex: 2,
-          child: EstimatedTimeWrapper(taskId: taskId),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              flex: 2,
+              child: EstimatedTimeWrapper(taskId: taskId),
+            ),
+            Flexible(
+              flex: 4,
+              child: TaskCategoryWrapper(taskId: taskId),
+            ),
+            Container(
+              constraints: const BoxConstraints(minWidth: 90),
+              child: TaskStatusWrapper(taskId: taskId),
+            ),
+          ],
         ),
-        Flexible(
-          flex: 4,
-          child: TaskCategoryWrapper(taskId: taskId),
-        ),
-        Container(
-          constraints: const BoxConstraints(minWidth: 90),
-          child: TaskStatusWrapper(taskId: taskId),
-        ),
+        TaskForm(taskId: taskId),
       ],
     );
   }
