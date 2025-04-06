@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/categories/ui/widgets/category_selection_icon_but
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -65,7 +65,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   !widget.inLinkedEntries)
                 CategorySelectionIconButton(entry: entry),
               const SizedBox(width: 10),
-              if (entry is! JournalEvent)
+              if (entry is! JournalEvent && (entry?.meta.starred ?? false))
                 SwitchIconWidget(
                   tooltip: context.messages.journalFavoriteTooltip,
                   onPressed: notifier.toggleStarred,
@@ -74,14 +74,15 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   activeIcon: Icons.star_rounded,
                   activeColor: starredGold,
                 ),
-              SwitchIconWidget(
-                tooltip: context.messages.journalFlaggedTooltip,
-                onPressed: notifier.toggleFlagged,
-                value: entry?.meta.flag == EntryFlag.import,
-                icon: Icons.flag_outlined,
-                activeIcon: Icons.flag,
-                activeColor: context.colorScheme.error,
-              ),
+              if (entry?.meta.flag == EntryFlag.import)
+                SwitchIconWidget(
+                  tooltip: context.messages.journalFlaggedTooltip,
+                  onPressed: notifier.toggleFlagged,
+                  value: entry?.meta.flag == EntryFlag.import,
+                  icon: Icons.flag_outlined,
+                  activeIcon: Icons.flag,
+                  activeColor: context.colorScheme.error,
+                ),
               if (entry != null && entry is Task || entry is JournalImage)
                 AiPopUpMenu(
                   journalEntity: entry!,
@@ -104,57 +105,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class SwitchIconWidget extends StatelessWidget {
-  const SwitchIconWidget({
-    required this.tooltip,
-    required this.onPressed,
-    required this.value,
-    required this.icon,
-    required this.activeIcon,
-    required this.activeColor,
-    super.key,
-  });
-
-  final String tooltip;
-  final void Function() onPressed;
-  final bool value;
-
-  final IconData icon;
-  final IconData activeIcon;
-  final Color activeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 40,
-      child: IconButton(
-        splashColor: Colors.transparent,
-        focusColor: Colors.transparent,
-        padding: EdgeInsets.zero,
-        splashRadius: 1,
-        tooltip: tooltip,
-        onPressed: () {
-          if (value) {
-            HapticFeedback.lightImpact();
-          } else {
-            HapticFeedback.heavyImpact();
-          }
-          onPressed();
-        },
-        icon: value
-            ? Icon(
-                activeIcon,
-                color: activeColor,
-              )
-            : Icon(
-                icon,
-                color: context.colorScheme.outline,
-              ),
-      ),
     );
   }
 }

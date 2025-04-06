@@ -4,83 +4,11 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_list_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
-class SwitchListTile extends StatelessWidget {
-  const SwitchListTile({
-    required this.title,
-    required this.onPressed,
-    required this.value,
-    required this.icon,
-    required this.activeIcon,
-    required this.activeColor,
-    super.key,
-  });
-
-  final String title;
-  final void Function() onPressed;
-  final bool value;
-
-  final IconData icon;
-  final IconData activeIcon;
-  final Color activeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: value
-          ? Icon(
-              activeIcon,
-              color: activeColor,
-            )
-          : Icon(icon),
-      title: Text(title),
-      onTap: onPressed,
-    );
-  }
-}
-
-class TogglePrivateListTile extends ConsumerWidget {
-  const TogglePrivateListTile({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
-
-    final entryState = ref.watch(provider).value;
-    if (entryState == null) {
-      return const SizedBox.shrink();
-    }
-
-    final entry = entryState.entry;
-
-    return SwitchListTile(
-      title: context.messages.journalPrivateTitle,
-      onPressed: () async {
-        await notifier.togglePrivate();
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        });
-      },
-      value: entry?.meta.private ?? false,
-      icon: Icons.shield_outlined,
-      activeIcon: Icons.shield,
-      activeColor: context.colorScheme.error,
-    );
-  }
-}
 
 class UnlinkListTile extends ConsumerWidget {
   const UnlinkListTile({
@@ -153,18 +81,11 @@ class ToggleMapListTile extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return SwitchListTile(
+    return MenuSwitchListTile(
       title: entryState.showMap
           ? context.messages.journalHideMapHint
           : context.messages.journalShowMapHint,
-      onPressed: () {
-        notifier.toggleMapVisible();
-        Future.delayed(const Duration(milliseconds: 600), () {
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        });
-      },
+      onChanged: notifier.setMapVisible,
       value: entryState.showMap,
       icon: Icons.map_outlined,
       activeIcon: Icons.map,
@@ -189,17 +110,18 @@ class ToggleHiddenListTile extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     final isHidden = link.hidden ?? false;
 
-    void updateLink() {
+    // ignore: avoid_positional_boolean_parameters
+    void updateLink(bool hidden) {
       final hidden = link.hidden ?? false;
       final updatedLink = link.copyWith(hidden: !hidden);
       notifier.updateLink(updatedLink);
       Navigator.of(context).pop();
     }
 
-    return SwitchListTile(
+    return MenuSwitchListTile(
       // TODO: l10n
-      title: isHidden ? 'Un-Hide' : 'Hide',
-      onPressed: updateLink,
+      title: 'Hidden',
+      onChanged: updateLink,
       value: isHidden,
       icon: MdiIcons.archive,
       activeIcon: MdiIcons.archiveCancel,

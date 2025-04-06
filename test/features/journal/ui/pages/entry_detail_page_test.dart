@@ -249,7 +249,7 @@ void main() {
       );
 
       // test weight entry is not starred
-      expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
     });
   });
 }
