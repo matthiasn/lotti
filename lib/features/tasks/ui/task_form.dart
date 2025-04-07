@@ -28,32 +28,23 @@ class TaskForm extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final dividerColor = context.colorScheme.outline.withAlpha(60);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TaskDateRow(taskId: taskId),
         TaskInfoRow(taskId: taskId),
         EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
-        Divider(
-          thickness: 1,
-          color: context.colorScheme.outline,
-        ),
+        Divider(color: dividerColor),
         const SizedBox(height: 10),
         LatestAiResponseSummary(
           id: taskId,
           aiResponseType: taskSummary,
         ),
-        const SizedBox(height: 20),
-        Divider(
-          thickness: 1,
-          color: context.colorScheme.outline,
-        ),
         ChecklistsWidget(entryId: taskId, task: task),
         const SizedBox(height: 10),
-        Divider(
-          thickness: 1,
-          color: context.colorScheme.outline,
-        ),
+        Divider(color: dividerColor),
       ],
     );
   }
