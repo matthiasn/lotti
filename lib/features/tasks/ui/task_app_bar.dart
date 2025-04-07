@@ -43,7 +43,6 @@ class TaskSliverAppBar extends ConsumerWidget {
       title: LinkedDuration(taskId: item.id),
       leading: const BackWidget(),
       actions: [
-        SaveButton(entryId: taskId),
         AiPopUpMenu(journalEntity: item, linkedFromId: null),
         IconButton(
           icon: Icon(

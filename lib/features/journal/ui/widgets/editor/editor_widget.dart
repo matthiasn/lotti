@@ -15,12 +15,14 @@ class EditorWidget extends ConsumerWidget {
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 10,
+    this.margin,
   });
 
   final String entryId;
   final double maxHeight;
   final double minHeight;
   final double padding;
+  final EdgeInsets? margin;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,6 +37,7 @@ class EditorWidget extends ConsumerWidget {
         entryState.value?.shouldShowEditorToolBar ?? false;
 
     return Card(
+      margin: margin,
       color: shouldShowEditorToolBar
           ? context.colorScheme.surface.brighten()
           : Colors.transparent,

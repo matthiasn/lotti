@@ -13,9 +13,9 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
-import 'package:lotti/features/tasks/ui/header/task_info_row.dart';
 import 'package:lotti/features/tasks/ui/header/task_title_header.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
+import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -94,7 +94,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                         right: 20,
                         top: 10,
                       ),
-                      child: TaskInfoRow(taskId: widget.itemId),
+                      child: TaskForm(taskId: widget.itemId),
                     ),
                   ),
                 SliverToBoxAdapter(
@@ -108,12 +108,13 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        EntryDetailsWidget(
-                          itemId: widget.itemId,
-                          popOnDelete: true,
-                          showTaskDetails: true,
-                          showAiEntry: true,
-                        ),
+                        if (item is! Task)
+                          EntryDetailsWidget(
+                            itemId: widget.itemId,
+                            popOnDelete: true,
+                            showTaskDetails: true,
+                            showAiEntry: true,
+                          ),
                         LinkedEntriesWidget(item),
                         LinkedFromEntriesWidget(item),
                         if (item is ChecklistItem)

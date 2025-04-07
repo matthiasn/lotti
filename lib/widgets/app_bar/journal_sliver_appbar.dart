@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
-import 'package:lotti/widgets/search/task_category_filter.dart';
-import 'package:lotti/widgets/search/task_filter_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class JournalSliverAppBar extends StatelessWidget {
