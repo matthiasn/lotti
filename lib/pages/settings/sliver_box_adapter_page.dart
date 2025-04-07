@@ -51,3 +51,75 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
     );
   }
 }
+
+class SliverBoxAdapterShowcasePage extends StatefulWidget {
+  const SliverBoxAdapterShowcasePage({
+    required this.child,
+    required this.title,
+    required this.showcaseIcon,
+    this.showBackButton = false,
+    super.key,
+  });
+
+  final Widget child;
+  final String title;
+  final bool showBackButton;
+  final Widget showcaseIcon;
+
+  @override
+  State<SliverBoxAdapterShowcasePage> createState() =>
+      _SliverBoxAdapterShowcasePageState();
+}
+
+class _SliverBoxAdapterShowcasePageState
+    extends State<SliverBoxAdapterShowcasePage> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    final listener = getIt<UserActivityService>().updateActivity;
+    _scrollController.addListener(listener);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(120),
+        child: AppBar(
+          leading: GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: const MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Row(
+                children: [
+                  SizedBox(width: 9),
+                  Icon(
+                    Icons.chevron_left,
+                    size: 30,
+                    weight: 500,
+                    semanticLabel: 'Navigate back',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          title: widget.showcaseIcon,
+        ),
+      ),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: <Widget>[
+          SliverToBoxAdapter(
+            child: widget.child
+                .animate()
+                .fadeIn(duration: const Duration(milliseconds: 500)),
+          ),
+        ],
+      ),
+    );
+  }
+}

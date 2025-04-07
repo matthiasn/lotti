@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -46,11 +47,18 @@ class ShowcaseWithWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              margin: const EdgeInsets.only(left: 7),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 10,
+              ),
+              margin: const EdgeInsets.only(
+                left: 7,
+              ),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(inputBorderRadius),
+                borderRadius: BorderRadius.circular(
+                  inputBorderRadius,
+                ),
               ),
               child: description,
             ),
@@ -62,18 +70,18 @@ class ShowcaseWithWidget extends StatelessWidget {
                     onPressed: () {
                       ShowCaseWidget.of(context).dismiss();
                     },
-                    child: const Text(
-                      'close',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      context.messages.showcaseCloseButton,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                   OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).next();
                     },
-                    child: const Text(
-                      'next',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      context.messages.showcaseNextButton,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ],
@@ -86,18 +94,18 @@ class ShowcaseWithWidget extends StatelessWidget {
                     onPressed: () {
                       ShowCaseWidget.of(context).previous();
                     },
-                    child: const Text(
-                      'Previous',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      context.messages.showcasePreviousButton,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                   OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).dismiss();
                     },
-                    child: const Text(
-                      'close',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      context.messages.showcaseCloseButton,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ],
@@ -110,18 +118,18 @@ class ShowcaseWithWidget extends StatelessWidget {
                     onPressed: () {
                       ShowCaseWidget.of(context).previous();
                     },
-                    child: const Text(
-                      'Previous',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      context.messages.showcasePreviousButton,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                   OutlinedButton(
                     onPressed: () {
                       ShowCaseWidget.of(context).next();
                     },
-                    child: const Text(
-                      'Next',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      context.messages.showcaseNextButton,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ],
