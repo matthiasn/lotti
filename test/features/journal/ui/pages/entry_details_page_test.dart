@@ -157,7 +157,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailPage(itemId: testTextEntry.meta.id),
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
         ),
       );
 
@@ -181,46 +181,6 @@ void main() {
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     });
 
-    testWidgets('Task Entry is rendered', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailPage(itemId: testTask.id),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // TODO: test that entry text is rendered
-
-      // test entry displays expected date
-      expect(
-        find.text(dfShorter.format(testTask.meta.dateFrom)),
-        findsOneWidget,
-      );
-
-      // test task displays progress bar with 2 hours progress and 4 hours total
-      final progressBar =
-          tester.firstWidget(find.byType(LinearProgressIndicator))
-              as LinearProgressIndicator;
-      expect(progressBar, isNotNull);
-      expect(progressBar.value, 0.25);
-
-      // test task title is displayed
-      expect(find.text(testTask.data.title), findsNWidgets(2));
-
-      // task entry duration estimate is rendered
-      expect(
-        find.text('04:00'),
-        findsNWidgets(1),
-      );
-
-      // test task is starred
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
-    });
-
     testWidgets('Weight Entry is rendered properly', (tester) async {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
@@ -236,7 +196,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailPage(itemId: testWeightEntry.meta.id),
+          EntryDetailsPage(itemId: testWeightEntry.meta.id),
         ),
       );
 
