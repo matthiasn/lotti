@@ -26,6 +26,7 @@ class DurationWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: item.meta.id);
+    final entry = ref.watch(provider).value?.entry;
 
     return StreamBuilder(
       stream: _timeService.getStream(),
@@ -88,7 +89,9 @@ class DurationWidget extends ConsumerWidget {
                     tooltip: 'Record',
                     color: context.colorScheme.error,
                     onPressed: () {
-                      _timeService.start(item, linkedFrom);
+                      if (entry != null) {
+                        _timeService.start(entry, linkedFrom);
+                      }
                     },
                   ),
                 ),

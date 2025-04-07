@@ -118,12 +118,6 @@ void main() {
             .fetchHealthDataDelta(testWeightEntry.data.dataType),
       ).thenAnswer((_) async {});
 
-      when(
-        () => mockJournalDb.getLinkedEntities(testTask.meta.id),
-      ).thenAnswer(
-        (_) async => [testTextEntry],
-      );
-
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 

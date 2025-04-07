@@ -114,11 +114,6 @@ void main() {
       );
 
       when(
-        () => mockHealthImport
-            .fetchHealthDataDelta(testWeightEntry.data.dataType),
-      ).thenAnswer((_) async {});
-
-      when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
       ).thenAnswer(
         (_) async => [testTextEntry],
@@ -144,10 +139,6 @@ void main() {
           type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
         ),
       ).thenAnswer((_) async => []);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
     });
     tearDown(getIt.reset);
 
