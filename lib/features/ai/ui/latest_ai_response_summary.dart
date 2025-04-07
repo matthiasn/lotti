@@ -54,6 +54,8 @@ class LatestAiResponseSummary extends ConsumerWidget {
             .valueOrNull ??
         false;
 
+    final dividerColor = context.colorScheme.outline.withAlpha(60);
+
     return latestSummaryAsync.when(
       loading: () => const Center(
         child: Padding(
@@ -71,6 +73,10 @@ class LatestAiResponseSummary extends ConsumerWidget {
         ),
       ),
       data: (aiResponse) {
+        if (aiResponse == null) {
+          return const SizedBox.shrink();
+        }
+
         return Column(
           children: [
             if (isRunning)
@@ -92,7 +98,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
                   ),
                 ],
               ),
-            if (!isRunning && aiResponse != null)
+            if (!isRunning)
               Row(
                 children: [
                   Text(
@@ -117,12 +123,13 @@ class LatestAiResponseSummary extends ConsumerWidget {
                     ),
                 ],
               ),
-            if (aiResponse != null)
-              AiResponseSummary(
-                aiResponse,
-                linkedFromId: id,
-                fadeOut: false,
-              ),
+            AiResponseSummary(
+              aiResponse,
+              linkedFromId: id,
+              fadeOut: false,
+            ),
+            const SizedBox(height: 20),
+            Divider(color: dividerColor),
           ],
         );
       },

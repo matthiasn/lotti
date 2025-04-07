@@ -8,10 +8,12 @@ import 'package:lotti/themes/theme.dart';
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
     required this.entryId,
+    this.padding = const EdgeInsets.only(left: 5),
     super.key,
   });
 
   final String entryId;
+  final EdgeInsets padding;
 
   @override
   Widget build(
@@ -26,19 +28,16 @@ class EntryDatetimeWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
-      child: GestureDetector(
-        onTap: () =>
-            EntryDateTimeModal.show<void>(entry: entry, context: context),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 5),
-          child: Text(
-            dfShorter.format(entry.meta.dateFrom),
-            style: context.textTheme.bodyMedium?.copyWith(
-              fontFeatures: [const FontFeature.tabularFigures()],
-              color: context.colorScheme.outline,
-            ),
+    return GestureDetector(
+      onTap: () =>
+          EntryDateTimeModal.show<void>(entry: entry, context: context),
+      child: Padding(
+        padding: padding,
+        child: Text(
+          dfShorter.format(entry.meta.dateFrom),
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontFeatures: [const FontFeature.tabularFigures()],
+            color: context.colorScheme.outline,
           ),
         ),
       ),
