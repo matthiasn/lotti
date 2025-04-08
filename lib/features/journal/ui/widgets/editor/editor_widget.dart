@@ -74,6 +74,13 @@ class EditorWidget extends ConsumerWidget {
                     cursorColor: context.colorScheme.onSurface,
                     selectionColor: context.colorScheme.primary.withAlpha(127),
                   ),
+                  spaceShortcutEvents: [
+                    formatHyphenToBulletList,
+                    formatOrderedNumberToList,
+                    formatHeaderToHeaderStyle,
+                    formatHeader2ToHeaderStyle,
+                    formatHeader3ToHeaderStyle,
+                  ],
                   minHeight: minHeight,
                   placeholder: context.messages.editorPlaceholder,
                   padding: EdgeInsets.only(
