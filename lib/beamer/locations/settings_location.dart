@@ -298,7 +298,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey(
             'settings-conflict-edit-${state.pathParameters['conflictId']}',
           ),
-          child: EntryDetailPage(itemId: state.pathParameters['conflictId']!),
+          child: EntryDetailsPage(itemId: state.pathParameters['conflictId']!),
         ),
 
       if (pathContains('advanced/maintenance'))

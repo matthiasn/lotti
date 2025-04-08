@@ -35,7 +35,7 @@ class JournalLocation extends BeamLocation<BeamState> {
       if (isUuid(entryId))
         BeamPage(
           key: ValueKey('journal-$entryId'),
-          child: EntryDetailPage(itemId: entryId!),
+          child: EntryDetailsPage(itemId: entryId!),
         ),
       if (pathContains('fill_survey/') && pathContainsKey('surveyType'))
         BeamPage(

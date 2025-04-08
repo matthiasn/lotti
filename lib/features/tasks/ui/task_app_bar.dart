@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
 import 'package:lotti/features/journal/state/journal_card_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -23,15 +23,7 @@ class TaskSliverAppBar extends ConsumerWidget {
     final item = ref.watch(provider).value;
 
     if (item == null || item is! Task) {
-      return SliverAppBar(
-        leadingWidth: 100,
-        leading: const BackWidget(),
-        pinned: true,
-        actions: [
-          SaveButton(entryId: item?.meta.id ?? ''),
-        ],
-        automaticallyImplyLeading: false,
-      );
+      return JournalSliverAppBar(entryId: taskId);
     }
 
     return SliverAppBar(
