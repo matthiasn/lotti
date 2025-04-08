@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 
 class TimeService {
   TimeService() {
@@ -22,14 +20,6 @@ class TimeService {
     _current = journalEntity;
     linkedFrom = linked;
     const interval = Duration(seconds: 1);
-
-    unawaited(
-      getIt<JournalDb>()
-          .watchJournalEntityById(journalEntity.id)
-          .forEach((entry) {
-        _current = entry;
-      }),
-    );
 
     int callback(int value) {
       return value;
@@ -62,5 +52,11 @@ class TimeService {
 
   Stream<JournalEntity?> getStream() {
     return _controller.stream;
+  }
+
+  void updateCurrent(JournalEntity? current) {
+    if (_current?.id == current?.id) {
+      _current = current;
+    }
   }
 }

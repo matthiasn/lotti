@@ -1,8 +1,8 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/speech/ui/pages/record_audio_page.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class TasksLocation extends BeamLocation<BeamState> {
@@ -11,15 +11,15 @@ class TasksLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
         '/tasks',
-        '/tasks/:entryId',
-        '/tasks/:entryId/record_audio/:linkedId',
+        '/tasks/:taskId',
+        '/tasks/:taskId/record_audio/:linkedId',
       ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     bool pathContains(String s) => state.uri.path.contains(s);
 
-    final entryId = state.pathParameters['entryId'];
+    final taskId = state.pathParameters['taskId'];
     final linkedId = state.pathParameters['linkedId'];
     final categoryId = state.queryParameters['categoryId'];
 
@@ -29,10 +29,10 @@ class TasksLocation extends BeamLocation<BeamState> {
         title: 'Tasks',
         child: InfiniteJournalPage(showTasks: true),
       ),
-      if (isUuid(entryId))
+      if (isUuid(taskId))
         BeamPage(
-          key: ValueKey('tasks-$entryId'),
-          child: EntryDetailPage(itemId: entryId!),
+          key: ValueKey('tasks-$taskId'),
+          child: TaskDetailsPage(taskId: taskId!),
         ),
       if (pathContains('record_audio/'))
         BeamPage(
