@@ -13,10 +13,10 @@ packages:
     dependency: transitive
     description:
       name: accessibility_tools
-      sha256: "1ee3612b9439ca315f92dcc31c6a4828e95b96c1aa64ac3a7776c149722deca8"
+      sha256: "3a36d23e8566f0618730c89b304f4faa5bc843255e26a47ee0ff15df0c30b15d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.1"
   analyzer:
     dependency: "direct dev"
     description:
@@ -1627,18 +1627,18 @@ packages:
     dependency: transitive
     description:
       name: just_audio_platform_interface
-      sha256: "271b93b484c6f494ecd72a107fffbdb26b425f170c665b9777a0a24a726f2f24"
+      sha256: "4cd94536af0219fa306205a58e78d67e02b0555283c1c094ee41e402a14a5c4a"
       url: "https://pub.dev"
     source: hosted
-    version: "4.4.0"
+    version: "4.5.0"
   just_audio_web:
     dependency: transitive
     description:
       name: just_audio_web
-      sha256: "58915be64509a7683c44bf11cd1a23c15a48de104927bee116e3c63c8eeea0d4"
+      sha256: "8c7e779892e180cbc9ffb5a3c52f6e90e1cbbf4a63694cc450972a7edbd2bb6d"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.14"
+    version: "0.4.15"
   langchain:
     dependency: "direct main"
     description:

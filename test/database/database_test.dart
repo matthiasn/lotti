@@ -38,11 +38,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: allowInvalidCertFlag,
-    description: 'Allow invalid certificate? (not recommended)',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableSyncFlag,
     description: 'Enable sync? (requires restart)',
     status: true,
