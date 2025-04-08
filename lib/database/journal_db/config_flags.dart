@@ -20,13 +20,6 @@ Future<void> initConfigFlags(
     ),
   );
   await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: allowInvalidCertFlag,
-      description: 'Allow invalid certificate? (not recommended)',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
     ConfigFlag(
       name: enableSyncFlag,
       description: 'Enable sync? (requires restart)',
