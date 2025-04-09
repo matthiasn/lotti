@@ -35,6 +35,7 @@ class TaskForm extends ConsumerWidget {
       children: [
         TaskDateRow(taskId: taskId),
         TaskInfoRow(taskId: taskId),
+        const SizedBox(height: 10),
         EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
         Divider(color: dividerColor),
         const SizedBox(height: 10),
