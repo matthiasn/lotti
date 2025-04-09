@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/features/tasks/ui/checklists/progress_indicator.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -94,7 +94,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           ),
           secondChild: Row(
             children: [
-              ProgressIndicator(
+              ChecklistProgressIndicator(
                 completionRate: widget.completionRate,
                 totalCount: widget.totalCount,
                 completedCount: widget.completedCount,
@@ -221,37 +221,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class ProgressIndicator extends StatelessWidget {
-  const ProgressIndicator({
-    required this.completionRate,
-    required this.completedCount,
-    required this.totalCount,
-    super.key,
-  });
-
-  final double completionRate;
-  final int completedCount;
-  final int totalCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          color: successColor,
-          backgroundColor: failColor,
-          value: completionRate,
-          strokeWidth: 5,
-          semanticsLabel: 'Checklist progress',
-        ),
       ),
     );
   }

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart'
-    hide ProgressIndicator;
+import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
