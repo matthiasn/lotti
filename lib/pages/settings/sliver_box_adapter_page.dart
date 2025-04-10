@@ -86,7 +86,7 @@ class _SliverBoxAdapterShowcasePageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(120),
+        preferredSize: const Size.fromHeight(kToolbarHeight),
         child: AppBar(
           leading: GestureDetector(
             onTap: () {
