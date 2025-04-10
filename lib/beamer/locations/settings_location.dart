@@ -212,9 +212,11 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Flags
       if (pathContains('flags'))
-        const BeamPage(
-          key: ValueKey('settings-flags'),
-          child: FlagsPage(),
+        BeamPage(
+          key: const ValueKey('settings-flags'),
+          child: ShowCaseWidget(
+            builder: (context) => const FlagsPage(),
+          ),
         ),
 
       // Theming

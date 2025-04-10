@@ -110,15 +110,24 @@ class _SliverBoxAdapterShowcasePageState
           title: widget.showcaseIcon,
         ),
       ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: <Widget>[
-          SliverToBoxAdapter(
-            child: widget.child
-                .animate()
-                .fadeIn(duration: const Duration(milliseconds: 500)),
-          ),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            controller: _scrollController,
+            child: Container(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+                maxHeight: constraints.maxHeight,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: widget.child
+                    .animate()
+                    .fadeIn(duration: const Duration(milliseconds: 500)),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
