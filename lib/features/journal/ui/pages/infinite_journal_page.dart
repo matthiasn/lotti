@@ -7,7 +7,7 @@ import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
-import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -104,7 +104,7 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
                   builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
                     animateTransitions: true,
                     itemBuilder: (context, item, index) {
-                      return EntryWrapperWidget(
+                      return CardWrapperWidget(
                         item: item,
                         taskAsListView: snapshot.taskAsListView,
                         key: ValueKey(item.meta.id),

@@ -13,7 +13,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summ
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';

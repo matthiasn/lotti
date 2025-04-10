@@ -1,13 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
-import 'package:lotti/features/journal/ui/widgets/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
@@ -319,123 +315,6 @@ class LeadingIcon extends StatelessWidget {
       iconData,
       size: 32,
       color: color ?? context.colorScheme.outline,
-    );
-  }
-}
-
-class JournalImageCard extends ConsumerWidget {
-  const JournalImageCard({
-    required this.item,
-    super.key,
-  });
-
-  final JournalImage item;
-
-  @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    void onTap() => beamToNamed('/journal/${item.meta.id}');
-    if (item.meta.deletedAt != null) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.only(right: 16),
-        onTap: onTap,
-        minLeadingWidth: 0,
-        minVerticalPadding: 0,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LimitedBox(
-              maxWidth: max(MediaQuery.of(context).size.width / 2, 300) - 40,
-              maxHeight: 160,
-              child: CardImageWidget(
-                journalImage: item,
-                height: 160,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: SizedBox(
-                height: 160,
-                child: JournalCardTitle(
-                  item: item,
-                  maxHeight: 200,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class TaskListCard extends StatelessWidget {
-  const TaskListCard({
-    required this.task,
-    super.key,
-  });
-
-  final Task task;
-
-  @override
-  Widget build(BuildContext context) {
-    void onTap() => beamToNamed('/tasks/${task.meta.id}');
-
-    return Card(
-      margin: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
-      child: ListTile(
-        onTap: onTap,
-        leading: CategoryColorIcon(task.meta.categoryId),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TimeRecordingIcon(
-              taskId: task.meta.id,
-              padding: const EdgeInsets.only(right: 10),
-            ),
-            TaskStatusWidget(task),
-          ],
-        ),
-        title: Text(
-          task.data.title,
-          style: const TextStyle(
-            fontSize: fontSizeMediumLarge,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class EntryWrapperWidget extends StatelessWidget {
-  const EntryWrapperWidget({
-    required this.item,
-    required this.taskAsListView,
-    super.key,
-  });
-
-  final JournalEntity item;
-  final bool taskAsListView;
-
-  @override
-  Widget build(BuildContext context) {
-    return item.maybeMap(
-      journalImage: (JournalImage image) => JournalImageCard(item: image),
-      task: (Task task) {
-        if (taskAsListView) {
-          return TaskListCard(task: task);
-        } else {
-          return JournalCard(item: task);
-        }
-      },
-      orElse: () => JournalCard(item: item),
     );
   }
 }
