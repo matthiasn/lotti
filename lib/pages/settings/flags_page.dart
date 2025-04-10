@@ -89,16 +89,18 @@ class _FlagsPageState extends State<FlagsPage> {
             ),
             title: context.messages.settingsFlagsTitle,
             showBackButton: true,
-            child: Column(
-              children: [
-                ...filteredItems.mapIndexed(
-                  (index, flag) => ConfigFlagCard(
-                    item: flag,
-                    index: index,
-                    showcaseKey: _getShowcaseKeyForFlag(flag.name),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  ...filteredItems.mapIndexed(
+                    (index, flag) => ConfigFlagCard(
+                      item: flag,
+                      index: index,
+                      showcaseKey: _getShowcaseKeyForFlag(flag.name),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
