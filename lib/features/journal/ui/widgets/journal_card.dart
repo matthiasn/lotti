@@ -7,7 +7,6 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
-import 'package:lotti/features/journal/state/journal_card_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
@@ -220,7 +219,7 @@ class JournalCardTitle extends StatelessWidget {
   }
 }
 
-class JournalCard extends ConsumerStatefulWidget {
+class JournalCard extends StatelessWidget {
   const JournalCard({
     required this.item,
     super.key,
@@ -233,24 +232,15 @@ class JournalCard extends ConsumerStatefulWidget {
   final bool showLinkedDuration;
 
   @override
-  ConsumerState<JournalCard> createState() => _JournalCardState();
-}
-
-class _JournalCardState extends ConsumerState<JournalCard> {
-  @override
   Widget build(BuildContext context) {
-    final provider = journalCardControllerProvider(id: widget.item.meta.id);
-    final entryState = ref.watch(provider).value;
-    final updatedItem = entryState ?? widget.item;
-
-    if (updatedItem.meta.deletedAt != null) {
+    if (item.meta.deletedAt != null) {
       return const SizedBox.shrink();
     }
     void onTap() {
-      if (updatedItem is Task) {
-        beamToNamed('/tasks/${updatedItem.meta.id}');
+      if (item is Task) {
+        beamToNamed('/tasks/${item.meta.id}');
       } else {
-        beamToNamed('/journal/${updatedItem.meta.id}');
+        beamToNamed('/journal/${item.meta.id}');
       }
     }
 
@@ -260,7 +250,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
       padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
       child: Card(
         child: ListTile(
-          leading: updatedItem.maybeMap(
+          leading: item.maybeMap(
             journalAudio: (item) {
               final transcripts = item.data.transcripts;
               return LeadingIcon(
@@ -302,9 +292,9 @@ class _JournalCardState extends ConsumerState<JournalCard> {
             orElse: () => null,
           ),
           title: JournalCardTitle(
-            item: updatedItem,
-            maxHeight: widget.maxHeight,
-            showLinkedDuration: widget.showLinkedDuration,
+            item: item,
+            maxHeight: maxHeight,
+            showLinkedDuration: showLinkedDuration,
           ),
           onTap: onTap,
         ),
@@ -347,11 +337,7 @@ class JournalImageCard extends ConsumerWidget {
     WidgetRef ref,
   ) {
     void onTap() => beamToNamed('/journal/${item.meta.id}');
-    final provider = journalCardControllerProvider(id: item.meta.id);
-    final entryState = ref.watch(provider).value;
-
-    final updatedItem = entryState ?? item;
-    if (updatedItem.meta.deletedAt != null) {
+    if (item.meta.deletedAt != null) {
       return const SizedBox.shrink();
     }
 
@@ -368,7 +354,7 @@ class JournalImageCard extends ConsumerWidget {
               maxWidth: max(MediaQuery.of(context).size.width / 2, 300) - 40,
               maxHeight: 160,
               child: CardImageWidget(
-                journalImage: updatedItem as JournalImage,
+                journalImage: item,
                 height: 160,
                 fit: BoxFit.cover,
               ),
@@ -378,7 +364,7 @@ class JournalImageCard extends ConsumerWidget {
               child: SizedBox(
                 height: 160,
                 child: JournalCardTitle(
-                  item: updatedItem,
+                  item: item,
                   maxHeight: 200,
                 ),
               ),
