@@ -110,6 +110,7 @@ class _HomeserverSettingsWidgetState
   final _formKey = GlobalKey<FormBuilderState>();
   bool _dirty = false;
   bool _showPassword = false;
+  bool _formIsValid = false;
 
   @override
   void initState() {
@@ -119,17 +120,37 @@ class _HomeserverSettingsWidgetState
     if (isLoggedIn) {
       widget.pageIndexNotifier.value = 1;
     }
+
+    // Schedule a check of form validity after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Set _dirty to false initially to prevent showing save button before validation
+      setState(() {
+        _dirty = false;
+        _formIsValid = false;
+      });
+      onFormChanged();
+    });
   }
 
   void onFormChanged() {
-    _formKey.currentState?.save();
-    setState(() => _dirty = true);
+    final currentState = _formKey.currentState;
+    if (currentState != null) {
+      currentState.save();
+
+      // Validate all fields
+      final isValid = currentState.validate();
+
+      setState(() {
+        _dirty = true;
+        _formIsValid = isValid;
+      });
+    }
   }
 
   Future<void> onSavePressed() async {
     final currentState = _formKey.currentState;
 
-    if (currentState == null) {
+    if (currentState == null || !_formIsValid) {
       return;
     }
 
@@ -139,17 +160,23 @@ class _HomeserverSettingsWidgetState
     if (currentState.validate()) {
       final previous = ref.read(matrixConfigControllerProvider).value;
 
+      // Get the homeserver URL and ensure it has a protocol prefix
+      String homeServer = formData[matrixHomeServerKey] as String? ??
+          previous?.homeServer ??
+          '';
+
       final config = MatrixConfig(
-        homeServer: formData[matrixHomeServerKey] as String? ??
-            previous?.homeServer ??
-            '',
+        homeServer: homeServer,
         user: formData[matrixUserKey] as String? ?? previous?.user ?? '',
         password:
             formData[matrixPasswordKey] as String? ?? previous?.password ?? '',
       );
 
       await ref.read(matrixConfigControllerProvider.notifier).setConfig(config);
-      setState(() => _dirty = false);
+      setState(() {
+        _dirty = false;
+        _formIsValid = true;
+      });
     }
   }
 
@@ -162,14 +189,34 @@ class _HomeserverSettingsWidgetState
         final config = data.value;
         return FormBuilder(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.disabled,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: onFormChanged,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               FormBuilderTextField(
                 name: matrixHomeServerKey,
-                validator: FormBuilderValidators.required(),
+                onChanged: (_) => onFormChanged(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Homeserver URL is required';
+                  }
+
+                  // Ensure URL has a protocol prefix
+                  String urlToCheck = value;
+
+                  // Try to parse the URL
+                  try {
+                    final uri = Uri.parse(urlToCheck);
+                    if (!uri.hasAuthority || uri.host.isEmpty) {
+                      return 'Please enter a valid URL';
+                    }
+                  } catch (e) {
+                    return 'Please enter a valid URL';
+                  }
+
+                  return null;
+                },
                 initialValue: config?.homeServer,
                 decoration: inputDecoration(
                   labelText: context.messages.settingsMatrixHomeServerLabel,
@@ -179,6 +226,7 @@ class _HomeserverSettingsWidgetState
               const SizedBox(height: 20),
               FormBuilderTextField(
                 name: matrixUserKey,
+                onChanged: (_) => onFormChanged(),
                 validator: FormBuilderValidators.required(),
                 initialValue: config?.user,
                 decoration: inputDecoration(
@@ -191,6 +239,7 @@ class _HomeserverSettingsWidgetState
                 name: matrixPasswordKey,
                 initialValue: config?.password,
                 obscureText: !_showPassword,
+                onChanged: (_) => onFormChanged(),
                 validator: FormBuilderValidators.required(),
                 decoration: inputDecoration(
                   labelText: context.messages.settingsMatrixPasswordLabel,
@@ -234,14 +283,14 @@ class _HomeserverSettingsWidgetState
                           semanticsLabel: 'Delete Matrix Config',
                         ),
                       ),
-                    if (_dirty)
+                    if (_dirty && _formIsValid)
                       OutlinedButton(
                         key: const Key('matrix_config_save'),
                         onPressed: onSavePressed,
                         child: Text(
                           context.messages.settingsMatrixSaveLabel,
                           style: TextStyle(
-                            color: context.colorScheme.error,
+                            color: context.colorScheme.primary,
                           ),
                           semanticsLabel: 'Save Matrix Config',
                         ),
