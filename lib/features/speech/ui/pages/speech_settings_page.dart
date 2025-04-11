@@ -26,14 +26,13 @@ class SpeechSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 30),
                   ListTile(
                     title: Text(
                       context.messages.settingsSpeechModelSelectionTitle,
                     ),
                   ),
                   ...snapshot.availableModels.map(WhisperModelCard.new),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 10),
                   ListTile(
                     title: Text(
                       context.messages.settingsSpeechAudioWithoutTranscript,

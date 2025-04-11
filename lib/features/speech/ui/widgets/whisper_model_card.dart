@@ -17,6 +17,7 @@ class WhisperModelCard extends StatelessWidget {
         return CheckboxListTile(
           value: model == snapshot.selectedModel,
           onChanged: (_) => cubit.selectModel(model),
+          visualDensity: VisualDensity.compact,
           controlAffinity: ListTileControlAffinity.leading,
           title: Text(model),
         );
