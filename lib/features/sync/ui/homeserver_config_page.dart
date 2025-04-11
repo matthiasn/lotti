@@ -26,12 +26,13 @@ SliverWoltModalSheetPage homeServerConfigPage({
     ),
     topBarTitle: Text(
       context.messages.settingsMatrixHomeserverConfigTitle,
-      style: textTheme.titleMedium,
+      style: textTheme.titleMedium
+          ?.copyWith(color: Theme.of(context).colorScheme.outline),
     ),
     isTopBarLayerAlwaysVisible: true,
     trailingNavBarWidget: IconButton(
       padding: WoltModalConfig.pagePadding,
-      icon: const Icon(Icons.close),
+      icon: Icon(Icons.close, color: context.colorScheme.outline),
       onPressed: Navigator.of(context).pop,
     ),
     child: Padding(
@@ -55,6 +56,9 @@ class HomeserverConfigPageStickyActionBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
+    final config = ref.watch(matrixConfigControllerProvider).valueOrNull;
+    final showLoginButton = config != null;
+
     return Padding(
       padding: WoltModalConfig.pagePadding,
       child: Row(
@@ -69,10 +73,14 @@ class HomeserverConfigPageStickyActionBar extends ConsumerWidget {
           const SizedBox(height: 8),
           FilledButton(
             key: const Key('matrix_login'),
-            onPressed: () async {
-              await ref.read(matrixLoginControllerProvider.notifier).login();
-              pageIndexNotifier.value = 1;
-            },
+            onPressed: showLoginButton
+                ? () async {
+                    await ref
+                        .read(matrixLoginControllerProvider.notifier)
+                        .login();
+                    pageIndexNotifier.value = 1;
+                  }
+                : null,
             child: Text(
               context.messages.settingsMatrixLoginButtonLabel,
               semanticsLabel: context.messages.settingsMatrixLoginButtonLabel,
@@ -101,6 +109,7 @@ class _HomeserverSettingsWidgetState
     extends ConsumerState<HomeserverSettingsWidget> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _dirty = false;
+  bool _showPassword = false;
 
   @override
   void initState() {
@@ -146,8 +155,6 @@ class _HomeserverSettingsWidgetState
 
   @override
   Widget build(BuildContext context) {
-    void maybePop() => Navigator.of(context).maybePop();
-
     final config = ref.watch(matrixConfigControllerProvider);
 
     return config.map(
@@ -183,11 +190,23 @@ class _HomeserverSettingsWidgetState
               FormBuilderTextField(
                 name: matrixPasswordKey,
                 initialValue: config?.password,
-                obscureText: true,
+                obscureText: !_showPassword,
                 validator: FormBuilderValidators.required(),
                 decoration: inputDecoration(
                   labelText: context.messages.settingsMatrixPasswordLabel,
                   themeData: Theme.of(context),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showPassword
+                          ? Icons.remove_red_eye_outlined
+                          : Icons.remove_red_eye,
+                      color: context.colorScheme.outline,
+                      semanticLabel: 'Password',
+                    ),
+                    onPressed: () => setState(() {
+                      _showPassword = !_showPassword;
+                    }),
+                  ),
                 ),
               ),
               SizedBox(
@@ -206,7 +225,6 @@ class _HomeserverSettingsWidgetState
                           setState(() {
                             _dirty = false;
                           });
-                          maybePop();
                         },
                         child: Text(
                           context.messages.settingsMatrixDeleteLabel,
@@ -219,10 +237,7 @@ class _HomeserverSettingsWidgetState
                     if (_dirty)
                       OutlinedButton(
                         key: const Key('matrix_config_save'),
-                        onPressed: () {
-                          onSavePressed();
-                          maybePop();
-                        },
+                        onPressed: onSavePressed,
                         child: Text(
                           context.messages.settingsMatrixSaveLabel,
                           style: TextStyle(

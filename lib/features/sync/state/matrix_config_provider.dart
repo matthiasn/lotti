@@ -16,8 +16,15 @@ class MatrixConfigController extends _$MatrixConfigController {
     return _matrixService.loadConfig();
   }
 
-  Future<void> setConfig(MatrixConfig config) =>
-      _matrixService.setConfig(config);
+  Future<void> setConfig(MatrixConfig config) async {
+    await _matrixService.setConfig(config);
+    state = const AsyncLoading();
+    ref.invalidateSelf();
+  }
 
-  Future<void> deleteConfig() => _matrixService.deleteConfig();
+  Future<void> deleteConfig() async {
+    await _matrixService.deleteConfig();
+    state = const AsyncLoading();
+    ref.invalidateSelf();
+  }
 }
