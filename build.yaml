@@ -1,6 +1,7 @@
 targets:
   $default:
     builders:
+
       drift_dev:
         options:
           generate_connect_constructor: true
@@ -9,3 +10,6 @@ targets:
             options:
               modules:
                 - fts5
+      flutter_gen:
+        options:
+          synthetic_package: false
