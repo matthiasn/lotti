@@ -1,14 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
-import 'package:lotti/features/journal/state/journal_card_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
@@ -220,7 +215,7 @@ class JournalCardTitle extends StatelessWidget {
   }
 }
 
-class JournalCard extends ConsumerStatefulWidget {
+class JournalCard extends StatelessWidget {
   const JournalCard({
     required this.item,
     super.key,
@@ -233,24 +228,15 @@ class JournalCard extends ConsumerStatefulWidget {
   final bool showLinkedDuration;
 
   @override
-  ConsumerState<JournalCard> createState() => _JournalCardState();
-}
-
-class _JournalCardState extends ConsumerState<JournalCard> {
-  @override
   Widget build(BuildContext context) {
-    final provider = journalCardControllerProvider(id: widget.item.meta.id);
-    final entryState = ref.watch(provider).value;
-    final updatedItem = entryState ?? widget.item;
-
-    if (updatedItem.meta.deletedAt != null) {
+    if (item.meta.deletedAt != null) {
       return const SizedBox.shrink();
     }
     void onTap() {
-      if (updatedItem is Task) {
-        beamToNamed('/tasks/${updatedItem.meta.id}');
+      if (item is Task) {
+        beamToNamed('/tasks/${item.meta.id}');
       } else {
-        beamToNamed('/journal/${updatedItem.meta.id}');
+        beamToNamed('/journal/${item.meta.id}');
       }
     }
 
@@ -260,7 +246,7 @@ class _JournalCardState extends ConsumerState<JournalCard> {
       padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
       child: Card(
         child: ListTile(
-          leading: updatedItem.maybeMap(
+          leading: item.maybeMap(
             journalAudio: (item) {
               final transcripts = item.data.transcripts;
               return LeadingIcon(
@@ -302,9 +288,9 @@ class _JournalCardState extends ConsumerState<JournalCard> {
             orElse: () => null,
           ),
           title: JournalCardTitle(
-            item: updatedItem,
-            maxHeight: widget.maxHeight,
-            showLinkedDuration: widget.showLinkedDuration,
+            item: item,
+            maxHeight: maxHeight,
+            showLinkedDuration: showLinkedDuration,
           ),
           onTap: onTap,
         ),
@@ -329,127 +315,6 @@ class LeadingIcon extends StatelessWidget {
       iconData,
       size: 32,
       color: color ?? context.colorScheme.outline,
-    );
-  }
-}
-
-class JournalImageCard extends ConsumerWidget {
-  const JournalImageCard({
-    required this.item,
-    super.key,
-  });
-
-  final JournalImage item;
-
-  @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    void onTap() => beamToNamed('/journal/${item.meta.id}');
-    final provider = journalCardControllerProvider(id: item.meta.id);
-    final entryState = ref.watch(provider).value;
-
-    final updatedItem = entryState ?? item;
-    if (updatedItem.meta.deletedAt != null) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.only(right: 16),
-        onTap: onTap,
-        minLeadingWidth: 0,
-        minVerticalPadding: 0,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LimitedBox(
-              maxWidth: max(MediaQuery.of(context).size.width / 2, 300) - 40,
-              maxHeight: 160,
-              child: CardImageWidget(
-                journalImage: updatedItem as JournalImage,
-                height: 160,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: SizedBox(
-                height: 160,
-                child: JournalCardTitle(
-                  item: updatedItem,
-                  maxHeight: 200,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class TaskListCard extends StatelessWidget {
-  const TaskListCard({
-    required this.task,
-    super.key,
-  });
-
-  final Task task;
-
-  @override
-  Widget build(BuildContext context) {
-    void onTap() => beamToNamed('/tasks/${task.meta.id}');
-
-    return Card(
-      margin: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
-      child: ListTile(
-        onTap: onTap,
-        leading: CategoryColorIcon(task.meta.categoryId),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TimeRecordingIcon(
-              taskId: task.meta.id,
-              padding: const EdgeInsets.only(right: 10),
-            ),
-            TaskStatusWidget(task),
-          ],
-        ),
-        title: Text(
-          task.data.title,
-          style: const TextStyle(
-            fontSize: fontSizeMediumLarge,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class EntryWrapperWidget extends StatelessWidget {
-  const EntryWrapperWidget({
-    required this.item,
-    required this.taskAsListView,
-    super.key,
-  });
-
-  final JournalEntity item;
-  final bool taskAsListView;
-
-  @override
-  Widget build(BuildContext context) {
-    return item.maybeMap(
-      journalImage: (JournalImage image) => JournalImageCard(item: image),
-      task: (Task task) {
-        if (taskAsListView) {
-          return TaskListCard(task: task);
-        } else {
-          return JournalCard(item: task);
-        }
-      },
-      orElse: () => JournalCard(item: item),
     );
   }
 }
