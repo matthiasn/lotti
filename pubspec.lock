@@ -1180,6 +1180,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "11.1.2"
+  formz:
+    dependency: "direct main"
+    description:
+      name: formz
+      sha256: "382c7be452ff76833f9efa0b2333fec3a576393f6d2c7801725bed502f3d40c3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
   freezed:
     dependency: "direct dev"
     description:

@@ -5,7 +5,7 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'matrix_config_provider.g.dart';
+part 'matrix_config_controller.g.dart';
 
 @riverpod
 class MatrixConfigController extends _$MatrixConfigController {
@@ -16,15 +16,8 @@ class MatrixConfigController extends _$MatrixConfigController {
     return _matrixService.loadConfig();
   }
 
-  Future<void> setConfig(MatrixConfig config) async {
-    await _matrixService.setConfig(config);
-    state = const AsyncLoading();
-    ref.invalidateSelf();
-  }
+  Future<void> setConfig(MatrixConfig config) =>
+      _matrixService.setConfig(config);
 
-  Future<void> deleteConfig() async {
-    await _matrixService.deleteConfig();
-    state = const AsyncLoading();
-    ref.invalidateSelf();
-  }
+  Future<void> deleteConfig() => _matrixService.deleteConfig();
 }

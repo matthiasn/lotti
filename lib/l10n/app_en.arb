@@ -411,6 +411,8 @@
   "syncAssistantStatusSuccess": "Account is successfully configured.",
   "syncAssistantStatusTesting": "Testing IMAP connection...",
   "syncAssistantStatusValid": "Account is valid.",
+  "syncDeleteConfigConfirm": "YES, I'M SURE",
+  "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",
   "taskCategoryAllLabel": "all",
