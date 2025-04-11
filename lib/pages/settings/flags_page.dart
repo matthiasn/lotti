@@ -32,6 +32,23 @@ class _FlagsPageState extends State<FlagsPage> {
   final _enableDashboardsPageFlagKey = GlobalKey();
   final _enableCalendarPageFlagKey = GlobalKey();
 
+  static const List<String> displayedItems = [
+    privateFlag,
+    attemptEmbedding,
+    enableNotificationsFlag,
+    autoTranscribeFlag,
+    recordLocationFlag,
+    enableTooltipFlag,
+    enableLoggingFlag,
+    enableMatrixFlag,
+    resendAttachments,
+    useCloudInferenceFlag,
+    enableAutoTaskTldrFlag,
+    enableHabitsPageFlag,
+    enableDashboardsPageFlag,
+    enableCalendarPageFlag,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Set<ConfigFlag>>(
@@ -40,67 +57,50 @@ class _FlagsPageState extends State<FlagsPage> {
         BuildContext context,
         AsyncSnapshot<Set<ConfigFlag>> snapshot,
       ) {
-        final items = snapshot.data?.toList() ?? [];
-
-        const displayedItems = {
-          enableHabitsPageFlag,
-          enableDashboardsPageFlag,
-          enableCalendarPageFlag,
-          privateFlag,
-          attemptEmbedding,
-          enableNotificationsFlag,
-          autoTranscribeFlag,
-          recordLocationFlag,
-          enableTooltipFlag,
-          enableLoggingFlag,
-          enableMatrixFlag,
-          resendAttachments,
-          useCloudInferenceFlag,
-          enableAutoTaskTldrFlag,
+        final flagLookup = <String, ConfigFlag>{
+          for (final ConfigFlag flag in snapshot.data ?? {}) flag.name: flag,
         };
 
-        final filteredItems =
-            items.where((flag) => displayedItems.contains(flag.name)).toList();
+        final orderedFlags =
+            displayedItems.map((name) => flagLookup[name]).nonNulls.toList();
 
-        return ShowCaseWidget(
-          builder: (context) => SliverBoxAdapterShowcasePage(
-            showcaseIcon: IconButton(
-              onPressed: () {
-                ShowCaseWidget.of(context).startShowCase([
-                  _privateFlagKey,
-                  _embeddingFlagKey,
-                  _autoTranscribeFlagKey,
-                  _enableMatrixFlagKey,
-                  _enableTooltipFlagKey,
-                  _recordLocationFlagKey,
-                  _resendAttachmentsFlagKey,
-                  _enableLoggingFlagKey,
-                  _useCloudInferenceFlagKey,
-                  _enableNotificationFlagKey,
-                  _enableAutoTaskTldrFlagKey,
-                  _enableHabitsPageFlagKey,
-                  _enableDashboardsPageFlagKey,
-                  _enableCalendarPageFlagKey,
-                ]);
-              },
-              icon: const Icon(
-                Icons.info_outline_rounded,
-              ),
+        return SliverBoxAdapterShowcasePage(
+          showcaseIcon: IconButton(
+            onPressed: () {
+              ShowCaseWidget.of(context).startShowCase([
+                _privateFlagKey,
+                _embeddingFlagKey,
+                _enableNotificationFlagKey,
+                _autoTranscribeFlagKey,
+                _recordLocationFlagKey,
+                _enableTooltipFlagKey,
+                _enableLoggingFlagKey,
+                _enableMatrixFlagKey,
+                _resendAttachmentsFlagKey,
+                _useCloudInferenceFlagKey,
+                _enableAutoTaskTldrFlagKey,
+                _enableHabitsPageFlagKey,
+                _enableDashboardsPageFlagKey,
+                _enableCalendarPageFlagKey,
+              ]);
+            },
+            icon: const Icon(
+              Icons.info_outline_rounded,
             ),
-            title: context.messages.settingsFlagsTitle,
-            showBackButton: true,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  ...filteredItems.mapIndexed(
-                    (index, flag) => ConfigFlagCard(
-                      item: flag,
-                      index: index,
-                      showcaseKey: _getShowcaseKeyForFlag(flag.name),
-                    ),
+          ),
+          title: context.messages.settingsFlagsTitle,
+          showBackButton: true,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ...orderedFlags.mapIndexed(
+                  (index, flag) => ConfigFlagCard(
+                    item: flag,
+                    index: index,
+                    showcaseKey: _getShowcaseKeyForFlag(flag.name),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );

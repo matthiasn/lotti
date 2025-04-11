@@ -91,12 +91,14 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const MediaQuery(
-          data: MediaQueryData(size: Size(800, 600)),
-          child: SliverBoxAdapterShowcasePage(
-            title: 'Flags',
-            showcaseIcon: Icon(Icons.info),
-            child: FlagsPage(),
+        home: ShowCaseWidget(
+          builder: (context) => const MediaQuery(
+            data: MediaQueryData(size: Size(800, 600)),
+            child: SliverBoxAdapterShowcasePage(
+              title: 'Flags',
+              showcaseIcon: Icon(Icons.info),
+              child: FlagsPage(),
+            ),
           ),
         ),
       ),
