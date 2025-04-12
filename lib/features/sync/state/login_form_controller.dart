@@ -53,6 +53,7 @@ class LoginFormController extends _$LoginFormController {
         status: Formz.validate([homeServer, data.userName, data.password])
             ? FormzSubmissionStatus.success
             : FormzSubmissionStatus.failure,
+        loginFailed: false,
       ),
     );
   }
@@ -66,6 +67,7 @@ class LoginFormController extends _$LoginFormController {
         status: Formz.validate([data.homeServer, data.userName, password])
             ? FormzSubmissionStatus.success
             : FormzSubmissionStatus.failure,
+        loginFailed: false,
       ),
     );
   }
@@ -79,6 +81,7 @@ class LoginFormController extends _$LoginFormController {
         status: Formz.validate([data.homeServer, data.password, userName])
             ? FormzSubmissionStatus.success
             : FormzSubmissionStatus.failure,
+        loginFailed: false,
       ),
     );
   }
@@ -96,10 +99,16 @@ class LoginFormController extends _$LoginFormController {
     );
 
     await _matrixService.setConfig(config);
-    final isLoggedIn = await _matrixService.login();
+    final loginSuccessful = await _matrixService.login();
 
-    state = AsyncData(data.copyWith(isLoggedIn: isLoggedIn));
-    return isLoggedIn;
+    state = AsyncData(
+      data.copyWith(
+        isLoggedIn: loginSuccessful,
+        loginFailed: !loginSuccessful,
+      ),
+    );
+
+    return loginSuccessful;
   }
 
   Future<void> deleteConfig() async {

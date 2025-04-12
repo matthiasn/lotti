@@ -21,6 +21,7 @@ mixin _$LoginFormState {
   Password get password => throw _privateConstructorUsedError;
   FormzSubmissionStatus get status => throw _privateConstructorUsedError;
   bool get isLoggedIn => throw _privateConstructorUsedError;
+  bool get loginFailed => throw _privateConstructorUsedError;
 
   /// Create a copy of LoginFormState
   /// with the given fields replaced by the non-null parameter values.
@@ -40,7 +41,8 @@ abstract class $LoginFormStateCopyWith<$Res> {
       UserName userName,
       Password password,
       FormzSubmissionStatus status,
-      bool isLoggedIn});
+      bool isLoggedIn,
+      bool loginFailed});
 }
 
 /// @nodoc
@@ -63,6 +65,7 @@ class _$LoginFormStateCopyWithImpl<$Res, $Val extends LoginFormState>
     Object? password = null,
     Object? status = null,
     Object? isLoggedIn = null,
+    Object? loginFailed = null,
   }) {
     return _then(_value.copyWith(
       homeServer: null == homeServer
@@ -85,6 +88,10 @@ class _$LoginFormStateCopyWithImpl<$Res, $Val extends LoginFormState>
           ? _value.isLoggedIn
           : isLoggedIn // ignore: cast_nullable_to_non_nullable
               as bool,
+      loginFailed: null == loginFailed
+          ? _value.loginFailed
+          : loginFailed // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -102,7 +109,8 @@ abstract class _$$LoginFormStateImplCopyWith<$Res>
       UserName userName,
       Password password,
       FormzSubmissionStatus status,
-      bool isLoggedIn});
+      bool isLoggedIn,
+      bool loginFailed});
 }
 
 /// @nodoc
@@ -123,6 +131,7 @@ class __$$LoginFormStateImplCopyWithImpl<$Res>
     Object? password = null,
     Object? status = null,
     Object? isLoggedIn = null,
+    Object? loginFailed = null,
   }) {
     return _then(_$LoginFormStateImpl(
       homeServer: null == homeServer
@@ -145,6 +154,10 @@ class __$$LoginFormStateImplCopyWithImpl<$Res>
           ? _value.isLoggedIn
           : isLoggedIn // ignore: cast_nullable_to_non_nullable
               as bool,
+      loginFailed: null == loginFailed
+          ? _value.loginFailed
+          : loginFailed // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -157,7 +170,8 @@ class _$LoginFormStateImpl implements _LoginFormState {
       this.userName = const UserName.pure(),
       this.password = const Password.pure(),
       this.status = FormzSubmissionStatus.initial,
-      this.isLoggedIn = false});
+      this.isLoggedIn = false,
+      this.loginFailed = false});
 
   @override
   @JsonKey()
@@ -174,10 +188,13 @@ class _$LoginFormStateImpl implements _LoginFormState {
   @override
   @JsonKey()
   final bool isLoggedIn;
+  @override
+  @JsonKey()
+  final bool loginFailed;
 
   @override
   String toString() {
-    return 'LoginFormState(homeServer: $homeServer, userName: $userName, password: $password, status: $status, isLoggedIn: $isLoggedIn)';
+    return 'LoginFormState(homeServer: $homeServer, userName: $userName, password: $password, status: $status, isLoggedIn: $isLoggedIn, loginFailed: $loginFailed)';
   }
 
   @override
@@ -193,12 +210,14 @@ class _$LoginFormStateImpl implements _LoginFormState {
                 other.password == password) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.isLoggedIn, isLoggedIn) ||
-                other.isLoggedIn == isLoggedIn));
+                other.isLoggedIn == isLoggedIn) &&
+            (identical(other.loginFailed, loginFailed) ||
+                other.loginFailed == loginFailed));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, homeServer, userName, password, status, isLoggedIn);
+  int get hashCode => Object.hash(runtimeType, homeServer, userName, password,
+      status, isLoggedIn, loginFailed);
 
   /// Create a copy of LoginFormState
   /// with the given fields replaced by the non-null parameter values.
@@ -216,7 +235,8 @@ abstract class _LoginFormState implements LoginFormState {
       final UserName userName,
       final Password password,
       final FormzSubmissionStatus status,
-      final bool isLoggedIn}) = _$LoginFormStateImpl;
+      final bool isLoggedIn,
+      final bool loginFailed}) = _$LoginFormStateImpl;
 
   @override
   HomeServer get homeServer;
@@ -228,6 +248,8 @@ abstract class _LoginFormState implements LoginFormState {
   FormzSubmissionStatus get status;
   @override
   bool get isLoggedIn;
+  @override
+  bool get loginFailed;
 
   /// Create a copy of LoginFormState
   /// with the given fields replaced by the non-null parameter values.

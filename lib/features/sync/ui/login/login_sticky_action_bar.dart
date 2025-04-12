@@ -26,7 +26,8 @@ class LoginStickyActionBar extends ConsumerWidget {
     final loginNotifier = ref.read(loginFormControllerProvider.notifier);
     final config = ref.watch(matrixConfigControllerProvider).valueOrNull;
 
-    final enableLoginButton = loginState?.status.isSuccess ?? false;
+    final enableLoginButton = (loginState?.status.isSuccess ?? false) &&
+        !(loginState?.loginFailed ?? false);
 
     Future<void> deleteConfig() async {
       const deleteKey = 'deleteKey';

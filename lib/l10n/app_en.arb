@@ -288,6 +288,7 @@
   "settingsMatrixHomeserverConfigTitle": "Matrix Homeserver Setup",
   "settingsMatrixListUnverifiedLabel": "Unverified devices",
   "settingsMatrixLoginButtonLabel": "Login",
+  "settingsMatrixLoginFailed": "Login failed",
   "settingsMatrixLogoutButtonLabel": "Logout",
   "settingsMatrixNextPage": "Next Page",
   "settingsMatrixNoUnverifiedLabel": "No unverified devices",

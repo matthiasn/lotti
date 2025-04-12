@@ -14,5 +14,6 @@ class LoginFormState with _$LoginFormState {
     @Default(Password.pure()) Password password,
     @Default(FormzSubmissionStatus.initial) FormzSubmissionStatus status,
     @Default(false) bool isLoggedIn,
+    @Default(false) bool loginFailed,
   }) = _LoginFormState;
 }
