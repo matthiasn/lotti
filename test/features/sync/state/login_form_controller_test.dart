@@ -132,7 +132,8 @@ void main() {
       // Setup mock behavior for setConfig and login
       when(() => mockMatrixService.setConfig(any()))
           .thenAnswer((_) => Future.value());
-      when(() => mockMatrixService.login()).thenAnswer((_) => Future.value());
+      when(() => mockMatrixService.login())
+          .thenAnswer((_) => Future.value(true));
 
       // Call login
       await loginController.login();
@@ -151,7 +152,8 @@ void main() {
       // Setup mock behavior for setConfig and login
       when(() => mockMatrixService.setConfig(any()))
           .thenAnswer((_) => Future.value());
-      when(() => mockMatrixService.login()).thenAnswer((_) => Future.value());
+      when(() => mockMatrixService.login())
+          .thenAnswer((_) => Future.value(true));
 
       // Call login
       await loginController.login();

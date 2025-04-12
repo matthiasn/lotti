@@ -72,8 +72,10 @@ class LoginStickyActionBar extends ConsumerWidget {
             key: const Key('matrix_login'),
             onPressed: enableLoginButton
                 ? () async {
-                    await loginNotifier.login();
-                    pageIndexNotifier.value = 1;
+                    final isLoggedIn = await loginNotifier.login();
+                    if (isLoggedIn) {
+                      pageIndexNotifier.value = 1;
+                    }
                   }
                 : null,
             child: Text(

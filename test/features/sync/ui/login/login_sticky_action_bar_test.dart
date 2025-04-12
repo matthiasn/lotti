@@ -46,7 +46,9 @@ void main() {
     when(() => mockMatrixService.loadConfig())
         .thenAnswer((_) => Future.value());
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.login()).thenAnswer((_) async {});
+    when(() => mockMatrixService.login()).thenAnswer((_) async {
+      return false;
+    });
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
 
     // Override GetIt to use our mock

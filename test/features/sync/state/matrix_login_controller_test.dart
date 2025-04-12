@@ -71,7 +71,8 @@ void main() {
 
     test('login calls login on MatrixService', () async {
       // Setup mock behavior for login
-      when(() => mockMatrixService.login()).thenAnswer((_) => Future.value());
+      when(() => mockMatrixService.login())
+          .thenAnswer((_) => Future.value(true));
 
       // Call login
       await container.read(matrixLoginControllerProvider.notifier).login();

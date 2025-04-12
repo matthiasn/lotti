@@ -83,10 +83,10 @@ class LoginFormController extends _$LoginFormController {
     );
   }
 
-  Future<void> login() async {
+  Future<bool> login() async {
     final data = state.valueOrNull;
     if (data == null) {
-      return;
+      return false;
     }
 
     final config = MatrixConfig(
@@ -96,7 +96,10 @@ class LoginFormController extends _$LoginFormController {
     );
 
     await _matrixService.setConfig(config);
-    await _matrixService.login();
+    final isLoggedIn = await _matrixService.login();
+
+    state = AsyncData(data.copyWith(isLoggedIn: isLoggedIn));
+    return isLoggedIn;
   }
 
   Future<void> deleteConfig() async {
