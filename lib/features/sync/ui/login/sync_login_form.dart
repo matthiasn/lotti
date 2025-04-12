@@ -48,7 +48,7 @@ class _SyncLoginFormState extends ConsumerState<SyncLoginForm> {
                 labelText: context.messages.settingsMatrixHomeServerLabel,
                 errorText: loginState.homeServer.isNotValid &&
                         !loginState.homeServer.isPure
-                    ? 'Please enter a valid URL'
+                    ? context.messages.settingsMatrixEnterValidUrl
                     : null,
               ),
             ),
@@ -63,7 +63,7 @@ class _SyncLoginFormState extends ConsumerState<SyncLoginForm> {
                 labelText: context.messages.settingsMatrixUserLabel,
                 errorText: loginState.userName.isNotValid &&
                         !loginState.userName.isPure
-                    ? 'Username too short'
+                    ? context.messages.settingsMatrixUserNameTooShort
                     : null,
               ),
             ),
@@ -79,7 +79,7 @@ class _SyncLoginFormState extends ConsumerState<SyncLoginForm> {
                 labelText: context.messages.settingsMatrixPasswordLabel,
                 errorText: loginState.password.isNotValid &&
                         !loginState.password.isPure
-                    ? 'Password too short'
+                    ? context.messages.settingsMatrixPasswordTooShort
                     : null,
                 suffixIcon: IconButton(
                   icon: Icon(
