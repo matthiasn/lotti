@@ -10,8 +10,8 @@ void main() {
     required void Function(Color) onColorChanged,
     String? initialColor,
   }) {
-    return createTestApp(
-      SelectColorField(
+    return WidgetTestBench(
+      child: SelectColorField(
         hexColor: initialColor,
         onColorChanged: onColorChanged,
       ),

@@ -35,8 +35,8 @@ void main() {
   testWidgets('renders correctly with expected elements',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        ProviderScope(
+      WidgetTestBench(
+        child: ProviderScope(
           child: AiImageAnalysisListTile(
             journalImage: mockJournalImage,
             onTap: () {},
@@ -52,8 +52,8 @@ void main() {
 
   testWidgets('linkedFromId is optional', (WidgetTester tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        ProviderScope(
+      WidgetTestBench(
+        child: ProviderScope(
           child: AiImageAnalysisListTile(
             journalImage: mockJournalImage,
             linkedFromId: 'linked-id',

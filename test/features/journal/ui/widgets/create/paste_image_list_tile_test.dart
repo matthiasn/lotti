@@ -33,8 +33,8 @@ void main() {
         overrides: [
           clipboardRepositoryProvider.overrideWithValue(mockClipboard),
         ],
-        child: createTestApp(
-          const Material(
+        child: const WidgetTestBench(
+          child: Material(
             child: PasteImageListTile(
               'testId',
               categoryId: 'testCategory',
@@ -61,8 +61,8 @@ void main() {
         overrides: [
           clipboardRepositoryProvider.overrideWithValue(mockClipboard),
         ],
-        child: createTestApp(
-          const Material(
+        child: const WidgetTestBench(
+          child: Material(
             child: PasteImageListTile(
               'testId',
               categoryId: 'testCategory',
@@ -91,8 +91,8 @@ void main() {
         overrides: [
           clipboardRepositoryProvider.overrideWithValue(mockClipboard),
         ],
-        child: createTestApp(
-          Navigator(
+        child: WidgetTestBench(
+          child: Navigator(
             onGenerateRoute: (settings) {
               return MaterialPageRoute<void>(
                 builder: (context) => const Material(
@@ -128,8 +128,8 @@ void main() {
         overrides: [
           clipboardRepositoryProvider.overrideWithValue(null),
         ],
-        child: createTestApp(
-          const Material(
+        child: const WidgetTestBench(
+          child: Material(
             child: PasteImageListTile(
               'testId',
               categoryId: 'testCategory',

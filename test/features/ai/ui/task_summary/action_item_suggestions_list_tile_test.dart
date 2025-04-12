@@ -37,8 +37,8 @@ void main() {
 
     testWidgets('renders with correct icon and title', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          ActionItemSuggestionsListTile(
+        WidgetTestBench(
+          child: ActionItemSuggestionsListTile(
             journalEntity: mockTask,
             linkedFromId: 'linked-id',
             onTap: null,
@@ -54,8 +54,8 @@ void main() {
 
     testWidgets('handles null linkedFromId correctly', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiTaskSummaryListTile(
+        WidgetTestBench(
+          child: AiTaskSummaryListTile(
             journalEntity: mockTask,
             onTap: null,
           ),
@@ -69,8 +69,8 @@ void main() {
 
     testWidgets('is tappable', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiTaskSummaryListTile(
+        WidgetTestBench(
+          child: AiTaskSummaryListTile(
             journalEntity: mockTask,
             linkedFromId: 'linked-id',
             onTap: () {},

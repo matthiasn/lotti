@@ -108,7 +108,7 @@ class MatrixService {
 
   Client get client => _client;
 
-  Future<void> login() => matrixConnect(
+  Future<bool> login() => matrixConnect(
         service: this,
         shouldAttemptLogin: true,
       );

@@ -63,7 +63,7 @@ Future<String> createMatrixDeviceName() async {
   return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
 }
 
-Future<void> matrixConnect({
+Future<bool> matrixConnect({
   required MatrixService service,
   required bool shouldAttemptLogin,
 }) async {
@@ -77,7 +77,7 @@ Future<void> matrixConnect({
         subDomain: 'login',
       );
 
-      return;
+      return false;
     }
 
     final homeServerSummary = await service.client.checkHomeserver(
@@ -119,6 +119,8 @@ Future<void> matrixConnect({
     if (roomId != null) {
       await service.joinRoom(roomId);
     }
+
+    return true;
   } catch (e, stackTrace) {
     debugPrint('$e');
     getIt<LoggingService>().captureException(
@@ -127,5 +129,6 @@ Future<void> matrixConnect({
       subDomain: 'login',
       stackTrace: stackTrace,
     );
+    return false;
   }
 }

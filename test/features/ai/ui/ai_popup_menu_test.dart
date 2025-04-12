@@ -13,8 +13,8 @@ void main() {
   group('AiPopUpMenu', () {
     testWidgets('renders AI assistant icon button', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiPopUpMenu(
+        WidgetTestBench(
+          child: AiPopUpMenu(
             journalEntity: testTask,
             linkedFromId: null,
           ),
@@ -49,8 +49,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createTestApp(
-          AiPopUpMenu(
+        WidgetTestBench(
+          child: AiPopUpMenu(
             journalEntity: task,
             linkedFromId: 'linked-id',
           ),
@@ -84,8 +84,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createTestApp(
-          AiPopUpMenu(
+        WidgetTestBench(
+          child: AiPopUpMenu(
             journalEntity: journalEntry,
             linkedFromId: 'linked-id',
           ),
@@ -103,8 +103,8 @@ void main() {
     testWidgets('shows no AI options when journalEntity is not Task or Image',
         (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiPopUpMenu(
+        WidgetTestBench(
+          child: AiPopUpMenu(
             journalEntity: testAudioEntry,
             linkedFromId: null,
           ),
