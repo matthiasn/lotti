@@ -112,8 +112,8 @@ void main() {
 
   group('TaskCategoryFilter', () {
     Widget buildSubject() {
-      return createTestApp(
-        BlocProvider<JournalPageCubit>.value(
+      return WidgetTestBench(
+        child: BlocProvider<JournalPageCubit>.value(
           value: mockCubit,
           child: const TaskCategoryFilter(),
         ),

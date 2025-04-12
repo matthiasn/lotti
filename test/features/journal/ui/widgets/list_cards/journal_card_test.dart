@@ -466,8 +466,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testJournalEntry),
+      WidgetTestBench(
+        child: JournalCard(item: testJournalEntry),
       ),
     );
 
@@ -486,8 +486,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testTask),
+      WidgetTestBench(
+        child: JournalCard(item: testTask),
       ),
     );
 
@@ -513,8 +513,8 @@ void main() {
 
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: deletedEntry),
+      WidgetTestBench(
+        child: JournalCard(item: deletedEntry),
       ),
     );
 
@@ -530,8 +530,8 @@ void main() {
     const color = Colors.red;
 
     await tester.pumpWidget(
-      createTestApp(
-        const LeadingIcon(iconData, color: color),
+      const WidgetTestBench(
+        child: LeadingIcon(iconData, color: color),
       ),
     );
 
@@ -546,8 +546,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testEvent),
+      WidgetTestBench(
+        child: JournalCard(item: testEvent),
       ),
     );
 
@@ -569,8 +569,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCardTitle(
+      WidgetTestBench(
+        child: JournalCardTitle(
           item: testJournalEntry,
           maxHeight: 120,
         ),
@@ -585,8 +585,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCardTitle(
+      WidgetTestBench(
+        child: JournalCardTitle(
           item: testEvent,
           maxHeight: 120,
         ),
@@ -614,8 +614,8 @@ void main() {
 
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: flaggedEntry),
+      WidgetTestBench(
+        child: JournalCard(item: flaggedEntry),
       ),
     );
 
@@ -634,8 +634,8 @@ void main() {
 
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: privateEntry),
+      WidgetTestBench(
+        child: JournalCard(item: privateEntry),
       ),
     );
 
@@ -647,8 +647,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange (using testJournalEntry which is already starred)
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testJournalEntry),
+      WidgetTestBench(
+        child: JournalCard(item: testJournalEntry),
       ),
     );
 
@@ -668,8 +668,8 @@ void main() {
 
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: taggedEntry),
+      WidgetTestBench(
+        child: JournalCard(item: taggedEntry),
       ),
     );
 
@@ -681,8 +681,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testJournalEntry),
+      WidgetTestBench(
+        child: JournalCard(item: testJournalEntry),
       ),
     );
 
@@ -703,8 +703,8 @@ void main() {
     File(filePath).createSync();
 
     await tester.pumpWidget(
-      createTestApp(
-        JournalImageCard(item: testImage),
+      WidgetTestBench(
+        child: JournalImageCard(item: testImage),
       ),
     );
 
@@ -723,8 +723,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testAudio),
+      WidgetTestBench(
+        child: JournalCard(item: testAudio),
       ),
     );
 
@@ -746,8 +746,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testAiResponse),
+      WidgetTestBench(
+        child: JournalCard(item: testAiResponse),
       ),
     );
 
@@ -772,8 +772,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testChecklist),
+      WidgetTestBench(
+        child: JournalCard(item: testChecklist),
       ),
     );
 
@@ -796,8 +796,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testChecklistItem),
+      WidgetTestBench(
+        child: JournalCard(item: testChecklistItem),
       ),
     );
 
@@ -819,8 +819,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testSurvey),
+      WidgetTestBench(
+        child: JournalCard(item: testSurvey),
       ),
     );
 
@@ -841,8 +841,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testWorkout),
+      WidgetTestBench(
+        child: JournalCard(item: testWorkout),
       ),
     );
 
@@ -864,8 +864,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        JournalCard(item: testUncheckedChecklistItem),
+      WidgetTestBench(
+        child: JournalCard(item: testUncheckedChecklistItem),
       ),
     );
 

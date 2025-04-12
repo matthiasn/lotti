@@ -244,8 +244,8 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        createTestApp(
-          CardWrapperWidget(
+        WidgetTestBench(
+          child: CardWrapperWidget(
             item: testImage,
             taskAsListView: false,
           ),
@@ -263,8 +263,8 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        createTestApp(
-          CardWrapperWidget(
+        WidgetTestBench(
+          child: CardWrapperWidget(
             item: testTask,
             taskAsListView: true,
           ),
@@ -282,8 +282,8 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        createTestApp(
-          CardWrapperWidget(
+        WidgetTestBench(
+          child: CardWrapperWidget(
             item: testTask,
             taskAsListView: false,
           ),
@@ -301,8 +301,8 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        createTestApp(
-          CardWrapperWidget(
+        WidgetTestBench(
+          child: CardWrapperWidget(
             item: testJournalEntry,
             taskAsListView: false, // value doesn't matter for non-Task types
           ),
@@ -320,8 +320,8 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        createTestApp(
-          CardWrapperWidget(
+        WidgetTestBench(
+          child: CardWrapperWidget(
             item: testEvent,
             taskAsListView: false, // value doesn't matter for non-Task types
           ),

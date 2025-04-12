@@ -43,8 +43,8 @@ void main() {
   group('AiResponseSummaryModalContent', () {
     testWidgets('renders all tabs', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiResponseSummaryModalContent(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
             testAiResponse,
             linkedFromId: 'linked-id',
           ),
@@ -63,8 +63,8 @@ void main() {
 
     testWidgets('displays model information in Setup tab', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiResponseSummaryModalContent(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
             testAiResponse,
             linkedFromId: 'linked-id',
           ),
@@ -85,8 +85,8 @@ void main() {
 
     testWidgets('can navigate between tabs', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiResponseSummaryModalContent(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
             testAiResponse,
             linkedFromId: 'linked-id',
           ),
@@ -106,8 +106,8 @@ void main() {
     testWidgets('has GestureDetector for copying text in Input tab',
         (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiResponseSummaryModalContent(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
             testAiResponse,
             linkedFromId: 'linked-id',
           ),
@@ -130,8 +130,8 @@ void main() {
 
     testWidgets('has SelectionArea for text selection', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          AiResponseSummaryModalContent(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
             testAiResponse,
             linkedFromId: 'linked-id',
           ),
@@ -173,8 +173,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createTestApp(
-          AiResponseSummaryModalContent(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
             minimalAiResponse,
             linkedFromId: null,
           ),

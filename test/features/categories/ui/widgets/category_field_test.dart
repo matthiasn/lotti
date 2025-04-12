@@ -36,8 +36,8 @@ void main() {
     required void Function(CategoryDefinition?) onSave,
     String? categoryId,
   }) {
-    return createTestApp(
-      CategoryField(
+    return WidgetTestBench(
+      child: CategoryField(
         categoryId: categoryId,
         onSave: onSave,
       ),

@@ -12,8 +12,8 @@ void main() {
       bool? checkboxValue;
 
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: title,
             isChecked: false,
             onChanged: (value) {
@@ -50,8 +50,8 @@ void main() {
 
     testWidgets('renders checked state correctly', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: true,
             onChanged: (_) {},
@@ -69,8 +69,8 @@ void main() {
     testWidgets('updates when isChecked property changes', (tester) async {
       // Start with unchecked state
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
@@ -86,8 +86,8 @@ void main() {
 
       // Update to checked state
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: true,
             onChanged: (_) {},
@@ -105,8 +105,8 @@ void main() {
 
     testWidgets('shows edit icon when showEditIcon is true', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
@@ -121,8 +121,8 @@ void main() {
     testWidgets('does not show edit icon when showEditIcon is false',
         (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
@@ -144,8 +144,8 @@ void main() {
       var editCallbackCalled = false;
 
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
@@ -171,8 +171,8 @@ void main() {
       String? newTitle;
 
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
@@ -197,8 +197,8 @@ void main() {
 
     testWidgets('is disabled when readOnly is true', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          ChecklistItemWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},

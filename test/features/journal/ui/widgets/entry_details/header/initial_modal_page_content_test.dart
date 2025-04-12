@@ -37,8 +37,8 @@ void main() {
 
       // Create a simple StatefulWidget to host our test widget and provide navigation context
       await tester.pumpWidget(
-        createTestApp(
-          Builder(
+        WidgetTestBench(
+          child: Builder(
             builder: (context) {
               return Column(
                 children: [
@@ -72,8 +72,8 @@ void main() {
 
       // Create a simple StatefulWidget to host our test widget and provide navigation context
       await tester.pumpWidget(
-        createTestApp(
-          Builder(
+        WidgetTestBench(
+          child: Builder(
             builder: (context) {
               return Column(
                 children: [
@@ -106,8 +106,8 @@ void main() {
         (tester) async {
       // Create a simple widget to test the page index change
       await tester.pumpWidget(
-        createTestApp(
-          Builder(
+        WidgetTestBench(
+          child: Builder(
             builder: (context) {
               return Column(
                 children: [
@@ -137,8 +137,8 @@ void main() {
         (tester) async {
       // Create a simple widget to test the page index change
       await tester.pumpWidget(
-        createTestApp(
-          Builder(
+        WidgetTestBench(
+          child: Builder(
             builder: (context) {
               return Column(
                 children: [

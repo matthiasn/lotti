@@ -12,8 +12,8 @@ void main() {
 
   testWidgets('renders empty state initially', (WidgetTester tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        ProviderScope(
+      WidgetTestBench(
+        child: ProviderScope(
           overrides: [
             aiImageAnalysisControllerProvider(id: testId).overrideWith(
               () => FakeAiImageAnalysisController(initialState: '', id: testId),
@@ -30,8 +30,8 @@ void main() {
 
   testWidgets('displays analysis results', (WidgetTester tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        ProviderScope(
+      WidgetTestBench(
+        child: ProviderScope(
           overrides: [
             aiImageAnalysisControllerProvider(id: testId).overrideWith(
               () => FakeAiImageAnalysisController(

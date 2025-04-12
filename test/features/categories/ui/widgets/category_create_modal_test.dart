@@ -28,8 +28,8 @@ void main() {
       overrides: [
         categoriesRepositoryProvider.overrideWithValue(mockRepository),
       ],
-      child: createTestApp(
-        CategoryCreateModal(
+      child: WidgetTestBench(
+        child: CategoryCreateModal(
           onCategoryCreated: onCategoryCreated,
           initialName: initialName,
           initialColor: initialColor,

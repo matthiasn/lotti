@@ -115,8 +115,8 @@ void main() {
 
   group('TaskFilterIcon', () {
     Widget buildSubject() {
-      return createTestApp(
-        BlocProvider<JournalPageCubit>.value(
+      return WidgetTestBench(
+        child: BlocProvider<JournalPageCubit>.value(
           value: mockCubit,
           child: const Scaffold(
             body: TaskFilterIcon(),
