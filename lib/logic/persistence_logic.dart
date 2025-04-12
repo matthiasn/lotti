@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -658,15 +659,21 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<void> addGeolocationAsync(String journalEntityId) async {
+  FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) async {
     try {
-      final geolocation = await location?.getCurrentGeoLocation().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => null,
-          );
+      Geolocation? geolocation;
+      try {
+        geolocation = await location?.getCurrentGeoLocation();
+      } catch (e) {
+        _loggingService.captureException(
+          e,
+          domain: 'persistence_logic',
+          subDomain: 'addGeolocation_getCurrentGeoLocation',
+        );
+      }
 
       if (geolocation == null) {
-        return;
+        return null;
       }
 
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
@@ -678,6 +685,8 @@ class PersistenceLogic {
           ),
         );
       }
+
+      return geolocation;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -685,11 +694,13 @@ class PersistenceLogic {
         subDomain: 'addGeolocation',
         stackTrace: stackTrace,
       );
+      return null;
     }
   }
 
   void addGeolocation(String journalEntityId) {
-    unawaited(addGeolocationAsync(journalEntityId));
+    // ignore: unawaited_futures
+    addGeolocationAsync(journalEntityId);
   }
 
   Future<bool> updateJournalEntity(
