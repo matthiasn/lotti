@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WidgetTestBench extends StatelessWidget {
   const WidgetTestBench({
@@ -28,6 +29,27 @@ class WidgetTestBench extends StatelessWidget {
           ),
           child: child,
         ),
+      ),
+    );
+  }
+}
+
+class RiverpodWidgetTestBench extends StatelessWidget {
+  const RiverpodWidgetTestBench({
+    required this.child,
+    this.overrides = const [],
+    super.key,
+  });
+
+  final Widget child;
+  final List<Override> overrides;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: overrides,
+      child: WidgetTestBench(
+        child: child,
       ),
     );
   }

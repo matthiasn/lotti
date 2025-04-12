@@ -116,6 +116,7 @@ dependencies:
   media_kit_libs_windows_audio: ^1.0.3
   media_kit_native_event_loop: ^1.0.3
   meta: ^1.15.0
+  mocktail: ^1.0.0
   multi_select_flutter: ^4.0.0
   ollama: ^1.0.4
   openai_dart: ^0.4.5
@@ -187,7 +188,6 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   json_serializable: ^6.0.0
-  mocktail: ^1.0.0
   msix: ^3.7.0
   riverpod_generator: ^2.4.0
   very_good_analysis: ^7.0.0
