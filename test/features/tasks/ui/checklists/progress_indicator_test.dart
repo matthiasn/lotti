@@ -9,8 +9,8 @@ void main() {
   group('ChecklistProgressIndicator', () {
     testWidgets('renders with correct size and padding', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          const ChecklistProgressIndicator(
+        const WidgetTestBench(
+          child: ChecklistProgressIndicator(
             completionRate: 0.5,
             completedCount: 2,
             totalCount: 4,
@@ -35,8 +35,8 @@ void main() {
       const completionRate = 0.75;
 
       await tester.pumpWidget(
-        createTestApp(
-          const ChecklistProgressIndicator(
+        const WidgetTestBench(
+          child: ChecklistProgressIndicator(
             completionRate: completionRate,
             completedCount: 3,
             totalCount: 4,
@@ -60,8 +60,8 @@ void main() {
     testWidgets('handles different completion rates correctly', (tester) async {
       // Test with 0% completion
       await tester.pumpWidget(
-        createTestApp(
-          const ChecklistProgressIndicator(
+        const WidgetTestBench(
+          child: ChecklistProgressIndicator(
             completionRate: 0,
             completedCount: 0,
             totalCount: 5,
@@ -76,8 +76,8 @@ void main() {
 
       // Test with 100% completion
       await tester.pumpWidget(
-        createTestApp(
-          const ChecklistProgressIndicator(
+        const WidgetTestBench(
+          child: ChecklistProgressIndicator(
             completionRate: 1,
             completedCount: 5,
             totalCount: 5,
@@ -94,8 +94,8 @@ void main() {
     testWidgets('renders correctly with empty checklist (totalCount = 0)',
         (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          const ChecklistProgressIndicator(
+        const WidgetTestBench(
+          child: ChecklistProgressIndicator(
             completionRate: 0,
             completedCount: 0,
             totalCount: 0,

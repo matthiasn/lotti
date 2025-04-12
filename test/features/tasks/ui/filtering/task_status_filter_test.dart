@@ -57,8 +57,8 @@ void main() {
 
   group('TaskStatusFilter', () {
     Widget buildSubject() {
-      return createTestApp(
-        BlocProvider<JournalPageCubit>.value(
+      return WidgetTestBench(
+        child: BlocProvider<JournalPageCubit>.value(
           value: mockCubit,
           child: const TaskStatusFilter(),
         ),
@@ -108,8 +108,8 @@ void main() {
       const selectedStatus = 'OPEN';
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusChip(
               selectedStatus,
@@ -135,8 +135,8 @@ void main() {
       const nonSelectedStatus = 'GROOMED';
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusChip(
               nonSelectedStatus,
@@ -163,8 +163,8 @@ void main() {
       const nonSelectedStatus = 'GROOMED';
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusChip(
               nonSelectedStatus,
@@ -187,8 +187,8 @@ void main() {
       when(() => mockCubit.toggleSelectedTaskStatus(status)).thenAnswer((_) {});
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusChip(
               status,
@@ -216,8 +216,8 @@ void main() {
       when(() => mockCubit.selectSingleTaskStatus(status)).thenAnswer((_) {});
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusChip(
               status,
@@ -258,8 +258,8 @@ void main() {
       when(() => mockCubit.state).thenReturn(mockState);
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusAllChip(),
           ),
@@ -281,8 +281,8 @@ void main() {
       // Only some statuses are selected (default in setUp)
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusAllChip(),
           ),
@@ -323,8 +323,8 @@ void main() {
       when(() => mockCubit.clearSelectedTaskStatuses()).thenAnswer((_) {});
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusAllChip(),
           ),
@@ -349,8 +349,8 @@ void main() {
       when(() => mockCubit.selectAllTaskStatuses()).thenAnswer((_) {});
 
       await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<JournalPageCubit>.value(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
             value: mockCubit,
             child: const TaskStatusAllChip(),
           ),

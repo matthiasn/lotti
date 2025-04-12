@@ -32,8 +32,8 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            ChecklistWidget(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
               title: mockState.title,
@@ -67,8 +67,8 @@ void main() {
     testWidgets('enters edit mode when edit button is tapped', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            ChecklistWidget(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
               title: mockState.title,
@@ -112,8 +112,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            ChecklistWidget(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
               title: mockState.title,
@@ -164,8 +164,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            ChecklistWidget(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
               title: mockState.title,
@@ -216,8 +216,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            ChecklistWidget(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
               title: mockState.title,

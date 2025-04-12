@@ -43,8 +43,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      createTestApp(
-        const HabitCompletionColorIcon(habitId),
+      const WidgetTestBench(
+        child: HabitCompletionColorIcon(habitId),
       ),
     );
 
@@ -60,8 +60,8 @@ void main() {
     when(() => mockCacheService.getHabitById(null)).thenReturn(null);
 
     await tester.pumpWidget(
-      createTestApp(
-        const HabitCompletionColorIcon(null),
+      const WidgetTestBench(
+        child: HabitCompletionColorIcon(null),
       ),
     );
 
@@ -92,8 +92,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      createTestApp(
-        const HabitCompletionColorIcon(
+      const WidgetTestBench(
+        child: HabitCompletionColorIcon(
           habitId,
           size: customSize,
         ),

@@ -12,10 +12,10 @@ void main() {
   group('ChecklistSuggestionsWidget UI Tests', () {
     testWidgets('ChecklistSuggestionsWidget renders correctly', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        const ProviderScope(
           // Wrap in ProviderScope to satisfy Riverpod dependencies
-          child: createTestApp(
-            const ChecklistSuggestionsWidget(itemId: 'test-id'),
+          child: WidgetTestBench(
+            child: ChecklistSuggestionsWidget(itemId: 'test-id'),
           ),
         ),
       );

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'matrix_login_provider.dart';
+part of 'matrix_login_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator

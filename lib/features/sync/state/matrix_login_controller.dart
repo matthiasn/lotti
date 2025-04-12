@@ -6,7 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:matrix/matrix.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'matrix_login_provider.g.dart';
+part 'matrix_login_controller.g.dart';
 
 @riverpod
 class MatrixLoginController extends _$MatrixLoginController {

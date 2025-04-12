@@ -67,8 +67,8 @@ void main() {
     final mockTask = createMockTask(status);
 
     await tester.pumpWidget(
-      createTestApp(
-        TaskStatusWidget(mockTask),
+      WidgetTestBench(
+        child: TaskStatusWidget(mockTask),
       ),
     );
 
@@ -167,8 +167,8 @@ void main() {
       final mockTask = createMockTask(status);
 
       await tester.pumpWidget(
-        createTestApp(
-          TaskStatusWidget(mockTask),
+        WidgetTestBench(
+          child: TaskStatusWidget(mockTask),
         ),
       );
 
@@ -196,8 +196,8 @@ void main() {
     final mockTask = createMockTask(status);
 
     await tester.pumpWidget(
-      createTestApp(
-        TaskStatusWidget(mockTask),
+      WidgetTestBench(
+        child: TaskStatusWidget(mockTask),
       ),
     );
 
@@ -225,8 +225,8 @@ void main() {
     final mockTask = createMockTask(status);
 
     await tester.pumpWidget(
-      createTestApp(
-        TaskStatusWidget(mockTask),
+      WidgetTestBench(
+        child: TaskStatusWidget(mockTask),
       ),
     );
 
@@ -292,8 +292,8 @@ void main() {
     final mockTask = createMockTask(status);
 
     await tester.pumpWidget(
-      createTestApp(
-        TaskStatusWidget(mockTask),
+      WidgetTestBench(
+        child: TaskStatusWidget(mockTask),
       ),
     );
 

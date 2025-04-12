@@ -5,7 +5,7 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'matrix_config_provider.g.dart';
+part 'matrix_config_controller.g.dart';
 
 @riverpod
 class MatrixConfigController extends _$MatrixConfigController {

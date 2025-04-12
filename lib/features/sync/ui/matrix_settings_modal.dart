@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/ui/homeserver_config_page.dart';
+import 'package:lotti/features/sync/ui/login/sync_login_modal_page.dart';
 import 'package:lotti/features/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
@@ -34,7 +34,7 @@ class MatrixSettingsCard extends StatelessWidget {
           pageListBuilder: (modalSheetContext) {
             final textTheme = context.textTheme;
             return [
-              homeServerConfigPage(
+              syncLoginModalPage(
                 context: modalSheetContext,
                 textTheme: textTheme,
                 pageIndexNotifier: pageIndexNotifier,

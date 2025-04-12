@@ -130,8 +130,8 @@ void main() {
         (WidgetTester tester) async {
       // Build the actual widget
       await tester.pumpWidget(
-        createTestApp(
-          JournalImageCard(item: testImage),
+        WidgetTestBench(
+          child: JournalImageCard(item: testImage),
         ),
       );
       await tester.pumpAndSettle();
@@ -168,8 +168,8 @@ void main() {
 
       // Build the actual widget with deleted item
       await tester.pumpWidget(
-        createTestApp(
-          JournalImageCard(item: deletedTestImage),
+        WidgetTestBench(
+          child: JournalImageCard(item: deletedTestImage),
         ),
       );
       await tester.pumpAndSettle();
@@ -187,8 +187,8 @@ void main() {
         (WidgetTester tester) async {
       // Build the actual widget
       await tester.pumpWidget(
-        createTestApp(
-          JournalImageCard(item: testImage),
+        WidgetTestBench(
+          child: JournalImageCard(item: testImage),
         ),
       );
       await tester.pumpAndSettle();
@@ -207,8 +207,8 @@ void main() {
     testWidgets('uses LimitedBox with correct constraints',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          JournalImageCard(item: testImage),
+        WidgetTestBench(
+          child: JournalImageCard(item: testImage),
         ),
       );
       await tester.pumpAndSettle();

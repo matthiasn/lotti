@@ -105,8 +105,8 @@ void main() {
 
   testWidgets('renders with task estimate', (tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        EstimatedTimeWidget(
+      WidgetTestBench(
+        child: EstimatedTimeWidget(
           task: mockTask,
           save: mockSave.call,
         ),
@@ -137,8 +137,8 @@ void main() {
     mockTask = MockTask(taskData);
 
     await tester.pumpWidget(
-      createTestApp(
-        EstimatedTimeWidget(
+      WidgetTestBench(
+        child: EstimatedTimeWidget(
           task: mockTask,
           save: mockSave.call,
         ),
@@ -151,8 +151,8 @@ void main() {
 
   testWidgets('opens duration bottom sheet when tapped', (tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        EstimatedTimeWidget(
+      WidgetTestBench(
+        child: EstimatedTimeWidget(
           task: mockTask,
           save: mockSave.call,
         ),
@@ -182,8 +182,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      createTestApp(
-        EstimatedTimeWidget(
+      WidgetTestBench(
+        child: EstimatedTimeWidget(
           task: mockTask,
           save: mockSave.call,
         ),
@@ -249,8 +249,8 @@ void main() {
         .thenAnswer((_) => Stream<JournalEntity?>.fromIterable([mockEntity]));
 
     await tester.pumpWidget(
-      createTestApp(
-        const TimeRecordingIcon(
+      const WidgetTestBench(
+        child: TimeRecordingIcon(
           taskId: 'test-task-id',
         ),
       ),
@@ -265,8 +265,8 @@ void main() {
   // Test for TimeRecordingIndicatorDot widget
   testWidgets('TimeRecordingIndicatorDot renders correctly', (tester) async {
     await tester.pumpWidget(
-      createTestApp(
-        const TimeRecordingIndicatorDot(),
+      const WidgetTestBench(
+        child: TimeRecordingIndicatorDot(),
       ),
     );
 

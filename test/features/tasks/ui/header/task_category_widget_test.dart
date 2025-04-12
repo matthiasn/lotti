@@ -47,8 +47,8 @@ void main() {
   testWidgets('renders correctly with a category', (tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskCategoryWidget(
+      WidgetTestBench(
+        child: TaskCategoryWidget(
           category: testCategory,
           onSave: mockSaveCallback.call,
         ),
@@ -65,8 +65,8 @@ void main() {
   testWidgets('renders correctly without a category', (tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskCategoryWidget(
+      WidgetTestBench(
+        child: TaskCategoryWidget(
           category: null,
           onSave: mockSaveCallback.call,
         ),
@@ -83,8 +83,8 @@ void main() {
   testWidgets('opens category selection modal when tapped', (tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskCategoryWidget(
+      WidgetTestBench(
+        child: TaskCategoryWidget(
           category: testCategory,
           onSave: mockSaveCallback.call,
         ),
@@ -121,8 +121,8 @@ void main() {
 
     // Pump the widget
     await tester.pumpWidget(
-      createTestApp(
-        TaskCategoryWidget(
+      WidgetTestBench(
+        child: TaskCategoryWidget(
           category: testCategory,
           onSave: mockSaveCallback.call,
         ),

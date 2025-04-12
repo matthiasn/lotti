@@ -19,8 +19,8 @@ void main() {
     testWidgets('should render SiriWaveform with correct height',
         (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          const AiRunningAnimation(height: 100),
+        const WidgetTestBench(
+          child: AiRunningAnimation(height: 100),
         ),
       );
 
@@ -48,8 +48,8 @@ void main() {
       // The default state for inference is idle, so we don't need any overrides
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            AiRunningAnimationWrapper(
+          child: WidgetTestBench(
+            child: AiRunningAnimationWrapper(
               entryId: testId,
               height: 100,
               responseTypes: testSet,
@@ -81,8 +81,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: createTestApp(
-            AiRunningAnimationWrapper(
+          child: WidgetTestBench(
+            child: AiRunningAnimationWrapper(
               entryId: testId,
               height: 100,
               responseTypes: testSet,
@@ -111,8 +111,8 @@ void main() {
       // The default state for inference is idle, so we don't need any overrides
       await tester.pumpWidget(
         ProviderScope(
-          child: createTestApp(
-            AiRunningAnimationWrapperCard(
+          child: WidgetTestBench(
+            child: AiRunningAnimationWrapperCard(
               entryId: testId,
               height: 100,
               responseTypes: testSet,
@@ -145,8 +145,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: createTestApp(
-            AiRunningAnimationWrapperCard(
+          child: WidgetTestBench(
+            child: AiRunningAnimationWrapperCard(
               entryId: testId,
               height: 100,
               responseTypes: testSet,

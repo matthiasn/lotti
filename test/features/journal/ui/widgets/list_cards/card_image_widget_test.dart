@@ -88,8 +88,8 @@ void main() {
 
       // Build the widget
       await tester.pumpWidget(
-        createTestApp(
-          CardImageWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
             journalImage: testImage,
             height: testHeight,
           ),
@@ -115,8 +115,8 @@ void main() {
 
       // Build the widget
       await tester.pumpWidget(
-        createTestApp(
-          CardImageWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
             journalImage: testImage,
             height: testHeight,
           ),
@@ -143,8 +143,8 @@ void main() {
 
       // Build the widget with custom BoxFit
       await tester.pumpWidget(
-        createTestApp(
-          CardImageWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
             journalImage: testImage,
             height: testHeight,
             fit: BoxFit.cover, // Custom BoxFit

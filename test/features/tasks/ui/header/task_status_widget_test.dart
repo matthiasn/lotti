@@ -85,8 +85,8 @@ void main() {
 
       // Act
       await tester.pumpWidget(
-        createTestApp(
-          TaskStatusWidget(
+        WidgetTestBench(
+          child: TaskStatusWidget(
             task: mockTask,
             onStatusChanged: (String? status) {},
           ),
@@ -118,8 +118,8 @@ void main() {
 
       // Act
       await tester.pumpWidget(
-        createTestApp(
-          TaskStatusWidget(
+        WidgetTestBench(
+          child: TaskStatusWidget(
             task: mockTask,
             onStatusChanged: (String? status) {},
           ),
@@ -149,8 +149,8 @@ void main() {
 
       // Act
       await tester.pumpWidget(
-        createTestApp(
-          TaskStatusWidget(
+        WidgetTestBench(
+          child: TaskStatusWidget(
             task: mockTask,
             onStatusChanged: (String? status) {},
           ),
@@ -189,8 +189,8 @@ void main() {
 
       // Act
       await tester.pumpWidget(
-        createTestApp(
-          TaskStatusWidget(
+        WidgetTestBench(
+          child: TaskStatusWidget(
             task: mockTask,
             onStatusChanged: (String? status) {
               callbackCalled = true;

@@ -99,8 +99,8 @@ void main() {
   testWidgets('displays task title correctly', (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskListCard(task: testTask),
+      WidgetTestBench(
+        child: TaskListCard(task: testTask),
       ),
     );
 
@@ -112,8 +112,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskListCard(task: testTask),
+      WidgetTestBench(
+        child: TaskListCard(task: testTask),
       ),
     );
 
@@ -131,8 +131,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskListCard(task: testTask),
+      WidgetTestBench(
+        child: TaskListCard(task: testTask),
       ),
     );
 
@@ -150,8 +150,8 @@ void main() {
       (WidgetTester tester) async {
     // Arrange
     await tester.pumpWidget(
-      createTestApp(
-        TaskListCard(task: testTask),
+      WidgetTestBench(
+        child: TaskListCard(task: testTask),
       ),
     );
 
@@ -172,8 +172,8 @@ void main() {
     getIt.registerSingleton<NavService>(mockNavService);
 
     await tester.pumpWidget(
-      createTestApp(
-        TaskListCard(task: testTask),
+      WidgetTestBench(
+        child: TaskListCard(task: testTask),
       ),
     );
 
@@ -198,8 +198,8 @@ void main() {
         .thenAnswer((_) => Stream.value(testTask));
 
     await tester.pumpWidget(
-      createTestApp(
-        TaskListCard(task: testTask),
+      WidgetTestBench(
+        child: TaskListCard(task: testTask),
       ),
     );
 
