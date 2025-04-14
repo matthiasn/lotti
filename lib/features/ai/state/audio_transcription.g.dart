@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'image_analysis.dart';
+part of 'audio_transcription.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$aiImageAnalysisControllerHash() =>
-    r'3397ee964bdbda95d7d73a571dbcf9ba9b8350a0';
+String _$aiAudioTranscriptionControllerHash() =>
+    r'778ad1d1e780eb1de23208be1922c1b9685ece7c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,7 +30,7 @@ class _SystemHash {
   }
 }
 
-abstract class _$AiImageAnalysisController
+abstract class _$AiAudioTranscriptionController
     extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
 
@@ -39,27 +39,28 @@ abstract class _$AiImageAnalysisController
   });
 }
 
-/// See also [AiImageAnalysisController].
-@ProviderFor(AiImageAnalysisController)
-const aiImageAnalysisControllerProvider = AiImageAnalysisControllerFamily();
+/// See also [AiAudioTranscriptionController].
+@ProviderFor(AiAudioTranscriptionController)
+const aiAudioTranscriptionControllerProvider =
+    AiAudioTranscriptionControllerFamily();
 
-/// See also [AiImageAnalysisController].
-class AiImageAnalysisControllerFamily extends Family<String> {
-  /// See also [AiImageAnalysisController].
-  const AiImageAnalysisControllerFamily();
+/// See also [AiAudioTranscriptionController].
+class AiAudioTranscriptionControllerFamily extends Family<String> {
+  /// See also [AiAudioTranscriptionController].
+  const AiAudioTranscriptionControllerFamily();
 
-  /// See also [AiImageAnalysisController].
-  AiImageAnalysisControllerProvider call({
+  /// See also [AiAudioTranscriptionController].
+  AiAudioTranscriptionControllerProvider call({
     required String id,
   }) {
-    return AiImageAnalysisControllerProvider(
+    return AiAudioTranscriptionControllerProvider(
       id: id,
     );
   }
 
   @override
-  AiImageAnalysisControllerProvider getProviderOverride(
-    covariant AiImageAnalysisControllerProvider provider,
+  AiAudioTranscriptionControllerProvider getProviderOverride(
+    covariant AiAudioTranscriptionControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -78,30 +79,31 @@ class AiImageAnalysisControllerFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'aiImageAnalysisControllerProvider';
+  String? get name => r'aiAudioTranscriptionControllerProvider';
 }
 
-/// See also [AiImageAnalysisController].
-class AiImageAnalysisControllerProvider
-    extends AutoDisposeNotifierProviderImpl<AiImageAnalysisController, String> {
-  /// See also [AiImageAnalysisController].
-  AiImageAnalysisControllerProvider({
+/// See also [AiAudioTranscriptionController].
+class AiAudioTranscriptionControllerProvider
+    extends AutoDisposeNotifierProviderImpl<AiAudioTranscriptionController,
+        String> {
+  /// See also [AiAudioTranscriptionController].
+  AiAudioTranscriptionControllerProvider({
     required String id,
   }) : this._internal(
-          () => AiImageAnalysisController()..id = id,
-          from: aiImageAnalysisControllerProvider,
-          name: r'aiImageAnalysisControllerProvider',
+          () => AiAudioTranscriptionController()..id = id,
+          from: aiAudioTranscriptionControllerProvider,
+          name: r'aiAudioTranscriptionControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$aiImageAnalysisControllerHash,
-          dependencies: AiImageAnalysisControllerFamily._dependencies,
+                  : _$aiAudioTranscriptionControllerHash,
+          dependencies: AiAudioTranscriptionControllerFamily._dependencies,
           allTransitiveDependencies:
-              AiImageAnalysisControllerFamily._allTransitiveDependencies,
+              AiAudioTranscriptionControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  AiImageAnalysisControllerProvider._internal(
+  AiAudioTranscriptionControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -115,7 +117,7 @@ class AiImageAnalysisControllerProvider
 
   @override
   String runNotifierBuild(
-    covariant AiImageAnalysisController notifier,
+    covariant AiAudioTranscriptionController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -123,10 +125,10 @@ class AiImageAnalysisControllerProvider
   }
 
   @override
-  Override overrideWith(AiImageAnalysisController Function() create) {
+  Override overrideWith(AiAudioTranscriptionController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: AiImageAnalysisControllerProvider._internal(
+      override: AiAudioTranscriptionControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -139,14 +141,14 @@ class AiImageAnalysisControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<AiImageAnalysisController, String>
+  AutoDisposeNotifierProviderElement<AiAudioTranscriptionController, String>
       createElement() {
-    return _AiImageAnalysisControllerProviderElement(this);
+    return _AiAudioTranscriptionControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is AiImageAnalysisControllerProvider && other.id == id;
+    return other is AiAudioTranscriptionControllerProvider && other.id == id;
   }
 
   @override
@@ -160,18 +162,19 @@ class AiImageAnalysisControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin AiImageAnalysisControllerRef on AutoDisposeNotifierProviderRef<String> {
+mixin AiAudioTranscriptionControllerRef
+    on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _AiImageAnalysisControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<AiImageAnalysisController,
-        String> with AiImageAnalysisControllerRef {
-  _AiImageAnalysisControllerProviderElement(super.provider);
+class _AiAudioTranscriptionControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<AiAudioTranscriptionController,
+        String> with AiAudioTranscriptionControllerRef {
+  _AiAudioTranscriptionControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as AiImageAnalysisControllerProvider).id;
+  String get id => (origin as AiAudioTranscriptionControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

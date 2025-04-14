@@ -23,6 +23,7 @@
   "addTaskTitle": "Add Task",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
+  "aiAssistantTranscribeAudio": "Transcribe audio",
   "aiAssistantCreateChecklist": "Create checklist items",
   "aiAssistantRunPrompt": "Ask Llama3",
   "aiAssistantSummarizeTask": "Summarize task",

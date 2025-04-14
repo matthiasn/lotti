@@ -65,9 +65,10 @@ class ActionItemSuggestionsController
       final useCloudInference =
           await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
 
-      final model = useCloudInference
-          ? 'deepseek-ai/DeepSeek-R1-fast'
-          : 'deepseek-r1:14b';
+      final model1 =
+          useCloudInference ? 'deepseek/deepseek-r1' : 'deepseek-r1:14b';
+
+      final model = "anthropic/claude-3.7-sonnet:thinking";
 
       const temperature = 0.6;
 
@@ -98,6 +99,8 @@ class ActionItemSuggestionsController
           state = buffer.toString();
         }
       }
+
+      print(buffer.toString());
 
       final completeResponse = buffer.toString();
       final [thoughts, response] = completeResponse.split('</think>');

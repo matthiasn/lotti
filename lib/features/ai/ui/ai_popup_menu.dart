@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/audio_transcription/ai_audio_transcription_list_tile.dart';
+import 'package:lotti/features/ai/ui/audio_transcription/ai_audio_transcription_view.dart';
 import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_list_tile.dart';
 import 'package:lotti/features/ai/ui/image_analysis/ai_image_analysis_view.dart';
 import 'package:lotti/features/ai/ui/task_summary/action_item_suggestions_list_tile.dart';
@@ -69,6 +71,12 @@ class AiModal {
               linkedFromId: linkedFromId,
               onTap: () => pageIndexNotifier.value = 3,
             ),
+          if (journalEntity is JournalAudio)
+            AiAudioTranscriptionListTile(
+              journalAudio: journalEntity,
+              linkedFromId: linkedFromId,
+              onTap: () => pageIndexNotifier.value = 4,
+            ),
           verticalModalSpacer,
         ],
       ),
@@ -94,6 +102,12 @@ class AiModal {
       child: AiImageAnalysisView(id: journalEntity.id),
       onTapBack: () => pageIndexNotifier.value = 0,
     );
+    final audioTranscriptionModalPage = ModalUtils.modalSheetPage(
+      context: context,
+      title: context.messages.aiAssistantTranscribeAudio,
+      child: AiAudioTranscriptionView(id: journalEntity.id),
+      onTapBack: () => pageIndexNotifier.value = 0,
+    );
 
     return WoltModalSheet.show<void>(
       context: context,
@@ -103,6 +117,7 @@ class AiModal {
           taskSummaryModalPage,
           actionItemSuggestionsModalPage,
           imageAnalysisModalPage,
+          audioTranscriptionModalPage,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,

@@ -71,8 +71,10 @@ class TaskSummaryController extends _$TaskSummaryController {
       final useCloudInference =
           await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
 
-      final model =
+      final mode1l =
           useCloudInference ? 'google/gemma-3-27b-it-fast' : 'gemma3:12b';
+      final model = 'google/gemini-2.0-flash-001';
+      //final model = 'meta-llama/llama-4-maverick';
 
       const temperature = 0.6;
 

@@ -53,11 +53,16 @@ class CloudInferenceRepository {
 
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
+        responseFormat: ResponseFormat.text(
+          type: ResponseFormatType.jsonObject,
+        ),
         messages: [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.parts(
               [
-                ChatCompletionMessageContentPart.text(text: prompt),
+                ChatCompletionMessageContentPart.text(
+                  text: prompt,
+                ),
                 ...images.map(
                   (image) {
                     return ChatCompletionMessageContentPart.image(
@@ -66,6 +71,46 @@ class CloudInferenceRepository {
                       ),
                     );
                   },
+                ),
+              ],
+            ),
+          ),
+        ],
+        model: ChatCompletionModel.modelId(model),
+        temperature: temperature,
+      ),
+    );
+
+    return res.asBroadcastStream();
+  }
+
+  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+    String prompt, {
+    required CloudInferenceConfig config,
+    required String model,
+    required double temperature,
+    required String audioBase64,
+  }) {
+    final client = OpenAIClient(
+      baseUrl: config.baseUrl,
+      apiKey: config.apiKey,
+    );
+
+    print('generateWithAudio $model');
+
+    final res = client.createChatCompletionStream(
+      request: CreateChatCompletionRequest(
+        stream: true,
+        messages: [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.parts(
+              [
+                ChatCompletionMessageContentPart.text(text: prompt),
+                ChatCompletionMessageContentPart.audio(
+                  inputAudio: ChatCompletionMessageInputAudio(
+                    data: audioBase64,
+                    format: ChatCompletionMessageInputAudioFormat.mp3,
+                  ),
                 ),
               ],
             ),

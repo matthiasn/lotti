@@ -63,7 +63,7 @@ content of the website, not the style of the website. Do not make up names.
         await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
 
     final model =
-        useCloudInference ? 'google/gemma-3-27b-it-fast' : 'gemma3:12b';
+        useCloudInference ? 'meta-llama/llama-4-maverick' : 'gemma3:12b';
 
     const temperature = 0.6;
 
