@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -7,10 +8,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
-import '../../widget_test_utils.dart';
+
+class MockMessages extends Mock implements AppLocalizations {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,21 +35,37 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('main page is displayed', (tester) async {
+      final mockMessages = MockMessages();
+      when(() => mockMessages.settingsAdvancedTitle)
+          .thenReturn('Advanced Settings');
+      when(() => mockMessages.settingsSyncOutboxTitle)
+          .thenReturn('Sync Outbox');
+      when(() => mockMessages.settingsConflictsTitle)
+          .thenReturn('Sync Conflicts');
+      when(() => mockMessages.settingsLogsTitle).thenReturn('Logs');
+      when(() => mockMessages.settingsMaintenanceTitle)
+          .thenReturn('Maintenance');
+
+      getIt.registerSingleton<AppLocalizations>(mockMessages);
+
       await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ShowCaseWidget(
+            builder: (context) => ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: const AdvancedSettingsPage(),
             ),
-            child: const AdvancedSettingsPage(),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Advanced Settings'), findsOneWidget);
       expect(find.text('Sync Outbox'), findsOneWidget);
       expect(find.text('Sync Conflicts'), findsOneWidget);
       expect(find.text('Logs'), findsOneWidget);

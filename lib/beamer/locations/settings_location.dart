@@ -244,9 +244,11 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Advanced Settings
       if (pathContains('advanced'))
-        const BeamPage(
-          key: ValueKey('settings-advanced'),
-          child: AdvancedSettingsPage(),
+        BeamPage(
+          key: const ValueKey('settings-advanced'),
+          child: ShowCaseWidget(
+            builder: (context) => const AdvancedSettingsPage(),
+          ),
         ),
 
       if (pathContains('advanced/outbox_monitor'))
