@@ -110,171 +110,183 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
             ),
         ],
       ),
-      body: EntityDetailCard(
-        child: Column(
-          children: [
-            FormBuilder(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              onChanged: () {
-                setState(() {
-                  dirty = true;
-                });
-              },
-              child: Column(
-                children: <Widget>[
-                  ShowcaseWithWidget(
-                    startNav: true,
-                    showcaseKey: _measurableNameKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText: context
-                          .messages.settingsMeasurableShowCaseNameTooltip,
-                    ),
-                    child: FormTextField(
-                      key: const Key('measurable_name_field'),
-                      initialValue: item.displayName,
-                      labelText: context.messages.settingsMeasurableNameLabel,
-                      name: 'displayName',
-                      semanticsLabel: 'Measurable - name field',
-                      large: true,
-                    ),
-                  ),
-                  inputSpacerSmall,
-                  ShowcaseWithWidget(
-                    showcaseKey: _measurableDescrKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText: context
-                          .messages.settingsMeasurableShowCaseDescrTooltip,
-                    ),
-                    child: FormTextField(
-                      key: const Key('measurable_description_field'),
-                      initialValue: item.description,
-                      labelText:
-                          context.messages.settingsMeasurableDescriptionLabel,
-                      fieldRequired: false,
-                      name: 'description',
-                      semanticsLabel: 'Measurable - description field',
-                    ),
-                  ),
-                  inputSpacerSmall,
-                  ShowcaseWithWidget(
-                    showcaseKey: _measurableUnitAbbrKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText: context
-                          .messages.settingsMeasurableShowCaseUnitTooltip,
-                    ),
-                    child: FormTextField(
-                      initialValue: item.unitName,
-                      labelText: context.messages.settingsMeasurableUnitLabel,
-                      fieldRequired: false,
-                      name: 'unitName',
-                      semanticsLabel: 'Measurable - unit name field',
-                    ),
-                  ),
-                  inputSpacerSmall,
-                  ShowcaseWithWidget(
-                    showcaseKey: _measurablePrivateKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText: context
-                          .messages.settingsMeasurableShowCasePrivateTooltip,
-                    ),
-                    child: FormSwitch(
-                      name: 'private',
-                      initialValue: item.private,
-                      title: context.messages.settingsMeasurablePrivateLabel,
-                      activeColor: context.colorScheme.error,
-                    ),
-                  ),
-                  inputSpacerSmall,
-                  ShowcaseWithWidget(
-                    showcaseKey: _measurableAggreTypeKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText: context
-                          .messages.settingsMeasurableShowCaseAggreTypeTooltip,
-                    ),
-                    child: FormBuilderDropdown(
-                      name: 'aggregationType',
-                      initialValue: item.aggregationType,
-                      decoration: inputDecoration(
-                        labelText:
-                            context.messages.settingsMeasurableAggregationLabel,
-                        suffixIcon: const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: Icon(Icons.close_rounded),
+      body: Column(
+        children: [
+          ShowcaseTitleText(
+            titleText: context.messages.settingsMeasurableDefinition,
+          ),
+          EntityDetailCard(
+            child: Column(
+              children: [
+                FormBuilder(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: () {
+                    setState(() {
+                      dirty = true;
+                    });
+                  },
+                  child: Column(
+                    children: <Widget>[
+                      ShowcaseWithWidget(
+                        startNav: true,
+                        showcaseKey: _measurableNameKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsMeasurableShowCaseNameTooltip,
                         ),
-                        themeData: Theme.of(context),
+                        child: FormTextField(
+                          key: const Key('measurable_name_field'),
+                          initialValue: item.displayName,
+                          labelText:
+                              context.messages.settingsMeasurableNameLabel,
+                          name: 'displayName',
+                          semanticsLabel: 'Measurable - name field',
+                          large: true,
+                        ),
                       ),
-                      style: TextStyle(
-                        fontSize: 40,
-                        color: context.textTheme.titleLarge?.color,
+                      inputSpacerSmall,
+                      ShowcaseWithWidget(
+                        showcaseKey: _measurableDescrKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsMeasurableShowCaseDescrTooltip,
+                        ),
+                        child: FormTextField(
+                          key: const Key('measurable_description_field'),
+                          initialValue: item.description,
+                          labelText: context
+                              .messages.settingsMeasurableDescriptionLabel,
+                          fieldRequired: false,
+                          name: 'description',
+                          semanticsLabel: 'Measurable - description field',
+                        ),
                       ),
-                      items: AggregationType.values.map((aggregationType) {
-                        return DropdownMenuItem(
-                          value: aggregationType,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text(
-                              EnumToString.convertToString(
-                                aggregationType,
-                              ),
-                              style: context.textTheme.titleMedium,
+                      inputSpacerSmall,
+                      ShowcaseWithWidget(
+                        showcaseKey: _measurableUnitAbbrKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsMeasurableShowCaseUnitTooltip,
+                        ),
+                        child: FormTextField(
+                          initialValue: item.unitName,
+                          labelText:
+                              context.messages.settingsMeasurableUnitLabel,
+                          fieldRequired: false,
+                          name: 'unitName',
+                          semanticsLabel: 'Measurable - unit name field',
+                        ),
+                      ),
+                      inputSpacerSmall,
+                      ShowcaseWithWidget(
+                        showcaseKey: _measurablePrivateKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context.messages
+                              .settingsMeasurableShowCasePrivateTooltip,
+                        ),
+                        child: FormSwitch(
+                          name: 'private',
+                          initialValue: item.private,
+                          title:
+                              context.messages.settingsMeasurablePrivateLabel,
+                          activeColor: context.colorScheme.error,
+                        ),
+                      ),
+                      inputSpacerSmall,
+                      ShowcaseWithWidget(
+                        showcaseKey: _measurableAggreTypeKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context.messages
+                              .settingsMeasurableShowCaseAggreTypeTooltip,
+                        ),
+                        child: FormBuilderDropdown(
+                          name: 'aggregationType',
+                          initialValue: item.aggregationType,
+                          decoration: inputDecoration(
+                            labelText: context
+                                .messages.settingsMeasurableAggregationLabel,
+                            suffixIcon: const Padding(
+                              padding: EdgeInsets.only(right: 8),
+                              child: Icon(Icons.close_rounded),
                             ),
+                            themeData: Theme.of(context),
                           ),
-                        );
-                      }).toList(),
-                    ),
+                          style: TextStyle(
+                            fontSize: 40,
+                            color: context.textTheme.titleLarge?.color,
+                          ),
+                          items: AggregationType.values.map((aggregationType) {
+                            return DropdownMenuItem(
+                              value: aggregationType,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(
+                                  EnumToString.convertToString(
+                                    aggregationType,
+                                  ),
+                                  style: context.textTheme.titleMedium,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ShowcaseWithWidget(
-                    isTooltipTop: true,
-                    endNav: true,
-                    showcaseKey: _measurableDeleteKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText:
-                          context.messages.settingsMeasurableShowCaseDelTooltip,
-                    ),
-                    child: IconButton(
-                      icon: Icon(MdiIcons.trashCanOutline),
-                      iconSize: settingsIconSize,
-                      tooltip: context.messages.settingsMeasurableDeleteTooltip,
-                      onPressed: () async {
-                        const deleteKey = 'deleteKey';
-                        final result = await showModalActionSheet<String>(
-                          context: context,
-                          title: context.messages.measurableDeleteQuestion,
-                          actions: [
-                            ModalSheetAction(
-                              icon: Icons.warning,
-                              label: context.messages.measurableDeleteConfirm,
-                              key: deleteKey,
-                              isDestructiveAction: true,
-                              isDefaultAction: true,
-                            ),
-                          ],
-                        );
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ShowcaseWithWidget(
+                        isTooltipTop: true,
+                        endNav: true,
+                        showcaseKey: _measurableDeleteKey,
+                        description: ShowcaseTextStyle(
+                          descriptionText: context
+                              .messages.settingsMeasurableShowCaseDelTooltip,
+                        ),
+                        child: IconButton(
+                          icon: Icon(MdiIcons.trashCanOutline),
+                          iconSize: settingsIconSize,
+                          tooltip:
+                              context.messages.settingsMeasurableDeleteTooltip,
+                          onPressed: () async {
+                            const deleteKey = 'deleteKey';
+                            final result = await showModalActionSheet<String>(
+                              context: context,
+                              title: context.messages.measurableDeleteQuestion,
+                              actions: [
+                                ModalSheetAction(
+                                  icon: Icons.warning,
+                                  label:
+                                      context.messages.measurableDeleteConfirm,
+                                  key: deleteKey,
+                                  isDestructiveAction: true,
+                                  isDefaultAction: true,
+                                ),
+                              ],
+                            );
 
-                        if (result == deleteKey) {
-                          await persistenceLogic.upsertEntityDefinition(
-                            item.copyWith(deletedAt: DateTime.now()),
-                          );
+                            if (result == deleteKey) {
+                              await persistenceLogic.upsertEntityDefinition(
+                                item.copyWith(deletedAt: DateTime.now()),
+                              );
 
-                          maybePop();
-                        }
-                      },
-                    ),
+                              maybePop();
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
