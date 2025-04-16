@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lotti/features/manual/widget/showcase_text_style.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
@@ -112,18 +113,24 @@ class _SliverBoxAdapterShowcasePageState
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          return SingleChildScrollView(
-            controller: _scrollController,
-            child: Container(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-                maxHeight: constraints.maxHeight,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: widget.child
-                    .animate()
-                    .fadeIn(duration: const Duration(milliseconds: 500)),
+          return Container(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+              maxHeight: constraints.maxHeight,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  ShowcaseTitleText(
+                    titleText: widget.title,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: widget.child
+                        .animate()
+                        .fadeIn(duration: const Duration(milliseconds: 500)),
+                  ),
+                ],
               ),
             ),
           );

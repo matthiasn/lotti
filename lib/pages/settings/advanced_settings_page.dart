@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
@@ -57,6 +58,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            inputSpacer,
             ShowcaseWithWidget(
               startNav: true,
               showcaseKey: _maxtrixsyncKey,

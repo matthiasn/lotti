@@ -97,171 +97,182 @@ class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
                     ),
                 ],
               ),
-              body: EntityDetailCard(
-                child: Column(
-                  children: [
-                    FormBuilder(
-                      key: state.formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      onChanged: cubit.setDirty,
-                      child: Column(
-                        children: <Widget>[
-                          ShowcaseWithWidget(
-                            showcaseKey: _categoryNameKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context
-                                  .messages.settingsCategoryShowCaseNameTooltip,
-                            ),
-                            child: FormBuilderTextField(
-                              key: const Key(
-                                'category_name_field',
-                              ),
-                              name: 'name',
-                              initialValue: item.name,
-                              textCapitalization: TextCapitalization.sentences,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontSize: fontSizeLarge,
+              body: Column(
+                children: [
+                  ShowcaseTitleText(
+                    titleText: context.messages.settingsCategoriesDefinition,
+                  ),
+                  EntityDetailCard(
+                    child: Column(
+                      children: [
+                        FormBuilder(
+                          key: state.formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          onChanged: cubit.setDirty,
+                          child: Column(
+                            children: <Widget>[
+                              ShowcaseWithWidget(
+                                showcaseKey: _categoryNameKey,
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsCategoryShowCaseNameTooltip,
+                                ),
+                                child: FormBuilderTextField(
+                                  key: const Key(
+                                    'category_name_field',
                                   ),
-                              validator: FormBuilderValidators.compose([
-                                FormBuilderValidators.required(),
-                                (categoryName) {
-                                  final existingId = categoryNames[
-                                      categoryName?.toLowerCase()];
-                                  if (existingId != null &&
-                                      existingId != item.id) {
-                                    return context.messages
-                                        .settingsCategoriesDuplicateError;
-                                  }
-                                  return null;
-                                }
-                              ]),
-                              decoration: inputDecoration(
-                                labelText: context
-                                    .messages.settingsCategoriesNameLabel,
-                                semanticsLabel: 'Category name field',
-                                themeData: Theme.of(
-                                  context,
+                                  name: 'name',
+                                  initialValue: item.name,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontSize: fontSizeLarge,
+                                      ),
+                                  validator: FormBuilderValidators.compose([
+                                    FormBuilderValidators.required(),
+                                    (categoryName) {
+                                      final existingId = categoryNames[
+                                          categoryName?.toLowerCase()];
+                                      if (existingId != null &&
+                                          existingId != item.id) {
+                                        return context.messages
+                                            .settingsCategoriesDuplicateError;
+                                      }
+                                      return null;
+                                    }
+                                  ]),
+                                  decoration: inputDecoration(
+                                    labelText: context
+                                        .messages.settingsCategoriesNameLabel,
+                                    semanticsLabel: 'Category name field',
+                                    themeData: Theme.of(
+                                      context,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                          inputSpacer,
-                          ShowcaseWithWidget(
-                            showcaseKey: _categoryPrivateFlagKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsCategoryShowCasePrivateTooltip,
-                            ),
-                            child: FormSwitch(
-                              name: 'private',
-                              initialValue: item.private,
-                              title:
-                                  context.messages.settingsHabitsPrivateLabel,
-                              activeColor: context.colorScheme.error,
-                            ),
-                          ),
-                          ShowcaseWithWidget(
-                            showcaseKey: _categoryActiveFlagKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsCategoryShowCaseActiveTooltip,
-                            ),
-                            child: FormSwitch(
-                              name: 'active',
-                              key: const Key(
-                                'category_active',
+                              inputSpacer,
+                              ShowcaseWithWidget(
+                                showcaseKey: _categoryPrivateFlagKey,
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsCategoryShowCasePrivateTooltip,
+                                ),
+                                child: FormSwitch(
+                                  name: 'private',
+                                  initialValue: item.private,
+                                  title: context
+                                      .messages.settingsHabitsPrivateLabel,
+                                  activeColor: context.colorScheme.error,
+                                ),
                               ),
-                              initialValue: state.categoryDefinition.active,
-                              title: context.messages.dashboardActiveLabel,
-                              activeColor: starredGold,
-                            ),
-                          ),
-                          ShowcaseWithWidget(
-                            showcaseKey: _categoryFavoriteFlagKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context
-                                  .messages.settingsCategoryShowCaseFavTooltip,
-                            ),
-                            child: FormSwitch(
-                              name: 'favorite',
-                              key: const Key(
-                                'category_favorite',
-                              ),
-                              initialValue: state.categoryDefinition.favorite,
-                              title: context
-                                  .messages.settingsMeasurableFavoriteLabel,
-                              activeColor: starredGold,
-                            ),
-                          ),
-                          inputSpacer,
-                          ShowcaseWithWidget(
-                            showcaseKey: _categoryColorPickerKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsCategoryShowCaseColorTooltip,
-                            ),
-                            child: SelectColorField(
-                              hexColor: state.categoryDefinition.color,
-                              onColorChanged: cubit.setColor,
-                            ),
-                          ),
-                          inputSpacer,
-                        ],
-                      ),
-                    ),
-
-                    ShowcaseWithWidget(
-                      isTooltipTop: true,
-                      endNav: true,
-                      showcaseKey: _categoryDeleteKey,
-                      description: ShowcaseTextStyle(
-                        descriptionText:
-                            context.messages.settingsCategoryShowCaseDelTooltip,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            key: const Key(
-                              'category_delete',
-                            ),
-                            icon: Icon(
-                              MdiIcons.trashCanOutline,
-                            ),
-                            iconSize: settingsIconSize,
-                            tooltip:
-                                context.messages.settingsHabitsDeleteTooltip,
-                            color: context.colorScheme.outline,
-                            onPressed: () async {
-                              const deleteKey = 'deleteKey';
-                              final result = await showModalActionSheet<String>(
-                                context: context,
-                                title: context.messages.categoryDeleteQuestion,
-                                actions: [
-                                  ModalSheetAction(
-                                    icon: Icons.warning,
-                                    label:
-                                        context.messages.categoryDeleteConfirm,
-                                    key: deleteKey,
-                                    isDestructiveAction: true,
-                                    isDefaultAction: true,
+                              ShowcaseWithWidget(
+                                showcaseKey: _categoryActiveFlagKey,
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsCategoryShowCaseActiveTooltip,
+                                ),
+                                child: FormSwitch(
+                                  name: 'active',
+                                  key: const Key(
+                                    'category_active',
                                   ),
-                                ],
-                              );
-
-                              if (result == deleteKey) {
-                                await cubit.delete();
-                              }
-                            },
+                                  initialValue: state.categoryDefinition.active,
+                                  title: context.messages.dashboardActiveLabel,
+                                  activeColor: starredGold,
+                                ),
+                              ),
+                              ShowcaseWithWidget(
+                                showcaseKey: _categoryFavoriteFlagKey,
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsCategoryShowCaseFavTooltip,
+                                ),
+                                child: FormSwitch(
+                                  name: 'favorite',
+                                  key: const Key(
+                                    'category_favorite',
+                                  ),
+                                  initialValue:
+                                      state.categoryDefinition.favorite,
+                                  title: context
+                                      .messages.settingsMeasurableFavoriteLabel,
+                                  activeColor: starredGold,
+                                ),
+                              ),
+                              inputSpacer,
+                              ShowcaseWithWidget(
+                                showcaseKey: _categoryColorPickerKey,
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsCategoryShowCaseColorTooltip,
+                                ),
+                                child: SelectColorField(
+                                  hexColor: state.categoryDefinition.color,
+                                  onColorChanged: cubit.setColor,
+                                ),
+                              ),
+                              inputSpacer,
+                            ],
                           ),
-                        ],
-                      ),
-                    ), // const HabitAutocompleteWrapper(),
-                  ],
-                ),
+                        ),
+
+                        ShowcaseWithWidget(
+                          isTooltipTop: true,
+                          endNav: true,
+                          showcaseKey: _categoryDeleteKey,
+                          description: ShowcaseTextStyle(
+                            descriptionText: context
+                                .messages.settingsCategoryShowCaseDelTooltip,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                key: const Key(
+                                  'category_delete',
+                                ),
+                                icon: Icon(
+                                  MdiIcons.trashCanOutline,
+                                ),
+                                iconSize: settingsIconSize,
+                                tooltip: context
+                                    .messages.settingsHabitsDeleteTooltip,
+                                color: context.colorScheme.outline,
+                                onPressed: () async {
+                                  const deleteKey = 'deleteKey';
+                                  final result =
+                                      await showModalActionSheet<String>(
+                                    context: context,
+                                    title:
+                                        context.messages.categoryDeleteQuestion,
+                                    actions: [
+                                      ModalSheetAction(
+                                        icon: Icons.warning,
+                                        label: context
+                                            .messages.categoryDeleteConfirm,
+                                        key: deleteKey,
+                                        isDestructiveAction: true,
+                                        isDefaultAction: true,
+                                      ),
+                                    ],
+                                  );
+
+                                  if (result == deleteKey) {
+                                    await cubit.delete();
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ), // const HabitAutocompleteWrapper(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           },

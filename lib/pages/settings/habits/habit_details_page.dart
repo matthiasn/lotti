@@ -101,215 +101,229 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
             ],
           ),
           body: SingleChildScrollView(
-            child: EntityDetailCard(
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 20,
-                horizontal: 10,
-              ),
-              child: Column(
-                children: [
-                  FormBuilder(
-                    key: state.formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    onChanged: cubit.setDirty,
-                    child: Column(
-                      children: <Widget>[
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCaseNameTooltip,
-                          ),
-                          startNav: true,
-                          showcaseKey: _habitNameKey,
-                          child: FormTextField(
-                            key: const Key('habit_name_field'),
-                            initialValue: item.name,
-                            labelText: context.messages.settingsHabitsNameLabel,
-                            name: 'name',
-                            semanticsLabel: 'Habit name field',
-                          ),
-                        ),
-                        inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCaseDescrTooltip,
-                          ),
-                          showcaseKey: _habitDescKey,
-                          child: FormTextField(
-                            key: const Key(
-                              'habit_description_field',
-                            ),
-                            initialValue: item.description,
-                            labelText:
-                                context.messages.settingsHabitsDescriptionLabel,
-                            fieldRequired: false,
-                            name: 'description',
-                            semanticsLabel: 'Habit description field',
-                          ),
-                        ),
-                        inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCaseCatTooltip,
-                          ),
-                          showcaseKey: _habitCateKey,
-                          child: const SelectCategoryWidget(),
-                        ),
-                        inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCaseDashTooltip,
-                          ),
-                          showcaseKey: _habitDashKey,
-                          child: SelectDashboardWidget(),
-                        ),
-                        inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCasePriorTooltip,
-                          ),
-                          showcaseKey: _habitPriorKey,
-                          child: FormSwitch(
-                            name: 'priority',
-                            key: const Key('habit_priority'),
-                            semanticsLabel: 'Habit priority',
-                            initialValue: state.habitDefinition.priority,
-                            title: context.messages.habitPriorityLabel,
-                            activeColor: starredGold,
-                          ),
-                        ),
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCasePrivateTooltip,
-                          ),
-                          showcaseKey: _habitPrivKey,
-                          child: FormSwitch(
-                            name: 'private',
-                            initialValue: item.private,
-                            title: context.messages.settingsHabitsPrivateLabel,
-                            activeColor: context.colorScheme.error,
-                          ),
-                        ),
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCaseArchivedTooltip,
-                          ),
-                          showcaseKey: _habitArchKey,
-                          child: FormSwitch(
-                            name: 'archived',
-                            key: const Key('habit_archived'),
-                            initialValue: !state.habitDefinition.active,
-                            title: context.messages.habitArchivedLabel,
-                            activeColor: context.colorScheme.outline,
-                          ),
-                        ),
-                        inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsHabitsShowCaseStarDateTooltip,
-                          ),
-                          showcaseKey: _habitStartDateKey,
-                          child: DateTimeField(
-                            dateTime: item.activeFrom,
-                            labelText: context.messages.habitActiveFromLabel,
-                            setDateTime: cubit.setActiveFrom,
-                            mode: CupertinoDatePickerMode.date,
-                          ),
-                        ),
-                        inputSpacerSmall,
-                        if (isDaily) ...[
-                          ShowcaseWithWidget(
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsHabitsShowCaseStartTimeTooltip,
-                            ),
-                            showcaseKey: _habitShowFromTimeKey,
-                            child: DateTimeField(
-                              dateTime: showFrom,
-                              labelText: context.messages.habitShowFromLabel,
-                              setDateTime: cubit.setShowFrom,
-                              mode: CupertinoDatePickerMode.time,
-                            ),
-                          ),
-                          inputSpacerSmall,
-                          ShowcaseWithWidget(
-                            isTooltipTop: true,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsHabitsShowCaseAlertTimeTooltip,
-                            ),
-                            showcaseKey: _habitAlertAtKey,
-                            child: DateTimeField(
-                              dateTime: alertAtTime,
-                              labelText: context.messages.habitShowAlertAtLabel,
-                              setDateTime: cubit.setAlertAtTime,
-                              clear: cubit.clearAlertAtTime,
-                              mode: CupertinoDatePickerMode.time,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                        ],
-                      ],
-                    ),
+            child: Column(
+              children: [
+                ShowcaseTitleText(
+                  titleText: context.messages.settingsHabitDefinition,
+                ),
+                EntityDetailCard(
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 10,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: IconButton(
-                            icon: ShowcaseWithWidget(
-                              isTooltipTop: true,
+                  child: Column(
+                    children: [
+                      FormBuilder(
+                        key: state.formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        onChanged: cubit.setDirty,
+                        child: Column(
+                          children: <Widget>[
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context
+                                    .messages.settingsHabitsShowCaseNameTooltip,
+                              ),
+                              startNav: true,
+                              showcaseKey: _habitNameKey,
+                              child: FormTextField(
+                                key: const Key('habit_name_field'),
+                                initialValue: item.name,
+                                labelText:
+                                    context.messages.settingsHabitsNameLabel,
+                                name: 'name',
+                                semanticsLabel: 'Habit name field',
+                              ),
+                            ),
+                            inputSpacerSmall,
+                            ShowcaseWithWidget(
                               description: ShowcaseTextStyle(
                                 descriptionText: context.messages
-                                    .settingsHabitsShowCaseDelHabitTooltip,
+                                    .settingsHabitsShowCaseDescrTooltip,
                               ),
-                              endNav: true,
-                              showcaseKey: _habitDeleKey,
-                              child: Icon(MdiIcons.trashCanOutline),
+                              showcaseKey: _habitDescKey,
+                              child: FormTextField(
+                                key: const Key(
+                                  'habit_description_field',
+                                ),
+                                initialValue: item.description,
+                                labelText: context
+                                    .messages.settingsHabitsDescriptionLabel,
+                                fieldRequired: false,
+                                name: 'description',
+                                semanticsLabel: 'Habit description field',
+                              ),
                             ),
-                            iconSize: settingsIconSize,
-                            tooltip:
-                                context.messages.settingsHabitsDeleteTooltip,
-                            color: context.colorScheme.outline,
-                            onPressed: () async {
-                              const deleteKey = 'deleteKey';
-                              final result = await showModalActionSheet<String>(
-                                context: context,
-                                title: context.messages.habitDeleteQuestion,
-                                actions: [
-                                  ModalSheetAction(
-                                    icon: Icons.warning,
-                                    label: context.messages.habitDeleteConfirm,
-                                    key: deleteKey,
-                                    isDestructiveAction: true,
-                                    isDefaultAction: true,
-                                  ),
-                                ],
-                              );
-
-                              if (result == deleteKey) {
-                                await cubit.delete();
-                              }
-                            },
-                          ),
+                            inputSpacerSmall,
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context
+                                    .messages.settingsHabitsShowCaseCatTooltip,
+                              ),
+                              showcaseKey: _habitCateKey,
+                              child: const SelectCategoryWidget(),
+                            ),
+                            inputSpacerSmall,
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context
+                                    .messages.settingsHabitsShowCaseDashTooltip,
+                              ),
+                              showcaseKey: _habitDashKey,
+                              child: SelectDashboardWidget(),
+                            ),
+                            inputSpacerSmall,
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context.messages
+                                    .settingsHabitsShowCasePriorTooltip,
+                              ),
+                              showcaseKey: _habitPriorKey,
+                              child: FormSwitch(
+                                name: 'priority',
+                                key: const Key('habit_priority'),
+                                semanticsLabel: 'Habit priority',
+                                initialValue: state.habitDefinition.priority,
+                                title: context.messages.habitPriorityLabel,
+                                activeColor: starredGold,
+                              ),
+                            ),
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context.messages
+                                    .settingsHabitsShowCasePrivateTooltip,
+                              ),
+                              showcaseKey: _habitPrivKey,
+                              child: FormSwitch(
+                                name: 'private',
+                                initialValue: item.private,
+                                title:
+                                    context.messages.settingsHabitsPrivateLabel,
+                                activeColor: context.colorScheme.error,
+                              ),
+                            ),
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context.messages
+                                    .settingsHabitsShowCaseArchivedTooltip,
+                              ),
+                              showcaseKey: _habitArchKey,
+                              child: FormSwitch(
+                                name: 'archived',
+                                key: const Key('habit_archived'),
+                                initialValue: !state.habitDefinition.active,
+                                title: context.messages.habitArchivedLabel,
+                                activeColor: context.colorScheme.outline,
+                              ),
+                            ),
+                            inputSpacerSmall,
+                            ShowcaseWithWidget(
+                              description: ShowcaseTextStyle(
+                                descriptionText: context.messages
+                                    .settingsHabitsShowCaseStarDateTooltip,
+                              ),
+                              showcaseKey: _habitStartDateKey,
+                              child: DateTimeField(
+                                dateTime: item.activeFrom,
+                                labelText:
+                                    context.messages.habitActiveFromLabel,
+                                setDateTime: cubit.setActiveFrom,
+                                mode: CupertinoDatePickerMode.date,
+                              ),
+                            ),
+                            inputSpacerSmall,
+                            if (isDaily) ...[
+                              ShowcaseWithWidget(
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsHabitsShowCaseStartTimeTooltip,
+                                ),
+                                showcaseKey: _habitShowFromTimeKey,
+                                child: DateTimeField(
+                                  dateTime: showFrom,
+                                  labelText:
+                                      context.messages.habitShowFromLabel,
+                                  setDateTime: cubit.setShowFrom,
+                                  mode: CupertinoDatePickerMode.time,
+                                ),
+                              ),
+                              inputSpacerSmall,
+                              ShowcaseWithWidget(
+                                isTooltipTop: true,
+                                description: ShowcaseTextStyle(
+                                  descriptionText: context.messages
+                                      .settingsHabitsShowCaseAlertTimeTooltip,
+                                ),
+                                showcaseKey: _habitAlertAtKey,
+                                child: DateTimeField(
+                                  dateTime: alertAtTime,
+                                  labelText:
+                                      context.messages.habitShowAlertAtLabel,
+                                  setDateTime: cubit.setAlertAtTime,
+                                  clear: cubit.clearAlertAtTime,
+                                  mode: CupertinoDatePickerMode.time,
+                                ),
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: IconButton(
+                                icon: ShowcaseWithWidget(
+                                  isTooltipTop: true,
+                                  description: ShowcaseTextStyle(
+                                    descriptionText: context.messages
+                                        .settingsHabitsShowCaseDelHabitTooltip,
+                                  ),
+                                  endNav: true,
+                                  showcaseKey: _habitDeleKey,
+                                  child: Icon(MdiIcons.trashCanOutline),
+                                ),
+                                iconSize: settingsIconSize,
+                                tooltip: context
+                                    .messages.settingsHabitsDeleteTooltip,
+                                color: context.colorScheme.outline,
+                                onPressed: () async {
+                                  const deleteKey = 'deleteKey';
+                                  final result =
+                                      await showModalActionSheet<String>(
+                                    context: context,
+                                    title: context.messages.habitDeleteQuestion,
+                                    actions: [
+                                      ModalSheetAction(
+                                        icon: Icons.warning,
+                                        label:
+                                            context.messages.habitDeleteConfirm,
+                                        key: deleteKey,
+                                        isDestructiveAction: true,
+                                        isDefaultAction: true,
+                                      ),
+                                    ],
+                                  );
+
+                                  if (result == deleteKey) {
+                                    await cubit.delete();
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // const HabitAutocompleteWrapper(),
+                    ],
                   ),
-                  // const HabitAutocompleteWrapper(),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
