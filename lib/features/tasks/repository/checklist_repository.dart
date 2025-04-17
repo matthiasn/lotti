@@ -42,7 +42,7 @@ class ChecklistRepository {
       final newChecklist = Checklist(
         meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistData(
-          title: title ?? task.data.title,
+          title: title ?? 'TODOs',
           linkedChecklistItems: [],
           linkedTasks: [task.id],
         ),

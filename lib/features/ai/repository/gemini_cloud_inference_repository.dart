@@ -18,7 +18,10 @@ class GeminiCloudInferenceRepository {
 
   Future<void> init() async {
     final config = await getConfig();
-    Gemini.init(apiKey: config.geminiApiKey);
+    Gemini.init(
+      apiKey: config.geminiApiKey,
+      disableAutoUpdateModelName: true,
+    );
   }
 
   Stream<Candidates?> transcribeAudioStream({

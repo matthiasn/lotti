@@ -47,13 +47,14 @@ class AudioTranscriptionController extends _$AudioTranscriptionController {
     state = '';
 
     const prompt = '''
-Transcribe the attached audio exactly as it was recorded, . Make sure to properly
+Transcribe the attached audio exactly as it was recorded. Make sure to properly
 separate words.
         ''';
 
     final buffer = StringBuffer();
     final base64 = await getAudioBase64(entry);
     const model = 'models/gemini-2.0-flash';
+    //const model = 'models/gemini-2.5-pro-preview-03-25';
 
     final stream =
         ref.read(geminiCloudInferenceRepositoryProvider).transcribeAudioStream(
