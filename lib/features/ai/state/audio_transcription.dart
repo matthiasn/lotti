@@ -100,7 +100,7 @@ separate words.
     state = '';
 
     const prompt = '''
-Transcribe the attached audio exactly as it was recorded.
+Transcribe the attached audio as it was recorded. Only remove filler words.
         ''';
 
     final base64 = await getAudioBase64(entry);
