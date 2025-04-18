@@ -41,6 +41,7 @@ class AudioTranscriptionController extends _$AudioTranscriptionController {
 
     final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier)
       ..setStatus(InferenceStatus.running);
+    final start = DateTime.now();
 
     await notifier.save();
 
@@ -73,9 +74,19 @@ separate words.
     }
 
     state = state.replaceAll('  ', ' ');
-
     inferenceStatusNotifier.setStatus(InferenceStatus.idle);
-    await notifier.addTextToAudio(state);
+    final finish = DateTime.now();
+    final text = state.trim();
+
+    final transcript = AudioTranscript(
+      created: DateTime.now(),
+      library: 'Google Gemini',
+      model: model,
+      detectedLanguage: '-',
+      transcript: text,
+      processingTime: finish.difference(start),
+    );
+    await notifier.addTextToAudio(transcript: transcript);
   }
 
   Future<void> transcribeAudio() async {
@@ -95,6 +106,7 @@ separate words.
 
     final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier)
       ..setStatus(InferenceStatus.running);
+    final start = DateTime.now();
 
     await notifier.save();
 
@@ -116,7 +128,20 @@ Transcribe the attached audio as it was recorded. Remove filler words.
 
     state = candidates?.output ?? '';
     inferenceStatusNotifier.setStatus(InferenceStatus.idle);
-    await notifier.addTextToAudio(state);
+
+    final finish = DateTime.now();
+    final text = state.trim();
+
+    final transcript = AudioTranscript(
+      created: DateTime.now(),
+      library: 'Google Gemini',
+      model: model,
+      detectedLanguage: '-',
+      transcript: text,
+      processingTime: finish.difference(start),
+    );
+
+    await notifier.addTextToAudio(transcript: transcript);
   }
 
   Future<String> getAudioBase64(JournalAudio audio) async {

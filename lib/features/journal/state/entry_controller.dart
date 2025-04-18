@@ -516,28 +516,12 @@ class EntryController extends _$EntryController {
     }
   }
 
-  Future<void> addTextToAudio(String text) async {
+  Future<void> addTextToAudio({required AudioTranscript transcript}) async {
     final journalAudio = state.value?.entry;
     if (journalAudio is JournalAudio) {
-      final originalText = journalAudio.entryText?.markdown ??
-          journalAudio.entryText?.markdown ??
-          '';
-      final amendedText = '$originalText\n\n$text';
-
-      final quill = markdownToDelta(amendedText);
-      final controller = makeController(serializedQuill: quill)
-        ..readOnly = true;
-
-      final updatedEntryText = EntryText(
-        plainText: controller.document.toPlainText(),
-        markdown: amendedText,
-        quill: quill,
-      );
-
-      await _persistenceLogic.updateJournalEntityText(
-        id,
-        updatedEntryText,
-        journalAudio.meta.dateFrom,
+      await SpeechRepository.addAudioTranscript(
+        journalEntityId: id,
+        transcript: transcript,
       );
     }
   }
