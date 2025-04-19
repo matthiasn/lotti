@@ -8,6 +8,7 @@ class CloudInferenceConfig with _$CloudInferenceConfig {
   const factory CloudInferenceConfig({
     required String baseUrl,
     required String apiKey,
+    required String geminiApiKey,
   }) = _CloudInferenceConfig;
 
   factory CloudInferenceConfig.fromJson(Map<String, dynamic> json) =>

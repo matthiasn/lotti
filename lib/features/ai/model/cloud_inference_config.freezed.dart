@@ -22,6 +22,7 @@ CloudInferenceConfig _$CloudInferenceConfigFromJson(Map<String, dynamic> json) {
 mixin _$CloudInferenceConfig {
   String get baseUrl => throw _privateConstructorUsedError;
   String get apiKey => throw _privateConstructorUsedError;
+  String get geminiApiKey => throw _privateConstructorUsedError;
 
   /// Serializes this CloudInferenceConfig to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -39,7 +40,7 @@ abstract class $CloudInferenceConfigCopyWith<$Res> {
           $Res Function(CloudInferenceConfig) then) =
       _$CloudInferenceConfigCopyWithImpl<$Res, CloudInferenceConfig>;
   @useResult
-  $Res call({String baseUrl, String apiKey});
+  $Res call({String baseUrl, String apiKey, String geminiApiKey});
 }
 
 /// @nodoc
@@ -60,6 +61,7 @@ class _$CloudInferenceConfigCopyWithImpl<$Res,
   $Res call({
     Object? baseUrl = null,
     Object? apiKey = null,
+    Object? geminiApiKey = null,
   }) {
     return _then(_value.copyWith(
       baseUrl: null == baseUrl
@@ -69,6 +71,10 @@ class _$CloudInferenceConfigCopyWithImpl<$Res,
       apiKey: null == apiKey
           ? _value.apiKey
           : apiKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      geminiApiKey: null == geminiApiKey
+          ? _value.geminiApiKey
+          : geminiApiKey // ignore: cast_nullable_to_non_nullable
               as String,
     ) as $Val);
   }
@@ -82,7 +88,7 @@ abstract class _$$CloudInferenceConfigImplCopyWith<$Res>
       __$$CloudInferenceConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String baseUrl, String apiKey});
+  $Res call({String baseUrl, String apiKey, String geminiApiKey});
 }
 
 /// @nodoc
@@ -100,6 +106,7 @@ class __$$CloudInferenceConfigImplCopyWithImpl<$Res>
   $Res call({
     Object? baseUrl = null,
     Object? apiKey = null,
+    Object? geminiApiKey = null,
   }) {
     return _then(_$CloudInferenceConfigImpl(
       baseUrl: null == baseUrl
@@ -110,6 +117,10 @@ class __$$CloudInferenceConfigImplCopyWithImpl<$Res>
           ? _value.apiKey
           : apiKey // ignore: cast_nullable_to_non_nullable
               as String,
+      geminiApiKey: null == geminiApiKey
+          ? _value.geminiApiKey
+          : geminiApiKey // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -118,7 +129,9 @@ class __$$CloudInferenceConfigImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CloudInferenceConfigImpl implements _CloudInferenceConfig {
   const _$CloudInferenceConfigImpl(
-      {required this.baseUrl, required this.apiKey});
+      {required this.baseUrl,
+      required this.apiKey,
+      required this.geminiApiKey});
 
   factory _$CloudInferenceConfigImpl.fromJson(Map<String, dynamic> json) =>
       _$$CloudInferenceConfigImplFromJson(json);
@@ -127,10 +140,12 @@ class _$CloudInferenceConfigImpl implements _CloudInferenceConfig {
   final String baseUrl;
   @override
   final String apiKey;
+  @override
+  final String geminiApiKey;
 
   @override
   String toString() {
-    return 'CloudInferenceConfig(baseUrl: $baseUrl, apiKey: $apiKey)';
+    return 'CloudInferenceConfig(baseUrl: $baseUrl, apiKey: $apiKey, geminiApiKey: $geminiApiKey)';
   }
 
   @override
@@ -139,12 +154,14 @@ class _$CloudInferenceConfigImpl implements _CloudInferenceConfig {
         (other.runtimeType == runtimeType &&
             other is _$CloudInferenceConfigImpl &&
             (identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl) &&
-            (identical(other.apiKey, apiKey) || other.apiKey == apiKey));
+            (identical(other.apiKey, apiKey) || other.apiKey == apiKey) &&
+            (identical(other.geminiApiKey, geminiApiKey) ||
+                other.geminiApiKey == geminiApiKey));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, baseUrl, apiKey);
+  int get hashCode => Object.hash(runtimeType, baseUrl, apiKey, geminiApiKey);
 
   /// Create a copy of CloudInferenceConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -167,7 +184,8 @@ class _$CloudInferenceConfigImpl implements _CloudInferenceConfig {
 abstract class _CloudInferenceConfig implements CloudInferenceConfig {
   const factory _CloudInferenceConfig(
       {required final String baseUrl,
-      required final String apiKey}) = _$CloudInferenceConfigImpl;
+      required final String apiKey,
+      required final String geminiApiKey}) = _$CloudInferenceConfigImpl;
 
   factory _CloudInferenceConfig.fromJson(Map<String, dynamic> json) =
       _$CloudInferenceConfigImpl.fromJson;
@@ -176,6 +194,8 @@ abstract class _CloudInferenceConfig implements CloudInferenceConfig {
   String get baseUrl;
   @override
   String get apiKey;
+  @override
+  String get geminiApiKey;
 
   /// Create a copy of CloudInferenceConfig
   /// with the given fields replaced by the non-null parameter values.
