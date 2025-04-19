@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -73,7 +74,7 @@ class ActionItemSuggestionsController
 
       if (useCloudInference) {
         final config =
-            await ref.read(cloudInferenceRepositoryProvider).getConfig();
+            await ref.read(cloudInferenceConfigRepositoryProvider).getConfig();
 
         final stream = ref.read(cloudInferenceRepositoryProvider).generate(
               prompt,

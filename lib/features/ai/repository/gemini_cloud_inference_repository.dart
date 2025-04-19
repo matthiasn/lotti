@@ -1,23 +1,21 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/cloud_inference_config.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:path/path.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_config_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'gemini_cloud_inference_repository.g.dart';
 
 class GeminiCloudInferenceRepository {
-  GeminiCloudInferenceRepository() {
+  GeminiCloudInferenceRepository(this.ref) {
     init();
   }
 
+  final Ref ref;
+
   Future<void> init() async {
-    final config = await getConfig();
+    final config =
+        await ref.read(cloudInferenceConfigRepositoryProvider).getConfig();
     Gemini.init(
       apiKey: config.geminiApiKey,
       disableAutoUpdateModelName: true,
@@ -66,19 +64,9 @@ class GeminiCloudInferenceRepository {
       ],
     );
   }
-
-  Future<CloudInferenceConfig> getConfig() async {
-    final docDir = getDocumentsDirectory();
-    final jsonFile = File(join(docDir.path, 'cloud_inference_config.json'));
-    final jsonString = await jsonFile.readAsString();
-
-    return CloudInferenceConfig.fromJson(
-      jsonDecode(jsonString) as Map<String, dynamic>,
-    );
-  }
 }
 
 @riverpod
 GeminiCloudInferenceRepository geminiCloudInferenceRepository(Ref ref) {
-  return GeminiCloudInferenceRepository();
+  return GeminiCloudInferenceRepository(ref);
 }
