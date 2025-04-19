@@ -27,7 +27,7 @@ class AudioTranscriptionProgressListTile extends ConsumerWidget {
         final provider =
             audioTranscriptionControllerProvider(id: journalAudio.id);
         ref.invalidate(provider);
-        ref.read(provider.notifier).transcribeAudio();
+        ref.read(provider.notifier).transcribeAudioStream();
         onTap();
       },
     );

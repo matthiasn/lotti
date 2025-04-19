@@ -1,28 +1,27 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/cloud_inference_config.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:path/path.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cloud_inference_repository.g.dart';
 
 class CloudInferenceRepository {
-  CloudInferenceRepository();
+  CloudInferenceRepository(this.ref);
+
+  final Ref ref;
 
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
     required String model,
     required double temperature,
-    required CloudInferenceConfig config,
+    required String baseUrl,
+    required String apiKey,
+    OpenAIClient? overrideClient,
   }) {
-    final client = OpenAIClient(
-      baseUrl: config.baseUrl,
-      apiKey: config.apiKey,
-    );
+    final client = overrideClient ??
+        OpenAIClient(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
 
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
@@ -33,6 +32,7 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        stream: true,
       ),
     );
 
@@ -41,15 +41,18 @@ class CloudInferenceRepository {
 
   Stream<CreateChatCompletionStreamResponse> generateWithImages(
     String prompt, {
-    required CloudInferenceConfig config,
+    required String baseUrl,
+    required String apiKey,
     required String model,
     required double temperature,
     required List<String> images,
+    OpenAIClient? overrideClient,
   }) {
-    final client = OpenAIClient(
-      baseUrl: config.baseUrl,
-      apiKey: config.apiKey,
-    );
+    final client = overrideClient ??
+        OpenAIClient(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
 
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
@@ -73,24 +76,55 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        stream: true,
       ),
     );
 
     return res.asBroadcastStream();
   }
 
-  Future<CloudInferenceConfig> getConfig() async {
-    final docDir = getDocumentsDirectory();
-    final jsonFile = File(join(docDir.path, 'cloud_inference_config.json'));
-    final jsonString = await jsonFile.readAsString();
+  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+    String prompt, {
+    required String baseUrl,
+    required String apiKey,
+    required String model,
+    required String audioBase64,
+    OpenAIClient? overrideClient,
+  }) {
+    final client = overrideClient ??
+        OpenAIClient(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
 
-    return CloudInferenceConfig.fromJson(
-      jsonDecode(jsonString) as Map<String, dynamic>,
-    );
+    return client
+        .createChatCompletionStream(
+          request: CreateChatCompletionRequest(
+            frequencyPenalty: null,
+            messages: [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.parts(
+                  [
+                    ChatCompletionMessageContentPart.text(text: prompt),
+                    ChatCompletionMessageContentPart.audio(
+                      inputAudio: ChatCompletionMessageInputAudio(
+                        data: audioBase64,
+                        format: ChatCompletionMessageInputAudioFormat.mp3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            model: ChatCompletionModel.modelId(model),
+            stream: true,
+          ),
+        )
+        .asBroadcastStream();
   }
 }
 
 @riverpod
 CloudInferenceRepository cloudInferenceRepository(Ref ref) {
-  return CloudInferenceRepository();
+  return CloudInferenceRepository(ref);
 }

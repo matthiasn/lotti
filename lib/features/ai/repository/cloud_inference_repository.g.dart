@@ -7,7 +7,7 @@ part of 'cloud_inference_repository.dart';
 // **************************************************************************
 
 String _$cloudInferenceRepositoryHash() =>
-    r'8fc45a2b10cd6d9412ac7e68e74bf6d06c93f444';
+    r'3223bed2333313813c785dada91b960d0205de38';
 
 /// See also [cloudInferenceRepository].
 @ProviderFor(cloudInferenceRepository)

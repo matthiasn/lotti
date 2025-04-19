@@ -586,22 +586,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.1"
-  dio:
-    dependency: transitive
-    description:
-      name: dio
-      sha256: "253a18bbd4851fecba42f7343a1df3a9a4c1d31a2c1b37e221086b4fa8c8dbc9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.8.0+1"
-  dio_web_adapter:
-    dependency: transitive
-    description:
-      name: dio_web_adapter
-      sha256: "7586e476d70caecaf1686d21eee7247ea43ef5c345eab9e0cc3583ff13378d78"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   drift:
     dependency: "direct main"
     description:
@@ -844,14 +828,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.0.1"
-  flutter_gemini:
-    dependency: "direct main"
-    description:
-      name: flutter_gemini
-      sha256: b7264b1d19acc4b1a5628a0e26c0976aa1fb948f0d3243bc3510ff51e09476b7
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.0"
   flutter_health_fit:
     dependency: "direct main"
     description:

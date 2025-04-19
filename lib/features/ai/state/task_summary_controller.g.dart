@@ -7,7 +7,7 @@ part of 'task_summary_controller.dart';
 // **************************************************************************
 
 String _$taskSummaryControllerHash() =>
-    r'9a37af06096134155f44dc9bae74d989a93d73c2';
+    r'aefdef14fb1e56f2571d9bb19b184ce97c125492';
 
 /// Copied from Dart SDK
 class _SystemHash {
