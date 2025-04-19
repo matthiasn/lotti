@@ -23,8 +23,8 @@ class CategorySelectionIconButton extends ConsumerWidget {
     final provider = entryControllerProvider(id: entry.id);
     final notifier = ref.read(provider.notifier);
 
-    return GestureDetector(
-      onTap: () {
+    return IconButton(
+      onPressed: () {
         ModalUtils.showSinglePageModal<void>(
           context: context,
           title: context.messages.habitCategoryLabel,
@@ -39,7 +39,10 @@ class CategorySelectionIconButton extends ConsumerWidget {
           },
         );
       },
-      child: CategoryColorIcon(entry.categoryId, size: 12),
+      icon: CategoryColorIcon(
+        entry.categoryId,
+        size: 16,
+      ),
     );
   }
 }

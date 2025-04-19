@@ -12,40 +12,48 @@ class CategoryTypeCard extends StatelessWidget {
   const CategoryTypeCard(
     this.categoryDefinition, {
     required this.onTap,
+    this.selected = false,
     super.key,
   });
 
   final CategoryDefinition categoryDefinition;
   final void Function() onTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
-    return SettingsCard(
-      onTap: onTap,
-      title: categoryDefinition.name,
-      leading: CategoryColorIcon(categoryDefinition.id),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Visibility(
-            visible: fromNullableBool(categoryDefinition.private),
-            child: Icon(
-              MdiIcons.security,
-              color: context.colorScheme.error,
-              size: settingsIconSize,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SettingsCard(
+        onTap: onTap,
+        title: categoryDefinition.name,
+        leading: CategoryColorIcon(categoryDefinition.id),
+        backgroundColor: selected
+            ? context.colorScheme.outline.withAlpha(55)
+            : Colors.transparent,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Visibility(
+              visible: fromNullableBool(categoryDefinition.private),
+              child: Icon(
+                MdiIcons.security,
+                color: context.colorScheme.error,
+                size: settingsIconSize,
+              ),
             ),
-          ),
-          Visibility(
-            visible: fromNullableBool(
-              categoryDefinition.favorite ?? false,
+            Visibility(
+              visible: fromNullableBool(
+                categoryDefinition.favorite ?? false,
+              ),
+              child: Icon(
+                MdiIcons.star,
+                color: starredGold,
+                size: settingsIconSize,
+              ),
             ),
-            child: Icon(
-              MdiIcons.star,
-              color: starredGold,
-              size: settingsIconSize,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
