@@ -516,6 +516,16 @@ class EntryController extends _$EntryController {
     }
   }
 
+  Future<void> addTextToAudio({required AudioTranscript transcript}) async {
+    final journalAudio = state.value?.entry;
+    if (journalAudio is JournalAudio) {
+      await SpeechRepository.addAudioTranscript(
+        journalEntityId: id,
+        transcript: transcript,
+      );
+    }
+  }
+
   Future<void> updateChecklistOrder(List<String> checklistIds) async {
     final task = state.value?.entry;
 
