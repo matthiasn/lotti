@@ -7,7 +7,7 @@ part of 'audio_transcription.dart';
 // **************************************************************************
 
 String _$audioTranscriptionControllerHash() =>
-    r'82e9ae960afd74a64fe51155667a04395d7d219c';
+    r'7b5c38e3d7bbd5558791ef8671260a685dd6e4e3';
 
 /// Copied from Dart SDK
 class _SystemHash {

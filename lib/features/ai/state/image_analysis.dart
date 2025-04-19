@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -69,7 +70,7 @@ content of the website, not the style of the website. Do not make up names.
 
     if (useCloudInference) {
       final config =
-          await ref.read(cloudInferenceRepositoryProvider).getConfig();
+          await ref.read(cloudInferenceConfigRepositoryProvider).getConfig();
 
       final stream =
           ref.read(cloudInferenceRepositoryProvider).generateWithImages(
@@ -77,7 +78,8 @@ content of the website, not the style of the website. Do not make up names.
                 model: model,
                 temperature: temperature,
                 images: [image],
-                config: config,
+                baseUrl: config.baseUrl,
+                apiKey: config.apiKey,
               );
 
       await for (final chunk in stream) {
