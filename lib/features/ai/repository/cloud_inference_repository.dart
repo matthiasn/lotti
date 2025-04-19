@@ -32,6 +32,7 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        stream: true,
       ),
     );
 
@@ -75,6 +76,7 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        stream: true,
       ),
     );
 
@@ -115,6 +117,7 @@ class CloudInferenceRepository {
               ),
             ],
             model: ChatCompletionModel.modelId(model),
+            stream: true,
           ),
         )
         .asBroadcastStream();
