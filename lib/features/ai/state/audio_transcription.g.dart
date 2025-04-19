@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'entry_controller.dart';
+part of 'audio_transcription.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$entryControllerHash() => r'7ab12295709350d757ced68c57e5af6baed65d3b';
+String _$audioTranscriptionControllerHash() =>
+    r'82e9ae960afd74a64fe51155667a04395d7d219c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,36 +30,37 @@ class _SystemHash {
   }
 }
 
-abstract class _$EntryController
-    extends BuildlessAutoDisposeAsyncNotifier<EntryState?> {
+abstract class _$AudioTranscriptionController
+    extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
 
-  FutureOr<EntryState?> build({
+  String build({
     required String id,
   });
 }
 
-/// See also [EntryController].
-@ProviderFor(EntryController)
-const entryControllerProvider = EntryControllerFamily();
+/// See also [AudioTranscriptionController].
+@ProviderFor(AudioTranscriptionController)
+const audioTranscriptionControllerProvider =
+    AudioTranscriptionControllerFamily();
 
-/// See also [EntryController].
-class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
-  /// See also [EntryController].
-  const EntryControllerFamily();
+/// See also [AudioTranscriptionController].
+class AudioTranscriptionControllerFamily extends Family<String> {
+  /// See also [AudioTranscriptionController].
+  const AudioTranscriptionControllerFamily();
 
-  /// See also [EntryController].
-  EntryControllerProvider call({
+  /// See also [AudioTranscriptionController].
+  AudioTranscriptionControllerProvider call({
     required String id,
   }) {
-    return EntryControllerProvider(
+    return AudioTranscriptionControllerProvider(
       id: id,
     );
   }
 
   @override
-  EntryControllerProvider getProviderOverride(
-    covariant EntryControllerProvider provider,
+  AudioTranscriptionControllerProvider getProviderOverride(
+    covariant AudioTranscriptionControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -77,30 +79,31 @@ class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'entryControllerProvider';
+  String? get name => r'audioTranscriptionControllerProvider';
 }
 
-/// See also [EntryController].
-class EntryControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<EntryController, EntryState?> {
-  /// See also [EntryController].
-  EntryControllerProvider({
+/// See also [AudioTranscriptionController].
+class AudioTranscriptionControllerProvider
+    extends AutoDisposeNotifierProviderImpl<AudioTranscriptionController,
+        String> {
+  /// See also [AudioTranscriptionController].
+  AudioTranscriptionControllerProvider({
     required String id,
   }) : this._internal(
-          () => EntryController()..id = id,
-          from: entryControllerProvider,
-          name: r'entryControllerProvider',
+          () => AudioTranscriptionController()..id = id,
+          from: audioTranscriptionControllerProvider,
+          name: r'audioTranscriptionControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$entryControllerHash,
-          dependencies: EntryControllerFamily._dependencies,
+                  : _$audioTranscriptionControllerHash,
+          dependencies: AudioTranscriptionControllerFamily._dependencies,
           allTransitiveDependencies:
-              EntryControllerFamily._allTransitiveDependencies,
+              AudioTranscriptionControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  EntryControllerProvider._internal(
+  AudioTranscriptionControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -113,8 +116,8 @@ class EntryControllerProvider
   final String id;
 
   @override
-  FutureOr<EntryState?> runNotifierBuild(
-    covariant EntryController notifier,
+  String runNotifierBuild(
+    covariant AudioTranscriptionController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -122,10 +125,10 @@ class EntryControllerProvider
   }
 
   @override
-  Override overrideWith(EntryController Function() create) {
+  Override overrideWith(AudioTranscriptionController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: EntryControllerProvider._internal(
+      override: AudioTranscriptionControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -138,14 +141,14 @@ class EntryControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<EntryController, EntryState?>
+  AutoDisposeNotifierProviderElement<AudioTranscriptionController, String>
       createElement() {
-    return _EntryControllerProviderElement(this);
+    return _AudioTranscriptionControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is EntryControllerProvider && other.id == id;
+    return other is AudioTranscriptionControllerProvider && other.id == id;
   }
 
   @override
@@ -159,18 +162,19 @@ class EntryControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin EntryControllerRef on AutoDisposeAsyncNotifierProviderRef<EntryState?> {
+mixin AudioTranscriptionControllerRef
+    on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _EntryControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<EntryController,
-        EntryState?> with EntryControllerRef {
-  _EntryControllerProviderElement(super.provider);
+class _AudioTranscriptionControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<AudioTranscriptionController,
+        String> with AudioTranscriptionControllerRef {
+  _AudioTranscriptionControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as EntryControllerProvider).id;
+  String get id => (origin as AudioTranscriptionControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

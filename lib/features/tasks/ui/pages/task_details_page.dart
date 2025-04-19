@@ -133,6 +133,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                   taskSummary,
                   actionItemSuggestions,
                   imageAnalysis,
+                  audioTranscription,
                 },
               ),
             ),

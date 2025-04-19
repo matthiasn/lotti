@@ -11,6 +11,7 @@ _$CloudInferenceConfigImpl _$$CloudInferenceConfigImplFromJson(
     _$CloudInferenceConfigImpl(
       baseUrl: json['baseUrl'] as String,
       apiKey: json['apiKey'] as String,
+      geminiApiKey: json['geminiApiKey'] as String,
     );
 
 Map<String, dynamic> _$$CloudInferenceConfigImplToJson(
@@ -18,4 +19,5 @@ Map<String, dynamic> _$$CloudInferenceConfigImplToJson(
     <String, dynamic>{
       'baseUrl': instance.baseUrl,
       'apiKey': instance.apiKey,
+      'geminiApiKey': instance.geminiApiKey,
     };

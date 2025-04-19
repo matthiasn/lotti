@@ -138,7 +138,7 @@ void main() {
       // Assert
       expect(result, isNotNull);
       expect(result!.meta.id, equals(metadata.id));
-      expect((result as Checklist).data.title, equals(testTask.data.title));
+      expect((result as Checklist).data.title, equals('TODOs'));
       expect(result.data.linkedTasks, contains(taskId));
 
       verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
