@@ -80,7 +80,8 @@ class ActionItemSuggestionsController
               prompt,
               model: model,
               temperature: temperature,
-              config: config,
+              baseUrl: config.baseUrl,
+              apiKey: config.apiKey,
             );
 
         await for (final chunk in stream) {

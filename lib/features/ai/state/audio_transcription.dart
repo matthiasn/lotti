@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -57,20 +59,20 @@ separate words.
     const model = 'models/gemini-2.0-flash';
     //const model = 'models/gemini-2.5-pro-preview-03-25';
 
-    final stream =
-        ref.read(geminiCloudInferenceRepositoryProvider).transcribeAudioStream(
-              prompt: prompt,
-              model: model,
-              audioBase64: base64,
-            );
+    final config =
+        await ref.read(cloudInferenceConfigRepositoryProvider).getConfig();
 
-    await for (final candidates in stream) {
-      final output = candidates?.output;
+    final stream = ref.read(cloudInferenceRepositoryProvider).generateWithAudio(
+          prompt,
+          model: model,
+          audioBase64: base64,
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          apiKey: config.geminiApiKey,
+        );
 
-      if (output != null) {
-        buffer.write(output);
-        state = buffer.toString();
-      }
+    await for (final chunk in stream) {
+      buffer.write(chunk.choices[0].delta.content);
+      state = buffer.toString();
     }
 
     state = state.replaceAll('  ', ' ');

@@ -85,7 +85,8 @@ class TaskSummaryController extends _$TaskSummaryController {
               prompt,
               model: model,
               temperature: temperature,
-              config: config,
+              baseUrl: config.baseUrl,
+              apiKey: config.apiKey,
             );
 
         await for (final chunk in stream) {

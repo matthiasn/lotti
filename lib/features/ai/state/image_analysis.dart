@@ -78,7 +78,8 @@ content of the website, not the style of the website. Do not make up names.
                 model: model,
                 temperature: temperature,
                 images: [image],
-                config: config,
+                baseUrl: config.baseUrl,
+                apiKey: config.apiKey,
               );
 
       await for (final chunk in stream) {
