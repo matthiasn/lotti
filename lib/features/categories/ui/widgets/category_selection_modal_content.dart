@@ -63,13 +63,21 @@ class CategorySelectionModalContentState
         )
         .toList();
 
-    final favoriteCategories = filteredCategories
+    final filteredWithoutSelected = filteredCategories
+        .where((category) => category.id != widget.initialCategoryId)
+        .toList();
+
+    final favoriteCategories = filteredWithoutSelected
         .where((category) => category.favorite ?? false)
         .toList();
 
-    final otherCategories = filteredCategories
+    final otherCategories = filteredWithoutSelected
         .where((category) => !(category.favorite ?? false))
         .toList();
+
+    final initialCategory = filteredCategories
+        .where((category) => category.id == widget.initialCategoryId)
+        .firstOrNull;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -94,6 +102,12 @@ class CategorySelectionModalContentState
             },
           ),
         ),
+        if (initialCategory != null)
+          CategoryTypeCard(
+            initialCategory,
+            onTap: () => Navigator.pop(context),
+            selected: true,
+          ),
         if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
           SettingsCard(
             onTap: () => _showColorPicker(searchQuery),

@@ -87,21 +87,15 @@ class BackWidget extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(
-          onTap: onPressed,
-          child: const MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Row(
-              children: [
-                SizedBox(width: 9),
-                Icon(
-                  Icons.chevron_left,
-                  size: 30,
-                  weight: 500,
-                  semanticLabel: 'Navigate back',
-                ),
-              ],
-            ),
+        const SizedBox(width: 2),
+        IconButton(
+          onPressed: onPressed,
+          icon: Icon(
+            Icons.chevron_left,
+            size: 30,
+            weight: 500,
+            color: Theme.of(context).colorScheme.outline,
+            semanticLabel: 'Navigate back',
           ),
         ),
       ],
