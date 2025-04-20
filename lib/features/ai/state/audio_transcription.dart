@@ -51,7 +51,8 @@ separate words.
 
     final buffer = StringBuffer();
     final base64 = await getAudioBase64(entry);
-    const model = 'models/gemini-2.0-flash';
+    //const model = 'models/gemini-2.0-flash';
+    const model = 'google/gemini-2.0-flash-001';
     //const model = 'models/gemini-2.5-pro-preview-03-25';
 
     final config =
@@ -61,7 +62,8 @@ separate words.
           prompt,
           model: model,
           audioBase64: base64,
-          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          //baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          baseUrl: 'https://openrouter.ai/api/v1',
           apiKey: config.geminiApiKey,
         );
 
