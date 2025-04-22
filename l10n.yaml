@@ -2,4 +2,6 @@ arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 untranslated-messages-file: missing_translations.txt
-preferred-supported-locales: [en]
+preferred-supported-locales: [ en ]
+arb-translate-model-provider: gemini
+arb-translate-model: gemini-1.5-pro
