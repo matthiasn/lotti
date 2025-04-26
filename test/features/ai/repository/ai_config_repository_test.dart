@@ -1,12 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAiConfigDb extends Mock implements AiConfigDb {}
 
+class MockOutboxService extends Mock implements OutboxService {}
+
 void main() {
+  late GetIt getIt;
+  late MockOutboxService mockOutboxService;
+
   setUpAll(() {
     // Register a fallback value for AiConfig
     registerFallbackValue(
@@ -18,6 +26,45 @@ void main() {
         createdAt: DateTime.now(),
       ),
     );
+
+    // Register a fallback value for SyncMessage
+    registerFallbackValue(
+      SyncMessage.aiConfig(
+        aiConfig: AiConfig.apiKey(
+          id: 'fallback-id',
+          baseUrl: 'https://fallback.example.com',
+          apiKey: 'fallback-key',
+          name: 'Fallback API',
+          createdAt: DateTime.now(),
+        ),
+        status: SyncEntryStatus.initial,
+      ),
+    );
+
+    // Set up GetIt
+    getIt = GetIt.instance;
+  });
+
+  setUp(() {
+    // Set up a fresh mock for each test
+    mockOutboxService = MockOutboxService();
+
+    // Register the mock with GetIt
+    if (getIt.isRegistered<OutboxService>()) {
+      getIt.unregister<OutboxService>();
+    }
+    getIt.registerSingleton<OutboxService>(mockOutboxService);
+
+    // Set up default behavior
+    when(() => mockOutboxService.enqueueMessage(any()))
+        .thenAnswer((_) async {});
+  });
+
+  tearDown(() {
+    // Clear GetIt registrations
+    if (getIt.isRegistered<OutboxService>()) {
+      getIt.unregister<OutboxService>();
+    }
   });
 
   group('AiConfigRepository with mocks', () {
@@ -27,9 +74,13 @@ void main() {
     setUp(() {
       mockDb = MockAiConfigDb();
       repository = AiConfigRepository(mockDb);
+
+      // Set up default behavior for mockDb
+      when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
     });
 
-    test('saveConfig calls db.saveConfig', () async {
+    test('saveConfig calls db.saveConfig and outboxService.enqueueMessage',
+        () async {
       // Arrange
       final config = AiConfig.apiKey(
         id: 'test-id',
@@ -38,13 +89,13 @@ void main() {
         name: 'Test API',
         createdAt: DateTime.now(),
       );
-      when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
 
       // Act
       await repository.saveConfig(config);
 
       // Assert
       verify(() => mockDb.saveConfig(any())).called(1);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
 
     test('deleteConfig calls db.deleteConfig', () async {
@@ -112,6 +163,19 @@ void main() {
     late AiConfigRepository repository;
 
     setUp(() async {
+      // Set up a fresh mock for each test
+      mockOutboxService = MockOutboxService();
+
+      // Register the mock with GetIt
+      if (getIt.isRegistered<OutboxService>()) {
+        getIt.unregister<OutboxService>();
+      }
+      getIt.registerSingleton<OutboxService>(mockOutboxService);
+
+      // Set up default behavior
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
       db = AiConfigDb(inMemoryDatabase: true);
       repository = AiConfigRepository(db);
     });
@@ -144,6 +208,9 @@ void main() {
         },
         orElse: () => fail('Retrieved config is not an API key config'),
       );
+
+      // Verify OutboxService was called
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
 
     test('deleteConfig removes the config', () async {

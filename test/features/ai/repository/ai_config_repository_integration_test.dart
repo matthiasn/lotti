@@ -1,20 +1,66 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockOutboxService extends Mock implements OutboxService {}
 
 void main() {
+  late GetIt getIt;
+  late MockOutboxService mockOutboxService;
+
+  setUpAll(() {
+    // Register a fallback value for SyncMessage
+    registerFallbackValue(
+      SyncMessage.aiConfig(
+        aiConfig: AiConfig.apiKey(
+          id: 'fallback-id',
+          baseUrl: 'https://fallback.example.com',
+          apiKey: 'fallback-key',
+          name: 'Fallback API',
+          createdAt: DateTime.now(),
+        ),
+        status: SyncEntryStatus.initial,
+      ),
+    );
+
+    // Set up GetIt
+    getIt = GetIt.instance;
+  });
+
   group('AiConfigRepository integration tests', () {
     late AiConfigDb db;
     late AiConfigRepository repository;
 
     setUp(() async {
+      // Set up a fresh mock for each test
+      mockOutboxService = MockOutboxService();
+
+      // Register the mock with GetIt
+      if (getIt.isRegistered<OutboxService>()) {
+        getIt.unregister<OutboxService>();
+      }
+      getIt.registerSingleton<OutboxService>(mockOutboxService);
+
+      // Set up default behavior
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
       db = AiConfigDb(inMemoryDatabase: true);
       repository = AiConfigRepository(db);
     });
 
     tearDown(() async {
       await db.close();
+
+      // Clean up GetIt registrations
+      if (getIt.isRegistered<OutboxService>()) {
+        getIt.unregister<OutboxService>();
+      }
     });
 
     test('should store and retrieve multiple config types', () async {
@@ -42,6 +88,9 @@ void main() {
       // Save both configs
       await repository.saveConfig(apiKeyConfig);
       await repository.saveConfig(promptConfig);
+
+      // Verify OutboxService was called twice (once for each config)
+      verify(() => mockOutboxService.enqueueMessage(any())).called(2);
 
       // Retrieve and check API key config
       final retrievedApiConfig = await repository.getConfigById('openai-key');
@@ -76,7 +125,7 @@ void main() {
 
       // Watch by type tests
       await expectLater(
-        repository.watchConfigsByType('_AiConfigApiKey'),
+        repository.watchConfigsByType('apiKey'),
         emits(
           predicate<List<AiConfig>>((configs) {
             return configs.length == 1 && configs.first.id == 'openai-key';
@@ -85,7 +134,7 @@ void main() {
       );
 
       await expectLater(
-        repository.watchConfigsByType('_AiConfigPromptTemplate'),
+        repository.watchConfigsByType('promptTemplate'),
         emits(
           predicate<List<AiConfig>>((configs) {
             return configs.length == 1 &&

@@ -3,13 +3,16 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_config_repository.g.dart';
 
 @Riverpod(keepAlive: true)
 AiConfigRepository aiConfigRepository(Ref ref) {
-  return AiConfigRepository(AiConfigDb());
+  return getIt<AiConfigRepository>();
 }
 
 class AiConfigRepository {
@@ -20,6 +23,13 @@ class AiConfigRepository {
   /// Save or update an AI configuration
   Future<void> saveConfig(AiConfig config) async {
     await _db.saveConfig(config);
+
+    await getIt<OutboxService>().enqueueMessage(
+      SyncMessage.aiConfig(
+        aiConfig: config,
+        status: SyncEntryStatus.initial,
+      ),
+    );
   }
 
   /// Delete an AI configuration by its ID

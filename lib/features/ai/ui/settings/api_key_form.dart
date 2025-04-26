@@ -25,6 +25,16 @@ class ApiKeyValue extends FormzInput<String, String> {
   }
 }
 
+class CommentValue extends FormzInput<String, String> {
+  const CommentValue.pure() : super.pure('');
+  const CommentValue.dirty([super.value = '']) : super.dirty();
+
+  @override
+  String? validator(String value) {
+    return null;
+  }
+}
+
 class BaseUrl extends FormzInput<String, String> {
   const BaseUrl.pure() : super.pure('');
   const BaseUrl.dirty([super.value = '']) : super.dirty();
@@ -52,6 +62,7 @@ class ApiKeyFormState with FormzMixin {
     this.name = const ApiKeyName.pure(),
     this.apiKey = const ApiKeyValue.pure(),
     this.baseUrl = const BaseUrl.pure(),
+    this.comment = const CommentValue.pure(),
     this.isSubmitting = false,
     this.submitFailed = false,
   });
@@ -60,6 +71,7 @@ class ApiKeyFormState with FormzMixin {
   final ApiKeyName name;
   final ApiKeyValue apiKey;
   final BaseUrl baseUrl;
+  final CommentValue comment;
   final bool isSubmitting;
   final bool submitFailed;
 
@@ -68,6 +80,7 @@ class ApiKeyFormState with FormzMixin {
     ApiKeyName? name,
     ApiKeyValue? apiKey,
     BaseUrl? baseUrl,
+    CommentValue? comment,
     bool? isSubmitting,
     bool? submitFailed,
   }) {
@@ -76,13 +89,19 @@ class ApiKeyFormState with FormzMixin {
       name: name ?? this.name,
       apiKey: apiKey ?? this.apiKey,
       baseUrl: baseUrl ?? this.baseUrl,
+      comment: comment ?? this.comment,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitFailed: submitFailed ?? this.submitFailed,
     );
   }
 
   @override
-  List<FormzInput<String, dynamic>> get inputs => [name, apiKey, baseUrl];
+  List<FormzInput<String, dynamic>> get inputs => [
+        name,
+        apiKey,
+        baseUrl,
+        comment,
+      ];
 
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
@@ -91,6 +110,7 @@ class ApiKeyFormState with FormzMixin {
       name: name.value,
       apiKey: apiKey.value,
       baseUrl: baseUrl.value,
+      comment: comment.value,
       createdAt: DateTime.now(),
     );
   }
@@ -106,12 +126,14 @@ final apiKeyFormInitialStateProvider =
   // Extract fields from the config based on the pattern match
   var apiKeyValue = '';
   var baseUrlValue = '';
+  var commentValue = '';
 
   // Check the specific type to access properties correctly
   config.maybeMap(
     apiKey: (apiKeyConfig) {
       apiKeyValue = apiKeyConfig.apiKey;
       baseUrlValue = apiKeyConfig.baseUrl;
+      commentValue = apiKeyConfig.comment ?? '';
     },
     orElse: () {},
   );
@@ -121,6 +143,7 @@ final apiKeyFormInitialStateProvider =
     name: ApiKeyName.dirty(config.name),
     apiKey: ApiKeyValue.dirty(apiKeyValue),
     baseUrl: BaseUrl.dirty(baseUrlValue),
+    comment: CommentValue.dirty(commentValue),
   );
 });
 
@@ -134,11 +157,13 @@ class ApiKeyFormController extends StateNotifier<AsyncValue<ApiKeyFormState>> {
   final nameController = TextEditingController();
   final apiKeyController = TextEditingController();
   final baseUrlController = TextEditingController();
+  final commentController = TextEditingController();
 
   void _updateTextControllers(ApiKeyFormState formState) {
     nameController.text = formState.name.value;
     apiKeyController.text = formState.apiKey.value;
     baseUrlController.text = formState.baseUrl.value;
+    commentController.text = formState.comment.value;
   }
 
   void nameChanged(String value) {
@@ -168,10 +193,20 @@ class ApiKeyFormController extends StateNotifier<AsyncValue<ApiKeyFormState>> {
     );
   }
 
+  void commentChanged(String value) {
+    final comment = CommentValue.dirty(value);
+    state = AsyncData(
+      state.valueOrNull!.copyWith(
+        comment: comment,
+      ),
+    );
+  }
+
   void reset() {
     nameController.clear();
     apiKeyController.clear();
     baseUrlController.clear();
+    commentController.clear();
     state = AsyncData(ApiKeyFormState());
   }
 
@@ -180,6 +215,7 @@ class ApiKeyFormController extends StateNotifier<AsyncValue<ApiKeyFormState>> {
     nameController.dispose();
     apiKeyController.dispose();
     baseUrlController.dispose();
+    commentController.dispose();
     super.dispose();
   }
 }
@@ -213,7 +249,6 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
 
   @override
   Widget build(BuildContext context) {
-    // Use the family provider with the config directly - no need for initState now
     final formState =
         ref.watch(apiKeyFormControllerProvider(widget.config)).valueOrNull;
     final formController =
@@ -280,6 +315,17 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
           ),
         ),
         SizedBox(
+          height: 100,
+          child: TextField(
+            onChanged: formController.commentChanged,
+            controller: formController.commentController,
+            decoration: const InputDecoration(
+              labelText: 'Comment (Optional)',
+            ),
+            maxLines: 2,
+          ),
+        ),
+        SizedBox(
           height: 50,
           child: formState.submitFailed
               ? Text(
@@ -294,7 +340,8 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             ElevatedButton(
-              onPressed: formState.isValid
+              onPressed: formState.isValid &&
+                      (widget.config == null || formState.isDirty)
                   ? () {
                       final config = formState.toAiConfig();
                       widget.onSave(config);

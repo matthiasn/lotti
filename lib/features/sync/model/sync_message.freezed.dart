@@ -24,6 +24,8 @@ SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
       return SyncTagEntity.fromJson(json);
     case 'entryLink':
       return SyncEntryLink.fromJson(json);
+    case 'aiConfig':
+      return SyncAiConfig.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'SyncMessage',
@@ -46,6 +48,8 @@ mixin _$SyncMessage {
         tagEntity,
     required TResult Function(EntryLink entryLink, SyncEntryStatus status)
         entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -58,6 +62,7 @@ mixin _$SyncMessage {
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -69,6 +74,7 @@ mixin _$SyncMessage {
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -78,6 +84,7 @@ mixin _$SyncMessage {
     required TResult Function(SyncEntityDefinition value) entityDefinition,
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -86,6 +93,7 @@ mixin _$SyncMessage {
     TResult? Function(SyncEntityDefinition value)? entityDefinition,
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -94,6 +102,7 @@ mixin _$SyncMessage {
     TResult Function(SyncEntityDefinition value)? entityDefinition,
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -268,6 +277,8 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
         tagEntity,
     required TResult Function(EntryLink entryLink, SyncEntryStatus status)
         entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
   }) {
     return journalEntity(id, jsonPath, vectorClock, status);
   }
@@ -283,6 +294,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
   }) {
     return journalEntity?.call(id, jsonPath, vectorClock, status);
   }
@@ -297,6 +309,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     required TResult orElse(),
   }) {
     if (journalEntity != null) {
@@ -312,6 +325,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     required TResult Function(SyncEntityDefinition value) entityDefinition,
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
   }) {
     return journalEntity(this);
   }
@@ -323,6 +337,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult? Function(SyncEntityDefinition value)? entityDefinition,
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
   }) {
     return journalEntity?.call(this);
   }
@@ -334,6 +349,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult Function(SyncEntityDefinition value)? entityDefinition,
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
     required TResult orElse(),
   }) {
     if (journalEntity != null) {
@@ -488,6 +504,8 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
         tagEntity,
     required TResult Function(EntryLink entryLink, SyncEntryStatus status)
         entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
   }) {
     return entityDefinition(this.entityDefinition, status);
   }
@@ -503,6 +521,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
   }) {
     return entityDefinition?.call(this.entityDefinition, status);
   }
@@ -517,6 +536,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     required TResult orElse(),
   }) {
     if (entityDefinition != null) {
@@ -532,6 +552,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     required TResult Function(SyncEntityDefinition value) entityDefinition,
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
   }) {
     return entityDefinition(this);
   }
@@ -543,6 +564,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     TResult? Function(SyncEntityDefinition value)? entityDefinition,
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
   }) {
     return entityDefinition?.call(this);
   }
@@ -554,6 +576,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     TResult Function(SyncEntityDefinition value)? entityDefinition,
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
     required TResult orElse(),
   }) {
     if (entityDefinition != null) {
@@ -700,6 +723,8 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
         tagEntity,
     required TResult Function(EntryLink entryLink, SyncEntryStatus status)
         entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
   }) {
     return tagEntity(this.tagEntity, status);
   }
@@ -715,6 +740,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
   }) {
     return tagEntity?.call(this.tagEntity, status);
   }
@@ -729,6 +755,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     required TResult orElse(),
   }) {
     if (tagEntity != null) {
@@ -744,6 +771,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     required TResult Function(SyncEntityDefinition value) entityDefinition,
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
   }) {
     return tagEntity(this);
   }
@@ -755,6 +783,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     TResult? Function(SyncEntityDefinition value)? entityDefinition,
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
   }) {
     return tagEntity?.call(this);
   }
@@ -766,6 +795,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     TResult Function(SyncEntityDefinition value)? entityDefinition,
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
     required TResult orElse(),
   }) {
     if (tagEntity != null) {
@@ -912,6 +942,8 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
         tagEntity,
     required TResult Function(EntryLink entryLink, SyncEntryStatus status)
         entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
   }) {
     return entryLink(this.entryLink, status);
   }
@@ -927,6 +959,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
   }) {
     return entryLink?.call(this.entryLink, status);
   }
@@ -941,6 +974,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     required TResult orElse(),
   }) {
     if (entryLink != null) {
@@ -956,6 +990,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     required TResult Function(SyncEntityDefinition value) entityDefinition,
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
   }) {
     return entryLink(this);
   }
@@ -967,6 +1002,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     TResult? Function(SyncEntityDefinition value)? entityDefinition,
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
   }) {
     return entryLink?.call(this);
   }
@@ -978,6 +1014,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     TResult Function(SyncEntityDefinition value)? entityDefinition,
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
     required TResult orElse(),
   }) {
     if (entryLink != null) {
@@ -1011,5 +1048,224 @@ abstract class SyncEntryLink implements SyncMessage {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncEntryLinkImplCopyWith<_$SyncEntryLinkImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$SyncAiConfigImplCopyWith<$Res>
+    implements $SyncMessageCopyWith<$Res> {
+  factory _$$SyncAiConfigImplCopyWith(
+          _$SyncAiConfigImpl value, $Res Function(_$SyncAiConfigImpl) then) =
+      __$$SyncAiConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({AiConfig aiConfig, SyncEntryStatus status});
+
+  $AiConfigCopyWith<$Res> get aiConfig;
+}
+
+/// @nodoc
+class __$$SyncAiConfigImplCopyWithImpl<$Res>
+    extends _$SyncMessageCopyWithImpl<$Res, _$SyncAiConfigImpl>
+    implements _$$SyncAiConfigImplCopyWith<$Res> {
+  __$$SyncAiConfigImplCopyWithImpl(
+      _$SyncAiConfigImpl _value, $Res Function(_$SyncAiConfigImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? aiConfig = null,
+    Object? status = null,
+  }) {
+    return _then(_$SyncAiConfigImpl(
+      aiConfig: null == aiConfig
+          ? _value.aiConfig
+          : aiConfig // ignore: cast_nullable_to_non_nullable
+              as AiConfig,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as SyncEntryStatus,
+    ));
+  }
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $AiConfigCopyWith<$Res> get aiConfig {
+    return $AiConfigCopyWith<$Res>(_value.aiConfig, (value) {
+      return _then(_value.copyWith(aiConfig: value));
+    });
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SyncAiConfigImpl implements SyncAiConfig {
+  const _$SyncAiConfigImpl(
+      {required this.aiConfig, required this.status, final String? $type})
+      : $type = $type ?? 'aiConfig';
+
+  factory _$SyncAiConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncAiConfigImplFromJson(json);
+
+  @override
+  final AiConfig aiConfig;
+  @override
+  final SyncEntryStatus status;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'SyncMessage.aiConfig(aiConfig: $aiConfig, status: $status)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SyncAiConfigImpl &&
+            (identical(other.aiConfig, aiConfig) ||
+                other.aiConfig == aiConfig) &&
+            (identical(other.status, status) || other.status == status));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, aiConfig, status);
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SyncAiConfigImplCopyWith<_$SyncAiConfigImpl> get copyWith =>
+      __$$SyncAiConfigImplCopyWithImpl<_$SyncAiConfigImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
+        journalEntity,
+    required TResult Function(
+            EntityDefinition entityDefinition, SyncEntryStatus status)
+        entityDefinition,
+    required TResult Function(TagEntity tagEntity, SyncEntryStatus status)
+        tagEntity,
+    required TResult Function(EntryLink entryLink, SyncEntryStatus status)
+        entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
+  }) {
+    return aiConfig(this.aiConfig, status);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
+        journalEntity,
+    TResult? Function(
+            EntityDefinition entityDefinition, SyncEntryStatus status)?
+        entityDefinition,
+    TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
+    TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+  }) {
+    return aiConfig?.call(this.aiConfig, status);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
+        journalEntity,
+    TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
+        entityDefinition,
+    TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
+    TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    required TResult orElse(),
+  }) {
+    if (aiConfig != null) {
+      return aiConfig(this.aiConfig, status);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(SyncJournalEntity value) journalEntity,
+    required TResult Function(SyncEntityDefinition value) entityDefinition,
+    required TResult Function(SyncTagEntity value) tagEntity,
+    required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
+  }) {
+    return aiConfig(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(SyncJournalEntity value)? journalEntity,
+    TResult? Function(SyncEntityDefinition value)? entityDefinition,
+    TResult? Function(SyncTagEntity value)? tagEntity,
+    TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
+  }) {
+    return aiConfig?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(SyncJournalEntity value)? journalEntity,
+    TResult Function(SyncEntityDefinition value)? entityDefinition,
+    TResult Function(SyncTagEntity value)? tagEntity,
+    TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
+    required TResult orElse(),
+  }) {
+    if (aiConfig != null) {
+      return aiConfig(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SyncAiConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class SyncAiConfig implements SyncMessage {
+  const factory SyncAiConfig(
+      {required final AiConfig aiConfig,
+      required final SyncEntryStatus status}) = _$SyncAiConfigImpl;
+
+  factory SyncAiConfig.fromJson(Map<String, dynamic> json) =
+      _$SyncAiConfigImpl.fromJson;
+
+  AiConfig get aiConfig;
+  @override
+  SyncEntryStatus get status;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SyncAiConfigImplCopyWith<_$SyncAiConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

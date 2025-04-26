@@ -7,7 +7,7 @@ part of 'ai_config_repository.dart';
 // **************************************************************************
 
 String _$aiConfigRepositoryHash() =>
-    r'c9ea5a055d1fa32a83189d5bb031bb0e40b9b9f3';
+    r'5b73533a1244a647454ee5fe18ac987e91ec18e3';
 
 /// See also [aiConfigRepository].
 @ProviderFor(aiConfigRepository)
