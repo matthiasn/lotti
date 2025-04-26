@@ -44,11 +44,11 @@ class ShareButtonWidget extends ConsumerWidget {
 
       if (entry is JournalImage) {
         final filePath = getFullImagePath(entry);
-        await Share.shareXFiles([XFile(filePath)]);
+        await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
       }
       if (entry is JournalAudio) {
         final filePath = await AudioUtils.getFullAudioPath(entry);
-        await Share.shareXFiles([XFile(filePath)]);
+        await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
       }
     }
 
@@ -105,11 +105,11 @@ class ShareButtonListTile extends ConsumerWidget {
 
       if (entry is JournalImage) {
         final filePath = getFullImagePath(entry);
-        await Share.shareXFiles([XFile(filePath)]);
+        await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
       }
       if (entry is JournalAudio) {
         final filePath = await AudioUtils.getFullAudioPath(entry);
-        await Share.shareXFiles([XFile(filePath)]);
+        await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
       }
       if (context.mounted) {
         Navigator.of(context).pop();
