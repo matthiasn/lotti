@@ -46,13 +46,12 @@ class AudioTranscriptionController extends _$AudioTranscriptionController {
 
     const prompt = '''
 Transcribe the attached audio exactly as it was recorded. Make sure to properly
-separate words.
+separate words. Remove filler words and word repetitions.
         ''';
 
     final buffer = StringBuffer();
     final base64 = await getAudioBase64(entry);
-    const model = 'models/gemini-2.0-flash';
-    //const model = 'models/gemini-2.5-pro-preview-03-25';
+    const model = 'models/gemini-2.5-flash-preview-04-17';
 
     final config =
         await ref.read(cloudInferenceConfigRepositoryProvider).getConfig();
