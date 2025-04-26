@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
+import 'package:lotti/features/ai/ui/settings/api_key_edit_page.dart';
 
 /// Page to manage API key configurations
 class ApiKeysSettingsPage extends ConsumerWidget {
@@ -20,19 +21,11 @@ class ApiKeysSettingsPage extends ConsumerWidget {
   }
 
   void _navigateToEditPage(BuildContext context, AiConfig? config) {
-    // In a real implementation, navigate to an edit page
-    // For now, just show a dialog
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(config == null ? 'Add API Key' : 'Edit API Key'),
-        content: const Text('Edit page would go here'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ApiKeyEditPage(
+          configId: config?.id,
+        ),
       ),
     );
   }
