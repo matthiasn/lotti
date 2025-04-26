@@ -82,13 +82,6 @@ void main() {
     test('getConfigsByType calls db.getConfigsByType', () async {
       // Arrange
       const type = 'apiKey';
-      final mockConfig = AiConfig.apiKey(
-        id: 'mock-id',
-        baseUrl: 'https://mock.example.com',
-        apiKey: 'mock-key',
-        name: 'Mock API',
-        createdAt: DateTime.now(),
-      );
 
       // Mock the DB response with any list of entities
       when(() => mockDb.getConfigsByType(type)).thenAnswer((_) async => []);

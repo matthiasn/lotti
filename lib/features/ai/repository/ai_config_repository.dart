@@ -1,7 +1,16 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'ai_config_repository.g.dart';
+
+@Riverpod(keepAlive: true)
+AiConfigRepository aiConfigRepository(Ref ref) {
+  return AiConfigRepository(AiConfigDb());
+}
 
 class AiConfigRepository {
   AiConfigRepository(this._db);

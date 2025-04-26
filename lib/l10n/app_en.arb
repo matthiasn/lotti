@@ -226,6 +226,7 @@
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
   "settingsAboutTitle": "About Lotti",
+  "settingsAiApiKeys": "AI API Keys",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsAdvancedShowCaseMatrixSyncTooltip": "Configure and manage Matrix synchronization settings for seamless data integration.",
   "settingsAdvancedShowCaseSyncOutboxTooltip": "View and manage items waiting to be synchronized in the outbox.",
