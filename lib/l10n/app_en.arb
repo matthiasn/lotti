@@ -452,5 +452,72 @@
   "viewMenuEnableBrightTheme": "Enable Bright Theme",
   "viewMenuHideThemeConfig": "Hide Theme Config",
   "viewMenuShowThemeConfig": "Show Theme Config",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+
+  "aiConfigListEmptyState": "No configurations found. Add one to get started.",
+  "aiConfigListErrorLoading": "Error loading configurations: {error}",
+  "@aiConfigListErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListDeleteConfirmTitle": "Confirm Deletion",
+  "aiConfigListDeleteConfirmMessage": "Are you sure you want to delete \"{configName}\"?",
+  "@aiConfigListDeleteConfirmMessage": {
+    "placeholders": {
+      "configName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListDeleteConfirmCancel": "CANCEL",
+  "aiConfigListDeleteConfirmDelete": "DELETE",
+  "aiConfigListItemDeleted": "{configName} deleted",
+  "@aiConfigListItemDeleted": {
+    "placeholders": {
+      "configName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListUndoDelete": "UNDO",
+  "aiConfigListErrorDeleting": "Error deleting {configName}: {error}",
+  "@aiConfigListErrorDeleting": {
+    "placeholders": {
+      "configName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListPromptTemplateSubtitle": "Template: {templatePreview}...",
+  "@aiConfigListPromptTemplateSubtitle": {
+    "placeholders": {
+      "templatePreview": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "apiKeyEditPageTitle": "Edit API Key",
+  "apiKeyAddPageTitle": "Add API Key",
+  "apiKeyEditLoadError": "Failed to load API key configuration",
+  
+  "apiKeyFormNameLabel": "Name",
+  "apiKeyFormNameError": "Name must be at least 3 characters",
+  "apiKeyFormBaseUrlLabel": "Base URL",
+  "apiKeyFormBaseUrlError": "Please enter a valid URL",
+  "apiKeyFormApiKeyLabel": "API Key",
+  "apiKeyFormApiKeyError": "API key cannot be empty",
+  "apiKeyFormCommentLabel": "Comment (Optional)",
+  "apiKeyFormShowApiKey": "Show API Key",
+  "apiKeyFormSaveError": "Failed to save API key configuration",
+  "apiKeyFormCreateButton": "Create",
+  "apiKeyFormUpdateButton": "Update",
+  
+  "apiKeysSettingsPageTitle": "API Keys"
 }

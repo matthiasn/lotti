@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/api_key_form.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Edit page for API keys
@@ -26,14 +27,16 @@ class ApiKeyEditPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          configId == null ? 'Add API Key' : 'Edit API Key',
+          configId == null
+              ? context.messages.apiKeyAddPageTitle
+              : context.messages.apiKeyEditPageTitle,
         ),
       ),
       body: switch (configAsync) {
         AsyncData(value: final config) => _buildForm(context, ref, config),
         AsyncError() => Center(
             child: Text(
-              'Failed to load API key configuration',
+              context.messages.apiKeyEditLoadError,
               style: context.textTheme.bodyLarge?.copyWith(
                 color: context.colorScheme.error,
               ),

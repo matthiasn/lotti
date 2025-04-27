@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// A page that displays a list of AI configurations of a specific type.
 /// Used in settings to manage configurations like API keys, etc.
@@ -32,7 +33,7 @@ class AiConfigListPage extends ConsumerWidget {
           if (configs.isEmpty) {
             return Center(
               child: Text(
-                'No configurations found. Add one to get started.',
+                context.messages.aiConfigListEmptyState,
                 style: Theme.of(context).textTheme.bodyLarge,
                 textAlign: TextAlign.center,
               ),
@@ -49,7 +50,8 @@ class AiConfigListPage extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error loading configurations: $error'),
+          child:
+              Text(context.messages.aiConfigListErrorLoading(error.toString())),
         ),
       ),
       floatingActionButton: onAddPressed != null
@@ -95,16 +97,18 @@ class AiConfigListPage extends ConsumerWidget {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Confirm Deletion'),
-            content: Text('Are you sure you want to delete "${config.name}"?'),
+            title: Text(context.messages.aiConfigListDeleteConfirmTitle),
+            content: Text(
+              context.messages.aiConfigListDeleteConfirmMessage(config.name),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('CANCEL'),
+                child: Text(context.messages.aiConfigListDeleteConfirmCancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('DELETE'),
+                child: Text(context.messages.aiConfigListDeleteConfirmDelete),
               ),
             ],
           ),
@@ -119,13 +123,14 @@ class AiConfigListPage extends ConsumerWidget {
 
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final errorColor = Theme.of(context).colorScheme.error;
+    final messages = context.messages;
 
     controller.deleteConfig(config.id).then((_) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('${config.name} deleted'),
+          content: Text(messages.aiConfigListItemDeleted(config.name)),
           action: SnackBarAction(
-            label: 'UNDO',
+            label: messages.aiConfigListUndoDelete,
             onPressed: () {
               controller.addConfig(config);
             },
@@ -135,7 +140,9 @@ class AiConfigListPage extends ConsumerWidget {
     }).catchError((dynamic error) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Error deleting ${config.name}: $error'),
+          content: Text(
+            messages.aiConfigListErrorDeleting(config.name, error.toString()),
+          ),
           backgroundColor: errorColor,
         ),
       );
@@ -145,17 +152,22 @@ class AiConfigListPage extends ConsumerWidget {
   Widget _buildConfigListTile(BuildContext context, AiConfig config) {
     return ListTile(
       title: Text(config.name),
-      subtitle: Text(_getConfigSubtitle(config)),
+      subtitle: Text(_getConfigSubtitle(context, config)),
       trailing: const Icon(Icons.chevron_right),
       onTap: onItemTap != null ? () => onItemTap!(config) : null,
     );
   }
 
-  String _getConfigSubtitle(AiConfig config) {
+  String _getConfigSubtitle(BuildContext context, AiConfig config) {
     return config.map(
       apiKey: (apiKey) => apiKey.baseUrl,
-      promptTemplate: (promptTemplate) =>
-          'Template: ${promptTemplate.template.substring(0, promptTemplate.template.length > 50 ? 50 : promptTemplate.template.length)}...',
+      promptTemplate: (promptTemplate) {
+        final previewLength = promptTemplate.template.length > 50
+            ? 50
+            : promptTemplate.template.length;
+        final preview = promptTemplate.template.substring(0, previewLength);
+        return context.messages.aiConfigListPromptTemplateSubtitle(preview);
+      },
     );
   }
 }
