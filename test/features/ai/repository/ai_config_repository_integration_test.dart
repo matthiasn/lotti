@@ -23,6 +23,7 @@ void main() {
           apiKey: 'fallback-key',
           name: 'Fallback API',
           createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
         ),
         status: SyncEntryStatus.initial,
       ),
@@ -72,6 +73,7 @@ void main() {
         name: 'OpenAI API Key',
         createdAt: DateTime.now(),
         comment: 'Test API key for OpenAI integration',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Create prompt template config

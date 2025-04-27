@@ -13,6 +13,8 @@ _$AiConfigApiKeyImpl _$$AiConfigApiKeyImplFromJson(Map<String, dynamic> json) =>
       apiKey: json['apiKey'] as String,
       name: json['name'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      inferenceProviderType: $enumDecode(
+          _$InferenceProviderTypeEnumMap, json['inferenceProviderType']),
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),
@@ -28,10 +30,19 @@ Map<String, dynamic> _$$AiConfigApiKeyImplToJson(
       'apiKey': instance.apiKey,
       'name': instance.name,
       'createdAt': instance.createdAt.toIso8601String(),
+      'inferenceProviderType':
+          _$InferenceProviderTypeEnumMap[instance.inferenceProviderType]!,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'comment': instance.comment,
       'runtimeType': instance.$type,
     };
+
+const _$InferenceProviderTypeEnumMap = {
+  InferenceProviderType.anthropic: 'anthropic',
+  InferenceProviderType.gemini: 'gemini',
+  InferenceProviderType.genericOpenAi: 'genericOpenAi',
+  InferenceProviderType.openAi: 'openAi',
+};
 
 _$AiConfigPromptTemplateImpl _$$AiConfigPromptTemplateImplFromJson(
         Map<String, dynamic> json) =>

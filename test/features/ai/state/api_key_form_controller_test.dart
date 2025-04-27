@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -18,6 +17,7 @@ void main() {
     apiKey: 'test-api-key',
     name: 'Test API',
     createdAt: DateTime.now(),
+    inferenceProviderType: InferenceProviderType.genericOpenAi,
   );
 
   setUpAll(() {
@@ -53,7 +53,9 @@ void main() {
       expect(controller.nameController.text, equals('Test API'));
       expect(controller.apiKeyController.text, equals('test-api-key'));
       expect(
-          controller.baseUrlController.text, equals('https://api.example.com'));
+        controller.baseUrlController.text,
+        equals('https://api.example.com'),
+      );
       verify(() => mockRepository.getConfigById('test-id')).called(1);
     });
 
@@ -105,6 +107,7 @@ void main() {
         apiKey: 'updated-key',
         name: 'Updated API',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Act

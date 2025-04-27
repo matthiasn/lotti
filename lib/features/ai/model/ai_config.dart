@@ -4,8 +4,10 @@ part 'ai_config.freezed.dart';
 part 'ai_config.g.dart';
 
 enum InferenceProviderType {
-  genericOpenAi,
+  anthropic,
   gemini,
+  genericOpenAi,
+  openAi,
 }
 
 @freezed
@@ -16,6 +18,7 @@ class AiConfig with _$AiConfig {
     required String apiKey,
     required String name,
     required DateTime createdAt,
+    required InferenceProviderType inferenceProviderType,
     DateTime? updatedAt,
     String? comment,
   }) = AiConfigApiKey;

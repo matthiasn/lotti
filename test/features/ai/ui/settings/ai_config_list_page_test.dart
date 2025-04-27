@@ -51,6 +51,7 @@ void main() {
         baseUrl: 'https://fallback.example.com',
         apiKey: 'fallback-key',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
     );
   });
@@ -68,6 +69,7 @@ void main() {
         baseUrl: 'https://api1.example.com',
         apiKey: 'test-api-key-1',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
       AiConfig.apiKey(
         id: 'test-id-2',
@@ -75,6 +77,7 @@ void main() {
         baseUrl: 'https://api2.example.com',
         apiKey: 'test-api-key-2',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
       AiConfig.promptTemplate(
         id: 'template-id-1',

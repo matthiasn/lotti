@@ -28,6 +28,7 @@ void main() {
         baseUrl: 'https://fallback.example.com',
         apiKey: 'fallback-key',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
     );
   });
@@ -42,6 +43,7 @@ void main() {
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',
       createdAt: DateTime.now(),
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 
     // Set up the repository responses

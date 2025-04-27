@@ -109,6 +109,7 @@ class ApiKeyFormState with FormzMixin {
       baseUrl: baseUrl.value,
       comment: comment.value,
       createdAt: DateTime.now(),
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
   }
 }

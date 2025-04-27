@@ -41,6 +41,7 @@ mixin _$AiConfig {
             String apiKey,
             String name,
             DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
             String? comment)
         apiKey,
@@ -58,8 +59,15 @@ mixin _$AiConfig {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, String baseUrl, String apiKey, String name,
-            DateTime createdAt, DateTime? updatedAt, String? comment)?
+    TResult? Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? comment)?
         apiKey,
     TResult? Function(
             String id,
@@ -75,8 +83,15 @@ mixin _$AiConfig {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, String baseUrl, String apiKey, String name,
-            DateTime createdAt, DateTime? updatedAt, String? comment)?
+    TResult Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? comment)?
         apiKey,
     TResult Function(
             String id,
@@ -184,6 +199,7 @@ abstract class _$$AiConfigApiKeyImplCopyWith<$Res>
       String apiKey,
       String name,
       DateTime createdAt,
+      InferenceProviderType inferenceProviderType,
       DateTime? updatedAt,
       String? comment});
 }
@@ -206,6 +222,7 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
     Object? apiKey = null,
     Object? name = null,
     Object? createdAt = null,
+    Object? inferenceProviderType = null,
     Object? updatedAt = freezed,
     Object? comment = freezed,
   }) {
@@ -230,6 +247,10 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      inferenceProviderType: null == inferenceProviderType
+          ? _value.inferenceProviderType
+          : inferenceProviderType // ignore: cast_nullable_to_non_nullable
+              as InferenceProviderType,
       updatedAt: freezed == updatedAt
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -251,6 +272,7 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
       required this.apiKey,
       required this.name,
       required this.createdAt,
+      required this.inferenceProviderType,
       this.updatedAt,
       this.comment,
       final String? $type})
@@ -270,6 +292,8 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
   @override
   final DateTime createdAt;
   @override
+  final InferenceProviderType inferenceProviderType;
+  @override
   final DateTime? updatedAt;
   @override
   final String? comment;
@@ -279,7 +303,7 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
 
   @override
   String toString() {
-    return 'AiConfig.apiKey(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, comment: $comment)';
+    return 'AiConfig.apiKey(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, comment: $comment)';
   }
 
   @override
@@ -293,6 +317,8 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.inferenceProviderType, inferenceProviderType) ||
+                other.inferenceProviderType == inferenceProviderType) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.comment, comment) || other.comment == comment));
@@ -300,8 +326,8 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, baseUrl, apiKey, name, createdAt, updatedAt, comment);
+  int get hashCode => Object.hash(runtimeType, id, baseUrl, apiKey, name,
+      createdAt, inferenceProviderType, updatedAt, comment);
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -321,6 +347,7 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             String apiKey,
             String name,
             DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
             String? comment)
         apiKey,
@@ -335,15 +362,22 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             String? category)
         promptTemplate,
   }) {
-    return apiKey(
-        id, baseUrl, this.apiKey, name, createdAt, updatedAt, comment);
+    return apiKey(id, baseUrl, this.apiKey, name, createdAt,
+        inferenceProviderType, updatedAt, comment);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, String baseUrl, String apiKey, String name,
-            DateTime createdAt, DateTime? updatedAt, String? comment)?
+    TResult? Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? comment)?
         apiKey,
     TResult? Function(
             String id,
@@ -356,15 +390,22 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             String? category)?
         promptTemplate,
   }) {
-    return apiKey?.call(
-        id, baseUrl, this.apiKey, name, createdAt, updatedAt, comment);
+    return apiKey?.call(id, baseUrl, this.apiKey, name, createdAt,
+        inferenceProviderType, updatedAt, comment);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, String baseUrl, String apiKey, String name,
-            DateTime createdAt, DateTime? updatedAt, String? comment)?
+    TResult Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? comment)?
         apiKey,
     TResult Function(
             String id,
@@ -379,8 +420,8 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
     required TResult orElse(),
   }) {
     if (apiKey != null) {
-      return apiKey(
-          id, baseUrl, this.apiKey, name, createdAt, updatedAt, comment);
+      return apiKey(id, baseUrl, this.apiKey, name, createdAt,
+          inferenceProviderType, updatedAt, comment);
     }
     return orElse();
   }
@@ -431,6 +472,7 @@ abstract class AiConfigApiKey implements AiConfig {
       required final String apiKey,
       required final String name,
       required final DateTime createdAt,
+      required final InferenceProviderType inferenceProviderType,
       final DateTime? updatedAt,
       final String? comment}) = _$AiConfigApiKeyImpl;
 
@@ -445,6 +487,7 @@ abstract class AiConfigApiKey implements AiConfig {
   String get name;
   @override
   DateTime get createdAt;
+  InferenceProviderType get inferenceProviderType;
   @override
   DateTime? get updatedAt;
   String? get comment;
@@ -641,6 +684,7 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
             String apiKey,
             String name,
             DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
             String? comment)
         apiKey,
@@ -662,8 +706,15 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, String baseUrl, String apiKey, String name,
-            DateTime createdAt, DateTime? updatedAt, String? comment)?
+    TResult? Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? comment)?
         apiKey,
     TResult? Function(
             String id,
@@ -683,8 +734,15 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, String baseUrl, String apiKey, String name,
-            DateTime createdAt, DateTime? updatedAt, String? comment)?
+    TResult Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? comment)?
         apiKey,
     TResult Function(
             String id,

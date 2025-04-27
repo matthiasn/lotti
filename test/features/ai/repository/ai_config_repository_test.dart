@@ -24,6 +24,7 @@ void main() {
         apiKey: 'fallback-key',
         name: 'Fallback API',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
     );
 
@@ -36,6 +37,7 @@ void main() {
           apiKey: 'fallback-key',
           name: 'Fallback API',
           createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
         ),
         status: SyncEntryStatus.initial,
       ),
@@ -88,6 +90,7 @@ void main() {
         apiKey: 'test-api-key',
         name: 'Test API',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Act
@@ -119,6 +122,7 @@ void main() {
         apiKey: 'test-api-key',
         name: 'Test API',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
       when(() => mockDb.getConfigById(id)).thenAnswer((_) async => config);
 
@@ -192,6 +196,7 @@ void main() {
         apiKey: 'test-api-key',
         name: 'Test API',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Act
@@ -221,6 +226,7 @@ void main() {
         apiKey: 'test-api-key',
         name: 'Test API',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
       await repository.saveConfig(config);
 
@@ -240,6 +246,7 @@ void main() {
         apiKey: 'test-api-key',
         name: 'API Config',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Save the config
@@ -260,6 +267,7 @@ void main() {
         apiKey: 'test-api-key',
         name: 'API Config',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Save the config
@@ -284,6 +292,7 @@ void main() {
         apiKey: 'test-api-key-1',
         name: 'API Config 1',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       final apiConfig2 = AiConfig.apiKey(
@@ -292,6 +301,7 @@ void main() {
         apiKey: 'test-api-key-2',
         name: 'API Config 2',
         createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Save the configs

@@ -22,6 +22,7 @@ void main() {
       apiKey: 'fallback-key',
       name: 'Fallback API',
       createdAt: DateTime.now(),
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 
     // Register fallback values for the types we'll be using with matchers
@@ -55,6 +56,7 @@ void main() {
       apiKey: 'test-api-key',
       name: 'Test API',
       createdAt: DateTime.now(),
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 
     setUp(() {
@@ -105,6 +107,7 @@ void main() {
       apiKey: 'test-api-key',
       name: 'Test API',
       createdAt: DateTime.now(),
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 
     setUp(() {
