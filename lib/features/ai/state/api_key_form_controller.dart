@@ -89,6 +89,10 @@ class ApiKeyFormController extends _$ApiKeyFormController {
   }
 
   void inferenceProviderTypeChanged(InferenceProviderType value) {
+    if (value == InferenceProviderType.gemini) {
+      baseUrlController.text =
+          'https://generativelanguage.googleapis.com/v1beta/openai';
+    }
     _setAllFields(inferenceProviderType: value);
   }
 

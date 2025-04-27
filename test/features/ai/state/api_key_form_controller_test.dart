@@ -240,5 +240,49 @@ void main() {
         equals(InferenceProviderType.anthropic),
       );
     });
+
+    test('should set baseUrl when Gemini provider type is selected', () async {
+      // Arrange
+      final controller =
+          container.read(apiKeyFormControllerProvider(configId: null).notifier);
+      await container.read(apiKeyFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
+      final formState = container
+          .read(apiKeyFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('https://generativelanguage.googleapis.com/v1beta/openai'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('https://generativelanguage.googleapis.com/v1beta/openai'),
+      );
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.gemini),
+      );
+    });
+
+    test('updates baseUrl when inferenceProviderType changes to gemini',
+        () async {
+      // Initially base URL is empty
+      final controller =
+          container.read(apiKeyFormControllerProvider(configId: null).notifier);
+      expect(controller.baseUrlController.text, isEmpty);
+
+      // Change inference provider type to Gemini
+      controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
+
+      // Verify base URL is updated
+      expect(
+        controller.baseUrlController.text,
+        'https://generativelanguage.googleapis.com/v1beta/openai',
+      );
+    });
   });
 }
