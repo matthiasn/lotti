@@ -91,3 +91,17 @@ Map<String, dynamic> _$$SyncAiConfigImplToJson(_$SyncAiConfigImpl instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
+
+_$SyncAiConfigDeleteImpl _$$SyncAiConfigDeleteImplFromJson(
+        Map<String, dynamic> json) =>
+    _$SyncAiConfigDeleteImpl(
+      id: json['id'] as String,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$SyncAiConfigDeleteImplToJson(
+        _$SyncAiConfigDeleteImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'runtimeType': instance.$type,
+    };

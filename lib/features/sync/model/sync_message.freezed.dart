@@ -26,6 +26,8 @@ SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
       return SyncEntryLink.fromJson(json);
     case 'aiConfig':
       return SyncAiConfig.fromJson(json);
+    case 'aiConfigDelete':
+      return SyncAiConfigDelete.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'SyncMessage',
@@ -35,7 +37,6 @@ SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SyncMessage {
-  SyncEntryStatus get status => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(String id, String jsonPath,
@@ -50,6 +51,7 @@ mixin _$SyncMessage {
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
+    required TResult Function(String id) aiConfigDelete,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -63,6 +65,7 @@ mixin _$SyncMessage {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -75,6 +78,7 @@ mixin _$SyncMessage {
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -85,6 +89,7 @@ mixin _$SyncMessage {
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -94,6 +99,7 @@ mixin _$SyncMessage {
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -103,18 +109,13 @@ mixin _$SyncMessage {
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
 
   /// Serializes this SyncMessage to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $SyncMessageCopyWith<SyncMessage> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -122,8 +123,6 @@ abstract class $SyncMessageCopyWith<$Res> {
   factory $SyncMessageCopyWith(
           SyncMessage value, $Res Function(SyncMessage) then) =
       _$SyncMessageCopyWithImpl<$Res, SyncMessage>;
-  @useResult
-  $Res call({SyncEntryStatus status});
 }
 
 /// @nodoc
@@ -138,27 +137,13 @@ class _$SyncMessageCopyWithImpl<$Res, $Val extends SyncMessage>
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? status = null,
-  }) {
-    return _then(_value.copyWith(
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-    ) as $Val);
-  }
 }
 
 /// @nodoc
-abstract class _$$SyncJournalEntityImplCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
+abstract class _$$SyncJournalEntityImplCopyWith<$Res> {
   factory _$$SyncJournalEntityImplCopyWith(_$SyncJournalEntityImpl value,
           $Res Function(_$SyncJournalEntityImpl) then) =
       __$$SyncJournalEntityImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call(
       {String id,
@@ -279,6 +264,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
+    required TResult Function(String id) aiConfigDelete,
   }) {
     return journalEntity(id, jsonPath, vectorClock, status);
   }
@@ -295,6 +281,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
   }) {
     return journalEntity?.call(id, jsonPath, vectorClock, status);
   }
@@ -310,6 +297,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (journalEntity != null) {
@@ -326,6 +314,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
   }) {
     return journalEntity(this);
   }
@@ -338,6 +327,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
   }) {
     return journalEntity?.call(this);
   }
@@ -350,6 +340,7 @@ class _$SyncJournalEntityImpl implements SyncJournalEntity {
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (journalEntity != null) {
@@ -379,24 +370,20 @@ abstract class SyncJournalEntity implements SyncMessage {
   String get id;
   String get jsonPath;
   VectorClock? get vectorClock;
-  @override
   SyncEntryStatus get status;
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncJournalEntityImplCopyWith<_$SyncJournalEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncEntityDefinitionImplCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
+abstract class _$$SyncEntityDefinitionImplCopyWith<$Res> {
   factory _$$SyncEntityDefinitionImplCopyWith(_$SyncEntityDefinitionImpl value,
           $Res Function(_$SyncEntityDefinitionImpl) then) =
       __$$SyncEntityDefinitionImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call({EntityDefinition entityDefinition, SyncEntryStatus status});
 
@@ -506,6 +493,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
+    required TResult Function(String id) aiConfigDelete,
   }) {
     return entityDefinition(this.entityDefinition, status);
   }
@@ -522,6 +510,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
   }) {
     return entityDefinition?.call(this.entityDefinition, status);
   }
@@ -537,6 +526,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (entityDefinition != null) {
@@ -553,6 +543,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
   }) {
     return entityDefinition(this);
   }
@@ -565,6 +556,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
   }) {
     return entityDefinition?.call(this);
   }
@@ -577,6 +569,7 @@ class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (entityDefinition != null) {
@@ -602,24 +595,20 @@ abstract class SyncEntityDefinition implements SyncMessage {
       _$SyncEntityDefinitionImpl.fromJson;
 
   EntityDefinition get entityDefinition;
-  @override
   SyncEntryStatus get status;
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncEntityDefinitionImplCopyWith<_$SyncEntityDefinitionImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncTagEntityImplCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
+abstract class _$$SyncTagEntityImplCopyWith<$Res> {
   factory _$$SyncTagEntityImplCopyWith(
           _$SyncTagEntityImpl value, $Res Function(_$SyncTagEntityImpl) then) =
       __$$SyncTagEntityImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call({TagEntity tagEntity, SyncEntryStatus status});
 
@@ -725,6 +714,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
+    required TResult Function(String id) aiConfigDelete,
   }) {
     return tagEntity(this.tagEntity, status);
   }
@@ -741,6 +731,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
   }) {
     return tagEntity?.call(this.tagEntity, status);
   }
@@ -756,6 +747,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (tagEntity != null) {
@@ -772,6 +764,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
   }) {
     return tagEntity(this);
   }
@@ -784,6 +777,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
   }) {
     return tagEntity?.call(this);
   }
@@ -796,6 +790,7 @@ class _$SyncTagEntityImpl implements SyncTagEntity {
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (tagEntity != null) {
@@ -821,24 +816,20 @@ abstract class SyncTagEntity implements SyncMessage {
       _$SyncTagEntityImpl.fromJson;
 
   TagEntity get tagEntity;
-  @override
   SyncEntryStatus get status;
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncTagEntityImplCopyWith<_$SyncTagEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncEntryLinkImplCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
+abstract class _$$SyncEntryLinkImplCopyWith<$Res> {
   factory _$$SyncEntryLinkImplCopyWith(
           _$SyncEntryLinkImpl value, $Res Function(_$SyncEntryLinkImpl) then) =
       __$$SyncEntryLinkImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call({EntryLink entryLink, SyncEntryStatus status});
 
@@ -944,6 +935,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
+    required TResult Function(String id) aiConfigDelete,
   }) {
     return entryLink(this.entryLink, status);
   }
@@ -960,6 +952,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
   }) {
     return entryLink?.call(this.entryLink, status);
   }
@@ -975,6 +968,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (entryLink != null) {
@@ -991,6 +985,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
   }) {
     return entryLink(this);
   }
@@ -1003,6 +998,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
   }) {
     return entryLink?.call(this);
   }
@@ -1015,6 +1011,7 @@ class _$SyncEntryLinkImpl implements SyncEntryLink {
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (entryLink != null) {
@@ -1040,24 +1037,20 @@ abstract class SyncEntryLink implements SyncMessage {
       _$SyncEntryLinkImpl.fromJson;
 
   EntryLink get entryLink;
-  @override
   SyncEntryStatus get status;
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncEntryLinkImplCopyWith<_$SyncEntryLinkImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncAiConfigImplCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
+abstract class _$$SyncAiConfigImplCopyWith<$Res> {
   factory _$$SyncAiConfigImplCopyWith(
           _$SyncAiConfigImpl value, $Res Function(_$SyncAiConfigImpl) then) =
       __$$SyncAiConfigImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call({AiConfig aiConfig, SyncEntryStatus status});
 
@@ -1163,6 +1156,7 @@ class _$SyncAiConfigImpl implements SyncAiConfig {
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
+    required TResult Function(String id) aiConfigDelete,
   }) {
     return aiConfig(this.aiConfig, status);
   }
@@ -1179,6 +1173,7 @@ class _$SyncAiConfigImpl implements SyncAiConfig {
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
   }) {
     return aiConfig?.call(this.aiConfig, status);
   }
@@ -1194,6 +1189,7 @@ class _$SyncAiConfigImpl implements SyncAiConfig {
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (aiConfig != null) {
@@ -1210,6 +1206,7 @@ class _$SyncAiConfigImpl implements SyncAiConfig {
     required TResult Function(SyncTagEntity value) tagEntity,
     required TResult Function(SyncEntryLink value) entryLink,
     required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
   }) {
     return aiConfig(this);
   }
@@ -1222,6 +1219,7 @@ class _$SyncAiConfigImpl implements SyncAiConfig {
     TResult? Function(SyncTagEntity value)? tagEntity,
     TResult? Function(SyncEntryLink value)? entryLink,
     TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
   }) {
     return aiConfig?.call(this);
   }
@@ -1234,6 +1232,7 @@ class _$SyncAiConfigImpl implements SyncAiConfig {
     TResult Function(SyncTagEntity value)? tagEntity,
     TResult Function(SyncEntryLink value)? entryLink,
     TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     required TResult orElse(),
   }) {
     if (aiConfig != null) {
@@ -1259,13 +1258,209 @@ abstract class SyncAiConfig implements SyncMessage {
       _$SyncAiConfigImpl.fromJson;
 
   AiConfig get aiConfig;
-  @override
   SyncEntryStatus get status;
 
   /// Create a copy of SyncMessage
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SyncAiConfigImplCopyWith<_$SyncAiConfigImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$SyncAiConfigDeleteImplCopyWith<$Res> {
+  factory _$$SyncAiConfigDeleteImplCopyWith(_$SyncAiConfigDeleteImpl value,
+          $Res Function(_$SyncAiConfigDeleteImpl) then) =
+      __$$SyncAiConfigDeleteImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String id});
+}
+
+/// @nodoc
+class __$$SyncAiConfigDeleteImplCopyWithImpl<$Res>
+    extends _$SyncMessageCopyWithImpl<$Res, _$SyncAiConfigDeleteImpl>
+    implements _$$SyncAiConfigDeleteImplCopyWith<$Res> {
+  __$$SyncAiConfigDeleteImplCopyWithImpl(_$SyncAiConfigDeleteImpl _value,
+      $Res Function(_$SyncAiConfigDeleteImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+  }) {
+    return _then(_$SyncAiConfigDeleteImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SyncAiConfigDeleteImpl implements SyncAiConfigDelete {
+  const _$SyncAiConfigDeleteImpl({required this.id, final String? $type})
+      : $type = $type ?? 'aiConfigDelete';
+
+  factory _$SyncAiConfigDeleteImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncAiConfigDeleteImplFromJson(json);
+
+  @override
+  final String id;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'SyncMessage.aiConfigDelete(id: $id)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SyncAiConfigDeleteImpl &&
+            (identical(other.id, id) || other.id == id));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id);
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SyncAiConfigDeleteImplCopyWith<_$SyncAiConfigDeleteImpl> get copyWith =>
+      __$$SyncAiConfigDeleteImplCopyWithImpl<_$SyncAiConfigDeleteImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String id, String jsonPath,
+            VectorClock? vectorClock, SyncEntryStatus status)
+        journalEntity,
+    required TResult Function(
+            EntityDefinition entityDefinition, SyncEntryStatus status)
+        entityDefinition,
+    required TResult Function(TagEntity tagEntity, SyncEntryStatus status)
+        tagEntity,
+    required TResult Function(EntryLink entryLink, SyncEntryStatus status)
+        entryLink,
+    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
+        aiConfig,
+    required TResult Function(String id) aiConfigDelete,
+  }) {
+    return aiConfigDelete(id);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
+        journalEntity,
+    TResult? Function(
+            EntityDefinition entityDefinition, SyncEntryStatus status)?
+        entityDefinition,
+    TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
+    TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult? Function(String id)? aiConfigDelete,
+  }) {
+    return aiConfigDelete?.call(id);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
+            SyncEntryStatus status)?
+        journalEntity,
+    TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
+        entityDefinition,
+    TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
+    TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
+    TResult Function(String id)? aiConfigDelete,
+    required TResult orElse(),
+  }) {
+    if (aiConfigDelete != null) {
+      return aiConfigDelete(id);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(SyncJournalEntity value) journalEntity,
+    required TResult Function(SyncEntityDefinition value) entityDefinition,
+    required TResult Function(SyncTagEntity value) tagEntity,
+    required TResult Function(SyncEntryLink value) entryLink,
+    required TResult Function(SyncAiConfig value) aiConfig,
+    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
+  }) {
+    return aiConfigDelete(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(SyncJournalEntity value)? journalEntity,
+    TResult? Function(SyncEntityDefinition value)? entityDefinition,
+    TResult? Function(SyncTagEntity value)? tagEntity,
+    TResult? Function(SyncEntryLink value)? entryLink,
+    TResult? Function(SyncAiConfig value)? aiConfig,
+    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
+  }) {
+    return aiConfigDelete?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(SyncJournalEntity value)? journalEntity,
+    TResult Function(SyncEntityDefinition value)? entityDefinition,
+    TResult Function(SyncTagEntity value)? tagEntity,
+    TResult Function(SyncEntryLink value)? entryLink,
+    TResult Function(SyncAiConfig value)? aiConfig,
+    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
+    required TResult orElse(),
+  }) {
+    if (aiConfigDelete != null) {
+      return aiConfigDelete(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SyncAiConfigDeleteImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class SyncAiConfigDelete implements SyncMessage {
+  const factory SyncAiConfigDelete({required final String id}) =
+      _$SyncAiConfigDeleteImpl;
+
+  factory SyncAiConfigDelete.fromJson(Map<String, dynamic> json) =
+      _$SyncAiConfigDeleteImpl.fromJson;
+
+  String get id;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SyncAiConfigDeleteImplCopyWith<_$SyncAiConfigDeleteImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -84,6 +84,9 @@ Future<void> processMatrixMessage({
       ) {
         getIt<AiConfigRepository>().saveConfig(aiConfig);
       },
+      aiConfigDelete: (String id) {
+        getIt<AiConfigRepository>().deleteConfig(id);
+      },
     );
   } catch (e, stackTrace) {
     getIt<LoggingService>().captureException(

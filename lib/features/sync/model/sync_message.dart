@@ -39,6 +39,10 @@ class SyncMessage with _$SyncMessage {
     required SyncEntryStatus status,
   }) = SyncAiConfig;
 
+  const factory SyncMessage.aiConfigDelete({
+    required String id,
+  }) = SyncAiConfigDelete;
+
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);
 }

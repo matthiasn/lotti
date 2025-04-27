@@ -23,7 +23,6 @@ class AiConfigRepository {
   /// Save or update an AI configuration
   Future<void> saveConfig(AiConfig config) async {
     await _db.saveConfig(config);
-
     await getIt<OutboxService>().enqueueMessage(
       SyncMessage.aiConfig(
         aiConfig: config,
@@ -35,6 +34,9 @@ class AiConfigRepository {
   /// Delete an AI configuration by its ID
   Future<void> deleteConfig(String id) async {
     await _db.deleteConfig(id);
+    await getIt<OutboxService>().enqueueMessage(
+      SyncMessage.aiConfigDelete(id: id),
+    );
   }
 
   /// Get an AI configuration by its ID
