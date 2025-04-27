@@ -3,6 +3,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'ai_config.freezed.dart';
 part 'ai_config.g.dart';
 
+enum InferenceProviderType {
+  genericOpenAi,
+  gemini,
+}
+
 @freezed
 class AiConfig with _$AiConfig {
   const factory AiConfig.apiKey({
@@ -12,7 +17,6 @@ class AiConfig with _$AiConfig {
     required String name,
     required DateTime createdAt,
     DateTime? updatedAt,
-    bool? supportsThinkingOutput,
     String? comment,
   }) = _AiConfigApiKey;
 

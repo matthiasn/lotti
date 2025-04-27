@@ -43,7 +43,7 @@ class AiConfigListPage extends ConsumerWidget {
             itemCount: configs.length,
             itemBuilder: (context, index) {
               final config = configs[index];
-              return _buildConfigListTile(context, config);
+              return _buildDismissibleConfig(context, config, ref);
             },
           );
         },
@@ -59,6 +59,87 @@ class AiConfigListPage extends ConsumerWidget {
             )
           : null,
     );
+  }
+
+  Widget _buildDismissibleConfig(
+    BuildContext context,
+    AiConfig config,
+    WidgetRef ref,
+  ) {
+    return Dismissible(
+      key: Key(config.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        return _showDeleteConfirmationDialog(context, config);
+      },
+      onDismissed: (direction) {
+        _deleteConfig(config, ref, context);
+      },
+      child: _buildConfigListTile(context, config),
+    );
+  }
+
+  Future<bool> _showDeleteConfirmationDialog(
+    BuildContext context,
+    AiConfig config,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Deletion'),
+            content: Text('Are you sure you want to delete "${config.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('CANCEL'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('DELETE'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  void _deleteConfig(AiConfig config, WidgetRef ref, BuildContext context) {
+    final controller = ref.read(
+      aiConfigByTypeControllerProvider(configType: configType).notifier,
+    );
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    controller.deleteConfig(config.id).then((_) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('${config.name} deleted'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () {
+              controller.addConfig(config);
+            },
+          ),
+        ),
+      );
+    }).catchError((dynamic error) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error deleting ${config.name}: $error'),
+          backgroundColor: errorColor,
+        ),
+      );
+    });
   }
 
   Widget _buildConfigListTile(BuildContext context, AiConfig config) {

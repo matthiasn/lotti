@@ -71,7 +71,7 @@ void main() {
         apiKey: 'sk-1234567890abcdef',
         name: 'OpenAI API Key',
         createdAt: DateTime.now(),
-        supportsThinkingOutput: true,
+        comment: 'Test API key for OpenAI integration',
       );
 
       // Create prompt template config
@@ -102,7 +102,7 @@ void main() {
           expect(config.id, equals('openai-key'));
           expect(config.baseUrl, equals('https://api.openai.com/v1'));
           expect(config.apiKey, equals('sk-1234567890abcdef'));
-          expect(config.supportsThinkingOutput, isTrue);
+          expect(config.comment, equals('Test API key for OpenAI integration'));
         },
         orElse: () => fail('Retrieved config is not an API key config'),
       );
@@ -127,19 +127,20 @@ void main() {
       await expectLater(
         repository.watchConfigsByType('apiKey'),
         emits(
-          predicate<List<AiConfig>>((configs) {
-            return configs.length == 1 && configs.first.id == 'openai-key';
-          }),
+          predicate<List<AiConfig>>(
+            (configs) =>
+                configs.length == 1 && configs.first.id == 'openai-key',
+          ),
         ),
       );
 
       await expectLater(
         repository.watchConfigsByType('promptTemplate'),
         emits(
-          predicate<List<AiConfig>>((configs) {
-            return configs.length == 1 &&
-                configs.first.id == 'summarize-prompt';
-          }),
+          predicate<List<AiConfig>>(
+            (configs) =>
+                configs.length == 1 && configs.first.id == 'summarize-prompt',
+          ),
         ),
       );
     });
