@@ -220,5 +220,25 @@ void main() {
       // Assert
       expect(formState?.comment.value, equals('New comment'));
     });
+
+    test('should update form state when inference provider type is changed',
+        () async {
+      // Arrange
+      final controller =
+          container.read(apiKeyFormControllerProvider(configId: null).notifier);
+      await container.read(apiKeyFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+      final formState = container
+          .read(apiKeyFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.anthropic),
+      );
+    });
   });
 }

@@ -515,5 +515,13 @@
   "viewMenuEnableBrightTheme": "Enable Bright Theme",
   "viewMenuHideThemeConfig": "Hide Theme Config",
   "viewMenuShowThemeConfig": "Show Theme Config",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "aiProviderAnthropicName": "Anthropic Claude",
+  "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
+  "aiProviderGeminiName": "Google Gemini",
+  "aiProviderGeminiDescription": "Google's Gemini AI models",
+  "aiProviderGenericOpenAiName": "OpenAI Compatible",
+  "aiProviderGenericOpenAiDescription": "API compatible with OpenAI format",
+  "aiProviderOpenAiName": "OpenAI",
+  "aiProviderOpenAiDescription": "OpenAI's GPT models"
 }

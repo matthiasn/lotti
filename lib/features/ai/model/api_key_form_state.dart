@@ -62,6 +62,7 @@ class ApiKeyFormState with FormzMixin {
     this.comment = const CommentValue.pure(),
     this.isSubmitting = false,
     this.submitFailed = false,
+    this.inferenceProviderType = InferenceProviderType.genericOpenAi,
   });
 
   final String? id; // null for new API keys
@@ -71,6 +72,7 @@ class ApiKeyFormState with FormzMixin {
   final CommentValue comment;
   final bool isSubmitting;
   final bool submitFailed;
+  final InferenceProviderType inferenceProviderType;
 
   ApiKeyFormState copyWith({
     String? id,
@@ -80,6 +82,7 @@ class ApiKeyFormState with FormzMixin {
     CommentValue? comment,
     bool? isSubmitting,
     bool? submitFailed,
+    InferenceProviderType? inferenceProviderType,
   }) {
     return ApiKeyFormState(
       id: id ?? this.id,
@@ -89,6 +92,8 @@ class ApiKeyFormState with FormzMixin {
       comment: comment ?? this.comment,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitFailed: submitFailed ?? this.submitFailed,
+      inferenceProviderType:
+          inferenceProviderType ?? this.inferenceProviderType,
     );
   }
 
@@ -109,7 +114,7 @@ class ApiKeyFormState with FormzMixin {
       baseUrl: baseUrl.value,
       comment: comment.value,
       createdAt: DateTime.now(),
-      inferenceProviderType: InferenceProviderType.genericOpenAi,
+      inferenceProviderType: inferenceProviderType,
     );
   }
 }

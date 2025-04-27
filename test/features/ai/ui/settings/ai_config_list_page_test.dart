@@ -287,5 +287,211 @@ void main() {
       // Assert
       expect(find.byIcon(Icons.add), findsNothing);
     });
+
+    group('Dismissible Tests', () {
+      testWidgets('should have dismissible items', (WidgetTester tester) async {
+        // Setup repository to return our test configs
+        when(() => mockRepository.watchConfigsByType('apiKey'))
+            .thenAnswer((_) => Stream.value(testConfigs));
+
+        // Arrange
+        await tester.pumpWidget(
+          buildTestWidget(
+            initialState: AsyncData(testConfigs),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Assert - verify each list item is wrapped in a Dismissible
+        expect(find.byType(Dismissible), findsNWidgets(testConfigs.length));
+      });
+
+      testWidgets('should show confirmation dialog when item is dismissed',
+          (WidgetTester tester) async {
+        // Mock API key controller for delete operations
+        final formController = MockFormController();
+        when(() => formController.deleteConfig(any())).thenAnswer((_) async {});
+
+        // Setup repository to return our test configs
+        when(() => mockRepository.watchConfigsByType('apiKey'))
+            .thenAnswer((_) => Stream.value(testConfigs));
+
+        // Override the controller provider
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          apiKeyFormControllerProvider(configId: 'test-id-1')
+              .overrideWith(() => formController),
+        ];
+
+        // Arrange
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: 'apiKey',
+                title: 'Test API Keys',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Verify the test data is rendered correctly
+        expect(find.byType(ListTile), findsNWidgets(testConfigs.length));
+        final item = find.byType(ListTile).first;
+        expect(item, findsOneWidget);
+
+        // Act - dismiss the first item by dragging right to left
+        await tester.drag(item, const Offset(-500, 0));
+        await tester.pump(); // Start the dismiss animation
+        await tester
+            .pump(const Duration(milliseconds: 500)); // Wait for animation
+
+        // Assert - check for dialog with correct title and message
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Confirm Deletion'), findsOneWidget);
+        expect(
+          find.textContaining('Are you sure you want to delete'),
+          findsOneWidget,
+        );
+        expect(find.text('CANCEL'), findsOneWidget);
+        expect(find.text('DELETE'), findsOneWidget);
+      });
+
+      testWidgets('should not delete item when dismissal is cancelled',
+          (WidgetTester tester) async {
+        // Mock the form controller
+        final formController = MockFormController();
+        when(() => formController.deleteConfig(any())).thenAnswer((_) async {});
+
+        // Setup repository to return our test configs
+        when(() => mockRepository.watchConfigsByType('apiKey'))
+            .thenAnswer((_) => Stream.value(testConfigs));
+
+        // Override providers
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          apiKeyFormControllerProvider(configId: 'test-id-1')
+              .overrideWith(() => formController),
+        ];
+
+        // Arrange
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: 'apiKey',
+                title: 'Test API Keys',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Verify the test data is rendered correctly
+        expect(find.byType(ListTile), findsNWidgets(testConfigs.length));
+
+        // Find the first ListTile
+        final firstItem = find.byType(ListTile).first;
+        expect(firstItem, findsOneWidget);
+
+        // Act - dismiss the first item
+        await tester.drag(firstItem, const Offset(-500, 0));
+        await tester.pump(); // Start the dismiss animation
+        await tester
+            .pump(const Duration(milliseconds: 500)); // Wait for animation
+
+        // Find and tap the CANCEL button in the dialog
+        await tester.tap(find.text('CANCEL'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Assert - verify deleteConfig was not called
+        verifyNever(() => formController.deleteConfig(any()));
+
+        // Item should still be in the list
+        expect(find.byType(ListTile), findsNWidgets(testConfigs.length));
+      });
+
+      testWidgets(
+          'should handle dismiss callbacks correctly when dismissing from left to right',
+          (WidgetTester tester) async {
+        // Mock the form controller
+        final formController = MockFormController();
+        when(() => formController.deleteConfig(any())).thenAnswer((_) async {});
+
+        // Setup repository to return our test configs
+        when(() => mockRepository.watchConfigsByType('apiKey'))
+            .thenAnswer((_) => Stream.value(testConfigs));
+
+        // Override providers
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          apiKeyFormControllerProvider(configId: 'test-id-1')
+              .overrideWith(() => formController),
+        ];
+
+        // Arrange
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: 'apiKey',
+                title: 'Test API Keys',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Verify the test data is rendered correctly
+        expect(find.byType(ListTile), findsNWidgets(testConfigs.length));
+
+        // Find the first ListTile
+        final firstItem = find.byType(ListTile).first;
+        expect(firstItem, findsOneWidget);
+
+        // The dismissible in AiConfigListPage is configured to only work from right to left
+        // So dragging from left to right should not trigger the dialog
+        await tester.drag(firstItem, const Offset(500, 0));
+        await tester.pump(); // Start the dismiss animation
+        await tester
+            .pump(const Duration(milliseconds: 500)); // Wait for animation
+
+        // Dialog shouldn't appear for left-to-right swipe due to direction setting
+        expect(find.byType(AlertDialog), findsNothing);
+      });
+    });
   });
 }

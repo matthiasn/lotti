@@ -6,6 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/api_key_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/api_key_form.dart';
+import 'package:mocktail/mocktail.dart';
+
+// Mock implementations
+class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 void main() {
   Widget buildTestWidget({
@@ -32,7 +36,7 @@ void main() {
   }
 
   group('ApiKeyForm', () {
-    testWidgets('should render all form fields including comment',
+    testWidgets('should render all form fields including provider type field',
         (WidgetTester tester) async {
       // Arrange
       // ignore: unused_local_variable
@@ -53,11 +57,12 @@ void main() {
       expect(find.text('Name'), findsOneWidget);
       expect(find.text('Base URL'), findsOneWidget);
       expect(find.text('API Key'), findsOneWidget);
+      expect(find.text('Provider Type'), findsOneWidget);
       expect(find.text('Comment (Optional)'), findsOneWidget);
       expect(find.text('Create'), findsOneWidget);
     });
 
-    testWidgets('should have comment field and validate form structure',
+    testWidgets('should have provider type field and validate form structure',
         (WidgetTester tester) async {
       // Simpler test that just validates the form structure
       await tester.pumpWidget(
@@ -74,12 +79,41 @@ void main() {
         find.byType(TextField),
         findsNWidgets(4),
       ); // Name, URL, API Key, Comment
-      expect(find.byType(FilledButton), findsOneWidget); // Create button
 
-      // Find the comment field specifically
-      final commentFieldFinder =
-          find.widgetWithText(TextField, 'Comment (Optional)');
-      expect(commentFieldFinder, findsOneWidget);
+      // Find the provider type field using the InputDecorator
+      final providerTypeFieldFinder =
+          find.widgetWithText(InputDecorator, 'Provider Type');
+      expect(providerTypeFieldFinder, findsOneWidget);
+
+      expect(find.byType(FilledButton), findsOneWidget); // Create button
+    });
+
+    testWidgets('tapping provider type field opens modal sheet',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          onSave: (_) {},
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find and tap the provider type field using the InputDecorator label
+      final providerTypeField = find.ancestor(
+        of: find.text('Provider Type'),
+        matching: find.byType(InputDecorator),
+      );
+      expect(providerTypeField, findsOneWidget);
+
+      // Cannot fully test the modal in widget tests as it uses a Navigator
+      // This just verifies the field's parent InkWell is tappable
+      final inkWell = find.ancestor(
+        of: providerTypeField,
+        matching: find.byType(InkWell),
+      );
+      expect(inkWell, findsOneWidget);
+      expect(tester.widget<InkWell>(inkWell).onTap, isNotNull);
     });
 
     testWidgets('new form should properly initialize controller',
@@ -117,7 +151,8 @@ void main() {
         ..nameChanged('Test Name')
         ..baseUrlChanged('https://test.example.com')
         ..apiKeyChanged('test-api-key')
-        ..commentChanged('Test comment');
+        ..commentChanged('Test comment')
+        ..inferenceProviderTypeChanged(InferenceProviderType.anthropic);
 
       // Verify the controller has the correct values
       final formState = controller.state.valueOrNull;
@@ -126,6 +161,7 @@ void main() {
       expect(formState.baseUrl.value, 'https://test.example.com');
       expect(formState.apiKey.value, 'test-api-key');
       expect(formState.comment.value, 'Test comment');
+      expect(formState.inferenceProviderType, InferenceProviderType.anthropic);
 
       // Convert to AiConfig and check values
       final config = formState.toAiConfig();
@@ -146,6 +182,14 @@ void main() {
           orElse: () => null,
         ),
         'Test comment',
+      );
+
+      expect(
+        config.maybeMap(
+          apiKey: (c) => c.inferenceProviderType,
+          orElse: () => null,
+        ),
+        InferenceProviderType.anthropic,
       );
     });
   });

@@ -34,7 +34,10 @@ class ApiKeyFormController extends _$ApiKeyFormController {
       commentController.dispose();
     });
 
-    return ApiKeyFormState();
+    return ApiKeyFormState(
+      inferenceProviderType:
+          _config?.inferenceProviderType ?? InferenceProviderType.genericOpenAi,
+    );
   }
 
   void _setAllFields({
@@ -42,6 +45,7 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     String? name,
     String? apiKey,
     String? baseUrl,
+    InferenceProviderType? inferenceProviderType,
   }) {
     final prev = state.valueOrNull;
     state = AsyncData(
@@ -50,6 +54,8 @@ class ApiKeyFormController extends _$ApiKeyFormController {
         apiKey: ApiKeyValue.dirty(apiKey ?? apiKeyController.text),
         baseUrl: BaseUrl.dirty(baseUrl ?? baseUrlController.text),
         comment: CommentValue.dirty(comment ?? commentController.text),
+        inferenceProviderType:
+            inferenceProviderType ?? prev?.inferenceProviderType,
       ),
     );
   }
@@ -80,6 +86,10 @@ class ApiKeyFormController extends _$ApiKeyFormController {
       commentController.text = value;
     }
     _setAllFields(comment: value);
+  }
+
+  void inferenceProviderTypeChanged(InferenceProviderType value) {
+    _setAllFields(inferenceProviderType: value);
   }
 
   /// Add a new configuration

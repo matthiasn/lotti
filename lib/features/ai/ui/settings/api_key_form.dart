@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/state/api_key_form_controller.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
 
 class ApiKeyForm extends ConsumerStatefulWidget {
   const ApiKeyForm({
@@ -20,6 +22,45 @@ class ApiKeyForm extends ConsumerStatefulWidget {
 
 class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
   bool _showApiKey = false;
+
+  void _showProviderTypeModal() {
+    ModalUtils.showSinglePageModal<void>(
+      context: context,
+      title: 'Select Provider Type',
+      builder: (modalContext) {
+        final formState = ref
+            .watch(
+              apiKeyFormControllerProvider(configId: widget.config?.id),
+            )
+            .valueOrNull;
+        final formController = ref.read(
+          apiKeyFormControllerProvider(configId: widget.config?.id).notifier,
+        );
+
+        if (formState == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return ListView(
+          shrinkWrap: true,
+          children: InferenceProviderType.values.map((type) {
+            return ListTile(
+              title: Text(type.displayName(modalContext)),
+              subtitle: Text(type.description(modalContext)),
+              leading: Icon(type.icon),
+              trailing: formState.inferenceProviderType == type
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                formController.inferenceProviderTypeChanged(type);
+                Navigator.of(modalContext).pop();
+              },
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +126,31 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
                 onPressed: () => setState(() {
                   _showApiKey = !_showApiKey;
                 }),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 90,
+          child: InkWell(
+            onTap: _showProviderTypeModal,
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Provider Type',
+                suffixIcon: Icon(Icons.arrow_drop_down),
+              ),
+              child: Row(
+                children: [
+                  Icon(formState.inferenceProviderType.icon, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      formState.inferenceProviderType.displayName(context),
+                      style: context.textTheme.bodyLarge,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
