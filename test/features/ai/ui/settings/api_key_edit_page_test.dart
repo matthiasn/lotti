@@ -113,7 +113,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Act - press the save button
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Create'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
       await tester.pumpAndSettle();
 
       // Assert
@@ -143,7 +143,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Act - press the save button
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Update'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Update'));
       await tester.pumpAndSettle();
 
       // Assert

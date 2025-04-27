@@ -7,7 +7,7 @@ part of 'api_key_form_controller.dart';
 // **************************************************************************
 
 String _$apiKeyFormControllerHash() =>
-    r'24c3a769d6195a1d25b922dd9079b42aca35f8b7';
+    r'baf9e4264f52ae2713e00da03c79798a020bfba1';
 
 /// Copied from Dart SDK
 class _SystemHash {

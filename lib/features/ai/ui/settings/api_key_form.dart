@@ -114,7 +114,7 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            ElevatedButton(
+            FilledButton(
               onPressed: formState.isValid &&
                       (widget.config == null || formState.isDirty)
                   ? () {

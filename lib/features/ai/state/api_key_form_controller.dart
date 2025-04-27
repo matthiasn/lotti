@@ -37,40 +37,49 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     return ApiKeyFormState();
   }
 
-  void nameChanged(String value) {
-    final name = ApiKeyName.dirty(value);
+  void _setAllFields({
+    String? comment,
+    String? name,
+    String? apiKey,
+    String? baseUrl,
+  }) {
+    final prev = state.valueOrNull;
     state = AsyncData(
-      state.valueOrNull!.copyWith(
-        name: name,
+      (prev ?? ApiKeyFormState()).copyWith(
+        name: ApiKeyName.dirty(name ?? nameController.text),
+        apiKey: ApiKeyValue.dirty(apiKey ?? apiKeyController.text),
+        baseUrl: BaseUrl.dirty(baseUrl ?? baseUrlController.text),
+        comment: CommentValue.dirty(comment ?? commentController.text),
       ),
     );
+  }
+
+  void nameChanged(String value) {
+    if (nameController.text != value) {
+      nameController.text = value;
+    }
+    _setAllFields(name: value);
   }
 
   void apiKeyChanged(String value) {
-    final apiKey = ApiKeyValue.dirty(value);
-    state = AsyncData(
-      state.valueOrNull!.copyWith(
-        apiKey: apiKey,
-      ),
-    );
+    if (apiKeyController.text != value) {
+      apiKeyController.text = value;
+    }
+    _setAllFields(apiKey: value);
   }
 
   void baseUrlChanged(String value) {
-    final baseUrl = BaseUrl.dirty(value);
-    state = AsyncData(
-      state.valueOrNull!.copyWith(
-        baseUrl: baseUrl,
-      ),
-    );
+    if (baseUrlController.text != value) {
+      baseUrlController.text = value;
+    }
+    _setAllFields(baseUrl: value);
   }
 
   void commentChanged(String value) {
-    final comment = CommentValue.dirty(value);
-    state = AsyncData(
-      state.valueOrNull!.copyWith(
-        comment: comment,
-      ),
-    );
+    if (commentController.text != value) {
+      commentController.text = value;
+    }
+    _setAllFields(comment: value);
   }
 
   /// Add a new configuration

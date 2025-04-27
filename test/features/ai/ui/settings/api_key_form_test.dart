@@ -74,7 +74,7 @@ void main() {
         find.byType(TextField),
         findsNWidgets(4),
       ); // Name, URL, API Key, Comment
-      expect(find.byType(ElevatedButton), findsOneWidget); // Create button
+      expect(find.byType(FilledButton), findsOneWidget); // Create button
 
       // Find the comment field specifically
       final commentFieldFinder =
