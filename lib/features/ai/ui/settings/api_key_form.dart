@@ -4,7 +4,6 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/api_key_form_controller.dart';
 import 'package:lotti/themes/theme.dart';
 
-// The actual form widget
 class ApiKeyForm extends ConsumerStatefulWidget {
   const ApiKeyForm({
     required this.onSave,
@@ -24,10 +23,11 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
 
   @override
   Widget build(BuildContext context) {
+    final configId = widget.config?.id;
     final formState =
-        ref.watch(apiKeyFormControllerProvider(widget.config)).valueOrNull;
+        ref.watch(apiKeyFormControllerProvider(configId: configId)).valueOrNull;
     final formController =
-        ref.read(apiKeyFormControllerProvider(widget.config).notifier);
+        ref.read(apiKeyFormControllerProvider(configId: configId).notifier);
 
     if (formState == null) {
       return const Center(child: CircularProgressIndicator());

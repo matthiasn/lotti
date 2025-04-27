@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/api_key_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/api_key_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -55,14 +56,12 @@ class ApiKeyEditPage extends ConsumerWidget {
           config: config,
           onSave: (updatedConfig) async {
             final controller = ref.read(
-              aiConfigByTypeControllerProvider(configType: 'apiKey').notifier,
+              apiKeyFormControllerProvider(configId: config?.id).notifier,
             );
 
             if (configId == null) {
-              // Add new config
               await controller.addConfig(updatedConfig);
             } else {
-              // Update existing config
               await controller.updateConfig(updatedConfig);
             }
 

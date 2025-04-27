@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
@@ -113,34 +112,3 @@ class ApiKeyFormState with FormzMixin {
     );
   }
 }
-
-// Provider to create the initial form state based on the config
-final apiKeyFormInitialStateProvider =
-    Provider.family<ApiKeyFormState, AiConfig?>((ref, config) {
-  if (config == null) {
-    return ApiKeyFormState();
-  }
-
-  // Extract fields from the config based on the pattern match
-  var apiKeyValue = '';
-  var baseUrlValue = '';
-  var commentValue = '';
-
-  // Check the specific type to access properties correctly
-  config.maybeMap(
-    apiKey: (apiKeyConfig) {
-      apiKeyValue = apiKeyConfig.apiKey;
-      baseUrlValue = apiKeyConfig.baseUrl;
-      commentValue = apiKeyConfig.comment ?? '';
-    },
-    orElse: () {},
-  );
-
-  return ApiKeyFormState(
-    id: config.id,
-    name: ApiKeyName.dirty(config.name),
-    apiKey: ApiKeyValue.dirty(apiKeyValue),
-    baseUrl: BaseUrl.dirty(baseUrlValue),
-    comment: CommentValue.dirty(commentValue),
-  );
-});

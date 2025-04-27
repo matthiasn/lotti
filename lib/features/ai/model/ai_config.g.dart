@@ -16,7 +16,6 @@ _$AiConfigApiKeyImpl _$$AiConfigApiKeyImplFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),
-      supportsThinkingOutput: json['supportsThinkingOutput'] as bool?,
       comment: json['comment'] as String?,
       $type: json['runtimeType'] as String?,
     );
@@ -30,7 +29,6 @@ Map<String, dynamic> _$$AiConfigApiKeyImplToJson(
       'name': instance.name,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
-      'supportsThinkingOutput': instance.supportsThinkingOutput,
       'comment': instance.comment,
       'runtimeType': instance.$type,
     };

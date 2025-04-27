@@ -170,7 +170,7 @@ class _AiConfigByIdProviderElement
 }
 
 String _$aiConfigByTypeControllerHash() =>
-    r'd9c1b5b4455eddcc6496fbea61880928a7e19d0b';
+    r'dbc8bdbc21989a883bc11183153da902a04ac292';
 
 abstract class _$AiConfigByTypeController
     extends BuildlessAutoDisposeStreamNotifier<List<AiConfig>> {

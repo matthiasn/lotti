@@ -18,7 +18,7 @@ class AiConfig with _$AiConfig {
     required DateTime createdAt,
     DateTime? updatedAt,
     String? comment,
-  }) = _AiConfigApiKey;
+  }) = AiConfigApiKey;
 
   const factory AiConfig.promptTemplate({
     required String id,
@@ -29,7 +29,7 @@ class AiConfig with _$AiConfig {
     String? description,
     Map<String, String>? defaultVariables,
     String? category,
-  }) = _AiConfigPromptTemplate;
+  }) = AiConfigPromptTemplate;
 
   factory AiConfig.fromJson(Map<String, dynamic> json) =>
       _$AiConfigFromJson(json);

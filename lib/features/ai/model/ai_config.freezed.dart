@@ -17,9 +17,9 @@ final _privateConstructorUsedError = UnsupportedError(
 AiConfig _$AiConfigFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'apiKey':
-      return _AiConfigApiKey.fromJson(json);
+      return AiConfigApiKey.fromJson(json);
     case 'promptTemplate':
-      return _AiConfigPromptTemplate.fromJson(json);
+      return AiConfigPromptTemplate.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'AiConfig',
@@ -42,7 +42,6 @@ mixin _$AiConfig {
             String name,
             DateTime createdAt,
             DateTime? updatedAt,
-            bool? supportsThinkingOutput,
             String? comment)
         apiKey,
     required TResult Function(
@@ -59,15 +58,8 @@ mixin _$AiConfig {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool? supportsThinkingOutput,
-            String? comment)?
+    TResult? Function(String id, String baseUrl, String apiKey, String name,
+            DateTime createdAt, DateTime? updatedAt, String? comment)?
         apiKey,
     TResult? Function(
             String id,
@@ -83,15 +75,8 @@ mixin _$AiConfig {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool? supportsThinkingOutput,
-            String? comment)?
+    TResult Function(String id, String baseUrl, String apiKey, String name,
+            DateTime createdAt, DateTime? updatedAt, String? comment)?
         apiKey,
     TResult Function(
             String id,
@@ -108,20 +93,20 @@ mixin _$AiConfig {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(_AiConfigApiKey value) apiKey,
-    required TResult Function(_AiConfigPromptTemplate value) promptTemplate,
+    required TResult Function(AiConfigApiKey value) apiKey,
+    required TResult Function(AiConfigPromptTemplate value) promptTemplate,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_AiConfigApiKey value)? apiKey,
-    TResult? Function(_AiConfigPromptTemplate value)? promptTemplate,
+    TResult? Function(AiConfigApiKey value)? apiKey,
+    TResult? Function(AiConfigPromptTemplate value)? promptTemplate,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(_AiConfigApiKey value)? apiKey,
-    TResult Function(_AiConfigPromptTemplate value)? promptTemplate,
+    TResult Function(AiConfigApiKey value)? apiKey,
+    TResult Function(AiConfigPromptTemplate value)? promptTemplate,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -200,7 +185,6 @@ abstract class _$$AiConfigApiKeyImplCopyWith<$Res>
       String name,
       DateTime createdAt,
       DateTime? updatedAt,
-      bool? supportsThinkingOutput,
       String? comment});
 }
 
@@ -223,7 +207,6 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
     Object? name = null,
     Object? createdAt = null,
     Object? updatedAt = freezed,
-    Object? supportsThinkingOutput = freezed,
     Object? comment = freezed,
   }) {
     return _then(_$AiConfigApiKeyImpl(
@@ -251,10 +234,6 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      supportsThinkingOutput: freezed == supportsThinkingOutput
-          ? _value.supportsThinkingOutput
-          : supportsThinkingOutput // ignore: cast_nullable_to_non_nullable
-              as bool?,
       comment: freezed == comment
           ? _value.comment
           : comment // ignore: cast_nullable_to_non_nullable
@@ -265,7 +244,7 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
+class _$AiConfigApiKeyImpl implements AiConfigApiKey {
   const _$AiConfigApiKeyImpl(
       {required this.id,
       required this.baseUrl,
@@ -273,7 +252,6 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
       required this.name,
       required this.createdAt,
       this.updatedAt,
-      this.supportsThinkingOutput,
       this.comment,
       final String? $type})
       : $type = $type ?? 'apiKey';
@@ -294,8 +272,6 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
   @override
   final DateTime? updatedAt;
   @override
-  final bool? supportsThinkingOutput;
-  @override
   final String? comment;
 
   @JsonKey(name: 'runtimeType')
@@ -303,7 +279,7 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
 
   @override
   String toString() {
-    return 'AiConfig.apiKey(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, supportsThinkingOutput: $supportsThinkingOutput, comment: $comment)';
+    return 'AiConfig.apiKey(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, comment: $comment)';
   }
 
   @override
@@ -319,15 +295,13 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
-            (identical(other.supportsThinkingOutput, supportsThinkingOutput) ||
-                other.supportsThinkingOutput == supportsThinkingOutput) &&
             (identical(other.comment, comment) || other.comment == comment));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, baseUrl, apiKey, name,
-      createdAt, updatedAt, supportsThinkingOutput, comment);
+  int get hashCode => Object.hash(
+      runtimeType, id, baseUrl, apiKey, name, createdAt, updatedAt, comment);
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -348,7 +322,6 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
             String name,
             DateTime createdAt,
             DateTime? updatedAt,
-            bool? supportsThinkingOutput,
             String? comment)
         apiKey,
     required TResult Function(
@@ -362,22 +335,15 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
             String? category)
         promptTemplate,
   }) {
-    return apiKey(id, baseUrl, this.apiKey, name, createdAt, updatedAt,
-        supportsThinkingOutput, comment);
+    return apiKey(
+        id, baseUrl, this.apiKey, name, createdAt, updatedAt, comment);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool? supportsThinkingOutput,
-            String? comment)?
+    TResult? Function(String id, String baseUrl, String apiKey, String name,
+            DateTime createdAt, DateTime? updatedAt, String? comment)?
         apiKey,
     TResult? Function(
             String id,
@@ -390,22 +356,15 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
             String? category)?
         promptTemplate,
   }) {
-    return apiKey?.call(id, baseUrl, this.apiKey, name, createdAt, updatedAt,
-        supportsThinkingOutput, comment);
+    return apiKey?.call(
+        id, baseUrl, this.apiKey, name, createdAt, updatedAt, comment);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool? supportsThinkingOutput,
-            String? comment)?
+    TResult Function(String id, String baseUrl, String apiKey, String name,
+            DateTime createdAt, DateTime? updatedAt, String? comment)?
         apiKey,
     TResult Function(
             String id,
@@ -420,8 +379,8 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
     required TResult orElse(),
   }) {
     if (apiKey != null) {
-      return apiKey(id, baseUrl, this.apiKey, name, createdAt, updatedAt,
-          supportsThinkingOutput, comment);
+      return apiKey(
+          id, baseUrl, this.apiKey, name, createdAt, updatedAt, comment);
     }
     return orElse();
   }
@@ -429,8 +388,8 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(_AiConfigApiKey value) apiKey,
-    required TResult Function(_AiConfigPromptTemplate value) promptTemplate,
+    required TResult Function(AiConfigApiKey value) apiKey,
+    required TResult Function(AiConfigPromptTemplate value) promptTemplate,
   }) {
     return apiKey(this);
   }
@@ -438,8 +397,8 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_AiConfigApiKey value)? apiKey,
-    TResult? Function(_AiConfigPromptTemplate value)? promptTemplate,
+    TResult? Function(AiConfigApiKey value)? apiKey,
+    TResult? Function(AiConfigPromptTemplate value)? promptTemplate,
   }) {
     return apiKey?.call(this);
   }
@@ -447,8 +406,8 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(_AiConfigApiKey value)? apiKey,
-    TResult Function(_AiConfigPromptTemplate value)? promptTemplate,
+    TResult Function(AiConfigApiKey value)? apiKey,
+    TResult Function(AiConfigPromptTemplate value)? promptTemplate,
     required TResult orElse(),
   }) {
     if (apiKey != null) {
@@ -465,18 +424,17 @@ class _$AiConfigApiKeyImpl implements _AiConfigApiKey {
   }
 }
 
-abstract class _AiConfigApiKey implements AiConfig {
-  const factory _AiConfigApiKey(
+abstract class AiConfigApiKey implements AiConfig {
+  const factory AiConfigApiKey(
       {required final String id,
       required final String baseUrl,
       required final String apiKey,
       required final String name,
       required final DateTime createdAt,
       final DateTime? updatedAt,
-      final bool? supportsThinkingOutput,
       final String? comment}) = _$AiConfigApiKeyImpl;
 
-  factory _AiConfigApiKey.fromJson(Map<String, dynamic> json) =
+  factory AiConfigApiKey.fromJson(Map<String, dynamic> json) =
       _$AiConfigApiKeyImpl.fromJson;
 
   @override
@@ -489,7 +447,6 @@ abstract class _AiConfigApiKey implements AiConfig {
   DateTime get createdAt;
   @override
   DateTime? get updatedAt;
-  bool? get supportsThinkingOutput;
   String? get comment;
 
   /// Create a copy of AiConfig
@@ -582,7 +539,7 @@ class __$$AiConfigPromptTemplateImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
+class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
   const _$AiConfigPromptTemplateImpl(
       {required this.id,
       required this.name,
@@ -685,7 +642,6 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
             String name,
             DateTime createdAt,
             DateTime? updatedAt,
-            bool? supportsThinkingOutput,
             String? comment)
         apiKey,
     required TResult Function(
@@ -706,15 +662,8 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool? supportsThinkingOutput,
-            String? comment)?
+    TResult? Function(String id, String baseUrl, String apiKey, String name,
+            DateTime createdAt, DateTime? updatedAt, String? comment)?
         apiKey,
     TResult? Function(
             String id,
@@ -734,15 +683,8 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String baseUrl,
-            String apiKey,
-            String name,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool? supportsThinkingOutput,
-            String? comment)?
+    TResult Function(String id, String baseUrl, String apiKey, String name,
+            DateTime createdAt, DateTime? updatedAt, String? comment)?
         apiKey,
     TResult Function(
             String id,
@@ -766,8 +708,8 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(_AiConfigApiKey value) apiKey,
-    required TResult Function(_AiConfigPromptTemplate value) promptTemplate,
+    required TResult Function(AiConfigApiKey value) apiKey,
+    required TResult Function(AiConfigPromptTemplate value) promptTemplate,
   }) {
     return promptTemplate(this);
   }
@@ -775,8 +717,8 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_AiConfigApiKey value)? apiKey,
-    TResult? Function(_AiConfigPromptTemplate value)? promptTemplate,
+    TResult? Function(AiConfigApiKey value)? apiKey,
+    TResult? Function(AiConfigPromptTemplate value)? promptTemplate,
   }) {
     return promptTemplate?.call(this);
   }
@@ -784,8 +726,8 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(_AiConfigApiKey value)? apiKey,
-    TResult Function(_AiConfigPromptTemplate value)? promptTemplate,
+    TResult Function(AiConfigApiKey value)? apiKey,
+    TResult Function(AiConfigPromptTemplate value)? promptTemplate,
     required TResult orElse(),
   }) {
     if (promptTemplate != null) {
@@ -802,8 +744,8 @@ class _$AiConfigPromptTemplateImpl implements _AiConfigPromptTemplate {
   }
 }
 
-abstract class _AiConfigPromptTemplate implements AiConfig {
-  const factory _AiConfigPromptTemplate(
+abstract class AiConfigPromptTemplate implements AiConfig {
+  const factory AiConfigPromptTemplate(
       {required final String id,
       required final String name,
       required final String template,
@@ -813,7 +755,7 @@ abstract class _AiConfigPromptTemplate implements AiConfig {
       final Map<String, String>? defaultVariables,
       final String? category}) = _$AiConfigPromptTemplateImpl;
 
-  factory _AiConfigPromptTemplate.fromJson(Map<String, dynamic> json) =
+  factory AiConfigPromptTemplate.fromJson(Map<String, dynamic> json) =
       _$AiConfigPromptTemplateImpl.fromJson;
 
   @override

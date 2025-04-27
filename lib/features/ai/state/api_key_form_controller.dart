@@ -1,56 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/api_key_form_state.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-// Provider to create the initial form state based on the config
-final apiKeyFormInitialStateProvider =
-    Provider.family<ApiKeyFormState, AiConfig?>((ref, config) {
-  if (config == null) {
-    return ApiKeyFormState();
-  }
+part 'api_key_form_controller.g.dart';
 
-  // Extract fields from the config based on the pattern match
-  var apiKeyValue = '';
-  var baseUrlValue = '';
-  var commentValue = '';
-
-  // Check the specific type to access properties correctly
-  config.maybeMap(
-    apiKey: (apiKeyConfig) {
-      apiKeyValue = apiKeyConfig.apiKey;
-      baseUrlValue = apiKeyConfig.baseUrl;
-      commentValue = apiKeyConfig.comment ?? '';
-    },
-    orElse: () {},
-  );
-
-  return ApiKeyFormState(
-    id: config.id,
-    name: ApiKeyName.dirty(config.name),
-    apiKey: ApiKeyValue.dirty(apiKeyValue),
-    baseUrl: BaseUrl.dirty(baseUrlValue),
-    comment: CommentValue.dirty(commentValue),
-  );
-});
-
-// Form controller
-class ApiKeyFormController extends StateNotifier<AsyncValue<ApiKeyFormState>> {
-  ApiKeyFormController(ApiKeyFormState initialState)
-      : super(AsyncData(initialState)) {
-    _updateTextControllers(initialState);
-  }
-
+@riverpod
+class ApiKeyFormController extends _$ApiKeyFormController {
   final nameController = TextEditingController();
   final apiKeyController = TextEditingController();
   final baseUrlController = TextEditingController();
   final commentController = TextEditingController();
 
-  void _updateTextControllers(ApiKeyFormState formState) {
-    nameController.text = formState.name.value;
-    apiKeyController.text = formState.apiKey.value;
-    baseUrlController.text = formState.baseUrl.value;
-    commentController.text = formState.comment.value;
+  AiConfigApiKey? _config;
+
+  @override
+  Future<ApiKeyFormState?> build({required String? configId}) async {
+    _config = configId != null
+        ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
+            as AiConfigApiKey?)
+        : null;
+
+    nameController.text = _config?.name ?? '';
+    apiKeyController.text = _config?.apiKey ?? '';
+    baseUrlController.text = _config?.baseUrl ?? '';
+    commentController.text = _config?.comment ?? '';
+
+    ref.onDispose(() {
+      nameController.dispose();
+      apiKeyController.dispose();
+      baseUrlController.dispose();
+      commentController.dispose();
+    });
+
+    return ApiKeyFormState();
   }
 
   void nameChanged(String value) {
@@ -89,6 +73,30 @@ class ApiKeyFormController extends StateNotifier<AsyncValue<ApiKeyFormState>> {
     );
   }
 
+  /// Add a new configuration
+  Future<void> addConfig(AiConfig config) async {
+    final repository = ref.read(aiConfigRepositoryProvider);
+    await repository.saveConfig(config);
+  }
+
+  /// Update an existing configuration
+  Future<void> updateConfig(AiConfig config) async {
+    final repository = ref.read(aiConfigRepositoryProvider);
+    await repository.saveConfig(
+      config.copyWith(
+        id: _config?.id ?? config.id,
+        createdAt: _config?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Delete a configuration
+  Future<void> deleteConfig(String id) async {
+    final repository = ref.read(aiConfigRepositoryProvider);
+    await repository.deleteConfig(id);
+  }
+
   void reset() {
     nameController.clear();
     apiKeyController.clear();
@@ -96,22 +104,4 @@ class ApiKeyFormController extends StateNotifier<AsyncValue<ApiKeyFormState>> {
     commentController.clear();
     state = AsyncData(ApiKeyFormState());
   }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    apiKeyController.dispose();
-    baseUrlController.dispose();
-    commentController.dispose();
-    super.dispose();
-  }
 }
-
-// Provider for the form controller with the config dependency
-final apiKeyFormControllerProvider = StateNotifierProvider.family
-    .autoDispose<ApiKeyFormController, AsyncValue<ApiKeyFormState>, AiConfig?>(
-  (ref, config) {
-    final initialState = ref.watch(apiKeyFormInitialStateProvider(config));
-    return ApiKeyFormController(initialState);
-  },
-);

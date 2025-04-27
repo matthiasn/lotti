@@ -14,24 +14,6 @@ class AiConfigByTypeController extends _$AiConfigByTypeController {
     final repository = ref.watch(aiConfigRepositoryProvider);
     return repository.watchConfigsByType(configType);
   }
-
-  /// Add a new configuration
-  Future<void> addConfig(AiConfig config) async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.saveConfig(config);
-  }
-
-  /// Update an existing configuration
-  Future<void> updateConfig(AiConfig config) async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.saveConfig(config);
-  }
-
-  /// Delete a configuration
-  Future<void> deleteConfig(String id) async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.deleteConfig(id);
-  }
 }
 
 /// Provider for getting a specific AiConfig by its ID
