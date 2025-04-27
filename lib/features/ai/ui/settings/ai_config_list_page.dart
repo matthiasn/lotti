@@ -150,17 +150,19 @@ class AiConfigListPage extends ConsumerWidget {
   }
 
   Widget _buildConfigListTile(BuildContext context, AiConfig config) {
+    final subtitle = _getConfigSubtitle(context, config);
     return ListTile(
       title: Text(config.name),
-      subtitle: Text(_getConfigSubtitle(context, config)),
+      subtitle: subtitle != null && subtitle.isNotEmpty ? Text(subtitle) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       trailing: const Icon(Icons.chevron_right),
       onTap: onItemTap != null ? () => onItemTap!(config) : null,
     );
   }
 
-  String _getConfigSubtitle(BuildContext context, AiConfig config) {
+  String? _getConfigSubtitle(BuildContext context, AiConfig config) {
     return config.map(
-      apiKey: (apiKey) => apiKey.baseUrl,
+      apiKey: (apiKey) => apiKey.comment,
       promptTemplate: (promptTemplate) {
         final previewLength = promptTemplate.template.length > 50
             ? 50

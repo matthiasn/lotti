@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/state/api_key_form_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 
@@ -26,7 +27,7 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
   void _showProviderTypeModal() {
     ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: 'Select Provider Type',
+      title: context.messages.aiConfigSelectProviderTypeModalTitle,
       builder: (modalContext) {
         final formState = ref
             .watch(
@@ -83,7 +84,7 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
             onChanged: formController.nameChanged,
             controller: formController.nameController,
             decoration: InputDecoration(
-              labelText: 'Name',
+              labelText: context.messages.aiConfigNameFieldLabel,
               errorText: formState.name.isNotValid && !formState.name.isPure
                   ? formState.name.error
                   : null,
@@ -96,7 +97,7 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
             onChanged: formController.baseUrlChanged,
             controller: formController.baseUrlController,
             decoration: InputDecoration(
-              labelText: 'Base URL',
+              labelText: context.messages.aiConfigBaseUrlFieldLabel,
               errorText:
                   formState.baseUrl.isNotValid && !formState.baseUrl.isPure
                       ? formState.baseUrl.error
@@ -111,7 +112,7 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
             controller: formController.apiKeyController,
             obscureText: !_showApiKey,
             decoration: InputDecoration(
-              labelText: 'API Key',
+              labelText: context.messages.aiConfigApiKeyFieldLabel,
               errorText: formState.apiKey.isNotValid && !formState.apiKey.isPure
                   ? formState.apiKey.error
                   : null,
@@ -135,9 +136,9 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
           child: InkWell(
             onTap: _showProviderTypeModal,
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Provider Type',
-                suffixIcon: Icon(Icons.arrow_drop_down),
+              decoration: InputDecoration(
+                labelText: context.messages.aiConfigProviderTypeFieldLabel,
+                suffixIcon: const Icon(Icons.arrow_drop_down),
               ),
               child: Row(
                 children: [
@@ -160,8 +161,8 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
           child: TextField(
             onChanged: formController.commentChanged,
             controller: formController.commentController,
-            decoration: const InputDecoration(
-              labelText: 'Comment (Optional)',
+            decoration: InputDecoration(
+              labelText: context.messages.aiConfigCommentFieldLabel,
             ),
             maxLines: 2,
           ),
@@ -170,7 +171,7 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
           height: 50,
           child: formState.submitFailed
               ? Text(
-                  'Failed to save API key configuration',
+                  context.messages.aiConfigFailedToSaveMessage,
                   style: context.textTheme.bodyLarge?.copyWith(
                     color: context.colorScheme.error,
                   ),
@@ -188,7 +189,11 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
                       widget.onSave(config);
                     }
                   : null,
-              child: Text(widget.config == null ? 'Create' : 'Update'),
+              child: Text(
+                widget.config == null
+                    ? context.messages.aiConfigCreateButtonLabel
+                    : context.messages.aiConfigUpdateButtonLabel,
+              ),
             ),
           ],
         ),
