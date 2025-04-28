@@ -23,15 +23,78 @@
   "addTaskTitle": "Add Task",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
-  "aiAssistantTranscribeAudio": "Transcribe audio",
   "aiAssistantCreateChecklist": "Create checklist items",
   "aiAssistantRunPrompt": "Ask Llama3",
   "aiAssistantSummarizeTask": "Summarize task",
   "aiAssistantThinking": "Thinking...",
   "aiAssistantTitle": "AI Assistant",
+  "aiAssistantTranscribeAudio": "Transcribe audio",
+  "aiConfigListDeleteConfirmCancel": "CANCEL",
+  "aiConfigListDeleteConfirmDelete": "DELETE",
+  "aiConfigListDeleteConfirmMessage": "Are you sure you want to delete \"{configName}\"?",
+  "@aiConfigListDeleteConfirmMessage": {
+    "placeholders": {
+      "configName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListDeleteConfirmTitle": "Confirm Deletion",
+  "aiConfigListEmptyState": "No configurations found. Add one to get started.",
+  "aiConfigListErrorDeleting": "Error deleting {configName}: {error}",
+  "@aiConfigListErrorDeleting": {
+    "placeholders": {
+      "configName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListErrorLoading": "Error loading configurations: {error}",
+  "@aiConfigListErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListItemDeleted": "{configName} deleted",
+  "@aiConfigListItemDeleted": {
+    "placeholders": {
+      "configName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListPromptTemplateSubtitle": "Template: {templatePreview}...",
+  "@aiConfigListPromptTemplateSubtitle": {
+    "placeholders": {
+      "templatePreview": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigListUndoDelete": "UNDO",
   "aiTaskNoSummaryTitle": "No AI Task Summary created yet",
   "aiTaskSummaryRunning": "Thinking about summarizing task...",
   "aiTaskSummaryTitle": "AI Task Summary",
+  "apiKeyAddPageTitle": "Add API Key",
+  "apiKeyEditLoadError": "Failed to load API key configuration",
+  "apiKeyEditPageTitle": "Edit API Key",
+  "apiKeyFormApiKeyError": "API key cannot be empty",
+  "apiKeyFormApiKeyLabel": "API Key",
+  "apiKeyFormBaseUrlError": "Please enter a valid URL",
+  "apiKeyFormBaseUrlLabel": "Base URL",
+  "apiKeyFormCommentLabel": "Comment (Optional)",
+  "apiKeyFormCreateButton": "Create",
+  "apiKeyFormNameError": "Name must be at least 3 characters",
+  "apiKeyFormNameLabel": "Name",
+  "apiKeyFormSaveError": "Failed to save API key configuration",
+  "apiKeyFormShowApiKey": "Show API Key",
+  "apiKeyFormUpdateButton": "Update",
+  "apiKeysSettingsPageTitle": "API Keys",
   "appBarBack": "Back",
   "cancelButton": "Cancel",
   "categoryDeleteConfirm": "YES, DELETE THIS CATEGORY",
@@ -226,14 +289,15 @@
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
   "settingsAboutTitle": "About Lotti",
-  "settingsAdvancedTitle": "Advanced Settings",
+  "settingsAdvancedShowCaseAboutLottiTooltip": "Learn more about the Lotti application, including version and credits.",
+  "settingsAdvancedShowCaseConflictsTooltip": "Resolve synchronization conflicts to ensure data consistency.",
+  "settingsAdvancedShowCaseHealthImportTooltip": "Import health-related data from external sources.",
+  "settingsAdvancedShowCaseLogsTooltip": "Access and review application logs for debugging and monitoring.",
+  "settingsAdvancedShowCaseMaintenanceTooltip": "Perform maintenance tasks to optimize application performance.",
   "settingsAdvancedShowCaseMatrixSyncTooltip": "Configure and manage Matrix synchronization settings for seamless data integration.",
   "settingsAdvancedShowCaseSyncOutboxTooltip": "View and manage items waiting to be synchronized in the outbox.",
-  "settingsAdvancedShowCaseConflictsTooltip": "Resolve synchronization conflicts to ensure data consistency.",
-  "settingsAdvancedShowCaseLogsTooltip": "Access and review application logs for debugging and monitoring.",
-  "settingsAdvancedShowCaseHealthImportTooltip": "Import health-related data from external sources.",
-  "settingsAdvancedShowCaseMaintenanceTooltip": "Perform maintenance tasks to optimize application performance.",
-  "settingsAdvancedShowCaseAboutLottiTooltip": "Learn more about the Lotti application, including version and credits.",
+  "settingsAdvancedTitle": "Advanced Settings",
+  "settingsAiApiKeys": "API Keys",
   "settingsCategoriesDuplicateError": "Category exists already",
   "settingsCategoriesNameLabel": "Category name:",
   "settingsCategoriesTitle": "Categories",
@@ -451,5 +515,22 @@
   "viewMenuEnableBrightTheme": "Enable Bright Theme",
   "viewMenuHideThemeConfig": "Hide Theme Config",
   "viewMenuShowThemeConfig": "Show Theme Config",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "aiConfigApiKeyFieldLabel": "API Key",
+  "aiConfigProviderTypeFieldLabel": "Provider Type",
+  "aiConfigCommentFieldLabel": "Comment (Optional)",
+  "aiConfigCreateButtonLabel": "Create",
+  "aiConfigBaseUrlFieldLabel": "Base URL",
+  "aiConfigNameFieldLabel": "Name",
+  "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
+  "aiConfigUpdateButtonLabel": "Update",
+  "aiConfigFailedToSaveMessage": "Failed to save API key configuration",
+  "aiProviderAnthropicName": "Anthropic Claude",
+  "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
+  "aiProviderGeminiName": "Google Gemini",
+  "aiProviderGeminiDescription": "Google's Gemini AI models",
+  "aiProviderGenericOpenAiName": "OpenAI Compatible",
+  "aiProviderGenericOpenAiDescription": "API compatible with OpenAI format",
+  "aiProviderOpenAiName": "OpenAI",
+  "aiProviderOpenAiDescription": "OpenAI's GPT models"
 }

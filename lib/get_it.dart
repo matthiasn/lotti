@@ -7,6 +7,8 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -47,6 +49,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())
+    ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
     ..registerSingleton<NavService>(NavService());
 
   unawaited(getIt<MatrixService>().init());
