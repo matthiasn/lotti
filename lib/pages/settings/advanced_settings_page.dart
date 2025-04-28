@@ -138,6 +138,10 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                 path: '/settings/advanced/about',
               ),
             ),
+            SettingsNavCard(
+              title: context.messages.settingsAiApiKeys,
+              path: '/settings/advanced/ai/api_keys',
+            ),
           ],
         ),
       ),

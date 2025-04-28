@@ -77,3 +77,31 @@ Map<String, dynamic> _$$SyncEntryLinkImplToJson(_$SyncEntryLinkImpl instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
+
+_$SyncAiConfigImpl _$$SyncAiConfigImplFromJson(Map<String, dynamic> json) =>
+    _$SyncAiConfigImpl(
+      aiConfig: AiConfig.fromJson(json['aiConfig'] as Map<String, dynamic>),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$SyncAiConfigImplToJson(_$SyncAiConfigImpl instance) =>
+    <String, dynamic>{
+      'aiConfig': instance.aiConfig,
+      'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'runtimeType': instance.$type,
+    };
+
+_$SyncAiConfigDeleteImpl _$$SyncAiConfigDeleteImplFromJson(
+        Map<String, dynamic> json) =>
+    _$SyncAiConfigDeleteImpl(
+      id: json['id'] as String,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$SyncAiConfigDeleteImplToJson(
+        _$SyncAiConfigDeleteImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'runtimeType': instance.$type,
+    };

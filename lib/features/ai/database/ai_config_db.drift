@@ -1,0 +1,22 @@
+CREATE TABLE ai_configs (
+  id TEXT NOT NULL PRIMARY KEY,
+  type TEXT NOT NULL,
+  name TEXT NOT NULL,
+  serialized TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME
+) as AiConfigDbEntity;
+
+/* Queries ----------------------------------------------------- */
+configById:
+SELECT * FROM ai_configs
+  WHERE id = :id;
+
+configsByType:
+SELECT * FROM ai_configs
+  WHERE type = :type
+  ORDER BY created_at DESC;
+
+allConfigs:
+SELECT * FROM ai_configs
+  ORDER BY created_at DESC; 

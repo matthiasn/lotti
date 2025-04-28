@@ -121,6 +121,12 @@ class OutboxService {
         );
       }
 
+      if (syncMessage is SyncAiConfig) {
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(subject: const Value('aiConfig')),
+        );
+      }
+
       if (syncMessage is SyncTagEntity) {
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(

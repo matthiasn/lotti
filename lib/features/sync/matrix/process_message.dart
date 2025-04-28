@@ -5,6 +5,8 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -75,6 +77,15 @@ Future<void> processMatrixMessage({
         SyncEntryStatus status,
       ) {
         journalDb.upsertTagEntity(tagEntity);
+      },
+      aiConfig: (
+        AiConfig aiConfig,
+        SyncEntryStatus status,
+      ) {
+        getIt<AiConfigRepository>().saveConfig(aiConfig);
+      },
+      aiConfigDelete: (String id) {
+        getIt<AiConfigRepository>().deleteConfig(id);
       },
     );
   } catch (e, stackTrace) {
