@@ -296,6 +296,7 @@
   "settingsAdvancedShowCaseMaintenanceTooltip": "Perform maintenance tasks to optimize application performance.",
   "settingsAdvancedShowCaseMatrixSyncTooltip": "Configure and manage Matrix synchronization settings for seamless data integration.",
   "settingsAdvancedShowCaseSyncOutboxTooltip": "View and manage items waiting to be synchronized in the outbox.",
+  "settingsAdvancedShowCaseApiKeyTooltip": "Manage your API keys for various AI providers. Add, edit, or delete keys to configure integrations with supported services like OpenAI, Gemini, and more. Ensure secure handling of sensitive information.",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsAiApiKeys": "API Keys",
   "settingsCategoriesDuplicateError": "Category exists already",

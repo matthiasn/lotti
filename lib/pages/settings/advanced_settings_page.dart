@@ -28,6 +28,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
   final _healthImportKey = GlobalKey();
   final _maintainaceKey = GlobalKey();
   final _aboutLottiKey = GlobalKey();
+  final _apikeyKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +44,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               _healthImportKey,
               _maintainaceKey,
               _aboutLottiKey,
+              _apikeyKey,
             ],
           );
         },
@@ -127,7 +129,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
             ),
             ShowcaseWithWidget(
               isTooltipTop: true,
-              endNav: true,
               showcaseKey: _aboutLottiKey,
               description: ShowcaseTextStyle(
                 descriptionText:
@@ -138,9 +139,18 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                 path: '/settings/advanced/about',
               ),
             ),
-            SettingsNavCard(
-              title: context.messages.settingsAiApiKeys,
-              path: '/settings/advanced/ai/api_keys',
+            ShowcaseWithWidget(
+              isTooltipTop: true,
+              endNav: true,
+              showcaseKey: _apikeyKey,
+              description: ShowcaseTextStyle(
+                descriptionText:
+                    context.messages.settingsAdvancedShowCaseApiKeyTooltip,
+              ),
+              child: SettingsNavCard(
+                title: context.messages.settingsAiApiKeys,
+                path: '/settings/advanced/ai/api_keys',
+              ),
             ),
           ],
         ),
