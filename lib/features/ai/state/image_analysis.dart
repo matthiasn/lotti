@@ -4,7 +4,8 @@ import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_config_repository.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -69,8 +70,22 @@ content of the website, not the style of the website. Do not make up names.
     const temperature = 0.6;
 
     if (useCloudInference) {
-      final config =
-          await ref.read(cloudInferenceConfigRepositoryProvider).getConfig();
+      final configs =
+          await ref.read(aiConfigRepositoryProvider).getConfigsByType('apiKey');
+
+      final apiKeyConfig = configs
+          .whereType<AiConfigApiKey>()
+          .where(
+            (config) =>
+                config.inferenceProviderType ==
+                InferenceProviderType.nebiusAiStudio,
+          )
+          .firstOrNull;
+
+      if (apiKeyConfig == null) {
+        state = 'No Nebius AI Studio API key found';
+        return;
+      }
 
       final stream =
           ref.read(cloudInferenceRepositoryProvider).generateWithImages(
@@ -78,8 +93,8 @@ content of the website, not the style of the website. Do not make up names.
                 model: model,
                 temperature: temperature,
                 images: [image],
-                baseUrl: config.baseUrl,
-                apiKey: config.apiKey,
+                baseUrl: apiKeyConfig.baseUrl,
+                apiKey: apiKeyConfig.apiKey,
               );
 
       await for (final chunk in stream) {
