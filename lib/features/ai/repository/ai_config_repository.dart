@@ -21,22 +21,32 @@ class AiConfigRepository {
   final AiConfigDb _db;
 
   /// Save or update an AI configuration
-  Future<void> saveConfig(AiConfig config) async {
+  Future<void> saveConfig(
+    AiConfig config, {
+    bool fromSync = false,
+  }) async {
     await _db.saveConfig(config);
-    await getIt<OutboxService>().enqueueMessage(
-      SyncMessage.aiConfig(
-        aiConfig: config,
-        status: SyncEntryStatus.initial,
-      ),
-    );
+    if (!fromSync) {
+      await getIt<OutboxService>().enqueueMessage(
+        SyncMessage.aiConfig(
+          aiConfig: config,
+          status: SyncEntryStatus.initial,
+        ),
+      );
+    }
   }
 
   /// Delete an AI configuration by its ID
-  Future<void> deleteConfig(String id) async {
+  Future<void> deleteConfig(
+    String id, {
+    bool fromSync = false,
+  }) async {
     await _db.deleteConfig(id);
-    await getIt<OutboxService>().enqueueMessage(
-      SyncMessage.aiConfigDelete(id: id),
-    );
+    if (!fromSync) {
+      await getIt<OutboxService>().enqueueMessage(
+        SyncMessage.aiConfigDelete(id: id),
+      );
+    }
   }
 
   /// Get an AI configuration by its ID
