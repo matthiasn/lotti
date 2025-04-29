@@ -234,6 +234,7 @@
   "settingsAdvancedShowCaseHealthImportTooltip": "Importați date legate de sănătate din surse externe.",
   "settingsAdvancedShowCaseMaintenanceTooltip": "Efectuați sarcini de întreținere pentru a optimiza performanța aplicației.",
   "settingsAdvancedShowCaseAboutLottiTooltip": "Aflați mai multe despre aplicația Lotti, inclusiv versiunea și creditele.",
+  "settingsAdvancedShowCaseApiKeyTooltip": "Administrați cheile API pentru diverși furnizori de inteligență artificială. Adăugați, editați sau ștergeți chei pentru a configura integrări cu servicii compatibile precum OpenAI, Gemini și altele. Asigurați-vă că informațiile sensibile sunt gestionate în siguranță.",
   "settingsCategoriesDuplicateError": "Categoria există deja",
   "settingsCategoriesNameLabel": "Numele categoriei:",
   "settingsCategoriesTitle": "Categorii",
