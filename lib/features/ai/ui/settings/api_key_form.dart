@@ -80,6 +80,31 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
       children: <Widget>[
         SizedBox(
           height: 90,
+          child: InkWell(
+            onTap: _showProviderTypeModal,
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: context.messages.aiConfigProviderTypeFieldLabel,
+                suffixIcon: const Icon(Icons.arrow_drop_down),
+              ),
+              child: Row(
+                children: [
+                  Icon(formState.inferenceProviderType.icon, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      formState.inferenceProviderType.displayName(context),
+                      style: context.textTheme.bodyLarge,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 90,
           child: TextField(
             onChanged: formController.nameChanged,
             controller: formController.nameController,
@@ -131,41 +156,13 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
             ),
           ),
         ),
-        SizedBox(
-          height: 90,
-          child: InkWell(
-            onTap: _showProviderTypeModal,
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: context.messages.aiConfigProviderTypeFieldLabel,
-                suffixIcon: const Icon(Icons.arrow_drop_down),
-              ),
-              child: Row(
-                children: [
-                  Icon(formState.inferenceProviderType.icon, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      formState.inferenceProviderType.displayName(context),
-                      style: context.textTheme.bodyLarge,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        TextField(
+          onChanged: formController.commentChanged,
+          controller: formController.commentController,
+          decoration: InputDecoration(
+            labelText: context.messages.aiConfigCommentFieldLabel,
           ),
-        ),
-        SizedBox(
-          height: 100,
-          child: TextField(
-            onChanged: formController.commentChanged,
-            controller: formController.commentController,
-            decoration: InputDecoration(
-              labelText: context.messages.aiConfigCommentFieldLabel,
-            ),
-            maxLines: 2,
-          ),
+          maxLines: 3,
         ),
         SizedBox(
           height: 50,

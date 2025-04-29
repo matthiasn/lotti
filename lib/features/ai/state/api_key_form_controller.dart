@@ -92,6 +92,17 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     if (value == InferenceProviderType.gemini) {
       baseUrlController.text =
           'https://generativelanguage.googleapis.com/v1beta/openai';
+
+      if (nameController.text.isEmpty) {
+        nameController.text = 'Gemini';
+      }
+    }
+    if (value == InferenceProviderType.nebiusAiStudio) {
+      baseUrlController.text = 'https://api.studio.nebius.com/v1';
+
+      if (nameController.text.isEmpty) {
+        nameController.text = 'Nebius AI Studio';
+      }
     }
     _setAllFields(inferenceProviderType: value);
   }
