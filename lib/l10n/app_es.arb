@@ -234,6 +234,7 @@
   "settingsAdvancedShowCaseHealthImportTooltip": "Importa datos relacionados con la salud desde fuentes externas.",
   "settingsAdvancedShowCaseMaintenanceTooltip": "Realiza tareas de mantenimiento para optimizar el rendimiento de la aplicación.",
   "settingsAdvancedShowCaseAboutLottiTooltip": "Obtén más información sobre la aplicación Lotti, incluida la versión y los créditos.",
+  "settingsAdvancedShowCaseApiKeyTooltip": "Administre sus claves API para varios proveedores de IA. Agregue, edite o elimine claves para configurar integraciones con servicios compatibles como OpenAI, Gemini y más. Asegúrese de manejar la información sensible de manera segura.",
   "settingsCategoriesDuplicateError": "La categoría ya existe",
   "settingsCategoriesNameLabel": "Nombre de la categoría:",
   "settingsCategoriesTitle": "Categorías",
