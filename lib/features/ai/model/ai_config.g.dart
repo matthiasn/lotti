@@ -42,6 +42,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.gemini: 'gemini',
   InferenceProviderType.genericOpenAi: 'genericOpenAi',
   InferenceProviderType.openAi: 'openAi',
+  InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
 };
 
 _$AiConfigPromptTemplateImpl _$$AiConfigPromptTemplateImplFromJson(

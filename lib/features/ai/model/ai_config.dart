@@ -8,6 +8,7 @@ enum InferenceProviderType {
   gemini,
   genericOpenAi,
   openAi,
+  nebiusAiStudio,
 }
 
 @freezed

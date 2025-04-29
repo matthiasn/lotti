@@ -82,10 +82,16 @@ Future<void> processMatrixMessage({
         AiConfig aiConfig,
         SyncEntryStatus status,
       ) {
-        getIt<AiConfigRepository>().saveConfig(aiConfig);
+        getIt<AiConfigRepository>().saveConfig(
+          aiConfig,
+          fromSync: true,
+        );
       },
       aiConfigDelete: (String id) {
-        getIt<AiConfigRepository>().deleteConfig(id);
+        getIt<AiConfigRepository>().deleteConfig(
+          id,
+          fromSync: true,
+        );
       },
     );
   } catch (e, stackTrace) {
