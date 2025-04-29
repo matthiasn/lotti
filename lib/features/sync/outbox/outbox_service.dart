@@ -127,6 +127,12 @@ class OutboxService {
         );
       }
 
+      if (syncMessage is SyncAiConfigDelete) {
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(subject: const Value('aiConfigDelete')),
+        );
+      }
+
       if (syncMessage is SyncTagEntity) {
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(
