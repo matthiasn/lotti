@@ -75,3 +75,47 @@ enum AiConfigType {
   prompt,
   model,
 }
+
+/// Checks if a given [AiConfigModel] meets the requirements specified by a [AiConfigPrompt].
+///
+/// Requirements checked:
+/// 1. Reasoning Capability: If the prompt requires reasoning (`useReasoning` = true),
+///    the model must also be a reasoning model (`isReasoningModel` = true).
+/// 2. Input Modalities: For every `InputDataType` listed in the prompt's
+///    `requiredInputData`, the model must support the corresponding input `Modality`.
+///
+/// Returns `true` if the model satisfies all prompt requirements, `false` otherwise.
+bool isModelSuitableForPrompt({
+  required AiConfigModel model,
+  required AiConfigPrompt prompt,
+}) {
+  // 1. Check Reasoning Capability Requirement
+  if (prompt.useReasoning && !model.isReasoningModel) {
+    // Prompt requires reasoning, but the model does not support it.
+    return false;
+  }
+
+  // 2. Check Required Input Modalities
+  if (prompt.requiredInputData.isNotEmpty) {
+    // Use a Set for efficient lookups of the model's supported modalities
+    final supportedModalities = model.inputModalities.toSet();
+
+    for (final requiredType in prompt.requiredInputData) {
+      final requiredModality = switch (requiredType) {
+        InputDataType.task => Modality.text,
+        InputDataType.tasksList => Modality.text,
+        InputDataType.audioFiles => Modality.audio,
+        InputDataType.images => Modality.image,
+      };
+
+      // Check if the model supports the required modality for this data type
+      if (!supportedModalities.contains(requiredModality)) {
+        // Model lacks a required input modality.
+        return false;
+      }
+    }
+  }
+
+  // If all checks passed, the model is suitable.
+  return true;
+}
