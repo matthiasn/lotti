@@ -29,6 +29,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
   final _maintainaceKey = GlobalKey();
   final _aboutLottiKey = GlobalKey();
   final _apikeyKey = GlobalKey();
+  final _modelsKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +46,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               _maintainaceKey,
               _aboutLottiKey,
               _apikeyKey,
+              _modelsKey,
             ],
           );
         },
@@ -56,103 +58,117 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
       showBackButton: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ShowcaseWithWidget(
-              startNav: true,
-              showcaseKey: _maxtrixsyncKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseMatrixSyncTooltip,
-              ),
-              child: const MatrixSettingsCard(),
-            ),
-            ShowcaseWithWidget(
-              showcaseKey: _syncoutBoxKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseSyncOutboxTooltip,
-              ),
-              child: SettingsNavCard(
-                trailing: OutboxBadgeIcon(
-                  icon: SettingsIcon(MdiIcons.mailboxOutline),
-                ),
-                title: context.messages.settingsSyncOutboxTitle,
-                path: '/settings/advanced/outbox_monitor',
-              ),
-            ),
-            ShowcaseWithWidget(
-              showcaseKey: _synConflictsKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseConflictsTooltip,
-              ),
-              child: SettingsNavCard(
-                title: context.messages.settingsConflictsTitle,
-                path: '/settings/advanced/conflicts',
-              ),
-            ),
-            ShowcaseWithWidget(
-              showcaseKey: _logsKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseLogsTooltip,
-              ),
-              child: SettingsNavCard(
-                title: context.messages.settingsLogsTitle,
-                path: '/settings/advanced/logging',
-              ),
-            ),
-            if (isMobile)
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               ShowcaseWithWidget(
-                showcaseKey: _healthImportKey,
+                startNav: true,
+                showcaseKey: _maxtrixsyncKey,
                 description: ShowcaseTextStyle(
                   descriptionText: context
-                      .messages.settingsAdvancedShowCaseHealthImportTooltip,
+                      .messages.settingsAdvancedShowCaseMatrixSyncTooltip,
+                ),
+                child: const MatrixSettingsCard(),
+              ),
+              ShowcaseWithWidget(
+                showcaseKey: _syncoutBoxKey,
+                description: ShowcaseTextStyle(
+                  descriptionText: context
+                      .messages.settingsAdvancedShowCaseSyncOutboxTooltip,
                 ),
                 child: SettingsNavCard(
-                  title: context.messages.settingsHealthImportTitle,
-                  path: '/settings/health_import',
+                  trailing: OutboxBadgeIcon(
+                    icon: SettingsIcon(MdiIcons.mailboxOutline),
+                  ),
+                  title: context.messages.settingsSyncOutboxTitle,
+                  path: '/settings/advanced/outbox_monitor',
                 ),
               ),
-            ShowcaseWithWidget(
-              showcaseKey: _maintainaceKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
+              ShowcaseWithWidget(
+                showcaseKey: _synConflictsKey,
+                description: ShowcaseTextStyle(
+                  descriptionText:
+                      context.messages.settingsAdvancedShowCaseConflictsTooltip,
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.settingsConflictsTitle,
+                  path: '/settings/advanced/conflicts',
+                ),
               ),
-              child: SettingsNavCard(
-                title: context.messages.settingsMaintenanceTitle,
-                path: '/settings/advanced/maintenance',
+              ShowcaseWithWidget(
+                showcaseKey: _logsKey,
+                description: ShowcaseTextStyle(
+                  descriptionText:
+                      context.messages.settingsAdvancedShowCaseLogsTooltip,
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.settingsLogsTitle,
+                  path: '/settings/advanced/logging',
+                ),
               ),
-            ),
-            ShowcaseWithWidget(
-              isTooltipTop: true,
-              showcaseKey: _aboutLottiKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
+              if (isMobile)
+                ShowcaseWithWidget(
+                  showcaseKey: _healthImportKey,
+                  description: ShowcaseTextStyle(
+                    descriptionText: context
+                        .messages.settingsAdvancedShowCaseHealthImportTooltip,
+                  ),
+                  child: SettingsNavCard(
+                    title: context.messages.settingsHealthImportTitle,
+                    path: '/settings/health_import',
+                  ),
+                ),
+              ShowcaseWithWidget(
+                showcaseKey: _maintainaceKey,
+                description: ShowcaseTextStyle(
+                  descriptionText: context
+                      .messages.settingsAdvancedShowCaseMaintenanceTooltip,
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.settingsMaintenanceTitle,
+                  path: '/settings/advanced/maintenance',
+                ),
               ),
-              child: SettingsNavCard(
-                title: context.messages.settingsAboutTitle,
-                path: '/settings/advanced/about',
+              ShowcaseWithWidget(
+                isTooltipTop: true,
+                showcaseKey: _aboutLottiKey,
+                description: ShowcaseTextStyle(
+                  descriptionText: context
+                      .messages.settingsAdvancedShowCaseAboutLottiTooltip,
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.settingsAboutTitle,
+                  path: '/settings/advanced/about',
+                ),
               ),
-            ),
-            ShowcaseWithWidget(
-              isTooltipTop: true,
-              endNav: true,
-              showcaseKey: _apikeyKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseApiKeyTooltip,
+              ShowcaseWithWidget(
+                isTooltipTop: true,
+                showcaseKey: _apikeyKey,
+                description: ShowcaseTextStyle(
+                  descriptionText:
+                      context.messages.settingsAdvancedShowCaseApiKeyTooltip,
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.settingsAiApiKeys,
+                  path: '/settings/advanced/ai/api_keys',
+                ),
               ),
-              child: SettingsNavCard(
-                title: context.messages.settingsAiApiKeys,
-                path: '/settings/advanced/ai/api_keys',
+              ShowcaseWithWidget(
+                isTooltipTop: true,
+                endNav: true,
+                showcaseKey: _modelsKey,
+                description: ShowcaseTextStyle(
+                  descriptionText:
+                      context.messages.settingsAdvancedShowCaseModelsTooltip,
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.settingsAiModels,
+                  path: '/settings/advanced/ai/models',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

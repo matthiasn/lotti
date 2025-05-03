@@ -71,15 +71,17 @@ class ActionItemSuggestionsController
           ? 'deepseek-ai/DeepSeek-R1-fast'
           : 'deepseek-r1:14b';
 
+      //final model = 'models/gemini-2.5-pro-preview-03-25';
+
       const temperature = 0.6;
 
       if (useCloudInference) {
         final configs = await ref
             .read(aiConfigRepositoryProvider)
-            .getConfigsByType('apiKey');
+            .getConfigsByType(AiConfigType.inferenceProvider);
 
         final apiKeyConfig = configs
-            .whereType<AiConfigApiKey>()
+            .whereType<AiConfigInferenceProvider>()
             .where(
               (config) =>
                   config.inferenceProviderType ==
@@ -118,7 +120,15 @@ class ActionItemSuggestionsController
       }
 
       final completeResponse = buffer.toString();
-      final [thoughts, response] = completeResponse.split('</think>');
+
+      var thoughts = '';
+      var response = completeResponse;
+
+      if (completeResponse.contains('</think>')) {
+        final [part1, part2] = completeResponse.split('</think>');
+        thoughts = part1;
+        response = part2;
+      }
 
       final exp = RegExp(r'\[(.|\n)*\]', multiLine: true);
       final match = exp.firstMatch(response)?.group(0) ?? '[]';

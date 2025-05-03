@@ -56,10 +56,12 @@ separate words. Remove filler words and word repetitions.
       final base64 = await getAudioBase64(entry);
       const model = 'models/gemini-2.5-flash-preview-04-17';
 
-      final configs =
-          await ref.read(aiConfigRepositoryProvider).getConfigsByType('apiKey');
+      final configs = await ref
+          .read(aiConfigRepositoryProvider)
+          .getConfigsByType(AiConfigType.inferenceProvider);
+
       final apiKeyConfig = configs
-          .whereType<AiConfigApiKey>()
+          .whereType<AiConfigInferenceProvider>()
           .where(
             (config) =>
                 config.inferenceProviderType == InferenceProviderType.gemini,

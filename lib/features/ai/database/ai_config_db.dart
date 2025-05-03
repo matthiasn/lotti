@@ -33,8 +33,9 @@ class AiConfigDb extends _$AiConfigDb {
     final dbEntity = AiConfigDbEntity(
       id: config.id,
       type: config.map(
-        apiKey: (_) => 'apiKey',
-        promptTemplate: (_) => 'promptTemplate',
+        inferenceProvider: (_) => 'inferenceProvider',
+        model: (_) => 'model',
+        prompt: (_) => 'prompt',
       ),
       name: config.name,
       serialized: jsonEncode(config.toJson()),

@@ -55,8 +55,8 @@ class AiConfigRepository {
   }
 
   /// Stream of all AI configurations of a specific type
-  Future<List<AiConfig>> getConfigsByType(String type) async {
-    final dbEntities = await _db.getConfigsByType(type);
+  Future<List<AiConfig>> getConfigsByType(AiConfigType type) async {
+    final dbEntities = await _db.getConfigsByType(type.name);
     return dbEntities
         .map(
           (entity) => AiConfig.fromJson(
@@ -67,8 +67,8 @@ class AiConfigRepository {
   }
 
   /// Stream of all AI configurations of a specific type
-  Stream<List<AiConfig>> watchConfigsByType(String type) {
-    return _db.watchConfigsByType(type).map(
+  Stream<List<AiConfig>> watchConfigsByType(AiConfigType type) {
+    return _db.watchConfigsByType(type.name).map(
           (entities) => entities
               .map(
                 (entity) => AiConfig.fromJson(

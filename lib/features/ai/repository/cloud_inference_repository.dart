@@ -25,6 +25,7 @@ class CloudInferenceRepository {
 
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
+        frequencyPenalty: null,
         messages: [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string(prompt),
@@ -56,6 +57,7 @@ class CloudInferenceRepository {
 
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
+        frequencyPenalty: null,
         messages: [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.parts(

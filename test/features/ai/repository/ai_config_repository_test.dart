@@ -18,7 +18,7 @@ void main() {
   setUpAll(() {
     // Register a fallback value for AiConfig
     registerFallbackValue(
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'fallback-id',
         baseUrl: 'https://fallback.example.com',
         apiKey: 'fallback-key',
@@ -31,7 +31,7 @@ void main() {
     // Register a fallback value for SyncMessage
     registerFallbackValue(
       SyncMessage.aiConfig(
-        aiConfig: AiConfig.apiKey(
+        aiConfig: AiConfig.inferenceProvider(
           id: 'fallback-id',
           baseUrl: 'https://fallback.example.com',
           apiKey: 'fallback-key',
@@ -84,7 +84,7 @@ void main() {
     test('saveConfig calls db.saveConfig and outboxService.enqueueMessage',
         () async {
       // Arrange
-      final config = AiConfig.apiKey(
+      final config = AiConfig.inferenceProvider(
         id: 'test-id',
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
@@ -116,7 +116,7 @@ void main() {
     test('getConfigById calls db.getConfigById', () async {
       // Arrange
       const id = 'test-id';
-      final config = AiConfig.apiKey(
+      final config = AiConfig.inferenceProvider(
         id: id,
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
@@ -136,13 +136,13 @@ void main() {
 
     test('getConfigsByType calls db.getConfigsByType', () async {
       // Arrange
-      const type = 'apiKey';
+      const type = 'inferenceProvider';
 
       // Mock the DB response with any list of entities
       when(() => mockDb.getConfigsByType(type)).thenAnswer((_) async => []);
 
       // Act
-      await repository.getConfigsByType(type);
+      await repository.getConfigsByType(AiConfigType.inferenceProvider);
 
       // Assert
       verify(() => mockDb.getConfigsByType(type)).called(1);
@@ -190,7 +190,7 @@ void main() {
 
     test('saveConfig and getConfigById work correctly', () async {
       // Arrange
-      final apiKeyConfig = AiConfig.apiKey(
+      final apiKeyConfig = AiConfig.inferenceProvider(
         id: 'test-id',
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
@@ -205,7 +205,7 @@ void main() {
 
       // Assert
       result?.maybeMap(
-        apiKey: (config) {
+        inferenceProvider: (config) {
           expect(config.id, equals(apiKeyConfig.id));
           expect(config.baseUrl, equals('https://api.example.com'));
           expect(config.apiKey, equals('test-api-key'));
@@ -220,7 +220,7 @@ void main() {
 
     test('deleteConfig removes the config', () async {
       // Arrange
-      final config = AiConfig.apiKey(
+      final config = AiConfig.inferenceProvider(
         id: 'test-id',
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
@@ -240,7 +240,7 @@ void main() {
 
     test('getConfigsByType returns configs of the specified type', () async {
       // Arrange
-      final apiConfig = AiConfig.apiKey(
+      final apiConfig = AiConfig.inferenceProvider(
         id: 'api-id',
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
@@ -254,14 +254,14 @@ void main() {
 
       // Act & Assert
       expect(
-        repository.getConfigsByType('apiKey'),
+        repository.getConfigsByType(AiConfigType.inferenceProvider),
         completion(equals([apiConfig])),
       );
     });
 
     test('watchConfigsByType returns configs of the specified type', () async {
       // Arrange
-      final apiConfig = AiConfig.apiKey(
+      final apiConfig = AiConfig.inferenceProvider(
         id: 'api-id',
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
@@ -275,7 +275,7 @@ void main() {
 
       // Act & Assert
       expect(
-        repository.watchConfigsByType('apiKey'),
+        repository.watchConfigsByType(AiConfigType.inferenceProvider),
         emits(
           predicate<List<AiConfig>>((configs) {
             return configs.length == 1 && configs.first.id == 'api-id';
@@ -286,7 +286,7 @@ void main() {
 
     test('watchAllConfigs returns all configs', () async {
       // Arrange
-      final apiConfig1 = AiConfig.apiKey(
+      final apiConfig1 = AiConfig.inferenceProvider(
         id: 'api-id-1',
         baseUrl: 'https://api1.example.com',
         apiKey: 'test-api-key-1',
@@ -295,7 +295,7 @@ void main() {
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
-      final apiConfig2 = AiConfig.apiKey(
+      final apiConfig2 = AiConfig.inferenceProvider(
         id: 'api-id-2',
         baseUrl: 'https://api2.example.com',
         apiKey: 'test-api-key-2',

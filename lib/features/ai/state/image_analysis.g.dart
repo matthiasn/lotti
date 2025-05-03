@@ -7,7 +7,7 @@ part of 'image_analysis.dart';
 // **************************************************************************
 
 String _$aiImageAnalysisControllerHash() =>
-    r'a908cb8a01f8b9f448fb2d92084b24736cfe2661';
+    r'6abc1714cf5f596e524ec2d5c289afceec17bfea';
 
 /// Copied from Dart SDK
 class _SystemHash {
