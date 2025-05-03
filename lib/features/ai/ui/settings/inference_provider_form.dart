@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
-import 'package:lotti/features/ai/state/api_key_form_controller.dart';
+import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 
-class ApiKeyForm extends ConsumerStatefulWidget {
-  const ApiKeyForm({
+class InferenceProviderForm extends ConsumerStatefulWidget {
+  const InferenceProviderForm({
     required this.onSave,
     this.config,
     super.key,
@@ -18,10 +18,11 @@ class ApiKeyForm extends ConsumerStatefulWidget {
   final void Function(AiConfig) onSave;
 
   @override
-  ConsumerState<ApiKeyForm> createState() => _ApiKeyFormState();
+  ConsumerState<InferenceProviderForm> createState() =>
+      _InferenceProviderFormState();
 }
 
-class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
+class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
   bool _showApiKey = false;
 
   void _showProviderTypeModal() {
@@ -31,11 +32,14 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
       builder: (modalContext) {
         final formState = ref
             .watch(
-              apiKeyFormControllerProvider(configId: widget.config?.id),
+              inferenceProviderFormControllerProvider(
+                configId: widget.config?.id,
+              ),
             )
             .valueOrNull;
         final formController = ref.read(
-          apiKeyFormControllerProvider(configId: widget.config?.id).notifier,
+          inferenceProviderFormControllerProvider(configId: widget.config?.id)
+              .notifier,
         );
 
         if (formState == null) {
@@ -66,10 +70,12 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
   @override
   Widget build(BuildContext context) {
     final configId = widget.config?.id;
-    final formState =
-        ref.watch(apiKeyFormControllerProvider(configId: configId)).valueOrNull;
-    final formController =
-        ref.read(apiKeyFormControllerProvider(configId: configId).notifier);
+    final formState = ref
+        .watch(inferenceProviderFormControllerProvider(configId: configId))
+        .valueOrNull;
+    final formController = ref.read(
+      inferenceProviderFormControllerProvider(configId: configId).notifier,
+    );
 
     if (formState == null) {
       return const Center(child: CircularProgressIndicator());

@@ -69,3 +69,9 @@ class AiConfig with _$AiConfig {
   factory AiConfig.fromJson(Map<String, dynamic> json) =>
       _$AiConfigFromJson(json);
 }
+
+enum AiConfigType {
+  inferenceProvider,
+  prompt,
+  model,
+}

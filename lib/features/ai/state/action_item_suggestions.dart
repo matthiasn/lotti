@@ -78,7 +78,7 @@ class ActionItemSuggestionsController
       if (useCloudInference) {
         final configs = await ref
             .read(aiConfigRepositoryProvider)
-            .getConfigsByType('apiKey');
+            .getConfigsByType(AiConfigType.inferenceProvider);
 
         final apiKeyConfig = configs
             .whereType<AiConfigInferenceProvider>()

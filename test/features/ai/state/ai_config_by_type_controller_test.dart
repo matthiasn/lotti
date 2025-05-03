@@ -65,9 +65,9 @@ void main() {
 
     test('should return configs of the specified type', () async {
       // Arrange
-      when(() => mockRepository.watchConfigsByType('apiKey')).thenAnswer(
-        (_) => Stream.value([testApiConfig]),
-      );
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value([testApiConfig]));
 
       final container = createContainer(
         overrides: [
@@ -78,7 +78,9 @@ void main() {
       // Act & Assert
       final listener = Listener<AsyncValue<List<AiConfig>>>();
       container.listen(
-        aiConfigByTypeControllerProvider(configType: 'apiKey'),
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.inferenceProvider,
+        ),
         listener.call,
         fireImmediately: true,
       );
@@ -95,7 +97,9 @@ void main() {
       ).called(1);
 
       // Verify the repository method was called with the correct type
-      verify(() => mockRepository.watchConfigsByType('apiKey')).called(1);
+      verify(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).called(1);
     });
   });
 

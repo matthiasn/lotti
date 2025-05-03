@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/state/api_key_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/api_key_form.dart';
+import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Edit page for API keys
-class ApiKeyEditPage extends ConsumerWidget {
-  const ApiKeyEditPage({
+class InferenceProviderEditPage extends ConsumerWidget {
+  const InferenceProviderEditPage({
     this.configId,
     super.key,
   });
@@ -52,11 +51,12 @@ class ApiKeyEditPage extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
-        child: ApiKeyForm(
+        child: InferenceProviderForm(
           config: config,
           onSave: (updatedConfig) async {
             final controller = ref.read(
-              apiKeyFormControllerProvider(configId: config?.id).notifier,
+              inferenceProviderFormControllerProvider(configId: config?.id)
+                  .notifier,
             );
 
             if (configId == null) {

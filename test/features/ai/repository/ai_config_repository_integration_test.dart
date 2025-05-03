@@ -133,7 +133,7 @@ void main() {
 
       // Watch by type tests
       await expectLater(
-        repository.watchConfigsByType('inferenceProvider'),
+        repository.watchConfigsByType(AiConfigType.inferenceProvider),
         emits(
           predicate<List<AiConfig>>(
             (configs) =>
@@ -143,7 +143,7 @@ void main() {
       );
 
       await expectLater(
-        repository.watchConfigsByType('prompt'),
+        repository.watchConfigsByType(AiConfigType.prompt),
         emits(
           predicate<List<AiConfig>>(
             (configs) =>

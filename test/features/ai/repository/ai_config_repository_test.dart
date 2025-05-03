@@ -142,7 +142,7 @@ void main() {
       when(() => mockDb.getConfigsByType(type)).thenAnswer((_) async => []);
 
       // Act
-      await repository.getConfigsByType(type);
+      await repository.getConfigsByType(AiConfigType.inferenceProvider);
 
       // Assert
       verify(() => mockDb.getConfigsByType(type)).called(1);
@@ -254,7 +254,7 @@ void main() {
 
       // Act & Assert
       expect(
-        repository.getConfigsByType('inferenceProvider'),
+        repository.getConfigsByType(AiConfigType.inferenceProvider),
         completion(equals([apiConfig])),
       );
     });
@@ -275,7 +275,7 @@ void main() {
 
       // Act & Assert
       expect(
-        repository.watchConfigsByType('inferenceProvider'),
+        repository.watchConfigsByType(AiConfigType.inferenceProvider),
         emits(
           predicate<List<AiConfig>>((configs) {
             return configs.length == 1 && configs.first.id == 'api-id';

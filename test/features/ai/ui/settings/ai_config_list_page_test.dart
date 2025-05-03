@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/api_key_form_controller.dart';
+import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -21,7 +21,8 @@ class MockItemTapCallback extends Mock {
   void call(AiConfig config);
 }
 
-class MockFormController extends Mock implements ApiKeyFormController {
+class MockFormController extends Mock
+    implements InferenceProviderFormController {
   @override
   final TextEditingController nameController = TextEditingController();
 
@@ -113,9 +114,9 @@ void main() {
     };
 
     // Set up the repository to return our test stream when watchConfigsByType is called
-    when(() => mockRepository.watchConfigsByType('apiKey')).thenAnswer(
-      (_) => testStream,
-    );
+    when(
+      () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer((_) => testStream);
 
     return ProviderScope(
       overrides: [
@@ -130,7 +131,7 @@ void main() {
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: AiConfigListPage(
-          configType: 'apiKey',
+          configType: AiConfigType.inferenceProvider,
           title: 'Test API Keys',
           onAddPressed: onAddPressed,
           onItemTap: onItemTap,
@@ -142,9 +143,9 @@ void main() {
   group('AiConfigListPage Tests', () {
     testWidgets('should render loading state', (WidgetTester tester) async {
       // Set up repository to return a never-completing stream to simulate loading
-      when(() => mockRepository.watchConfigsByType('apiKey')).thenAnswer(
-        (_) => const Stream.empty(),
-      );
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => const Stream.empty());
 
       // Arrange
       await tester.pumpWidget(
@@ -257,9 +258,9 @@ void main() {
     testWidgets('should not show add button if onAddPressed is null',
         (WidgetTester tester) async {
       // Set up the stream to return our test configs
-      when(() => mockRepository.watchConfigsByType('apiKey')).thenAnswer(
-        (_) => Stream.value(testConfigs),
-      );
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value(testConfigs));
 
       // Arrange
       await tester.pumpWidget(
@@ -276,7 +277,7 @@ void main() {
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: AiConfigListPage(
-              configType: 'apiKey',
+              configType: AiConfigType.inferenceProvider,
               title: 'Test API Keys',
               onItemTap: mockItemTapCallback.call,
             ),
@@ -294,8 +295,10 @@ void main() {
     group('Dismissible Tests', () {
       testWidgets('should have dismissible items', (WidgetTester tester) async {
         // Setup repository to return our test configs
-        when(() => mockRepository.watchConfigsByType('apiKey'))
-            .thenAnswer((_) => Stream.value(testConfigs));
+        when(
+          () =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) => Stream.value(testConfigs));
 
         // Arrange
         await tester.pumpWidget(
@@ -317,13 +320,15 @@ void main() {
         when(() => formController.deleteConfig(any())).thenAnswer((_) async {});
 
         // Setup repository to return our test configs
-        when(() => mockRepository.watchConfigsByType('apiKey'))
-            .thenAnswer((_) => Stream.value(testConfigs));
+        when(
+          () =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) => Stream.value(testConfigs));
 
         // Override the controller provider
         final overrides = [
           aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          apiKeyFormControllerProvider(configId: 'test-id-1')
+          inferenceProviderFormControllerProvider(configId: 'test-id-1')
               .overrideWith(() => formController),
         ];
 
@@ -340,7 +345,7 @@ void main() {
               ],
               supportedLocales: [Locale('en', '')],
               home: AiConfigListPage(
-                configType: 'apiKey',
+                configType: AiConfigType.inferenceProvider,
                 title: 'Test API Keys',
               ),
             ),
@@ -379,13 +384,15 @@ void main() {
         when(() => formController.deleteConfig(any())).thenAnswer((_) async {});
 
         // Setup repository to return our test configs
-        when(() => mockRepository.watchConfigsByType('apiKey'))
-            .thenAnswer((_) => Stream.value(testConfigs));
+        when(
+          () =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) => Stream.value(testConfigs));
 
         // Override providers
         final overrides = [
           aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          apiKeyFormControllerProvider(configId: 'test-id-1')
+          inferenceProviderFormControllerProvider(configId: 'test-id-1')
               .overrideWith(() => formController),
         ];
 
@@ -402,7 +409,7 @@ void main() {
               ],
               supportedLocales: [Locale('en', '')],
               home: AiConfigListPage(
-                configType: 'apiKey',
+                configType: AiConfigType.inferenceProvider,
                 title: 'Test API Keys',
               ),
             ),
@@ -445,13 +452,16 @@ void main() {
         when(() => formController.deleteConfig(any())).thenAnswer((_) async {});
 
         // Setup repository to return our test configs
-        when(() => mockRepository.watchConfigsByType('apiKey'))
-            .thenAnswer((_) => Stream.value(testConfigs));
+        when(
+          () => mockRepository.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => Stream.value(testConfigs));
 
         // Override providers
         final overrides = [
           aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          apiKeyFormControllerProvider(configId: 'test-id-1')
+          inferenceProviderFormControllerProvider(configId: 'test-id-1')
               .overrideWith(() => formController),
         ];
 
@@ -468,7 +478,7 @@ void main() {
               ],
               supportedLocales: [Locale('en', '')],
               home: AiConfigListPage(
-                configType: 'apiKey',
+                configType: AiConfigType.inferenceProvider,
                 title: 'Test API Keys',
               ),
             ),

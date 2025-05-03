@@ -22,9 +22,9 @@ class ApiKeyValue extends FormzInput<String, String> {
   }
 }
 
-class CommentValue extends FormzInput<String, String> {
-  const CommentValue.pure() : super.pure('');
-  const CommentValue.dirty([super.value = '']) : super.dirty();
+class DescriptionValue extends FormzInput<String, String> {
+  const DescriptionValue.pure() : super.pure('');
+  const DescriptionValue.dirty([super.value = '']) : super.dirty();
 
   @override
   String? validator(String value) {
@@ -53,13 +53,13 @@ class BaseUrl extends FormzInput<String, String> {
 }
 
 // Form state class
-class ApiKeyFormState with FormzMixin {
-  ApiKeyFormState({
+class InferenceProviderFormState with FormzMixin {
+  InferenceProviderFormState({
     this.id,
     this.name = const ApiKeyName.pure(),
     this.apiKey = const ApiKeyValue.pure(),
     this.baseUrl = const BaseUrl.pure(),
-    this.comment = const CommentValue.pure(),
+    this.description = const DescriptionValue.pure(),
     this.isSubmitting = false,
     this.submitFailed = false,
     this.inferenceProviderType = InferenceProviderType.genericOpenAi,
@@ -69,27 +69,27 @@ class ApiKeyFormState with FormzMixin {
   final ApiKeyName name;
   final ApiKeyValue apiKey;
   final BaseUrl baseUrl;
-  final CommentValue comment;
+  final DescriptionValue description;
   final bool isSubmitting;
   final bool submitFailed;
   final InferenceProviderType inferenceProviderType;
 
-  ApiKeyFormState copyWith({
+  InferenceProviderFormState copyWith({
     String? id,
     ApiKeyName? name,
     ApiKeyValue? apiKey,
     BaseUrl? baseUrl,
-    CommentValue? comment,
+    DescriptionValue? description,
     bool? isSubmitting,
     bool? submitFailed,
     InferenceProviderType? inferenceProviderType,
   }) {
-    return ApiKeyFormState(
+    return InferenceProviderFormState(
       id: id ?? this.id,
       name: name ?? this.name,
       apiKey: apiKey ?? this.apiKey,
       baseUrl: baseUrl ?? this.baseUrl,
-      comment: comment ?? this.comment,
+      description: description ?? this.description,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitFailed: submitFailed ?? this.submitFailed,
       inferenceProviderType:
@@ -102,7 +102,7 @@ class ApiKeyFormState with FormzMixin {
         name,
         apiKey,
         baseUrl,
-        comment,
+        description,
       ];
 
   // Convert form state to AiConfig model
@@ -112,7 +112,7 @@ class ApiKeyFormState with FormzMixin {
       name: name.value,
       apiKey: apiKey.value,
       baseUrl: baseUrl.value,
-      description: comment.value,
+      description: description.value,
       createdAt: DateTime.now(),
       inferenceProviderType: inferenceProviderType,
     );

@@ -10,7 +10,7 @@ part 'ai_config_by_type_controller.g.dart';
 @riverpod
 class AiConfigByTypeController extends _$AiConfigByTypeController {
   @override
-  Stream<List<AiConfig>> build({required String configType}) {
+  Stream<List<AiConfig>> build({required AiConfigType configType}) {
     final repository = ref.watch(aiConfigRepositoryProvider);
     return repository.watchConfigsByType(configType);
   }

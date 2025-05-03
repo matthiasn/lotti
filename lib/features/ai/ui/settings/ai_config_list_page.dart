@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/state/api_key_form_controller.dart';
+import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// A page that displays a list of AI configurations of a specific type.
@@ -16,7 +16,7 @@ class AiConfigListPage extends ConsumerWidget {
     super.key,
   });
 
-  final String configType;
+  final AiConfigType configType;
   final String title;
   final VoidCallback? onAddPressed;
   final void Function(AiConfig config)? onItemTap;
@@ -118,8 +118,9 @@ class AiConfigListPage extends ConsumerWidget {
   }
 
   void _deleteConfig(AiConfig config, WidgetRef ref, BuildContext context) {
-    final controller =
-        ref.read(apiKeyFormControllerProvider(configId: config.id).notifier);
+    final controller = ref.read(
+      inferenceProviderFormControllerProvider(configId: config.id).notifier,
+    );
 
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final errorColor = Theme.of(context).colorScheme.error;

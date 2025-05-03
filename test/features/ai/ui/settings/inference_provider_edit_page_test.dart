@@ -8,8 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/ui/settings/api_key_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/api_key_form.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
@@ -68,7 +68,7 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: ApiKeyEditPage(configId: configId),
+        home: InferenceProviderEditPage(configId: configId),
         navigatorObservers: [MockNavigatorObserver()],
       ),
     );
@@ -87,7 +87,7 @@ void main() {
 
       // Assert
       expect(find.text('Add API Key'), findsOneWidget);
-      expect(find.byType(ApiKeyForm), findsOneWidget);
+      expect(find.byType(InferenceProviderForm), findsOneWidget);
     });
 
     testWidgets('should display "Edit API Key" title when configId is provided',
@@ -102,7 +102,7 @@ void main() {
 
       // Assert
       expect(find.text('Edit API Key'), findsOneWidget);
-      expect(find.byType(ApiKeyForm), findsOneWidget);
+      expect(find.byType(InferenceProviderForm), findsOneWidget);
     });
 
     testWidgets('should call repository saveConfig when adding a new API key',
@@ -132,7 +132,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the form widget
-      final formWidget = tester.widget<ApiKeyForm>(find.byType(ApiKeyForm));
+      final formWidget = tester
+          .widget<InferenceProviderForm>(find.byType(InferenceProviderForm));
 
       // Create a config with known values
       final config = AiConfig.inferenceProvider(
@@ -186,7 +187,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the form widget
-      final formWidget = tester.widget<ApiKeyForm>(find.byType(ApiKeyForm));
+      final formWidget = tester
+          .widget<InferenceProviderForm>(find.byType(InferenceProviderForm));
 
       // Create a config with known values
       final config = AiConfig.inferenceProvider(
@@ -258,7 +260,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify initial provider type is shown
-      final context = tester.element(find.byType(ApiKeyForm));
+      final context = tester.element(find.byType(InferenceProviderForm));
       expect(
         find.text(InferenceProviderType.genericOpenAi.displayName(context)),
         findsOneWidget,
@@ -309,7 +311,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Get the build context
-      final context = tester.element(find.byType(ApiKeyForm));
+      final context = tester.element(find.byType(InferenceProviderForm));
 
       // Open the provider type selection modal
       final inkWell = find.ancestor(

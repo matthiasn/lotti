@@ -7,7 +7,7 @@ part of 'action_item_suggestions.dart';
 // **************************************************************************
 
 String _$actionItemSuggestionsControllerHash() =>
-    r'cc291f9ced558e47d9598bcf403267444cc5a8a0';
+    r'f5e92b7019b1e08b5b7d83cb5eb02a5759310d55';
 
 /// Copied from Dart SDK
 class _SystemHash {

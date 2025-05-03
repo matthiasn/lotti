@@ -70,8 +70,9 @@ content of the website, not the style of the website. Do not make up names.
     const temperature = 0.6;
 
     if (useCloudInference) {
-      final configs =
-          await ref.read(aiConfigRepositoryProvider).getConfigsByType('apiKey');
+      final configs = await ref
+          .read(aiConfigRepositoryProvider)
+          .getConfigsByType(AiConfigType.inferenceProvider);
 
       final apiKeyConfig = configs
           .whereType<AiConfigInferenceProvider>()
