@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'action_item_suggestions.dart';
+part of 'task_from_audio.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$actionItemSuggestionsControllerHash() =>
-    r'2fac913301cd84cb069aadc684cf1a44552b09ab';
+String _$taskFromAudioControllerHash() =>
+    r'993d4fc81ecba7d22f0bf967dac68d5f18d9f785';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,7 +30,7 @@ class _SystemHash {
   }
 }
 
-abstract class _$ActionItemSuggestionsController
+abstract class _$TaskFromAudioController
     extends BuildlessAutoDisposeNotifier<String> {
   late final String id;
 
@@ -39,28 +39,27 @@ abstract class _$ActionItemSuggestionsController
   });
 }
 
-/// See also [ActionItemSuggestionsController].
-@ProviderFor(ActionItemSuggestionsController)
-const actionItemSuggestionsControllerProvider =
-    ActionItemSuggestionsControllerFamily();
+/// See also [TaskFromAudioController].
+@ProviderFor(TaskFromAudioController)
+const taskFromAudioControllerProvider = TaskFromAudioControllerFamily();
 
-/// See also [ActionItemSuggestionsController].
-class ActionItemSuggestionsControllerFamily extends Family<String> {
-  /// See also [ActionItemSuggestionsController].
-  const ActionItemSuggestionsControllerFamily();
+/// See also [TaskFromAudioController].
+class TaskFromAudioControllerFamily extends Family<String> {
+  /// See also [TaskFromAudioController].
+  const TaskFromAudioControllerFamily();
 
-  /// See also [ActionItemSuggestionsController].
-  ActionItemSuggestionsControllerProvider call({
+  /// See also [TaskFromAudioController].
+  TaskFromAudioControllerProvider call({
     required String id,
   }) {
-    return ActionItemSuggestionsControllerProvider(
+    return TaskFromAudioControllerProvider(
       id: id,
     );
   }
 
   @override
-  ActionItemSuggestionsControllerProvider getProviderOverride(
-    covariant ActionItemSuggestionsControllerProvider provider,
+  TaskFromAudioControllerProvider getProviderOverride(
+    covariant TaskFromAudioControllerProvider provider,
   ) {
     return call(
       id: provider.id,
@@ -79,31 +78,30 @@ class ActionItemSuggestionsControllerFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'actionItemSuggestionsControllerProvider';
+  String? get name => r'taskFromAudioControllerProvider';
 }
 
-/// See also [ActionItemSuggestionsController].
-class ActionItemSuggestionsControllerProvider
-    extends AutoDisposeNotifierProviderImpl<ActionItemSuggestionsController,
-        String> {
-  /// See also [ActionItemSuggestionsController].
-  ActionItemSuggestionsControllerProvider({
+/// See also [TaskFromAudioController].
+class TaskFromAudioControllerProvider
+    extends AutoDisposeNotifierProviderImpl<TaskFromAudioController, String> {
+  /// See also [TaskFromAudioController].
+  TaskFromAudioControllerProvider({
     required String id,
   }) : this._internal(
-          () => ActionItemSuggestionsController()..id = id,
-          from: actionItemSuggestionsControllerProvider,
-          name: r'actionItemSuggestionsControllerProvider',
+          () => TaskFromAudioController()..id = id,
+          from: taskFromAudioControllerProvider,
+          name: r'taskFromAudioControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$actionItemSuggestionsControllerHash,
-          dependencies: ActionItemSuggestionsControllerFamily._dependencies,
+                  : _$taskFromAudioControllerHash,
+          dependencies: TaskFromAudioControllerFamily._dependencies,
           allTransitiveDependencies:
-              ActionItemSuggestionsControllerFamily._allTransitiveDependencies,
+              TaskFromAudioControllerFamily._allTransitiveDependencies,
           id: id,
         );
 
-  ActionItemSuggestionsControllerProvider._internal(
+  TaskFromAudioControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -117,7 +115,7 @@ class ActionItemSuggestionsControllerProvider
 
   @override
   String runNotifierBuild(
-    covariant ActionItemSuggestionsController notifier,
+    covariant TaskFromAudioController notifier,
   ) {
     return notifier.build(
       id: id,
@@ -125,10 +123,10 @@ class ActionItemSuggestionsControllerProvider
   }
 
   @override
-  Override overrideWith(ActionItemSuggestionsController Function() create) {
+  Override overrideWith(TaskFromAudioController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ActionItemSuggestionsControllerProvider._internal(
+      override: TaskFromAudioControllerProvider._internal(
         () => create()..id = id,
         from: from,
         name: null,
@@ -141,14 +139,14 @@ class ActionItemSuggestionsControllerProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<ActionItemSuggestionsController, String>
+  AutoDisposeNotifierProviderElement<TaskFromAudioController, String>
       createElement() {
-    return _ActionItemSuggestionsControllerProviderElement(this);
+    return _TaskFromAudioControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ActionItemSuggestionsControllerProvider && other.id == id;
+    return other is TaskFromAudioControllerProvider && other.id == id;
   }
 
   @override
@@ -162,19 +160,18 @@ class ActionItemSuggestionsControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin ActionItemSuggestionsControllerRef
-    on AutoDisposeNotifierProviderRef<String> {
+mixin TaskFromAudioControllerRef on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
-class _ActionItemSuggestionsControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<ActionItemSuggestionsController,
-        String> with ActionItemSuggestionsControllerRef {
-  _ActionItemSuggestionsControllerProviderElement(super.provider);
+class _TaskFromAudioControllerProviderElement
+    extends AutoDisposeNotifierProviderElement<TaskFromAudioController, String>
+    with TaskFromAudioControllerRef {
+  _TaskFromAudioControllerProviderElement(super.provider);
 
   @override
-  String get id => (origin as ActionItemSuggestionsControllerProvider).id;
+  String get id => (origin as TaskFromAudioControllerProvider).id;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
