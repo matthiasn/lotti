@@ -170,14 +170,14 @@ class _AiConfigByIdProviderElement
 }
 
 String _$aiConfigByTypeControllerHash() =>
-    r'dbc8bdbc21989a883bc11183153da902a04ac292';
+    r'a808c63b14000abab40ea37fa9fdbafdfb1b1254';
 
 abstract class _$AiConfigByTypeController
     extends BuildlessAutoDisposeStreamNotifier<List<AiConfig>> {
-  late final String configType;
+  late final AiConfigType configType;
 
   Stream<List<AiConfig>> build({
-    required String configType,
+    required AiConfigType configType,
   });
 }
 
@@ -205,7 +205,7 @@ class AiConfigByTypeControllerFamily
   ///
   /// Copied from [AiConfigByTypeController].
   AiConfigByTypeControllerProvider call({
-    required String configType,
+    required AiConfigType configType,
   }) {
     return AiConfigByTypeControllerProvider(
       configType: configType,
@@ -248,7 +248,7 @@ class AiConfigByTypeControllerProvider
   ///
   /// Copied from [AiConfigByTypeController].
   AiConfigByTypeControllerProvider({
-    required String configType,
+    required AiConfigType configType,
   }) : this._internal(
           () => AiConfigByTypeController()..configType = configType,
           from: aiConfigByTypeControllerProvider,
@@ -273,7 +273,7 @@ class AiConfigByTypeControllerProvider
     required this.configType,
   }) : super.internal();
 
-  final String configType;
+  final AiConfigType configType;
 
   @override
   Stream<List<AiConfig>> runNotifierBuild(
@@ -326,7 +326,7 @@ class AiConfigByTypeControllerProvider
 mixin AiConfigByTypeControllerRef
     on AutoDisposeStreamNotifierProviderRef<List<AiConfig>> {
   /// The parameter `configType` of this provider.
-  String get configType;
+  AiConfigType get configType;
 }
 
 class _AiConfigByTypeControllerProviderElement
@@ -335,7 +335,7 @@ class _AiConfigByTypeControllerProviderElement
   _AiConfigByTypeControllerProviderElement(super.provider);
 
   @override
-  String get configType =>
+  AiConfigType get configType =>
       (origin as AiConfigByTypeControllerProvider).configType;
 }
 // ignore_for_file: type=lint

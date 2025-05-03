@@ -1,47 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/api_key_form_state.dart';
+import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'api_key_form_controller.g.dart';
+part 'inference_provider_form_controller.g.dart';
 
 @riverpod
-class ApiKeyFormController extends _$ApiKeyFormController {
+class InferenceProviderFormController
+    extends _$InferenceProviderFormController {
   final nameController = TextEditingController();
   final apiKeyController = TextEditingController();
   final baseUrlController = TextEditingController();
-  final commentController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-  AiConfigApiKey? _config;
+  AiConfigInferenceProvider? _config;
 
   @override
-  Future<ApiKeyFormState?> build({required String? configId}) async {
+  Future<InferenceProviderFormState?> build({required String? configId}) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
-            as AiConfigApiKey?)
+            as AiConfigInferenceProvider?)
         : null;
 
     nameController.text = _config?.name ?? '';
     apiKeyController.text = _config?.apiKey ?? '';
     baseUrlController.text = _config?.baseUrl ?? '';
-    commentController.text = _config?.comment ?? '';
+    descriptionController.text = _config?.description ?? '';
 
     ref.onDispose(() {
       nameController.dispose();
       apiKeyController.dispose();
       baseUrlController.dispose();
-      commentController.dispose();
+      descriptionController.dispose();
     });
 
-    return ApiKeyFormState(
+    return InferenceProviderFormState(
       inferenceProviderType:
           _config?.inferenceProviderType ?? InferenceProviderType.genericOpenAi,
     );
   }
 
   void _setAllFields({
-    String? comment,
+    String? description,
     String? name,
     String? apiKey,
     String? baseUrl,
@@ -49,11 +50,12 @@ class ApiKeyFormController extends _$ApiKeyFormController {
   }) {
     final prev = state.valueOrNull;
     state = AsyncData(
-      (prev ?? ApiKeyFormState()).copyWith(
+      (prev ?? InferenceProviderFormState()).copyWith(
         name: ApiKeyName.dirty(name ?? nameController.text),
         apiKey: ApiKeyValue.dirty(apiKey ?? apiKeyController.text),
         baseUrl: BaseUrl.dirty(baseUrl ?? baseUrlController.text),
-        comment: CommentValue.dirty(comment ?? commentController.text),
+        description:
+            DescriptionValue.dirty(description ?? descriptionController.text),
         inferenceProviderType:
             inferenceProviderType ?? prev?.inferenceProviderType,
       ),
@@ -81,11 +83,11 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     _setAllFields(baseUrl: value);
   }
 
-  void commentChanged(String value) {
-    if (commentController.text != value) {
-      commentController.text = value;
+  void descriptionChanged(String value) {
+    if (descriptionController.text != value) {
+      descriptionController.text = value;
     }
-    _setAllFields(comment: value);
+    _setAllFields(description: value);
   }
 
   void inferenceProviderTypeChanged(InferenceProviderType value) {
@@ -135,7 +137,7 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     nameController.clear();
     apiKeyController.clear();
     baseUrlController.clear();
-    commentController.clear();
-    state = AsyncData(ApiKeyFormState());
+    descriptionController.clear();
+    state = AsyncData(InferenceProviderFormState());
   }
 }

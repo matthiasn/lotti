@@ -17,7 +17,7 @@ void main() {
     // Register a fallback value for SyncMessage
     registerFallbackValue(
       SyncMessage.aiConfig(
-        aiConfig: AiConfig.apiKey(
+        aiConfig: AiConfig.inferenceProvider(
           id: 'fallback-id',
           baseUrl: 'https://fallback.example.com',
           apiKey: 'fallback-key',
@@ -66,18 +66,18 @@ void main() {
 
     test('should store and retrieve multiple config types', () async {
       // Create API key config
-      final apiKeyConfig = AiConfig.apiKey(
+      final apiKeyConfig = AiConfig.inferenceProvider(
         id: 'openai-key',
         baseUrl: 'https://api.openai.com/v1',
         apiKey: 'sk-1234567890abcdef',
         name: 'OpenAI API Key',
         createdAt: DateTime.now(),
-        comment: 'Test API key for OpenAI integration',
+        description: 'Test API key for OpenAI integration',
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
       // Create prompt template config
-      final promptConfig = AiConfig.promptTemplate(
+      final promptConfig = AiConfig.prompt(
         id: 'summarize-prompt',
         name: 'Summarization Template',
         template: 'Please summarize the following text: {{text}}',
@@ -85,6 +85,9 @@ void main() {
         description: 'Template for text summarization',
         defaultVariables: {'text': 'Enter text to summarize'},
         category: 'Summarization',
+        modelId: 'model-id1',
+        useReasoning: false,
+        requiredInputData: [],
       );
 
       // Save both configs
@@ -100,11 +103,14 @@ void main() {
 
       // Use maybeMap to check the type and fields
       retrievedApiConfig?.maybeMap(
-        apiKey: (config) {
+        inferenceProvider: (config) {
           expect(config.id, equals('openai-key'));
           expect(config.baseUrl, equals('https://api.openai.com/v1'));
           expect(config.apiKey, equals('sk-1234567890abcdef'));
-          expect(config.comment, equals('Test API key for OpenAI integration'));
+          expect(
+            config.description,
+            equals('Test API key for OpenAI integration'),
+          );
         },
         orElse: () => fail('Retrieved config is not an API key config'),
       );
@@ -116,7 +122,7 @@ void main() {
 
       // Use maybeMap to check the type and fields
       retrievedPromptConfig?.maybeMap(
-        promptTemplate: (config) {
+        prompt: (config) {
           expect(config.id, equals('summarize-prompt'));
           expect(config.name, equals('Summarization Template'));
           expect(config.template, contains('Please summarize'));
@@ -127,7 +133,7 @@ void main() {
 
       // Watch by type tests
       await expectLater(
-        repository.watchConfigsByType('apiKey'),
+        repository.watchConfigsByType(AiConfigType.inferenceProvider),
         emits(
           predicate<List<AiConfig>>(
             (configs) =>
@@ -137,7 +143,7 @@ void main() {
       );
 
       await expectLater(
-        repository.watchConfigsByType('promptTemplate'),
+        repository.watchConfigsByType(AiConfigType.prompt),
         emits(
           predicate<List<AiConfig>>(
             (configs) =>

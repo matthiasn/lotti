@@ -16,7 +16,7 @@ void main() {
   // Setup for all tests
   setUpAll(() {
     // Create a fallback AiConfig instance that Mocktail can use
-    final fallbackConfig = AiConfig.apiKey(
+    final fallbackConfig = AiConfig.inferenceProvider(
       id: 'fallback-id',
       baseUrl: 'https://fallback.example.com',
       apiKey: 'fallback-key',
@@ -50,7 +50,7 @@ void main() {
 
   group('AiConfigByTypeController Tests', () {
     late MockAiConfigRepository mockRepository;
-    final testApiConfig = AiConfig.apiKey(
+    final testApiConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',
@@ -65,9 +65,9 @@ void main() {
 
     test('should return configs of the specified type', () async {
       // Arrange
-      when(() => mockRepository.watchConfigsByType('apiKey')).thenAnswer(
-        (_) => Stream.value([testApiConfig]),
-      );
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value([testApiConfig]));
 
       final container = createContainer(
         overrides: [
@@ -78,7 +78,9 @@ void main() {
       // Act & Assert
       final listener = Listener<AsyncValue<List<AiConfig>>>();
       container.listen(
-        aiConfigByTypeControllerProvider(configType: 'apiKey'),
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.inferenceProvider,
+        ),
         listener.call,
         fireImmediately: true,
       );
@@ -95,13 +97,15 @@ void main() {
       ).called(1);
 
       // Verify the repository method was called with the correct type
-      verify(() => mockRepository.watchConfigsByType('apiKey')).called(1);
+      verify(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).called(1);
     });
   });
 
   group('aiConfigById Tests', () {
     late MockAiConfigRepository mockRepository;
-    final testApiConfig = AiConfig.apiKey(
+    final testApiConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',

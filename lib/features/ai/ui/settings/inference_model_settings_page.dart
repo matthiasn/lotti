@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
-import 'package:lotti/features/ai/ui/settings/api_key_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Page to manage API key configurations
-class ApiKeysSettingsPage extends ConsumerWidget {
-  const ApiKeysSettingsPage({super.key});
+class InferenceModelSettingsPage extends ConsumerWidget {
+  const InferenceModelSettingsPage({super.key});
 
-  static const String routeName = '/settings/ai/api-keys';
+  static const String routeName = '/settings/ai/models';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AiConfigListPage(
-      configType: 'apiKey',
-      title: context.messages.apiKeysSettingsPageTitle,
+      configType: AiConfigType.model,
+      title: context.messages.modelsSettingsPageTitle,
       onAddPressed: () => _navigateToEditPage(context, null),
       onItemTap: (config) => _navigateToEditPage(context, config),
     );
@@ -24,7 +23,7 @@ class ApiKeysSettingsPage extends ConsumerWidget {
   void _navigateToEditPage(BuildContext context, AiConfig? config) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => ApiKeyEditPage(
+        builder: (context) => InferenceModelEditPage(
           configId: config?.id,
         ),
       ),

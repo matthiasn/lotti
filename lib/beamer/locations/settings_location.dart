@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/ai/ui/settings/api_keys_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/speech/ui/pages/speech_settings_page.dart';
 import 'package:lotti/pages/settings/advanced/about_page.dart';
@@ -63,6 +64,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/advanced/conflicts',
         '/settings/maintenance',
         '/settings/advanced/ai/api_keys',
+        '/settings/advanced/ai/models',
       ];
 
   @override
@@ -316,7 +318,13 @@ class SettingsLocation extends BeamLocation<BeamState> {
       if (pathContains('advanced/ai/api_keys'))
         const BeamPage(
           key: ValueKey('settings-ai-api-keys'),
-          child: ApiKeysSettingsPage(),
+          child: InferenceProviderSettingsPage(),
+        ),
+
+      if (pathContains('advanced/ai/models'))
+        const BeamPage(
+          key: ValueKey('settings-ai-models'),
+          child: InferenceModelSettingsPage(),
         ),
     ];
   }

@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'api_key_form_controller.dart';
+part of 'inference_provider_form_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$apiKeyFormControllerHash() =>
-    r'219894ec091da5f17d30eabb875e41e3ed8bfc99';
+String _$inferenceProviderFormControllerHash() =>
+    r'6d5acbecf54de89172dd6bb839f6607783617db0';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,36 +30,38 @@ class _SystemHash {
   }
 }
 
-abstract class _$ApiKeyFormController
-    extends BuildlessAutoDisposeAsyncNotifier<ApiKeyFormState?> {
+abstract class _$InferenceProviderFormController
+    extends BuildlessAutoDisposeAsyncNotifier<InferenceProviderFormState?> {
   late final String? configId;
 
-  FutureOr<ApiKeyFormState?> build({
+  FutureOr<InferenceProviderFormState?> build({
     required String? configId,
   });
 }
 
-/// See also [ApiKeyFormController].
-@ProviderFor(ApiKeyFormController)
-const apiKeyFormControllerProvider = ApiKeyFormControllerFamily();
+/// See also [InferenceProviderFormController].
+@ProviderFor(InferenceProviderFormController)
+const inferenceProviderFormControllerProvider =
+    InferenceProviderFormControllerFamily();
 
-/// See also [ApiKeyFormController].
-class ApiKeyFormControllerFamily extends Family<AsyncValue<ApiKeyFormState?>> {
-  /// See also [ApiKeyFormController].
-  const ApiKeyFormControllerFamily();
+/// See also [InferenceProviderFormController].
+class InferenceProviderFormControllerFamily
+    extends Family<AsyncValue<InferenceProviderFormState?>> {
+  /// See also [InferenceProviderFormController].
+  const InferenceProviderFormControllerFamily();
 
-  /// See also [ApiKeyFormController].
-  ApiKeyFormControllerProvider call({
+  /// See also [InferenceProviderFormController].
+  InferenceProviderFormControllerProvider call({
     required String? configId,
   }) {
-    return ApiKeyFormControllerProvider(
+    return InferenceProviderFormControllerProvider(
       configId: configId,
     );
   }
 
   @override
-  ApiKeyFormControllerProvider getProviderOverride(
-    covariant ApiKeyFormControllerProvider provider,
+  InferenceProviderFormControllerProvider getProviderOverride(
+    covariant InferenceProviderFormControllerProvider provider,
   ) {
     return call(
       configId: provider.configId,
@@ -78,30 +80,31 @@ class ApiKeyFormControllerFamily extends Family<AsyncValue<ApiKeyFormState?>> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'apiKeyFormControllerProvider';
+  String? get name => r'inferenceProviderFormControllerProvider';
 }
 
-/// See also [ApiKeyFormController].
-class ApiKeyFormControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    ApiKeyFormController, ApiKeyFormState?> {
-  /// See also [ApiKeyFormController].
-  ApiKeyFormControllerProvider({
+/// See also [InferenceProviderFormController].
+class InferenceProviderFormControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<
+        InferenceProviderFormController, InferenceProviderFormState?> {
+  /// See also [InferenceProviderFormController].
+  InferenceProviderFormControllerProvider({
     required String? configId,
   }) : this._internal(
-          () => ApiKeyFormController()..configId = configId,
-          from: apiKeyFormControllerProvider,
-          name: r'apiKeyFormControllerProvider',
+          () => InferenceProviderFormController()..configId = configId,
+          from: inferenceProviderFormControllerProvider,
+          name: r'inferenceProviderFormControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$apiKeyFormControllerHash,
-          dependencies: ApiKeyFormControllerFamily._dependencies,
+                  : _$inferenceProviderFormControllerHash,
+          dependencies: InferenceProviderFormControllerFamily._dependencies,
           allTransitiveDependencies:
-              ApiKeyFormControllerFamily._allTransitiveDependencies,
+              InferenceProviderFormControllerFamily._allTransitiveDependencies,
           configId: configId,
         );
 
-  ApiKeyFormControllerProvider._internal(
+  InferenceProviderFormControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -114,8 +117,8 @@ class ApiKeyFormControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   final String? configId;
 
   @override
-  FutureOr<ApiKeyFormState?> runNotifierBuild(
-    covariant ApiKeyFormController notifier,
+  FutureOr<InferenceProviderFormState?> runNotifierBuild(
+    covariant InferenceProviderFormController notifier,
   ) {
     return notifier.build(
       configId: configId,
@@ -123,10 +126,10 @@ class ApiKeyFormControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  Override overrideWith(ApiKeyFormController Function() create) {
+  Override overrideWith(InferenceProviderFormController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ApiKeyFormControllerProvider._internal(
+      override: InferenceProviderFormControllerProvider._internal(
         () => create()..configId = configId,
         from: from,
         name: null,
@@ -139,14 +142,15 @@ class ApiKeyFormControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<ApiKeyFormController,
-      ApiKeyFormState?> createElement() {
-    return _ApiKeyFormControllerProviderElement(this);
+  AutoDisposeAsyncNotifierProviderElement<InferenceProviderFormController,
+      InferenceProviderFormState?> createElement() {
+    return _InferenceProviderFormControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ApiKeyFormControllerProvider && other.configId == configId;
+    return other is InferenceProviderFormControllerProvider &&
+        other.configId == configId;
   }
 
   @override
@@ -160,19 +164,21 @@ class ApiKeyFormControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin ApiKeyFormControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<ApiKeyFormState?> {
+mixin InferenceProviderFormControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<InferenceProviderFormState?> {
   /// The parameter `configId` of this provider.
   String? get configId;
 }
 
-class _ApiKeyFormControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<ApiKeyFormController,
-        ApiKeyFormState?> with ApiKeyFormControllerRef {
-  _ApiKeyFormControllerProviderElement(super.provider);
+class _InferenceProviderFormControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<
+        InferenceProviderFormController,
+        InferenceProviderFormState?> with InferenceProviderFormControllerRef {
+  _InferenceProviderFormControllerProviderElement(super.provider);
 
   @override
-  String? get configId => (origin as ApiKeyFormControllerProvider).configId;
+  String? get configId =>
+      (origin as InferenceProviderFormControllerProvider).configId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

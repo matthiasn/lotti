@@ -4,8 +4,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/api_key_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/api_key_form.dart';
+import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock implementations
@@ -26,7 +26,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: ProviderScope(
-          child: ApiKeyForm(
+          child: InferenceProviderForm(
             config: initialConfig,
             onSave: onSave,
           ),
@@ -134,7 +134,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Directly test the controller without relying on UI interactions
-      final formFinder = find.byType(ApiKeyForm);
+      final formFinder = find.byType(InferenceProviderForm);
 
       // Check that we found the form
       expect(formFinder, findsOneWidget);
@@ -144,14 +144,15 @@ void main() {
       );
 
       // Manually enter values into the controller
-      final controller = providerContainer
-          .read(apiKeyFormControllerProvider(configId: null).notifier)
+      final controller = providerContainer.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      )
 
         // Update the form values through the controller
         ..nameChanged('Test Name')
         ..baseUrlChanged('https://test.example.com')
         ..apiKeyChanged('test-api-key')
-        ..commentChanged('Test comment')
+        ..descriptionChanged('Test description')
         ..inferenceProviderTypeChanged(InferenceProviderType.anthropic);
 
       // Verify the controller has the correct values
@@ -160,7 +161,7 @@ void main() {
       expect(formState!.name.value, 'Test Name');
       expect(formState.baseUrl.value, 'https://test.example.com');
       expect(formState.apiKey.value, 'test-api-key');
-      expect(formState.comment.value, 'Test comment');
+      expect(formState.description.value, 'Test description');
       expect(formState.inferenceProviderType, InferenceProviderType.anthropic);
 
       // Convert to AiConfig and check values
@@ -170,7 +171,7 @@ void main() {
       // Use maybeMap to access implementation-specific fields
       expect(
         config.maybeMap(
-          apiKey: (c) => c.baseUrl,
+          inferenceProvider: (c) => c.baseUrl,
           orElse: () => '',
         ),
         'https://test.example.com',
@@ -178,15 +179,15 @@ void main() {
 
       expect(
         config.maybeMap(
-          apiKey: (c) => c.comment,
+          inferenceProvider: (c) => c.description,
           orElse: () => null,
         ),
-        'Test comment',
+        'Test description',
       );
 
       expect(
         config.maybeMap(
-          apiKey: (c) => c.inferenceProviderType,
+          inferenceProvider: (c) => c.inferenceProviderType,
           orElse: () => null,
         ),
         InferenceProviderType.anthropic,

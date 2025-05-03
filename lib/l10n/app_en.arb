@@ -535,5 +535,33 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenAiDescription": "OpenAI's GPT models",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
-  "aiProviderNebiusAiStudioDescription": "Nebius AI Studio's models"
+  "aiProviderNebiusAiStudioDescription": "Nebius AI Studio's models",
+
+
+
+
+  "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderOpenRouterDescription": "OpenRouter's models",
+
+  "modalityTextName": "Text",
+  "modalityTextDescription": "Text-based content and processing",
+  "modalityAudioName": "Audio",
+  "modalityAudioDescription": "Audio processing capabilities",
+  "modalityImageName": "Image",
+  "modalityImageDescription": "Image processing capabilities",
+  "aiConfigInputModalitiesTitle": "Input Modalities",
+  "aiConfigInputModalitiesFieldLabel": "Input Modalities",
+  "aiConfigOutputModalitiesTitle": "Output Modalities",
+  "aiConfigOutputModalitiesFieldLabel": "Output Modalities",
+  "aiConfigReasoningCapabilityFieldLabel": "Reasoning Capability",
+  "aiConfigReasoningCapabilityDescription": "Model can perform step-by-step reasoning",
+  "aiConfigSelectModalitiesPrompt": "Select modalities",
+  "aiConfigNoProvidersAvailable": "No API providers available. Please add an API provider first.",
+  "modelAddPageTitle": "Add Model",
+  "modelEditPageTitle": "Edit Model",
+  "modelEditLoadError": "Failed to load model configuration",
+  "modelsSettingsPageTitle": "AI Models",
+  "settingsAiModels": "AI Models",
+  "settingsAdvancedShowCaseModelsTooltip": "Define AI models that use inference providers",
+  "saveButtonLabel": "Save"
 }

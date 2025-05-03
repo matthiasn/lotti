@@ -8,11 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
-import 'package:lotti/features/ai/ui/settings/api_key_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/api_keys_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_settings_page.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mock classes
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
@@ -24,7 +23,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'fallback-id',
         name: 'Fallback API',
         baseUrl: 'https://fallback.example.com',
@@ -47,7 +46,7 @@ void main() {
 
     // Create some test configs
     testConfigs = [
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'test-id-1',
         name: 'Test API 1',
         baseUrl: 'https://api1.example.com',
@@ -55,7 +54,7 @@ void main() {
         createdAt: DateTime.now(),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'test-id-2',
         name: 'Test API 2',
         baseUrl: 'https://api2.example.com',
@@ -66,7 +65,9 @@ void main() {
     ];
 
     // Set up the repository to return our test configs
-    when(() => mockRepository.watchConfigsByType('apiKey')).thenAnswer(
+    when(
+      () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer(
       (_) => Stream.value(testConfigs),
     );
   });
@@ -85,7 +86,7 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const ApiKeysSettingsPage(),
+        home: const InferenceProviderSettingsPage(),
         navigatorObservers: [mockNavigatorObserver],
       ),
     );
@@ -105,7 +106,7 @@ void main() {
       final listPage = tester.widget<AiConfigListPage>(
         find.byType(AiConfigListPage),
       );
-      expect(listPage.configType, equals('apiKey'));
+      expect(listPage.configType, equals(AiConfigType.inferenceProvider));
     });
 
     testWidgets('should navigate to edit page when add button is pressed',
@@ -125,7 +126,7 @@ void main() {
       verify(() => mockNavigatorObserver.didPush(any(), any())).called(1);
 
       // Verify we're on the edit page with null configId
-      expect(find.byType(ApiKeyEditPage), findsOneWidget);
+      expect(find.byType(InferenceProviderEditPage), findsOneWidget);
       expect(find.text('Add API Key'), findsOneWidget);
     });
 
@@ -148,7 +149,7 @@ void main() {
       verify(() => mockNavigatorObserver.didPush(any(), any())).called(1);
 
       // Verify we're on the edit page with the correct configId
-      expect(find.byType(ApiKeyEditPage), findsOneWidget);
+      expect(find.byType(InferenceProviderEditPage), findsOneWidget);
       expect(find.text('Edit API Key'), findsOneWidget);
     });
   });

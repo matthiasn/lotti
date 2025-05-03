@@ -16,10 +16,12 @@ final _privateConstructorUsedError = UnsupportedError(
 
 AiConfig _$AiConfigFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
-    case 'apiKey':
-      return AiConfigApiKey.fromJson(json);
-    case 'promptTemplate':
-      return AiConfigPromptTemplate.fromJson(json);
+    case 'inferenceProvider':
+      return AiConfigInferenceProvider.fromJson(json);
+    case 'model':
+      return AiConfigModel.fromJson(json);
+    case 'prompt':
+      return AiConfigPrompt.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'AiConfig',
@@ -33,6 +35,7 @@ mixin _$AiConfig {
   String get name => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(
@@ -43,18 +46,33 @@ mixin _$AiConfig {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)
-        apiKey,
+            String? description)
+        inferenceProvider,
+    required TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)
+        model,
     required TResult Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)
-        promptTemplate,
+        prompt,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -67,18 +85,33 @@ mixin _$AiConfig {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)?
-        apiKey,
+            String? description)?
+        inferenceProvider,
+    TResult? Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
     TResult? Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)?
-        promptTemplate,
+        prompt,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -91,37 +124,56 @@ mixin _$AiConfig {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)?
-        apiKey,
+            String? description)?
+        inferenceProvider,
+    TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
     TResult Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)?
-        promptTemplate,
+        prompt,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigApiKey value) apiKey,
-    required TResult Function(AiConfigPromptTemplate value) promptTemplate,
+    required TResult Function(AiConfigInferenceProvider value)
+        inferenceProvider,
+    required TResult Function(AiConfigModel value) model,
+    required TResult Function(AiConfigPrompt value) prompt,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigApiKey value)? apiKey,
-    TResult? Function(AiConfigPromptTemplate value)? promptTemplate,
+    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult? Function(AiConfigModel value)? model,
+    TResult? Function(AiConfigPrompt value)? prompt,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigApiKey value)? apiKey,
-    TResult Function(AiConfigPromptTemplate value)? promptTemplate,
+    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult Function(AiConfigModel value)? model,
+    TResult Function(AiConfigPrompt value)? prompt,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -141,7 +193,12 @@ abstract class $AiConfigCopyWith<$Res> {
   factory $AiConfigCopyWith(AiConfig value, $Res Function(AiConfig) then) =
       _$AiConfigCopyWithImpl<$Res, AiConfig>;
   @useResult
-  $Res call({String id, String name, DateTime createdAt, DateTime? updatedAt});
+  $Res call(
+      {String id,
+      String name,
+      DateTime createdAt,
+      DateTime? updatedAt,
+      String? description});
 }
 
 /// @nodoc
@@ -163,6 +220,7 @@ class _$AiConfigCopyWithImpl<$Res, $Val extends AiConfig>
     Object? name = null,
     Object? createdAt = null,
     Object? updatedAt = freezed,
+    Object? description = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -181,16 +239,21 @@ class _$AiConfigCopyWithImpl<$Res, $Val extends AiConfig>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
 
 /// @nodoc
-abstract class _$$AiConfigApiKeyImplCopyWith<$Res>
+abstract class _$$AiConfigInferenceProviderImplCopyWith<$Res>
     implements $AiConfigCopyWith<$Res> {
-  factory _$$AiConfigApiKeyImplCopyWith(_$AiConfigApiKeyImpl value,
-          $Res Function(_$AiConfigApiKeyImpl) then) =
-      __$$AiConfigApiKeyImplCopyWithImpl<$Res>;
+  factory _$$AiConfigInferenceProviderImplCopyWith(
+          _$AiConfigInferenceProviderImpl value,
+          $Res Function(_$AiConfigInferenceProviderImpl) then) =
+      __$$AiConfigInferenceProviderImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -201,15 +264,16 @@ abstract class _$$AiConfigApiKeyImplCopyWith<$Res>
       DateTime createdAt,
       InferenceProviderType inferenceProviderType,
       DateTime? updatedAt,
-      String? comment});
+      String? description});
 }
 
 /// @nodoc
-class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
-    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigApiKeyImpl>
-    implements _$$AiConfigApiKeyImplCopyWith<$Res> {
-  __$$AiConfigApiKeyImplCopyWithImpl(
-      _$AiConfigApiKeyImpl _value, $Res Function(_$AiConfigApiKeyImpl) _then)
+class __$$AiConfigInferenceProviderImplCopyWithImpl<$Res>
+    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigInferenceProviderImpl>
+    implements _$$AiConfigInferenceProviderImplCopyWith<$Res> {
+  __$$AiConfigInferenceProviderImplCopyWithImpl(
+      _$AiConfigInferenceProviderImpl _value,
+      $Res Function(_$AiConfigInferenceProviderImpl) _then)
       : super(_value, _then);
 
   /// Create a copy of AiConfig
@@ -224,9 +288,9 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? inferenceProviderType = null,
     Object? updatedAt = freezed,
-    Object? comment = freezed,
+    Object? description = freezed,
   }) {
-    return _then(_$AiConfigApiKeyImpl(
+    return _then(_$AiConfigInferenceProviderImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -255,9 +319,9 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      comment: freezed == comment
-          ? _value.comment
-          : comment // ignore: cast_nullable_to_non_nullable
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
@@ -265,8 +329,8 @@ class __$$AiConfigApiKeyImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigApiKeyImpl implements AiConfigApiKey {
-  const _$AiConfigApiKeyImpl(
+class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
+  const _$AiConfigInferenceProviderImpl(
       {required this.id,
       required this.baseUrl,
       required this.apiKey,
@@ -274,12 +338,12 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
       required this.createdAt,
       required this.inferenceProviderType,
       this.updatedAt,
-      this.comment,
+      this.description,
       final String? $type})
-      : $type = $type ?? 'apiKey';
+      : $type = $type ?? 'inferenceProvider';
 
-  factory _$AiConfigApiKeyImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiConfigApiKeyImplFromJson(json);
+  factory _$AiConfigInferenceProviderImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiConfigInferenceProviderImplFromJson(json);
 
   @override
   final String id;
@@ -296,21 +360,21 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
   @override
   final DateTime? updatedAt;
   @override
-  final String? comment;
+  final String? description;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'AiConfig.apiKey(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, comment: $comment)';
+    return 'AiConfig.inferenceProvider(id: $id, baseUrl: $baseUrl, apiKey: $apiKey, name: $name, createdAt: $createdAt, inferenceProviderType: $inferenceProviderType, updatedAt: $updatedAt, description: $description)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiConfigApiKeyImpl &&
+            other is _$AiConfigInferenceProviderImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl) &&
             (identical(other.apiKey, apiKey) || other.apiKey == apiKey) &&
@@ -321,22 +385,23 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
                 other.inferenceProviderType == inferenceProviderType) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
-            (identical(other.comment, comment) || other.comment == comment));
+            (identical(other.description, description) ||
+                other.description == description));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, baseUrl, apiKey, name,
-      createdAt, inferenceProviderType, updatedAt, comment);
+      createdAt, inferenceProviderType, updatedAt, description);
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$AiConfigApiKeyImplCopyWith<_$AiConfigApiKeyImpl> get copyWith =>
-      __$$AiConfigApiKeyImplCopyWithImpl<_$AiConfigApiKeyImpl>(
-          this, _$identity);
+  _$$AiConfigInferenceProviderImplCopyWith<_$AiConfigInferenceProviderImpl>
+      get copyWith => __$$AiConfigInferenceProviderImplCopyWithImpl<
+          _$AiConfigInferenceProviderImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -349,21 +414,36 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)
-        apiKey,
+            String? description)
+        inferenceProvider,
+    required TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)
+        model,
     required TResult Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)
-        promptTemplate,
+        prompt,
   }) {
-    return apiKey(id, baseUrl, this.apiKey, name, createdAt,
-        inferenceProviderType, updatedAt, comment);
+    return inferenceProvider(id, baseUrl, apiKey, name, createdAt,
+        inferenceProviderType, updatedAt, description);
   }
 
   @override
@@ -377,21 +457,36 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)?
-        apiKey,
+            String? description)?
+        inferenceProvider,
+    TResult? Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
     TResult? Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)?
-        promptTemplate,
+        prompt,
   }) {
-    return apiKey?.call(id, baseUrl, this.apiKey, name, createdAt,
-        inferenceProviderType, updatedAt, comment);
+    return inferenceProvider?.call(id, baseUrl, apiKey, name, createdAt,
+        inferenceProviderType, updatedAt, description);
   }
 
   @override
@@ -405,23 +500,38 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)?
-        apiKey,
+            String? description)?
+        inferenceProvider,
+    TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
     TResult Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)?
-        promptTemplate,
+        prompt,
     required TResult orElse(),
   }) {
-    if (apiKey != null) {
-      return apiKey(id, baseUrl, this.apiKey, name, createdAt,
-          inferenceProviderType, updatedAt, comment);
+    if (inferenceProvider != null) {
+      return inferenceProvider(id, baseUrl, apiKey, name, createdAt,
+          inferenceProviderType, updatedAt, description);
     }
     return orElse();
   }
@@ -429,44 +539,48 @@ class _$AiConfigApiKeyImpl implements AiConfigApiKey {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigApiKey value) apiKey,
-    required TResult Function(AiConfigPromptTemplate value) promptTemplate,
+    required TResult Function(AiConfigInferenceProvider value)
+        inferenceProvider,
+    required TResult Function(AiConfigModel value) model,
+    required TResult Function(AiConfigPrompt value) prompt,
   }) {
-    return apiKey(this);
+    return inferenceProvider(this);
   }
 
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigApiKey value)? apiKey,
-    TResult? Function(AiConfigPromptTemplate value)? promptTemplate,
+    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult? Function(AiConfigModel value)? model,
+    TResult? Function(AiConfigPrompt value)? prompt,
   }) {
-    return apiKey?.call(this);
+    return inferenceProvider?.call(this);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigApiKey value)? apiKey,
-    TResult Function(AiConfigPromptTemplate value)? promptTemplate,
+    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult Function(AiConfigModel value)? model,
+    TResult Function(AiConfigPrompt value)? prompt,
     required TResult orElse(),
   }) {
-    if (apiKey != null) {
-      return apiKey(this);
+    if (inferenceProvider != null) {
+      return inferenceProvider(this);
     }
     return orElse();
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AiConfigApiKeyImplToJson(
+    return _$$AiConfigInferenceProviderImplToJson(
       this,
     );
   }
 }
 
-abstract class AiConfigApiKey implements AiConfig {
-  const factory AiConfigApiKey(
+abstract class AiConfigInferenceProvider implements AiConfig {
+  const factory AiConfigInferenceProvider(
       {required final String id,
       required final String baseUrl,
       required final String apiKey,
@@ -474,10 +588,10 @@ abstract class AiConfigApiKey implements AiConfig {
       required final DateTime createdAt,
       required final InferenceProviderType inferenceProviderType,
       final DateTime? updatedAt,
-      final String? comment}) = _$AiConfigApiKeyImpl;
+      final String? description}) = _$AiConfigInferenceProviderImpl;
 
-  factory AiConfigApiKey.fromJson(Map<String, dynamic> json) =
-      _$AiConfigApiKeyImpl.fromJson;
+  factory AiConfigInferenceProvider.fromJson(Map<String, dynamic> json) =
+      _$AiConfigInferenceProviderImpl.fromJson;
 
   @override
   String get id;
@@ -490,30 +604,446 @@ abstract class AiConfigApiKey implements AiConfig {
   InferenceProviderType get inferenceProviderType;
   @override
   DateTime? get updatedAt;
-  String? get comment;
+  @override
+  String? get description;
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiConfigApiKeyImplCopyWith<_$AiConfigApiKeyImpl> get copyWith =>
+  _$$AiConfigInferenceProviderImplCopyWith<_$AiConfigInferenceProviderImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$AiConfigModelImplCopyWith<$Res>
+    implements $AiConfigCopyWith<$Res> {
+  factory _$$AiConfigModelImplCopyWith(
+          _$AiConfigModelImpl value, $Res Function(_$AiConfigModelImpl) then) =
+      __$$AiConfigModelImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      String inferenceProviderId,
+      DateTime createdAt,
+      List<Modality> inputModalities,
+      List<Modality> outputModalities,
+      bool isReasoningModel,
+      DateTime? updatedAt,
+      String? description});
+}
+
+/// @nodoc
+class __$$AiConfigModelImplCopyWithImpl<$Res>
+    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigModelImpl>
+    implements _$$AiConfigModelImplCopyWith<$Res> {
+  __$$AiConfigModelImplCopyWithImpl(
+      _$AiConfigModelImpl _value, $Res Function(_$AiConfigModelImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? inferenceProviderId = null,
+    Object? createdAt = null,
+    Object? inputModalities = null,
+    Object? outputModalities = null,
+    Object? isReasoningModel = null,
+    Object? updatedAt = freezed,
+    Object? description = freezed,
+  }) {
+    return _then(_$AiConfigModelImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      inferenceProviderId: null == inferenceProviderId
+          ? _value.inferenceProviderId
+          : inferenceProviderId // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      inputModalities: null == inputModalities
+          ? _value._inputModalities
+          : inputModalities // ignore: cast_nullable_to_non_nullable
+              as List<Modality>,
+      outputModalities: null == outputModalities
+          ? _value._outputModalities
+          : outputModalities // ignore: cast_nullable_to_non_nullable
+              as List<Modality>,
+      isReasoningModel: null == isReasoningModel
+          ? _value.isReasoningModel
+          : isReasoningModel // ignore: cast_nullable_to_non_nullable
+              as bool,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AiConfigModelImpl implements AiConfigModel {
+  const _$AiConfigModelImpl(
+      {required this.id,
+      required this.name,
+      required this.inferenceProviderId,
+      required this.createdAt,
+      required final List<Modality> inputModalities,
+      required final List<Modality> outputModalities,
+      required this.isReasoningModel,
+      this.updatedAt,
+      this.description,
+      final String? $type})
+      : _inputModalities = inputModalities,
+        _outputModalities = outputModalities,
+        $type = $type ?? 'model';
+
+  factory _$AiConfigModelImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiConfigModelImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String inferenceProviderId;
+  @override
+  final DateTime createdAt;
+  final List<Modality> _inputModalities;
+  @override
+  List<Modality> get inputModalities {
+    if (_inputModalities is EqualUnmodifiableListView) return _inputModalities;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_inputModalities);
+  }
+
+  final List<Modality> _outputModalities;
+  @override
+  List<Modality> get outputModalities {
+    if (_outputModalities is EqualUnmodifiableListView)
+      return _outputModalities;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_outputModalities);
+  }
+
+  @override
+  final bool isReasoningModel;
+  @override
+  final DateTime? updatedAt;
+  @override
+  final String? description;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'AiConfig.model(id: $id, name: $name, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, updatedAt: $updatedAt, description: $description)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AiConfigModelImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.inferenceProviderId, inferenceProviderId) ||
+                other.inferenceProviderId == inferenceProviderId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            const DeepCollectionEquality()
+                .equals(other._inputModalities, _inputModalities) &&
+            const DeepCollectionEquality()
+                .equals(other._outputModalities, _outputModalities) &&
+            (identical(other.isReasoningModel, isReasoningModel) ||
+                other.isReasoningModel == isReasoningModel) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.description, description) ||
+                other.description == description));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      inferenceProviderId,
+      createdAt,
+      const DeepCollectionEquality().hash(_inputModalities),
+      const DeepCollectionEquality().hash(_outputModalities),
+      isReasoningModel,
+      updatedAt,
+      description);
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AiConfigModelImplCopyWith<_$AiConfigModelImpl> get copyWith =>
+      __$$AiConfigModelImplCopyWithImpl<_$AiConfigModelImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? description)
+        inferenceProvider,
+    required TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)
+        model,
+    required TResult Function(
+            String id,
+            String name,
+            String template,
+            String modelId,
+            DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
+            DateTime? updatedAt,
+            String? description,
+            Map<String, String>? defaultVariables,
+            String? category)
+        prompt,
+  }) {
+    return model(id, name, inferenceProviderId, createdAt, inputModalities,
+        outputModalities, isReasoningModel, updatedAt, description);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? description)?
+        inferenceProvider,
+    TResult? Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
+    TResult? Function(
+            String id,
+            String name,
+            String template,
+            String modelId,
+            DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
+            DateTime? updatedAt,
+            String? description,
+            Map<String, String>? defaultVariables,
+            String? category)?
+        prompt,
+  }) {
+    return model?.call(
+        id,
+        name,
+        inferenceProviderId,
+        createdAt,
+        inputModalities,
+        outputModalities,
+        isReasoningModel,
+        updatedAt,
+        description);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(
+            String id,
+            String baseUrl,
+            String apiKey,
+            String name,
+            DateTime createdAt,
+            InferenceProviderType inferenceProviderType,
+            DateTime? updatedAt,
+            String? description)?
+        inferenceProvider,
+    TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
+    TResult Function(
+            String id,
+            String name,
+            String template,
+            String modelId,
+            DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
+            DateTime? updatedAt,
+            String? description,
+            Map<String, String>? defaultVariables,
+            String? category)?
+        prompt,
+    required TResult orElse(),
+  }) {
+    if (model != null) {
+      return model(id, name, inferenceProviderId, createdAt, inputModalities,
+          outputModalities, isReasoningModel, updatedAt, description);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(AiConfigInferenceProvider value)
+        inferenceProvider,
+    required TResult Function(AiConfigModel value) model,
+    required TResult Function(AiConfigPrompt value) prompt,
+  }) {
+    return model(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult? Function(AiConfigModel value)? model,
+    TResult? Function(AiConfigPrompt value)? prompt,
+  }) {
+    return model?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult Function(AiConfigModel value)? model,
+    TResult Function(AiConfigPrompt value)? prompt,
+    required TResult orElse(),
+  }) {
+    if (model != null) {
+      return model(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AiConfigModelImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class AiConfigModel implements AiConfig {
+  const factory AiConfigModel(
+      {required final String id,
+      required final String name,
+      required final String inferenceProviderId,
+      required final DateTime createdAt,
+      required final List<Modality> inputModalities,
+      required final List<Modality> outputModalities,
+      required final bool isReasoningModel,
+      final DateTime? updatedAt,
+      final String? description}) = _$AiConfigModelImpl;
+
+  factory AiConfigModel.fromJson(Map<String, dynamic> json) =
+      _$AiConfigModelImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  String get inferenceProviderId;
+  @override
+  DateTime get createdAt;
+  List<Modality> get inputModalities;
+  List<Modality> get outputModalities;
+  bool get isReasoningModel;
+  @override
+  DateTime? get updatedAt;
+  @override
+  String? get description;
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$AiConfigModelImplCopyWith<_$AiConfigModelImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AiConfigPromptTemplateImplCopyWith<$Res>
+abstract class _$$AiConfigPromptImplCopyWith<$Res>
     implements $AiConfigCopyWith<$Res> {
-  factory _$$AiConfigPromptTemplateImplCopyWith(
-          _$AiConfigPromptTemplateImpl value,
-          $Res Function(_$AiConfigPromptTemplateImpl) then) =
-      __$$AiConfigPromptTemplateImplCopyWithImpl<$Res>;
+  factory _$$AiConfigPromptImplCopyWith(_$AiConfigPromptImpl value,
+          $Res Function(_$AiConfigPromptImpl) then) =
+      __$$AiConfigPromptImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
       {String id,
       String name,
       String template,
+      String modelId,
       DateTime createdAt,
+      bool useReasoning,
+      List<InputDataType> requiredInputData,
+      String? comment,
       DateTime? updatedAt,
       String? description,
       Map<String, String>? defaultVariables,
@@ -521,12 +1051,11 @@ abstract class _$$AiConfigPromptTemplateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AiConfigPromptTemplateImplCopyWithImpl<$Res>
-    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigPromptTemplateImpl>
-    implements _$$AiConfigPromptTemplateImplCopyWith<$Res> {
-  __$$AiConfigPromptTemplateImplCopyWithImpl(
-      _$AiConfigPromptTemplateImpl _value,
-      $Res Function(_$AiConfigPromptTemplateImpl) _then)
+class __$$AiConfigPromptImplCopyWithImpl<$Res>
+    extends _$AiConfigCopyWithImpl<$Res, _$AiConfigPromptImpl>
+    implements _$$AiConfigPromptImplCopyWith<$Res> {
+  __$$AiConfigPromptImplCopyWithImpl(
+      _$AiConfigPromptImpl _value, $Res Function(_$AiConfigPromptImpl) _then)
       : super(_value, _then);
 
   /// Create a copy of AiConfig
@@ -537,13 +1066,17 @@ class __$$AiConfigPromptTemplateImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? template = null,
+    Object? modelId = null,
     Object? createdAt = null,
+    Object? useReasoning = null,
+    Object? requiredInputData = null,
+    Object? comment = freezed,
     Object? updatedAt = freezed,
     Object? description = freezed,
     Object? defaultVariables = freezed,
     Object? category = freezed,
   }) {
-    return _then(_$AiConfigPromptTemplateImpl(
+    return _then(_$AiConfigPromptImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -556,10 +1089,26 @@ class __$$AiConfigPromptTemplateImplCopyWithImpl<$Res>
           ? _value.template
           : template // ignore: cast_nullable_to_non_nullable
               as String,
+      modelId: null == modelId
+          ? _value.modelId
+          : modelId // ignore: cast_nullable_to_non_nullable
+              as String,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      useReasoning: null == useReasoning
+          ? _value.useReasoning
+          : useReasoning // ignore: cast_nullable_to_non_nullable
+              as bool,
+      requiredInputData: null == requiredInputData
+          ? _value._requiredInputData
+          : requiredInputData // ignore: cast_nullable_to_non_nullable
+              as List<InputDataType>,
+      comment: freezed == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String?,
       updatedAt: freezed == updatedAt
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -582,22 +1131,27 @@ class __$$AiConfigPromptTemplateImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
-  const _$AiConfigPromptTemplateImpl(
+class _$AiConfigPromptImpl implements AiConfigPrompt {
+  const _$AiConfigPromptImpl(
       {required this.id,
       required this.name,
       required this.template,
+      required this.modelId,
       required this.createdAt,
+      required this.useReasoning,
+      required final List<InputDataType> requiredInputData,
+      this.comment,
       this.updatedAt,
       this.description,
       final Map<String, String>? defaultVariables,
       this.category,
       final String? $type})
-      : _defaultVariables = defaultVariables,
-        $type = $type ?? 'promptTemplate';
+      : _requiredInputData = requiredInputData,
+        _defaultVariables = defaultVariables,
+        $type = $type ?? 'prompt';
 
-  factory _$AiConfigPromptTemplateImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AiConfigPromptTemplateImplFromJson(json);
+  factory _$AiConfigPromptImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AiConfigPromptImplFromJson(json);
 
   @override
   final String id;
@@ -606,7 +1160,22 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
   @override
   final String template;
   @override
+  final String modelId;
+  @override
   final DateTime createdAt;
+  @override
+  final bool useReasoning;
+  final List<InputDataType> _requiredInputData;
+  @override
+  List<InputDataType> get requiredInputData {
+    if (_requiredInputData is EqualUnmodifiableListView)
+      return _requiredInputData;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_requiredInputData);
+  }
+
+  @override
+  final String? comment;
   @override
   final DateTime? updatedAt;
   @override
@@ -629,20 +1198,26 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
 
   @override
   String toString() {
-    return 'AiConfig.promptTemplate(id: $id, name: $name, template: $template, createdAt: $createdAt, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
+    return 'AiConfig.prompt(id: $id, name: $name, template: $template, modelId: $modelId, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AiConfigPromptTemplateImpl &&
+            other is _$AiConfigPromptImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.template, template) ||
                 other.template == template) &&
+            (identical(other.modelId, modelId) || other.modelId == modelId) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.useReasoning, useReasoning) ||
+                other.useReasoning == useReasoning) &&
+            const DeepCollectionEquality()
+                .equals(other._requiredInputData, _requiredInputData) &&
+            (identical(other.comment, comment) || other.comment == comment) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.description, description) ||
@@ -660,7 +1235,11 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
       id,
       name,
       template,
+      modelId,
       createdAt,
+      useReasoning,
+      const DeepCollectionEquality().hash(_requiredInputData),
+      comment,
       updatedAt,
       description,
       const DeepCollectionEquality().hash(_defaultVariables),
@@ -671,9 +1250,9 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$AiConfigPromptTemplateImplCopyWith<_$AiConfigPromptTemplateImpl>
-      get copyWith => __$$AiConfigPromptTemplateImplCopyWithImpl<
-          _$AiConfigPromptTemplateImpl>(this, _$identity);
+  _$$AiConfigPromptImplCopyWith<_$AiConfigPromptImpl> get copyWith =>
+      __$$AiConfigPromptImplCopyWithImpl<_$AiConfigPromptImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -686,21 +1265,47 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)
-        apiKey,
+            String? description)
+        inferenceProvider,
+    required TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)
+        model,
     required TResult Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)
-        promptTemplate,
+        prompt,
   }) {
-    return promptTemplate(id, name, template, createdAt, updatedAt, description,
-        defaultVariables, category);
+    return prompt(
+        id,
+        name,
+        template,
+        modelId,
+        createdAt,
+        useReasoning,
+        requiredInputData,
+        comment,
+        updatedAt,
+        description,
+        defaultVariables,
+        category);
   }
 
   @override
@@ -714,21 +1319,47 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)?
-        apiKey,
+            String? description)?
+        inferenceProvider,
+    TResult? Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
     TResult? Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)?
-        promptTemplate,
+        prompt,
   }) {
-    return promptTemplate?.call(id, name, template, createdAt, updatedAt,
-        description, defaultVariables, category);
+    return prompt?.call(
+        id,
+        name,
+        template,
+        modelId,
+        createdAt,
+        useReasoning,
+        requiredInputData,
+        comment,
+        updatedAt,
+        description,
+        defaultVariables,
+        category);
   }
 
   @override
@@ -742,23 +1373,49 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
             DateTime createdAt,
             InferenceProviderType inferenceProviderType,
             DateTime? updatedAt,
-            String? comment)?
-        apiKey,
+            String? description)?
+        inferenceProvider,
+    TResult Function(
+            String id,
+            String name,
+            String inferenceProviderId,
+            DateTime createdAt,
+            List<Modality> inputModalities,
+            List<Modality> outputModalities,
+            bool isReasoningModel,
+            DateTime? updatedAt,
+            String? description)?
+        model,
     TResult Function(
             String id,
             String name,
             String template,
+            String modelId,
             DateTime createdAt,
+            bool useReasoning,
+            List<InputDataType> requiredInputData,
+            String? comment,
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
             String? category)?
-        promptTemplate,
+        prompt,
     required TResult orElse(),
   }) {
-    if (promptTemplate != null) {
-      return promptTemplate(id, name, template, createdAt, updatedAt,
-          description, defaultVariables, category);
+    if (prompt != null) {
+      return prompt(
+          id,
+          name,
+          template,
+          modelId,
+          createdAt,
+          useReasoning,
+          requiredInputData,
+          comment,
+          updatedAt,
+          description,
+          defaultVariables,
+          category);
     }
     return orElse();
   }
@@ -766,65 +1423,78 @@ class _$AiConfigPromptTemplateImpl implements AiConfigPromptTemplate {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(AiConfigApiKey value) apiKey,
-    required TResult Function(AiConfigPromptTemplate value) promptTemplate,
+    required TResult Function(AiConfigInferenceProvider value)
+        inferenceProvider,
+    required TResult Function(AiConfigModel value) model,
+    required TResult Function(AiConfigPrompt value) prompt,
   }) {
-    return promptTemplate(this);
+    return prompt(this);
   }
 
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(AiConfigApiKey value)? apiKey,
-    TResult? Function(AiConfigPromptTemplate value)? promptTemplate,
+    TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult? Function(AiConfigModel value)? model,
+    TResult? Function(AiConfigPrompt value)? prompt,
   }) {
-    return promptTemplate?.call(this);
+    return prompt?.call(this);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(AiConfigApiKey value)? apiKey,
-    TResult Function(AiConfigPromptTemplate value)? promptTemplate,
+    TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
+    TResult Function(AiConfigModel value)? model,
+    TResult Function(AiConfigPrompt value)? prompt,
     required TResult orElse(),
   }) {
-    if (promptTemplate != null) {
-      return promptTemplate(this);
+    if (prompt != null) {
+      return prompt(this);
     }
     return orElse();
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AiConfigPromptTemplateImplToJson(
+    return _$$AiConfigPromptImplToJson(
       this,
     );
   }
 }
 
-abstract class AiConfigPromptTemplate implements AiConfig {
-  const factory AiConfigPromptTemplate(
+abstract class AiConfigPrompt implements AiConfig {
+  const factory AiConfigPrompt(
       {required final String id,
       required final String name,
       required final String template,
+      required final String modelId,
       required final DateTime createdAt,
+      required final bool useReasoning,
+      required final List<InputDataType> requiredInputData,
+      final String? comment,
       final DateTime? updatedAt,
       final String? description,
       final Map<String, String>? defaultVariables,
-      final String? category}) = _$AiConfigPromptTemplateImpl;
+      final String? category}) = _$AiConfigPromptImpl;
 
-  factory AiConfigPromptTemplate.fromJson(Map<String, dynamic> json) =
-      _$AiConfigPromptTemplateImpl.fromJson;
+  factory AiConfigPrompt.fromJson(Map<String, dynamic> json) =
+      _$AiConfigPromptImpl.fromJson;
 
   @override
   String get id;
   @override
   String get name;
   String get template;
+  String get modelId;
   @override
   DateTime get createdAt;
+  bool get useReasoning;
+  List<InputDataType> get requiredInputData;
+  String? get comment;
   @override
   DateTime? get updatedAt;
+  @override
   String? get description;
   Map<String, String>? get defaultVariables;
   String? get category;
@@ -833,6 +1503,6 @@ abstract class AiConfigPromptTemplate implements AiConfig {
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AiConfigPromptTemplateImplCopyWith<_$AiConfigPromptTemplateImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  _$$AiConfigPromptImplCopyWith<_$AiConfigPromptImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
