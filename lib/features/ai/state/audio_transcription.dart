@@ -59,7 +59,7 @@ separate words. Remove filler words and word repetitions.
       final configs =
           await ref.read(aiConfigRepositoryProvider).getConfigsByType('apiKey');
       final apiKeyConfig = configs
-          .whereType<AiConfigApiKey>()
+          .whereType<AiConfigInferenceProvider>()
           .where(
             (config) =>
                 config.inferenceProviderType == InferenceProviderType.gemini,

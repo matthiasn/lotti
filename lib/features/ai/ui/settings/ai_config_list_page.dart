@@ -162,13 +162,15 @@ class AiConfigListPage extends ConsumerWidget {
 
   String? _getConfigSubtitle(BuildContext context, AiConfig config) {
     return config.map(
-      apiKey: (apiKey) => apiKey.comment,
-      promptTemplate: (promptTemplate) {
-        final previewLength = promptTemplate.template.length > 50
-            ? 50
-            : promptTemplate.template.length;
-        final preview = promptTemplate.template.substring(0, previewLength);
+      inferenceProvider: (apiKey) => apiKey.description,
+      prompt: (prompt) {
+        final previewLength =
+            prompt.template.length > 50 ? 50 : prompt.template.length;
+        final preview = prompt.template.substring(0, previewLength);
         return context.messages.aiConfigListPromptTemplateSubtitle(preview);
+      },
+      model: (AiConfigModel value) {
+        return value.description;
       },
     );
   }

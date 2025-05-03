@@ -107,12 +107,12 @@ class ApiKeyFormState with FormzMixin {
 
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
-    return AiConfig.apiKey(
+    return AiConfig.inferenceProvider(
       id: id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: name.value,
       apiKey: apiKey.value,
       baseUrl: baseUrl.value,
-      comment: comment.value,
+      description: comment.value,
       createdAt: DateTime.now(),
       inferenceProviderType: inferenceProviderType,
     );

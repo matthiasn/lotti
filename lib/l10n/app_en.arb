@@ -535,5 +535,7 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenAiDescription": "OpenAI's GPT models",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
-  "aiProviderNebiusAiStudioDescription": "Nebius AI Studio's models"
+  "aiProviderNebiusAiStudioDescription": "Nebius AI Studio's models",
+  "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderOpenRouterDescription": "OpenRouter's models"
 }

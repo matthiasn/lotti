@@ -151,7 +151,7 @@ void main() {
         ..nameChanged('Test Name')
         ..baseUrlChanged('https://test.example.com')
         ..apiKeyChanged('test-api-key')
-        ..commentChanged('Test comment')
+        ..descriptionChanged('Test description')
         ..inferenceProviderTypeChanged(InferenceProviderType.anthropic);
 
       // Verify the controller has the correct values
@@ -170,7 +170,7 @@ void main() {
       // Use maybeMap to access implementation-specific fields
       expect(
         config.maybeMap(
-          apiKey: (c) => c.baseUrl,
+          inferenceProvider: (c) => c.baseUrl,
           orElse: () => '',
         ),
         'https://test.example.com',
@@ -178,15 +178,15 @@ void main() {
 
       expect(
         config.maybeMap(
-          apiKey: (c) => c.comment,
+          inferenceProvider: (c) => c.description,
           orElse: () => null,
         ),
-        'Test comment',
+        'Test description',
       );
 
       expect(
         config.maybeMap(
-          apiKey: (c) => c.inferenceProviderType,
+          inferenceProvider: (c) => c.inferenceProviderType,
           orElse: () => null,
         ),
         InferenceProviderType.anthropic,

@@ -24,7 +24,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'fallback-id',
         name: 'Fallback API',
         baseUrl: 'https://fallback.example.com',
@@ -47,7 +47,7 @@ void main() {
 
     // Create some test configs
     testConfigs = [
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'test-id-1',
         name: 'Test API 1',
         baseUrl: 'https://api1.example.com',
@@ -55,7 +55,7 @@ void main() {
         createdAt: DateTime.now(),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'test-id-2',
         name: 'Test API 2',
         baseUrl: 'https://api2.example.com',

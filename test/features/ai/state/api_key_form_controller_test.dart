@@ -11,7 +11,7 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 void main() {
   late MockAiConfigRepository mockRepository;
   late ProviderContainer container;
-  final testConfig = AiConfig.apiKey(
+  final testConfig = AiConfig.inferenceProvider(
     id: 'test-id',
     baseUrl: 'https://api.example.com',
     apiKey: 'test-api-key',
@@ -101,7 +101,7 @@ void main() {
           .read(apiKeyFormControllerProvider(configId: 'test-id').future);
 
       // Create an updated config
-      final updatedConfig = AiConfig.apiKey(
+      final updatedConfig = AiConfig.inferenceProvider(
         id: 'test-id',
         baseUrl: 'https://updated.example.com',
         apiKey: 'updated-key',
@@ -154,7 +154,7 @@ void main() {
       expect(controller.nameController.text, isEmpty);
       expect(controller.apiKeyController.text, isEmpty);
       expect(controller.baseUrlController.text, isEmpty);
-      expect(controller.commentController.text, isEmpty);
+      expect(controller.descriptionController.text, isEmpty);
     });
 
     test('should update form state when name is changed', () async {
@@ -212,7 +212,7 @@ void main() {
       await container.read(apiKeyFormControllerProvider(configId: null).future);
 
       // Act
-      controller.commentChanged('New comment');
+      controller.descriptionChanged('New comment');
       final formState = container
           .read(apiKeyFormControllerProvider(configId: null))
           .valueOrNull;

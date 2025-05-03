@@ -81,7 +81,7 @@ class ActionItemSuggestionsController
             .getConfigsByType('apiKey');
 
         final apiKeyConfig = configs
-            .whereType<AiConfigApiKey>()
+            .whereType<AiConfigInferenceProvider>()
             .where(
               (config) =>
                   config.inferenceProviderType ==

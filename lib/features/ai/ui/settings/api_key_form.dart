@@ -157,8 +157,8 @@ class _ApiKeyFormState extends ConsumerState<ApiKeyForm> {
           ),
         ),
         TextField(
-          onChanged: formController.commentChanged,
-          controller: formController.commentController,
+          onChanged: formController.descriptionChanged,
+          controller: formController.descriptionController,
           decoration: InputDecoration(
             labelText: context.messages.aiConfigCommentFieldLabel,
           ),

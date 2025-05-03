@@ -32,7 +32,7 @@ class MockFormController extends Mock implements ApiKeyFormController {
   final TextEditingController baseUrlController = TextEditingController();
 
   @override
-  final TextEditingController commentController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
 }
 
 void main() {
@@ -45,7 +45,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'fallback-id',
         name: 'Fallback API',
         baseUrl: 'https://fallback.example.com',
@@ -63,7 +63,7 @@ void main() {
 
     // Create test data
     testConfigs = [
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'test-id-1',
         name: 'Test API 1',
         baseUrl: 'https://api1.example.com',
@@ -71,7 +71,7 @@ void main() {
         createdAt: DateTime.now(),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'test-id-2',
         name: 'Test API 2',
         baseUrl: 'https://api2.example.com',
@@ -79,12 +79,15 @@ void main() {
         createdAt: DateTime.now(),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
-      AiConfig.promptTemplate(
+      AiConfig.prompt(
         id: 'template-id-1',
         name: 'Test Template',
         template:
             'This is a template for testing purposes with some long text that will be truncated',
         createdAt: DateTime.now(),
+        modelId: 'model-id-1',
+        useReasoning: false,
+        requiredInputData: [],
       ),
     ];
 

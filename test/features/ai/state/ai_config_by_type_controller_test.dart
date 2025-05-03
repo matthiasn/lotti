@@ -16,7 +16,7 @@ void main() {
   // Setup for all tests
   setUpAll(() {
     // Create a fallback AiConfig instance that Mocktail can use
-    final fallbackConfig = AiConfig.apiKey(
+    final fallbackConfig = AiConfig.inferenceProvider(
       id: 'fallback-id',
       baseUrl: 'https://fallback.example.com',
       apiKey: 'fallback-key',
@@ -50,7 +50,7 @@ void main() {
 
   group('AiConfigByTypeController Tests', () {
     late MockAiConfigRepository mockRepository;
-    final testApiConfig = AiConfig.apiKey(
+    final testApiConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',
@@ -101,7 +101,7 @@ void main() {
 
   group('aiConfigById Tests', () {
     late MockAiConfigRepository mockRepository;
-    final testApiConfig = AiConfig.apiKey(
+    final testApiConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',

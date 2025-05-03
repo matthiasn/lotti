@@ -11,27 +11,27 @@ class ApiKeyFormController extends _$ApiKeyFormController {
   final nameController = TextEditingController();
   final apiKeyController = TextEditingController();
   final baseUrlController = TextEditingController();
-  final commentController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-  AiConfigApiKey? _config;
+  AiConfigInferenceProvider? _config;
 
   @override
   Future<ApiKeyFormState?> build({required String? configId}) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
-            as AiConfigApiKey?)
+            as AiConfigInferenceProvider?)
         : null;
 
     nameController.text = _config?.name ?? '';
     apiKeyController.text = _config?.apiKey ?? '';
     baseUrlController.text = _config?.baseUrl ?? '';
-    commentController.text = _config?.comment ?? '';
+    descriptionController.text = _config?.description ?? '';
 
     ref.onDispose(() {
       nameController.dispose();
       apiKeyController.dispose();
       baseUrlController.dispose();
-      commentController.dispose();
+      descriptionController.dispose();
     });
 
     return ApiKeyFormState(
@@ -53,7 +53,7 @@ class ApiKeyFormController extends _$ApiKeyFormController {
         name: ApiKeyName.dirty(name ?? nameController.text),
         apiKey: ApiKeyValue.dirty(apiKey ?? apiKeyController.text),
         baseUrl: BaseUrl.dirty(baseUrl ?? baseUrlController.text),
-        comment: CommentValue.dirty(comment ?? commentController.text),
+        comment: CommentValue.dirty(comment ?? descriptionController.text),
         inferenceProviderType:
             inferenceProviderType ?? prev?.inferenceProviderType,
       ),
@@ -81,9 +81,9 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     _setAllFields(baseUrl: value);
   }
 
-  void commentChanged(String value) {
-    if (commentController.text != value) {
-      commentController.text = value;
+  void descriptionChanged(String value) {
+    if (descriptionController.text != value) {
+      descriptionController.text = value;
     }
     _setAllFields(comment: value);
   }
@@ -135,7 +135,7 @@ class ApiKeyFormController extends _$ApiKeyFormController {
     nameController.clear();
     apiKeyController.clear();
     baseUrlController.clear();
-    commentController.clear();
+    descriptionController.clear();
     state = AsyncData(ApiKeyFormState());
   }
 }

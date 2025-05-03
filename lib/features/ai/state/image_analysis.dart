@@ -74,7 +74,7 @@ content of the website, not the style of the website. Do not make up names.
           await ref.read(aiConfigRepositoryProvider).getConfigsByType('apiKey');
 
       final apiKeyConfig = configs
-          .whereType<AiConfigApiKey>()
+          .whereType<AiConfigInferenceProvider>()
           .where(
             (config) =>
                 config.inferenceProviderType ==

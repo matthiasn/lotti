@@ -23,7 +23,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      AiConfig.apiKey(
+      AiConfig.inferenceProvider(
         id: 'fallback-id',
         name: 'Fallback API',
         baseUrl: 'https://fallback.example.com',
@@ -38,7 +38,7 @@ void main() {
     mockRepository = MockAiConfigRepository();
 
     // Create a test config
-    testConfig = AiConfig.apiKey(
+    testConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       name: 'Test API',
       baseUrl: 'https://api.example.com',
@@ -135,12 +135,12 @@ void main() {
       final formWidget = tester.widget<ApiKeyForm>(find.byType(ApiKeyForm));
 
       // Create a config with known values
-      final config = AiConfig.apiKey(
+      final config = AiConfig.inferenceProvider(
         id: 'test-id-new',
         name: 'New API',
         baseUrl: 'https://new.example.com',
         apiKey: 'new-api-key',
-        comment: '',
+        description: '',
         createdAt: DateTime(2022),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
@@ -189,12 +189,12 @@ void main() {
       final formWidget = tester.widget<ApiKeyForm>(find.byType(ApiKeyForm));
 
       // Create a config with known values
-      final config = AiConfig.apiKey(
+      final config = AiConfig.inferenceProvider(
         id: 'test-id',
         name: 'Updated API',
         baseUrl: 'https://updated.example.com',
         apiKey: 'updated-api-key',
-        comment: '',
+        description: '',
         createdAt: DateTime(2022),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
