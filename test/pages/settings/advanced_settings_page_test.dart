@@ -55,7 +55,7 @@ void main() {
           home: ShowCaseWidget(
             builder: (context) => ConstrainedBox(
               constraints: const BoxConstraints(
-                maxHeight: 1000,
+                maxHeight: 1200,
                 maxWidth: 1000,
               ),
               child: const AdvancedSettingsPage(),

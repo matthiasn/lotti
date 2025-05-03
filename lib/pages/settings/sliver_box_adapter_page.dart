@@ -83,51 +83,42 @@ class _SliverBoxAdapterShowcasePageState
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AppBar(
-          leading: GestureDetector(
-            onTap: () {
-              Navigator.pop(context);
-            },
-            child: const MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Row(
-                children: [
-                  SizedBox(width: 9),
-                  Icon(
-                    Icons.chevron_left,
-                    size: 30,
-                    weight: 500,
-                    semanticLabel: 'Navigate back',
+      appBar: AppBar(
+        title: Text(widget.title),
+        leading: widget.showBackButton
+            ? GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: const MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 9),
+                      Icon(
+                        Icons.chevron_left,
+                        size: 30,
+                        weight: 500,
+                        semanticLabel: 'Navigate back',
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ),
-          title: widget.showcaseIcon,
-        ),
+                ),
+              )
+            : null,
+        actions: [widget.showcaseIcon],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            controller: _scrollController,
-            child: Container(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-                maxHeight: constraints.maxHeight,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: widget.child
-                    .animate()
-                    .fadeIn(duration: const Duration(milliseconds: 500)),
-              ),
-            ),
-          );
-        },
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: widget.child,
       ),
     );
   }
