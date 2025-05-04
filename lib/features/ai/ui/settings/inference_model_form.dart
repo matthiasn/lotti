@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
-import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
+import 'package:lotti/features/ai/ui/settings/provider_selection_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
@@ -26,74 +27,9 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
   void _showInferenceProviderModal() {
     ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: context.messages.aiConfigSelectProviderTypeModalTitle,
-      builder: (modalContext) {
-        final formState = ref
-            .watch(
-              inferenceModelFormControllerProvider(
-                configId: widget.config?.id,
-              ),
-            )
-            .valueOrNull;
-        final formController = ref.read(
-          inferenceModelFormControllerProvider(configId: widget.config?.id)
-              .notifier,
-        );
-
-        if (formState == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return ref
-            .watch(
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ),
-            )
-            .when(
-              data: (providers) {
-                if (providers.isEmpty) {
-                  return Center(
-                    child: Text(context.messages.aiConfigNoProvidersAvailable),
-                  );
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: providers.length,
-                  itemBuilder: (context, index) {
-                    final provider = providers[index];
-                    return provider.maybeMap(
-                      inferenceProvider: (providerConfig) {
-                        return ListTile(
-                          title: Text(providerConfig.name),
-                          subtitle: Text(
-                            providerConfig.description ??
-                                providerConfig.baseUrl,
-                          ),
-                          trailing:
-                              formState.inferenceProviderId == providerConfig.id
-                                  ? const Icon(Icons.check)
-                                  : null,
-                          onTap: () {
-                            formController
-                                .inferenceProviderIdChanged(providerConfig.id);
-                            Navigator.of(modalContext).pop();
-                          },
-                        );
-                      },
-                      orElse: () => const SizedBox.shrink(),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, __) => Center(
-                child: Text(
-                  context.messages.aiConfigListErrorLoading(err.toString()),
-                ),
-              ),
-            );
-      },
+      title: context.messages.aiConfigSelectProviderModalTitle,
+      builder: (modalContext) =>
+          ProviderSelectionModal(configId: widget.config?.id),
     );
   }
 
@@ -148,17 +84,6 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
     );
   }
 
-  String _getProviderName(String providerId) {
-    final provider = ref.read(aiConfigByIdProvider(providerId)).valueOrNull;
-
-    if (provider == null) return providerId;
-
-    return provider.maybeMap(
-      inferenceProvider: (p) => p.name,
-      orElse: () => providerId,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final configId = widget.config?.id;
@@ -196,15 +121,16 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
               onTap: _showInferenceProviderModal,
               child: InputDecorator(
                 decoration: InputDecoration(
-                  labelText: context.messages.aiConfigProviderTypeFieldLabel,
+                  labelText: context.messages.aiConfigProviderFieldLabel,
                   suffixIcon: const Icon(Icons.arrow_drop_down),
                 ),
-                child: Text(
-                  formState.inferenceProviderId.isEmpty
-                      ? context.messages.aiConfigSelectProviderTypeModalTitle
-                      : _getProviderName(formState.inferenceProviderId),
-                  style: context.textTheme.bodyLarge,
-                ),
+                child: formState.inferenceProviderId.isEmpty
+                    ? Text(
+                        context.messages.aiConfigSelectProviderModalTitle,
+                      )
+                    : InferenceProviderNameWidget(
+                        providerId: formState.inferenceProviderId,
+                      ),
               ),
             ),
           ),
