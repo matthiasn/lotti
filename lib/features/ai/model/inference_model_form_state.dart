@@ -1,5 +1,6 @@
 import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 // Input validation classes
 class ModelName extends FormzInput<String, String> {
@@ -79,7 +80,7 @@ class InferenceModelFormState with FormzMixin {
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
     return AiConfig.model(
-      id: id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: id ?? uuid.v1(),
       name: name.value,
       description: description.value,
       inferenceProviderId: inferenceProviderId,
