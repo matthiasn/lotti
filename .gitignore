@@ -83,3 +83,6 @@ integration_test/docker/config/jetstream/
 integration_test/docker/config/logs/
 integration_test/docker/config/media_store/
 macos/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+
+# Android build artifacts
+/android/app/.cxx/

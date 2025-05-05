@@ -5,7 +5,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -112,10 +111,21 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final trashIconFinder = find.byIcon(MdiIcons.trashCanOutline);
-      await tester.tap(trashIconFinder);
+      // Find and scroll to the delete button
+      final deleteButtonFinder = find.byTooltip('Delete measurable type');
+      expect(deleteButtonFinder, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        deleteButtonFinder,
+        find.byType(CustomScrollView),
+        const Offset(0, 50),
+      );
+
+      // Tap the delete button
+      await tester.tap(deleteButtonFinder);
       await tester.pumpAndSettle();
 
+      // Find the delete confirmation dialog
       final deleteQuestionFinder =
           find.text('Do you want to delete this measurable data type?');
       final confirmDeleteFinder = find.text('YES, DELETE THIS MEASURABLE');
