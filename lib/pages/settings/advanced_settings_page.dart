@@ -30,6 +30,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
   final _aboutLottiKey = GlobalKey();
   final _apikeyKey = GlobalKey();
   final _modelsKey = GlobalKey();
+  final _promptsKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +48,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               _aboutLottiKey,
               _apikeyKey,
               _modelsKey,
+              _promptsKey,
             ],
           );
         },
@@ -165,6 +167,19 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                 child: SettingsNavCard(
                   title: context.messages.settingsAiModels,
                   path: '/settings/advanced/ai/models',
+                ),
+              ),
+              ShowcaseWithWidget(
+                isTooltipTop: true,
+                endNav: true,
+                showcaseKey: _promptsKey,
+                description: const ShowcaseTextStyle(
+                  descriptionText:
+                      'Manage AI prompts for use with different models.',
+                ),
+                child: SettingsNavCard(
+                  title: context.messages.promptSettingsPageTitle,
+                  path: '/settings/advanced/ai/prompts',
                 ),
               ),
             ],
