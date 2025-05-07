@@ -1308,12 +1308,11 @@ packages:
   health:
     dependency: "direct main"
     description:
-      path: "packages/health"
-      ref: "1fcaf9c"
-      resolved-ref: "1fcaf9c3d22841f12f593825d718c21e4cc68eab"
-      url: "https://github.com/matthiasn/flutter-plugins"
-    source: git
-    version: "4.4.0"
+      name: health
+      sha256: "4c7458f35e5e74f709e99af5e7f5d78d4b2ac25b09d6a70eedec1c7b5cf091e8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.2.0"
   hive:
     dependency: transitive
     description:

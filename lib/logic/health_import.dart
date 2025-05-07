@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
@@ -21,7 +22,8 @@ class HealthImport {
   }
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalDb _db = getIt<JournalDb>();
-  final HealthFactory _healthFactory = HealthFactory();
+  final health = Health();
+
   Duration defaultFetchDuration = const Duration(days: 90);
 
   final queue = Queue<String>();
@@ -117,23 +119,39 @@ class HealthImport {
           999,
         );
 
-        final steps =
-            await _healthFactory.getTotalStepsInInterval(dateFrom, dateTo);
-
-        final flightsClimbed = await _healthFactory
-            .getTotalFlightsClimbedInInterval(dateFrom, dateTo);
-        final distance =
-            await _healthFactory.getTotalDistanceInInterval(dateFrom, dateTo);
-
-        flightsByDay[dateFrom] = flightsClimbed ?? 0;
+        final steps = await health.getTotalStepsInInterval(dateFrom, dateTo);
         stepsByDay[dateFrom] = steps ?? 0;
-        distanceByDay[dateFrom] = distance ?? 0;
+
+        final flightsClimbedDataPoints =
+            await health.getHealthAggregateDataFromTypes(
+          types: [HealthDataType.FLIGHTS_CLIMBED],
+          startDate: dateFrom,
+          endDate: dateTo,
+        );
+
+        final distanceDataPoints = await health.getHealthAggregateDataFromTypes(
+          types: [HealthDataType.DISTANCE_WALKING_RUNNING],
+          startDate: dateFrom,
+          endDate: dateTo,
+        );
+
+        flightsByDay[dateFrom] =
+            sumNumericHealthValues(flightsClimbedDataPoints);
+        distanceByDay[dateFrom] = sumNumericHealthValues(distanceDataPoints);
       }
     }
 
     await addEntries(stepsByDay, 'cumulative_step_count', 'count');
     await addEntries(flightsByDay, 'cumulative_flights_climbed', 'count');
     await addEntries(distanceByDay, 'cumulative_distance', 'meters');
+  }
+
+  num sumNumericHealthValues(List<HealthDataPoint> dataPoints) {
+    return dataPoints
+        .map((HealthDataPoint e) => e.value)
+        .whereType<NumericHealthValue>()
+        .map((NumericHealthValue e) => e.numericValue)
+        .sum;
   }
 
   Future<void> getActivityHealthData({
@@ -153,7 +171,7 @@ class HealthImport {
       return false;
     }
 
-    return _healthFactory.requestAuthorization(types);
+    return health.requestAuthorization(types);
   }
 
   Future<void> fetchHealthData({
@@ -171,10 +189,10 @@ class HealthImport {
       try {
         final now = DateTime.now();
         final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-        final dataPoints = await _healthFactory.getHealthDataFromTypes(
-          dateFrom,
-          dateToOrNow,
-          types,
+        final dataPoints = await health.getHealthDataFromTypes(
+          types: types,
+          startTime: dateFrom,
+          endTime: dateToOrNow,
         );
 
         for (final dataPoint in dataPoints.reversed) {
@@ -192,7 +210,6 @@ class HealthImport {
               platformType: platform,
               sourceId: dataPoint.sourceId,
               sourceName: dataPoint.sourceName,
-              deviceId: dataPoint.deviceId,
             );
             await persistenceLogic.createQuantitativeEntry(discreteQuantity);
 
@@ -359,10 +376,10 @@ class HealthImport {
 List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_IN_BED,
   HealthDataType.SLEEP_ASLEEP,
-  HealthDataType.SLEEP_ASLEEP_CORE,
-  HealthDataType.SLEEP_ASLEEP_DEEP,
-  HealthDataType.SLEEP_ASLEEP_REM,
-  HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
+  HealthDataType.SLEEP_LIGHT,
+  HealthDataType.SLEEP_DEEP,
+  HealthDataType.SLEEP_REM,
+  HealthDataType.SLEEP_UNKNOWN,
   HealthDataType.SLEEP_AWAKE,
 ];
 

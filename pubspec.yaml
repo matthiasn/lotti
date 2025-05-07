@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.603+3028
+version: 0.9.604+3029
 
 msix_config:
   display_name: LottiApp
@@ -88,14 +88,7 @@ dependencies:
   google_fonts: ^6.1.0
   gpt_markdown: ^1.0.11
   graphic: ^2.3.0
-
-  #health: ^4.4.0
-  health:
-    git:
-      url: https://github.com/matthiasn/flutter-plugins
-      path: packages/health
-      ref: 1fcaf9c
-
+  health: ^12.2.0
   hotkey_manager: ^0.2.0
   infinite_scroll_pagination: ^4.0.0
   intersperse: ^2.0.0

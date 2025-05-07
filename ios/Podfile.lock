@@ -28,7 +28,7 @@ PODS:
     - OpenSSL-Universal
   - flutter_secure_storage (6.0.0):
     - Flutter
-  - health (1.0.4):
+  - health (12.2.0):
     - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
@@ -251,7 +251,7 @@ SPEC CHECKSUMS:
   flutter_olm: 381bdf22eaeb0b5120539a79fb45199e2dbef163
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
-  health: a38a2b7480871e575ef403a8746cb2c08d20f1a4
+  health: 5f06d2b77cede1909be85dcd588570668caa5be2
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
