@@ -994,14 +994,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.1.1"
-  flutter_markdown:
-    dependency: "direct main"
-    description:
-      name: flutter_markdown
-      sha256: "634622a3a826d67cb05c0e3e576d1812c430fa98404e95b60b131775c73d76ec"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.7"
   flutter_math_fork:
     dependency: transitive
     description:
