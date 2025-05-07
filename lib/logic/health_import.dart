@@ -15,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HealthImport {
   HealthImport() : super() {
@@ -51,7 +52,7 @@ class HealthImport {
     }
   }
 
-  Future<void> _getActivityHealthData({
+  Future<void> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -60,9 +61,11 @@ class HealthImport {
     }
 
     final now = DateTime.now();
-    final accessGranted = await authorizeHealth(activityTypes);
+    await Permission.activityRecognition.request();
+    await Permission.location.request();
+    final accessWasGranted = await authorizeHealth(activityTypes);
 
-    if (!accessGranted) {
+    if (!accessWasGranted) {
       return;
     }
 
@@ -122,17 +125,16 @@ class HealthImport {
         final steps = await health.getTotalStepsInInterval(dateFrom, dateTo);
         stepsByDay[dateFrom] = steps ?? 0;
 
-        final flightsClimbedDataPoints =
-            await health.getHealthAggregateDataFromTypes(
+        final flightsClimbedDataPoints = await health.getHealthDataFromTypes(
           types: [HealthDataType.FLIGHTS_CLIMBED],
-          startDate: dateFrom,
-          endDate: dateTo,
+          startTime: dateFrom,
+          endTime: dateTo,
         );
 
-        final distanceDataPoints = await health.getHealthAggregateDataFromTypes(
+        final distanceDataPoints = await health.getHealthDataFromTypes(
           types: [HealthDataType.DISTANCE_WALKING_RUNNING],
-          startDate: dateFrom,
-          endDate: dateTo,
+          startTime: dateFrom,
+          endTime: dateTo,
         );
 
         flightsByDay[dateFrom] =
@@ -154,23 +156,12 @@ class HealthImport {
         .sum;
   }
 
-  Future<void> getActivityHealthData({
-    required DateTime dateFrom,
-    required DateTime dateTo,
-  }) async {
-    await _db.transaction<void>(() async {
-      await _getActivityHealthData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-    });
-  }
-
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
     if (isDesktop) {
       return false;
     }
-
+    //await health.requestHealthDataHistoryAuthorization();
+    //await health.requestHealthDataInBackgroundAuthorization();
     return health.requestAuthorization(types);
   }
 
@@ -218,8 +209,8 @@ class HealthImport {
             // with watchOS 9
             if ({
               'HealthDataType.SLEEP_ASLEEP_CORE',
-              'HealthDataType.SLEEP_ASLEEP_DEEP',
-              'HealthDataType.SLEEP_ASLEEP_REM',
+              'HealthDataType.SLEEP_DEEP',
+              'HealthDataType.SLEEP_REM',
               'HealthDataType.SLEEP_ASLEEP_UNSPECIFIED',
             }.contains(dataType)) {
               await persistenceLogic.createQuantitativeEntry(
@@ -292,15 +283,9 @@ class HealthImport {
     }
   }
 
-  Future<void> _fetchHealthDataDeltaTx(String type) async {
-    await _db.transaction<void>(() async {
-      await _fetchHealthDataDelta(type);
-    });
-  }
-
   Future<void> _start() async {
     while (queue.isNotEmpty) {
-      await _fetchHealthDataDeltaTx(queue.removeFirst());
+      await _fetchHealthDataDelta(queue.removeFirst());
     }
 
     running = false;
@@ -379,7 +364,6 @@ List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_LIGHT,
   HealthDataType.SLEEP_DEEP,
   HealthDataType.SLEEP_REM,
-  HealthDataType.SLEEP_UNKNOWN,
   HealthDataType.SLEEP_AWAKE,
 ];
 
