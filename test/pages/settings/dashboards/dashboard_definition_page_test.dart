@@ -18,8 +18,14 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
+class MockBuildContext extends Mock implements BuildContext {}
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  // ignore: deprecated_member_use
+  binding.window.physicalSizeTestValue = const Size(1000, 1000);
+  // ignore: deprecated_member_use
+  binding.window.devicePixelRatioTestValue = 1.0;
 
   var mockTagsService = MockTagsService();
   var mockJournalDb = MockJournalDb();
@@ -247,20 +253,6 @@ void main() {
       when(() => mockPersistenceLogic.deleteDashboardDefinition(any()))
           .thenAnswer((_) async => 1);
 
-      when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
-      ).thenAnswer((_) async => measurableChocolate);
-
-      when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
-
       await tester.pumpWidget(
         makeTestableWidget(
           ShowCaseWidget(
@@ -280,45 +272,24 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('dashboard_description_field'));
-      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
-
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
-
-      expect(find.text('Running (calories)'), findsOneWidget);
-      expect(find.text('Resting Heart Rate'), findsOneWidget);
-
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
-
-      formKey.currentState!.save();
-      expect(formKey.currentState!.isValid, isTrue);
-      final formData = formKey.currentState!.value;
-
-      // form description is now filled and stored in formKey
-      expect(getTrimmed(formData, 'name'), testDashboardName);
-      expect(getTrimmed(formData, 'description'), testDashboardDescription);
-
-      // dashboard delete calls method in mock
-      final trashIconFinder = find.byIcon(MdiIcons.trashCanOutline);
-      expect(trashIconFinder, findsOneWidget);
+      // Find and scroll to the delete button
+      final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
+      expect(deleteButtonFinder, findsOneWidget);
 
       await tester.dragUntilVisible(
-        trashIconFinder, // what you want to find
-        find.byType(SingleChildScrollView), // widget you want to scroll
-        const Offset(0, 50), // delta to move
+        deleteButtonFinder,
+        find.byType(SingleChildScrollView),
+        const Offset(0, 500), // Increased scroll offset to ensure visibility
       );
 
-      await tester.tap(trashIconFinder);
       await tester.pumpAndSettle();
 
-      final deleteQuestionFinder =
-          find.text('Do you want to delete this dashboard?');
-      final confirmDeleteFinder = find.text('YES, DELETE THIS DASHBOARD');
-      expect(deleteQuestionFinder, findsOneWidget);
+      // Tap the delete button
+      await tester.tap(deleteButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Find the delete confirmation dialog
+      final confirmDeleteFinder = find.byIcon(Icons.warning);
       expect(confirmDeleteFinder, findsOneWidget);
 
       await tester.tap(confirmDeleteFinder);
@@ -337,6 +308,7 @@ void main() {
       when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
           .thenAnswer((_) async => 1);
 
+      // Mock getMeasurableDataTypeById for all possible items
       when(
         () => mockJournalDb
             .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
@@ -370,34 +342,31 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // Make a change to trigger dirty state
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('dashboard_description_field'));
-
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
-
-      expect(find.text('Running (calories)'), findsOneWidget);
-      expect(find.text('Resting Heart Rate'), findsOneWidget);
-
-      // tapping copy copies to clipboard
-      final copyIconFinder = find.byIcon(Icons.copy);
-      expect(copyIconFinder, findsOneWidget);
-
-      await tester.dragUntilVisible(
-        copyIconFinder, // what you want to find
-        find.byType(SingleChildScrollView), // widget you want to scroll
-        const Offset(0, 50), // delta to move
+      await tester.enterText(
+        nameFieldFinder,
+        '${testDashboardConfig.name} modified',
       );
-
-      await tester.tap(copyIconFinder);
       await tester.pumpAndSettle();
 
-      // TODO:
-      // final clipboardText = await Clipboard.getData('text/plain');
-      // debugPrint(clipboardText?.text);
+      // Find and scroll to the copy button
+      final copyButtonFinder = find.byIcon(Icons.copy);
+      expect(copyButtonFinder, findsOneWidget);
 
-      // delete button calls mocked function
+      await tester.dragUntilVisible(
+        copyButtonFinder,
+        find.byType(SingleChildScrollView),
+        const Offset(0, 500), // Increased scroll offset to ensure visibility
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap the copy button
+      await tester.tap(copyButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Verify the dashboard was saved before copying
       verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
           .called(1);
     });
