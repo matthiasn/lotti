@@ -6,7 +6,6 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
-import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -94,11 +93,7 @@ void main() {
         home: ShowCaseWidget(
           builder: (context) => const MediaQuery(
             data: MediaQueryData(size: Size(800, 600)),
-            child: SliverBoxAdapterShowcasePage(
-              title: 'Flags',
-              showcaseIcon: Icon(Icons.info),
-              child: FlagsPage(),
-            ),
+            child: FlagsPage(),
           ),
         ),
       ),
@@ -106,19 +101,13 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Verify the showcase AppBar is displayed with the info icon in the title
-    final appBar = find.byType(AppBar).first;
-    expect(appBar, findsOneWidget);
-    expect(find.byIcon(Icons.info), findsOneWidget);
+    // Verify the showcase icon is displayed
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
 
     // Verify the private flag is displayed
     expect(find.text('Show private entries?'), findsOneWidget);
 
-    // Verify the back button is present in the AppBar
-    final backButton = find.descendant(
-      of: appBar,
-      matching: find.byIcon(Icons.chevron_left),
-    );
-    expect(backButton, findsOneWidget);
+    // Verify the back button is present
+    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
   });
 }
