@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter_health_fit/flutter_health_fit.dart';
-import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HealthImport {
   HealthImport() : super() {
@@ -21,7 +21,8 @@ class HealthImport {
   }
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalDb _db = getIt<JournalDb>();
-  final HealthFactory _healthFactory = HealthFactory();
+  final health = Health();
+
   Duration defaultFetchDuration = const Duration(days: 90);
 
   final queue = Queue<String>();
@@ -49,7 +50,7 @@ class HealthImport {
     }
   }
 
-  Future<void> _getActivityHealthData({
+  Future<void> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -58,9 +59,11 @@ class HealthImport {
     }
 
     final now = DateTime.now();
-    final accessGranted = await authorizeHealth(activityTypes);
+    await Permission.activityRecognition.request();
+    await Permission.location.request();
+    final accessWasGranted = await authorizeHealth(activityTypes);
 
-    if (!accessGranted) {
+    if (!accessWasGranted) {
       return;
     }
 
@@ -117,17 +120,24 @@ class HealthImport {
           999,
         );
 
-        final steps =
-            await _healthFactory.getTotalStepsInInterval(dateFrom, dateTo);
-
-        final flightsClimbed = await _healthFactory
-            .getTotalFlightsClimbedInInterval(dateFrom, dateTo);
-        final distance =
-            await _healthFactory.getTotalDistanceInInterval(dateFrom, dateTo);
-
-        flightsByDay[dateFrom] = flightsClimbed ?? 0;
+        final steps = await health.getTotalStepsInInterval(dateFrom, dateTo);
         stepsByDay[dateFrom] = steps ?? 0;
-        distanceByDay[dateFrom] = distance ?? 0;
+
+        final flightsClimbedDataPoints = await health.getHealthDataFromTypes(
+          types: [HealthDataType.FLIGHTS_CLIMBED],
+          startTime: dateFrom,
+          endTime: dateTo,
+        );
+
+        final distanceDataPoints = await health.getHealthDataFromTypes(
+          types: [HealthDataType.DISTANCE_WALKING_RUNNING],
+          startTime: dateFrom,
+          endTime: dateTo,
+        );
+
+        flightsByDay[dateFrom] =
+            sumNumericHealthValues(flightsClimbedDataPoints);
+        distanceByDay[dateFrom] = sumNumericHealthValues(distanceDataPoints);
       }
     }
 
@@ -136,24 +146,21 @@ class HealthImport {
     await addEntries(distanceByDay, 'cumulative_distance', 'meters');
   }
 
-  Future<void> getActivityHealthData({
-    required DateTime dateFrom,
-    required DateTime dateTo,
-  }) async {
-    await _db.transaction<void>(() async {
-      await _getActivityHealthData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-    });
+  num sumNumericHealthValues(List<HealthDataPoint> dataPoints) {
+    return dataPoints
+        .map((HealthDataPoint e) => e.value)
+        .whereType<NumericHealthValue>()
+        .map((NumericHealthValue e) => e.numericValue)
+        .sum;
   }
 
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
     if (isDesktop) {
       return false;
     }
-
-    return _healthFactory.requestAuthorization(types);
+    await health.requestHealthDataHistoryAuthorization();
+    await health.requestHealthDataInBackgroundAuthorization();
+    return health.requestAuthorization(types);
   }
 
   Future<void> fetchHealthData({
@@ -171,10 +178,10 @@ class HealthImport {
       try {
         final now = DateTime.now();
         final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-        final dataPoints = await _healthFactory.getHealthDataFromTypes(
-          dateFrom,
-          dateToOrNow,
-          types,
+        final dataPoints = await health.getHealthDataFromTypes(
+          types: types,
+          startTime: dateFrom,
+          endTime: dateToOrNow,
         );
 
         for (final dataPoint in dataPoints.reversed) {
@@ -192,7 +199,6 @@ class HealthImport {
               platformType: platform,
               sourceId: dataPoint.sourceId,
               sourceName: dataPoint.sourceName,
-              deviceId: dataPoint.deviceId,
             );
             await persistenceLogic.createQuantitativeEntry(discreteQuantity);
 
@@ -201,8 +207,8 @@ class HealthImport {
             // with watchOS 9
             if ({
               'HealthDataType.SLEEP_ASLEEP_CORE',
-              'HealthDataType.SLEEP_ASLEEP_DEEP',
-              'HealthDataType.SLEEP_ASLEEP_REM',
+              'HealthDataType.SLEEP_DEEP',
+              'HealthDataType.SLEEP_REM',
               'HealthDataType.SLEEP_ASLEEP_UNSPECIFIED',
             }.contains(dataType)) {
               await persistenceLogic.createQuantitativeEntry(
@@ -275,15 +281,9 @@ class HealthImport {
     }
   }
 
-  Future<void> _fetchHealthDataDeltaTx(String type) async {
-    await _db.transaction<void>(() async {
-      await _fetchHealthDataDelta(type);
-    });
-  }
-
   Future<void> _start() async {
     while (queue.isNotEmpty) {
-      await _fetchHealthDataDeltaTx(queue.removeFirst());
+      await _fetchHealthDataDelta(queue.removeFirst());
     }
 
     running = false;
@@ -316,25 +316,38 @@ class HealthImport {
     final now = DateTime.now();
     final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
-    await FlutterHealthFit().authorize();
+    await Permission.activityRecognition.request();
+    await Permission.location.request();
+    const types = [HealthDataType.WORKOUT];
+    final accessWasGranted = await authorizeHealth(types);
 
-    final workouts = await FlutterHealthFit().getWorkoutsBySegment(
-      dateFrom.millisecondsSinceEpoch,
-      dateToOrNow.millisecondsSinceEpoch,
+    if (!accessWasGranted) {
+      return;
+    }
+
+    final dataPoints = await health.getHealthDataFromTypes(
+      types: types,
+      startTime: dateFrom,
+      endTime: dateToOrNow,
     );
 
-    workouts?.forEach((WorkoutSample workoutSample) async {
-      final workoutData = WorkoutData(
-        dateFrom: workoutSample.start,
-        dateTo: workoutSample.end,
-        distance: workoutSample.distance,
-        energy: workoutSample.energy,
-        source: workoutSample.source,
-        workoutType: workoutSample.type.name,
-        id: workoutSample.id,
-      );
-      await persistenceLogic.createWorkoutEntry(workoutData);
-    });
+    for (final dataPoint in dataPoints.reversed) {
+      final value = dataPoint.value;
+
+      if (value is WorkoutHealthValue) {
+        final workoutData = WorkoutData(
+          dateFrom: dataPoint.dateFrom,
+          dateTo: dataPoint.dateTo,
+          distance: value.totalDistance,
+          energy: value.totalEnergyBurned,
+          source: dataPoint.sourceId,
+          workoutType: value.workoutActivityType.name,
+          id: dataPoint.uuid,
+        );
+
+        await persistenceLogic.createWorkoutEntry(workoutData);
+      }
+    }
   }
 
   Future<void> getWorkoutsHealthDataDelta() async {
@@ -359,10 +372,9 @@ class HealthImport {
 List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_IN_BED,
   HealthDataType.SLEEP_ASLEEP,
-  HealthDataType.SLEEP_ASLEEP_CORE,
-  HealthDataType.SLEEP_ASLEEP_DEEP,
-  HealthDataType.SLEEP_ASLEEP_REM,
-  HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
+  HealthDataType.SLEEP_LIGHT,
+  HealthDataType.SLEEP_DEEP,
+  HealthDataType.SLEEP_REM,
   HealthDataType.SLEEP_AWAKE,
 ];
 
