@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.605+3031
+version: 0.9.605+3032
 
 msix_config:
   display_name: LottiApp
@@ -56,12 +56,6 @@ dependencies:
   flutter_dotenv: ^5.1.0
   flutter_fadein: ^2.0.0
   flutter_form_builder: ^10.0.1
-
-  flutter_health_fit:
-    git:
-      url: https://github.com/matthiasn/flutter_health_fit.git
-      ref: 37afbc9
-
   flutter_image_compress: ^2.0.3
   flutter_linkify: ^6.0.0
   flutter_local_notifications: ^19.0.0

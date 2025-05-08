@@ -828,15 +828,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.0.1"
-  flutter_health_fit:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "37afbc9"
-      resolved-ref: "37afbc9557d02aa22cd6398d53bcf735709fba28"
-      url: "https://github.com/matthiasn/flutter_health_fit.git"
-    source: git
-    version: "0.1.0"
   flutter_image_compress:
     dependency: "direct main"
     description:

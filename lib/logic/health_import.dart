@@ -5,8 +5,6 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter_health_fit/flutter_health_fit.dart';
-import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
@@ -160,8 +158,8 @@ class HealthImport {
     if (isDesktop) {
       return false;
     }
-    //await health.requestHealthDataHistoryAuthorization();
-    //await health.requestHealthDataInBackgroundAuthorization();
+    await health.requestHealthDataHistoryAuthorization();
+    await health.requestHealthDataInBackgroundAuthorization();
     return health.requestAuthorization(types);
   }
 
@@ -318,25 +316,38 @@ class HealthImport {
     final now = DateTime.now();
     final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
-    await FlutterHealthFit().authorize();
+    await Permission.activityRecognition.request();
+    await Permission.location.request();
+    const types = [HealthDataType.WORKOUT];
+    final accessWasGranted = await authorizeHealth(types);
 
-    final workouts = await FlutterHealthFit().getWorkoutsBySegment(
-      dateFrom.millisecondsSinceEpoch,
-      dateToOrNow.millisecondsSinceEpoch,
+    if (!accessWasGranted) {
+      return;
+    }
+
+    final dataPoints = await health.getHealthDataFromTypes(
+      types: types,
+      startTime: dateFrom,
+      endTime: dateToOrNow,
     );
 
-    workouts?.forEach((WorkoutSample workoutSample) async {
-      final workoutData = WorkoutData(
-        dateFrom: workoutSample.start,
-        dateTo: workoutSample.end,
-        distance: workoutSample.distance,
-        energy: workoutSample.energy,
-        source: workoutSample.source,
-        workoutType: workoutSample.type.name,
-        id: workoutSample.id,
-      );
-      await persistenceLogic.createWorkoutEntry(workoutData);
-    });
+    for (final dataPoint in dataPoints.reversed) {
+      final value = dataPoint.value;
+
+      if (value is WorkoutHealthValue) {
+        final workoutData = WorkoutData(
+          dateFrom: dataPoint.dateFrom,
+          dateTo: dataPoint.dateTo,
+          distance: value.totalDistance,
+          energy: value.totalEnergyBurned,
+          source: dataPoint.sourceId,
+          workoutType: value.workoutActivityType.name,
+          id: dataPoint.uuid,
+        );
+
+        await persistenceLogic.createWorkoutEntry(workoutData);
+      }
+    }
   }
 
   Future<void> getWorkoutsHealthDataDelta() async {
