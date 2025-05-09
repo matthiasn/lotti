@@ -7,7 +7,7 @@ import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage roomConfigPage({
@@ -64,8 +64,6 @@ class RoomConfig extends ConsumerStatefulWidget {
 }
 
 class _RoomConfigState extends ConsumerState<RoomConfig> {
-  final _qrKey = GlobalKey(debugLabel: 'matrix_QR_key');
-  QRViewController? controller;
   bool showCam = false;
   final joinRoomController = TextEditingController();
   String manualRoomId = '';
@@ -79,21 +77,6 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
     final camDimension =
         max(MediaQuery.of(context).size.width - 100, 300).toDouble();
 
-    void onQRViewCreated(QRViewController controller) {
-      this.controller = controller;
-      controller.scannedDataStream.listen((scanData) async {
-        final userId = scanData.code;
-
-        debugPrint('scanned: $userId');
-        if (userId != null) {
-          await roomNotifier.inviteToRoom(userId);
-          setState(() {
-            showCam = false;
-          });
-        }
-      });
-    }
-
     Future<void> invitePressed() async {
       setState(() {
         showCam = true;
@@ -102,6 +85,17 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
 
     Future<void> joinRoom() async {
       await roomNotifier.joinRoom(manualRoomId);
+    }
+
+    Future<void> handleBarcode(BarcodeCapture barcodes) async {
+      final barcode = barcodes.barcodes.firstOrNull;
+      final userId = barcode?.rawValue;
+      if (userId != null) {
+        await roomNotifier.inviteToRoom(userId);
+        setState(() {
+          showCam = false;
+        });
+      }
     }
 
     return Column(
@@ -127,10 +121,7 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
               child: SizedBox(
                 height: camDimension,
                 width: camDimension,
-                child: QRView(
-                  key: _qrKey,
-                  onQRViewCreated: onQRViewCreated,
-                ),
+                child: MobileScanner(onDetect: handleBarcode),
               ),
             ),
         ] else ...[
