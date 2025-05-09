@@ -56,7 +56,9 @@ PODS:
     - Flutter
   - media_kit_native_event_loop (1.0.0):
     - Flutter
-  - MTBBarcodeScanner (5.0.11)
+  - mobile_scanner (7.0.0):
+    - Flutter
+    - FlutterMacOS
   - OpenSSL-Universal (3.3.2000)
   - package_info_plus (0.4.5):
     - Flutter
@@ -68,9 +70,6 @@ PODS:
   - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
-  - qr_code_scanner (0.2.0):
-    - Flutter
-    - MTBBarcodeScanner
   - quill_native_bridge_ios (0.0.1):
     - Flutter
   - record_ios (1.0.0):
@@ -139,11 +138,11 @@ DEPENDENCIES:
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
+  - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
-  - qr_code_scanner (from `.symlinks/plugins/qr_code_scanner/ios`)
   - quill_native_bridge_ios (from `.symlinks/plugins/quill_native_bridge_ios/ios`)
   - record_ios (from `.symlinks/plugins/record_ios/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
@@ -158,7 +157,6 @@ SPEC REPOS:
   trunk:
     - libwebp
     - Mantle
-    - MTBBarcodeScanner
     - OpenSSL-Universal
     - SDWebImage
     - SDWebImageWebPCoder
@@ -203,6 +201,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/media_kit_libs_ios_audio/ios"
   media_kit_native_event_loop:
     :path: ".symlinks/plugins/media_kit_native_event_loop/ios"
+  mobile_scanner:
+    :path: ".symlinks/plugins/mobile_scanner/darwin"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
@@ -211,8 +211,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   photo_manager:
     :path: ".symlinks/plugins/photo_manager/ios"
-  qr_code_scanner:
-    :path: ".symlinks/plugins/qr_code_scanner/ios"
   quill_native_bridge_ios:
     :path: ".symlinks/plugins/quill_native_bridge_ios/ios"
   record_ios:
@@ -254,13 +252,12 @@ SPEC CHECKSUMS:
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
   media_kit_native_event_loop: 73662a859a79301a2dc7f05e086189b7818f80b4
-  MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
+  mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   photo_manager: d2fbcc0f2d82458700ee6256a15018210a81d413
-  qr_code_scanner: d77f94ecc9abf96d9b9b8fc04ef13f611e5a147a
   quill_native_bridge_ios: f47af4b14e7757968486641656c5d23250cee521
   record_ios: fee1c924aa4879b882ebca2b4bce6011bcfc3d8b
   SDWebImage: f84b0feeb08d2d11e6a9b843cb06d75ebf5b8868
