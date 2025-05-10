@@ -20,7 +20,9 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 class JournalPageCubit extends Cubit<JournalPageState> {
   JournalPageCubit({required this.showTasks})
-      : super(
+      : _db = getIt<JournalDb>(),
+        _updateNotifications = getIt<UpdateNotifications>(),
+        super(
           JournalPageState(
             match: '',
             tagIds: <String>{},
@@ -30,10 +32,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             fullTextMatches: {},
             showTasks: showTasks,
             taskAsListView: true,
-            pagingController: PagingController<int, JournalEntity>(
-              firstPageKey: 0,
-              invisibleItemsThreshold: 10,
-            ),
+            pagingController: null,
             taskStatuses: [
               'OPEN',
               'GROOMED',
@@ -51,6 +50,62 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             selectedCategoryIds: {},
           ),
         ) {
+    // Create the controller right after initialization
+    final controller = PagingController<int, JournalEntity>(
+      getNextPageKey: (PagingState<int, JournalEntity> state) {
+        final currentKeys = state.keys;
+        if (currentKeys == null || currentKeys.isEmpty) {
+          return 0; // First page key (offset)
+        }
+        if (!state.hasNextPage) {
+          return null; // No next page if controller says so
+        }
+        final currentPages = state.pages;
+        // If last page had fewer items than _pageSize, it's the last page
+        if (currentPages != null &&
+            currentPages.isNotEmpty &&
+            currentPages.last.length < _pageSize) {
+          return null; // No more pages
+        }
+        if (currentPages != null &&
+            currentPages.isNotEmpty &&
+            currentKeys.length == currentPages.length) {
+          final lastFetchedItemsCount = currentPages.last.length;
+          return currentKeys.last + lastFetchedItemsCount;
+        }
+        // Fallback: if keys exist but pages inconsistent or last page empty.
+        // Controller handles hasNextPage based on fetchPage results.
+        return currentKeys.last +
+            ((currentPages != null &&
+                    currentPages.isNotEmpty &&
+                    currentKeys.length == currentPages.length)
+                ? currentPages.last.length
+                : 0);
+      },
+      fetchPage: _fetchPage, // Now we can directly use the method reference
+    );
+
+    // Set the controller and trigger initial load
+    emit(
+      JournalPageState(
+        match: state.match,
+        tagIds: state.tagIds,
+        filters: state.filters,
+        showPrivateEntries: state.showPrivateEntries,
+        selectedEntryTypes: state.selectedEntryTypes,
+        fullTextMatches: state.fullTextMatches,
+        showTasks: state.showTasks,
+        taskAsListView: state.taskAsListView,
+        pagingController: controller,
+        taskStatuses: state.taskStatuses,
+        selectedTaskStatuses: state.selectedTaskStatuses,
+        selectedCategoryIds: state.selectedCategoryIds,
+      ),
+    );
+
+    // Call fetchNextPage to trigger the initial load
+    controller.fetchNextPage();
+
     getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
       _showPrivateEntries = showPrivate;
       emitState();
@@ -78,8 +133,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       refreshQuery();
     });
 
-    state.pagingController.addPageRequestListener(_fetchPage);
-
     if (isDesktop) {
       hotKeyManager.register(
         HotKey(
@@ -102,7 +155,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         .listen((affectedIds) async {
       if (_isVisible) {
         final displayedIds =
-            state.pagingController.itemList?.map(idMapper).toSet() ?? {};
+            state.pagingController?.value.items?.map(idMapper).toSet() ??
+                <String>{};
 
         if (showTasks) {
           final newIds = (await _runQuery(0)).map(idMapper).toSet();
@@ -124,8 +178,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   static const taskFiltersKey = 'TASK_FILTERS';
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
-  final JournalDb _db = getIt<JournalDb>();
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+  final JournalDb _db;
+  final UpdateNotifications _updateNotifications;
   bool _isVisible = false;
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
@@ -287,7 +341,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> refreshQuery() async {
     emitState();
-    state.pagingController.refresh();
+
+    if (state.pagingController == null) {
+      debugPrint('Warning: refreshQuery called but pagingController is null');
+      return;
+    }
+
+    debugPrint('Refreshing and fetching page');
+    state.pagingController!.refresh();
+    state.pagingController!.fetchNextPage();
   }
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
@@ -298,24 +360,25 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     _isVisible = isVisible;
   }
 
-  Future<void> _fetchPage(int pageKey) async {
+  Future<List<JournalEntity>> _fetchPage(int pageKey) async {
     try {
       final start = DateTime.now();
       final newItems = await _runQuery(pageKey);
-      final isLastPage = newItems.length < _pageSize;
+      // The PagingController will use the returned list (newItems)
+      // to update its state, including pages, keys, and hasNextPage.
 
-      if (isLastPage) {
-        state.pagingController.appendLastPage(newItems);
-      } else {
-        final nextPageKey = pageKey + newItems.length;
-        state.pagingController.appendPage(newItems, nextPageKey);
-      }
       final duration2 = DateTime.now().difference(start).inMicroseconds / 1000;
       debugPrint(
-        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration2 ms',
+        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration2 ms, found ${newItems.length} items',
       );
-    } catch (error) {
-      state.pagingController.error = error;
+      return newItems;
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        print('Error in _fetchPage: $error\n$stackTrace');
+      }
+      // Rethrow the error. The PagingController will catch it
+      // and update its state.error field.
+      rethrow;
     }
   }
 
@@ -368,7 +431,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   @override
   Future<void> close() async {
-    state.pagingController.dispose();
+    state.pagingController?.dispose();
     await super.close();
   }
 }
