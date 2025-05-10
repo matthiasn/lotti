@@ -1,7 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
-import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/pages/riverpod_journal_page.dart';
 import 'package:lotti/features/speech/ui/pages/record_audio_page.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/utils/uuid.dart';
@@ -30,7 +30,7 @@ class JournalLocation extends BeamLocation<BeamState> {
       const BeamPage(
         key: ValueKey('journal'),
         title: 'Journal',
-        child: InfiniteJournalPage(showTasks: false),
+        child: RiverpodJournalPage(showTasks: false),
       ),
       if (isUuid(entryId))
         BeamPage(
