@@ -134,7 +134,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
               ),
               getTooltipColor: (_) =>
                   Theme.of(context).primaryColor.desaturate(),
-              tooltipRoundedRadius: 8,
+              tooltipBorderRadius: BorderRadius.circular(8),
               getTooltipItem: (groupData, timestamp, rodData, foo) {
                 final formatted = valueInHours
                     ? hoursToHhMm(rodData.toY)
