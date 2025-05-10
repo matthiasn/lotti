@@ -86,7 +86,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
               ),
               getTooltipColor: (_) =>
                   Theme.of(context).primaryColor.desaturate(),
-              tooltipRoundedRadius: 8,
+              tooltipBorderRadius: BorderRadius.circular(8),
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {
                   return LineTooltipItem(
