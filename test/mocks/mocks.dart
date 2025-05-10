@@ -56,6 +56,30 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
     (_) => Stream<List<MeasurableDataType>>.fromIterable([dataTypes]),
   );
 
+  when(
+    () => mock.getJournalEntities(
+      types: any(named: 'types'),
+      starredStatuses: any(named: 'starredStatuses'),
+      privateStatuses: any(named: 'privateStatuses'),
+      flaggedStatuses: any(named: 'flaggedStatuses'),
+      ids: any(named: 'ids'),
+      limit: any(named: 'limit'),
+      offset: any(named: 'offset'),
+      categoryIds: any(named: 'categoryIds'),
+    ),
+  ).thenAnswer((_) async => <JournalEntity>[]);
+
+  when(
+    () => mock.getTasks(
+      ids: any(named: 'ids'),
+      starredStatuses: any(named: 'starredStatuses'),
+      taskStatuses: any(named: 'taskStatuses'),
+      categoryIds: any(named: 'categoryIds'),
+      limit: any(named: 'limit'),
+      offset: any(named: 'offset'),
+    ),
+  ).thenAnswer((_) async => <JournalEntity>[]);
+
   for (final dataType in dataTypes) {
     when(() => mock.watchMeasurableDataTypeById(dataType.id)).thenAnswer(
       (_) => Stream<MeasurableDataType>.fromIterable([dataType]),

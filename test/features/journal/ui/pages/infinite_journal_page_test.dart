@@ -77,6 +77,31 @@ void main() {
 
       when(mockJournalDb.getTasksCount).thenAnswer((_) async => 42);
 
+      // Add default implementations for pagination (subsequent pages should return empty lists)
+      when(
+        () => mockJournalDb.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+
+      when(
+        () => mockJournalDb.getTasks(
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<UserActivityService>(UserActivityService())
@@ -119,6 +144,18 @@ void main() {
     });
     tearDown(getIt.reset);
 
+    // Helper function to replace pumpAndSettle
+    Future<void> pumpWithDelay(WidgetTester tester) async {
+      // Give the widget time to build and load initial data
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Additional pumps to progress animations
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
     testWidgets('page is rendered with text entry', (tester) async {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
@@ -153,9 +190,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      // TODO: test that entry text is rendered
+      await pumpWithDelay(tester);
 
       // test entry displays expected date
       expect(
@@ -204,7 +239,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await pumpWithDelay(tester);
 
       // test task title is displayed
       expect(
@@ -240,7 +275,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await pumpWithDelay(tester);
 
       // test task title is displayed
       expect(
@@ -283,7 +318,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await pumpWithDelay(tester);
 
       // task entry displays expected date
       expect(
@@ -379,7 +414,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await pumpWithDelay(tester);
 
       // measurement entry displays expected date
       expect(
@@ -464,7 +499,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await pumpWithDelay(tester);
 
       // measurement entry displays expected date
       expect(

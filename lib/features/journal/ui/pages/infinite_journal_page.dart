@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -82,6 +80,13 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
     final listener = getIt<UserActivityService>().updateActivity;
     _scrollController.addListener(listener);
     super.initState();
+
+    // Trigger initial fetch when widget is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<JournalPageCubit>().refreshQuery();
+      }
+    });
   }
 
   @override
@@ -94,24 +99,39 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
       child: BlocBuilder<JournalPageCubit, JournalPageState>(
         builder: (context, snapshot) {
           return RefreshIndicator(
-            onRefresh: () => Future.sync(snapshot.pagingController.refresh),
+            onRefresh: cubit.refreshQuery,
             child: CustomScrollView(
               controller: _scrollController,
               slivers: <Widget>[
                 const JournalSliverAppBar(),
-                PagedSliverList<int, JournalEntity>(
-                  pagingController: snapshot.pagingController,
-                  builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
-                    animateTransitions: true,
-                    itemBuilder: (context, item, index) {
-                      return CardWrapperWidget(
-                        item: item,
-                        taskAsListView: snapshot.taskAsListView,
-                        key: ValueKey(item.meta.id),
+                if (snapshot.pagingController != null)
+                  PagingListener<int, JournalEntity>(
+                    controller: snapshot.pagingController!,
+                    builder: (context, pagingState, fetchNextPageFunction) {
+                      return PagedSliverList<int, JournalEntity>(
+                        state: pagingState,
+                        fetchNextPage: fetchNextPageFunction,
+                        builderDelegate:
+                            PagedChildBuilderDelegate<JournalEntity>(
+                          animateTransitions: true,
+                          invisibleItemsThreshold: 10,
+                          itemBuilder: (context, item, index) {
+                            return CardWrapperWidget(
+                              item: item,
+                              taskAsListView: snapshot.taskAsListView,
+                              key: ValueKey(item.meta.id),
+                            );
+                          },
+                        ),
                       );
                     },
+                  )
+                else
+                  const SliverToBoxAdapter(
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
                   ),
-                ),
               ],
             ),
           );
