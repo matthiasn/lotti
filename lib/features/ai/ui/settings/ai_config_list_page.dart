@@ -51,8 +51,9 @@ class AiConfigListPage extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child:
-              Text(context.messages.aiConfigListErrorLoading(error.toString())),
+          child: Text(
+            '${context.messages.aiConfigListErrorLoading}: $error',
+          ),
         ),
       ),
       floatingActionButton: onAddPressed != null
@@ -168,7 +169,7 @@ class AiConfigListPage extends ConsumerWidget {
         final previewLength =
             prompt.template.length > 50 ? 50 : prompt.template.length;
         final preview = prompt.template.substring(0, previewLength);
-        return context.messages.aiConfigListPromptTemplateSubtitle(preview);
+        return '${context.messages.aiConfigListPromptTemplateSubtitle} $preview...';
       },
       model: (AiConfigModel value) {
         return value.description;

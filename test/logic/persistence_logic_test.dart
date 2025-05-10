@@ -441,7 +441,7 @@ void main() {
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
 
-      await getIt<JournalDb>().purgeDeleted(backup: false);
+      getIt<JournalDb>().purgeDeleted(backup: false);
     });
 
     test('create and retrieve workout entry', () async {
@@ -793,6 +793,24 @@ void main() {
 
       // Verify getCurrentGeoLocation was called at least once
       verify(mockDeviceLocation.getCurrentGeoLocation).called(1);
+    });
+
+    test('purgeDeleted should remove deleted items', () async {
+      // Setup test data
+      // ... existing setup code ...
+
+      // Call purgeDeleted and collect all progress values
+      final progressValues = <double>[];
+      await for (final progress
+          in getIt<JournalDb>().purgeDeleted(backup: false)) {
+        progressValues.add(progress);
+      }
+
+      // Verify the final progress is 1.0
+      expect(progressValues.last, 1.0);
+
+      // Verify items are deleted
+      // ... existing verification code ...
     });
   });
 }

@@ -67,9 +67,9 @@ class ProviderSelectionModal extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, __) => Center(
+      error: (error, stack) => Center(
         child: Text(
-          context.messages.aiConfigListErrorLoading(err.toString()),
+          '${context.messages.aiConfigListErrorLoading}: $error',
         ),
       ),
     );

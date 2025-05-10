@@ -549,15 +549,77 @@ class JournalDb extends _$JournalDb {
     return flag;
   }
 
-  Future<void> purgeDeleted({bool backup = true}) async {
+  Stream<double> purgeDeleted({bool backup = true}) async* {
     if (backup) {
       await createDbBackup(journalDbFileName);
     }
 
-    await purgeDeletedDashboards();
-    await purgeDeletedMeasurables();
-    await purgeDeletedTagEntities();
-    await purgeDeletedJournalEntities();
+    final dashboardCount = await (select(dashboardDefinitions)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .get()
+        .then((list) => list.length);
+
+    final measurableCount = await (select(measurableTypes)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .get()
+        .then((list) => list.length);
+
+    final tagCount = await (select(tagEntities)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .get()
+        .then((list) => list.length);
+
+    final journalCount = await (select(journal)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .get()
+        .then((list) => list.length);
+
+    final totalItems = dashboardCount + measurableCount + tagCount + journalCount;
+
+    if (totalItems == 0) {
+      yield 1.0; // Already empty
+      return;
+    }
+
+    var completedItems = 0;
+
+    // Add a small delay between progress updates
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Purge dashboards
+    await (delete(dashboardDefinitions)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .go();
+    completedItems += dashboardCount;
+    yield completedItems / totalItems;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Purge measurables
+    await (delete(measurableTypes)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .go();
+    completedItems += measurableCount;
+    yield completedItems / totalItems;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Purge tags
+    await (delete(tagEntities)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .go();
+    completedItems += tagCount;
+    yield completedItems / totalItems;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Purge journal entries
+    await (delete(journal)
+          ..where((tbl) => tbl.deleted.equals(true)))
+        .go();
+    completedItems += journalCount;
+    yield completedItems / totalItems;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Final progress update
+    yield 1.0;
   }
 
   Future<bool> getConfigFlag(String flagName) async {

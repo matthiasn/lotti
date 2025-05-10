@@ -49,19 +49,12 @@
   "aiConfigListDeleteConfirmTitle": "Confirm Deletion",
   "aiConfigListEmptyState": "No configurations found. Add one to get started.",
   "aiConfigListErrorDeleting": "Error deleting {configName}: {error}",
+  "aiConfigListErrorLoading": "Error loading configurations",
   "@aiConfigListErrorDeleting": {
     "placeholders": {
       "configName": {
         "type": "String"
       },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "aiConfigListErrorLoading": "Error loading configurations: {error}",
-  "@aiConfigListErrorLoading": {
-    "placeholders": {
       "error": {
         "type": "String"
       }
@@ -285,9 +278,13 @@
   "maintenanceDeleteLoggingDb": "Delete logging database",
   "maintenanceDeleteSyncDb": "Delete sync database",
   "maintenanceDeleteTagged": "Delete tagged",
+  "maintenancePurgeDeleted": "Purge deleted items",
+  "maintenancePurgeDeletedQuestion": "Are you sure you want to purge all deleted items?",
+  "maintenancePurgeDeletedConfirm": "Yes, purge all deleted items",
+  "maintenancePurgeDeletedProgress": "Purging deleted items...",
+  "maintenancePurgeDeletedEmpty": "No deleted items to purge",
   "maintenancePersistTaskCategories": "Persist task categories",
   "maintenancePurgeAudioModels": "Purge audio models",
-  "maintenancePurgeDeleted": "Purge deleted items",
   "maintenanceRecreateFts5": "Recreate full-text index",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceReprocessSync": "Reprocess sync messages",
