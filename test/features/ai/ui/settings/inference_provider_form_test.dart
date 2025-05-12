@@ -54,7 +54,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Assert - verify form fields are present
-      expect(find.text('Name'), findsOneWidget);
+      expect(find.text('Display Name'), findsOneWidget);
       expect(find.text('Base URL'), findsOneWidget);
       expect(find.text('API Key'), findsOneWidget);
       expect(find.text('Provider Type'), findsOneWidget);
@@ -86,6 +86,124 @@ void main() {
       expect(providerTypeFieldFinder, findsOneWidget);
 
       expect(find.byType(FilledButton), findsOneWidget); // Create button
+    });
+
+    // Test error text for short name input
+    testWidgets('should show correct error text when name is too short',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          onSave: (_) {},
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find the name field (first TextField)
+      final nameTextField = find.byType(TextField).first;
+
+      // Enter valid name, then clear and enter invalid short name
+      await tester.enterText(nameTextField, 'Valid Name');
+      await tester.pump();
+
+      // No error should be shown for valid input
+      expect(find.text('Name must be at least 3 characters'), findsNothing);
+
+      // Enter an invalid short name (less than 3 characters)
+      await tester.enterText(nameTextField, 'ab');
+      await tester.pump();
+
+      // Error message should appear
+      expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+
+      // Enter a single character
+      await tester.enterText(nameTextField, 'a');
+      await tester.pump();
+
+      // Error should still be shown
+      expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+
+      // Enter empty string
+      await tester.enterText(nameTextField, '');
+      await tester.pump();
+
+      // Error should still be shown
+      expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+    });
+
+    // Test error text for empty API key
+    testWidgets('should show correct error text when API key is empty',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          onSave: (_) {},
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find the API key field (third TextField)
+      final apiKeyField = find.byType(TextField).at(2);
+
+      // Enter valid API key, then clear
+      await tester.enterText(apiKeyField, 'valid-api-key');
+      await tester.pump();
+
+      // No error should be shown for valid input
+      expect(find.text('API key cannot be empty'), findsNothing);
+
+      // Enter empty API key
+      await tester.enterText(apiKeyField, '');
+      await tester.pump();
+
+      // Error message should appear
+      expect(find.text('API key cannot be empty'), findsOneWidget);
+    });
+
+    // Test error text for invalid URL
+    testWidgets('should show correct error text for invalid URL',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          onSave: (_) {},
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find the base URL field (second TextField)
+      final baseUrlField = find.byType(TextField).at(1);
+
+      // Enter valid URL
+      await tester.enterText(baseUrlField, 'https://example.com');
+      await tester.pump();
+
+      // No error should be shown for valid input
+      expect(find.text('Please enter a valid URL'), findsNothing);
+
+      // Enter an invalid URL without protocol
+      await tester.enterText(baseUrlField, 'example.com');
+      await tester.pump();
+
+      // Error message should appear
+      expect(find.text('Please enter a valid URL'), findsOneWidget);
+
+      // Enter another invalid URL
+      await tester.enterText(baseUrlField, 'not-a-url');
+      await tester.pump();
+
+      // Error should still be shown
+      expect(find.text('Please enter a valid URL'), findsOneWidget);
+
+      // Enter empty string - for base URL, empty is valid since it's optional
+      await tester.enterText(baseUrlField, '');
+      await tester.pump();
+
+      // For an empty URL, no validation message should appear
+      expect(find.text('Please enter a valid URL'), findsNothing);
     });
 
     testWidgets('tapping provider type field opens modal sheet',

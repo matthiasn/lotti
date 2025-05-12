@@ -2,26 +2,28 @@ import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+enum ModelFormError {
+  tooShort,
+}
+
 // Input validation classes
-class ModelName extends FormzInput<String, String> {
+class ModelName extends FormzInput<String, ModelFormError> {
   const ModelName.pure() : super.pure('');
   const ModelName.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
-    return value.length < 3 ? 'Name must be at least 3 characters' : null;
+  ModelFormError? validator(String value) {
+    return value.length < 3 ? ModelFormError.tooShort : null;
   }
 }
 
-class ProviderModelId extends FormzInput<String, String> {
+class ProviderModelId extends FormzInput<String, ModelFormError> {
   const ProviderModelId.pure() : super.pure('');
   const ProviderModelId.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
-    return value.length < 3
-        ? 'ProviderModelId must be at least 3 characters'
-        : null;
+  ModelFormError? validator(String value) {
+    return value.length < 3 ? ModelFormError.tooShort : null;
   }
 }
 
