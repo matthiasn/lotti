@@ -280,7 +280,7 @@
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenancePurgeDeletedQuestion": "Are you sure you want to purge all deleted items?",
-  "maintenancePurgeDeletedConfirm": "Yes, purge all deleted items",
+  "maintenancePurgeDeletedConfirm": "Yes, purge all",
   "maintenancePurgeDeletedProgress": "Purging deleted items...",
   "maintenancePurgeDeletedEmpty": "No deleted items to purge",
   "maintenancePersistTaskCategories": "Persist task categories",

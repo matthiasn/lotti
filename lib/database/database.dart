@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
@@ -14,7 +15,9 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 
 part 'database.g.dart';
 
@@ -549,10 +552,54 @@ class JournalDb extends _$JournalDb {
     return flag;
   }
 
+  Future<void> purgeDeletedFiles() async {
+    final deletedEntries =
+        await (select(journal)..where((tbl) => tbl.deleted.equals(true))).get();
+
+    for (final entry in deletedEntries) {
+      try {
+        final journalEntity = JournalEntity.fromJson(
+          jsonDecode(entry.serialized) as Map<String, dynamic>,
+        );
+
+        await journalEntity.maybeMap(
+          journalImage: (JournalImage image) async {
+            final fullPath = getFullImagePath(image);
+            final jsonPath = '$fullPath.json';
+            await File(fullPath).delete();
+            await File(jsonPath).delete();
+          },
+          journalAudio: (JournalAudio audio) async {
+            final fullPath = await AudioUtils.getFullAudioPath(audio);
+            final jsonPath = '$fullPath.json';
+            await File(fullPath).delete();
+            await File(jsonPath).delete();
+          },
+          orElse: () async {
+            // For all other entry types, just delete the JSON file
+            final docDir = getDocumentsDirectory();
+            final jsonPath = entityPath(journalEntity, docDir);
+            await File(jsonPath).delete();
+          },
+        );
+      } catch (e) {
+        // Log error but continue with other files
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'Database',
+          subDomain: 'purgeDeletedFiles',
+        );
+      }
+    }
+  }
+
   Stream<double> purgeDeleted({bool backup = true}) async* {
     if (backup) {
       await createDbBackup(journalDbFileName);
     }
+
+    // First delete the actual files
+    await purgeDeletedFiles();
 
     final dashboardCount = await (select(dashboardDefinitions)
           ..where((tbl) => tbl.deleted.equals(true)))
@@ -574,7 +621,8 @@ class JournalDb extends _$JournalDb {
         .get()
         .then((list) => list.length);
 
-    final totalItems = dashboardCount + measurableCount + tagCount + journalCount;
+    final totalItems =
+        dashboardCount + measurableCount + tagCount + journalCount;
 
     if (totalItems == 0) {
       yield 1.0; // Already empty
@@ -595,25 +643,20 @@ class JournalDb extends _$JournalDb {
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
     // Purge measurables
-    await (delete(measurableTypes)
-          ..where((tbl) => tbl.deleted.equals(true)))
+    await (delete(measurableTypes)..where((tbl) => tbl.deleted.equals(true)))
         .go();
     completedItems += measurableCount;
     yield completedItems / totalItems;
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
     // Purge tags
-    await (delete(tagEntities)
-          ..where((tbl) => tbl.deleted.equals(true)))
-        .go();
+    await (delete(tagEntities)..where((tbl) => tbl.deleted.equals(true))).go();
     completedItems += tagCount;
     yield completedItems / totalItems;
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
     // Purge journal entries
-    await (delete(journal)
-          ..where((tbl) => tbl.deleted.equals(true)))
-        .go();
+    await (delete(journal)..where((tbl) => tbl.deleted.equals(true))).go();
     completedItems += journalCount;
     yield completedItems / totalItems;
     await Future<void>.delayed(const Duration(milliseconds: 500));
