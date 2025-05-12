@@ -16,6 +16,7 @@ void main() {
   final testConfig = AiConfig.model(
     id: 'test-id',
     name: 'Test Model',
+    providerModelId: 'test-provider-model-id',
     inferenceProviderId: testProviderId,
     createdAt: DateTime.now(),
     inputModalities: [Modality.text],
@@ -57,6 +58,10 @@ void main() {
       // Assert
       expect(formState, isA<InferenceModelFormState>());
       expect(controller.nameController.text, equals('Test Model'));
+      expect(
+        controller.providerModelIdController.text,
+        equals('test-provider-model-id'),
+      );
       expect(controller.descriptionController.text, equals('Test description'));
       expect(formState?.inferenceProviderId, equals(testProviderId));
       expect(formState?.inputModalities, equals([Modality.text]));
@@ -76,6 +81,7 @@ void main() {
       // Assert
       expect(formState, isA<InferenceModelFormState>());
       expect(controller.nameController.text, isEmpty);
+      expect(controller.providerModelIdController.text, isEmpty);
       expect(controller.descriptionController.text, isEmpty);
       expect(formState?.inferenceProviderId, isEmpty);
       expect(formState?.inputModalities, equals([Modality.text]));
@@ -117,6 +123,7 @@ void main() {
       final updatedConfig = AiConfig.model(
         id: 'test-id',
         name: 'Updated Model',
+        providerModelId: 'updated-provider-model-id',
         inferenceProviderId: testProviderId,
         createdAt: DateTime.now(),
         inputModalities: [Modality.text, Modality.image],
@@ -226,6 +233,24 @@ void main() {
 
       // Assert
       expect(formState?.inferenceProviderId, equals('new-provider-id'));
+    });
+
+    test('should update form state when providerModelId is changed', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceModelFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceModelFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.providerModelIdChanged('new-provider-model-id');
+      final formState = container
+          .read(inferenceModelFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.providerModelId.value, equals('new-provider-model-id'));
     });
 
     test('should update form state when inputModalities is changed', () async {

@@ -8,6 +8,7 @@ void main() {
   final textModel = AiConfigModel(
     id: 'text-basic',
     name: 'Text Basic',
+    providerModelId: 'text-model-id',
     inferenceProviderId: 'p1',
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
@@ -19,6 +20,7 @@ void main() {
   final reasoningTextImageModel = AiConfigModel(
     id: 'reason-text-img',
     name: 'Reason Text Image',
+    providerModelId: 'reasoning-text-img-id',
     inferenceProviderId: 'p2',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
@@ -30,6 +32,7 @@ void main() {
   final multiModalNonReasoningModel = AiConfigModel(
     id: 'multi-no-reason',
     name: 'Multi Modal Non Reason',
+    providerModelId: 'multi-modal-noreasons-id',
     inferenceProviderId: 'p1',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text, Modality.audio],
@@ -41,6 +44,7 @@ void main() {
   final fullMultiModalReasoningModel = AiConfigModel(
     id: 'multi-reason',
     name: 'Full Multi Modal Reason',
+    providerModelId: 'multi-modal-reasoning-id',
     inferenceProviderId: 'p2',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text, Modality.audio],

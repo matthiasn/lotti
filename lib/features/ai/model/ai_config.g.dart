@@ -51,6 +51,7 @@ _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
     _$AiConfigModelImpl(
       id: json['id'] as String,
       name: json['name'] as String,
+      providerModelId: json['providerModelId'] as String,
       inferenceProviderId: json['inferenceProviderId'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       inputModalities: (json['inputModalities'] as List<dynamic>)
@@ -71,6 +72,7 @@ Map<String, dynamic> _$$AiConfigModelImplToJson(_$AiConfigModelImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'providerModelId': instance.providerModelId,
       'inferenceProviderId': instance.inferenceProviderId,
       'createdAt': instance.createdAt.toIso8601String(),
       'inputModalities':

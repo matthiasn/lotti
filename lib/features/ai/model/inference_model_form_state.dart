@@ -13,6 +13,18 @@ class ModelName extends FormzInput<String, String> {
   }
 }
 
+class ProviderModelId extends FormzInput<String, String> {
+  const ProviderModelId.pure() : super.pure('');
+  const ProviderModelId.dirty([super.value = '']) : super.dirty();
+
+  @override
+  String? validator(String value) {
+    return value.length < 3
+        ? 'ProviderModelId must be at least 3 characters'
+        : null;
+  }
+}
+
 class ModelDescription extends FormzInput<String, String> {
   const ModelDescription.pure() : super.pure('');
   const ModelDescription.dirty([super.value = '']) : super.dirty();
@@ -28,6 +40,7 @@ class InferenceModelFormState with FormzMixin {
   InferenceModelFormState({
     this.id,
     this.name = const ModelName.pure(),
+    this.providerModelId = const ProviderModelId.pure(),
     this.description = const ModelDescription.pure(),
     this.inferenceProviderId = '',
     this.inputModalities = const [Modality.text],
@@ -39,6 +52,7 @@ class InferenceModelFormState with FormzMixin {
 
   final String? id; // null for new models
   final ModelName name;
+  final ProviderModelId providerModelId;
   final ModelDescription description;
   final String inferenceProviderId;
   final List<Modality> inputModalities;
@@ -50,6 +64,7 @@ class InferenceModelFormState with FormzMixin {
   InferenceModelFormState copyWith({
     String? id,
     ModelName? name,
+    ProviderModelId? providerModelId,
     ModelDescription? description,
     String? inferenceProviderId,
     List<Modality>? inputModalities,
@@ -62,6 +77,7 @@ class InferenceModelFormState with FormzMixin {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      providerModelId: providerModelId ?? this.providerModelId,
       inferenceProviderId: inferenceProviderId ?? this.inferenceProviderId,
       inputModalities: inputModalities ?? this.inputModalities,
       outputModalities: outputModalities ?? this.outputModalities,
@@ -74,6 +90,7 @@ class InferenceModelFormState with FormzMixin {
   @override
   List<FormzInput<String, dynamic>> get inputs => [
         name,
+        providerModelId,
         description,
       ];
 
@@ -82,6 +99,7 @@ class InferenceModelFormState with FormzMixin {
     return AiConfig.model(
       id: id ?? uuid.v1(),
       name: name.value,
+      providerModelId: providerModelId.value,
       description: description.value,
       inferenceProviderId: inferenceProviderId,
       createdAt: DateTime.now(),

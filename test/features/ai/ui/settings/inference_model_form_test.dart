@@ -35,6 +35,7 @@ Widget buildTestWidget({
 AiConfig createMockModelConfig({
   required String id,
   required String name,
+  required String providerModelId,
   String? description,
   String inferenceProviderId = 'provider-1',
   List<Modality> inputModalities = const [Modality.text],
@@ -44,6 +45,7 @@ AiConfig createMockModelConfig({
   return AiConfig.model(
     id: id,
     name: name,
+    providerModelId: providerModelId,
     inferenceProviderId: inferenceProviderId,
     createdAt: DateTime.now(),
     inputModalities: inputModalities,
@@ -118,6 +120,14 @@ void main() {
 
     // Enter a name
     await tester.enterText(nameField, 'Test Model');
+    await tester.pump();
+
+    // Find the providerModelId field (second TextField)
+    final providerModelIdField = find.byType(TextField).at(1);
+    expect(providerModelIdField, findsOneWidget);
+
+    // Enter provider model ID
+    await tester.enterText(providerModelIdField, 'test-provider-model-id');
     await tester.pump();
 
     // Find the description field (last TextField)

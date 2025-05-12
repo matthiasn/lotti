@@ -24,6 +24,7 @@ void main() {
       AiConfig.model(
         id: 'fallback-id',
         name: 'Fallback Model',
+        providerModelId: 'fallback-provider-model-id',
         inferenceProviderId: 'provider-1',
         createdAt: DateTime.now(),
         inputModalities: const [Modality.text],
@@ -48,6 +49,7 @@ void main() {
       AiConfig.model(
         id: 'model-1',
         name: 'Test Model 1',
+        providerModelId: 'provider-model-id-1',
         inferenceProviderId: 'provider-1',
         createdAt: DateTime.now(),
         inputModalities: const [Modality.text],
@@ -57,6 +59,7 @@ void main() {
       AiConfig.model(
         id: 'model-2',
         name: 'Test Model 2',
+        providerModelId: 'provider-model-id-2',
         inferenceProviderId: 'provider-2',
         createdAt: DateTime.now(),
         inputModalities: const [Modality.text, Modality.image],

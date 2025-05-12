@@ -42,6 +42,7 @@ class AiConfig with _$AiConfig {
   const factory AiConfig.model({
     required String id,
     required String name,
+    required String providerModelId,
     required String inferenceProviderId,
     required DateTime createdAt,
     required List<Modality> inputModalities,

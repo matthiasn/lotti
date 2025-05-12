@@ -117,6 +117,20 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
           ),
           SizedBox(
             height: 90,
+            child: TextField(
+              onChanged: formController.providerModelIdChanged,
+              controller: formController.providerModelIdController,
+              decoration: InputDecoration(
+                labelText: context.messages.aiConfigProviderModelIdFieldLabel,
+                errorText: formState.providerModelId.isNotValid &&
+                        !formState.providerModelId.isPure
+                    ? formState.providerModelId.error
+                    : null,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 90,
             child: InkWell(
               onTap: _showInferenceProviderModal,
               child: InputDecorator(

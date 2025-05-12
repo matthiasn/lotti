@@ -59,6 +59,7 @@ void main() {
     return AiConfig.model(
       id: id,
       name: name,
+      providerModelId: 'test-provider-model-id',
       inferenceProviderId: 'provider-1',
       createdAt: DateTime.now(),
       inputModalities: const [Modality.text],

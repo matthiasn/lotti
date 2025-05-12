@@ -51,6 +51,7 @@ mixin _$AiConfig {
     required TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -90,6 +91,7 @@ mixin _$AiConfig {
     TResult? Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -129,6 +131,7 @@ mixin _$AiConfig {
     TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -419,6 +422,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
     required TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -462,6 +466,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
     TResult? Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -505,6 +510,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
     TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -626,6 +632,7 @@ abstract class _$$AiConfigModelImplCopyWith<$Res>
   $Res call(
       {String id,
       String name,
+      String providerModelId,
       String inferenceProviderId,
       DateTime createdAt,
       List<Modality> inputModalities,
@@ -650,6 +657,7 @@ class __$$AiConfigModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? providerModelId = null,
     Object? inferenceProviderId = null,
     Object? createdAt = null,
     Object? inputModalities = null,
@@ -666,6 +674,10 @@ class __$$AiConfigModelImplCopyWithImpl<$Res>
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      providerModelId: null == providerModelId
+          ? _value.providerModelId
+          : providerModelId // ignore: cast_nullable_to_non_nullable
               as String,
       inferenceProviderId: null == inferenceProviderId
           ? _value.inferenceProviderId
@@ -705,6 +717,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
   const _$AiConfigModelImpl(
       {required this.id,
       required this.name,
+      required this.providerModelId,
       required this.inferenceProviderId,
       required this.createdAt,
       required final List<Modality> inputModalities,
@@ -724,6 +737,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
   final String id;
   @override
   final String name;
+  @override
+  final String providerModelId;
   @override
   final String inferenceProviderId;
   @override
@@ -757,7 +772,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
 
   @override
   String toString() {
-    return 'AiConfig.model(id: $id, name: $name, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, updatedAt: $updatedAt, description: $description)';
+    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, updatedAt: $updatedAt, description: $description)';
   }
 
   @override
@@ -767,6 +782,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             other is _$AiConfigModelImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.providerModelId, providerModelId) ||
+                other.providerModelId == providerModelId) &&
             (identical(other.inferenceProviderId, inferenceProviderId) ||
                 other.inferenceProviderId == inferenceProviderId) &&
             (identical(other.createdAt, createdAt) ||
@@ -789,6 +806,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
       runtimeType,
       id,
       name,
+      providerModelId,
       inferenceProviderId,
       createdAt,
       const DeepCollectionEquality().hash(_inputModalities),
@@ -821,6 +839,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
     required TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -844,8 +863,17 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String? category)
         prompt,
   }) {
-    return model(id, name, inferenceProviderId, createdAt, inputModalities,
-        outputModalities, isReasoningModel, updatedAt, description);
+    return model(
+        id,
+        name,
+        providerModelId,
+        inferenceProviderId,
+        createdAt,
+        inputModalities,
+        outputModalities,
+        isReasoningModel,
+        updatedAt,
+        description);
   }
 
   @override
@@ -864,6 +892,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
     TResult? Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -890,6 +919,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
     return model?.call(
         id,
         name,
+        providerModelId,
         inferenceProviderId,
         createdAt,
         inputModalities,
@@ -915,6 +945,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
     TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -940,8 +971,17 @@ class _$AiConfigModelImpl implements AiConfigModel {
     required TResult orElse(),
   }) {
     if (model != null) {
-      return model(id, name, inferenceProviderId, createdAt, inputModalities,
-          outputModalities, isReasoningModel, updatedAt, description);
+      return model(
+          id,
+          name,
+          providerModelId,
+          inferenceProviderId,
+          createdAt,
+          inputModalities,
+          outputModalities,
+          isReasoningModel,
+          updatedAt,
+          description);
     }
     return orElse();
   }
@@ -993,6 +1033,7 @@ abstract class AiConfigModel implements AiConfig {
   const factory AiConfigModel(
       {required final String id,
       required final String name,
+      required final String providerModelId,
       required final String inferenceProviderId,
       required final DateTime createdAt,
       required final List<Modality> inputModalities,
@@ -1008,6 +1049,7 @@ abstract class AiConfigModel implements AiConfig {
   String get id;
   @override
   String get name;
+  String get providerModelId;
   String get inferenceProviderId;
   @override
   DateTime get createdAt;
@@ -1270,6 +1312,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     required TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -1324,6 +1367,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     TResult? Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
@@ -1378,6 +1422,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     TResult Function(
             String id,
             String name,
+            String providerModelId,
             String inferenceProviderId,
             DateTime createdAt,
             List<Modality> inputModalities,
