@@ -2,53 +2,58 @@ import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+enum PromptFormError {
+  tooShort,
+  empty,
+}
+
 // Input validation classes
-class PromptName extends FormzInput<String, String> {
+class PromptName extends FormzInput<String, PromptFormError> {
   const PromptName.pure() : super.pure('');
   const PromptName.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
-    return value.length < 3 ? 'Name must be at least 3 characters' : null;
+  PromptFormError? validator(String value) {
+    return value.length < 3 ? PromptFormError.tooShort : null;
   }
 }
 
-class PromptTemplate extends FormzInput<String, String> {
+class PromptTemplate extends FormzInput<String, PromptFormError> {
   const PromptTemplate.pure() : super.pure('');
   const PromptTemplate.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
-    return value.isEmpty ? 'Template cannot be empty' : null;
+  PromptFormError? validator(String value) {
+    return value.isEmpty ? PromptFormError.empty : null;
   }
 }
 
-class PromptDescription extends FormzInput<String, String> {
+class PromptDescription extends FormzInput<String, PromptFormError> {
   const PromptDescription.pure() : super.pure('');
   const PromptDescription.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
+  PromptFormError? validator(String value) {
     return null; // Optional field
   }
 }
 
-class PromptComment extends FormzInput<String, String> {
+class PromptComment extends FormzInput<String, PromptFormError> {
   const PromptComment.pure() : super.pure('');
   const PromptComment.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
+  PromptFormError? validator(String value) {
     return null; // Optional field
   }
 }
 
-class PromptCategory extends FormzInput<String, String> {
+class PromptCategory extends FormzInput<String, PromptFormError> {
   const PromptCategory.pure() : super.pure('');
   const PromptCategory.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
+  PromptFormError? validator(String value) {
     return null; // Optional field
   }
 }

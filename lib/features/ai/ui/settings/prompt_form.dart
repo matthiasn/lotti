@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/input_data_type_extensions.dart';
+import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/model_selection_modal.dart';
@@ -112,8 +113,10 @@ class _PromptFormState extends ConsumerState<PromptForm> {
               controller: formController.nameController,
               decoration: InputDecoration(
                 labelText: context.messages.aiConfigNameFieldLabel,
-                errorText: formState.name.isNotValid && !formState.name.isPure
-                    ? formState.name.error
+                errorText: formState.name.isNotValid &&
+                        !formState.name.isPure &&
+                        formState.name.error == PromptFormError.tooShort
+                    ? context.messages.aiConfigNameTooShortError
                     : null,
               ),
             ),
@@ -147,10 +150,11 @@ class _PromptFormState extends ConsumerState<PromptForm> {
               controller: formController.templateController,
               decoration: InputDecoration(
                 labelText: context.messages.aiConfigTemplateFieldLabel,
-                errorText:
-                    formState.template.isNotValid && !formState.template.isPure
-                        ? formState.template.error
-                        : null,
+                errorText: formState.template.isNotValid &&
+                        !formState.template.isPure &&
+                        formState.template.error == PromptFormError.empty
+                    ? context.messages.aiConfigTemplateEmptyError
+                    : null,
                 alignLabelWithHint: true,
               ),
               maxLines: 8,
