@@ -86,8 +86,10 @@ String entryTextForWorkout(
 }) {
   final duration = data.dateTo.difference(data.dateFrom);
   final title = includeTitle ? '${data.workoutType}\n' : '';
+  final energy = data.energy ?? 0;
+
   return '$title'
-      'energy: ${nf.format(data.energy)} kcal\n'
+      'energy: ${nf.format(energy)} kcal\n'
       'duration: ${duration.inMinutes} minutes';
 }
 
