@@ -28,10 +28,12 @@ Future<T?> showModalActionSheet<T>({
               children: [
                 if (title != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    padding: const EdgeInsets.fromLTRB(2, 16, 2, 8),
                     child: Text(
                       title,
-                      style: settingsCardTextStyle.copyWith(fontSize: fontSizeMedium),
+                      style: settingsCardTextStyle.copyWith(
+                        fontSize: fontSizeMedium,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -54,7 +56,8 @@ Future<T?> showModalActionSheet<T>({
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: SizedBox(
                       width: double.infinity,
                       child: TextButton(
@@ -76,9 +79,12 @@ Future<T?> showModalActionSheet<T>({
                             Flexible(
                               child: Text(
                                 action.label,
-                                style: (action.style ?? settingsCardTextStyle).copyWith(
+                                style: (action.style ?? settingsCardTextStyle)
+                                    .copyWith(
                                   color: color,
-                                  fontWeight: action.isDefaultAction ? FontWeight.bold : null,
+                                  fontWeight: action.isDefaultAction
+                                      ? FontWeight.bold
+                                      : null,
                                 ),
                                 textAlign: TextAlign.center,
                               ),

@@ -78,7 +78,6 @@ class MaintenancePage extends StatelessWidget {
                         isDestructiveAction: true,
                         isDefaultAction: true,
                         style: settingsCardTextStyle.copyWith(
-                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.error,
                         ),
@@ -145,7 +144,9 @@ class MaintenancePage extends StatelessWidget {
                                                   .surfaceContainerHighest,
                                               valueColor:
                                                   AlwaysStoppedAnimation<Color>(
-                                                Theme.of(context).colorScheme.primary,
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
                                               ),
                                             ),
                                           ),
@@ -155,7 +156,9 @@ class MaintenancePage extends StatelessWidget {
                                           '${(progress * 100).toInt()}%',
                                           style: settingsCardTextStyle.copyWith(
                                             fontSize: 12,
-                                            color: Theme.of(context).colorScheme.outline,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline,
                                           ),
                                         ),
                                       ],
