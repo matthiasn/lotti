@@ -194,19 +194,6 @@ class MaintenancePage extends StatelessWidget {
                 title: context.messages.maintenanceReSync,
                 onTap: () => ReSyncModal.show(context),
               ),
-              SettingsCard(
-                title: context.messages.maintenanceAssignCategoriesToChecklists,
-                onTap: maintenance.addCategoriesToChecklists,
-              ),
-              SettingsCard(
-                title: context
-                    .messages.maintenanceAssignCategoriesToLinkedFromTasks,
-                onTap: maintenance.addCategoriesToLinkedFromTasks,
-              ),
-              SettingsCard(
-                title: context.messages.maintenanceAssignCategoriesToLinked,
-                onTap: maintenance.addCategoriesToLinked,
-              ),
             ],
           ),
         );
