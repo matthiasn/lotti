@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 @immutable
 class ModalSheetAction<T> {
   const ModalSheetAction({
-    required this.label, 
+    required this.label,
     this.key,
     this.icon,
     this.isDefaultAction = false,
