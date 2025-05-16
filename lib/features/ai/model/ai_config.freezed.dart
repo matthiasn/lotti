@@ -63,7 +63,8 @@ mixin _$AiConfig {
     required TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -104,7 +105,8 @@ mixin _$AiConfig {
     TResult? Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -145,7 +147,8 @@ mixin _$AiConfig {
     TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -437,7 +440,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
     required TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -482,7 +486,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
     TResult? Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -527,7 +532,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
     TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -857,7 +863,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
     required TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -911,7 +918,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
     TResult? Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -965,7 +973,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
     TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -1089,7 +1098,8 @@ abstract class _$$AiConfigPromptImplCopyWith<$Res>
   $Res call(
       {String id,
       String name,
-      String template,
+      String systemMessage,
+      String userMessage,
       String defaultModelId,
       List<String> modelIds,
       DateTime createdAt,
@@ -1117,7 +1127,8 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? name = null,
-    Object? template = null,
+    Object? systemMessage = null,
+    Object? userMessage = null,
     Object? defaultModelId = null,
     Object? modelIds = null,
     Object? createdAt = null,
@@ -1138,9 +1149,13 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      template: null == template
-          ? _value.template
-          : template // ignore: cast_nullable_to_non_nullable
+      systemMessage: null == systemMessage
+          ? _value.systemMessage
+          : systemMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      userMessage: null == userMessage
+          ? _value.userMessage
+          : userMessage // ignore: cast_nullable_to_non_nullable
               as String,
       defaultModelId: null == defaultModelId
           ? _value.defaultModelId
@@ -1192,7 +1207,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
   const _$AiConfigPromptImpl(
       {required this.id,
       required this.name,
-      required this.template,
+      required this.systemMessage,
+      required this.userMessage,
       required this.defaultModelId,
       required final List<String> modelIds,
       required this.createdAt,
@@ -1217,7 +1233,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
   @override
   final String name;
   @override
-  final String template;
+  final String systemMessage;
+  @override
+  final String userMessage;
   @override
   final String defaultModelId;
   final List<String> _modelIds;
@@ -1265,7 +1283,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
 
   @override
   String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, template: $template, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
+    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
   }
 
   @override
@@ -1275,8 +1293,10 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             other is _$AiConfigPromptImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.template, template) ||
-                other.template == template) &&
+            (identical(other.systemMessage, systemMessage) ||
+                other.systemMessage == systemMessage) &&
+            (identical(other.userMessage, userMessage) ||
+                other.userMessage == userMessage) &&
             (identical(other.defaultModelId, defaultModelId) ||
                 other.defaultModelId == defaultModelId) &&
             const DeepCollectionEquality().equals(other._modelIds, _modelIds) &&
@@ -1303,7 +1323,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       runtimeType,
       id,
       name,
-      template,
+      systemMessage,
+      userMessage,
       defaultModelId,
       const DeepCollectionEquality().hash(_modelIds),
       createdAt,
@@ -1352,7 +1373,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     required TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -1368,7 +1390,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     return prompt(
         id,
         name,
-        template,
+        systemMessage,
+        userMessage,
         defaultModelId,
         modelIds,
         createdAt,
@@ -1409,7 +1432,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     TResult? Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -1425,7 +1449,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     return prompt?.call(
         id,
         name,
-        template,
+        systemMessage,
+        userMessage,
         defaultModelId,
         modelIds,
         createdAt,
@@ -1466,7 +1491,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
     TResult Function(
             String id,
             String name,
-            String template,
+            String systemMessage,
+            String userMessage,
             String defaultModelId,
             List<String> modelIds,
             DateTime createdAt,
@@ -1484,7 +1510,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       return prompt(
           id,
           name,
-          template,
+          systemMessage,
+          userMessage,
           defaultModelId,
           modelIds,
           createdAt,
@@ -1546,7 +1573,8 @@ abstract class AiConfigPrompt implements AiConfig {
   const factory AiConfigPrompt(
       {required final String id,
       required final String name,
-      required final String template,
+      required final String systemMessage,
+      required final String userMessage,
       required final String defaultModelId,
       required final List<String> modelIds,
       required final DateTime createdAt,
@@ -1565,7 +1593,8 @@ abstract class AiConfigPrompt implements AiConfig {
   String get id;
   @override
   String get name;
-  String get template;
+  String get systemMessage;
+  String get userMessage;
   String get defaultModelId;
   List<String> get modelIds;
   @override

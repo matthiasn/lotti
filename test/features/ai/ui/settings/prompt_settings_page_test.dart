@@ -24,7 +24,8 @@ void main() {
       AiConfig.prompt(
         id: 'fallback-id',
         name: 'Fallback Prompt',
-        template: 'Fallback template',
+        systemMessage: 'Fallback system message',
+        userMessage: 'Fallback template',
         defaultModelId: 'model-123',
         modelIds: [],
         createdAt: DateTime.now(),
@@ -49,7 +50,8 @@ void main() {
       AiConfig.prompt(
         id: 'prompt-1',
         name: 'Test Prompt 1',
-        template: 'Template for prompt 1',
+        systemMessage: 'System message for prompt 1',
+        userMessage: 'Template for prompt 1',
         defaultModelId: 'model-1',
         modelIds: [],
         createdAt: DateTime.now(),
@@ -59,7 +61,8 @@ void main() {
       AiConfig.prompt(
         id: 'prompt-2',
         name: 'Test Prompt 2',
-        template: 'Template for prompt 2',
+        systemMessage: 'System message for prompt 2',
+        userMessage: 'Template for prompt 2',
         defaultModelId: 'model-2',
         modelIds: [],
         createdAt: DateTime.now(),

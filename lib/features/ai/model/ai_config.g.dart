@@ -95,7 +95,8 @@ _$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
     _$AiConfigPromptImpl(
       id: json['id'] as String,
       name: json['name'] as String,
-      template: json['template'] as String,
+      systemMessage: json['systemMessage'] as String,
+      userMessage: json['userMessage'] as String,
       defaultModelId: json['defaultModelId'] as String,
       modelIds:
           (json['modelIds'] as List<dynamic>).map((e) => e as String).toList(),
@@ -122,7 +123,8 @@ Map<String, dynamic> _$$AiConfigPromptImplToJson(
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
-      'template': instance.template,
+      'systemMessage': instance.systemMessage,
+      'userMessage': instance.userMessage,
       'defaultModelId': instance.defaultModelId,
       'modelIds': instance.modelIds,
       'createdAt': instance.createdAt.toIso8601String(),

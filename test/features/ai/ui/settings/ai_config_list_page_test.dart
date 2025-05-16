@@ -83,7 +83,8 @@ void main() {
       AiConfig.prompt(
         id: 'prompt-1',
         name: 'Prompt Test 1',
-        template: 'Template for prompt test 1',
+        systemMessage: 'System message for prompt test 1',
+        userMessage: 'Template for prompt test 1',
         defaultModelId: 'model-id-1',
         modelIds: [],
         requiredInputData: const [],
@@ -93,7 +94,8 @@ void main() {
       AiConfig.prompt(
         id: 'prompt-2',
         name: 'Prompt Test 2',
-        template: 'Template for prompt test 2',
+        systemMessage: 'System message for prompt test 2',
+        userMessage: 'Template for prompt test 2',
         defaultModelId: 'model-id-2',
         modelIds: [],
         requiredInputData: const [],

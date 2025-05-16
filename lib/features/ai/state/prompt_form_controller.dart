@@ -9,7 +9,8 @@ part 'prompt_form_controller.g.dart';
 @riverpod
 class PromptFormController extends _$PromptFormController {
   final nameController = TextEditingController();
-  final templateController = TextEditingController();
+  final systemMessageController = TextEditingController();
+  final userMessageController = TextEditingController();
   final descriptionController = TextEditingController();
 
   AiConfigPrompt? _config;
@@ -22,12 +23,15 @@ class PromptFormController extends _$PromptFormController {
         : null;
 
     nameController.text = _config?.name ?? '';
-    templateController.text = _config?.template ?? '';
+
+    userMessageController.text = _config?.userMessage ?? '';
+    systemMessageController.text = _config?.systemMessage ?? '';
     descriptionController.text = _config?.description ?? '';
 
     ref.onDispose(() {
       nameController.dispose();
-      templateController.dispose();
+      userMessageController.dispose();
+      systemMessageController.dispose();
       descriptionController.dispose();
     });
 
@@ -35,7 +39,8 @@ class PromptFormController extends _$PromptFormController {
       return PromptFormState(
         id: _config!.id,
         name: PromptName.dirty(_config!.name),
-        template: PromptTemplate.dirty(_config!.template),
+        systemMessage: PromptSystemMessage.dirty(_config!.systemMessage),
+        userMessage: PromptUserMessage.dirty(_config!.userMessage),
         defaultModelId: _config!.defaultModelId,
         modelIds: _config!.modelIds,
         useReasoning: _config!.useReasoning,
@@ -52,7 +57,8 @@ class PromptFormController extends _$PromptFormController {
 
   void _setAllFields({
     String? name,
-    String? template,
+    String? systemMessage,
+    String? userMessage,
     String? defaultModelId,
     List<String>? modelIds,
     bool? useReasoning,
@@ -68,8 +74,12 @@ class PromptFormController extends _$PromptFormController {
     state = AsyncData(
       prev.copyWith(
         name: name != null ? PromptName.dirty(name) : prev.name,
-        template:
-            template != null ? PromptTemplate.dirty(template) : prev.template,
+        systemMessage: systemMessage != null
+            ? PromptSystemMessage.dirty(systemMessage)
+            : prev.systemMessage,
+        userMessage: userMessage != null
+            ? PromptUserMessage.dirty(userMessage)
+            : prev.userMessage,
         defaultModelId: defaultModelId,
         modelIds: modelIds ?? prev.modelIds,
         useReasoning: useReasoning,
@@ -92,11 +102,18 @@ class PromptFormController extends _$PromptFormController {
     _setAllFields(name: value);
   }
 
-  void templateChanged(String value) {
-    if (templateController.text != value) {
-      templateController.text = value;
+  void systemMessageChanged(String value) {
+    if (systemMessageController.text != value) {
+      systemMessageController.text = value;
     }
-    _setAllFields(template: value);
+    _setAllFields(systemMessage: value);
+  }
+
+  void userMessageChanged(String value) {
+    if (userMessageController.text != value) {
+      userMessageController.text = value;
+    }
+    _setAllFields(userMessage: value);
   }
 
   void defaultModelIdChanged(String value) {
@@ -170,7 +187,8 @@ class PromptFormController extends _$PromptFormController {
 
   void reset() {
     nameController.clear();
-    templateController.clear();
+    systemMessageController.clear();
+    userMessageController.clear();
     descriptionController.clear();
     state = AsyncData(PromptFormState());
   }

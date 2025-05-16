@@ -55,7 +55,8 @@ class AiConfig with _$AiConfig {
   const factory AiConfig.prompt({
     required String id,
     required String name,
-    required String template,
+    required String systemMessage,
+    required String userMessage,
     required String defaultModelId,
     required List<String> modelIds,
     required DateTime createdAt,

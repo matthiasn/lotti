@@ -87,117 +87,122 @@ class _PromptFormState extends ConsumerState<PromptForm> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            height: 70,
-            child: TextField(
-              onChanged: formController.nameChanged,
-              controller: formController.nameController,
-              decoration: InputDecoration(
-                labelText: context.messages.aiConfigNameFieldLabel,
-                errorText: formState.name.isNotValid &&
-                        !formState.name.isPure &&
-                        formState.name.error == PromptFormError.tooShort
-                    ? context.messages.aiConfigNameTooShortError
-                    : null,
-              ),
-            ),
-          ),
-          PromptFormSelectModel(config: widget.config),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: TextField(
-              onChanged: formController.templateChanged,
-              controller: formController.templateController,
-              decoration: InputDecoration(
-                labelText: context.messages.aiConfigTemplateFieldLabel,
-                errorText: formState.template.isNotValid &&
-                        !formState.template.isPure &&
-                        formState.template.error == PromptFormError.empty
-                    ? context.messages.aiConfigTemplateEmptyError
-                    : null,
-                alignLabelWithHint: true,
-              ),
-              maxLines: 8,
-            ),
-          ),
-          const SizedBox(height: 20),
-          InkWell(
-            onTap: () => _showInputDataTypeSelectionModal(
-              selectedTypes: formState.requiredInputData,
-              onSave: formController.requiredInputDataChanged,
-            ),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: context.messages.aiConfigRequiredInputDataFieldLabel,
-                suffixIcon: const Icon(Icons.arrow_drop_down),
-              ),
-              child: Text(
-                formState.requiredInputData.isEmpty
-                    ? context.messages.aiConfigSelectInputDataTypesPrompt
-                    : formState.requiredInputData
-                        .map((type) => type.displayName(context))
-                        .join(', '),
-                style: context.textTheme.bodyLarge,
-              ),
-            ),
-          ),
-          const SizedBox(height: 5),
-          SwitchListTile(
-            title: Text(context.messages.aiConfigUseReasoningFieldLabel),
-            subtitle: Text(context.messages.aiConfigUseReasoningDescription),
-            value: formState.useReasoning,
-            onChanged: formController.useReasoningChanged,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 5),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            onChanged: formController.descriptionChanged,
-            controller: formController.descriptionController,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          height: 70,
+          child: TextField(
+            onChanged: formController.nameChanged,
+            controller: formController.nameController,
             decoration: InputDecoration(
-              labelText: context.messages.aiConfigDescriptionFieldLabel,
+              labelText: context.messages.aiConfigNameFieldLabel,
+              errorText: formState.name.isNotValid &&
+                      !formState.name.isPure &&
+                      formState.name.error == PromptFormError.tooShort
+                  ? context.messages.aiConfigNameTooShortError
+                  : null,
             ),
-            maxLines: 3,
           ),
-          SizedBox(
-            height: 50,
-            child: formState.submitFailed
-                ? Text(
-                    context.messages.aiConfigFailedToSaveMessage,
-                    style: context.textTheme.bodyLarge?.copyWith(
-                      color: context.colorScheme.error,
-                    ),
-                  )
+        ),
+        PromptFormSelectModel(config: widget.config),
+        const SizedBox(height: 20),
+        TextField(
+          onChanged: formController.userMessageChanged,
+          controller: formController.userMessageController,
+          decoration: InputDecoration(
+            labelText: context.messages.aiConfigUserMessageFieldLabel,
+            errorText: formState.userMessage.isNotValid &&
+                    !formState.userMessage.isPure &&
+                    formState.userMessage.error == PromptFormError.empty
+                ? context.messages.aiConfigUserMessageEmptyError
                 : null,
+            alignLabelWithHint: true,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilledButton(
-                onPressed: formState.isValid &&
-                        formState.modelIds.isNotEmpty &&
-                        formState.defaultModelId.isNotEmpty &&
-                        formState.modelIds.contains(formState.defaultModelId) &&
-                        (widget.config == null || formState.isDirty)
-                    ? () {
-                        final config = formState.toAiConfig();
-                        widget.onSave(config);
-                      }
-                    : null,
-                child: Text(
-                  widget.config == null
-                      ? context.messages.aiConfigCreateButtonLabel
-                      : context.messages.aiConfigUpdateButtonLabel,
-                ),
+          maxLines: 6,
+        ),
+        const SizedBox(height: 20),
+        TextField(
+          onChanged: formController.systemMessageChanged,
+          controller: formController.systemMessageController,
+          decoration: InputDecoration(
+            labelText: context.messages.aiConfigSystemMessageFieldLabel,
+            alignLabelWithHint: true,
+          ),
+          maxLines: 2,
+        ),
+        const SizedBox(height: 20),
+        InkWell(
+          onTap: () => _showInputDataTypeSelectionModal(
+            selectedTypes: formState.requiredInputData,
+            onSave: formController.requiredInputDataChanged,
+          ),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: context.messages.aiConfigRequiredInputDataFieldLabel,
+              suffixIcon: const Icon(Icons.arrow_drop_down),
+            ),
+            child: Text(
+              formState.requiredInputData.isEmpty
+                  ? context.messages.aiConfigSelectInputDataTypesPrompt
+                  : formState.requiredInputData
+                      .map((type) => type.displayName(context))
+                      .join(', '),
+              style: context.textTheme.bodyLarge,
+            ),
+          ),
+        ),
+        const SizedBox(height: 5),
+        SwitchListTile(
+          title: Text(context.messages.aiConfigUseReasoningFieldLabel),
+          subtitle: Text(context.messages.aiConfigUseReasoningDescription),
+          value: formState.useReasoning,
+          onChanged: formController.useReasoningChanged,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 5),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          onChanged: formController.descriptionChanged,
+          controller: formController.descriptionController,
+          decoration: InputDecoration(
+            labelText: context.messages.aiConfigDescriptionFieldLabel,
+          ),
+          maxLines: 2,
+        ),
+        SizedBox(
+          height: 50,
+          child: formState.submitFailed
+              ? Text(
+                  context.messages.aiConfigFailedToSaveMessage,
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    color: context.colorScheme.error,
+                  ),
+                )
+              : null,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FilledButton(
+              onPressed: formState.isValid &&
+                      formState.modelIds.isNotEmpty &&
+                      formState.defaultModelId.isNotEmpty &&
+                      formState.modelIds.contains(formState.defaultModelId) &&
+                      (widget.config == null || formState.isDirty)
+                  ? () {
+                      final config = formState.toAiConfig();
+                      widget.onSave(config);
+                    }
+                  : null,
+              child: Text(
+                widget.config == null
+                    ? context.messages.aiConfigCreateButtonLabel
+                    : context.messages.aiConfigUpdateButtonLabel,
               ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

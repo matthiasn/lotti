@@ -155,6 +155,7 @@ class AiConfigListPage extends ConsumerWidget {
     return ListTile(
       title: Text(config.name),
       subtitle: Text(
+        maxLines: 2,
         config.map(
           inferenceProvider: (_) => config.description ?? '',
           model: (model) => model.description ?? '',

@@ -157,24 +157,24 @@ class _ModelManagementModalState extends ConsumerState<ModelManagementModal> {
                             ],
                           ),
                         ),
-                        if (isSelected)
-                          IconButton(
+                        Opacity(
+                          opacity: isSelected ? 1 : 0,
+                          child: IconButton(
                             icon: Icon(
                               isDefault ? Icons.star : Icons.star_border,
                               color: isDefault
                                   ? context.colorScheme.primary
                                   : context.colorScheme.onSurfaceVariant,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _defaultId = model.id;
-                              });
-                            },
-                          )
-                        else
-                          const SizedBox(
-                            width: 48,
-                          ), // To keep alignment consistent when star is not visible
+                            onPressed: isSelected
+                                ? () {
+                                    setState(() {
+                                      _defaultId = model.id;
+                                    });
+                                  }
+                                : null,
+                          ),
+                        ),
                       ],
                     ),
                   ),

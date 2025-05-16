@@ -32,9 +32,11 @@ Widget buildTestWidget({
           aiConfigRepositoryProvider
               .overrideWithValue(MockAiConfigRepository()),
         ],
-        child: PromptForm(
-          onSave: onSave,
-          config: config,
+        child: SingleChildScrollView(
+          child: PromptForm(
+            onSave: onSave,
+            config: config,
+          ),
         ),
       ),
     ),
@@ -45,7 +47,8 @@ Widget buildTestWidget({
 AiConfig createMockPromptConfig({
   required String id,
   required String name,
-  required String template,
+  required String systemMessage,
+  required String userMessage,
   required String defaultModelId,
   List<String> modelIds = const [],
   String? description,
@@ -57,7 +60,8 @@ AiConfig createMockPromptConfig({
   return AiConfig.prompt(
     id: id,
     name: name,
-    template: template,
+    systemMessage: systemMessage,
+    userMessage: userMessage,
     defaultModelId: defaultModelId,
     modelIds: modelIds,
     createdAt: DateTime.now(),
@@ -72,7 +76,8 @@ AiConfig createMockPromptConfig({
 AiConfig createTestPrompt({
   String id = 'test-prompt',
   String name = 'Test Prompt Name',
-  String template = 'Test prompt template {{variable}}',
+  String systemMessage = 'Test prompt system message',
+  String userMessage = 'Test prompt user message {{variable}}',
   String defaultModelId = 'test-model-id',
   List<String> modelIds = const [],
   bool useReasoning = false,
@@ -86,7 +91,8 @@ AiConfig createTestPrompt({
   return AiConfig.prompt(
     id: id,
     name: name,
-    template: template,
+    systemMessage: systemMessage,
+    userMessage: userMessage,
     defaultModelId: defaultModelId,
     modelIds: modelIds,
     useReasoning: useReasoning,
@@ -106,7 +112,8 @@ void main() {
       createMockPromptConfig(
         id: 'fallback-id',
         name: 'Fallback Name',
-        template: 'Fallback Template',
+        systemMessage: 'Fallback System Message',
+        userMessage: 'Fallback User Message',
         defaultModelId: 'fallback-model-id',
       ),
     );
@@ -195,7 +202,8 @@ void main() {
       expect(find.text(localizedError), findsOneWidget);
     });
 
-    testWidgets('should validate template field', (WidgetTester tester) async {
+    testWidgets('should validate user message field',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
           onSave: (_) {},
@@ -207,31 +215,32 @@ void main() {
 
       // Get the localized strings
       final context = tester.element(find.byType(PromptForm));
-      final localizedError = context.messages.aiConfigTemplateEmptyError;
-      final templateFieldLabel = context.messages.aiConfigTemplateFieldLabel;
+      final localizedError = context.messages.aiConfigUserMessageEmptyError;
+      final userMessageFieldLabel =
+          context.messages.aiConfigUserMessageFieldLabel;
 
-      // Find the template field
-      final templateField = find.ancestor(
-        of: find.text(templateFieldLabel),
+      // Find the user message field
+      final userMessageField = find.ancestor(
+        of: find.text(userMessageFieldLabel),
         matching: find.byType(TextField),
       );
 
-      expect(templateField, findsOneWidget);
+      expect(userMessageField, findsOneWidget);
 
-      // Enter valid template
-      await tester.enterText(templateField, 'This is a valid template');
+      // Enter valid user message
+      await tester.enterText(userMessageField, 'This is a valid user message');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
       // No error should be shown
       expect(find.text(localizedError), findsNothing);
 
-      // Clear the template (should trigger validation error)
-      await tester.enterText(templateField, '');
+      // Clear the user message (should trigger validation error)
+      await tester.enterText(userMessageField, '');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Error message should be visible now
+      // Error should be shown
       expect(find.text(localizedError), findsOneWidget);
     });
   });
@@ -266,7 +275,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(context.messages.aiConfigTemplateFieldLabel),
+        find.text(context.messages.aiConfigSystemMessageFieldLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.aiConfigUserMessageFieldLabel),
         findsOneWidget,
       );
       expect(
@@ -356,7 +369,8 @@ void main() {
       final config = createMockPromptConfig(
         id: 'test-id',
         name: 'Test Name',
-        template: 'Test Template',
+        systemMessage: 'Test System Message',
+        userMessage: 'Test User Message',
         defaultModelId: 'test-model-id',
       );
 

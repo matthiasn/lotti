@@ -54,7 +54,8 @@ void main() {
   AiConfig createMockPromptConfig({
     required String id,
     required String name,
-    required String template,
+    required String systemMessage,
+    required String userMessage,
     required String defaultModelId,
     List<String> modelIds = const [],
     String? description,
@@ -66,7 +67,8 @@ void main() {
     return AiConfig.prompt(
       id: id,
       name: name,
-      template: template,
+      systemMessage: systemMessage,
+      userMessage: userMessage,
       defaultModelId: defaultModelId,
       modelIds: modelIds,
       createdAt: DateTime.now(),
@@ -106,7 +108,8 @@ void main() {
       final mockConfig = createMockPromptConfig(
         id: 'prompt-1',
         name: 'Test Prompt',
-        template: 'This is a test template with {{variable}}',
+        systemMessage: 'System message for Test Prompt',
+        userMessage: 'This is a test template with {{variable}}',
         defaultModelId: 'model-123',
         description: 'Test Description',
       );

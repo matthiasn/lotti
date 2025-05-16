@@ -18,9 +18,19 @@ class PromptName extends FormzInput<String, PromptFormError> {
   }
 }
 
-class PromptTemplate extends FormzInput<String, PromptFormError> {
-  const PromptTemplate.pure() : super.pure('');
-  const PromptTemplate.dirty([super.value = '']) : super.dirty();
+class PromptUserMessage extends FormzInput<String, PromptFormError> {
+  const PromptUserMessage.pure() : super.pure('');
+  const PromptUserMessage.dirty([super.value = '']) : super.dirty();
+
+  @override
+  PromptFormError? validator(String value) {
+    return value.isEmpty ? PromptFormError.empty : null;
+  }
+}
+
+class PromptSystemMessage extends FormzInput<String, PromptFormError> {
+  const PromptSystemMessage.pure() : super.pure('');
+  const PromptSystemMessage.dirty([super.value = '']) : super.dirty();
 
   @override
   PromptFormError? validator(String value) {
@@ -63,7 +73,8 @@ class PromptFormState with FormzMixin {
   PromptFormState({
     this.id,
     this.name = const PromptName.pure(),
-    this.template = const PromptTemplate.pure(),
+    this.systemMessage = const PromptSystemMessage.pure(),
+    this.userMessage = const PromptUserMessage.pure(),
     this.defaultModelId = '',
     this.modelIds = const [],
     this.useReasoning = false,
@@ -78,7 +89,8 @@ class PromptFormState with FormzMixin {
 
   final String? id; // null for new prompts
   final PromptName name;
-  final PromptTemplate template;
+  final PromptUserMessage userMessage;
+  final PromptSystemMessage systemMessage;
   final String defaultModelId;
   final List<String> modelIds;
   final bool useReasoning;
@@ -93,7 +105,8 @@ class PromptFormState with FormzMixin {
   PromptFormState copyWith({
     String? id,
     PromptName? name,
-    PromptTemplate? template,
+    PromptSystemMessage? systemMessage,
+    PromptUserMessage? userMessage,
     String? defaultModelId,
     List<String>? modelIds,
     bool? useReasoning,
@@ -108,7 +121,8 @@ class PromptFormState with FormzMixin {
     return PromptFormState(
       id: id ?? this.id,
       name: name ?? this.name,
-      template: template ?? this.template,
+      systemMessage: systemMessage ?? this.systemMessage,
+      userMessage: userMessage ?? this.userMessage,
       defaultModelId: defaultModelId ?? this.defaultModelId,
       modelIds: modelIds ?? this.modelIds,
       useReasoning: useReasoning ?? this.useReasoning,
@@ -125,7 +139,8 @@ class PromptFormState with FormzMixin {
   @override
   List<FormzInput<dynamic, dynamic>> get inputs => [
         name,
-        template,
+        userMessage,
+        systemMessage,
         comment,
         description,
         category,
@@ -136,7 +151,8 @@ class PromptFormState with FormzMixin {
     return AiConfig.prompt(
       id: id ?? uuid.v1(),
       name: name.value,
-      template: template.value,
+      systemMessage: systemMessage.value,
+      userMessage: userMessage.value,
       defaultModelId: defaultModelId,
       modelIds: modelIds,
       createdAt: DateTime.now(),
