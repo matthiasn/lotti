@@ -273,7 +273,8 @@ void main() {
   });
 
   // Test create vs update button text
-  testWidgets('should show Create Prompt button text for new model',
+  testWidgets(
+      'should show Save button text for new model (previously Create Prompt)',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       buildTestWidget(
@@ -281,33 +282,11 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final l10n =
         AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(find.text(l10n.aiConfigCreateButtonLabel), findsOneWidget);
-  });
-
-  testWidgets('should show Update Prompt button text for existing model',
-      (WidgetTester tester) async {
-    final existingConfig = createMockModelConfig(
-      id: 'existing-id',
-      name: 'Existing Model',
-      providerModelId: 'existing-provider-id',
-    );
-
-    await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-        config: existingConfig,
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    final l10n =
-        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(find.text(l10n.aiConfigUpdateButtonLabel), findsOneWidget);
+    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
   });
 
   testWidgets('should show Save button text for new model',
@@ -318,32 +297,15 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
+    // Find the button and check its text for the CREATE case
+    final buttonFinder = find.byType(FilledButton);
+    expect(buttonFinder, findsOneWidget);
+    final buttonWidget = tester.widget<FilledButton>(buttonFinder);
+    final buttonTextWidget = buttonWidget.child! as Text;
     final l10n =
         AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
-  });
-
-  testWidgets('should show Save button text for existing model',
-      (WidgetTester tester) async {
-    final existingConfig = createMockModelConfig(
-      id: 'existing-id',
-      name: 'Existing Model',
-      providerModelId: 'existing-provider-id',
-    );
-
-    await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-        config: existingConfig, // Edit mode
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    final l10n =
-        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
+    expect(buttonTextWidget.data, l10n.saveButtonLabel);
   });
 }

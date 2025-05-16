@@ -130,11 +130,6 @@ class _PromptFormState extends ConsumerState<PromptForm> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Get the currently selected model
-    final selectedModelAsync = formState.defaultModelId.isNotEmpty
-        ? ref.watch(aiConfigByIdProvider(formState.defaultModelId))
-        : const AsyncValue<AiConfig?>.data(null);
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,50 +149,191 @@ class _PromptFormState extends ConsumerState<PromptForm> {
               ),
             ),
           ),
-          // NEW MODEL MANAGEMENT UI (Placeholder)
           const SizedBox(height: 16),
-          Text(
-            context.messages.aiConfigModelsTitle,
-            style: context.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          if (formState.modelIds.isEmpty)
-            Text(context.messages.aiConfigNoModelsSelected)
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: formState.modelIds.map((modelId) {
-                // TODO: Fetch actual model name and indicate default
-                // For now, just show IDs and a star for default
-                final isDefault = modelId == formState.defaultModelId;
-                final modelDataAsync = ref.watch(aiConfigByIdProvider(modelId));
-                return modelDataAsync.when(
-                  data: (config) {
-                    final modelName =
-                        (config as AiConfigModel?)?.name ?? modelId;
-                    return Chip(
-                      label: Text(modelName),
-                      avatar:
-                          isDefault ? const Icon(Icons.star, size: 16) : null,
-                      // TODO: Add onDeleted to remove model, or handle in modal
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.messages.aiConfigModelsTitle,
+                  style: context.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                if (formState.modelIds.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      context.messages.aiConfigNoModelsSelected,
+                      style: context.textTheme.bodyMedium,
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: formState.modelIds.map((modelId) {
+                      final isDefault = modelId == formState.defaultModelId;
+                      final modelDataAsync =
+                          ref.watch(aiConfigByIdProvider(modelId));
+
+                      return modelDataAsync.when(
+                        data: (config) {
+                          final modelName =
+                              (config as AiConfigModel?)?.name ?? modelId;
+                          return Dismissible(
+                            key: ValueKey('selected_model_$modelId'),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              color: context.colorScheme.errorContainer,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              alignment: Alignment.centerRight,
+                              child: Icon(
+                                Icons.delete_sweep_outlined,
+                                color: context.colorScheme.onErrorContainer,
+                              ),
+                            ),
+                            confirmDismiss: (direction) async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (BuildContext dialogContext) {
+                                  return AlertDialog(
+                                    title: Text(
+                                      context.messages
+                                          .aiConfigListDeleteConfirmTitle,
+                                    ),
+                                    content: Text(
+                                      context.messages
+                                          .aiConfigListDeleteConfirmMessage(
+                                        modelName,
+                                      ),
+                                    ),
+                                    actions: <Widget>[
+                                      TextButton(
+                                        child: Text(
+                                          context.messages
+                                              .aiConfigListDeleteConfirmCancel,
+                                        ),
+                                        onPressed: () {
+                                          Navigator.of(dialogContext)
+                                              .pop(false);
+                                        },
+                                      ),
+                                      TextButton(
+                                        child: Text(
+                                          context.messages
+                                              .aiConfigListDeleteConfirmDelete,
+                                        ),
+                                        onPressed: () {
+                                          Navigator.of(dialogContext).pop(true);
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              return confirmed ?? false;
+                            },
+                            onDismissed: (direction) {
+                              final currentModels =
+                                  List<String>.from(formState.modelIds)
+                                    ..remove(modelId);
+                              formController.modelIdsChanged(currentModels);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    context.messages
+                                        .aiConfigModelRemovedMessage(
+                                      modelName,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Card(
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                side: BorderSide(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outline
+                                      .withAlpha(128),
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        modelName,
+                                        style: context.textTheme.bodyLarge,
+                                      ),
+                                    ),
+                                    if (isDefault) const SizedBox(width: 10),
+                                    if (isDefault)
+                                      Icon(
+                                        Icons.star,
+                                        color: context.colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text('Loading model...'),
+                            ],
+                          ),
+                        ),
+                        error: (err, stack) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: context.colorScheme.error,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Text('Error: $modelId'),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    _showModelManagementModal(
+                      currentSelectedIds: formState.modelIds,
+                      currentDefaultId: formState.defaultModelId,
+                      formController: formController,
                     );
                   },
-                  loading: () => const Chip(label: Text('Loading...')),
-                  error: (err, stack) => Chip(label: Text('Error: $modelId')),
-                );
-              }).toList(),
+                  child: Text(context.messages.aiConfigManageModelsButton),
+                ),
+              ],
             ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () {
-              _showModelManagementModal(
-                currentSelectedIds: formState.modelIds,
-                currentDefaultId: formState.defaultModelId,
-                formController: formController,
-              );
-            },
-            child: Text(context.messages.aiConfigManageModelsButton),
           ),
           const SizedBox(height: 16),
           SizedBox(

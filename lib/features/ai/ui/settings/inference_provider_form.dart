@@ -200,8 +200,8 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
                   : null,
               child: Text(
                 widget.config == null
-                    ? context.messages.aiConfigCreateButtonLabel
-                    : context.messages.aiConfigUpdateButtonLabel,
+                    ? context.messages.apiKeyFormCreateButton
+                    : context.messages.apiKeyFormUpdateButton,
               ),
             ),
           ],

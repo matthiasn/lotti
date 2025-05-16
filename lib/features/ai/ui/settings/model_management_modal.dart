@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart'; // Assuming AppTheme is here for context.colorScheme
 
 class ModelManagementModal extends ConsumerStatefulWidget {
   const ModelManagementModal({
@@ -35,123 +36,183 @@ class _ModelManagementModalState extends ConsumerState<ModelManagementModal> {
   @override
   Widget build(BuildContext context) {
     final allModelsAsync = ref.watch(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.model));
+      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+    );
 
     return allModelsAsync.when(
-        data: (allModels) {
-          // --- DIAGNOSTIC PRINT START ---
+      data: (allModels) {
+        // --- DIAGNOSTIC PRINT START ---
+        debugPrint(
+          '[ModelManagementModal] Received ${allModels.length} AiConfig items from controller for AiConfigType.model.',
+        );
+        for (var i = 0; i < allModels.length; i++) {
+          final item = allModels[i];
           debugPrint(
-              '[ModelManagementModal] Received ${allModels.length} AiConfig items from controller for AiConfigType.model.');
-          for (int i = 0; i < allModels.length; i++) {
-            final item = allModels[i];
+            '  Item $i: id=${item.id}, name=${item.name}, runtimeType=${item.runtimeType}, is AiConfigModel: ${item is AiConfigModel}',
+          );
+        }
+        // --- DIAGNOSTIC PRINT END ---
+
+        final modelConfigs = allModels.whereType<AiConfigModel>().toList();
+
+        // --- DIAGNOSTIC PRINT START ---
+        debugPrint(
+          '[ModelManagementModal] Filtered to ${modelConfigs.length} AiConfigModel items.',
+        );
+        // --- DIAGNOSTIC PRINT END ---
+
+        if (modelConfigs.isEmpty) {
+          final message = context.messages.aiConfigNoModelsAvailable;
+          if (allModels.isNotEmpty && modelConfigs.isEmpty) {
+            // This case means items were received, but none were of type AiConfigModel
             debugPrint(
-                '  Item $i: id=${item.id}, name=${item.name}, runtimeType=${item.runtimeType}, is AiConfigModel: ${item is AiConfigModel}');
-          }
-          // --- DIAGNOSTIC PRINT END ---
-
-          final modelConfigs = allModels.whereType<AiConfigModel>().toList();
-
-          // --- DIAGNOSTIC PRINT START ---
-          debugPrint(
-              '[ModelManagementModal] Filtered to ${modelConfigs.length} AiConfigModel items.');
-          // --- DIAGNOSTIC PRINT END ---
-
-          if (modelConfigs.isEmpty) {
-            String message = context.messages.aiConfigNoModelsAvailable;
-            if (allModels.isNotEmpty && modelConfigs.isEmpty) {
-              // This case means items were received, but none were of type AiConfigModel
-              debugPrint(
-                  '[ModelManagementModal] Warning: Received AiConfig items, but none were of AiConfigModel type.');
-            } else if (allModels.isEmpty) {
-              debugPrint(
-                  '[ModelManagementModal] No AiConfig items received from controller for AiConfigType.model.');
-            }
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(message, textAlign: TextAlign.center),
-              ),
+              '[ModelManagementModal] Warning: Received AiConfig items, but none were of AiConfigModel type.',
+            );
+          } else if (allModels.isEmpty) {
+            debugPrint(
+              '[ModelManagementModal] No AiConfig items received from controller for AiConfigType.model.',
             );
           }
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListView.builder(
-                shrinkWrap: true,
-                itemCount: modelConfigs.length,
-                itemBuilder: (context, index) {
-                  final model = modelConfigs[index];
-                  final bool isSelected = _selectedIds.contains(model.id);
-
-                  return CheckboxListTile(
-                    title: Text(model.name),
-                    subtitle: Text(model.description ?? ''),
-                    value: isSelected,
-                    secondary: isSelected
-                        ? Radio<String>(
-                            value: model.id,
-                            groupValue: _defaultId,
-                            onChanged: (String? value) {
-                              if (value != null) {
-                                setState(() {
-                                  _defaultId = value;
-                                });
-                              }
-                            },
-                          )
-                        : null,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        if (value == true) {
-                          _selectedIds.add(model.id);
-                          if (_selectedIds.length == 1 || _defaultId.isEmpty) {
-                            _defaultId = model.id;
-                          }
-                        } else {
-                          _selectedIds.remove(model.id);
-                          if (_defaultId == model.id) {
-                            _defaultId = _selectedIds.isNotEmpty
-                                ? _selectedIds.first
-                                : '';
-                          }
-                        }
-                      });
-                    },
-                  );
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: (_selectedIds.isNotEmpty &&
-                          _defaultId.isNotEmpty &&
-                          _selectedIds.contains(_defaultId))
-                      ? () {
-                          widget.onSave(_selectedIds.toList(), _defaultId);
-                          Navigator.of(context).pop();
-                        }
-                      : null,
-                  child: Text(context.messages.saveButtonLabel),
-                ),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) {
-          // --- DIAGNOSTIC PRINT START ---
-          debugPrint('[ModelManagementModal] Error loading models: $error');
-          // --- DIAGNOSTIC PRINT END ---
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(
-                context.messages.aiConfigFailedToLoadModels(error.toString()),
-                textAlign: TextAlign.center,
-              ),
+              child: Text(message, textAlign: TextAlign.center),
             ),
           );
-        });
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: modelConfigs.length,
+              itemBuilder: (context, index) {
+                final model = modelConfigs[index];
+                final isSelected = _selectedIds.contains(model.id);
+                final isDefault = _defaultId == model.id;
+
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedIds.remove(model.id);
+                        if (isDefault) {
+                          _defaultId =
+                              _selectedIds.isNotEmpty ? _selectedIds.first : '';
+                        }
+                      } else {
+                        _selectedIds.add(model.id);
+                        if (_selectedIds.length == 1 || _defaultId.isEmpty) {
+                          _defaultId = model.id;
+                        }
+                      }
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value ?? false) {
+                                _selectedIds.add(model.id);
+                                if (_selectedIds.length == 1 ||
+                                    _defaultId.isEmpty) {
+                                  _defaultId = model.id;
+                                }
+                              } else {
+                                _selectedIds.remove(model.id);
+                                if (isDefault) {
+                                  _defaultId = _selectedIds.isNotEmpty
+                                      ? _selectedIds.first
+                                      : '';
+                                }
+                              }
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                model.name,
+                                style: context.textTheme.titleMedium,
+                              ),
+                              if (model.description != null &&
+                                  model.description!.isNotEmpty)
+                                Text(
+                                  model.description!,
+                                  style: context.textTheme.bodySmall,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          IconButton(
+                            icon: Icon(
+                              isDefault ? Icons.star : Icons.star_border,
+                              color: isDefault
+                                  ? context.colorScheme.primary
+                                  : context.colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _defaultId = model.id;
+                              });
+                            },
+                          )
+                        else
+                          const SizedBox(
+                            width: 48,
+                          ), // To keep alignment consistent when star is not visible
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: FilledButton(
+                onPressed: (_selectedIds.isNotEmpty &&
+                        _defaultId.isNotEmpty &&
+                        _selectedIds.contains(_defaultId))
+                    ? () {
+                        widget.onSave(_selectedIds.toList(), _defaultId);
+                        Navigator.of(context).pop();
+                      }
+                    : null,
+                child: Text(context.messages.saveButtonLabel),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) {
+        // --- DIAGNOSTIC PRINT START ---
+        debugPrint('[ModelManagementModal] Error loading models: $error');
+        // --- DIAGNOSTIC PRINT END ---
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              context.messages.aiConfigFailedToLoadModels(error.toString()),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      },
+    );
   }
 }

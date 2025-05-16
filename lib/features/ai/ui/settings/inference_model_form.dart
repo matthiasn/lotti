@@ -241,11 +241,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
                         widget.onSave(config);
                       }
                     : null,
-                child: Text(
-                  widget.config == null
-                      ? context.messages.aiConfigCreateButtonLabel
-                      : context.messages.aiConfigUpdateButtonLabel,
-                ),
+                child: Text(context.messages.saveButtonLabel),
               ),
             ],
           ),

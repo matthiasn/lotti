@@ -612,6 +612,14 @@
   "aiConfigModelsTitle": "Selected Models",
   "aiConfigNoModelsSelected": "No models selected. At least one model is required.",
   "aiConfigManageModelsButton": "Manage Models",
+  "aiConfigModelRemovedMessage": "{modelName} removed from prompt",
+  "@aiConfigModelRemovedMessage": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "fileInputTypeAll": "All files",
   "fileInputTypeAudio": "Audio files"
 }
