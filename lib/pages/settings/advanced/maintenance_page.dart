@@ -41,11 +41,60 @@ class MaintenancePage extends StatelessWidget {
               ),
               SettingsCard(
                 title: context.messages.maintenanceDeleteLoggingDb,
-                onTap: maintenance.deleteLoggingDb,
+                onTap: () async {
+                  const deleteKey = 'deleteKey';
+                  final result = await showModalActionSheet<String>(
+                    context: context,
+                    title: context.messages.maintenanceDeleteLoggingDbQuestion,
+                    actions: [
+                      ModalSheetAction(
+                        icon: Icons.warning,
+                        label:
+                            context.messages.maintenanceDeleteLoggingDbConfirm,
+                        key: deleteKey,
+                        isDestructiveAction: true,
+                        isDefaultAction: true,
+                        style: settingsCardTextStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    cancelLabel: context.messages.cancelButton,
+                  );
+
+                  if (result == deleteKey && context.mounted) {
+                    await maintenance.deleteLoggingDb();
+                  }
+                },
               ),
               SettingsCard(
                 title: context.messages.maintenanceDeleteSyncDb,
-                onTap: maintenance.deleteSyncDb,
+                onTap: () async {
+                  const deleteKey = 'deleteKey';
+                  final result = await showModalActionSheet<String>(
+                    context: context,
+                    title: context.messages.maintenanceDeleteSyncDbQuestion,
+                    actions: [
+                      ModalSheetAction(
+                        icon: Icons.warning,
+                        label: context.messages.maintenanceDeleteSyncDbConfirm,
+                        key: deleteKey,
+                        isDestructiveAction: true,
+                        isDefaultAction: true,
+                        style: settingsCardTextStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    cancelLabel: context.messages.cancelButton,
+                  );
+
+                  if (result == deleteKey && context.mounted) {
+                    await maintenance.deleteSyncDb();
+                  }
+                },
               ),
               SettingsCard(
                 title: context.messages.maintenanceRecreateTagged,
