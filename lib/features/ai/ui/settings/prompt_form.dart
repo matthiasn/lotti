@@ -98,9 +98,9 @@ class _PromptFormState extends ConsumerState<PromptForm> {
     }
 
     // Get the currently selected model
-    final selectedModelAsync = formState.modelId.isNotEmpty
-        ? ref.watch(aiConfigByIdProvider(formState.modelId))
-        : const AsyncData<AiConfig?>(null);
+    final selectedModelAsync = formState.defaultModelId.isNotEmpty
+        ? ref.watch(aiConfigByIdProvider(formState.defaultModelId))
+        : const AsyncValue<AiConfig?>.data(null);
 
     return SingleChildScrollView(
       child: Column(
@@ -216,7 +216,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
             children: [
               FilledButton(
                 onPressed: formState.isValid &&
-                        formState.modelId.isNotEmpty &&
+                        formState.defaultModelId.isNotEmpty &&
                         (widget.config == null || formState.isDirty)
                     ? () {
                         final config = formState.toAiConfig();

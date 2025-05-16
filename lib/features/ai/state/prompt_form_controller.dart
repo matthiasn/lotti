@@ -36,7 +36,8 @@ class PromptFormController extends _$PromptFormController {
         id: _config!.id,
         name: PromptName.dirty(_config!.name),
         template: PromptTemplate.dirty(_config!.template),
-        modelId: _config!.modelId,
+        defaultModelId: _config!.defaultModelId,
+        modelIds: _config!.modelIds,
         useReasoning: _config!.useReasoning,
         requiredInputData: _config!.requiredInputData,
         comment: PromptComment.dirty(_config!.comment ?? ''),
@@ -52,7 +53,8 @@ class PromptFormController extends _$PromptFormController {
   void _setAllFields({
     String? name,
     String? template,
-    String? modelId,
+    String? defaultModelId,
+    List<String>? modelIds,
     bool? useReasoning,
     List<InputDataType>? requiredInputData,
     String? comment,
@@ -68,7 +70,8 @@ class PromptFormController extends _$PromptFormController {
         name: name != null ? PromptName.dirty(name) : prev.name,
         template:
             template != null ? PromptTemplate.dirty(template) : prev.template,
-        modelId: modelId,
+        defaultModelId: defaultModelId,
+        modelIds: modelIds ?? prev.modelIds,
         useReasoning: useReasoning,
         requiredInputData: requiredInputData,
         comment: comment != null ? PromptComment.dirty(comment) : prev.comment,
@@ -96,8 +99,8 @@ class PromptFormController extends _$PromptFormController {
     _setAllFields(template: value);
   }
 
-  void modelIdChanged(String value) {
-    _setAllFields(modelId: value);
+  void defaultModelIdChanged(String value) {
+    _setAllFields(defaultModelId: value);
   }
 
   // ignore: avoid_positional_boolean_parameters
@@ -107,6 +110,10 @@ class PromptFormController extends _$PromptFormController {
 
   void requiredInputDataChanged(List<InputDataType> inputData) {
     _setAllFields(requiredInputData: inputData);
+  }
+
+  void modelIdsChanged(List<String> value) {
+    _setAllFields(modelIds: value);
   }
 
   void descriptionChanged(String value) {

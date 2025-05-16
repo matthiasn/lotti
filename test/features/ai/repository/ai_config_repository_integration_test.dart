@@ -85,7 +85,8 @@ void main() {
         description: 'Template for text summarization',
         defaultVariables: {'text': 'Enter text to summarize'},
         category: 'Summarization',
-        modelId: 'model-id1',
+        defaultModelId: 'model-id1',
+        modelIds: [],
         useReasoning: false,
         requiredInputData: [],
       );

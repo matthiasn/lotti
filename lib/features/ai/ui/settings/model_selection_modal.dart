@@ -53,7 +53,7 @@ class ModelSelectionModal extends ConsumerWidget {
                     .read(
                       promptFormControllerProvider(configId: promptId).notifier,
                     )
-                    .modelIdChanged(model.id);
+                    .defaultModelIdChanged(model.id);
                 Navigator.of(context).pop();
               },
             );

@@ -64,7 +64,8 @@ mixin _$AiConfig {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -104,7 +105,8 @@ mixin _$AiConfig {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -144,7 +146,8 @@ mixin _$AiConfig {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -435,7 +438,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -479,7 +483,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -523,7 +528,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -852,7 +858,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -905,7 +912,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -958,7 +966,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -1081,7 +1090,8 @@ abstract class _$$AiConfigPromptImplCopyWith<$Res>
       {String id,
       String name,
       String template,
-      String modelId,
+      String defaultModelId,
+      List<String> modelIds,
       DateTime createdAt,
       bool useReasoning,
       List<InputDataType> requiredInputData,
@@ -1108,7 +1118,8 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? template = null,
-    Object? modelId = null,
+    Object? defaultModelId = null,
+    Object? modelIds = null,
     Object? createdAt = null,
     Object? useReasoning = null,
     Object? requiredInputData = null,
@@ -1131,10 +1142,14 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
           ? _value.template
           : template // ignore: cast_nullable_to_non_nullable
               as String,
-      modelId: null == modelId
-          ? _value.modelId
-          : modelId // ignore: cast_nullable_to_non_nullable
+      defaultModelId: null == defaultModelId
+          ? _value.defaultModelId
+          : defaultModelId // ignore: cast_nullable_to_non_nullable
               as String,
+      modelIds: null == modelIds
+          ? _value._modelIds
+          : modelIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1178,7 +1193,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       {required this.id,
       required this.name,
       required this.template,
-      required this.modelId,
+      required this.defaultModelId,
+      required final List<String> modelIds,
       required this.createdAt,
       required this.useReasoning,
       required final List<InputDataType> requiredInputData,
@@ -1188,7 +1204,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       final Map<String, String>? defaultVariables,
       this.category,
       final String? $type})
-      : _requiredInputData = requiredInputData,
+      : _modelIds = modelIds,
+        _requiredInputData = requiredInputData,
         _defaultVariables = defaultVariables,
         $type = $type ?? 'prompt';
 
@@ -1202,7 +1219,15 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
   @override
   final String template;
   @override
-  final String modelId;
+  final String defaultModelId;
+  final List<String> _modelIds;
+  @override
+  List<String> get modelIds {
+    if (_modelIds is EqualUnmodifiableListView) return _modelIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_modelIds);
+  }
+
   @override
   final DateTime createdAt;
   @override
@@ -1240,7 +1265,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
 
   @override
   String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, template: $template, modelId: $modelId, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
+    return 'AiConfig.prompt(id: $id, name: $name, template: $template, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
   }
 
   @override
@@ -1252,7 +1277,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.template, template) ||
                 other.template == template) &&
-            (identical(other.modelId, modelId) || other.modelId == modelId) &&
+            (identical(other.defaultModelId, defaultModelId) ||
+                other.defaultModelId == defaultModelId) &&
+            const DeepCollectionEquality().equals(other._modelIds, _modelIds) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.useReasoning, useReasoning) ||
@@ -1277,7 +1304,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       id,
       name,
       template,
-      modelId,
+      defaultModelId,
+      const DeepCollectionEquality().hash(_modelIds),
       createdAt,
       useReasoning,
       const DeepCollectionEquality().hash(_requiredInputData),
@@ -1325,7 +1353,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -1340,7 +1369,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         id,
         name,
         template,
-        modelId,
+        defaultModelId,
+        modelIds,
         createdAt,
         useReasoning,
         requiredInputData,
@@ -1380,7 +1410,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -1395,7 +1426,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         id,
         name,
         template,
-        modelId,
+        defaultModelId,
+        modelIds,
         createdAt,
         useReasoning,
         requiredInputData,
@@ -1435,7 +1467,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             String id,
             String name,
             String template,
-            String modelId,
+            String defaultModelId,
+            List<String> modelIds,
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
@@ -1452,7 +1485,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
           id,
           name,
           template,
-          modelId,
+          defaultModelId,
+          modelIds,
           createdAt,
           useReasoning,
           requiredInputData,
@@ -1513,7 +1547,8 @@ abstract class AiConfigPrompt implements AiConfig {
       {required final String id,
       required final String name,
       required final String template,
-      required final String modelId,
+      required final String defaultModelId,
+      required final List<String> modelIds,
       required final DateTime createdAt,
       required final bool useReasoning,
       required final List<InputDataType> requiredInputData,
@@ -1531,7 +1566,8 @@ abstract class AiConfigPrompt implements AiConfig {
   @override
   String get name;
   String get template;
-  String get modelId;
+  String get defaultModelId;
+  List<String> get modelIds;
   @override
   DateTime get createdAt;
   bool get useReasoning;

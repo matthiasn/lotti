@@ -55,7 +55,8 @@ void main() {
     required String id,
     required String name,
     required String template,
-    required String modelId,
+    required String defaultModelId,
+    List<String> modelIds = const [],
     String? description,
     String? comment,
     String? category,
@@ -66,7 +67,8 @@ void main() {
       id: id,
       name: name,
       template: template,
-      modelId: modelId,
+      defaultModelId: defaultModelId,
+      modelIds: modelIds,
       createdAt: DateTime.now(),
       useReasoning: useReasoning,
       requiredInputData: requiredInputData,
@@ -105,7 +107,7 @@ void main() {
         id: 'prompt-1',
         name: 'Test Prompt',
         template: 'This is a test template with {{variable}}',
-        modelId: 'model-123',
+        defaultModelId: 'model-123',
         description: 'Test Description',
       );
 

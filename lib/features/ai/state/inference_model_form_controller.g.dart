@@ -7,7 +7,7 @@ part of 'inference_model_form_controller.dart';
 // **************************************************************************
 
 String _$inferenceModelFormControllerHash() =>
-    r'18874ede399dd2209f826c93f790d88561d8c4ff';
+    r'c2a3b8b8238380ef0715ab0d4689f3c9076d7eb5';
 
 /// Copied from Dart SDK
 class _SystemHash {

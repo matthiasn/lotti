@@ -46,7 +46,8 @@ AiConfig createMockPromptConfig({
   required String id,
   required String name,
   required String template,
-  required String modelId,
+  required String defaultModelId,
+  List<String> modelIds = const [],
   String? description,
   String? comment,
   String? category,
@@ -57,13 +58,44 @@ AiConfig createMockPromptConfig({
     id: id,
     name: name,
     template: template,
-    modelId: modelId,
+    defaultModelId: defaultModelId,
+    modelIds: modelIds,
     createdAt: DateTime.now(),
     useReasoning: useReasoning,
     requiredInputData: requiredInputData,
     description: description,
     comment: comment,
     category: category,
+  );
+}
+
+AiConfig createTestPrompt({
+  String id = 'test-prompt',
+  String name = 'Test Prompt Name',
+  String template = 'Test prompt template {{variable}}',
+  String defaultModelId = 'test-model-id',
+  List<String> modelIds = const [],
+  bool useReasoning = false,
+  List<InputDataType> requiredInputData = const [],
+  String comment = 'Test comment',
+  String description = 'Test description',
+  String category = 'Test category',
+  Map<String, String> defaultVariables = const {'variable': 'value'},
+  DateTime? createdAt,
+}) {
+  return AiConfig.prompt(
+    id: id,
+    name: name,
+    template: template,
+    defaultModelId: defaultModelId,
+    modelIds: modelIds,
+    useReasoning: useReasoning,
+    requiredInputData: requiredInputData,
+    comment: comment,
+    description: description,
+    category: category,
+    defaultVariables: defaultVariables,
+    createdAt: createdAt ?? DateTime.now(),
   );
 }
 
@@ -75,7 +107,7 @@ void main() {
         id: 'fallback-id',
         name: 'Fallback Name',
         template: 'Fallback Template',
-        modelId: 'fallback-model-id',
+        defaultModelId: 'fallback-model-id',
       ),
     );
   });
@@ -315,7 +347,7 @@ void main() {
         id: 'test-id',
         name: 'Test Name',
         template: 'Test Template',
-        modelId: 'test-model-id',
+        defaultModelId: 'test-model-id',
       );
 
       // Build the widget in edit mode

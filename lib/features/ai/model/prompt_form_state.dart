@@ -64,7 +64,8 @@ class PromptFormState with FormzMixin {
     this.id,
     this.name = const PromptName.pure(),
     this.template = const PromptTemplate.pure(),
-    this.modelId = '',
+    this.defaultModelId = '',
+    this.modelIds = const [],
     this.useReasoning = false,
     this.requiredInputData = const [],
     this.comment = const PromptComment.pure(),
@@ -78,7 +79,8 @@ class PromptFormState with FormzMixin {
   final String? id; // null for new prompts
   final PromptName name;
   final PromptTemplate template;
-  final String modelId;
+  final String defaultModelId;
+  final List<String> modelIds;
   final bool useReasoning;
   final List<InputDataType> requiredInputData;
   final PromptComment comment;
@@ -92,7 +94,8 @@ class PromptFormState with FormzMixin {
     String? id,
     PromptName? name,
     PromptTemplate? template,
-    String? modelId,
+    String? defaultModelId,
+    List<String>? modelIds,
     bool? useReasoning,
     List<InputDataType>? requiredInputData,
     PromptComment? comment,
@@ -106,7 +109,8 @@ class PromptFormState with FormzMixin {
       id: id ?? this.id,
       name: name ?? this.name,
       template: template ?? this.template,
-      modelId: modelId ?? this.modelId,
+      defaultModelId: defaultModelId ?? this.defaultModelId,
+      modelIds: modelIds ?? this.modelIds,
       useReasoning: useReasoning ?? this.useReasoning,
       requiredInputData: requiredInputData ?? this.requiredInputData,
       comment: comment ?? this.comment,
@@ -133,7 +137,8 @@ class PromptFormState with FormzMixin {
       id: id ?? uuid.v1(),
       name: name.value,
       template: template.value,
-      modelId: modelId,
+      defaultModelId: defaultModelId,
+      modelIds: modelIds,
       createdAt: DateTime.now(),
       useReasoning: useReasoning,
       requiredInputData: requiredInputData,
