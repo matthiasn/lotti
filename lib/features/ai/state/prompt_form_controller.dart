@@ -112,8 +112,25 @@ class PromptFormController extends _$PromptFormController {
     _setAllFields(requiredInputData: inputData);
   }
 
-  void modelIdsChanged(List<String> value) {
-    _setAllFields(modelIds: value);
+  void modelIdsChanged(List<String> newModelIds) {
+    final currentFormState = state.valueOrNull;
+    if (currentFormState == null) return;
+
+    var newDefaultModelId = currentFormState.defaultModelId;
+
+    if (newModelIds.isEmpty) {
+      // If the new list of model IDs is empty, clear the default model ID.
+      newDefaultModelId = '';
+    } else if (!newModelIds.contains(currentFormState.defaultModelId)) {
+      // If the current default model ID is not in the new list (or was empty),
+      // set the default to the first model in the new list.
+      newDefaultModelId = newModelIds.first;
+    } else {
+      // Default model ID is still valid within the new list, keep it.
+      newDefaultModelId = currentFormState.defaultModelId;
+    }
+
+    _setAllFields(modelIds: newModelIds, defaultModelId: newDefaultModelId);
   }
 
   void descriptionChanged(String value) {

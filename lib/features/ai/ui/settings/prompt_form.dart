@@ -5,7 +5,7 @@ import 'package:lotti/features/ai/model/input_data_type_extensions.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/model_selection_modal.dart';
+import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
@@ -25,12 +25,45 @@ class PromptForm extends ConsumerStatefulWidget {
 }
 
 class _PromptFormState extends ConsumerState<PromptForm> {
-  void _showModelSelectionModal() {
+  void _showModelManagementModal({
+    required List<String> currentSelectedIds,
+    required String currentDefaultId,
+    required PromptFormController formController,
+  }) {
     ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: context.messages.aiConfigSelectModelModalTitle,
-      builder: (modalContext) =>
-          ModelSelectionModal(promptId: widget.config?.id),
+      title: context.messages.aiConfigManageModelsButton,
+      builder: (modalContext) => ModelManagementModal(
+        currentSelectedIds: currentSelectedIds,
+        currentDefaultId: currentDefaultId,
+        onSave: (List<String> newSelectedIds, String newDefaultIdFromModal) {
+          formController.modelIdsChanged(newSelectedIds);
+
+          // After modelIdsChanged, the controller might have already updated defaultModelId in its state.
+          // We set the defaultModelId to what the user explicitly chose in the modal,
+          // but only if it's part of the newSelectedIds (which should be guaranteed by modal logic).
+          // We also check if it actually needs changing.
+          final controllerProvider =
+              promptFormControllerProvider(configId: widget.config?.id);
+          final currentDefaultInState =
+              ref.read(controllerProvider).valueOrNull?.defaultModelId;
+
+          if (newSelectedIds.contains(newDefaultIdFromModal)) {
+            if (currentDefaultInState != newDefaultIdFromModal) {
+              formController.defaultModelIdChanged(newDefaultIdFromModal);
+            }
+          } else if (newSelectedIds.isEmpty) {
+            // If the list became empty, ensure default is cleared.
+            // modelIdsChanged should handle this, but as a safeguard:
+            if (currentDefaultInState != '') {
+              formController.defaultModelIdChanged('');
+            }
+          }
+          // If newDefaultIdFromModal is not in newSelectedIds, but newSelectedIds is not empty,
+          // modelIdsChanged will have picked the first item as default. We respect that choice implicitly
+          // by not calling defaultModelIdChanged if the modal's default is now invalid.
+        },
+      ),
     );
   }
 
@@ -121,28 +154,52 @@ class _PromptFormState extends ConsumerState<PromptForm> {
               ),
             ),
           ),
-          SizedBox(
-            height: 90,
-            child: InkWell(
-              onTap: _showModelSelectionModal,
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: context.messages.aiConfigModelFieldLabel,
-                  suffixIcon: const Icon(Icons.arrow_drop_down),
-                ),
-                child: selectedModelAsync.when(
-                  data: (model) => model == null
-                      ? Text(context.messages.aiConfigSelectModelModalTitle)
-                      : Text(model.name),
-                  loading: () => const LinearProgressIndicator(),
-                  error: (_, __) => Text(
-                    context.messages.aiConfigModelLoadError,
-                    style: TextStyle(color: context.colorScheme.error),
-                  ),
-                ),
-              ),
-            ),
+          // NEW MODEL MANAGEMENT UI (Placeholder)
+          const SizedBox(height: 16),
+          Text(
+            context.messages.aiConfigModelsTitle,
+            style: context.textTheme.titleMedium,
           ),
+          const SizedBox(height: 8),
+          if (formState.modelIds.isEmpty)
+            Text(context.messages.aiConfigNoModelsSelected)
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: formState.modelIds.map((modelId) {
+                // TODO: Fetch actual model name and indicate default
+                // For now, just show IDs and a star for default
+                final isDefault = modelId == formState.defaultModelId;
+                final modelDataAsync = ref.watch(aiConfigByIdProvider(modelId));
+                return modelDataAsync.when(
+                  data: (config) {
+                    final modelName =
+                        (config as AiConfigModel?)?.name ?? modelId;
+                    return Chip(
+                      label: Text(modelName),
+                      avatar:
+                          isDefault ? const Icon(Icons.star, size: 16) : null,
+                      // TODO: Add onDeleted to remove model, or handle in modal
+                    );
+                  },
+                  loading: () => const Chip(label: Text('Loading...')),
+                  error: (err, stack) => Chip(label: Text('Error: $modelId')),
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {
+              _showModelManagementModal(
+                currentSelectedIds: formState.modelIds,
+                currentDefaultId: formState.defaultModelId,
+                formController: formController,
+              );
+            },
+            child: Text(context.messages.aiConfigManageModelsButton),
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             height: 200,
             child: TextField(
@@ -216,7 +273,9 @@ class _PromptFormState extends ConsumerState<PromptForm> {
             children: [
               FilledButton(
                 onPressed: formState.isValid &&
+                        formState.modelIds.isNotEmpty &&
                         formState.defaultModelId.isNotEmpty &&
+                        formState.modelIds.contains(formState.defaultModelId) &&
                         (widget.config == null || formState.isDirty)
                     ? () {
                         final config = formState.toAiConfig();

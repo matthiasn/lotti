@@ -258,7 +258,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(context.messages.aiConfigModelFieldLabel),
+        find.text(context.messages.aiConfigModelsTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.aiConfigManageModelsButton),
         findsOneWidget,
       );
       expect(
@@ -280,6 +284,12 @@ void main() {
 
       // Verify button is present (disabled initially)
       expect(find.byType(FilledButton), findsOneWidget);
+      // Check the specific save/create button using its label
+      // Assuming it's a new prompt, so create label
+      expect(
+        find.text(context.messages.aiConfigCreateButtonLabel),
+        findsOneWidget,
+      );
     });
 
     testWidgets('submit button should be disabled with invalid form',

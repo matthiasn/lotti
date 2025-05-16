@@ -59,7 +59,11 @@ void main() {
       expect(find.text('API Key'), findsOneWidget);
       expect(find.text('Provider Type'), findsOneWidget);
       expect(find.text('Comment (Optional)'), findsOneWidget);
-      expect(find.text('Create'), findsOneWidget);
+      // Get AppLocalizations instance from context
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(InferenceProviderForm)),
+      )!;
+      expect(find.text(l10n.saveButtonLabel), findsOneWidget);
     });
 
     testWidgets('should have provider type field and validate form structure',
@@ -310,6 +314,78 @@ void main() {
         ),
         InferenceProviderType.anthropic,
       );
+    });
+
+    testWidgets('should show Update API Key button for existing config',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          onSave: (_) {},
+          initialConfig: AiConfig.inferenceProvider(
+            id: 'test-id',
+            name: 'Test Provider',
+            apiKey: 'key',
+            baseUrl: 'url',
+            createdAt: DateTime.now(),
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find the button and check its text
+      final buttonFinder = find.byType(FilledButton);
+      expect(buttonFinder, findsOneWidget);
+      final FilledButton button = tester.widget<FilledButton>(buttonFinder);
+      final Text buttonTextWidget = button.child! as Text;
+      final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(InferenceProviderForm)))!;
+      expect(buttonTextWidget.data, l10n.apiKeyFormUpdateButton);
+    });
+
+    testWidgets('validates name field - too short',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          onSave: (_) {},
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find the name field (first TextField)
+      final nameTextField = find.byType(TextField).first;
+
+      // Enter valid name, then clear and enter invalid short name
+      await tester.enterText(nameTextField, 'Valid Name');
+      await tester.pump();
+
+      // No error should be shown for valid input
+      expect(find.text('Name must be at least 3 characters'), findsNothing);
+
+      // Enter an invalid short name (less than 3 characters)
+      await tester.enterText(nameTextField, 'ab');
+      await tester.pump();
+
+      // Error message should appear
+      expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+
+      // Enter a single character
+      await tester.enterText(nameTextField, 'a');
+      await tester.pump();
+
+      // Error should still be shown
+      expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+
+      // Enter empty string
+      await tester.enterText(nameTextField, '');
+      await tester.pump();
+
+      // Error should still be shown
+      expect(find.text('Name must be at least 3 characters'), findsOneWidget);
     });
   });
 }

@@ -273,7 +273,7 @@ void main() {
   });
 
   // Test create vs update button text
-  testWidgets('should show Create button text for new model',
+  testWidgets('should show Create Prompt button text for new model',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       buildTestWidget(
@@ -281,11 +281,69 @@ void main() {
       ),
     );
 
-    // Wait for widget to be ready with timed pumps instead of pumpAndSettle
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
-    // Check for the Create text directly, without going through the button first
-    expect(find.text('Create'), findsOneWidget);
+    final l10n =
+        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
+    expect(find.text(l10n.aiConfigCreateButtonLabel), findsOneWidget);
+  });
+
+  testWidgets('should show Update Prompt button text for existing model',
+      (WidgetTester tester) async {
+    final existingConfig = createMockModelConfig(
+      id: 'existing-id',
+      name: 'Existing Model',
+      providerModelId: 'existing-provider-id',
+    );
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        onSave: (_) {},
+        config: existingConfig,
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final l10n =
+        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
+    expect(find.text(l10n.aiConfigUpdateButtonLabel), findsOneWidget);
+  });
+
+  testWidgets('should show Save button text for new model',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      buildTestWidget(
+        onSave: (_) {},
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final l10n =
+        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
+    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
+  });
+
+  testWidgets('should show Save button text for existing model',
+      (WidgetTester tester) async {
+    final existingConfig = createMockModelConfig(
+      id: 'existing-id',
+      name: 'Existing Model',
+      providerModelId: 'existing-provider-id',
+    );
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        onSave: (_) {},
+        config: existingConfig, // Edit mode
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final l10n =
+        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
+    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
   });
 }
