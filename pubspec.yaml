@@ -174,6 +174,8 @@ dev_dependencies:
     sdk: flutter
   json_serializable: ^6.0.0
   msix: ^3.7.0
+  path_provider_platform_interface: any
+  plugin_platform_interface: any
   riverpod_generator: ^2.4.0
   very_good_analysis: ^7.0.0
 

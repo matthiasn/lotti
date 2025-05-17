@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart'; // Assuming AppTheme is here for context.colorScheme
+import 'package:lotti/themes/theme.dart';
 
 class ModelManagementModal extends ConsumerStatefulWidget {
   const ModelManagementModal({
@@ -41,38 +41,11 @@ class _ModelManagementModalState extends ConsumerState<ModelManagementModal> {
 
     return allModelsAsync.when(
       data: (allModels) {
-        // --- DIAGNOSTIC PRINT START ---
-        debugPrint(
-          '[ModelManagementModal] Received ${allModels.length} AiConfig items from controller for AiConfigType.model.',
-        );
-        for (var i = 0; i < allModels.length; i++) {
-          final item = allModels[i];
-          debugPrint(
-            '  Item $i: id=${item.id}, name=${item.name}, runtimeType=${item.runtimeType}, is AiConfigModel: ${item is AiConfigModel}',
-          );
-        }
-        // --- DIAGNOSTIC PRINT END ---
-
         final modelConfigs = allModels.whereType<AiConfigModel>().toList();
-
-        // --- DIAGNOSTIC PRINT START ---
-        debugPrint(
-          '[ModelManagementModal] Filtered to ${modelConfigs.length} AiConfigModel items.',
-        );
-        // --- DIAGNOSTIC PRINT END ---
 
         if (modelConfigs.isEmpty) {
           final message = context.messages.aiConfigNoModelsAvailable;
-          if (allModels.isNotEmpty && modelConfigs.isEmpty) {
-            // This case means items were received, but none were of type AiConfigModel
-            debugPrint(
-              '[ModelManagementModal] Warning: Received AiConfig items, but none were of AiConfigModel type.',
-            );
-          } else if (allModels.isEmpty) {
-            debugPrint(
-              '[ModelManagementModal] No AiConfig items received from controller for AiConfigType.model.',
-            );
-          }
+
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -200,9 +173,6 @@ class _ModelManagementModalState extends ConsumerState<ModelManagementModal> {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) {
-        // --- DIAGNOSTIC PRINT START ---
-        debugPrint('[ModelManagementModal] Error loading models: $error');
-        // --- DIAGNOSTIC PRINT END ---
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
