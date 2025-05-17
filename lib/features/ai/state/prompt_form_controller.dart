@@ -173,7 +173,7 @@ class PromptFormController extends _$PromptFormController {
     await repository.saveConfig(
       config.copyWith(
         id: _config?.id ?? config.id,
-        createdAt: _config?.createdAt ?? DateTime.now(),
+        createdAt: _config?.createdAt ?? (config as AiConfigPrompt).createdAt,
         updatedAt: DateTime.now(),
       ),
     );
