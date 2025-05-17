@@ -81,14 +81,26 @@ void main() {
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
       AiConfig.prompt(
-        id: 'template-id-1',
-        name: 'Test Template',
-        template:
-            'This is a template for testing purposes with some long text that will be truncated',
+        id: 'prompt-1',
+        name: 'Prompt Test 1',
+        systemMessage: 'System message for prompt test 1',
+        userMessage: 'Template for prompt test 1',
+        defaultModelId: 'model-id-1',
+        modelIds: [],
+        requiredInputData: const [],
         createdAt: DateTime.now(),
-        modelId: 'model-id-1',
+        useReasoning: true,
+      ),
+      AiConfig.prompt(
+        id: 'prompt-2',
+        name: 'Prompt Test 2',
+        systemMessage: 'System message for prompt test 2',
+        userMessage: 'Template for prompt test 2',
+        defaultModelId: 'model-id-2',
+        modelIds: [],
+        requiredInputData: const [],
+        createdAt: DateTime.now(),
         useReasoning: false,
-        requiredInputData: [],
       ),
     ];
 

@@ -51,6 +51,7 @@ _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
     _$AiConfigModelImpl(
       id: json['id'] as String,
       name: json['name'] as String,
+      providerModelId: json['providerModelId'] as String,
       inferenceProviderId: json['inferenceProviderId'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       inputModalities: (json['inputModalities'] as List<dynamic>)
@@ -71,6 +72,7 @@ Map<String, dynamic> _$$AiConfigModelImplToJson(_$AiConfigModelImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'providerModelId': instance.providerModelId,
       'inferenceProviderId': instance.inferenceProviderId,
       'createdAt': instance.createdAt.toIso8601String(),
       'inputModalities':
@@ -93,8 +95,11 @@ _$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
     _$AiConfigPromptImpl(
       id: json['id'] as String,
       name: json['name'] as String,
-      template: json['template'] as String,
-      modelId: json['modelId'] as String,
+      systemMessage: json['systemMessage'] as String,
+      userMessage: json['userMessage'] as String,
+      defaultModelId: json['defaultModelId'] as String,
+      modelIds:
+          (json['modelIds'] as List<dynamic>).map((e) => e as String).toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       useReasoning: json['useReasoning'] as bool,
       requiredInputData: (json['requiredInputData'] as List<dynamic>)
@@ -118,8 +123,10 @@ Map<String, dynamic> _$$AiConfigPromptImplToJson(
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
-      'template': instance.template,
-      'modelId': instance.modelId,
+      'systemMessage': instance.systemMessage,
+      'userMessage': instance.userMessage,
+      'defaultModelId': instance.defaultModelId,
+      'modelIds': instance.modelIds,
       'createdAt': instance.createdAt.toIso8601String(),
       'useReasoning': instance.useReasoning,
       'requiredInputData': instance.requiredInputData

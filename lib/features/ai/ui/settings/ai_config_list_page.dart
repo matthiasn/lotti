@@ -152,28 +152,19 @@ class AiConfigListPage extends ConsumerWidget {
   }
 
   Widget _buildConfigListTile(BuildContext context, AiConfig config) {
-    final subtitle = _getConfigSubtitle(context, config);
     return ListTile(
       title: Text(config.name),
-      subtitle: subtitle != null && subtitle.isNotEmpty ? Text(subtitle) : null,
+      subtitle: Text(
+        maxLines: 2,
+        config.map(
+          inferenceProvider: (_) => config.description ?? '',
+          model: (model) => model.description ?? '',
+          prompt: (prompt) => prompt.description ?? '',
+        ),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       trailing: const Icon(Icons.chevron_right),
       onTap: onItemTap != null ? () => onItemTap!(config) : null,
-    );
-  }
-
-  String? _getConfigSubtitle(BuildContext context, AiConfig config) {
-    return config.map(
-      inferenceProvider: (apiKey) => apiKey.description,
-      prompt: (prompt) {
-        final previewLength =
-            prompt.template.length > 50 ? 50 : prompt.template.length;
-        final preview = prompt.template.substring(0, previewLength);
-        return '${context.messages.aiConfigListPromptTemplateSubtitle} $preview...';
-      },
-      model: (AiConfigModel value) {
-        return value.description;
-      },
     );
   }
 }

@@ -80,12 +80,14 @@ void main() {
       final promptConfig = AiConfig.prompt(
         id: 'summarize-prompt',
         name: 'Summarization Template',
-        template: 'Please summarize the following text: {{text}}',
+        systemMessage: 'Please summarize the following text:',
+        userMessage: '{{text}}',
         createdAt: DateTime.now(),
         description: 'Template for text summarization',
         defaultVariables: {'text': 'Enter text to summarize'},
         category: 'Summarization',
-        modelId: 'model-id1',
+        defaultModelId: 'model-id1',
+        modelIds: [],
         useReasoning: false,
         requiredInputData: [],
       );
@@ -125,7 +127,11 @@ void main() {
         prompt: (config) {
           expect(config.id, equals('summarize-prompt'));
           expect(config.name, equals('Summarization Template'));
-          expect(config.template, contains('Please summarize'));
+          expect(
+            config.systemMessage,
+            equals('Please summarize the following text:'),
+          );
+          expect(config.userMessage, equals('{{text}}'));
           expect(config.category, equals('Summarization'));
         },
         orElse: () => fail('Retrieved config is not a prompt template config'),

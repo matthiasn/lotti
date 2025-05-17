@@ -29,13 +29,15 @@
   "aiAssistantThinking": "Thinking...",
   "aiAssistantTitle": "AI Assistant",
   "aiAssistantTranscribeAudio": "Transcribe audio",
+  "aiConfigApiKeyEmptyError": "API key cannot be empty",
   "aiConfigApiKeyFieldLabel": "API Key",
   "aiConfigBaseUrlFieldLabel": "Base URL",
   "aiConfigCommentFieldLabel": "Comment (Optional)",
-  "aiConfigCreateButtonLabel": "Create",
-  "aiConfigFailedToSaveMessage": "Failed to save API key configuration",
+  "aiConfigCreateButtonLabel": "Create Prompt",
+  "aiConfigFailedToSaveMessage": "Failed to save configuration. Please try again.",
   "aiConfigInputModalitiesFieldLabel": "Input Modalities",
   "aiConfigInputModalitiesTitle": "Input Modalities",
+  "aiConfigInvalidUrlError": "Please enter a valid URL",
   "aiConfigListDeleteConfirmCancel": "CANCEL",
   "aiConfigListDeleteConfirmDelete": "DELETE",
   "aiConfigListDeleteConfirmMessage": "Are you sure you want to delete \"{configName}\"?",
@@ -77,7 +79,14 @@
     }
   },
   "aiConfigListUndoDelete": "UNDO",
-  "aiConfigNameFieldLabel": "Name",
+  "aiConfigModelFieldLabel": "Model",
+  "aiConfigModelLoadError": "Could not load model details.",
+  "aiConfigModelSupportsReasoning": "Supports reasoning",
+  "aiConfigNameFieldLabel": "Display Name",
+  "aiConfigNameTooShortError": "Name must be at least 3 characters",
+  "aiConfigProviderModelIdTooShortError": "ProviderModelId must be at least 3 characters",
+  "aiConfigProviderModelIdFieldLabel": "Provider Model ID",
+  "aiConfigNoModelsAvailable": "No AI models are configured yet. Please add one in settings.",
   "aiConfigNoProvidersAvailable": "No API providers available. Please add an API provider first.",
   "aiConfigOutputModalitiesFieldLabel": "Output Modalities",
   "aiConfigOutputModalitiesTitle": "Output Modalities",
@@ -85,11 +94,41 @@
   "aiConfigProviderFieldLabel": "Inference Provider",
   "aiConfigReasoningCapabilityDescription": "Model can perform step-by-step reasoning",
   "aiConfigReasoningCapabilityFieldLabel": "Reasoning Capability",
+  "aiConfigRequiredInputDataFieldLabel": "Required Input Data",
+  "aiConfigSelectInputDataTypesPrompt": "Select required data types...",
   "aiConfigSelectModalitiesPrompt": "Select modalities",
+  "aiConfigSelectModelModalTitle": "Select AI Model",
   "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
   "aiConfigSelectProviderModalTitle": "Select Inference Provider",
   "aiConfigSelectProviderNotFound": "Inference Provider not found",
-  "aiConfigUpdateButtonLabel": "Update",
+  "aiConfigSystemMessageFieldLabel": "System Message (optional)",
+  "aiConfigUserMessageFieldLabel": "User Message",
+  "aiConfigUseReasoningDescription": "If enabled, the model will use its reasoning capabilities for this prompt.",
+  "aiConfigUseReasoningFieldLabel": "Use Reasoning",
+  "aiConfigCategoryFieldLabel": "Category (Optional)",
+  "aiConfigDescriptionFieldLabel": "Description (Optional)",
+  "aiConfigUpdateButtonLabel": "Update Prompt",
+  "aiConfigFailedToLoadModels": "Failed to load models: {error}",
+  "@aiConfigFailedToLoadModels": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConfigInputDataTypesTitle": "Required Input Data Types",
+  "inputDataTypeTaskName": "Task",
+  "inputDataTypeTaskDescription": "Use the current task as input",
+  "inputDataTypeTasksListName": "Tasks List",
+  "inputDataTypeTasksListDescription": "Use a list of tasks as input",
+  "inputDataTypeAudioFilesName": "Audio Files",
+  "inputDataTypeAudioFilesDescription": "Use audio files as input",
+  "inputDataTypeImagesName": "Images",
+  "inputDataTypeImagesDescription": "Use images as input",
+  "promptAddPageTitle": "Add Prompt",
+  "promptEditPageTitle": "Edit Prompt",
+  "promptEditLoadError": "Failed to load prompt",
+  "promptSettingsPageTitle": "AI Prompts",
   "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
   "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderGeminiDescription": "Google's Gemini AI models",
@@ -568,5 +607,21 @@
   "viewMenuEnableBrightTheme": "Enable Bright Theme",
   "viewMenuHideThemeConfig": "Hide Theme Config",
   "viewMenuShowThemeConfig": "Show Theme Config",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "aiConfigTemplateEmptyError": "Template cannot be empty",
+  "aiConfigUserMessageEmptyError": "User message cannot be empty",
+  "aiConfigDefaultVariablesFieldLabel": "Default Variables (JSON, Optional)",
+  "aiConfigModelsTitle": "Available Models",
+  "aiConfigNoModelsSelected": "No models selected. At least one model is required.",
+  "aiConfigManageModelsButton": "Manage Models",
+  "aiConfigModelRemovedMessage": "{modelName} removed from prompt",
+  "@aiConfigModelRemovedMessage": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "fileInputTypeAll": "All files",
+  "fileInputTypeAudio": "Audio files"
 }

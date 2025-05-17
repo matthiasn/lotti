@@ -35,6 +35,7 @@ Widget buildTestWidget({
 AiConfig createMockModelConfig({
   required String id,
   required String name,
+  required String providerModelId,
   String? description,
   String inferenceProviderId = 'provider-1',
   List<Modality> inputModalities = const [Modality.text],
@@ -44,6 +45,7 @@ AiConfig createMockModelConfig({
   return AiConfig.model(
     id: id,
     name: name,
+    providerModelId: providerModelId,
     inferenceProviderId: inferenceProviderId,
     createdAt: DateTime.now(),
     inputModalities: inputModalities,
@@ -101,6 +103,107 @@ void main() {
     expect(find.text('Name must be at least 3 characters'), findsOneWidget);
   });
 
+  // Test error text for short name input
+  testWidgets('should show correct error text when name is too short',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      buildTestWidget(
+        onSave: (_) {},
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Find the name field
+    final nameTextField = find.byType(TextField).first;
+
+    // Enter valid name, then clear and enter invalid short name
+    await tester.enterText(nameTextField, 'Valid Name');
+    await tester.pump();
+
+    // No error should be shown for valid input
+    expect(find.text('Name must be at least 3 characters'), findsNothing);
+
+    // Enter an invalid short name (less than 3 characters)
+    await tester.enterText(nameTextField, 'ab');
+    await tester.pump();
+
+    // Error message should appear
+    expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+
+    // Enter a single character
+    await tester.enterText(nameTextField, 'a');
+    await tester.pump();
+
+    // Error should still be shown
+    expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+
+    // Enter empty string
+    await tester.enterText(nameTextField, '');
+    await tester.pump();
+
+    // Error should still be shown
+    expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+  });
+
+  // Test error text for short provider model ID input
+  testWidgets(
+      'should show correct error text when provider model ID is too short',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      buildTestWidget(
+        onSave: (_) {},
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Find the provider model ID field (second TextField)
+    final providerModelIdField = find.byType(TextField).at(1);
+
+    // Enter valid provider model ID, then clear and enter invalid short ID
+    await tester.enterText(providerModelIdField, 'valid-model-id');
+    await tester.pump();
+
+    // No error should be shown for valid input
+    expect(
+      find.text('ProviderModelId must be at least 3 characters'),
+      findsNothing,
+    );
+
+    // Enter an invalid short provider model ID (less than 3 characters)
+    await tester.enterText(providerModelIdField, 'ab');
+    await tester.pump();
+
+    // Error message should appear
+    expect(
+      find.text('ProviderModelId must be at least 3 characters'),
+      findsOneWidget,
+    );
+
+    // Enter a single character
+    await tester.enterText(providerModelIdField, 'a');
+    await tester.pump();
+
+    // Error should still be shown
+    expect(
+      find.text('ProviderModelId must be at least 3 characters'),
+      findsOneWidget,
+    );
+
+    // Enter empty string
+    await tester.enterText(providerModelIdField, '');
+    await tester.pump();
+
+    // Error should still be shown
+    expect(
+      find.text('ProviderModelId must be at least 3 characters'),
+      findsOneWidget,
+    );
+  });
+
   // Form interaction test
   testWidgets('should allow filling out the form', (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -118,6 +221,14 @@ void main() {
 
     // Enter a name
     await tester.enterText(nameField, 'Test Model');
+    await tester.pump();
+
+    // Find the providerModelId field (second TextField)
+    final providerModelIdField = find.byType(TextField).at(1);
+    expect(providerModelIdField, findsOneWidget);
+
+    // Enter provider model ID
+    await tester.enterText(providerModelIdField, 'test-provider-model-id');
     await tester.pump();
 
     // Find the description field (last TextField)
@@ -162,7 +273,8 @@ void main() {
   });
 
   // Test create vs update button text
-  testWidgets('should show Create button text for new model',
+  testWidgets(
+      'should show Save button text for new model (previously Create Prompt)',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       buildTestWidget(
@@ -170,11 +282,30 @@ void main() {
       ),
     );
 
-    // Wait for widget to be ready with timed pumps instead of pumpAndSettle
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
 
-    // Check for the Create text directly, without going through the button first
-    expect(find.text('Create'), findsOneWidget);
+    final l10n =
+        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
+    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
+  });
+
+  testWidgets('should show Save button text for new model',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      buildTestWidget(
+        onSave: (_) {},
+      ),
+    );
+
+    await tester.pump();
+
+    // Find the button and check its text for the CREATE case
+    final buttonFinder = find.byType(FilledButton);
+    expect(buttonFinder, findsOneWidget);
+    final buttonWidget = tester.widget<FilledButton>(buttonFinder);
+    final buttonTextWidget = buttonWidget.child! as Text;
+    final l10n =
+        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
+    expect(buttonTextWidget.data, l10n.saveButtonLabel);
   });
 }

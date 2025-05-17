@@ -120,7 +120,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Fill in the form fields
-      await tester.enterText(find.widgetWithText(TextField, 'Name'), 'New API');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Display Name'),
+        'New API',
+      );
       await tester.enterText(
         find.widgetWithText(TextField, 'Base URL'),
         'https://new.example.com',
@@ -173,7 +176,7 @@ void main() {
 
       // Fill in the form fields
       await tester.enterText(
-        find.widgetWithText(TextField, 'Name'),
+        find.widgetWithText(TextField, 'Display Name'),
         'Updated API',
       );
       await tester.enterText(
