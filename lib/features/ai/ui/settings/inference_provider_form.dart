@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
+import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -116,8 +117,10 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
             controller: formController.nameController,
             decoration: InputDecoration(
               labelText: context.messages.aiConfigNameFieldLabel,
-              errorText: formState.name.isNotValid && !formState.name.isPure
-                  ? formState.name.error
+              errorText: formState.name.isNotValid &&
+                      !formState.name.isPure &&
+                      formState.name.error == ProviderFormError.tooShort
+                  ? context.messages.aiConfigNameTooShortError
                   : null,
             ),
           ),
@@ -129,10 +132,11 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
             controller: formController.baseUrlController,
             decoration: InputDecoration(
               labelText: context.messages.aiConfigBaseUrlFieldLabel,
-              errorText:
-                  formState.baseUrl.isNotValid && !formState.baseUrl.isPure
-                      ? formState.baseUrl.error
-                      : null,
+              errorText: formState.baseUrl.isNotValid &&
+                      !formState.baseUrl.isPure &&
+                      formState.baseUrl.error == ProviderFormError.invalidUrl
+                  ? context.messages.aiConfigInvalidUrlError
+                  : null,
             ),
           ),
         ),
@@ -144,8 +148,10 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
             obscureText: !_showApiKey,
             decoration: InputDecoration(
               labelText: context.messages.aiConfigApiKeyFieldLabel,
-              errorText: formState.apiKey.isNotValid && !formState.apiKey.isPure
-                  ? formState.apiKey.error
+              errorText: formState.apiKey.isNotValid &&
+                      !formState.apiKey.isPure &&
+                      formState.apiKey.error == ProviderFormError.empty
+                  ? context.messages.aiConfigApiKeyEmptyError
                   : null,
               suffixIcon: IconButton(
                 icon: Icon(
@@ -194,8 +200,8 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
                   : null,
               child: Text(
                 widget.config == null
-                    ? context.messages.aiConfigCreateButtonLabel
-                    : context.messages.aiConfigUpdateButtonLabel,
+                    ? context.messages.apiKeyFormCreateButton
+                    : context.messages.apiKeyFormUpdateButton,
               ),
             ),
           ],

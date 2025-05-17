@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'inference_model_form_controller.dart';
+part of 'prompt_form_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$inferenceModelFormControllerHash() =>
-    r'c2a3b8b8238380ef0715ab0d4689f3c9076d7eb5';
+String _$promptFormControllerHash() =>
+    r'51a71945f5832d0df00ed22a1c2dfdb2655a565a';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,38 +30,36 @@ class _SystemHash {
   }
 }
 
-abstract class _$InferenceModelFormController
-    extends BuildlessAutoDisposeAsyncNotifier<InferenceModelFormState?> {
+abstract class _$PromptFormController
+    extends BuildlessAutoDisposeAsyncNotifier<PromptFormState?> {
   late final String? configId;
 
-  FutureOr<InferenceModelFormState?> build({
+  FutureOr<PromptFormState?> build({
     required String? configId,
   });
 }
 
-/// See also [InferenceModelFormController].
-@ProviderFor(InferenceModelFormController)
-const inferenceModelFormControllerProvider =
-    InferenceModelFormControllerFamily();
+/// See also [PromptFormController].
+@ProviderFor(PromptFormController)
+const promptFormControllerProvider = PromptFormControllerFamily();
 
-/// See also [InferenceModelFormController].
-class InferenceModelFormControllerFamily
-    extends Family<AsyncValue<InferenceModelFormState?>> {
-  /// See also [InferenceModelFormController].
-  const InferenceModelFormControllerFamily();
+/// See also [PromptFormController].
+class PromptFormControllerFamily extends Family<AsyncValue<PromptFormState?>> {
+  /// See also [PromptFormController].
+  const PromptFormControllerFamily();
 
-  /// See also [InferenceModelFormController].
-  InferenceModelFormControllerProvider call({
+  /// See also [PromptFormController].
+  PromptFormControllerProvider call({
     required String? configId,
   }) {
-    return InferenceModelFormControllerProvider(
+    return PromptFormControllerProvider(
       configId: configId,
     );
   }
 
   @override
-  InferenceModelFormControllerProvider getProviderOverride(
-    covariant InferenceModelFormControllerProvider provider,
+  PromptFormControllerProvider getProviderOverride(
+    covariant PromptFormControllerProvider provider,
   ) {
     return call(
       configId: provider.configId,
@@ -80,31 +78,30 @@ class InferenceModelFormControllerFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'inferenceModelFormControllerProvider';
+  String? get name => r'promptFormControllerProvider';
 }
 
-/// See also [InferenceModelFormController].
-class InferenceModelFormControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<InferenceModelFormController,
-        InferenceModelFormState?> {
-  /// See also [InferenceModelFormController].
-  InferenceModelFormControllerProvider({
+/// See also [PromptFormController].
+class PromptFormControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
+    PromptFormController, PromptFormState?> {
+  /// See also [PromptFormController].
+  PromptFormControllerProvider({
     required String? configId,
   }) : this._internal(
-          () => InferenceModelFormController()..configId = configId,
-          from: inferenceModelFormControllerProvider,
-          name: r'inferenceModelFormControllerProvider',
+          () => PromptFormController()..configId = configId,
+          from: promptFormControllerProvider,
+          name: r'promptFormControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$inferenceModelFormControllerHash,
-          dependencies: InferenceModelFormControllerFamily._dependencies,
+                  : _$promptFormControllerHash,
+          dependencies: PromptFormControllerFamily._dependencies,
           allTransitiveDependencies:
-              InferenceModelFormControllerFamily._allTransitiveDependencies,
+              PromptFormControllerFamily._allTransitiveDependencies,
           configId: configId,
         );
 
-  InferenceModelFormControllerProvider._internal(
+  PromptFormControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -117,8 +114,8 @@ class InferenceModelFormControllerProvider
   final String? configId;
 
   @override
-  FutureOr<InferenceModelFormState?> runNotifierBuild(
-    covariant InferenceModelFormController notifier,
+  FutureOr<PromptFormState?> runNotifierBuild(
+    covariant PromptFormController notifier,
   ) {
     return notifier.build(
       configId: configId,
@@ -126,10 +123,10 @@ class InferenceModelFormControllerProvider
   }
 
   @override
-  Override overrideWith(InferenceModelFormController Function() create) {
+  Override overrideWith(PromptFormController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: InferenceModelFormControllerProvider._internal(
+      override: PromptFormControllerProvider._internal(
         () => create()..configId = configId,
         from: from,
         name: null,
@@ -142,15 +139,14 @@ class InferenceModelFormControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<InferenceModelFormController,
-      InferenceModelFormState?> createElement() {
-    return _InferenceModelFormControllerProviderElement(this);
+  AutoDisposeAsyncNotifierProviderElement<PromptFormController,
+      PromptFormState?> createElement() {
+    return _PromptFormControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is InferenceModelFormControllerProvider &&
-        other.configId == configId;
+    return other is PromptFormControllerProvider && other.configId == configId;
   }
 
   @override
@@ -164,21 +160,19 @@ class InferenceModelFormControllerProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin InferenceModelFormControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<InferenceModelFormState?> {
+mixin PromptFormControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<PromptFormState?> {
   /// The parameter `configId` of this provider.
   String? get configId;
 }
 
-class _InferenceModelFormControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<
-        InferenceModelFormController,
-        InferenceModelFormState?> with InferenceModelFormControllerRef {
-  _InferenceModelFormControllerProviderElement(super.provider);
+class _PromptFormControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<PromptFormController,
+        PromptFormState?> with PromptFormControllerRef {
+  _PromptFormControllerProviderElement(super.provider);
 
   @override
-  String? get configId =>
-      (origin as InferenceModelFormControllerProvider).configId;
+  String? get configId => (origin as PromptFormControllerProvider).configId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

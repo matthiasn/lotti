@@ -8,6 +8,7 @@ void main() {
   final textModel = AiConfigModel(
     id: 'text-basic',
     name: 'Text Basic',
+    providerModelId: 'text-model-id',
     inferenceProviderId: 'p1',
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
@@ -19,6 +20,7 @@ void main() {
   final reasoningTextImageModel = AiConfigModel(
     id: 'reason-text-img',
     name: 'Reason Text Image',
+    providerModelId: 'reasoning-text-img-id',
     inferenceProviderId: 'p2',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
@@ -30,6 +32,7 @@ void main() {
   final multiModalNonReasoningModel = AiConfigModel(
     id: 'multi-no-reason',
     name: 'Multi Modal Non Reason',
+    providerModelId: 'multi-modal-noreasons-id',
     inferenceProviderId: 'p1',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text, Modality.audio],
@@ -41,6 +44,7 @@ void main() {
   final fullMultiModalReasoningModel = AiConfigModel(
     id: 'multi-reason',
     name: 'Full Multi Modal Reason',
+    providerModelId: 'multi-modal-reasoning-id',
     inferenceProviderId: 'p2',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text, Modality.audio],
@@ -55,10 +59,13 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p1',
         name: 'Basic Question',
-        modelId: '', // Not relevant for this function
-        template: 'What is Flutter?',
-        requiredInputData: [], // No specific data types needed
-        useReasoning: false, createdAt: DateTime.now(),
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'What is Flutter?',
+        userMessage: '',
+        requiredInputData: [],
+        useReasoning: false,
+        createdAt: DateTime.now(),
       );
       expect(
         isModelSuitableForPrompt(prompt: prompt, model: textModel),
@@ -87,10 +94,12 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p2',
         name: 'Analyze deeply',
-        modelId: '',
-        template: 'Deduce the meaning...',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Deduce the meaning...',
+        userMessage: '{{input}}',
         requiredInputData: [],
-        useReasoning: true, // Requires reasoning
+        useReasoning: true,
         createdAt: DateTime.now(),
       );
       expect(
@@ -112,8 +121,10 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p3',
         name: 'Analyze deeply',
-        modelId: '',
-        template: 'Deduce the meaning...',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Deduce the meaning...',
+        userMessage: '{{input}}',
         requiredInputData: [],
         useReasoning: true,
         createdAt: DateTime.now(),
@@ -140,11 +151,12 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p4',
         name: 'Simple Summary',
-        modelId: '',
-        template: 'Summarize this.',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Summarize this.',
+        userMessage: '{{textToSummarize}}',
         requiredInputData: [],
-        useReasoning: false, // Does NOT require reasoning
-
+        useReasoning: false,
         createdAt: DateTime.now(),
       );
       expect(
@@ -166,9 +178,11 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p5',
         name: 'Describe Image',
-        modelId: '',
-        template: 'Describe the attached image.',
-        requiredInputData: [InputDataType.images], // Needs image input
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Describe the attached image.',
+        userMessage: '{{image}}',
+        requiredInputData: [InputDataType.images],
         useReasoning: false,
         createdAt: DateTime.now(),
       );
@@ -184,8 +198,10 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p6',
         name: 'Describe Image',
-        modelId: '',
-        template: 'Describe the attached image.',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Describe the attached image.',
+        userMessage: '{{image}}',
         requiredInputData: [InputDataType.images],
         useReasoning: false,
         createdAt: DateTime.now(),
@@ -212,9 +228,10 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p7',
         name: 'Transcribe and Summarize',
-        modelId: '',
-        template: 'Transcribe the audio and summarize the text.',
-        // Requires both task (text) and audioFiles (audio)
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Transcribe the audio and summarize the text.',
+        userMessage: '{{audio}} {{text}}',
         requiredInputData: [InputDataType.task, InputDataType.audioFiles],
         useReasoning: false,
         createdAt: DateTime.now(),
@@ -240,14 +257,15 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p8',
         name: 'Process Audio and Tasks',
-        modelId: '',
-        template: 'Based on the audio and the task list...',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Based on the audio and the task list...',
+        userMessage: '{{audio}} {{taskList}}',
         requiredInputData: [
           InputDataType.audioFiles,
           InputDataType.tasksList,
-        ], // Needs audio, needs text (for tasksList)
+        ],
         useReasoning: false,
-
         createdAt: DateTime.now(),
       );
       // These models support both text and audio
@@ -272,13 +290,14 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p9',
         name: 'Describe Image (Reasoning)',
-        modelId: '',
-        template: 'Analyze and describe the attached image.',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage: 'Analyze and describe the attached image.',
+        userMessage: '{{image}}',
         requiredInputData: [
           InputDataType.images,
-        ], // Only needs image input explicitly
-        useReasoning: true, // Requires reasoning
-
+        ],
+        useReasoning: true,
         createdAt: DateTime.now(),
       );
       // fullMultiModalReasoningModel supports text, image, audio AND reasoning
@@ -297,14 +316,16 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p10',
         name: 'Analyze Audio and Image',
-        modelId: '',
-        template: 'Analyze the relationship between the audio and the image.',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage:
+            'Analyze the relationship between the audio and the image.',
+        userMessage: '{{audio}} {{image}}',
         requiredInputData: [
           InputDataType.audioFiles,
           InputDataType.images,
-        ], // Needs audio & image
-        useReasoning: true, // Needs reasoning
-
+        ],
+        useReasoning: true,
         createdAt: DateTime.now(),
       );
       // reasoningTextImageModel has reasoning and image, but LACKS AUDIO
@@ -336,8 +357,11 @@ void main() {
       final prompt = AiConfigPrompt(
         id: 'p11',
         name: 'Analyze Audio and Image',
-        modelId: '',
-        template: 'Analyze the relationship between the audio and the image.',
+        defaultModelId: '',
+        modelIds: [],
+        systemMessage:
+            'Analyze the relationship between the audio and the image.',
+        userMessage: '{{audio}} {{image}}',
         requiredInputData: [InputDataType.audioFiles, InputDataType.images],
         useReasoning: true,
         createdAt: DateTime.now(),

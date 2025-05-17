@@ -9,22 +9,27 @@ part 'inference_model_form_controller.g.dart';
 @riverpod
 class InferenceModelFormController extends _$InferenceModelFormController {
   final nameController = TextEditingController();
+  final providerModelIdController = TextEditingController();
   final descriptionController = TextEditingController();
 
   AiConfigModel? _config;
 
   @override
-  Future<InferenceModelFormState?> build({required String? configId}) async {
+  Future<InferenceModelFormState?> build({
+    required String? configId,
+  }) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
             as AiConfigModel?)
         : null;
 
     nameController.text = _config?.name ?? '';
+    providerModelIdController.text = _config?.providerModelId ?? '';
     descriptionController.text = _config?.description ?? '';
 
     ref.onDispose(() {
       nameController.dispose();
+      providerModelIdController.dispose();
       descriptionController.dispose();
     });
 
@@ -32,6 +37,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
       return InferenceModelFormState(
         id: _config!.id,
         name: ModelName.dirty(_config!.name),
+        providerModelId: ProviderModelId.dirty(_config!.providerModelId),
         description: ModelDescription.dirty(_config!.description ?? ''),
         inferenceProviderId: _config!.inferenceProviderId,
         inputModalities: _config!.inputModalities,
@@ -46,6 +52,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   void _setAllFields({
     String? description,
     String? name,
+    String? providerModelId,
     String? inferenceProviderId,
     List<Modality>? inputModalities,
     List<Modality>? outputModalities,
@@ -60,6 +67,9 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         description: description != null
             ? ModelDescription.dirty(description)
             : prev.description,
+        providerModelId: providerModelId != null
+            ? ProviderModelId.dirty(providerModelId)
+            : prev.providerModelId,
         inferenceProviderId: inferenceProviderId,
         inputModalities: inputModalities,
         outputModalities: outputModalities,
@@ -73,6 +83,13 @@ class InferenceModelFormController extends _$InferenceModelFormController {
       nameController.text = value;
     }
     _setAllFields(name: value);
+  }
+
+  void providerModelIdChanged(String value) {
+    if (providerModelIdController.text != value) {
+      providerModelIdController.text = value;
+    }
+    _setAllFields(providerModelId: value);
   }
 
   void descriptionChanged(String value) {

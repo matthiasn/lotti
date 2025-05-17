@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
@@ -109,8 +110,26 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
               controller: formController.nameController,
               decoration: InputDecoration(
                 labelText: context.messages.aiConfigNameFieldLabel,
-                errorText: formState.name.isNotValid && !formState.name.isPure
-                    ? formState.name.error
+                errorText: formState.name.isNotValid &&
+                        !formState.name.isPure &&
+                        formState.name.error == ModelFormError.tooShort
+                    ? context.messages.aiConfigNameTooShortError
+                    : null,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 90,
+            child: TextField(
+              onChanged: formController.providerModelIdChanged,
+              controller: formController.providerModelIdController,
+              decoration: InputDecoration(
+                labelText: context.messages.aiConfigProviderModelIdFieldLabel,
+                errorText: formState.providerModelId.isNotValid &&
+                        !formState.providerModelId.isPure &&
+                        formState.providerModelId.error ==
+                            ModelFormError.tooShort
+                    ? context.messages.aiConfigProviderModelIdTooShortError
                     : null,
               ),
             ),
@@ -125,9 +144,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
                   suffixIcon: const Icon(Icons.arrow_drop_down),
                 ),
                 child: formState.inferenceProviderId.isEmpty
-                    ? Text(
-                        context.messages.aiConfigSelectProviderModalTitle,
-                      )
+                    ? Text(context.messages.aiConfigSelectProviderModalTitle)
                     : InferenceProviderNameWidget(
                         providerId: formState.inferenceProviderId,
                       ),
@@ -224,11 +241,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
                         widget.onSave(config);
                       }
                     : null,
-                child: Text(
-                  widget.config == null
-                      ? context.messages.aiConfigCreateButtonLabel
-                      : context.messages.aiConfigUpdateButtonLabel,
-                ),
+                child: Text(context.messages.saveButtonLabel),
               ),
             ],
           ),

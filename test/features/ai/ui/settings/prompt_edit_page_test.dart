@@ -7,15 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/inference_model_form.dart';
+import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/prompt_form.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Mock repository implementation
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 /// Mock controller for saving/updating
-class MockInferenceModelFormController extends Mock {
+class MockPromptFormController extends Mock {
   void addConfig(AiConfig config) {}
   void updateConfig(AiConfig config) {}
 }
@@ -45,31 +45,42 @@ void main() {
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(repository),
         ],
-        child: InferenceModelEditPage(configId: configId),
+        child: PromptEditPage(configId: configId),
       ),
     );
   }
 
-  /// Creates a mock model config for testing
-  AiConfig createMockModelConfig({
+  /// Creates a mock prompt config for testing
+  AiConfig createMockPromptConfig({
     required String id,
     required String name,
+    required String systemMessage,
+    required String userMessage,
+    required String defaultModelId,
+    List<String> modelIds = const [],
     String? description,
+    String? comment,
+    String? category,
+    bool useReasoning = false,
+    List<InputDataType> requiredInputData = const [],
   }) {
-    return AiConfig.model(
+    return AiConfig.prompt(
       id: id,
       name: name,
-      providerModelId: 'test-provider-model-id',
-      inferenceProviderId: 'provider-1',
+      systemMessage: systemMessage,
+      userMessage: userMessage,
+      defaultModelId: defaultModelId,
+      modelIds: modelIds,
       createdAt: DateTime.now(),
-      inputModalities: const [Modality.text],
-      outputModalities: const [Modality.text],
-      isReasoningModel: true,
+      useReasoning: useReasoning,
+      requiredInputData: requiredInputData,
       description: description,
+      comment: comment,
+      category: category,
     );
   }
 
-  group('InferenceModelEditPage', () {
+  group('PromptEditPage', () {
     testWidgets('displays create form when configId is null',
         (WidgetTester tester) async {
       // Build the widget in create mode
@@ -83,31 +94,34 @@ void main() {
       // Allow async operations to complete
       await tester.pumpAndSettle();
 
-      // Verify the title shows "Add Model" or equivalent
-      expect(find.textContaining('Add Model'), findsOneWidget);
+      // Verify the title shows "Add Prompt" or equivalent
+      expect(find.textContaining('Add Prompt'), findsOneWidget);
 
-      // Verify the form is displayed - look for the form widget itself
-      expect(find.byType(InferenceModelForm), findsOneWidget);
+      // Verify the form is displayed
+      expect(find.byType(PromptForm), findsOneWidget);
     });
 
     testWidgets(
         'displays edit form when configId is provided and config exists',
         (WidgetTester tester) async {
       // Create a mock config
-      final mockConfig = createMockModelConfig(
-        id: 'model-1',
-        name: 'Test Model',
+      final mockConfig = createMockPromptConfig(
+        id: 'prompt-1',
+        name: 'Test Prompt',
+        systemMessage: 'System message for Test Prompt',
+        userMessage: 'This is a test template with {{variable}}',
+        defaultModelId: 'model-123',
         description: 'Test Description',
       );
 
       // Set up mock repository to return the config
-      when(() => mockRepository.getConfigById('model-1'))
+      when(() => mockRepository.getConfigById('prompt-1'))
           .thenAnswer((_) async => mockConfig);
 
       // Build the widget in edit mode
       await tester.pumpWidget(
         buildTestWidget(
-          configId: 'model-1',
+          configId: 'prompt-1',
           repository: mockRepository,
         ),
       );
@@ -115,8 +129,8 @@ void main() {
       // Allow async operations to complete
       await tester.pumpAndSettle();
 
-      // Verify the title shows "Edit Model" or equivalent
-      expect(find.textContaining('Edit Model'), findsOneWidget);
+      // Verify the title shows "Edit Prompt" or equivalent
+      expect(find.textContaining('Edit Prompt'), findsOneWidget);
     });
 
     testWidgets('displays loading indicator when config is loading',
@@ -125,13 +139,13 @@ void main() {
       final completer = Completer<AiConfig?>();
 
       // Set up mock repository to return the completer's future
-      when(() => mockRepository.getConfigById('model-1'))
+      when(() => mockRepository.getConfigById('prompt-1'))
           .thenAnswer((_) => completer.future);
 
       // Build the widget in edit mode
       await tester.pumpWidget(
         buildTestWidget(
-          configId: 'model-1',
+          configId: 'prompt-1',
           repository: mockRepository,
         ),
       );
@@ -147,13 +161,13 @@ void main() {
     testWidgets('displays error when config fails to load',
         (WidgetTester tester) async {
       // Set up mock repository to throw error
-      when(() => mockRepository.getConfigById('model-1'))
+      when(() => mockRepository.getConfigById('prompt-1'))
           .thenThrow(Exception('Test error'));
 
       // Build the widget in edit mode
       await tester.pumpWidget(
         buildTestWidget(
-          configId: 'model-1',
+          configId: 'prompt-1',
           repository: mockRepository,
         ),
       );
@@ -164,8 +178,5 @@ void main() {
       // Verify error message is shown
       expect(find.textContaining('Failed to load'), findsOneWidget);
     });
-
-    // Note: Testing form submission would be better handled in integration tests
-    // since it's challenging to mock the form controller properly in widget tests.
   });
 }

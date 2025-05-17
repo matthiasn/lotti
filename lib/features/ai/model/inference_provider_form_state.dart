@@ -2,53 +2,64 @@ import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+enum ProviderFormError {
+  tooShort,
+  empty,
+  invalidUrl,
+}
+
 // Input validation classes
-class ApiKeyName extends FormzInput<String, String> {
+class ApiKeyName extends FormzInput<String, ProviderFormError> {
   const ApiKeyName.pure() : super.pure('');
   const ApiKeyName.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
-    return value.length < 3 ? 'Name must be at least 3 characters' : null;
+  ProviderFormError? validator(String value) {
+    return value.length < 3 ? ProviderFormError.tooShort : null;
   }
 }
 
-class ApiKeyValue extends FormzInput<String, String> {
+class ApiKeyValue extends FormzInput<String, ProviderFormError> {
   const ApiKeyValue.pure() : super.pure('');
   const ApiKeyValue.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
-    return value.isEmpty ? 'API key cannot be empty' : null;
+  ProviderFormError? validator(String value) {
+    return value.isEmpty ? ProviderFormError.empty : null;
   }
 }
 
-class DescriptionValue extends FormzInput<String, String> {
+class DescriptionValue extends FormzInput<String, ProviderFormError> {
   const DescriptionValue.pure() : super.pure('');
   const DescriptionValue.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
+  ProviderFormError? validator(String value) {
     return null;
   }
 }
 
-class BaseUrl extends FormzInput<String, String> {
+class BaseUrl extends FormzInput<String, ProviderFormError> {
   const BaseUrl.pure() : super.pure('');
   const BaseUrl.dirty([super.value = '']) : super.dirty();
 
   @override
-  String? validator(String value) {
+  ProviderFormError? validator(String value) {
+    // Empty URLs are valid (field is optional)
+    if (value.isEmpty) {
+      return null;
+    }
+
     // Simple URL validation
     try {
       final uri = Uri.parse(value);
       if (!uri.isAbsolute ||
           (!uri.scheme.startsWith('http') && !uri.scheme.startsWith('https'))) {
-        return 'Please enter a valid URL';
+        return ProviderFormError.invalidUrl;
       }
       return null;
     } catch (_) {
-      return 'Please enter a valid URL';
+      return ProviderFormError.invalidUrl;
     }
   }
 }
