@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
@@ -117,6 +118,8 @@ void main() {
         defaultModelId: 'fallback-model-id',
       ),
     );
+    // Register fallback for AiConfigPrompt for controller interactions if any
+    registerFallbackValue(createTestPrompt(id: 'fallback-prompt-id'));
   });
 
   group('PromptForm ValidationErrors Tests', () {
@@ -254,14 +257,12 @@ void main() {
         ),
       );
 
-      // Wait for the async operations and states to settle
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(); // Initial pump
+      await tester
+          .pump(const Duration(milliseconds: 500)); // Allow controller to build
 
-      // Get the localized strings
       final context = tester.element(find.byType(PromptForm));
 
-      // Verify all expected form fields are visible
       expect(
         find.text(context.messages.aiConfigNameFieldLabel),
         findsOneWidget,
@@ -294,11 +295,9 @@ void main() {
         find.text(context.messages.aiConfigDescriptionFieldLabel),
         findsOneWidget,
       );
+      // Removed Category and Comment label checks for now as their UI isn't standard TextFields
 
-      // Verify button is present (disabled initially)
       expect(find.byType(FilledButton), findsOneWidget);
-      // Check the specific save/create button using its label
-      // Assuming it's a new prompt, so create label
       expect(
         find.text(context.messages.aiConfigCreateButtonLabel),
         findsOneWidget,
@@ -341,7 +340,8 @@ void main() {
       );
     });
 
-    testWidgets('should be able to toggle Use Reasoning switch',
+    testWidgets(
+        'should be able to toggle Use Reasoning switch and reflect in state',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
@@ -349,80 +349,125 @@ void main() {
         ),
       );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(); // Initial pump
+      await tester
+          .pump(const Duration(milliseconds: 500)); // Allow controller to build
 
       // Find the switch
       final switchFinder = find.byType(Switch);
       expect(switchFinder, findsOneWidget);
 
       // Initial state is off
-      final switchWidget = tester.widget<Switch>(switchFinder);
+      var switchWidget = tester.widget<Switch>(switchFinder);
+      expect(switchWidget.value, isFalse);
+
+      // Tap the switch
+      await tester.tap(switchFinder);
+      await tester.pump(); // Pump after tap
+      await tester.pump(const Duration(milliseconds: 200)); // Settle
+
+      switchWidget = tester.widget<Switch>(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // Tap again to turn off
+      await tester.tap(switchFinder);
+      await tester.pump(); // Pump after tap
+      await tester.pump(const Duration(milliseconds: 200)); // Settle
+
+      switchWidget = tester.widget<Switch>(switchFinder);
       expect(switchWidget.value, isFalse);
     });
   });
 
   group('PromptForm Edit Mode Tests', () {
-    testWidgets('should load form in edit mode without errors',
+    testWidgets(
+        'should load form in edit mode with fields pre-filled and correct button label',
         (WidgetTester tester) async {
-      // Create a test config for edit mode
-      final config = createMockPromptConfig(
-        id: 'test-id',
-        name: 'Test Name',
-        systemMessage: 'Test System Message',
-        userMessage: 'Test User Message',
-        defaultModelId: 'test-model-id',
+      final testTime = DateTime.now();
+      final config = createTestPrompt(
+        id: 'edit-id-123',
+        name: 'Edit Name',
+        systemMessage: 'Edit System Message',
+        userMessage: 'Edit User Message {{var}}',
+        defaultModelId: 'edit-model-id',
+        modelIds: ['edit-model-id', 'another-model'],
+        useReasoning: true,
+        requiredInputData: [InputDataType.task, InputDataType.images],
+        comment: 'Edit Comment',
+        description: 'Edit Description',
+        category: 'Edit Category',
+        defaultVariables: {'var': 'editValue'},
+        createdAt: testTime,
       );
+      final configId = config.id;
 
-      // Build the widget in edit mode
+      final AiConfigRepository mockRepo = MockAiConfigRepository();
+      when(() => mockRepo.getConfigById(configId))
+          .thenAnswer((_) async => config as AiConfigPrompt);
+
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-          config: config,
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ProviderScope(
+              overrides: [
+                aiConfigRepositoryProvider.overrideWithValue(mockRepo),
+              ],
+              child: SingleChildScrollView(
+                child: PromptForm(
+                  onSave: (_) {},
+                  config: config,
+                ),
+              ),
+            ),
+          ),
         ),
       );
 
-      // Let the widget settle
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      // Allow controller to build and load config
+      await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // Simply verify the form loads without errors
-      expect(find.byType(PromptForm), findsOneWidget);
-
-      // We won't test for specific widgets as they might be lazily loaded
-      // or hidden in the widget tree in the test environment
-    });
-  });
-
-  group('PromptForm Submission Tests', () {
-    testWidgets('should have a working form submission button',
-        (WidgetTester tester) async {
-      // ignore: unused_local_variable
-      var saveWasCalled = false;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {
-            saveWasCalled = true;
-          },
-        ),
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // Get context
       final context = tester.element(find.byType(PromptForm));
+      final formController = ProviderScope.containerOf(context)
+          .read(promptFormControllerProvider(configId: configId).notifier);
 
-      // Verify the button exists
-      final buttonFinder = find.descendant(
-        of: find.byType(FilledButton),
-        matching: find.text(context.messages.aiConfigCreateButtonLabel),
+      // Verify button label is "Update"
+      expect(
+        find.widgetWithText(
+          FilledButton,
+          context.messages.aiConfigUpdateButtonLabel,
+        ),
+        findsOneWidget,
       );
-      expect(buttonFinder, findsOneWidget);
+      expect(
+        find.text(context.messages.aiConfigCreateButtonLabel),
+        findsNothing,
+      );
 
-      // We won't attempt to tap it since it would be disabled with invalid form data
-      // But we've validated that the form submission UI exists
+      // Verify fields are pre-filled by checking controller text
+      expect(formController.nameController.text, 'Edit Name');
+      expect(
+        formController.systemMessageController.text,
+        'Edit System Message',
+      );
+      expect(
+        formController.userMessageController.text,
+        'Edit User Message {{var}}',
+      );
+      expect(formController.descriptionController.text, 'Edit Description');
+      // Category and Comment checks removed
+
+      // Verify switch state from controller's state
+      final formState = ProviderScope.containerOf(context)
+          .read(promptFormControllerProvider(configId: configId))
+          .value;
+      expect(formState?.useReasoning, isTrue);
     });
   });
 }
