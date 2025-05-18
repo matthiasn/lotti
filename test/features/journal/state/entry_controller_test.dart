@@ -856,6 +856,87 @@ void main() {
         ); // Should be called even if updateCategoryId returns false
       });
     });
+
+    group('updateFromTo', () {
+      final entryId = testTextEntry.meta.id;
+      final initialDateFrom = testTextEntry.meta.dateFrom;
+      final initialDateTo = testTextEntry.meta.dateTo;
+      final newDateFrom = initialDateFrom.subtract(const Duration(days: 1));
+      final newDateTo = initialDateTo.add(const Duration(days: 1));
+
+      test('successfully updates dates and returns true', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        when(
+          () => localMockJournalRepository.updateJournalEntityDate(
+            entryId,
+            dateFrom: newDateFrom,
+            dateTo: newDateTo,
+          ),
+        ).thenAnswer((_) async => true);
+        // If getLinkedEntities is called by the controller during this flow, stub it too.
+        // Based on controller code, it's not directly called by updateFromTo itself.
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container
+            .read(entryControllerProvider(id: entryId).future); // Ensure loaded
+
+        final result = await notifier.updateFromTo(
+          dateFrom: newDateFrom,
+          dateTo: newDateTo,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => localMockJournalRepository.updateJournalEntityDate(
+            entryId,
+            dateFrom: newDateFrom,
+            dateTo: newDateTo,
+          ),
+        ).called(1);
+      });
+
+      test('returns false when repository update fails', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        when(
+          () => localMockJournalRepository.updateJournalEntityDate(
+            entryId,
+            dateFrom: newDateFrom,
+            dateTo: newDateTo,
+          ),
+        ).thenAnswer((_) async => false); // Simulate repository failure
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final result = await notifier.updateFromTo(
+          dateFrom: newDateFrom,
+          dateTo: newDateTo,
+        );
+
+        expect(result, isFalse);
+        verify(
+          () => localMockJournalRepository.updateJournalEntityDate(
+            entryId,
+            dateFrom: newDateFrom,
+            dateTo: newDateTo,
+          ),
+        ).called(1);
+      });
+    });
   });
 }
 
