@@ -166,10 +166,22 @@ class EntryController extends _$EntryController {
   }
 
   Future<bool> updateCategoryId(String? categoryId) async {
-    return ref.read(journalRepositoryProvider).updateCategoryId(
-          id,
-          categoryId: categoryId,
-        );
+    final res = await ref
+        .read(journalRepositoryProvider)
+        .updateCategoryId(id, categoryId: categoryId);
+
+    final linkedEntries = await ref
+        .read(journalRepositoryProvider)
+        .getLinkedEntities(linkedTo: id);
+
+    for (final entry in linkedEntries) {
+      if (entry.categoryId == null) {
+        await ref
+            .read(journalRepositoryProvider)
+            .updateCategoryId(entry.id, categoryId: categoryId);
+      }
+    }
+    return res;
   }
 
   Future<JournalEntity?> _fetch() async {
