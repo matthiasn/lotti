@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter_quill/flutter_quill.dart'; // Import for QuillController
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -47,6 +49,9 @@ class MockEditorStateService extends Mock implements EditorStateService {}
 // Fake for QuillController
 class FakeQuillController extends Fake implements QuillController {}
 
+// Added FakeTaskData
+class FakeTaskData extends Fake implements TaskData {}
+
 // Definitions for sample JournalImage for testing addTextToImage
 const _testImageEntryId = 'image_id_001';
 final _testImageDateFrom = DateTime(2023, 10, 26, 10);
@@ -84,6 +89,95 @@ final JournalImage testImageEntryWithMarkdown = testImageEntryNoText.copyWith(
   ),
 );
 
+// Definitions for sample Task and ChecklistItems for testing updateChecklistOrder
+const _testTaskId = 'task_id_001';
+final _testTaskDateFrom = DateTime(2023, 11, 1, 10);
+final _testTaskCreatedAt = DateTime(2023, 11, 1, 9);
+final _testTaskUpdatedAt = DateTime(2023, 11, 1, 9, 30);
+
+// Helper for creating TaskStatus for test data
+final _testTaskOpenStatus = TaskStatus.open(
+  id: 'status_open_id',
+  createdAt: _testTaskCreatedAt,
+  utcOffset: 0,
+);
+
+final ChecklistItem testChecklistItem1 = ChecklistItem(
+  meta: Metadata(
+    id: 'cl_item_1',
+    createdAt: _testTaskCreatedAt,
+    updatedAt: _testTaskUpdatedAt,
+    dateFrom: _testTaskDateFrom,
+    dateTo: _testTaskDateFrom,
+    vectorClock: const VectorClock({'device': 1}),
+    starred: false,
+    private: false,
+  ),
+  data: const ChecklistItemData(
+    title: 'Item 1',
+    isChecked: false,
+    linkedChecklists: [],
+  ),
+);
+
+final ChecklistItem testChecklistItem2 = ChecklistItem(
+  meta: Metadata(
+    id: 'cl_item_2',
+    createdAt: _testTaskCreatedAt,
+    updatedAt: _testTaskUpdatedAt,
+    dateFrom: _testTaskDateFrom,
+    dateTo: _testTaskDateFrom,
+    vectorClock: const VectorClock({'device': 1}),
+    starred: false,
+    private: false,
+  ),
+  data: const ChecklistItemData(
+    title: 'Item 2',
+    isChecked: false,
+    linkedChecklists: [],
+  ),
+);
+
+final ChecklistItem testChecklistItem3Deleted = ChecklistItem(
+  meta: Metadata(
+    id: 'cl_item_3_deleted',
+    createdAt: _testTaskCreatedAt,
+    updatedAt: _testTaskUpdatedAt,
+    dateFrom: _testTaskDateFrom,
+    dateTo: _testTaskDateFrom,
+    vectorClock: const VectorClock({'device': 1}),
+    deletedAt: _testTaskUpdatedAt, // Mark as deleted
+    starred: false, private: false,
+  ),
+  data: const ChecklistItemData(
+    title: 'Item 3',
+    isChecked: true,
+    linkedChecklists: [],
+  ),
+);
+
+final Task testTaskEntry = Task(
+  meta: Metadata(
+    id: _testTaskId,
+    createdAt: _testTaskCreatedAt,
+    updatedAt: _testTaskUpdatedAt,
+    dateFrom: _testTaskDateFrom,
+    dateTo: _testTaskDateFrom,
+    vectorClock: const VectorClock({'device': 1}),
+    starred: false,
+    private: false,
+  ),
+  data: TaskData(
+    title: 'Test Task with Checklists',
+    status: _testTaskOpenStatus, // Use helper
+    dateFrom: _testTaskDateFrom, // TaskData also has dateFrom/dateTo
+    dateTo: _testTaskDateFrom,
+    statusHistory: [_testTaskOpenStatus], // Provide history
+    checklistIds: [testChecklistItem1.id, testChecklistItem2.id],
+  ),
+  entryText: const EntryText(plainText: 'Initial task description'),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -115,6 +209,7 @@ void main() {
     registerFallbackValue(FakeJournalEntity());
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeEntryText());
+    registerFallbackValue(FakeTaskData());
     registerFallbackValue(const AsyncLoading<EntryState?>());
     registerFallbackValue(DateTime.now());
     registerFallbackValue(FakeQuillController());
@@ -177,6 +272,15 @@ void main() {
     when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
         .thenAnswer((_) async => true);
     when(mockNotificationService.updateBadge).thenAnswer((_) async {});
+
+    // Default stub for persistence logic updateTask, must return Future<bool>
+    when(
+      () => mockPersistenceLogic.updateTask(
+        entryText: any(named: 'entryText'),
+        journalEntityId: any(named: 'journalEntityId'),
+        taskData: any(named: 'taskData'),
+      ),
+    ).thenAnswer((_) async => true);
   });
 
   tearDownAll(getIt.reset);
@@ -1189,6 +1293,149 @@ void main() {
         expect(notifier.save, throwsA(exception));
       });
     });
+
+    group('setStarred', () {
+      final entryId = testTextEntry.meta.id;
+
+      setUp(() {
+        reset(mockPersistenceLogic);
+        // Default behavior: return testTextEntry (starred: false)
+        when(() => mockJournalDb.journalEntityById(entryId))
+            .thenAnswer((_) async => testTextEntry);
+      });
+
+      test('sets starred to true when initially false', () async {
+        final container = makeProviderContainer();
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final expectedMetadataUpdate =
+            testTextEntry.meta.copyWith(starred: true);
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(
+            testTextEntry,
+            expectedMetadataUpdate,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await notifier.setStarred(true);
+
+        verify(
+          () => mockPersistenceLogic.updateJournalEntity(
+            testTextEntry,
+            expectedMetadataUpdate,
+          ),
+        ).called(1);
+      });
+
+      test('sets starred to false when initially false (idempotent)', () async {
+        final container = makeProviderContainer();
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final expectedMetadataUpdate =
+            testTextEntry.meta.copyWith(starred: false);
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(
+            testTextEntry,
+            expectedMetadataUpdate,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await notifier.setStarred(false);
+
+        verify(
+          () => mockPersistenceLogic.updateJournalEntity(
+            testTextEntry,
+            expectedMetadataUpdate,
+          ),
+        ).called(1);
+      });
+
+      test('sets starred to false when initially true', () async {
+        final entryInitiallyStarred = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(starred: true),
+        );
+        when(() => mockJournalDb.journalEntityById(entryId))
+            .thenAnswer((_) async => entryInitiallyStarred);
+
+        final container = makeProviderContainer();
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final expectedMetadataUpdate =
+            entryInitiallyStarred.meta.copyWith(starred: false);
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(
+            entryInitiallyStarred,
+            expectedMetadataUpdate,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await notifier.setStarred(false);
+
+        verify(
+          () => mockPersistenceLogic.updateJournalEntity(
+            entryInitiallyStarred,
+            expectedMetadataUpdate,
+          ),
+        ).called(1);
+      });
+
+      test('sets starred to true when initially true (idempotent)', () async {
+        final entryInitiallyStarred = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(starred: true),
+        );
+        when(() => mockJournalDb.journalEntityById(entryId))
+            .thenAnswer((_) async => entryInitiallyStarred);
+
+        final container = makeProviderContainer();
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final expectedMetadataUpdate =
+            entryInitiallyStarred.meta.copyWith(starred: true);
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(
+            entryInitiallyStarred,
+            expectedMetadataUpdate,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await notifier.setStarred(true);
+
+        verify(
+          () => mockPersistenceLogic.updateJournalEntity(
+            entryInitiallyStarred,
+            expectedMetadataUpdate,
+          ),
+        ).called(1);
+      });
+
+      test('does nothing if journal entity is not found', () async {
+        when(() => mockJournalDb.journalEntityById(entryId))
+            .thenAnswer((_) async => null);
+
+        final container = makeProviderContainer();
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        // It's important that the provider is initialized,
+        // even if the entry is null to simulate a real scenario.
+        // The build method will complete with an EntryState that has a null entry.
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        await notifier
+            .setStarred(true); // The value (true/false) doesn't matter here
+
+        verifyNever(
+          () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+        );
+      });
+    });
   });
 
   // Add tests for addTextToImage
@@ -1305,6 +1552,166 @@ void main() {
         reason: 'Quill delta should be generated',
       );
       expect(captured[2], _testImageDateFrom);
+    });
+  });
+
+  // Add tests for updateChecklistOrder
+  group('updateChecklistOrder method', () {
+    const entryId = _testTaskId; // ID of the main Task entry
+
+    setUp(() {
+      reset(mockPersistenceLogic);
+      reset(mockJournalDb);
+
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => testTaskEntry);
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
+
+      // Corrected when call for updateTask
+      when(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('does nothing if current entry is not a Task', () async {
+      final nonTaskEntryId = testImageEntryNoText.meta.id;
+      when(() => mockJournalDb.journalEntityById(nonTaskEntryId))
+          .thenAnswer((_) async => testImageEntryNoText);
+
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: nonTaskEntryId).notifier);
+      await container.read(entryControllerProvider(id: nonTaskEntryId).future);
+
+      await notifier.updateChecklistOrder(['any_id']);
+
+      // Corrected verifyNever call
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('updates with an empty list, clearing existing checklistIds',
+        () async {
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
+      await container.read(entryControllerProvider(id: entryId).future);
+
+      notifier.controller.document
+          .insert(0, 'Task description from controller');
+      final expectedEntryText = entryTextFromController(notifier.controller);
+
+      when(() => mockJournalDb.getJournalEntitiesForIds(const <String>{}))
+          .thenAnswer((_) async => []);
+
+      await notifier.updateChecklistOrder([]);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedTaskData = captured[1] as TaskData;
+      final capturedEntryText = captured[2] as EntryText;
+      expect(capturedTaskData.checklistIds, isEmpty);
+      expect(capturedEntryText.plainText, expectedEntryText.plainText);
+    });
+
+    test('updates with a new order of existing checklistIds', () async {
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
+      await container.read(entryControllerProvider(id: entryId).future);
+      notifier.controller.document.insert(0, 'Reordering checklist');
+      final expectedEntryText = entryTextFromController(notifier.controller);
+
+      final newOrder = [testChecklistItem2.id, testChecklistItem1.id];
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(
+          {testChecklistItem1.id, testChecklistItem2.id},
+        ),
+      ).thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
+
+      await notifier.updateChecklistOrder(newOrder);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedTaskData = captured[1] as TaskData;
+      final capturedEntryText = captured[2] as EntryText;
+      expect(capturedTaskData.checklistIds, newOrder);
+      expect(capturedEntryText.plainText, expectedEntryText.plainText);
+    });
+
+    test('filters out non-existent or deleted checklistIds', () async {
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
+      await container.read(entryControllerProvider(id: entryId).future);
+      notifier.controller.document.insert(0, 'Filtering checklist');
+      final expectedEntryText = entryTextFromController(notifier.controller);
+
+      final idsWithInvalid = [
+        testChecklistItem1.id,
+        'non_existent_id',
+        testChecklistItem3Deleted.id,
+        testChecklistItem2.id,
+      ];
+      final expectedFilteredOrder = [
+        testChecklistItem1.id,
+        testChecklistItem2.id,
+      ];
+
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds({
+          testChecklistItem1.id,
+          'non_existent_id',
+          testChecklistItem3Deleted.id,
+          testChecklistItem2.id,
+        }),
+      ).thenAnswer(
+        (_) async => [
+          testChecklistItem1,
+          testChecklistItem2,
+          testChecklistItem3Deleted,
+        ],
+      );
+
+      await notifier.updateChecklistOrder(idsWithInvalid);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedTaskData = captured[1] as TaskData;
+      final capturedEntryText = captured[2] as EntryText;
+      expect(capturedTaskData.checklistIds, expectedFilteredOrder);
+      expect(capturedEntryText.plainText, expectedEntryText.plainText);
     });
   });
 }
