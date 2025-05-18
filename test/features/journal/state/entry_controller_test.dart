@@ -9,6 +9,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -36,10 +37,12 @@ class Listener<T> extends Mock {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  // a helper method to create a ProviderContainer that overrides the authRepositoryProvider
-  ProviderContainer makeProviderContainer() {
+
+  ProviderContainer makeProviderContainer({
+    List<Override> overrides = const [],
+  }) {
     final container = ProviderContainer(
-      overrides: [],
+      overrides: overrides, // Allow full override control from tests
     );
     addTearDown(container.dispose);
     return container;
@@ -116,8 +119,40 @@ void main() {
 
     tearDownAll(getIt.reset);
 
+    setUp(() {
+      reset(mockPersistenceLogic);
+      vcMockNext = '1';
+
+      // Specific mocks for JournalDb
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+      when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
+          .thenAnswer((_) async => testTextEntryNoGeo);
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+
+      // General stub for getLinkedEntities, specific stubs for update/delete will be in tests
+      // This needs a mockJournalRepository instance, so this setup might need to move or be adapted
+      // For now, let's assume tests needing this will set it up on their local mock.
+      // when(() => mockJournalRepository.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
+      //     .thenAnswer((_) async => []);
+    });
+
     test('entry loads', () async {
-      final container = makeProviderContainer();
+      final localMockJournalRepository = MockJournalRepository();
+      // Stub getLinkedEntities if it's called during load/build by the controller for this test
+      when(
+        () => localMockJournalRepository.getLinkedEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = makeProviderContainer(
+        overrides: [
+          journalRepositoryProvider
+              .overrideWithValue(localMockJournalRepository),
+        ],
+      );
       final entryId = testTextEntry.meta.id;
       final testEntryProvider = entryControllerProvider(id: entryId);
       final notifier = container.read(testEntryProvider.notifier);
@@ -265,8 +300,25 @@ void main() {
     });
 
     test('delete entry', () async {
-      final container = makeProviderContainer();
+      final localMockJournalRepository = MockJournalRepository();
       final entryId = testTextEntry.meta.id;
+
+      // Specific stub for this test
+      when(() => localMockJournalRepository.deleteJournalEntity(entryId))
+          .thenAnswer((_) async => true);
+      // If getLinkedEntities is called by the controller during this flow, stub it too.
+      when(
+        () => localMockJournalRepository.getLinkedEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = makeProviderContainer(
+        overrides: [
+          journalRepositoryProvider
+              .overrideWithValue(localMockJournalRepository),
+        ],
+      );
       final testEntryProvider = entryControllerProvider(id: entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
@@ -279,11 +331,9 @@ void main() {
         (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
       );
 
-      Future<bool?> testFn() => mockPersistenceLogic.updateDbEntity(any());
-      when(testFn).thenAnswer((invocation) async => true);
-
       await notifier.delete(beamBack: false);
-      verify(testFn).called(1);
+      verify(() => localMockJournalRepository.deleteJournalEntity(entryId))
+          .called(1);
       await expectLater(
         container.read(testEntryProvider.future),
         completion(null),
@@ -292,8 +342,24 @@ void main() {
 
     test('delete entry & beam back', () async {
       reset(mockPersistenceLogic);
-      final container = makeProviderContainer();
+      final localMockJournalRepository = MockJournalRepository();
       final entryId = testTextEntry.meta.id;
+
+      // Specific stub for this test
+      when(() => localMockJournalRepository.deleteJournalEntity(entryId))
+          .thenAnswer((_) async => true);
+      when(
+        () => localMockJournalRepository.getLinkedEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = makeProviderContainer(
+        overrides: [
+          journalRepositoryProvider
+              .overrideWithValue(localMockJournalRepository),
+        ],
+      );
       final testEntryProvider = entryControllerProvider(id: entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
@@ -320,11 +386,9 @@ void main() {
         (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
       );
 
-      Future<bool?> testFn() => mockPersistenceLogic.updateDbEntity(any());
-      when(testFn).thenAnswer((invocation) async => true);
-
       await notifier.delete(beamBack: true);
-      verify(testFn).called(1);
+      verify(() => localMockJournalRepository.deleteJournalEntity(entryId))
+          .called(1);
 
       await expectLater(
         container.read(testEntryProvider.future),
@@ -506,5 +570,293 @@ void main() {
         ),
       );
     });
+
+    group('updateCategoryId', () {
+      const testCategoryId = 'cat_123';
+      final entryId = testTextEntry.meta.id;
+
+      setUp(() {
+        // Common stubs for this group if any mockJournalRepository method is always called.
+        // For example, if getLinkedEntities is always called by the controller build:
+        // This needs a way to access the localMockJournalRepository of each test, so better in each test.
+      });
+
+      test('successfully updates categoryId for the main entry', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        // Specific stub for this test
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
+        ).thenAnswer((_) async => []);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        // Ensure the initial state is loaded AFTER container is created and notifier is obtained
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final result = await notifier.updateCategoryId(testCategoryId);
+
+        expect(result, isTrue);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+      });
+
+      test('propagates categoryId to linked entries with null categoryId',
+          () async {
+        final localMockJournalRepository = MockJournalRepository();
+
+        final linkedEntry1 = testTask.copyWith(
+          meta: testTask.meta.copyWith(id: 'linked_1', categoryId: null),
+        );
+        final linkedEntry2 = testTextEntryNoGeo.copyWith(
+          meta: testTextEntryNoGeo.meta
+              .copyWith(id: 'linked_2', categoryId: null),
+        );
+
+        // Specific stubs for this test
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
+        ).thenAnswer((_) async => [linkedEntry1, linkedEntry2]);
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry1.id,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry2.id,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final result = await notifier.updateCategoryId(testCategoryId);
+
+        expect(result, isTrue);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry1.id,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntry2.id,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+      });
+
+      test(
+          'does not propagate categoryId to linked entries that already have a categoryId',
+          () async {
+        final localMockJournalRepository = MockJournalRepository();
+
+        final linkedEntryWithCategory = testTask.copyWith(
+          meta: testTask.meta
+              .copyWith(id: 'linked_with_cat', categoryId: 'existing_cat_id'),
+        );
+        final linkedEntryNullCategory = testTextEntryNoGeo.copyWith(
+          meta: testTextEntryNoGeo.meta
+              .copyWith(id: 'linked_null_cat', categoryId: null),
+        );
+
+        // Specific stubs for this test
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
+        ).thenAnswer(
+          (_) async => [linkedEntryWithCategory, linkedEntryNullCategory],
+        );
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntryNullCategory.id,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final result = await notifier.updateCategoryId(testCategoryId);
+
+        expect(result, isTrue);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntryNullCategory.id,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+        verifyNever(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntryWithCategory.id,
+            categoryId: testCategoryId,
+          ),
+        );
+      });
+
+      test('handles null categoryId update (clearing category)', () async {
+        final localMockJournalRepository = MockJournalRepository();
+
+        final linkedEntryNullCategory = testTextEntryNoGeo.copyWith(
+          meta: testTextEntryNoGeo.meta.copyWith(
+            id: 'linked_null_cat_clear',
+            categoryId: null,
+          ), // This one should be updated to null
+        );
+        final linkedEntryWithCategory = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            id: 'linked_with_cat_clear',
+            categoryId: 'existing_cat_id',
+          ), // This one should NOT be updated to null
+        );
+
+        // Specific stubs for this test
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: null,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
+        ).thenAnswer(
+          (_) async => [linkedEntryNullCategory, linkedEntryWithCategory],
+        );
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntryNullCategory.id,
+            categoryId: null,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final result = await notifier.updateCategoryId(null);
+
+        expect(result, isTrue);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: null,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            linkedEntryNullCategory.id,
+            categoryId: null,
+          ),
+        ).called(1);
+        verifyNever(
+          () => localMockJournalRepository
+              .updateCategoryId(linkedEntryWithCategory.id, categoryId: null),
+        );
+      });
+
+      test('returns false if main entry update fails', () async {
+        final localMockJournalRepository = MockJournalRepository();
+
+        // Specific stub for this test - this one returns false
+        when(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).thenAnswer((_) async => false); // Simulate failure
+        when(
+          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
+        ).thenAnswer((_) async => []);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        final result = await notifier.updateCategoryId(testCategoryId);
+
+        expect(result, isFalse);
+        verify(
+          () => localMockJournalRepository.updateCategoryId(
+            entryId,
+            categoryId: testCategoryId,
+          ),
+        ).called(1);
+        verify(
+          () => localMockJournalRepository.getLinkedEntities(linkedTo: entryId),
+        ).called(
+          1,
+        ); // Should be called even if updateCategoryId returns false
+      });
+    });
   });
 }
+
+class MockJournalRepository extends Mock implements JournalRepository {}
