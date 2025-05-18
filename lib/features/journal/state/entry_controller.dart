@@ -238,8 +238,12 @@ class EntryController extends _$EntryController {
         });
       }
 
-      _shouldShowEditorToolBar = false;
       focusNode.unfocus();
+
+      _isFocused = false;
+      _shouldShowEditorToolBar = false;
+      _dirty = false;
+
       emitState();
     }
 
@@ -248,7 +252,6 @@ class EntryController extends _$EntryController {
       lastSaved: entry.meta.updatedAt,
       controller: controller,
     );
-    setDirty(value: false);
     await HapticFeedback.heavyImpact();
   }
 

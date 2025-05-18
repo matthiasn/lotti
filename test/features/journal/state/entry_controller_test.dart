@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter_quill/flutter_quill.dart'; // Import for QuillController
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
+import 'package:lotti/features/sync/vector_clock.dart'; // Added import for VectorClock
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -35,107 +38,165 @@ class Listener<T> extends Mock {
   void call(T? previous, T next);
 }
 
+// Create a Fake class for EntryText to use with registerFallbackValue
+class FakeEntryText extends Fake implements EntryText {}
+
+// Mock for EditorStateService
+class MockEditorStateService extends Mock implements EditorStateService {}
+
+// Fake for QuillController
+class FakeQuillController extends Fake implements QuillController {}
+
+// Definitions for sample JournalImage for testing addTextToImage
+const _testImageEntryId = 'image_id_001';
+final _testImageDateFrom = DateTime(2023, 10, 26, 10);
+final _testImageCreatedAt = DateTime(2023, 10, 26, 9);
+final _testImageUpdatedAt = DateTime(2023, 10, 26, 9, 30);
+final _testImageCapturedAt = DateTime(2023, 10, 26, 9, 55);
+
+final _testImageData = ImageData(
+  capturedAt: _testImageCapturedAt,
+  imageId:
+      _testImageEntryId, // Assuming imageId within ImageData can be same as entry id
+  imageFile: 'image.jpg',
+  imageDirectory: '/path/to/image',
+);
+
+final JournalImage testImageEntryNoText = JournalImage(
+  meta: Metadata(
+    id: _testImageEntryId,
+    createdAt: _testImageCreatedAt,
+    updatedAt: _testImageUpdatedAt,
+    dateFrom: _testImageDateFrom,
+    dateTo:
+        _testImageDateFrom, // Consistent with how dateTo is used in addTextToImage context
+    vectorClock: const VectorClock({'device': 1}),
+    starred: false,
+    private: false,
+  ),
+  data: _testImageData,
+);
+
+final JournalImage testImageEntryWithMarkdown = testImageEntryNoText.copyWith(
+  entryText: const EntryText(
+    plainText: 'Initial Markdown Text',
+    markdown: 'Initial Markdown Text',
+  ),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mocks defined at main scope
+  final mockUpdateNotifications = MockUpdateNotifications();
+  final secureStorageMock = MockSecureStorage();
+  final settingsDb = SettingsDb(inMemoryDatabase: true);
+  final mockTimeService = MockTimeService();
+  final mockJournalDb = MockJournalDb();
+  final mockPersistenceLogic = MockPersistenceLogic();
+  final mockNavService = MockNavService();
+  final mockNotificationService = MockNotificationService();
+  final mockEditorStateService = MockEditorStateService();
+  var vcMockNext =
+      '1'; // This was used by secureStorageMock for vector clock testing
 
   ProviderContainer makeProviderContainer({
     List<Override> overrides = const [],
   }) {
     final container = ProviderContainer(
-      overrides: overrides, // Allow full override control from tests
+      overrides: overrides,
     );
     addTearDown(container.dispose);
     return container;
   }
 
-  group('EntryController Tests - ', () {
-    var vcMockNext = '1';
+  // setUpAll at main scope
+  setUpAll(() {
+    registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(FakeMetadata());
+    registerFallbackValue(FakeEntryText());
+    registerFallbackValue(const AsyncLoading<EntryState?>());
+    registerFallbackValue(DateTime.now());
+    registerFallbackValue(FakeQuillController());
 
-    final mockUpdateNotifications = MockUpdateNotifications();
-    final secureStorageMock = MockSecureStorage();
-    final settingsDb = SettingsDb(inMemoryDatabase: true);
-    final mockTimeService = MockTimeService();
-    final mockJournalDb = MockJournalDb();
-    final mockPersistenceLogic = MockPersistenceLogic();
-    final mockNavService = MockNavService();
-    final mockNotificationService = MockNotificationService();
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+    when(() => mockEditorStateService.getUnsavedStream(any(), any()))
+        .thenAnswer((_) => Stream<bool>.fromIterable([false]));
+    when(
+      () => mockEditorStateService.entryWasSaved(
+        id: any(named: 'id'),
+        lastSaved: any(named: 'lastSaved'),
+        controller: any(named: 'controller'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => mockEditorStateService.getDelta(any())).thenReturn(null);
+    when(() => mockEditorStateService.getSelection(any())).thenReturn(null);
+    when(() => mockEditorStateService.entryIsUnsaved(any())).thenReturn(false);
 
-    setUpAll(() {
-      registerFallbackValue(FakeJournalEntity());
-      registerFallbackValue(FakeMetadata());
-      registerFallbackValue(FakeJournalEntity());
-      registerFallbackValue(const AsyncLoading<EntryState?>());
+    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-
-      when(() => secureStorageMock.readValue(hostKey))
-          .thenAnswer((_) async => 'some_host');
-
-      when(() => secureStorageMock.readValue(nextAvailableCounterKey))
-          .thenAnswer((_) async {
-        return vcMockNext;
-      });
-
-      when(() => secureStorageMock.writeValue(nextAvailableCounterKey, any()))
-          .thenAnswer((invocation) async {
-        vcMockNext = invocation.positionalArguments[1] as String;
-      });
-
-      getIt
-        ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-        ..registerSingleton<LoggingService>(LoggingService())
-        ..registerSingleton<SecureStorage>(secureStorageMock)
-        ..registerSingleton<OutboxService>(OutboxService())
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<VectorClockService>(VectorClockService())
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
-        ..registerSingleton<EditorStateService>(EditorStateService());
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
-          .thenAnswer((_) async => testTextEntryNoGeo);
-
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
-
-      when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
-          .thenAnswer(
-        (_) async => true,
-      );
-
-      when(mockNotificationService.updateBadge).thenAnswer((_) async {});
+    when(() => secureStorageMock.readValue(hostKey))
+        .thenAnswer((_) async => 'some_host');
+    when(() => secureStorageMock.readValue(nextAvailableCounterKey))
+        .thenAnswer((_) async => vcMockNext);
+    when(() => secureStorageMock.writeValue(nextAvailableCounterKey, any()))
+        .thenAnswer((invocation) async {
+      vcMockNext = invocation.positionalArguments[1] as String;
     });
 
-    tearDownAll(getIt.reset);
+    getIt
+      ..registerSingleton<SettingsDb>(settingsDb)
+      ..registerSingleton<NotificationService>(mockNotificationService)
+      ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+      ..registerSingleton<LoggingService>(LoggingService())
+      ..registerSingleton<SecureStorage>(secureStorageMock)
+      ..registerSingleton<OutboxService>(OutboxService())
+      ..registerSingleton<TimeService>(mockTimeService)
+      ..registerSingleton<VectorClockService>(VectorClockService())
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+      ..registerSingleton<NavService>(mockNavService)
+      ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+      ..registerSingleton<EditorStateService>(mockEditorStateService);
 
+    when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+        .thenAnswer((_) async => testTextEntry);
+    when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
+        .thenAnswer((_) async => testTextEntryNoGeo);
+    when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+        .thenAnswer((_) async => testTask);
+    // For addTextToImage tests - ensure these are also available if not overridden in group's setUp
+    when(() => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id))
+        .thenAnswer((_) async => testImageEntryNoText);
+    when(
+      () => mockJournalDb.journalEntityById(testImageEntryWithMarkdown.meta.id),
+    ).thenAnswer((_) async => testImageEntryWithMarkdown);
+
+    when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
+        .thenAnswer((_) async => true);
+    when(mockNotificationService.updateBadge).thenAnswer((_) async {});
+  });
+
+  tearDownAll(getIt.reset);
+
+  group('EntryController Tests - ', () {
+    // Specific setUp for this group if needed (e.g., vcMockNext reset)
     setUp(() {
-      reset(mockPersistenceLogic);
+      reset(
+        mockPersistenceLogic,
+      ); // Still good to reset per group if tests modify its state
       vcMockNext = '1';
 
-      // Specific mocks for JournalDb
+      // JournalDb mocks specific to this group, ensure they don't conflict if IDs overlap
+      // with addTextToImage test data, or make IDs unique.
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
       when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
           .thenAnswer((_) async => testTextEntryNoGeo);
       when(() => mockJournalDb.journalEntityById(testTask.meta.id))
           .thenAnswer((_) async => testTask);
-
-      // General stub for getLinkedEntities, specific stubs for update/delete will be in tests
-      // This needs a mockJournalRepository instance, so this setup might need to move or be adapted
-      // For now, let's assume tests needing this will set it up on their local mock.
-      // when(() => mockJournalRepository.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
-      //     .thenAnswer((_) async => []);
     });
 
     test('entry loads', () async {
@@ -488,6 +549,8 @@ void main() {
       when(testFn).thenAnswer((invocation) async => true);
 
       await notifier.save();
+      await container.pump(); // Revert to container.pump for consistency
+
       verify(testFn).called(1);
     });
 
@@ -507,6 +570,7 @@ void main() {
               showMap: false,
               isFocused: false,
               shouldShowEditorToolBar: false,
+              formKey: notifier.formKey,
             ),
           ),
         );
@@ -529,6 +593,7 @@ void main() {
               showMap: false,
               isFocused: false,
               shouldShowEditorToolBar: false,
+              formKey: notifier.formKey,
             ),
           ),
         );
@@ -541,13 +606,15 @@ void main() {
         when(testFn).thenAnswer((invocation) async => true);
 
         await notifier.save();
+        await container
+            .pump(); // Add pump to allow async focus changes to settle
+
         verify(testFn).called(1);
 
         final plainText =
             entryTextFromController(notifier.controller).plainText;
         expect(plainText, 'PREFIXED: test entry text\n');
       },
-      skip: true,
     );
 
     test('focus', () async {
@@ -574,12 +641,6 @@ void main() {
     group('updateCategoryId', () {
       const testCategoryId = 'cat_123';
       final entryId = testTextEntry.meta.id;
-
-      setUp(() {
-        // Common stubs for this group if any mockJournalRepository method is always called.
-        // For example, if getLinkedEntities is always called by the controller build:
-        // This needs a way to access the localMockJournalRepository of each test, so better in each test.
-      });
 
       test('successfully updates categoryId for the main entry', () async {
         final localMockJournalRepository = MockJournalRepository();
@@ -872,7 +933,9 @@ void main() {
             dateFrom: newDateFrom,
             dateTo: newDateTo,
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async {
+          return true;
+        });
         // If getLinkedEntities is called by the controller during this flow, stub it too.
         // Based on controller code, it's not directly called by updateFromTo itself.
 
@@ -910,7 +973,9 @@ void main() {
             dateFrom: newDateFrom,
             dateTo: newDateTo,
           ),
-        ).thenAnswer((_) async => false); // Simulate repository failure
+        ).thenAnswer((_) async {
+          return false;
+        });
 
         final container = makeProviderContainer(
           overrides: [
@@ -920,7 +985,8 @@ void main() {
         );
         final notifier =
             container.read(entryControllerProvider(id: entryId).notifier);
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container
+            .read(entryControllerProvider(id: entryId).future); // Ensure loaded
 
         final result = await notifier.updateFromTo(
           dateFrom: newDateFrom,
@@ -936,6 +1002,309 @@ void main() {
           ),
         ).called(1);
       });
+    });
+
+    group('build method', () {
+      test('emits AsyncError when _journalDb.journalEntityById throws',
+          () async {
+        const entryId = 'error-id';
+        final exception = Exception('Database error');
+
+        when(() => mockJournalDb.journalEntityById(entryId))
+            .thenThrow(exception);
+
+        final localMockJournalRepository = MockJournalRepository();
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+
+        final listener = Listener<AsyncValue<EntryState?>>();
+        container.listen<AsyncValue<EntryState?>>(
+          entryControllerProvider(id: entryId),
+          listener.call,
+          fireImmediately: true,
+        );
+
+        await container.pump();
+
+        final lastEmittedValue =
+            verify(() => listener(captureAny(), captureAny())).captured.last;
+        expect(lastEmittedValue, isA<AsyncError<EntryState?>>());
+        expect((lastEmittedValue as AsyncError).error, exception);
+      });
+
+      test(
+          'emits EntryState.saved with null entry when _journalDb.journalEntityById returns null',
+          () async {
+        const entryId = 'not-found-id';
+
+        when(() => mockJournalDb.journalEntityById(entryId))
+            .thenAnswer((_) async => null);
+
+        final localMockJournalRepository = MockJournalRepository();
+        when(
+          () => localMockJournalRepository.getLinkedEntities(
+            linkedTo: any(named: 'linkedTo'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+
+        final initialState =
+            await container.read(entryControllerProvider(id: entryId).future);
+
+        expect(initialState, isNotNull);
+        expect(initialState, isNot(isA<EntryStateDirty>()));
+        expect(initialState?.entry, isNull);
+        expect(initialState?.entryId, entryId);
+      });
+    });
+
+    group('save method - JournalEntry (text)', () {
+      final entryId = testTextEntry.meta.id;
+
+      test('successful save updates state and calls dependencies', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+
+        notifier.controller.document.insert(0, 'New text');
+        notifier.setDirty(value: true);
+        final dirtyState =
+            await container.read(entryControllerProvider(id: entryId).future);
+        expect(dirtyState, isA<EntryStateDirty>());
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            entryId,
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
+
+        notifier.focusNode.requestFocus();
+
+        await notifier.save();
+        await container.pump(); // Revert to container.pump for consistency
+
+        verify(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            entryId,
+            any(),
+            any(),
+          ),
+        ).called(1);
+        verify(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).called(1);
+
+        final savedState =
+            await container.read(entryControllerProvider(id: entryId).future);
+        expect(savedState, isNot(isA<EntryStateDirty>()));
+        expect(savedState?.shouldShowEditorToolBar, isFalse);
+      });
+
+      test('save with stopRecording calls TimeService.stop', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+        notifier.setDirty(value: true);
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            entryId,
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
+        when(mockTimeService.stop).thenAnswer((_) async {});
+
+        await notifier.save(stopRecording: true);
+
+        verify(mockTimeService.stop).called(1);
+      });
+
+      test('save propagates exception from updateJournalEntityText', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        final exception = Exception('Persistence error');
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+        notifier.setDirty(value: true);
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            entryId,
+            any(),
+            any(),
+          ),
+        ).thenThrow(exception);
+
+        expect(notifier.save, throwsA(exception));
+      });
+    });
+  });
+
+  // Add tests for addTextToImage
+  group('addTextToImage method', () {
+    const entryId = _testImageEntryId;
+    const textToAdd = 'newly added text';
+
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => testImageEntryNoText);
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('does nothing if the current entry is not a JournalImage', () async {
+      final nonImageEntryId = testTextEntry.meta.id;
+      when(() => mockJournalDb.journalEntityById(nonImageEntryId))
+          .thenAnswer((_) async => testTextEntry);
+
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: nonImageEntryId).notifier);
+      await container.read(entryControllerProvider(id: nonImageEntryId).future);
+
+      await notifier.addTextToImage(textToAdd);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      );
+    });
+
+    test(
+        'adds text to an image with no initial text, using dateFrom for persistence',
+        () async {
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => testImageEntryNoText);
+
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
+      await container.read(entryControllerProvider(id: entryId).future);
+
+      await notifier.addTextToImage(textToAdd);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          captureAny(),
+          captureAny(),
+          captureAny(),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedEntryText = captured[1] as EntryText;
+      const expectedMarkdown = '\n\n$textToAdd';
+      expect(capturedEntryText.markdown, expectedMarkdown);
+      expect(
+        capturedEntryText.plainText,
+        isNotNull,
+        reason: 'Plain text should be generated',
+      );
+      expect(
+        capturedEntryText.quill,
+        isNotNull,
+        reason: 'Quill delta should be generated',
+      );
+      expect(captured[2], _testImageDateFrom);
+    });
+
+    test(
+        'appends text to an image with existing markdown, using dateFrom for persistence',
+        () async {
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => testImageEntryWithMarkdown);
+
+      final container = makeProviderContainer();
+      final notifier =
+          container.read(entryControllerProvider(id: entryId).notifier);
+      await container.read(entryControllerProvider(id: entryId).future);
+
+      await notifier.addTextToImage(textToAdd);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          captureAny(),
+          captureAny(),
+          captureAny(),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedEntryText = captured[1] as EntryText;
+      final expectedMarkdown =
+          '${testImageEntryWithMarkdown.entryText!.markdown!}\n\n$textToAdd';
+      expect(capturedEntryText.markdown, expectedMarkdown);
+      expect(
+        capturedEntryText.plainText,
+        isNotNull,
+        reason: 'Plain text should be generated',
+      );
+      expect(
+        capturedEntryText.quill,
+        isNotNull,
+        reason: 'Quill delta should be generated',
+      );
+      expect(captured[2], _testImageDateFrom);
     });
   });
 }
