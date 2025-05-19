@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
+import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -85,26 +85,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
         const SizedBox(height: 20),
         PromptInputTypeSelection(configId: configId),
         const SizedBox(height: 20),
-        DropdownButtonFormField<AiResponseType>(
-          value: formState.aiResponseType.value,
-          onChanged: formController.aiResponseTypeChanged,
-          decoration: InputDecoration(
-            labelText: context.messages.aiConfigResponseTypeFieldLabel,
-            errorText: formState.aiResponseType.isNotValid &&
-                    !formState.aiResponseType.isPure &&
-                    formState.aiResponseType.error ==
-                        PromptFormError.notSelected
-                ? context.messages.aiConfigResponseTypeNotSelectedError
-                : null,
-          ),
-          items: AiResponseType.values.map((AiResponseType type) {
-            return DropdownMenuItem<AiResponseType>(
-              value: type,
-              child: Text(type.localizedName(context)),
-            );
-          }).toList(),
-          hint: Text(context.messages.aiConfigResponseTypeSelectHint),
-        ),
+        PromptResponseTypeSelection(configId: configId),
         const SizedBox(height: 5),
         SwitchListTile(
           title: Text(context.messages.aiConfigUseReasoningFieldLabel),
