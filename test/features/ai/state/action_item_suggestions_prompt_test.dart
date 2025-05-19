@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions_prompt.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -26,6 +27,9 @@ void main() {
   late MockAiInputRepository mockAiInputRepository;
   late MockJournalRepository mockJournalRepository;
   late MockUpdateNotifications mockUpdateNotifications;
+
+  registerFallbackValue(AiResponseType.actionItemSuggestions);
+
   late Listener<AsyncValue<String?>> listener;
   late StreamController<Set<String>> updateStreamController;
 

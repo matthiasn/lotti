@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/task_summary_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -51,7 +52,7 @@ void main() {
         prompt: 'test-prompt',
         thoughts: 'test-thoughts',
         response: 'test-response',
-        type: 'TaskSummary',
+        type: AiResponseType.taskSummary,
       ),
     );
     registerFallbackValue(DateTime.now());

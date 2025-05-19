@@ -7,7 +7,7 @@ part of 'inference_status_controller.dart';
 // **************************************************************************
 
 String _$inferenceStatusControllerHash() =>
-    r'7b6d14f4f9f60e17756a8aaa77f7f3dc0177a8a6';
+    r'42c736c8fcb9f21c98683e879518cfda4ab88120';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,11 +33,11 @@ class _SystemHash {
 abstract class _$InferenceStatusController
     extends BuildlessAutoDisposeNotifier<InferenceStatus> {
   late final String id;
-  late final String aiResponseType;
+  late final AiResponseType aiResponseType;
 
   InferenceStatus build({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   });
 }
 
@@ -53,7 +53,7 @@ class InferenceStatusControllerFamily extends Family<InferenceStatus> {
   /// See also [InferenceStatusController].
   InferenceStatusControllerProvider call({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) {
     return InferenceStatusControllerProvider(
       id: id,
@@ -92,7 +92,7 @@ class InferenceStatusControllerProvider extends AutoDisposeNotifierProviderImpl<
   /// See also [InferenceStatusController].
   InferenceStatusControllerProvider({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) : this._internal(
           () => InferenceStatusController()
             ..id = id
@@ -122,7 +122,7 @@ class InferenceStatusControllerProvider extends AutoDisposeNotifierProviderImpl<
   }) : super.internal();
 
   final String id;
-  final String aiResponseType;
+  final AiResponseType aiResponseType;
 
   @override
   InferenceStatus runNotifierBuild(
@@ -184,7 +184,7 @@ mixin InferenceStatusControllerRef
   String get id;
 
   /// The parameter `aiResponseType` of this provider.
-  String get aiResponseType;
+  AiResponseType get aiResponseType;
 }
 
 class _InferenceStatusControllerProviderElement
@@ -195,21 +195,21 @@ class _InferenceStatusControllerProviderElement
   @override
   String get id => (origin as InferenceStatusControllerProvider).id;
   @override
-  String get aiResponseType =>
+  AiResponseType get aiResponseType =>
       (origin as InferenceStatusControllerProvider).aiResponseType;
 }
 
 String _$inferenceRunningControllerHash() =>
-    r'f7ab0d70298907cd8e83db3f491244fe6df9f7dc';
+    r'98e6bb2372af2115718976c3eb9f9651da5ec5f1';
 
 abstract class _$InferenceRunningController
     extends BuildlessAutoDisposeNotifier<bool> {
   late final String id;
-  late final Set<String> responseTypes;
+  late final Set<AiResponseType> responseTypes;
 
   bool build({
     required String id,
-    required Set<String> responseTypes,
+    required Set<AiResponseType> responseTypes,
   });
 }
 
@@ -225,7 +225,7 @@ class InferenceRunningControllerFamily extends Family<bool> {
   /// See also [InferenceRunningController].
   InferenceRunningControllerProvider call({
     required String id,
-    required Set<String> responseTypes,
+    required Set<AiResponseType> responseTypes,
   }) {
     return InferenceRunningControllerProvider(
       id: id,
@@ -264,7 +264,7 @@ class InferenceRunningControllerProvider
   /// See also [InferenceRunningController].
   InferenceRunningControllerProvider({
     required String id,
-    required Set<String> responseTypes,
+    required Set<AiResponseType> responseTypes,
   }) : this._internal(
           () => InferenceRunningController()
             ..id = id
@@ -294,7 +294,7 @@ class InferenceRunningControllerProvider
   }) : super.internal();
 
   final String id;
-  final Set<String> responseTypes;
+  final Set<AiResponseType> responseTypes;
 
   @override
   bool runNotifierBuild(
@@ -355,7 +355,7 @@ mixin InferenceRunningControllerRef on AutoDisposeNotifierProviderRef<bool> {
   String get id;
 
   /// The parameter `responseTypes` of this provider.
-  Set<String> get responseTypes;
+  Set<AiResponseType> get responseTypes;
 }
 
 class _InferenceRunningControllerProviderElement
@@ -366,7 +366,7 @@ class _InferenceRunningControllerProviderElement
   @override
   String get id => (origin as InferenceRunningControllerProvider).id;
   @override
-  Set<String> get responseTypes =>
+  Set<AiResponseType> get responseTypes =>
       (origin as InferenceRunningControllerProvider).responseTypes;
 }
 // ignore_for_file: type=lint

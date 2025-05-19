@@ -5,17 +5,18 @@ import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
+import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 class PromptForm extends ConsumerStatefulWidget {
   const PromptForm({
     required this.onSave,
-    this.config,
+    this.configId,
     super.key,
   });
 
-  final AiConfig? config;
+  final String? configId;
   final void Function(AiConfig) onSave;
 
   @override
@@ -25,7 +26,7 @@ class PromptForm extends ConsumerStatefulWidget {
 class _PromptFormState extends ConsumerState<PromptForm> {
   @override
   Widget build(BuildContext context) {
-    final configId = widget.config?.id;
+    final configId = widget.configId;
     final formState =
         ref.watch(promptFormControllerProvider(configId: configId)).valueOrNull;
     final formController = ref.read(
@@ -55,7 +56,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
             ),
           ),
         ),
-        PromptFormSelectModel(config: widget.config),
+        PromptFormSelectModel(configId: configId),
         const SizedBox(height: 20),
         TextField(
           onChanged: formController.userMessageChanged,
@@ -82,7 +83,9 @@ class _PromptFormState extends ConsumerState<PromptForm> {
           maxLines: 2,
         ),
         const SizedBox(height: 20),
-        PromptInputTypeSelection(config: widget.config),
+        PromptInputTypeSelection(configId: configId),
+        const SizedBox(height: 20),
+        PromptResponseTypeSelection(configId: configId),
         const SizedBox(height: 5),
         SwitchListTile(
           title: Text(context.messages.aiConfigUseReasoningFieldLabel),
@@ -119,14 +122,14 @@ class _PromptFormState extends ConsumerState<PromptForm> {
                       formState.modelIds.isNotEmpty &&
                       formState.defaultModelId.isNotEmpty &&
                       formState.modelIds.contains(formState.defaultModelId) &&
-                      (widget.config == null || formState.isDirty)
+                      (configId == null || formState.isDirty)
                   ? () {
                       final config = formState.toAiConfig();
                       widget.onSave(config);
                     }
                   : null,
               child: Text(
-                widget.config == null
+                configId == null
                     ? context.messages.aiConfigCreateButtonLabel
                     : context.messages.aiConfigUpdateButtonLabel,
               ),

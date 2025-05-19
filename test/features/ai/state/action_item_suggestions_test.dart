@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/action_item_suggestions.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -46,7 +47,7 @@ void main() {
         prompt: 'test-prompt',
         thoughts: 'test-thoughts',
         response: 'test-response',
-        type: 'action_item_suggestions',
+        type: AiResponseType.actionItemSuggestions,
         suggestedActionItems: [],
       ),
     );

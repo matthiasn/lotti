@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'prompt_form_controller.g.dart';
@@ -49,6 +50,7 @@ class PromptFormController extends _$PromptFormController {
         description: PromptDescription.dirty(_config!.description ?? ''),
         category: PromptCategory.dirty(_config!.category ?? ''),
         defaultVariables: _config!.defaultVariables ?? {},
+        aiResponseType: PromptAiResponseType.dirty(_config!.aiResponseType),
       );
     }
 
@@ -67,6 +69,7 @@ class PromptFormController extends _$PromptFormController {
     String? description,
     String? category,
     Map<String, String>? defaultVariables,
+    AiResponseType? aiResponseType,
   }) {
     final prev = state.valueOrNull;
     if (prev == null) return;
@@ -91,6 +94,9 @@ class PromptFormController extends _$PromptFormController {
         category:
             category != null ? PromptCategory.dirty(category) : prev.category,
         defaultVariables: defaultVariables,
+        aiResponseType: aiResponseType != null
+            ? PromptAiResponseType.dirty(aiResponseType)
+            : prev.aiResponseType,
       ),
     );
   }
@@ -114,6 +120,10 @@ class PromptFormController extends _$PromptFormController {
       userMessageController.text = value;
     }
     _setAllFields(userMessage: value);
+  }
+
+  void aiResponseTypeChanged(AiResponseType? value) {
+    _setAllFields(aiResponseType: value);
   }
 
   void defaultModelIdChanged(String value) {

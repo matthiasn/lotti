@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -90,6 +91,7 @@ void main() {
         modelIds: [],
         useReasoning: false,
         requiredInputData: [],
+        aiResponseType: AiResponseType.taskSummary,
       );
 
       // Save both configs

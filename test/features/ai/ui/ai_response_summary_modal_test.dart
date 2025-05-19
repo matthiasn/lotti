@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:super_clipboard/super_clipboard.dart';
@@ -36,7 +37,7 @@ void main() {
           '# Thinking Process\nThis is a philosophical question that has been debated for centuries.',
       response:
           '# Response\nThe meaning of life is subjective and varies from person to person.',
-      type: 'TestSummary',
+      type: AiResponseType.taskSummary,
     ),
   );
 

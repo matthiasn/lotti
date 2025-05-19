@@ -15,7 +15,7 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
   }) async {
     final provider = latestSummaryControllerProvider(
       id: id,
-      aiResponseType: actionItemSuggestions,
+      aiResponseType: AiResponseType.actionItemSuggestions,
     );
 
     final latestAiEntry = await ref.watch(provider.future);
@@ -36,7 +36,7 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
   void notifyCreatedChecklistItem({required String title}) {
     final provider = latestSummaryControllerProvider(
       id: id,
-      aiResponseType: actionItemSuggestions,
+      aiResponseType: AiResponseType.actionItemSuggestions,
     );
     ref.read(provider.notifier).removeActionItem(title: title);
   }
@@ -44,7 +44,7 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
   void removeActionItem({required String title}) {
     final provider = latestSummaryControllerProvider(
       id: id,
-      aiResponseType: actionItemSuggestions,
+      aiResponseType: AiResponseType.actionItemSuggestions,
     );
     ref.read(provider.notifier).removeActionItem(title: title);
   }
@@ -52,7 +52,7 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
   void clearActionItem({required String title}) {
     final provider = latestSummaryControllerProvider(
       id: id,
-      aiResponseType: actionItemSuggestions,
+      aiResponseType: AiResponseType.actionItemSuggestions,
     );
     ref.read(provider.notifier).removeActionItem(title: title);
   }

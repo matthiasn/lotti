@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -31,7 +32,7 @@ void main() {
   late StreamController<Set<String>> updateStreamController;
 
   const testId = 'test-id';
-  const testAiResponseType = 'TestSummary';
+  const testAiResponseType = AiResponseType.taskSummary;
   final testDateTime = DateTime(2023);
 
   setUpAll(() {
@@ -51,7 +52,7 @@ void main() {
           prompt: 'test-prompt',
           thoughts: 'test-thoughts',
           response: 'test-response',
-          type: testAiResponseType,
+          type: AiResponseType.taskSummary,
         ),
       ),
     );
