@@ -48,7 +48,7 @@ class AudioTranscriptionProgressView extends ConsumerWidget {
             child: AiRunningAnimationWrapper(
               entryId: id,
               height: 50,
-              responseTypes: const {audioTranscription},
+              responseTypes: const {AiResponseType.audioTranscription},
             ),
           ),
         ],

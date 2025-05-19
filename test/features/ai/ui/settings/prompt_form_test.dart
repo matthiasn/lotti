@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -36,7 +37,7 @@ Widget buildTestWidget({
         child: SingleChildScrollView(
           child: PromptForm(
             onSave: onSave,
-            config: config,
+            configId: config?.id,
           ),
         ),
       ),
@@ -71,6 +72,7 @@ AiConfig createMockPromptConfig({
     description: description,
     comment: comment,
     category: category,
+    aiResponseType: AiResponseType.taskSummary,
   );
 }
 
@@ -103,6 +105,7 @@ AiConfig createTestPrompt({
     category: category,
     defaultVariables: defaultVariables,
     createdAt: createdAt ?? DateTime.now(),
+    aiResponseType: AiResponseType.taskSummary,
   );
 }
 
@@ -354,27 +357,34 @@ void main() {
           .pump(const Duration(milliseconds: 500)); // Allow controller to build
 
       // Find the switch
-      final switchFinder = find.byType(Switch);
+      final switchFinder = find.byType(SwitchListTile);
       expect(switchFinder, findsOneWidget);
 
       // Initial state is off
-      var switchWidget = tester.widget<Switch>(switchFinder);
+      var switchWidget = tester.widget<SwitchListTile>(switchFinder);
       expect(switchWidget.value, isFalse);
+
+      // Ensure the switch is visible before tapping
+      await tester.ensureVisible(switchFinder);
+      await tester.pumpAndSettle();
 
       // Tap the switch
       await tester.tap(switchFinder);
-      await tester.pump(); // Pump after tap
-      await tester.pump(const Duration(milliseconds: 200)); // Settle
+      await tester
+          .pumpAndSettle(); // Use pumpAndSettle for state changes to propagate
 
-      switchWidget = tester.widget<Switch>(switchFinder);
+      switchWidget = tester.widget<SwitchListTile>(switchFinder);
       expect(switchWidget.value, isTrue);
+
+      // Ensure the switch is visible before tapping again
+      await tester.ensureVisible(switchFinder);
+      await tester.pumpAndSettle();
 
       // Tap again to turn off
       await tester.tap(switchFinder);
-      await tester.pump(); // Pump after tap
-      await tester.pump(const Duration(milliseconds: 200)); // Settle
+      await tester.pumpAndSettle(); // Use pumpAndSettle
 
-      switchWidget = tester.widget<Switch>(switchFinder);
+      switchWidget = tester.widget<SwitchListTile>(switchFinder);
       expect(switchWidget.value, isFalse);
     });
   });
@@ -422,7 +432,7 @@ void main() {
               child: SingleChildScrollView(
                 child: PromptForm(
                   onSave: (_) {},
-                  config: config,
+                  configId: config.id,
                 ),
               ),
             ),

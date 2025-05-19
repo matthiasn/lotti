@@ -18,7 +18,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
         entry.data.taskResult.identifier.toLowerCase(),
     workout: (WorkoutEntry entry) => entry.data.workoutType,
     habitCompletion: (HabitCompletionEntry entry) => entry.data.habitId,
-    aiResponse: (AiResponseEntry entry) => entry.data.type,
+    aiResponse: (AiResponseEntry entry) => entry.data.type?.name,
     orElse: () => '',
   );
 

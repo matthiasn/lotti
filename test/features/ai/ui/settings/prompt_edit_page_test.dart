@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form.dart';
 import 'package:mocktail/mocktail.dart';
@@ -63,6 +64,7 @@ void main() {
     String? category,
     bool useReasoning = false,
     List<InputDataType> requiredInputData = const [],
+    AiResponseType aiResponseType = AiResponseType.taskSummary,
   }) {
     return AiConfig.prompt(
       id: id,
@@ -77,6 +79,7 @@ void main() {
       description: description,
       comment: comment,
       category: category,
+      aiResponseType: aiResponseType,
     );
   }
 

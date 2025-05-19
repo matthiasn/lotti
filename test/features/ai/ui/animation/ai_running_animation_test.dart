@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:siri_wave/siri_wave.dart';
@@ -40,7 +41,7 @@ void main() {
 
   group('AiRunningAnimationWrapper', () {
     const testId = 'test-id';
-    const testType = 'test-type';
+    const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
     testWidgets('should render nothing when isRunning is false',
@@ -103,7 +104,7 @@ void main() {
 
   group('AiRunningAnimationWrapperCard', () {
     const testId = 'test-id';
-    const testType = 'test-type';
+    const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
     testWidgets('should render nothing when isRunning is false',

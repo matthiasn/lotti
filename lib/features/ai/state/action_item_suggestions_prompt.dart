@@ -48,7 +48,7 @@ class ActionItemSuggestionsPromptController
   Future<String?> _buildPrompt({required String id}) async {
     return ref.read(aiInputRepositoryProvider).buildPrompt(
           id: id,
-          aiResponseType: actionItemSuggestions,
+          aiResponseType: AiResponseType.actionItemSuggestions,
         );
   }
 }

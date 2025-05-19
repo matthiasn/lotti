@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 
 part 'ai_config.freezed.dart';
 part 'ai_config.g.dart';
@@ -62,6 +63,7 @@ class AiConfig with _$AiConfig {
     required DateTime createdAt,
     required bool useReasoning,
     required List<InputDataType> requiredInputData,
+    required AiResponseType aiResponseType,
     String? comment,
     DateTime? updatedAt,
     String? description,

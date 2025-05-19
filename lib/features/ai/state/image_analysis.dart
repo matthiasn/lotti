@@ -40,7 +40,7 @@ class AiImageAnalysisController extends _$AiImageAnalysisController {
 
     final inferenceStatusProvider = inferenceStatusControllerProvider(
       id: id,
-      aiResponseType: imageAnalysis,
+      aiResponseType: AiResponseType.imageAnalysis,
     );
 
     final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier)

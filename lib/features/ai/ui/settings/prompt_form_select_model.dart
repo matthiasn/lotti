@@ -10,11 +10,11 @@ import 'package:lotti/utils/modals.dart';
 
 class PromptFormSelectModel extends ConsumerStatefulWidget {
   const PromptFormSelectModel({
-    this.config,
+    this.configId,
     super.key,
   });
 
-  final AiConfig? config;
+  final String? configId;
 
   @override
   ConsumerState<PromptFormSelectModel> createState() =>
@@ -41,7 +41,7 @@ class _PromptFormSelectModelState extends ConsumerState<PromptFormSelectModel> {
           // but only if it's part of the newSelectedIds (which should be guaranteed by modal logic).
           // We also check if it actually needs changing.
           final controllerProvider =
-              promptFormControllerProvider(configId: widget.config?.id);
+              promptFormControllerProvider(configId: widget.configId);
           final currentDefaultInState =
               ref.read(controllerProvider).valueOrNull?.defaultModelId;
 
@@ -66,7 +66,7 @@ class _PromptFormSelectModelState extends ConsumerState<PromptFormSelectModel> {
 
   @override
   Widget build(BuildContext context) {
-    final configId = widget.config?.id;
+    final configId = widget.configId;
     final formState =
         ref.watch(promptFormControllerProvider(configId: configId)).valueOrNull;
     final formController = ref.read(

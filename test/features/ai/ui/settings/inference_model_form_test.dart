@@ -241,8 +241,10 @@ void main() {
 
     // Toggle reasoning capability
     final reasoningSwitch = find.byType(SwitchListTile);
+    await tester.ensureVisible(reasoningSwitch);
+    await tester.pumpAndSettle();
     await tester.tap(reasoningSwitch);
-    await tester.pump();
+    await tester.pumpAndSettle();
   });
 
   // Test form submission

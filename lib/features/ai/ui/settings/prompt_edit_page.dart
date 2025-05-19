@@ -52,7 +52,7 @@ class PromptEditPage extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         child: PromptForm(
-          config: config,
+          configId: config?.id,
           onSave: (updatedConfig) async {
             final controller = ref.read(
               promptFormControllerProvider(configId: config?.id).notifier,

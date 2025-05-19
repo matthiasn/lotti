@@ -1,10 +1,12 @@
 import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 enum PromptFormError {
   tooShort,
   empty,
+  notSelected,
 }
 
 // Input validation classes
@@ -68,6 +70,17 @@ class PromptCategory extends FormzInput<String, PromptFormError> {
   }
 }
 
+class PromptAiResponseType
+    extends FormzInput<AiResponseType?, PromptFormError> {
+  const PromptAiResponseType.pure() : super.pure(null);
+  const PromptAiResponseType.dirty([super.value]) : super.dirty();
+
+  @override
+  PromptFormError? validator(AiResponseType? value) {
+    return value == null ? PromptFormError.notSelected : null;
+  }
+}
+
 // Form state class
 class PromptFormState with FormzMixin {
   PromptFormState({
@@ -85,6 +98,7 @@ class PromptFormState with FormzMixin {
     this.defaultVariables = const {},
     this.isSubmitting = false,
     this.submitFailed = false,
+    this.aiResponseType = const PromptAiResponseType.pure(),
   });
 
   final String? id; // null for new prompts
@@ -101,6 +115,7 @@ class PromptFormState with FormzMixin {
   final Map<String, String> defaultVariables;
   final bool isSubmitting;
   final bool submitFailed;
+  final PromptAiResponseType aiResponseType;
 
   PromptFormState copyWith({
     String? id,
@@ -117,6 +132,7 @@ class PromptFormState with FormzMixin {
     Map<String, String>? defaultVariables,
     bool? isSubmitting,
     bool? submitFailed,
+    PromptAiResponseType? aiResponseType,
   }) {
     return PromptFormState(
       id: id ?? this.id,
@@ -133,6 +149,7 @@ class PromptFormState with FormzMixin {
       defaultVariables: defaultVariables ?? this.defaultVariables,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitFailed: submitFailed ?? this.submitFailed,
+      aiResponseType: aiResponseType ?? this.aiResponseType,
     );
   }
 
@@ -144,10 +161,14 @@ class PromptFormState with FormzMixin {
         comment,
         description,
         category,
+        aiResponseType,
       ];
 
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
+    if (aiResponseType.value == null) {
+      throw StateError('AiResponseType cannot be null when creating AiConfig');
+    }
     return AiConfig.prompt(
       id: id ?? uuid.v1(),
       name: name.value,
@@ -156,8 +177,10 @@ class PromptFormState with FormzMixin {
       defaultModelId: defaultModelId,
       modelIds: modelIds,
       createdAt: DateTime.now(),
+      updatedAt: id != null ? DateTime.now() : null,
       useReasoning: useReasoning,
       requiredInputData: requiredInputData,
+      aiResponseType: aiResponseType.value!,
       comment: comment.value.isEmpty ? null : comment.value,
       description: description.value.isEmpty ? null : description.value,
       category: category.value.isEmpty ? null : category.value,

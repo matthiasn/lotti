@@ -105,6 +105,8 @@ _$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
       requiredInputData: (json['requiredInputData'] as List<dynamic>)
           .map((e) => $enumDecode(_$InputDataTypeEnumMap, e))
           .toList(),
+      aiResponseType:
+          $enumDecode(_$AiResponseTypeEnumMap, json['aiResponseType']),
       comment: json['comment'] as String?,
       updatedAt: json['updatedAt'] == null
           ? null
@@ -132,6 +134,7 @@ Map<String, dynamic> _$$AiConfigPromptImplToJson(
       'requiredInputData': instance.requiredInputData
           .map((e) => _$InputDataTypeEnumMap[e]!)
           .toList(),
+      'aiResponseType': _$AiResponseTypeEnumMap[instance.aiResponseType]!,
       'comment': instance.comment,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'description': instance.description,
@@ -145,4 +148,11 @@ const _$InputDataTypeEnumMap = {
   InputDataType.tasksList: 'tasksList',
   InputDataType.audioFiles: 'audioFiles',
   InputDataType.images: 'images',
+};
+
+const _$AiResponseTypeEnumMap = {
+  AiResponseType.actionItemSuggestions: 'ActionItemSuggestions',
+  AiResponseType.taskSummary: 'TaskSummary',
+  AiResponseType.imageAnalysis: 'ImageAnalysis',
+  AiResponseType.audioTranscription: 'AudioTranscription',
 };

@@ -129,7 +129,7 @@ class AiInputRepository {
 
   Future<String?> buildPrompt({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) async {
     final aiInput = await generate(id);
 
@@ -140,10 +140,10 @@ class AiInputRepository {
     const encoder = JsonEncoder.withIndent('    ');
     final jsonString = encoder.convert(aiInput);
 
-    if (aiResponseType == taskSummary) {
+    if (aiResponseType == AiResponseType.taskSummary) {
       return createTaskSummaryPrompt(jsonString);
     }
-    if (aiResponseType == actionItemSuggestions) {
+    if (aiResponseType == AiResponseType.actionItemSuggestions) {
       return createActionItemSuggestionsPrompt(jsonString);
     }
     return null;

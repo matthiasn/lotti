@@ -48,7 +48,7 @@ class ActionItemSuggestionsView extends ConsumerWidget {
             child: AiRunningAnimationWrapper(
               entryId: id,
               height: 50,
-              responseTypes: const {actionItemSuggestions},
+              responseTypes: const {AiResponseType.actionItemSuggestions},
             ),
           ),
         ],

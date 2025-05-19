@@ -35,7 +35,7 @@ class ActionItemSuggestionsController
 
   Future<void> getActionItemSuggestion() async {
     final repository = ref.read(aiInputRepositoryProvider);
-    const aiResponseType = actionItemSuggestions;
+    const aiResponseType = AiResponseType.actionItemSuggestions;
     final suggestionsStatusNotifier = ref.read(
       inferenceStatusControllerProvider(
         id: id,
@@ -145,7 +145,7 @@ class ActionItemSuggestionsController
         thoughts: thoughts,
         response: response,
         suggestedActionItems: suggestedActionItems,
-        type: actionItemSuggestions,
+        type: AiResponseType.actionItemSuggestions,
       );
 
       await repository.createAiResponseEntry(

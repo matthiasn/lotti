@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 
 void main() {
   // --- Mock Data Setup ---
@@ -66,6 +67,7 @@ void main() {
         requiredInputData: [],
         useReasoning: false,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       expect(
         isModelSuitableForPrompt(prompt: prompt, model: textModel),
@@ -101,6 +103,7 @@ void main() {
         requiredInputData: [],
         useReasoning: true,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       expect(
         isModelSuitableForPrompt(prompt: prompt, model: textModel),
@@ -128,6 +131,7 @@ void main() {
         requiredInputData: [],
         useReasoning: true,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       expect(
         isModelSuitableForPrompt(
@@ -158,6 +162,7 @@ void main() {
         requiredInputData: [],
         useReasoning: false,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       expect(
         isModelSuitableForPrompt(prompt: prompt, model: textModel),
@@ -185,6 +190,7 @@ void main() {
         requiredInputData: [InputDataType.images],
         useReasoning: false,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       expect(
         isModelSuitableForPrompt(prompt: prompt, model: textModel),
@@ -205,6 +211,7 @@ void main() {
         requiredInputData: [InputDataType.images],
         useReasoning: false,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       expect(
         isModelSuitableForPrompt(
@@ -235,6 +242,7 @@ void main() {
         requiredInputData: [InputDataType.task, InputDataType.audioFiles],
         useReasoning: false,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       // reasoningTextImageModel supports Text and Image, but not Audio
       expect(
@@ -267,6 +275,7 @@ void main() {
         ],
         useReasoning: false,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       // These models support both text and audio
       expect(
@@ -299,6 +308,7 @@ void main() {
         ],
         useReasoning: true,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       // fullMultiModalReasoningModel supports text, image, audio AND reasoning
       expect(
@@ -327,6 +337,7 @@ void main() {
         ],
         useReasoning: true,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       // reasoningTextImageModel has reasoning and image, but LACKS AUDIO
       expect(
@@ -365,6 +376,7 @@ void main() {
         requiredInputData: [InputDataType.audioFiles, InputDataType.images],
         useReasoning: true,
         createdAt: DateTime.now(),
+        aiResponseType: AiResponseType.taskSummary,
       );
       // fullMultiModalReasoningModel has everything needed
       expect(
