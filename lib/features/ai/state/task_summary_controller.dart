@@ -133,7 +133,7 @@ class TaskSummaryController extends _$TaskSummaryController {
         prompt: prompt,
         thoughts: '',
         response: completeResponse,
-        type: 'TaskSummary',
+        type: taskSummary,
       );
 
       await ref.read(aiInputRepositoryProvider).createAiResponseEntry(

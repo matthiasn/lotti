@@ -9,6 +9,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
@@ -690,7 +691,7 @@ void main() {
         // Arrange
         const taskTitle = 'Test Task';
         const statusId = 'status-123';
-        const aiResponseType = 'TaskSummary';
+        const aiResponseType = taskSummary;
 
         // Mock the task
         final task = JournalEntity.task(
@@ -817,7 +818,7 @@ void main() {
 
       test('returns null for non-task entity', () async {
         // Arrange
-        const aiResponseType = 'TaskSummary';
+        const aiResponseType = taskSummary;
 
         // Mock a non-task entity (journal entry)
         when(() => mockDb.journalEntityById(taskId)).thenAnswer(
@@ -846,7 +847,7 @@ void main() {
 
       test('returns null for non-existent entity', () async {
         // Arrange
-        const aiResponseType = 'TaskSummary';
+        const aiResponseType = taskSummary;
 
         // Mock non-existent entity
         when(() => mockDb.journalEntityById(taskId))
@@ -927,7 +928,7 @@ void main() {
         const checklistId = 'checklist-123';
         const checklistItemId = 'checklist-item-123';
         const linkedEntryId = 'linked-entry-123';
-        const aiResponseType = 'TaskSummary';
+        const aiResponseType = taskSummary;
 
         // Set up specific mock for the task progress repository
         when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))

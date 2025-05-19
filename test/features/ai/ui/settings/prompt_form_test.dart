@@ -36,7 +36,7 @@ Widget buildTestWidget({
         child: SingleChildScrollView(
           child: PromptForm(
             onSave: onSave,
-            config: config,
+            configId: config?.id,
           ),
         ),
       ),
@@ -422,7 +422,7 @@ void main() {
               child: SingleChildScrollView(
                 child: PromptForm(
                   onSave: (_) {},
-                  config: config,
+                  configId: config.id,
                 ),
               ),
             ),

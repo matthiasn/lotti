@@ -9,11 +9,11 @@ import 'package:lotti/utils/modals.dart';
 
 class PromptInputTypeSelection extends ConsumerStatefulWidget {
   const PromptInputTypeSelection({
-    this.config,
+    this.configId,
     super.key,
   });
 
-  final AiConfig? config;
+  final String? configId;
 
   @override
   ConsumerState<PromptInputTypeSelection> createState() =>
@@ -74,7 +74,7 @@ class _PromptInputTypeSelection
 
   @override
   Widget build(BuildContext context) {
-    final configId = widget.config?.id;
+    final configId = widget.configId;
     final formState =
         ref.watch(promptFormControllerProvider(configId: configId)).valueOrNull;
     final formController = ref.read(

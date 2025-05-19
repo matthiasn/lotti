@@ -132,7 +132,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
         home: Scaffold(
-          body: PromptInputTypeSelection(config: config),
+          body: PromptInputTypeSelection(configId: config?.id),
         ),
       ),
     );
