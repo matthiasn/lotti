@@ -42,7 +42,9 @@ MockTagsService mockTagsServiceWithTags(
   return mock;
 }
 
-class MockJournalDb extends Mock implements JournalDb {}
+class MockJournalDb extends Mock implements JournalDb {
+  Future<void> deleteLoggingDatabase() async {}
+}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
