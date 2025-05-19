@@ -16,3 +16,15 @@ final promptsForAiResponseTypeProvider =
     });
   },
 );
+
+// Provider to fetch a list of AiConfigModel objects by their IDs
+final modelsByIdsProvider =
+    FutureProvider.family<List<AiConfigModel>, List<String>>(
+  (ref, modelIds) async {
+    if (modelIds.isEmpty) {
+      return [];
+    }
+    final repository = ref.watch(aiConfigRepositoryProvider);
+    return repository.getModelsByIds(modelIds);
+  },
+);

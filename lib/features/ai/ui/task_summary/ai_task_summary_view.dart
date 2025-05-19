@@ -9,19 +9,24 @@ class AiTaskSummaryView extends ConsumerWidget {
   const AiTaskSummaryView({
     required this.id,
     this.promptId,
+    this.modelId,
     super.key,
   });
 
   final String id;
   final String? promptId;
+  final String? modelId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(taskSummaryControllerProvider(id: id));
 
     if (promptId != null) {
-      // ignore: avoid_print
       print('AiTaskSummaryView received promptId: $promptId');
+    }
+
+    if (modelId != null) {
+      print('AiTaskSummaryView received modelId: $modelId');
     }
 
     return ConstrainedBox(

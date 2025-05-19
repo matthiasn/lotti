@@ -65,25 +65,25 @@ class AiModal {
             AiTaskSummaryListTile(
               journalEntity: journalEntity,
               linkedFromId: linkedFromId,
-              onTap: () => pageIndexNotifier.value = 5,
+              onTap: () => pageIndexNotifier.value = 1,
             ),
           if (journalEntity is Task)
             ActionItemSuggestionsListTile(
               journalEntity: journalEntity,
               linkedFromId: linkedFromId,
-              onTap: () => pageIndexNotifier.value = 2,
+              onTap: () => pageIndexNotifier.value = 4,
             ),
           if (journalEntity is JournalImage)
             AiImageAnalysisListTile(
               journalImage: journalEntity,
               linkedFromId: linkedFromId,
-              onTap: () => pageIndexNotifier.value = 3,
+              onTap: () => pageIndexNotifier.value = 5,
             ),
           if (journalEntity is JournalAudio)
             AudioTranscriptionProgressListTile(
               journalAudio: journalEntity,
               linkedFromId: linkedFromId,
-              onTap: () => pageIndexNotifier.value = 4,
+              onTap: () => pageIndexNotifier.value = 6,
             ),
           verticalModalSpacer,
         ],
@@ -133,10 +133,10 @@ class AiModal {
                       selectedPromptNotifier.value = prompt;
                       selectedModelIdNotifier.value = null;
                       if (prompt.modelIds.length > 1) {
-                        pageIndexNotifier.value = 6;
+                        pageIndexNotifier.value = 2;
                       } else {
                         selectedModelIdNotifier.value = prompt.defaultModelId;
-                        pageIndexNotifier.value = 1;
+                        pageIndexNotifier.value = 3;
                       }
                     },
                   );
@@ -172,18 +172,58 @@ class AiModal {
               child: Text(context.messages.aiAssistantNoModelsForPrompt),
             );
           }
-          return ListView.builder(
-            padding: EdgeInsets.zero,
-            shrinkWrap: true,
-            itemCount: selectedPrompt.modelIds.length,
-            itemBuilder: (context, index) {
-              final modelId = selectedPrompt.modelIds[index];
-              return ListTile(
-                title: Text(modelId),
-                onTap: () {
-                  selectedModelIdNotifier.value = modelId;
-                  pageIndexNotifier.value = 1;
+
+          return Consumer(
+            builder: (context, WidgetRef consumerRef, child) {
+              final modelsAsyncValue = consumerRef
+                  .watch(modelsByIdsProvider(selectedPrompt.modelIds));
+              return modelsAsyncValue.when(
+                data: (models) {
+                  if (models.isEmpty && selectedPrompt.modelIds.isNotEmpty) {
+                    return Center(
+                      child: Text(
+                        context.messages.aiAssistantModelsNotFoundForPrompt,
+                      ),
+                    );
+                  }
+                  if (models.isEmpty) {
+                    return Center(
+                      child: Text(
+                        context.messages.aiAssistantNoModelsForPrompt,
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    shrinkWrap: true,
+                    itemCount: models.length,
+                    itemBuilder: (context, index) {
+                      final model = models[index];
+                      return ListTile(
+                        title: Text(model.name),
+                        subtitle: model.description != null &&
+                                model.description!.isNotEmpty
+                            ? Text(
+                                model.description!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : null,
+                        trailing: model.id == selectedPrompt.defaultModelId
+                            ? const Icon(Icons.star)
+                            : null,
+                        onTap: () {
+                          selectedModelIdNotifier.value = model.id;
+                          pageIndexNotifier.value = 3;
+                        },
+                      );
+                    },
+                  );
                 },
+                loading: () =>
+                    const Center(child: CircularProgressIndicator.adaptive()),
+                error: (err, stack) =>
+                    Center(child: Text('Error loading models: $err')),
               );
             },
           );
@@ -216,6 +256,7 @@ class AiModal {
           return AiTaskSummaryView(
             id: journalEntity.id,
             promptId: selectedPrompt?.id,
+            modelId: selectedModelIdNotifier.value,
           );
         },
       ),
@@ -247,12 +288,12 @@ class AiModal {
       pageListBuilder: (modalSheetContext) {
         return [
           initialModalPage,
+          promptSelectionPage,
+          modelSelectionPage,
           taskSummaryModalPage,
           actionItemSuggestionsModalPage,
           imageAnalysisModalPage,
           audioTranscriptionModalPage,
-          promptSelectionPage,
-          modelSelectionPage,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,

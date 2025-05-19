@@ -36,6 +36,7 @@
   "aiAssistantNoTaskSummaryPromptsFound": "No task summary prompts found.",
   "aiAssistantSelectModelTitle": "Select Model",
   "aiAssistantNoModelsForPrompt": "No models available for the selected prompt.",
+  "aiAssistantModelsNotFoundForPrompt": "Could not find details for the specified models.",
   "aiConfigApiKeyEmptyError": "API key cannot be empty",
   "aiConfigApiKeyFieldLabel": "API Key",
   "aiConfigBaseUrlFieldLabel": "Base URL",

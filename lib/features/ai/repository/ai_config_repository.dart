@@ -79,6 +79,18 @@ class AiConfigRepository {
         .toList();
   }
 
+  /// Get a list of AI models by their IDs
+  Future<List<AiConfigModel>> getModelsByIds(List<String> ids) async {
+    final models = <AiConfigModel>[];
+    for (final id in ids) {
+      final config = await getConfigById(id);
+      if (config is AiConfigModel) {
+        models.add(config);
+      }
+    }
+    return models;
+  }
+
   /// Stream of all AI configurations of a specific type
   Stream<List<AiConfig>> watchConfigsByType(AiConfigType type) {
     return _db.watchConfigsByType(type.name).map(
