@@ -36,7 +36,7 @@ class PromptSystemMessage extends FormzInput<String, PromptFormError> {
 
   @override
   PromptFormError? validator(String value) {
-    return value.isEmpty ? PromptFormError.empty : null;
+    return null;
   }
 }
 

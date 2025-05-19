@@ -100,7 +100,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
           items: AiResponseType.values.map((AiResponseType type) {
             return DropdownMenuItem<AiResponseType>(
               value: type,
-              child: Text(type.name),
+              child: Text(type.localizedName(context)),
             );
           }).toList(),
           hint: Text(context.messages.aiConfigResponseTypeSelectHint),
