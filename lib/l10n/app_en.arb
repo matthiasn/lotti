@@ -78,6 +78,9 @@
       }
     }
   },
+  "aiConfigResponseTypeFieldLabel": "AI Response Type",
+  "aiConfigResponseTypeNotSelectedError": "Please select a response type",
+  "aiConfigResponseTypeSelectHint": "Select response type",
   "aiConfigListUndoDelete": "UNDO",
   "aiConfigModelFieldLabel": "Model",
   "aiConfigModelLoadError": "Could not load model details.",

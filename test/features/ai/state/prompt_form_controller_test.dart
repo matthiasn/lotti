@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -54,6 +55,7 @@ void main() {
       defaultVariables: {'var1': 'val1'},
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      aiResponseType: AiResponseType.taskSummary,
     );
 
     test('build loads existing config when configId is provided', () async {
@@ -352,6 +354,7 @@ void main() {
             fixedCreatedAt, // ensure createdAt is definitely before updatedAt
         useReasoning: false,
         requiredInputData: [],
+        aiResponseType: AiResponseType.taskSummary,
       );
 
       // Stub the saveConfig method

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 
 void main() {
   group('PromptFormState Tests', () {
@@ -63,10 +64,11 @@ void main() {
         expect(formState.comment.isPure, isTrue);
         expect(formState.description.isPure, isTrue);
         expect(formState.category.isPure, isTrue);
+        expect(formState.aiResponseType.isPure, isTrue);
         expect(
           formState.isValid,
           isFalse,
-        ); // name, userMessage, systemMessage are required
+        ); // name, userMessage, systemMessage, aiResponseType are required
       });
 
       test('Form is valid when required fields are valid', () {
@@ -74,6 +76,8 @@ void main() {
           name: const PromptName.dirty('Test Name'),
           userMessage: const PromptUserMessage.dirty('User message'),
           systemMessage: const PromptSystemMessage.dirty('System message'),
+          aiResponseType:
+              const PromptAiResponseType.dirty(AiResponseType.taskSummary),
         );
         expect(formState.isValid, isTrue);
       });
@@ -83,6 +87,8 @@ void main() {
           name: const PromptName.dirty(), // Invalid
           userMessage: const PromptUserMessage.dirty('User message'),
           systemMessage: const PromptSystemMessage.dirty('System message'),
+          aiResponseType:
+              const PromptAiResponseType.dirty(AiResponseType.taskSummary),
         );
         expect(formState.isValid, isFalse);
       });
@@ -93,11 +99,18 @@ void main() {
           name: const PromptName.dirty('New Name'),
           defaultModelId: 'gpt-4',
           useReasoning: true,
+          aiResponseType: const PromptAiResponseType.dirty(
+            AiResponseType.actionItemSuggestions,
+          ),
         );
 
         expect(updatedState.name.value, 'New Name');
         expect(updatedState.defaultModelId, 'gpt-4');
         expect(updatedState.useReasoning, isTrue);
+        expect(
+          updatedState.aiResponseType.value,
+          AiResponseType.actionItemSuggestions,
+        );
         expect(updatedState.id, initialState.id);
         expect(updatedState.userMessage, initialState.userMessage);
       });
@@ -117,6 +130,8 @@ void main() {
               const PromptDescription.dirty('Detailed description here.'),
           category: const PromptCategory.dirty('Testing'),
           defaultVariables: {'input': 'default_value'},
+          aiResponseType:
+              const PromptAiResponseType.dirty(AiResponseType.taskSummary),
         );
 
         final aiConfig = formState.toAiConfig() as AiConfigPrompt;
@@ -133,6 +148,7 @@ void main() {
         expect(aiConfig.description, 'Detailed description here.');
         expect(aiConfig.category, 'Testing');
         expect(aiConfig.defaultVariables, {'input': 'default_value'});
+        expect(aiConfig.aiResponseType, AiResponseType.taskSummary);
         expect(aiConfig.createdAt, isA<DateTime>());
       });
 
@@ -142,11 +158,14 @@ void main() {
           systemMessage: const PromptSystemMessage.dirty('System instructions'),
           userMessage: const PromptUserMessage.dirty('User query'),
           defaultModelId: 'model-123',
+          aiResponseType:
+              const PromptAiResponseType.dirty(AiResponseType.imageAnalysis),
         );
 
         final aiConfig = formState.toAiConfig() as AiConfigPrompt;
         expect(aiConfig.id, isNotNull); // Should generate a new UUID
         expect(aiConfig.name, 'Test Prompt');
+        expect(aiConfig.aiResponseType, AiResponseType.imageAnalysis);
         expect(aiConfig.comment, isNull);
         expect(aiConfig.description, isNull);
         expect(aiConfig.category, isNull);
@@ -162,7 +181,8 @@ void main() {
         expect(inputs, contains(formState.comment));
         expect(inputs, contains(formState.description));
         expect(inputs, contains(formState.category));
-        expect(inputs.length, 6);
+        expect(inputs, contains(formState.aiResponseType));
+        expect(inputs.length, 7);
       });
     });
   });

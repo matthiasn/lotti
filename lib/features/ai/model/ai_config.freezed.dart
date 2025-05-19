@@ -70,6 +70,7 @@ mixin _$AiConfig {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -112,6 +113,7 @@ mixin _$AiConfig {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -154,6 +156,7 @@ mixin _$AiConfig {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -447,6 +450,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -493,6 +497,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -539,6 +544,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -870,6 +876,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -925,6 +932,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -980,6 +988,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -1105,6 +1114,7 @@ abstract class _$$AiConfigPromptImplCopyWith<$Res>
       DateTime createdAt,
       bool useReasoning,
       List<InputDataType> requiredInputData,
+      AiResponseType aiResponseType,
       String? comment,
       DateTime? updatedAt,
       String? description,
@@ -1134,6 +1144,7 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? useReasoning = null,
     Object? requiredInputData = null,
+    Object? aiResponseType = null,
     Object? comment = freezed,
     Object? updatedAt = freezed,
     Object? description = freezed,
@@ -1177,6 +1188,10 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
           ? _value._requiredInputData
           : requiredInputData // ignore: cast_nullable_to_non_nullable
               as List<InputDataType>,
+      aiResponseType: null == aiResponseType
+          ? _value.aiResponseType
+          : aiResponseType // ignore: cast_nullable_to_non_nullable
+              as AiResponseType,
       comment: freezed == comment
           ? _value.comment
           : comment // ignore: cast_nullable_to_non_nullable
@@ -1214,6 +1229,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       required this.createdAt,
       required this.useReasoning,
       required final List<InputDataType> requiredInputData,
+      required this.aiResponseType,
       this.comment,
       this.updatedAt,
       this.description,
@@ -1260,6 +1276,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
   }
 
   @override
+  final AiResponseType aiResponseType;
+  @override
   final String? comment;
   @override
   final DateTime? updatedAt;
@@ -1283,7 +1301,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
 
   @override
   String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
+    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
   }
 
   @override
@@ -1306,6 +1324,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
                 other.useReasoning == useReasoning) &&
             const DeepCollectionEquality()
                 .equals(other._requiredInputData, _requiredInputData) &&
+            (identical(other.aiResponseType, aiResponseType) ||
+                other.aiResponseType == aiResponseType) &&
             (identical(other.comment, comment) || other.comment == comment) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
@@ -1330,6 +1350,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       createdAt,
       useReasoning,
       const DeepCollectionEquality().hash(_requiredInputData),
+      aiResponseType,
       comment,
       updatedAt,
       description,
@@ -1380,6 +1401,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -1397,6 +1419,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         createdAt,
         useReasoning,
         requiredInputData,
+        aiResponseType,
         comment,
         updatedAt,
         description,
@@ -1439,6 +1462,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -1456,6 +1480,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         createdAt,
         useReasoning,
         requiredInputData,
+        aiResponseType,
         comment,
         updatedAt,
         description,
@@ -1498,6 +1523,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             DateTime createdAt,
             bool useReasoning,
             List<InputDataType> requiredInputData,
+            AiResponseType aiResponseType,
             String? comment,
             DateTime? updatedAt,
             String? description,
@@ -1517,6 +1543,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
           createdAt,
           useReasoning,
           requiredInputData,
+          aiResponseType,
           comment,
           updatedAt,
           description,
@@ -1580,6 +1607,7 @@ abstract class AiConfigPrompt implements AiConfig {
       required final DateTime createdAt,
       required final bool useReasoning,
       required final List<InputDataType> requiredInputData,
+      required final AiResponseType aiResponseType,
       final String? comment,
       final DateTime? updatedAt,
       final String? description,
@@ -1601,6 +1629,7 @@ abstract class AiConfigPrompt implements AiConfig {
   DateTime get createdAt;
   bool get useReasoning;
   List<InputDataType> get requiredInputData;
+  AiResponseType get aiResponseType;
   String? get comment;
   @override
   DateTime? get updatedAt;

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_settings_page.dart';
@@ -31,6 +32,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: const [],
+        aiResponseType: AiResponseType.taskSummary,
       ),
     );
 
@@ -57,6 +59,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: true,
         requiredInputData: const [InputDataType.task],
+        aiResponseType: AiResponseType.taskSummary,
       ),
       AiConfig.prompt(
         id: 'prompt-2',
@@ -68,6 +71,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: const [InputDataType.images],
+        aiResponseType: AiResponseType.taskSummary,
       ),
     ];
 
