@@ -8,14 +8,21 @@ import 'package:lotti/themes/theme.dart';
 class AiTaskSummaryView extends ConsumerWidget {
   const AiTaskSummaryView({
     required this.id,
+    this.promptId,
     super.key,
   });
 
   final String id;
+  final String? promptId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(taskSummaryControllerProvider(id: id));
+
+    if (promptId != null) {
+      // ignore: avoid_print
+      print('AiTaskSummaryView received promptId: $promptId');
+    }
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 240),

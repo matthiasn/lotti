@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -54,7 +55,7 @@ class AiConfigRepository {
     return _db.getConfigById(id);
   }
 
-  /// Stream of all AI configurations of a specific type
+  /// Future with all AI configurations of a specific type
   Future<List<AiConfig>> getConfigsByType(AiConfigType type) async {
     final dbEntities = await _db.getConfigsByType(type.name);
     return dbEntities
@@ -63,6 +64,18 @@ class AiConfigRepository {
             Map<String, dynamic>.from(_jsonDecode(entity.serialized)),
           ),
         )
+        .toList();
+  }
+
+  /// Get all AiConfigPrompt configurations filtered by a specific AiResponseType
+  Future<List<AiConfigPrompt>> getPromptsByResponseType(
+    AiResponseType responseType,
+  ) async {
+    final allPrompts = await getConfigsByType(AiConfigType.prompt);
+    return allPrompts
+        .whereType<
+            AiConfigPrompt>() // Ensure we only have AiConfigPrompt instances
+        .where((prompt) => prompt.aiResponseType == responseType)
         .toList();
   }
 
