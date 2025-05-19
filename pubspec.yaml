@@ -173,6 +173,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   json_serializable: ^6.0.0
+  mockito: ^5.4.5
   msix: ^3.7.0
   path_provider_platform_interface: any
   plugin_platform_interface: any

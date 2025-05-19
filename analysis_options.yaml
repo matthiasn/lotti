@@ -14,5 +14,6 @@ analyzer:
     - '**/*.freezed.dart'
   errors:
     invalid_annotation_target: ignore
+    invalid_use_of_internal_member: ignore
   language:
-    strict-raw-types: true
+    strict-raw-types: true 

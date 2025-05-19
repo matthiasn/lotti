@@ -334,21 +334,33 @@
   "maintenanceAssignCategoriesToLinked": "Assign categories to entries linked from entries with categories",
   "maintenanceAssignCategoriesToLinkedFromTasks": "Assign categories to entries linked from tasks",
   "maintenanceCancelNotifications": "Cancel all notifications",
-  "maintenanceDeleteEditorDb": "Delete editor drafts database",
-  "maintenanceDeleteLoggingDb": "Delete logging database",
-  "maintenanceDeleteLoggingDbConfirm": "Yes, delete database",
-  "maintenanceDeleteLoggingDbQuestion": "Are you sure you want to delete the logging database? This action cannot be undone.",
-  "maintenanceDeleteSyncDb": "Delete sync database",
-  "maintenanceDeleteSyncDbConfirm": "Yes, delete database",
-  "maintenanceDeleteSyncDbQuestion": "Are you sure you want to delete the sync database? This action cannot be undone.",
-  "maintenanceDeleteTagged": "Delete tagged",
-  "maintenancePersistTaskCategories": "Persist task categories",
-  "maintenancePurgeAudioModels": "Purge audio models",
+  "maintenanceDeleteEditorDb": "Delete Editor Database",
+  "maintenanceDeleteLoggingDb": "Delete Logging Database",
+  "maintenanceDeleteSyncDb": "Delete Sync Database",
+  "maintenanceDeleteDatabaseQuestion": "Are you sure you want to delete {databaseName} Database?",
+  "maintenanceDeleteDatabaseConfirm": "YES, DELETE DATABASE",
+  "@maintenanceDeleteDatabaseQuestion": {
+    "placeholders": {
+      "databaseName": {
+        "type": "String"
+      }
+    }
+  },
+  "maintenanceDeleteDatabaseMessage": "Are you sure you want to delete the {databaseName} Database? This action cannot be undone.",
+  "@maintenanceDeleteDatabaseMessage": {
+    "placeholders": {
+      "databaseName": {
+        "type": "String"
+      }
+    }
+  },
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenancePurgeDeletedConfirm": "Yes, purge all",
-  "maintenancePurgeDeletedEmpty": "No deleted items to purge",
   "maintenancePurgeDeletedProgress": "Purging deleted items...",
-  "maintenancePurgeDeletedQuestion": "Are you sure you want to purge all deleted items?",
+  "maintenancePurgeDeletedEmpty": "No deleted items to purge",
+  "maintenancePurgeDeletedMessage": "Are you sure you want to purge all deleted items? This action cannot be undone.",
+  "maintenancePersistTaskCategories": "Persist task categories",
+  "maintenancePurgeAudioModels": "Purge audio models",
   "maintenanceRecreateFts5": "Recreate full-text index",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceReprocessSync": "Reprocess sync messages",
@@ -632,5 +644,13 @@
   "viewMenuEnableBrightTheme": "Enable Bright Theme",
   "viewMenuHideThemeConfig": "Hide Theme Config",
   "viewMenuShowThemeConfig": "Show Theme Config",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "syncEntitiesTitle": "Sync Entities",
+  "syncEntitiesMessage": "This will sync all tags, measurables, and categories. Do you want to continue?",
+  "syncEntitiesConfirm": "YES, SYNC ALL",
+  "syncEntitiesStepTags": "Syncing tags...",
+  "syncEntitiesStepMeasurables": "Syncing measurables...",
+  "syncEntitiesStepCategories": "Syncing categories...",
+  "syncEntitiesComplete": "All entities have been synced successfully.",
+  "done": "Done"
 }
