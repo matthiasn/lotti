@@ -36,7 +36,7 @@ class AudioTranscriptionController extends _$AudioTranscriptionController {
 
       final inferenceStatusProvider = inferenceStatusControllerProvider(
         id: id,
-        aiResponseType: audioTranscription,
+        aiResponseType: AiResponseType.audioTranscription,
       );
 
       final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier)

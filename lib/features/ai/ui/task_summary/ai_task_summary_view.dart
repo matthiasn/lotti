@@ -46,7 +46,7 @@ class AiTaskSummaryView extends ConsumerWidget {
             child: AiRunningAnimationWrapper(
               entryId: id,
               height: 50,
-              responseTypes: const {taskSummary},
+              responseTypes: const {AiResponseType.taskSummary},
             ),
           ),
         ],

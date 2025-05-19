@@ -41,7 +41,7 @@ class TaskForm extends ConsumerWidget {
         const SizedBox(height: 10),
         LatestAiResponseSummary(
           id: taskId,
-          aiResponseType: taskSummary,
+          aiResponseType: AiResponseType.taskSummary,
         ),
         ChecklistsWidget(entryId: taskId, task: task),
         const SizedBox(height: 10),

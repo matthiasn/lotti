@@ -1,17 +1,17 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-const actionItemSuggestions = 'ActionItemSuggestions';
-const taskSummary = 'TaskSummary';
-const imageAnalysis = 'ImageAnalysis';
-const audioTranscription = 'AudioTranscription';
+const actionItemSuggestionsConst = 'ActionItemSuggestions';
+const taskSummaryConst = 'TaskSummary';
+const imageAnalysisConst = 'ImageAnalysis';
+const audioTranscriptionConst = 'AudioTranscription';
 
 enum AiResponseType {
-  @JsonValue(actionItemSuggestions)
+  @JsonValue(actionItemSuggestionsConst)
   actionItemSuggestions,
-  @JsonValue(taskSummary)
+  @JsonValue(taskSummaryConst)
   taskSummary,
-  @JsonValue(imageAnalysis)
+  @JsonValue(imageAnalysisConst)
   imageAnalysis,
-  @JsonValue(audioTranscription)
+  @JsonValue(audioTranscriptionConst)
   audioTranscription,
 }

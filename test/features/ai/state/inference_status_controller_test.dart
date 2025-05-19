@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
 
   group('InferenceStatusController', () {
     const testId = 'test-id';
-    const testAiResponseType = 'TestSummary';
+    const testAiResponseType = AiResponseType.taskSummary;
 
     test('initial state is idle', () {
       final state = container.read(
@@ -74,7 +75,7 @@ void main() {
 
     test('different instances maintain separate states', () {
       const testId2 = 'test-id-2';
-      const testAiResponseType2 = 'TestSummary2';
+      const testAiResponseType2 = AiResponseType.taskSummary;
 
       final controller1 = container.read(
         inferenceStatusControllerProvider(
@@ -152,8 +153,8 @@ void main() {
 
   group('InferenceRunningController', () {
     const testId = 'test-id';
-    const responseType1 = 'TestSummary';
-    const responseType2 = 'TestAnalysis';
+    const responseType1 = AiResponseType.taskSummary;
+    const responseType2 = AiResponseType.actionItemSuggestions;
     final responseTypes = {responseType1, responseType2};
 
     test('initial state is false when no inference is running', () {
@@ -341,7 +342,7 @@ void main() {
     });
 
     test('works with empty response types set', () {
-      final emptyResponseTypes = <String>{};
+      final emptyResponseTypes = <AiResponseType>{};
 
       final state = container.read(
         inferenceRunningControllerProvider(

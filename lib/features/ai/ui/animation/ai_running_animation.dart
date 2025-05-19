@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass_kit/glass_kit.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:siri_wave/siri_wave.dart';
@@ -42,7 +43,7 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
 
   final String entryId;
   final double height;
-  final Set<String> responseTypes;
+  final Set<AiResponseType> responseTypes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +71,7 @@ class AiRunningAnimationWrapperCard extends ConsumerWidget {
 
   final String entryId;
   final double height;
-  final Set<String> responseTypes;
+  final Set<AiResponseType> responseTypes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

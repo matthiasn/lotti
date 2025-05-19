@@ -655,7 +655,7 @@ void main() {
             AiActionItem(title: 'Action 1', completed: false),
             AiActionItem(title: 'Action 2', completed: true),
           ],
-          type: 'ActionItemSuggestions',
+          type: AiResponseType.actionItemSuggestions,
         );
 
         final testStart = DateTime(2023);
@@ -691,7 +691,7 @@ void main() {
         // Arrange
         const taskTitle = 'Test Task';
         const statusId = 'status-123';
-        const aiResponseType = taskSummary;
+        const aiResponseType = AiResponseType.taskSummary;
 
         // Mock the task
         final task = JournalEntity.task(
@@ -754,7 +754,7 @@ void main() {
         // Arrange
         const taskTitle = 'Test Task';
         const statusId = 'status-123';
-        const aiResponseType = 'ActionItemSuggestions';
+        const aiResponseType = AiResponseType.actionItemSuggestions;
 
         // Mock the task
         final task = JournalEntity.task(
@@ -818,7 +818,7 @@ void main() {
 
       test('returns null for non-task entity', () async {
         // Arrange
-        const aiResponseType = taskSummary;
+        const aiResponseType = AiResponseType.taskSummary;
 
         // Mock a non-task entity (journal entry)
         when(() => mockDb.journalEntityById(taskId)).thenAnswer(
@@ -847,7 +847,7 @@ void main() {
 
       test('returns null for non-existent entity', () async {
         // Arrange
-        const aiResponseType = taskSummary;
+        const aiResponseType = AiResponseType.taskSummary;
 
         // Mock non-existent entity
         when(() => mockDb.journalEntityById(taskId))
@@ -864,61 +864,6 @@ void main() {
         verify(() => mockDb.journalEntityById(taskId)).called(1);
       });
 
-      test('returns null for unsupported aiResponseType', () async {
-        // Arrange
-        const taskTitle = 'Test Task';
-        const statusId = 'status-123';
-        const aiResponseType = 'UnsupportedType';
-
-        // Mock the task
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: taskId,
-            dateFrom: creationDate,
-            dateTo: creationDate,
-            createdAt: creationDate,
-            updatedAt: creationDate,
-          ),
-          data: TaskData(
-            title: taskTitle,
-            status: TaskStatus.open(
-              id: statusId,
-              createdAt: creationDate,
-              utcOffset: 0,
-            ),
-            statusHistory: [],
-            dateFrom: creationDate,
-            dateTo: creationDate,
-          ),
-        );
-
-        // Set up specific mock for the task progress repository
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer(
-          (_) async => (
-            const Duration(minutes: 30), // estimate
-            {'entry1': const Duration(minutes: 15)}, // durations
-          ),
-        );
-
-        // Set up mocks
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
-
-        // Act
-        final result = await repository.buildPrompt(
-          id: taskId,
-          aiResponseType: aiResponseType,
-        );
-
-        // Assert
-        expect(result, isNull);
-        verify(() => mockDb.journalEntityById(taskId)).called(1);
-        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
-      });
-
       test(
           'includes full task details in the prompt including action items and log entries',
           () async {
@@ -928,7 +873,7 @@ void main() {
         const checklistId = 'checklist-123';
         const checklistItemId = 'checklist-item-123';
         const linkedEntryId = 'linked-entry-123';
-        const aiResponseType = taskSummary;
+        const aiResponseType = AiResponseType.taskSummary;
 
         // Set up specific mock for the task progress repository
         when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))

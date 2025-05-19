@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/task_summary_prompt.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -36,6 +37,9 @@ void main() {
     mockAiInputRepository = MockAiInputRepository();
     mockJournalRepository = MockJournalRepository();
     mockUpdateNotifications = MockUpdateNotifications();
+
+    registerFallbackValue(AiResponseType.taskSummary);
+
     listener = Listener<AsyncValue<String?>>();
 
     updateStreamController = StreamController<Set<String>>.broadcast();

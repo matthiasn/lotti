@@ -42,7 +42,7 @@ class LatestSummaryController extends _$LatestSummaryController {
   @override
   Future<AiResponseEntry?> build({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) async {
     ref.onDispose(() => _updateSubscription?.cancel());
     watchedIds
@@ -93,9 +93,9 @@ class IsLatestSummaryOutdatedController
   @override
   Future<bool> build({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) async {
-    if (aiResponseType == taskSummary && !isTestEnv) {
+    if (aiResponseType == AiResponseType.taskSummary && !isTestEnv) {
       _timer ??= Timer.periodic(
         const Duration(seconds: 5),
         (timer) async {
@@ -141,7 +141,7 @@ class IsLatestSummaryOutdatedController
 
     final latestSummaryPrompt = latestSummary?.data.prompt;
 
-    final latestUnrealizedPrompt = aiResponseType == taskSummary
+    final latestUnrealizedPrompt = aiResponseType == AiResponseType.taskSummary
         ? await ref.watch(
             taskSummaryPromptControllerProvider(id: id).future,
           )

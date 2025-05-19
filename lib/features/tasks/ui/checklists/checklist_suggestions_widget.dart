@@ -37,7 +37,7 @@ class _ChecklistSuggestionsWidgetState
     final suggestionsInferenceStatus = ref.watch(
       inferenceStatusControllerProvider(
         id: widget.itemId,
-        aiResponseType: actionItemSuggestions,
+        aiResponseType: AiResponseType.actionItemSuggestions,
       ),
     );
 
@@ -45,7 +45,7 @@ class _ChecklistSuggestionsWidgetState
             .watch(
               isLatestSummaryOutdatedControllerProvider(
                 id: widget.itemId,
-                aiResponseType: actionItemSuggestions,
+                aiResponseType: AiResponseType.actionItemSuggestions,
               ),
             )
             .valueOrNull ??

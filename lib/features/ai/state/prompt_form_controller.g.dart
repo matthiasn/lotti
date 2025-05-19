@@ -7,7 +7,7 @@ part of 'prompt_form_controller.dart';
 // **************************************************************************
 
 String _$promptFormControllerHash() =>
-    r'51a71945f5832d0df00ed22a1c2dfdb2655a565a';
+    r'76245ede2fb87b1183f2686c0404535ce9b0ad3d';
 
 /// Copied from Dart SDK
 class _SystemHash {

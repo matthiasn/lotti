@@ -7,7 +7,7 @@ part of 'latest_summary_controller.dart';
 // **************************************************************************
 
 String _$latestSummaryControllerHash() =>
-    r'52ab0dc9495771ac4de9bcf7454ad7088748c80f';
+    r'012cd7f02a986bea593d0a984560af35caea3665';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,11 +33,11 @@ class _SystemHash {
 abstract class _$LatestSummaryController
     extends BuildlessAutoDisposeAsyncNotifier<AiResponseEntry?> {
   late final String id;
-  late final String aiResponseType;
+  late final AiResponseType aiResponseType;
 
   FutureOr<AiResponseEntry?> build({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   });
 }
 
@@ -54,7 +54,7 @@ class LatestSummaryControllerFamily
   /// See also [LatestSummaryController].
   LatestSummaryControllerProvider call({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) {
     return LatestSummaryControllerProvider(
       id: id,
@@ -94,7 +94,7 @@ class LatestSummaryControllerProvider
   /// See also [LatestSummaryController].
   LatestSummaryControllerProvider({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) : this._internal(
           () => LatestSummaryController()
             ..id = id
@@ -124,7 +124,7 @@ class LatestSummaryControllerProvider
   }) : super.internal();
 
   final String id;
-  final String aiResponseType;
+  final AiResponseType aiResponseType;
 
   @override
   FutureOr<AiResponseEntry?> runNotifierBuild(
@@ -186,7 +186,7 @@ mixin LatestSummaryControllerRef
   String get id;
 
   /// The parameter `aiResponseType` of this provider.
-  String get aiResponseType;
+  AiResponseType get aiResponseType;
 }
 
 class _LatestSummaryControllerProviderElement
@@ -197,21 +197,21 @@ class _LatestSummaryControllerProviderElement
   @override
   String get id => (origin as LatestSummaryControllerProvider).id;
   @override
-  String get aiResponseType =>
+  AiResponseType get aiResponseType =>
       (origin as LatestSummaryControllerProvider).aiResponseType;
 }
 
 String _$isLatestSummaryOutdatedControllerHash() =>
-    r'7b03c4d79cb5471a2085841311e302543c89d1af';
+    r'6c0a2618fe2cbfdb12f0ba03bfeb8a5e34e48985';
 
 abstract class _$IsLatestSummaryOutdatedController
     extends BuildlessAutoDisposeAsyncNotifier<bool> {
   late final String id;
-  late final String aiResponseType;
+  late final AiResponseType aiResponseType;
 
   FutureOr<bool> build({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   });
 }
 
@@ -228,7 +228,7 @@ class IsLatestSummaryOutdatedControllerFamily extends Family<AsyncValue<bool>> {
   /// See also [IsLatestSummaryOutdatedController].
   IsLatestSummaryOutdatedControllerProvider call({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) {
     return IsLatestSummaryOutdatedControllerProvider(
       id: id,
@@ -268,7 +268,7 @@ class IsLatestSummaryOutdatedControllerProvider
   /// See also [IsLatestSummaryOutdatedController].
   IsLatestSummaryOutdatedControllerProvider({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) : this._internal(
           () => IsLatestSummaryOutdatedController()
             ..id = id
@@ -298,7 +298,7 @@ class IsLatestSummaryOutdatedControllerProvider
   }) : super.internal();
 
   final String id;
-  final String aiResponseType;
+  final AiResponseType aiResponseType;
 
   @override
   FutureOr<bool> runNotifierBuild(
@@ -360,7 +360,7 @@ mixin IsLatestSummaryOutdatedControllerRef
   String get id;
 
   /// The parameter `aiResponseType` of this provider.
-  String get aiResponseType;
+  AiResponseType get aiResponseType;
 }
 
 class _IsLatestSummaryOutdatedControllerProviderElement
@@ -372,7 +372,7 @@ class _IsLatestSummaryOutdatedControllerProviderElement
   @override
   String get id => (origin as IsLatestSummaryOutdatedControllerProvider).id;
   @override
-  String get aiResponseType =>
+  AiResponseType get aiResponseType =>
       (origin as IsLatestSummaryOutdatedControllerProvider).aiResponseType;
 }
 // ignore_for_file: type=lint

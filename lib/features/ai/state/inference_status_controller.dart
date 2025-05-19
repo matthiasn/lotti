@@ -1,3 +1,4 @@
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -14,7 +15,7 @@ class InferenceStatusController extends _$InferenceStatusController {
   @override
   InferenceStatus build({
     required String id,
-    required String aiResponseType,
+    required AiResponseType aiResponseType,
   }) {
     ref.cacheFor(inferenceStateCacheDuration);
     return InferenceStatus.idle;
@@ -31,7 +32,7 @@ class InferenceRunningController extends _$InferenceRunningController {
   @override
   bool build({
     required String id,
-    required Set<String> responseTypes,
+    required Set<AiResponseType> responseTypes,
   }) {
     final runningStatuses = responseTypes.map((responseType) {
       final inferenceStatus = ref.watch(

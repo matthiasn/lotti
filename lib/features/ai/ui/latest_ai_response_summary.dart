@@ -19,7 +19,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
   });
 
   final String id;
-  final String aiResponseType;
+  final AiResponseType aiResponseType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +31,10 @@ class LatestAiResponseSummary extends ConsumerWidget {
     );
 
     final inferenceStatus = ref.watch(
-      inferenceStatusControllerProvider(id: id, aiResponseType: taskSummary),
+      inferenceStatusControllerProvider(
+        id: id,
+        aiResponseType: AiResponseType.taskSummary,
+      ),
     );
 
     final isRunning = inferenceStatus == InferenceStatus.running;

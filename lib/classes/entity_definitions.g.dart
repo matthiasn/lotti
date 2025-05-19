@@ -415,7 +415,7 @@ _$AiResponseDataImpl _$$AiResponseDataImplFromJson(Map<String, dynamic> json) =>
       suggestedActionItems: (json['suggestedActionItems'] as List<dynamic>?)
           ?.map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
-      type: json['type'] as String?,
+      type: $enumDecodeNullable(_$AiResponseTypeEnumMap, json['type']),
       temperature: (json['temperature'] as num?)?.toDouble(),
     );
 
@@ -428,9 +428,16 @@ Map<String, dynamic> _$$AiResponseDataImplToJson(
       'thoughts': instance.thoughts,
       'response': instance.response,
       'suggestedActionItems': instance.suggestedActionItems,
-      'type': instance.type,
+      'type': _$AiResponseTypeEnumMap[instance.type],
       'temperature': instance.temperature,
     };
+
+const _$AiResponseTypeEnumMap = {
+  AiResponseType.actionItemSuggestions: 'ActionItemSuggestions',
+  AiResponseType.taskSummary: 'TaskSummary',
+  AiResponseType.imageAnalysis: 'ImageAnalysis',
+  AiResponseType.audioTranscription: 'AudioTranscription',
+};
 
 _$WorkoutDataImpl _$$WorkoutDataImplFromJson(Map<String, dynamic> json) =>
     _$WorkoutDataImpl(

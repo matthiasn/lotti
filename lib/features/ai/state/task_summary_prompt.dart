@@ -47,7 +47,7 @@ class TaskSummaryPromptController extends _$TaskSummaryPromptController {
   Future<String?> _buildPrompt({required String id}) async {
     return ref.read(aiInputRepositoryProvider).buildPrompt(
           id: id,
-          aiResponseType: taskSummary,
+          aiResponseType: AiResponseType.taskSummary,
         );
   }
 }

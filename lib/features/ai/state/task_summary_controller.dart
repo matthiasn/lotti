@@ -39,7 +39,7 @@ class TaskSummaryController extends _$TaskSummaryController {
 
     final inferenceStatusProvider = inferenceStatusControllerProvider(
       id: id,
-      aiResponseType: taskSummary,
+      aiResponseType: AiResponseType.taskSummary,
     );
 
     final inferenceStatusNotifier = ref.read(inferenceStatusProvider.notifier);
@@ -62,7 +62,7 @@ class TaskSummaryController extends _$TaskSummaryController {
 
       final prompt = await ref
           .read(aiInputRepositoryProvider)
-          .buildPrompt(id: id, aiResponseType: taskSummary);
+          .buildPrompt(id: id, aiResponseType: AiResponseType.taskSummary);
 
       if (prompt == null) {
         return;
@@ -133,7 +133,7 @@ class TaskSummaryController extends _$TaskSummaryController {
         prompt: prompt,
         thoughts: '',
         response: completeResponse,
-        type: taskSummary,
+        type: AiResponseType.taskSummary,
       );
 
       await ref.read(aiInputRepositoryProvider).createAiResponseEntry(

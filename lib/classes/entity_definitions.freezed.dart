@@ -5523,7 +5523,7 @@ mixin _$AiResponseData {
   String get response => throw _privateConstructorUsedError;
   List<AiActionItem>? get suggestedActionItems =>
       throw _privateConstructorUsedError;
-  String? get type => throw _privateConstructorUsedError;
+  AiResponseType? get type => throw _privateConstructorUsedError;
   double? get temperature => throw _privateConstructorUsedError;
 
   /// Serializes this AiResponseData to a JSON map.
@@ -5549,7 +5549,7 @@ abstract class $AiResponseDataCopyWith<$Res> {
       String thoughts,
       String response,
       List<AiActionItem>? suggestedActionItems,
-      String? type,
+      AiResponseType? type,
       double? temperature});
 }
 
@@ -5605,7 +5605,7 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
       type: freezed == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
-              as String?,
+              as AiResponseType?,
       temperature: freezed == temperature
           ? _value.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
@@ -5629,7 +5629,7 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
       String thoughts,
       String response,
       List<AiActionItem>? suggestedActionItems,
-      String? type,
+      AiResponseType? type,
       double? temperature});
 }
 
@@ -5683,7 +5683,7 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
       type: freezed == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
-              as String?,
+              as AiResponseType?,
       temperature: freezed == temperature
           ? _value.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
@@ -5731,7 +5731,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
   }
 
   @override
-  final String? type;
+  final AiResponseType? type;
   @override
   final double? temperature;
 
@@ -5798,7 +5798,7 @@ abstract class _AiResponseData implements AiResponseData {
       required final String thoughts,
       required final String response,
       final List<AiActionItem>? suggestedActionItems,
-      final String? type,
+      final AiResponseType? type,
       final double? temperature}) = _$AiResponseDataImpl;
 
   factory _AiResponseData.fromJson(Map<String, dynamic> json) =
@@ -5817,7 +5817,7 @@ abstract class _AiResponseData implements AiResponseData {
   @override
   List<AiActionItem>? get suggestedActionItems;
   @override
-  String? get type;
+  AiResponseType? get type;
   @override
   double? get temperature;
 
