@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -10,7 +8,7 @@ Future<bool> showConfirmationModal({
   required BuildContext context,
   required String message,
   String? title,
-  String confirmLabel = 'YES, DELETE',
+  String confirmLabel = 'YES, DELETE DATABASE',
   String cancelLabel = 'CANCEL',
   bool isDestructive = true,
 }) async {
@@ -21,16 +19,14 @@ Future<bool> showConfirmationModal({
     pageListBuilder: (modalSheetContext) {
       return [
         WoltModalSheetPage(
-          backgroundColor: context.colorScheme.surfaceContainer,
+          backgroundColor: const Color(0xFF544F72),
+          // Fun dark purple background
           hasSabGradient: false,
           navBarHeight: 35,
-          topBarTitle: title != null
-              ? Text(title, style: context.textTheme.titleSmall)
-              : null,
-          isTopBarLayerAlwaysVisible: title != null,
+          isTopBarLayerAlwaysVisible: false,
           trailingNavBarWidget: IconButton(
             padding: WoltModalConfig.pagePadding,
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () {
               result = false;
               Navigator.of(context).pop();
@@ -41,47 +37,79 @@ Future<bool> showConfirmationModal({
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Warning Icon
                 if (isDestructive)
-                  Icon(
+                  const Icon(
                     Icons.warning_amber_rounded,
-                    size: 48,
-                    color: context.colorScheme.error,
+                    size: 36,
+                    color: Color(0xFFFF6B6B), // Soft alert red
                   ),
-                if (isDestructive) const SizedBox(height: 16),
+                const SizedBox(height: 16),
+
+                // Confirmation Text
                 Text(
                   message,
-                  style: context.textTheme.headlineSmall,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+
+                const SizedBox(height: 28),
+
+                // Action Buttons
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton(
-                      onPressed: () {
-                        result = false;
-                        Navigator.of(context).pop();
-                      },
-                      child: Text(cancelLabel),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          result = false;
+                          Navigator.of(context).pop();
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF7B9EC6),
+                          // Muted blue
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          cancelLabel,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
-                    FilledButton(
-                      onPressed: () {
-                        result = true;
-                        Navigator.of(context).pop();
-                      },
-                      style: isDestructive
-                          ? FilledButton.styleFrom(
-                              backgroundColor: context.colorScheme.error,
-                            )
-                          : null,
-                      child: Text(
-                        confirmLabel,
-                        style: isDestructive
-                            ? context.textTheme.labelLarge?.copyWith(
-                                color: context.colorScheme.onError,
-                                fontWeight: FontWeight.bold,
-                              )
-                            : null,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          result = true;
+                          Navigator.of(context).pop();
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFE57373),
+                          // Playful red
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          confirmLabel.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -93,20 +121,8 @@ Future<bool> showConfirmationModal({
       ];
     },
     modalTypeBuilder: ModalUtils.modalTypeBuilder,
-    barrierDismissible: false,
+    barrierDismissible: true,
   );
 
   return result ?? false;
-}
-
-/// shows a confirmation modal specifically for database deletion operations.
-Future<bool> showDatabaseDeleteConfirmationModal({
-  required BuildContext context,
-  required String databaseName,
-}) async {
-  return showConfirmationModal(
-    context: context,
-    message: context.messages.maintenanceDeleteDatabaseMessage(databaseName),
-    confirmLabel: context.messages.maintenanceDeleteDatabaseConfirm,
-  );
 }
