@@ -40,7 +40,7 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - photo_manager (2.0.0):
+  - photo_manager (3.7.0):
     - Flutter
     - FlutterMacOS
   - quill_native_bridge_macos (0.0.1):
@@ -211,7 +211,7 @@ SPEC CHECKSUMS:
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  photo_manager: d2fbcc0f2d82458700ee6256a15018210a81d413
+  photo_manager: 07ebd7b0ba45c60d8d06110bebf9dc4f60380764
   quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
   record_macos: 295d70bd5fb47145df78df7b80e6697cd18403c0
   screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
