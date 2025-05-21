@@ -945,32 +945,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Eliminar la base de datos de registro';
 
   @override
-  String get maintenanceDeleteLoggingDbConfirm => 'Yes, delete database';
-
-  @override
-  String get maintenanceDeleteLoggingDbQuestion =>
-      'Are you sure you want to delete the logging database? This action cannot be undone.';
-
-  @override
   String get maintenanceDeleteSyncDb =>
       'Eliminar la base de datos de sincronización';
 
   @override
-  String get maintenanceDeleteSyncDbConfirm => 'Yes, delete database';
+  String maintenanceDeleteDatabaseQuestion(String databaseName) {
+    return 'Are you sure you want to delete $databaseName Database?';
+  }
 
   @override
-  String get maintenanceDeleteSyncDbQuestion =>
-      'Are you sure you want to delete the sync database? This action cannot be undone.';
+  String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
 
   @override
-  String get maintenanceDeleteTagged => 'Eliminar etiquetados';
-
-  @override
-  String get maintenancePersistTaskCategories =>
-      'Conservar categorías de tareas';
-
-  @override
-  String get maintenancePurgeAudioModels => 'Purgar modelos de audio';
+  String maintenanceDeleteDatabaseMessage(String databaseName) {
+    return 'Are you sure you want to delete the $databaseName Database? This action cannot be undone.';
+  }
 
   @override
   String get maintenancePurgeDeleted => 'Purgar elementos eliminados';
@@ -979,14 +968,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
-  String get maintenancePurgeDeletedEmpty => 'No deleted items to purge';
-
-  @override
   String get maintenancePurgeDeletedProgress => 'Purging deleted items...';
 
   @override
-  String get maintenancePurgeDeletedQuestion =>
-      'Are you sure you want to purge all deleted items?';
+  String get maintenancePurgeDeletedEmpty => 'No deleted items to purge';
+
+  @override
+  String get maintenancePurgeDeletedMessage =>
+      'Are you sure you want to purge all deleted items? This action cannot be undone.';
+
+  @override
+  String get maintenancePersistTaskCategories =>
+      'Conservar categorías de tareas';
+
+  @override
+  String get maintenancePurgeAudioModels => 'Purgar modelos de audio';
 
   @override
   String get maintenanceRecreateFts5 => 'Recrear el índice de texto completo';
@@ -1899,4 +1895,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'Vista';
+
+  @override
+  String get syncEntitiesTitle => 'Sync Entities';
+
+  @override
+  String get syncEntitiesMessage =>
+      'This will sync all tags, measurables, and categories. Do you want to continue?';
+
+  @override
+  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+
+  @override
+  String get syncEntitiesStepTags => 'Syncing tags...';
+
+  @override
+  String get syncEntitiesStepMeasurables => 'Syncing measurables...';
+
+  @override
+  String get syncEntitiesStepCategories => 'Syncing categories...';
+
+  @override
+  String get syncEntitiesComplete =>
+      'All entities have been synced successfully.';
+
+  @override
+  String get done => 'Done';
 }

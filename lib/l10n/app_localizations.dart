@@ -1848,62 +1848,38 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceDeleteEditorDb.
   ///
   /// In en, this message translates to:
-  /// **'Delete editor drafts database'**
+  /// **'Delete Editor Database'**
   String get maintenanceDeleteEditorDb;
 
   /// No description provided for @maintenanceDeleteLoggingDb.
   ///
   /// In en, this message translates to:
-  /// **'Delete logging database'**
+  /// **'Delete Logging Database'**
   String get maintenanceDeleteLoggingDb;
-
-  /// No description provided for @maintenanceDeleteLoggingDbConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Yes, delete database'**
-  String get maintenanceDeleteLoggingDbConfirm;
-
-  /// No description provided for @maintenanceDeleteLoggingDbQuestion.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete the logging database? This action cannot be undone.'**
-  String get maintenanceDeleteLoggingDbQuestion;
 
   /// No description provided for @maintenanceDeleteSyncDb.
   ///
   /// In en, this message translates to:
-  /// **'Delete sync database'**
+  /// **'Delete Sync Database'**
   String get maintenanceDeleteSyncDb;
 
-  /// No description provided for @maintenanceDeleteSyncDbConfirm.
+  /// No description provided for @maintenanceDeleteDatabaseQuestion.
   ///
   /// In en, this message translates to:
-  /// **'Yes, delete database'**
-  String get maintenanceDeleteSyncDbConfirm;
+  /// **'Are you sure you want to delete {databaseName} Database?'**
+  String maintenanceDeleteDatabaseQuestion(String databaseName);
 
-  /// No description provided for @maintenanceDeleteSyncDbQuestion.
+  /// No description provided for @maintenanceDeleteDatabaseConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete the sync database? This action cannot be undone.'**
-  String get maintenanceDeleteSyncDbQuestion;
+  /// **'YES, DELETE DATABASE'**
+  String get maintenanceDeleteDatabaseConfirm;
 
-  /// No description provided for @maintenanceDeleteTagged.
+  /// No description provided for @maintenanceDeleteDatabaseMessage.
   ///
   /// In en, this message translates to:
-  /// **'Delete tagged'**
-  String get maintenanceDeleteTagged;
-
-  /// No description provided for @maintenancePersistTaskCategories.
-  ///
-  /// In en, this message translates to:
-  /// **'Persist task categories'**
-  String get maintenancePersistTaskCategories;
-
-  /// No description provided for @maintenancePurgeAudioModels.
-  ///
-  /// In en, this message translates to:
-  /// **'Purge audio models'**
-  String get maintenancePurgeAudioModels;
+  /// **'Are you sure you want to delete the {databaseName} Database? This action cannot be undone.'**
+  String maintenanceDeleteDatabaseMessage(String databaseName);
 
   /// No description provided for @maintenancePurgeDeleted.
   ///
@@ -1917,23 +1893,35 @@ abstract class AppLocalizations {
   /// **'Yes, purge all'**
   String get maintenancePurgeDeletedConfirm;
 
-  /// No description provided for @maintenancePurgeDeletedEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No deleted items to purge'**
-  String get maintenancePurgeDeletedEmpty;
-
   /// No description provided for @maintenancePurgeDeletedProgress.
   ///
   /// In en, this message translates to:
   /// **'Purging deleted items...'**
   String get maintenancePurgeDeletedProgress;
 
-  /// No description provided for @maintenancePurgeDeletedQuestion.
+  /// No description provided for @maintenancePurgeDeletedEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to purge all deleted items?'**
-  String get maintenancePurgeDeletedQuestion;
+  /// **'No deleted items to purge'**
+  String get maintenancePurgeDeletedEmpty;
+
+  /// No description provided for @maintenancePurgeDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to purge all deleted items? This action cannot be undone.'**
+  String get maintenancePurgeDeletedMessage;
+
+  /// No description provided for @maintenancePersistTaskCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Persist task categories'**
+  String get maintenancePersistTaskCategories;
+
+  /// No description provided for @maintenancePurgeAudioModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Purge audio models'**
+  String get maintenancePurgeAudioModels;
 
   /// No description provided for @maintenanceRecreateFts5.
   ///
@@ -3579,6 +3567,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get viewMenuTitle;
+
+  /// No description provided for @syncEntitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Entities'**
+  String get syncEntitiesTitle;
+
+  /// No description provided for @syncEntitiesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will sync all tags, measurables, and categories. Do you want to continue?'**
+  String get syncEntitiesMessage;
+
+  /// No description provided for @syncEntitiesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'YES, SYNC ALL'**
+  String get syncEntitiesConfirm;
+
+  /// No description provided for @syncEntitiesStepTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing tags...'**
+  String get syncEntitiesStepTags;
+
+  /// No description provided for @syncEntitiesStepMeasurables.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing measurables...'**
+  String get syncEntitiesStepMeasurables;
+
+  /// No description provided for @syncEntitiesStepCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing categories...'**
+  String get syncEntitiesStepCategories;
+
+  /// No description provided for @syncEntitiesComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'All entities have been synced successfully.'**
+  String get syncEntitiesComplete;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
 }
 
 class _AppLocalizationsDelegate
