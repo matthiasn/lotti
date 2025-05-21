@@ -54,14 +54,14 @@ void main() {
       when(() => mockJournalDb.watchTags())
           .thenAnswer((_) => Stream.value([testTag]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+          .thenAnswer((_) => Future.value());
 
       await syncService.syncTags();
 
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
 
-    test('syncTags skips deleted and inactive tags', () async {
+    test('syncTags skips deleted tags', () async {
       final deletedTag = TagEntity.genericTag(
         id: '2',
         tag: 'deleted',
@@ -83,10 +83,47 @@ void main() {
       );
       when(() => mockJournalDb.watchTags())
           .thenAnswer((_) => Stream.value([deletedTag, inactiveTag]));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) => Future.value());
 
       await syncService.syncTags();
 
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      final capturedMessages =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+
+      // Expect that exactly one message was captured
+      expect(capturedMessages.length, 1);
+
+      // Expect that the captured message is the inactiveTag
+      final inactiveTagMessage = capturedMessages.firstWhere(
+        (m) =>
+            (m as SyncMessage).mapOrNull(
+              tagEntity: (syncTag) => syncTag.tagEntity.id == inactiveTag.id,
+            ) ??
+            false,
+        orElse: () =>
+            null, // Add orElse to handle not found case, though expect will fail if it's null
+      );
+      expect(
+        inactiveTagMessage,
+        isNotNull,
+        reason: 'Message for inactiveTag was not captured',
+      );
+
+      // Expect that no message for the deletedTag was captured
+      final deletedTagMessage = capturedMessages.firstWhere(
+        (m) =>
+            (m as SyncMessage).mapOrNull(
+              tagEntity: (syncTag) => syncTag.tagEntity.id == deletedTag.id,
+            ) ??
+            false,
+        orElse: () => null, // Add orElse to return null if not found
+      );
+      expect(
+        deletedTagMessage,
+        isNull,
+        reason: 'Message for deletedTag was captured but should not have been',
+      );
     });
   });
 }
