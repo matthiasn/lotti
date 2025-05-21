@@ -52,29 +52,43 @@ class FakeHabitDefinition extends Fake implements HabitDefinition {
 }
 
 void main() {
-  late SyncMaintenanceRepository syncService;
   late MockJournalDb mockJournalDb;
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLoggingService;
+  late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
     registerFallbackValue(SyncMessageFake());
+    registerFallbackValue(StackTrace.empty);
   });
 
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockOutboxService = MockOutboxService();
     mockLoggingService = MockLoggingService();
+
+    // Clear previous registrations if any, to avoid conflicts during re-runs.
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<OutboxService>()) {
+      getIt.unregister<OutboxService>();
+    }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<LoggingService>(mockLoggingService);
-    syncService = SyncMaintenanceRepository();
+
+    syncMaintenanceRepository = SyncMaintenanceRepository();
   });
 
   tearDown(getIt.reset);
 
-  group('SyncService Tests', () {
+  group('SyncMaintenanceRepository - Original Tests', () {
     test('syncTags enqueues tags for sync', () async {
       final testTag = TagEntity.genericTag(
         id: '1',
@@ -88,14 +102,27 @@ void main() {
       when(() => mockJournalDb.watchTags())
           .thenAnswer((_) => Stream.value([testTag]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncTags();
+      await syncMaintenanceRepository.syncTags();
 
-      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          tagEntity: (syncTag) => syncTag.tagEntity.id,
+        ),
+        testTag.id,
+      );
+      expect(
+        capturedMessage.mapOrNull(tagEntity: (syncTag) => syncTag.status),
+        SyncEntryStatus.update,
+      );
     });
 
-    test('syncTags skips deleted tags', () async {
+    test('syncTags skips deleted tags but syncs inactive tags', () async {
       final deletedTag = TagEntity.genericTag(
         id: '2',
         tag: 'deleted',
@@ -118,77 +145,60 @@ void main() {
       when(() => mockJournalDb.watchTags())
           .thenAnswer((_) => Stream.value([deletedTag, inactiveTag]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncTags();
+      await syncMaintenanceRepository.syncTags();
 
-      final capturedMessages =
+      final captured =
           verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
 
-      // Expect that exactly one message was captured
-      expect(capturedMessages.length, 1);
-
-      // Expect that the captured message is the inactiveTag
-      final inactiveTagMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              tagEntity: (syncTag) => syncTag.tagEntity.id == inactiveTag.id,
-            ) ??
-            false,
-        orElse: () =>
-            null, // Add orElse to handle not found case, though expect will fail if it's null
+      // Should only capture the inactive tag
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          tagEntity: (syncTag) => syncTag.tagEntity.id,
+        ),
+        inactiveTag.id,
       );
       expect(
-        inactiveTagMessage,
-        isNotNull,
-        reason: 'Message for inactiveTag was not captured',
+        capturedMessage.mapOrNull(tagEntity: (syncTag) => syncTag.status),
+        SyncEntryStatus.update,
       );
 
-      // Expect that no message for the deletedTag was captured
-      final deletedTagMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              tagEntity: (syncTag) => syncTag.tagEntity.id == deletedTag.id,
-            ) ??
-            false,
-        orElse: () => null, // Add orElse to return null if not found
-      );
-      expect(
-        deletedTagMessage,
-        isNull,
-        reason: 'Message for deletedTag was captured but should not have been',
-      );
+      // Verify that the deleted tag was never enqueued by checking all captured messages.
+      // This is a more robust way than verifyNever if other messages could have been sent.
+      for (final msg in captured) {
+        final id = (msg as SyncMessage)
+            .mapOrNull(tagEntity: (syncTag) => syncTag.tagEntity.id);
+        expect(id, isNot(deletedTag.id));
+      }
     });
-  });
 
-  group('SyncMeasurables Tests', () {
     test('syncMeasurables enqueues measurables for sync', () async {
       final testMeasurable = FakeMeasurableDataType(id: '1');
-      // No need to mock id and deletedAt as they are set in constructor
       when(() => mockJournalDb.watchMeasurableDataTypes())
           .thenAnswer((_) => Stream.value([testMeasurable]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncMeasurables();
+      await syncMaintenanceRepository.syncMeasurables();
 
-      verify(
-        () => mockOutboxService.enqueueMessage(
-          any(
-            that: isA<SyncMessage>().having(
-              (m) =>
-                  m.mapOrNull(
-                    entityDefinition: (s) =>
-                        (s.entityDefinition as MeasurableDataType).id ==
-                        testMeasurable.id,
-                  ) ??
-                  false,
-              'id',
-              true,
-            ),
-          ),
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as MeasurableDataType).id,
         ),
-      ).called(1);
+        testMeasurable.id,
+      );
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
+      );
     });
 
     test('syncMeasurables skips deleted measurables', () async {
@@ -200,67 +210,59 @@ void main() {
         (_) => Stream.value([deletedMeasurable, activeMeasurable]),
       );
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncMeasurables();
+      await syncMaintenanceRepository.syncMeasurables();
 
-      final capturedMessages =
+      final captured =
           verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
-      expect(capturedMessages.length, 1);
-
-      final activeMeasurableMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as MeasurableDataType).id ==
-                  activeMeasurable.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as MeasurableDataType).id,
+        ),
+        activeMeasurable.id,
       );
-      expect(activeMeasurableMessage, isNotNull);
-
-      final deletedMeasurableMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as MeasurableDataType).id ==
-                  deletedMeasurable.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
       );
-      expect(deletedMeasurableMessage, isNull);
+
+      for (final msg in captured) {
+        final id = (msg as SyncMessage).mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as MeasurableDataType).id,
+        );
+        expect(id, isNot(deletedMeasurable.id));
+      }
     });
-  });
 
-  group('SyncCategories Tests', () {
     test('syncCategories enqueues categories for sync', () async {
       final testCategory = FakeCategoryDefinition(id: '1');
       when(() => mockJournalDb.watchCategories())
           .thenAnswer((_) => Stream.value([testCategory]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncCategories();
+      await syncMaintenanceRepository.syncCategories();
 
-      verify(
-        () => mockOutboxService.enqueueMessage(
-          any(
-            that: isA<SyncMessage>().having(
-              (m) =>
-                  m.mapOrNull(
-                    entityDefinition: (s) =>
-                        (s.entityDefinition as CategoryDefinition).id ==
-                        testCategory.id,
-                  ) ??
-                  false,
-              'id',
-              true,
-            ),
-          ),
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as CategoryDefinition).id,
         ),
-      ).called(1);
+        testCategory.id,
+      );
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
+      );
     });
 
     test('syncCategories skips deleted categories', () async {
@@ -271,67 +273,59 @@ void main() {
       when(() => mockJournalDb.watchCategories())
           .thenAnswer((_) => Stream.value([deletedCategory, activeCategory]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncCategories();
+      await syncMaintenanceRepository.syncCategories();
 
-      final capturedMessages =
+      final captured =
           verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
-      expect(capturedMessages.length, 1);
-
-      final activeCategoryMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as CategoryDefinition).id ==
-                  activeCategory.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as CategoryDefinition).id,
+        ),
+        activeCategory.id,
       );
-      expect(activeCategoryMessage, isNotNull);
-
-      final deletedCategoryMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as CategoryDefinition).id ==
-                  deletedCategory.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
       );
-      expect(deletedCategoryMessage, isNull);
+
+      for (final msg in captured) {
+        final id = (msg as SyncMessage).mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as CategoryDefinition).id,
+        );
+        expect(id, isNot(deletedCategory.id));
+      }
     });
-  });
 
-  group('SyncDashboards Tests', () {
     test('syncDashboards enqueues dashboards for sync', () async {
       final testDashboard = FakeDashboardDefinition(id: '1');
       when(() => mockJournalDb.watchDashboards())
           .thenAnswer((_) => Stream.value([testDashboard]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncDashboards();
+      await syncMaintenanceRepository.syncDashboards();
 
-      verify(
-        () => mockOutboxService.enqueueMessage(
-          any(
-            that: isA<SyncMessage>().having(
-              (m) =>
-                  m.mapOrNull(
-                    entityDefinition: (s) =>
-                        (s.entityDefinition as DashboardDefinition).id ==
-                        testDashboard.id,
-                  ) ??
-                  false,
-              'id',
-              true,
-            ),
-          ),
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as DashboardDefinition).id,
         ),
-      ).called(1);
+        testDashboard.id,
+      );
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
+      );
     });
 
     test('syncDashboards skips deleted dashboards', () async {
@@ -342,67 +336,58 @@ void main() {
       when(() => mockJournalDb.watchDashboards())
           .thenAnswer((_) => Stream.value([deletedDashboard, activeDashboard]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncDashboards();
+      await syncMaintenanceRepository.syncDashboards();
 
-      final capturedMessages =
+      final captured =
           verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
-      expect(capturedMessages.length, 1);
-
-      final activeDashboardMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as DashboardDefinition).id ==
-                  activeDashboard.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as DashboardDefinition).id,
+        ),
+        activeDashboard.id,
       );
-      expect(activeDashboardMessage, isNotNull);
-
-      final deletedDashboardMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as DashboardDefinition).id ==
-                  deletedDashboard.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
       );
-      expect(deletedDashboardMessage, isNull);
+
+      for (final msg in captured) {
+        final id = (msg as SyncMessage).mapOrNull(
+          entityDefinition: (s) =>
+              (s.entityDefinition as DashboardDefinition).id,
+        );
+        expect(id, isNot(deletedDashboard.id));
+      }
     });
-  });
 
-  group('SyncHabits Tests', () {
     test('syncHabits enqueues habits for sync', () async {
       final testHabit = FakeHabitDefinition(id: '1');
       when(() => mockJournalDb.watchHabitDefinitions())
           .thenAnswer((_) => Stream.value([testHabit]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncHabits();
+      await syncMaintenanceRepository.syncHabits();
 
-      verify(
-        () => mockOutboxService.enqueueMessage(
-          any(
-            that: isA<SyncMessage>().having(
-              (m) =>
-                  m.mapOrNull(
-                    entityDefinition: (s) =>
-                        (s.entityDefinition as HabitDefinition).id ==
-                        testHabit.id,
-                  ) ??
-                  false,
-              'id',
-              true,
-            ),
-          ),
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) => (s.entityDefinition as HabitDefinition).id,
         ),
-      ).called(1);
+        testHabit.id,
+      );
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
+      );
     });
 
     test('syncHabits skips deleted habits', () async {
@@ -413,35 +398,140 @@ void main() {
       when(() => mockJournalDb.watchHabitDefinitions())
           .thenAnswer((_) => Stream.value([deletedHabit, activeHabit]));
       when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) async {});
 
-      await syncService.syncHabits();
+      await syncMaintenanceRepository.syncHabits();
 
-      final capturedMessages =
+      final captured =
           verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
-      expect(capturedMessages.length, 1);
-
-      final activeHabitMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as HabitDefinition).id == activeHabit.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(captured.length, 1);
+      final capturedMessage = captured.first as SyncMessage;
+      expect(
+        capturedMessage.mapOrNull(
+          entityDefinition: (s) => (s.entityDefinition as HabitDefinition).id,
+        ),
+        activeHabit.id,
       );
-      expect(activeHabitMessage, isNotNull);
-
-      final deletedHabitMessage = capturedMessages.firstWhere(
-        (m) =>
-            (m as SyncMessage).mapOrNull(
-              entityDefinition: (s) =>
-                  (s.entityDefinition as HabitDefinition).id == deletedHabit.id,
-            ) ??
-            false,
-        orElse: () => null,
+      expect(
+        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+        SyncEntryStatus.update,
       );
-      expect(deletedHabitMessage, isNull);
+
+      for (final msg in captured) {
+        final id = (msg as SyncMessage).mapOrNull(
+          entityDefinition: (s) => (s.entityDefinition as HabitDefinition).id,
+        );
+        expect(id, isNot(deletedHabit.id));
+      }
+    });
+  });
+
+  group('SyncMaintenanceRepository - Logging Tests', () {
+    final testException = Exception('Test DB Error');
+
+    group('syncTags', () {
+      test('should log and rethrow exception when db fails', () async {
+        when(() => mockJournalDb.watchTags())
+            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+
+        await expectLater(
+          () => syncMaintenanceRepository.syncTags(),
+          throwsA(testException),
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'SYNC_SERVICE',
+            subDomain: 'syncTags',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('syncMeasurables', () {
+      test('should log and rethrow exception when db fails', () async {
+        when(() => mockJournalDb.watchMeasurableDataTypes())
+            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+
+        await expectLater(
+          () => syncMaintenanceRepository.syncMeasurables(),
+          throwsA(testException),
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'SYNC_SERVICE',
+            subDomain: 'syncMeasurables',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('syncCategories', () {
+      test('should log and rethrow exception when db fails', () async {
+        when(() => mockJournalDb.watchCategories())
+            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+
+        await expectLater(
+          () => syncMaintenanceRepository.syncCategories(),
+          throwsA(testException),
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'SYNC_SERVICE',
+            subDomain: 'syncCategories',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('syncDashboards', () {
+      test('should log and rethrow exception when db fails', () async {
+        when(() => mockJournalDb.watchDashboards())
+            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+
+        await expectLater(
+          () => syncMaintenanceRepository.syncDashboards(),
+          throwsA(testException),
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'SYNC_SERVICE',
+            subDomain: 'syncDashboards',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('syncHabits', () {
+      test('should log and rethrow exception when db fails', () async {
+        when(() => mockJournalDb.watchHabitDefinitions())
+            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+
+        await expectLater(
+          () => syncMaintenanceRepository.syncHabits(),
+          throwsA(testException),
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'SYNC_SERVICE',
+            subDomain: 'syncHabits',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
     });
   });
 }
