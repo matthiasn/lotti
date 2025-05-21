@@ -929,36 +929,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceCancelNotifications => 'Cancel all notifications';
 
   @override
-  String get maintenanceDeleteEditorDb => 'Delete editor drafts database';
+  String get maintenanceDeleteEditorDb => 'Delete Editor Database';
 
   @override
-  String get maintenanceDeleteLoggingDb => 'Delete logging database';
+  String get maintenanceDeleteLoggingDb => 'Delete Logging Database';
 
   @override
-  String get maintenanceDeleteLoggingDbConfirm => 'Yes, delete database';
+  String get maintenanceDeleteSyncDb => 'Delete Sync Database';
 
   @override
-  String get maintenanceDeleteLoggingDbQuestion =>
-      'Are you sure you want to delete the logging database? This action cannot be undone.';
+  String maintenanceDeleteDatabaseQuestion(String databaseName) {
+    return 'Are you sure you want to delete $databaseName Database?';
+  }
 
   @override
-  String get maintenanceDeleteSyncDb => 'Delete sync database';
+  String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
 
   @override
-  String get maintenanceDeleteSyncDbConfirm => 'Yes, delete database';
-
-  @override
-  String get maintenanceDeleteSyncDbQuestion =>
-      'Are you sure you want to delete the sync database? This action cannot be undone.';
-
-  @override
-  String get maintenanceDeleteTagged => 'Delete tagged';
-
-  @override
-  String get maintenancePersistTaskCategories => 'Persist task categories';
-
-  @override
-  String get maintenancePurgeAudioModels => 'Purge audio models';
+  String maintenanceDeleteDatabaseMessage(String databaseName) {
+    return 'Are you sure you want to delete the $databaseName Database? This action cannot be undone.';
+  }
 
   @override
   String get maintenancePurgeDeleted => 'Purge deleted items';
@@ -967,14 +957,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
-  String get maintenancePurgeDeletedEmpty => 'No deleted items to purge';
-
-  @override
   String get maintenancePurgeDeletedProgress => 'Purging deleted items...';
 
   @override
-  String get maintenancePurgeDeletedQuestion =>
-      'Are you sure you want to purge all deleted items?';
+  String get maintenancePurgeDeletedEmpty => 'No deleted items to purge';
+
+  @override
+  String get maintenancePurgeDeletedMessage =>
+      'Are you sure you want to purge all deleted items? This action cannot be undone.';
+
+  @override
+  String get maintenancePersistTaskCategories => 'Persist task categories';
+
+  @override
+  String get maintenancePurgeAudioModels => 'Purge audio models';
 
   @override
   String get maintenanceRecreateFts5 => 'Recreate full-text index';
@@ -1871,6 +1867,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'View';
+
+  @override
+  String get syncEntitiesTitle => 'Sync Entities';
+
+  @override
+  String get syncEntitiesMessage =>
+      'This will sync all tags, measurables, and categories. Do you want to continue?';
+
+  @override
+  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+
+  @override
+  String get syncEntitiesStepTags => 'Syncing tags...';
+
+  @override
+  String get syncEntitiesStepMeasurables => 'Syncing measurables...';
+
+  @override
+  String get syncEntitiesStepCategories => 'Syncing categories...';
+
+  @override
+  String get syncEntitiesComplete =>
+      'All entities have been synced successfully.';
+
+  @override
+  String get done => 'Done';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -2471,16 +2493,13 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get maintenanceDeleteSyncDb => 'Delete sync database';
 
   @override
-  String get maintenanceDeleteTagged => 'Delete tagged';
+  String get maintenancePurgeDeleted => 'Purge deleted items';
 
   @override
   String get maintenancePersistTaskCategories => 'Persist task categories';
 
   @override
   String get maintenancePurgeAudioModels => 'Purge audio models';
-
-  @override
-  String get maintenancePurgeDeleted => 'Purge deleted items';
 
   @override
   String get maintenanceRecreateFts5 => 'Recreate full-text index';
