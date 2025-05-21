@@ -17,8 +17,8 @@ class SyncService {
 
       // syncing each tag
       for (final tag in tags) {
-        // Skip deleted or inactive tags
-        if (tag.deletedAt != null || tag.inactive!) {
+        // Skip deleted
+        if (tag.deletedAt != null) {
           continue;
         }
 
@@ -48,7 +48,7 @@ class SyncService {
 
       // syncing each measurable
       for (final measurable in measurables) {
-        // Skip deleted or inactive measurables
+        // Skip deleted measurables
         if (measurable.deletedAt != null) {
           continue;
         }
@@ -79,8 +79,8 @@ class SyncService {
 
       // syncing each category
       for (final category in categories) {
-        // Skip deleted or inactive categories
-        if (category.deletedAt != null || category.active == false) {
+        // Skip deleted categories
+        if (category.deletedAt != null) {
           continue;
         }
 
@@ -110,8 +110,8 @@ class SyncService {
 
       // syncing each dashboard
       for (final dashboard in dashboards) {
-        // Skip deleted or inactive dashboards
-        if (dashboard.deletedAt != null || dashboard.active == false) {
+        // Skip deleted dashboards
+        if (dashboard.deletedAt != null) {
           continue;
         }
 
@@ -141,8 +141,8 @@ class SyncService {
 
       // syncing each habit
       for (final habit in habits) {
-        // Skip deleted or inactive habits
-        if (habit.deletedAt != null || habit.active == false) {
+        // Skip deleted habits
+        if (habit.deletedAt != null) {
           continue;
         }
 
