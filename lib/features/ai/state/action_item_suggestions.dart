@@ -158,9 +158,68 @@ class ActionItemSuggestionsController
       suggestionsStatusNotifier.setStatus(InferenceStatus.idle);
     } catch (e, stackTrace) {
       suggestionsStatusNotifier.setStatus(InferenceStatus.error);
+      var displayMessage = e.toString(); // Default message
+
+      final dynamic dynError = e;
+      try {
+        dynamic errorBody;
+        // Attempt to access dynError.body if it exists
+        try {
+          // ignore: avoid_dynamic_calls
+          errorBody = dynError.body;
+        } catch (_) {
+          // dynError doesn't have a .body property, errorBody remains null
+        }
+
+        dynamic detailContent;
+
+        if (errorBody != null) {
+          if (errorBody is Map && errorBody.containsKey('detail')) {
+            detailContent = errorBody['detail'];
+          } else if (errorBody is String) {
+            try {
+              final decodedBody = jsonDecode(errorBody) as Map<String, dynamic>;
+              if (decodedBody.containsKey('detail')) {
+                detailContent = decodedBody['detail'];
+              }
+            } catch (_) {
+              // JSON decoding failed, or not a map, or no 'detail' key
+            }
+          }
+        }
+
+        if (detailContent != null) {
+          displayMessage = detailContent.toString();
+        } else {
+          // Fallback to dynError.message if detailContent is not found
+          dynamic errorMessage;
+          try {
+            // ignore: avoid_dynamic_calls
+            errorMessage = dynError.message;
+          } catch (_) {
+            // dynError doesn't have a .message property
+          }
+          if (errorMessage != null) {
+            displayMessage = errorMessage.toString();
+          }
+          // If all else fails, displayMessage remains e.toString()
+        }
+      } catch (extractionException) {
+        // Catch any error during the dynamic extraction process itself
+        // displayMessage is already e.toString(). Consider logging extractionException.
+      }
+
+      // Ensure displayMessage is not literally "null" or empty
+      if (displayMessage.trim().isEmpty ||
+          displayMessage.trim().toLowerCase() == 'null') {
+        displayMessage = e.toString();
+      }
+
+      state = displayMessage;
+
       getIt<LoggingService>().captureException(
         e,
-        domain: 'SuggestionsStatusController',
+        domain: 'ActionItemSuggestionsController', // Corrected domain
         subDomain: 'getActionItemSuggestion',
         stackTrace: stackTrace,
       );

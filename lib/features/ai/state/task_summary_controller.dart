@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -145,9 +146,64 @@ class TaskSummaryController extends _$TaskSummaryController {
       inferenceStatusNotifier.setStatus(InferenceStatus.idle);
     } catch (e, stackTrace) {
       inferenceStatusNotifier.setStatus(InferenceStatus.error);
+      var displayMessage = e.toString(); // Default message
+
+      final dynamic dynError = e;
+      try {
+        dynamic errorBody;
+        try {
+          // ignore: avoid_dynamic_calls
+          errorBody = dynError.body;
+        } catch (_) {
+          // dynError doesn't have a .body property, errorBody remains null
+        }
+
+        dynamic detailContent;
+
+        if (errorBody != null) {
+          if (errorBody is Map && errorBody.containsKey('detail')) {
+            detailContent = errorBody['detail'];
+          } else if (errorBody is String) {
+            try {
+              final decodedBody = jsonDecode(errorBody) as Map<String, dynamic>;
+              if (decodedBody.containsKey('detail')) {
+                detailContent = decodedBody['detail'];
+              }
+            } catch (_) {
+              // JSON decoding failed, or not a map, or no 'detail' key
+            }
+          }
+        }
+
+        if (detailContent != null) {
+          displayMessage = detailContent.toString();
+        } else {
+          dynamic errorMessage;
+          try {
+            // ignore: avoid_dynamic_calls
+            errorMessage = dynError.message;
+          } catch (_) {
+            // dynError doesn't have a .message property
+          }
+          if (errorMessage != null) {
+            displayMessage = errorMessage.toString();
+          }
+        }
+      } catch (extractionException) {
+        // Catch any error during the dynamic extraction process itself
+        // displayMessage is already e.toString().
+      }
+
+      if (displayMessage.trim().isEmpty ||
+          displayMessage.trim().toLowerCase() == 'null') {
+        displayMessage = e.toString();
+      }
+
+      state = displayMessage;
+
       getIt<LoggingService>().captureException(
         e,
-        domain: 'TaskSummaryController',
+        domain: 'TaskSummaryController', // Ensuring domain is correct
         subDomain: 'getTaskSummary',
         stackTrace: stackTrace,
       );
