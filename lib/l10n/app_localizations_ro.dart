@@ -941,31 +941,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceDeleteLoggingDb => 'Șterge log-urile din baza de date';
 
   @override
-  String get maintenanceDeleteLoggingDbConfirm => 'Yes, delete database';
-
-  @override
-  String get maintenanceDeleteLoggingDbQuestion =>
-      'Are you sure you want to delete the logging database? This action cannot be undone.';
-
-  @override
   String get maintenanceDeleteSyncDb => 'Ștergeți baza de date de sincronizare';
 
   @override
-  String get maintenanceDeleteSyncDbConfirm => 'Yes, delete database';
+  String maintenanceDeleteDatabaseQuestion(String databaseName) {
+    return 'Are you sure you want to delete $databaseName Database?';
+  }
 
   @override
-  String get maintenanceDeleteSyncDbQuestion =>
-      'Are you sure you want to delete the sync database? This action cannot be undone.';
+  String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
 
   @override
-  String get maintenanceDeleteTagged => 'Șterge etichetat';
-
-  @override
-  String get maintenancePersistTaskCategories =>
-      'Păstrați categoriile de sarcini';
-
-  @override
-  String get maintenancePurgeAudioModels => 'Eliminați modelele audio';
+  String maintenanceDeleteDatabaseMessage(String databaseName) {
+    return 'Are you sure you want to delete the $databaseName Database? This action cannot be undone.';
+  }
 
   @override
   String get maintenancePurgeDeleted => 'Eliminați elementele șterse';
@@ -974,14 +963,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
-  String get maintenancePurgeDeletedEmpty => 'No deleted items to purge';
-
-  @override
   String get maintenancePurgeDeletedProgress => 'Purging deleted items...';
 
   @override
-  String get maintenancePurgeDeletedQuestion =>
-      'Are you sure you want to purge all deleted items?';
+  String get maintenancePurgeDeletedEmpty => 'No deleted items to purge';
+
+  @override
+  String get maintenancePurgeDeletedMessage =>
+      'Are you sure you want to purge all deleted items? This action cannot be undone.';
+
+  @override
+  String get maintenancePersistTaskCategories =>
+      'Păstrați categoriile de sarcini';
+
+  @override
+  String get maintenancePurgeAudioModels => 'Eliminați modelele audio';
 
   @override
   String get maintenanceRecreateFts5 => 'Recreați indexul full-text';
@@ -1884,4 +1880,30 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'Vizualizare';
+
+  @override
+  String get syncEntitiesTitle => 'Sync Entities';
+
+  @override
+  String get syncEntitiesMessage =>
+      'This will sync all tags, measurables, and categories. Do you want to continue?';
+
+  @override
+  String get syncEntitiesConfirm => 'YES, SYNC ALL';
+
+  @override
+  String get syncEntitiesStepTags => 'Syncing tags...';
+
+  @override
+  String get syncEntitiesStepMeasurables => 'Syncing measurables...';
+
+  @override
+  String get syncEntitiesStepCategories => 'Syncing categories...';
+
+  @override
+  String get syncEntitiesComplete =>
+      'All entities have been synced successfully.';
+
+  @override
+  String get done => 'Done';
 }
