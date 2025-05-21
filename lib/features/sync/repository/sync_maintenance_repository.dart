@@ -5,7 +5,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-class SyncService {
+class SyncMaintenanceRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final OutboxService _outboxService = getIt<OutboxService>();
   final LoggingService _loggingService = getIt<LoggingService>();
@@ -166,6 +166,7 @@ class SyncService {
   }
 }
 
-final syncServiceProvider = Provider<SyncService>((ref) {
-  return SyncService();
+final syncMaintenanceRepositoryProvider =
+    Provider<SyncMaintenanceRepository>((ref) {
+  return SyncMaintenanceRepository();
 });

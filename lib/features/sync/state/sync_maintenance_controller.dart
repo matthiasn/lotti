@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
-import 'package:lotti/features/sync/services/sync_service.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-class SyncController extends StateNotifier<SyncState> {
-  SyncController(this._syncService) : super(const SyncState());
+class SyncMaintenanceController extends StateNotifier<SyncState> {
+  SyncMaintenanceController(this._repository) : super(const SyncState());
 
-  final SyncService _syncService;
+  final SyncMaintenanceRepository _repository;
   final LoggingService _loggingService = getIt<LoggingService>();
 
   Future<void> syncAll() async {
@@ -16,11 +16,11 @@ class SyncController extends StateNotifier<SyncState> {
 
     // Define all sync operations
     final syncOperations = [
-      (step: SyncStep.tags, operation: _syncService.syncTags),
-      (step: SyncStep.measurables, operation: _syncService.syncMeasurables),
-      (step: SyncStep.categories, operation: _syncService.syncCategories),
-      (step: SyncStep.dashboards, operation: _syncService.syncDashboards),
-      (step: SyncStep.habits, operation: _syncService.syncHabits),
+      (step: SyncStep.tags, operation: _repository.syncTags),
+      (step: SyncStep.measurables, operation: _repository.syncMeasurables),
+      (step: SyncStep.categories, operation: _repository.syncCategories),
+      (step: SyncStep.dashboards, operation: _repository.syncDashboards),
+      (step: SyncStep.habits, operation: _repository.syncHabits),
     ];
 
     try {
@@ -61,7 +61,7 @@ class SyncController extends StateNotifier<SyncState> {
 }
 
 final syncControllerProvider =
-    StateNotifierProvider<SyncController, SyncState>((ref) {
-  final syncService = ref.watch(syncServiceProvider);
-  return SyncController(syncService);
+    StateNotifierProvider<SyncMaintenanceController, SyncState>((ref) {
+  final repository = ref.watch(syncMaintenanceRepositoryProvider);
+  return SyncMaintenanceController(repository);
 });

@@ -3,7 +3,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/services/sync_service.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,7 +18,7 @@ class MockLoggingService extends Mock implements LoggingService {}
 class SyncMessageFake extends Fake implements SyncMessage {}
 
 void main() {
-  late SyncService syncService;
+  late SyncMaintenanceRepository syncService;
   late MockJournalDb mockJournalDb;
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLoggingService;
@@ -35,7 +35,7 @@ void main() {
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<LoggingService>(mockLoggingService);
-    syncService = SyncService();
+    syncService = SyncMaintenanceRepository();
   });
 
   tearDown(getIt.reset);

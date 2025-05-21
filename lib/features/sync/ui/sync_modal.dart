@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/controllers/sync_controller.dart';
+import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
