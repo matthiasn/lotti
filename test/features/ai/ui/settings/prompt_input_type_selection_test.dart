@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations_en.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+// import 'package:lotti/features/ai/model/input_data_type_extensions.dart'; // Unused due to local helpers
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
-import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/l10n/app_localizations_en.dart';
+// import 'package:mocktail/mocktail.dart'; // No longer needed if MockPromptFormState is removed
 
 class FakePromptFormController extends PromptFormController {
   FakePromptFormController()
@@ -66,6 +68,8 @@ class FakePromptFormController extends PromptFormController {
   }
 }
 
+// class MockPromptFormState extends Mock implements PromptFormState {} // Removed as not directly used by fake
+
 void main() {
   late FakePromptFormController fakePromptFormController;
   var l10n = AppLocalizationsEn();
@@ -106,7 +110,6 @@ void main() {
 
   setUp(() {
     l10n = AppLocalizationsEn();
-
     fakePromptFormController = FakePromptFormController();
   });
 
