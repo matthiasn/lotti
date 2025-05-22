@@ -67,7 +67,7 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - photo_manager (3.7.0):
+  - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
   - quill_native_bridge_ios (0.0.1):
@@ -257,7 +257,7 @@ SPEC CHECKSUMS:
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
-  photo_manager: 07ebd7b0ba45c60d8d06110bebf9dc4f60380764
+  photo_manager: d2fbcc0f2d82458700ee6256a15018210a81d413
   quill_native_bridge_ios: f47af4b14e7757968486641656c5d23250cee521
   record_ios: fee1c924aa4879b882ebca2b4bce6011bcfc3d8b
   SDWebImage: f84b0feeb08d2d11e6a9b843cb06d75ebf5b8868

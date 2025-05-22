@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_settings_page.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
