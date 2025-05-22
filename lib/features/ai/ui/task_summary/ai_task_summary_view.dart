@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/task_summary_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/themes/theme.dart';
@@ -15,7 +16,33 @@ class AiTaskSummaryView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(taskSummaryControllerProvider(id: id));
+    final state = ref.watch(
+      taskSummaryControllerProvider(id: id),
+    );
+
+    final summaryInferenceStatus = ref.watch(
+      // Watcher for summary status
+      inferenceStatusControllerProvider(
+        id: id,
+        aiResponseType: AiResponseType.taskSummary, // Correct AiResponseType
+      ),
+    );
+
+    final isError = summaryInferenceStatus == InferenceStatus.error;
+    final isRunning = summaryInferenceStatus == InferenceStatus.running;
+
+    TextStyle textStyle;
+    if (isError) {
+      textStyle = monospaceTextStyleSmall.copyWith(
+        color: Colors.red,
+        fontSize: fontSizeMediumLarge, // 20.0
+        fontWeight: FontWeight.w300,
+      );
+    } else {
+      textStyle = monospaceTextStyleSmall.copyWith(
+        fontWeight: FontWeight.w300,
+      );
+    }
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 240),
@@ -34,21 +61,22 @@ class AiTaskSummaryView extends ConsumerWidget {
                 constraints: const BoxConstraints(minWidth: 600),
                 child: Text(
                   state,
-                  style: monospaceTextStyleSmall.copyWith(
-                    fontWeight: FontWeight.w300,
-                  ),
+                  style: textStyle,
                 ),
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AiRunningAnimationWrapper(
-              entryId: id,
-              height: 50,
-              responseTypes: const {AiResponseType.taskSummary},
+          if (isRunning) // Only show animation if still running
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AiRunningAnimationWrapper(
+                entryId: id,
+                height: 50,
+                responseTypes: const {
+                  AiResponseType.taskSummary,
+                }, // Correct AiResponseType
+              ),
             ),
-          ),
         ],
       ),
     );

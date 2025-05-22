@@ -21,7 +21,7 @@ class TranscriptListItem extends StatefulWidget {
 }
 
 class _TranscriptListItemState extends State<TranscriptListItem> {
-  final ExpansibleController _controller = ExpansibleController();
+  final ExpansionTileController _controller = ExpansionTileController();
 
   bool show = false;
 

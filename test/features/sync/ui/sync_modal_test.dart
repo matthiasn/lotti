@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations_en.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
