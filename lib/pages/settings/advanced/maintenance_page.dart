@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class MaintenancePage extends StatelessWidget {
   const MaintenancePage({super.key});
@@ -22,7 +19,7 @@ class MaintenancePage extends StatelessWidget {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
     final notificationService = getIt<NotificationService>();
-    final theme = Theme.of(context);
+    Theme.of(context);
 
     return FutureBuilder<int>(
       future: db.getTaggedCount(),
@@ -94,91 +91,7 @@ class MaintenancePage extends StatelessWidget {
               ),
               SettingsCard(
                 title: context.messages.maintenancePurgeDeleted,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages.maintenancePurgeDeletedMessage,
-                    confirmLabel:
-                        context.messages.maintenancePurgeDeletedConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await WoltModalSheet.show<void>(
-                      context: context,
-                      pageListBuilder: (modalSheetContext) {
-                        return [
-                          WoltModalSheetPage(
-                            backgroundColor: theme.colorScheme.inversePrimary,
-                            hasSabGradient: false,
-                            navBarHeight: 35,
-                            isTopBarLayerAlwaysVisible: false,
-                            trailingNavBarWidget: IconButton(
-                              padding: WoltModalConfig.pagePadding,
-                              icon: Icon(
-                                Icons.close,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
-                            child: Padding(
-                              padding: WoltModalConfig.pagePadding,
-                              child: StreamBuilder<double>(
-                                stream: db.purgeDeleted(),
-                                builder: (context, snapshot) {
-                                  final progress = snapshot.data ?? 0.0;
-
-                                  return Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const SizedBox(height: 16),
-                                      if (progress == 1.0 &&
-                                          snapshot.connectionState ==
-                                              ConnectionState.done)
-                                        Icon(
-                                          Icons.delete_forever_outlined,
-                                          size: 48,
-                                          color: theme.colorScheme.error,
-                                        )
-                                      else
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: SizedBox(
-                                                height: 5,
-                                                child: LinearProgressIndicator(
-                                                  value: progress,
-                                                  backgroundColor: theme
-                                                      .colorScheme
-                                                      .surfaceContainerHighest,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(
-                                                    theme.colorScheme.primary,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        context
-                                            .messages.maintenancePurgeDeleted,
-                                        style: settingsCardTextStyle.copyWith(
-                                          color: theme.colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ];
-                      },
-                      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-                    );
-                  }
-                },
+                onTap: () => PurgeModal.show(context),
               ),
               SettingsCard(
                 title: context.messages.maintenancePurgeAudioModels,
