@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -66,6 +66,7 @@ class TaskSummaryController extends _$TaskSummaryController {
           .buildPrompt(id: id, aiResponseType: AiResponseType.taskSummary);
 
       if (prompt == null) {
+        inferenceStatusNotifier.setStatus(InferenceStatus.idle);
         return;
       }
 
@@ -95,6 +96,7 @@ class TaskSummaryController extends _$TaskSummaryController {
 
         if (apiKeyConfig == null) {
           state = 'No Nebius AI Studio API key found';
+          inferenceStatusNotifier.setStatus(InferenceStatus.error);
           return;
         }
         final stream = ref.read(cloudInferenceRepositoryProvider).generate(
@@ -124,9 +126,6 @@ class TaskSummaryController extends _$TaskSummaryController {
 
       final completeResponse = buffer.toString();
 
-      // only required for reasoning models
-      // final [thoughts, response] = completeResponse.split('</think>');
-
       final data = AiResponseData(
         model: model,
         temperature: temperature,
@@ -146,64 +145,14 @@ class TaskSummaryController extends _$TaskSummaryController {
       inferenceStatusNotifier.setStatus(InferenceStatus.idle);
     } catch (e, stackTrace) {
       inferenceStatusNotifier.setStatus(InferenceStatus.error);
-      var displayMessage = e.toString(); // Default message
-
-      final dynamic dynError = e;
-      try {
-        dynamic errorBody;
-        try {
-          // ignore: avoid_dynamic_calls
-          errorBody = dynError.body;
-        } catch (_) {
-          // dynError doesn't have a .body property, errorBody remains null
-        }
-
-        dynamic detailContent;
-
-        if (errorBody != null) {
-          if (errorBody is Map && errorBody.containsKey('detail')) {
-            detailContent = errorBody['detail'];
-          } else if (errorBody is String) {
-            try {
-              final decodedBody = jsonDecode(errorBody) as Map<String, dynamic>;
-              if (decodedBody.containsKey('detail')) {
-                detailContent = decodedBody['detail'];
-              }
-            } catch (_) {
-              // JSON decoding failed, or not a map, or no 'detail' key
-            }
-          }
-        }
-
-        if (detailContent != null) {
-          displayMessage = detailContent.toString();
-        } else {
-          dynamic errorMessage;
-          try {
-            // ignore: avoid_dynamic_calls
-            errorMessage = dynError.message;
-          } catch (_) {
-            // dynError doesn't have a .message property
-          }
-          if (errorMessage != null) {
-            displayMessage = errorMessage.toString();
-          }
-        }
-      } catch (extractionException) {
-        // Catch any error during the dynamic extraction process itself
-        // displayMessage is already e.toString().
-      }
-
-      if (displayMessage.trim().isEmpty ||
-          displayMessage.trim().toLowerCase() == 'null') {
-        displayMessage = e.toString();
-      }
-
-      state = displayMessage;
+      state = AiErrorUtils.extractDetailedErrorMessage(
+        e,
+        defaultMessage: e.toString(),
+      );
 
       getIt<LoggingService>().captureException(
         e,
-        domain: 'TaskSummaryController', // Ensuring domain is correct
+        domain: 'TaskSummaryController',
         subDomain: 'getTaskSummary',
         stackTrace: stackTrace,
       );

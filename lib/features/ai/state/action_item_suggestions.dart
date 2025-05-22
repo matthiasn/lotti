@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -46,7 +47,7 @@ class ActionItemSuggestionsController
     getIt<LoggingService>().captureEvent(
       'Starting action item suggestions for $id',
       subDomain: 'getActionItemSuggestion',
-      domain: 'SuggestionsStatusController',
+      domain: 'ActionItemSuggestionsController',
     );
 
     try {
@@ -71,8 +72,6 @@ class ActionItemSuggestionsController
           ? 'deepseek-ai/DeepSeek-R1-fast'
           : 'deepseek-r1:14b';
 
-      //final model = 'models/gemini-2.5-pro-preview-03-25';
-
       const temperature = 0.6;
 
       if (useCloudInference) {
@@ -91,6 +90,7 @@ class ActionItemSuggestionsController
 
         if (apiKeyConfig == null) {
           state = 'No Nebius AI Studio API key found';
+          suggestionsStatusNotifier.setStatus(InferenceStatus.error);
           return;
         }
 
@@ -125,9 +125,11 @@ class ActionItemSuggestionsController
       var response = completeResponse;
 
       if (completeResponse.contains('</think>')) {
-        final [part1, part2] = completeResponse.split('</think>');
-        thoughts = part1;
-        response = part2;
+        final parts = completeResponse.split('</think>');
+        if (parts.length == 2) {
+          thoughts = parts[0];
+          response = parts[1];
+        }
       }
 
       final exp = RegExp(r'\[(.|\n)*\]', multiLine: true);
@@ -158,68 +160,14 @@ class ActionItemSuggestionsController
       suggestionsStatusNotifier.setStatus(InferenceStatus.idle);
     } catch (e, stackTrace) {
       suggestionsStatusNotifier.setStatus(InferenceStatus.error);
-      var displayMessage = e.toString(); // Default message
-
-      final dynamic dynError = e;
-      try {
-        dynamic errorBody;
-        // Attempt to access dynError.body if it exists
-        try {
-          // ignore: avoid_dynamic_calls
-          errorBody = dynError.body;
-        } catch (_) {
-          // dynError doesn't have a .body property, errorBody remains null
-        }
-
-        dynamic detailContent;
-
-        if (errorBody != null) {
-          if (errorBody is Map && errorBody.containsKey('detail')) {
-            detailContent = errorBody['detail'];
-          } else if (errorBody is String) {
-            try {
-              final decodedBody = jsonDecode(errorBody) as Map<String, dynamic>;
-              if (decodedBody.containsKey('detail')) {
-                detailContent = decodedBody['detail'];
-              }
-            } catch (_) {
-              // JSON decoding failed, or not a map, or no 'detail' key
-            }
-          }
-        }
-
-        if (detailContent != null) {
-          displayMessage = detailContent.toString();
-        } else {
-          // Fallback to dynError.message if detailContent is not found
-          dynamic errorMessage;
-          try {
-            // ignore: avoid_dynamic_calls
-            errorMessage = dynError.message;
-          } catch (_) {
-            // dynError doesn't have a .message property
-          }
-          if (errorMessage != null) {
-            displayMessage = errorMessage.toString();
-          }
-          // If all else fails, displayMessage remains e.toString()
-        }
-      } catch (extractionException) {
-        // Catch any error during the dynamic extraction process itself
-        // displayMessage is already e.toString(). Consider logging extractionException.
-      }
-
-      // Ensure displayMessage is not literally "null" or empty
-      if (displayMessage.trim().isEmpty ||
-          displayMessage.trim().toLowerCase() == 'null') {
-        displayMessage = e.toString();
-      }
-
-      state = displayMessage;
+      state = AiErrorUtils.extractDetailedErrorMessage(
+        e,
+        defaultMessage: e.toString(),
+      );
 
       getIt<LoggingService>().captureException(
         e,
-        domain: 'ActionItemSuggestionsController', // Corrected domain
+        domain: 'ActionItemSuggestionsController',
         subDomain: 'getActionItemSuggestion',
         stackTrace: stackTrace,
       );
