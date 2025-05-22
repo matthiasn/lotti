@@ -22,6 +22,7 @@ class MaintenancePage extends StatelessWidget {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
     final notificationService = getIt<NotificationService>();
+    final theme = Theme.of(context);
 
     return FutureBuilder<int>(
       future: db.getTaggedCount(),
@@ -106,14 +107,16 @@ class MaintenancePage extends StatelessWidget {
                       pageListBuilder: (modalSheetContext) {
                         return [
                           WoltModalSheetPage(
-                            backgroundColor: const Color(0xFF544F72),
+                            backgroundColor: theme.colorScheme.inversePrimary,
                             hasSabGradient: false,
                             navBarHeight: 35,
                             isTopBarLayerAlwaysVisible: false,
                             trailingNavBarWidget: IconButton(
                               padding: WoltModalConfig.pagePadding,
-                              icon:
-                                  const Icon(Icons.close, color: Colors.white),
+                              icon: Icon(
+                                Icons.close,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
                               onPressed: () => Navigator.of(context).pop(),
                             ),
                             child: Padding(
@@ -133,9 +136,7 @@ class MaintenancePage extends StatelessWidget {
                                         Icon(
                                           Icons.delete_forever_outlined,
                                           size: 48,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline,
+                                          color: theme.colorScheme.error,
                                         )
                                       else
                                         Row(
@@ -145,17 +146,13 @@ class MaintenancePage extends StatelessWidget {
                                                 height: 5,
                                                 child: LinearProgressIndicator(
                                                   value: progress,
-                                                  backgroundColor: Theme.of(
-                                                    context,
-                                                  )
+                                                  backgroundColor: theme
                                                       .colorScheme
                                                       .surfaceContainerHighest,
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
                                                           Color>(
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .primary,
+                                                    theme.colorScheme.primary,
                                                   ),
                                                 ),
                                               ),
@@ -166,7 +163,9 @@ class MaintenancePage extends StatelessWidget {
                                       Text(
                                         context
                                             .messages.maintenancePurgeDeleted,
-                                        style: settingsCardTextStyle,
+                                        style: settingsCardTextStyle.copyWith(
+                                          color: theme.colorScheme.onSurface,
+                                        ),
                                       ),
                                     ],
                                   );

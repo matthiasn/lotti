@@ -13,20 +13,21 @@ Future<bool> showConfirmationModal({
   bool isDestructive = true,
 }) async {
   bool? result;
+  final theme = Theme.of(context);
 
   await WoltModalSheet.show<void>(
     context: context,
     pageListBuilder: (modalSheetContext) {
       return [
         WoltModalSheetPage(
-          backgroundColor: const Color(0xFF544F72),
-          // Fun dark purple background
+          backgroundColor: theme.colorScheme.inversePrimary,
           hasSabGradient: false,
           navBarHeight: 35,
           isTopBarLayerAlwaysVisible: false,
           trailingNavBarWidget: IconButton(
             padding: WoltModalConfig.pagePadding,
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon:
+                Icon(Icons.close, color: theme.colorScheme.onPrimaryContainer),
             onPressed: () {
               result = false;
               Navigator.of(context).pop();
@@ -39,21 +40,21 @@ Future<bool> showConfirmationModal({
               children: [
                 // Warning Icon
                 if (isDestructive)
-                  const Icon(
+                  Icon(
                     Icons.warning_amber_rounded,
                     size: 36,
-                    color: Color(0xFFFF6B6B), // Soft alert red
+                    color: theme.colorScheme.error,
                   ),
                 const SizedBox(height: 16),
 
                 // Confirmation Text
                 Text(
                   message,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
                   textAlign: TextAlign.center,
                 ),
 
@@ -69,8 +70,7 @@ Future<bool> showConfirmationModal({
                           Navigator.of(context).pop();
                         },
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF7B9EC6),
-                          // Muted blue
+                          backgroundColor: theme.colorScheme.surfaceTint,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
@@ -78,9 +78,9 @@ Future<bool> showConfirmationModal({
                         ),
                         child: Text(
                           cancelLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.black,
+                            color: theme.colorScheme.onError,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -94,8 +94,7 @@ Future<bool> showConfirmationModal({
                           Navigator.of(context).pop();
                         },
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFE57373),
-                          // Playful red
+                          backgroundColor: theme.colorScheme.error,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
@@ -103,10 +102,10 @@ Future<bool> showConfirmationModal({
                         ),
                         child: Text(
                           confirmLabel.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                             letterSpacing: 0.5,
                           ),
                         ),
