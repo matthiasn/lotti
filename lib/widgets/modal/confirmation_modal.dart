@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -10,27 +8,26 @@ Future<bool> showConfirmationModal({
   required BuildContext context,
   required String message,
   String? title,
-  String confirmLabel = 'YES, DELETE',
+  String confirmLabel = 'YES, DELETE DATABASE',
   String cancelLabel = 'CANCEL',
   bool isDestructive = true,
 }) async {
   bool? result;
+  final theme = Theme.of(context);
 
   await WoltModalSheet.show<void>(
     context: context,
     pageListBuilder: (modalSheetContext) {
       return [
         WoltModalSheetPage(
-          backgroundColor: context.colorScheme.surfaceContainer,
+          backgroundColor: theme.colorScheme.inversePrimary,
           hasSabGradient: false,
           navBarHeight: 35,
-          topBarTitle: title != null
-              ? Text(title, style: context.textTheme.titleSmall)
-              : null,
-          isTopBarLayerAlwaysVisible: title != null,
+          isTopBarLayerAlwaysVisible: false,
           trailingNavBarWidget: IconButton(
             padding: WoltModalConfig.pagePadding,
-            icon: const Icon(Icons.close),
+            icon:
+                Icon(Icons.close, color: theme.colorScheme.onPrimaryContainer),
             onPressed: () {
               result = false;
               Navigator.of(context).pop();
@@ -41,47 +38,77 @@ Future<bool> showConfirmationModal({
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Warning Icon
                 if (isDestructive)
                   Icon(
                     Icons.warning_amber_rounded,
-                    size: 48,
-                    color: context.colorScheme.error,
+                    size: 36,
+                    color: theme.colorScheme.error,
                   ),
-                if (isDestructive) const SizedBox(height: 16),
+                const SizedBox(height: 16),
+
+                // Confirmation Text
                 Text(
                   message,
-                  style: context.textTheme.headlineSmall,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+
+                const SizedBox(height: 28),
+
+                // Action Buttons
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton(
-                      onPressed: () {
-                        result = false;
-                        Navigator.of(context).pop();
-                      },
-                      child: Text(cancelLabel),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          result = false;
+                          Navigator.of(context).pop();
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.surfaceTint,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          cancelLabel,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: theme.colorScheme.onError,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
-                    FilledButton(
-                      onPressed: () {
-                        result = true;
-                        Navigator.of(context).pop();
-                      },
-                      style: isDestructive
-                          ? FilledButton.styleFrom(
-                              backgroundColor: context.colorScheme.error,
-                            )
-                          : null,
-                      child: Text(
-                        confirmLabel,
-                        style: isDestructive
-                            ? context.textTheme.labelLarge?.copyWith(
-                                color: context.colorScheme.onError,
-                                fontWeight: FontWeight.bold,
-                              )
-                            : null,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          result = true;
+                          Navigator.of(context).pop();
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          confirmLabel.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -93,20 +120,8 @@ Future<bool> showConfirmationModal({
       ];
     },
     modalTypeBuilder: ModalUtils.modalTypeBuilder,
-    barrierDismissible: false,
+    barrierDismissible: true,
   );
 
   return result ?? false;
-}
-
-/// shows a confirmation modal specifically for database deletion operations.
-Future<bool> showDatabaseDeleteConfirmationModal({
-  required BuildContext context,
-  required String databaseName,
-}) async {
-  return showConfirmationModal(
-    context: context,
-    message: context.messages.maintenanceDeleteDatabaseMessage(databaseName),
-    confirmLabel: context.messages.maintenanceDeleteDatabaseConfirm,
-  );
 }
