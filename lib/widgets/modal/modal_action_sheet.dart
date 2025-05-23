@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
-import 'package:meta/meta.dart';
 
-@useResult
 Future<T?> showModalActionSheet<T>({
   required BuildContext context,
   String? title,
