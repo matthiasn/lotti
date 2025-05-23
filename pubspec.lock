@@ -377,14 +377,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
-  country_flags:
-    dependency: "direct main"
-    description:
-      name: country_flags
-      sha256: "66726c7070d60c2f90c4a1d58980e9188fa04335d6287e98aef835461019c3c2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.0"
   coverage:
     dependency: transitive
     description:
@@ -812,14 +804,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_fadein:
-    dependency: "direct main"
-    description:
-      name: flutter_fadein
-      sha256: ab6830acf1d09087e069c363fd063a625b2ebeb5153b74fa15b1bce108c212e4
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
   flutter_form_builder:
     dependency: "direct main"
     description:
@@ -1541,30 +1525,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.0"
-  jiffy:
-    dependency: "direct main"
-    description:
-      name: jiffy
-      sha256: "9bafbfe6d97587048bf449165e050029e716a12438f54a3d39e7e3a256decdac"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.4.3"
-  jovial_misc:
-    dependency: transitive
-    description:
-      name: jovial_misc
-      sha256: "4301011027d87b8b919cb862db84071a34448eadbb32cc8d40fe505424dfe69a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.9.2"
-  jovial_svg:
-    dependency: transitive
-    description:
-      name: jovial_svg
-      sha256: "5e45b05845c8cbfec99ea32f177473ab2573d2c48479b29922c44ad329881d72"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.25"
   js:
     dependency: transitive
     description:
@@ -1621,22 +1581,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.16"
-  langchain:
-    dependency: "direct main"
-    description:
-      name: langchain
-      sha256: "5ed0d1718108f78657f6e83dc7ce383f054a9ad46c7230957d82600ca677deaa"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.7+2"
-  langchain_core:
-    dependency: transitive
-    description:
-      name: langchain_core
-      sha256: "89ae8945acfc21434e6374324a4592e7cfe49a3af28a6d9780f8c9cf5028fe31"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.6+1"
   latlong2:
     dependency: "direct main"
     description:
@@ -1830,7 +1774,7 @@ packages:
     source: hosted
     version: "1.0.9"
   meta:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: meta
       sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
@@ -2385,10 +2329,10 @@ packages:
     dependency: transitive
     description:
       name: record_linux
-      sha256: fcb5964a84292813de70d52253663c1caca00a15f849fb5d0fdf9b929b28a7b9
+      sha256: "29e7735b05c1944bb6c9b72a36c08d4a1b24117e712d6a9523c003bde12bf484"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.1.0"
   record_macos:
     dependency: transitive
     description:
@@ -2417,10 +2361,10 @@ packages:
     dependency: transitive
     description:
       name: record_windows
-      sha256: "26bfebc8899f4fa5b6b044089887dc42115820cd6a907bdf40c16e909e87de0a"
+      sha256: "85a22fc97f6d73ecd67c8ba5f2f472b74ef1d906f795b7970f771a0914167e99"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.5"
+    version: "1.0.6"
   research_package:
     dependency: "direct main"
     description:
@@ -2691,14 +2635,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  sleek_circular_slider:
-    dependency: "direct main"
-    description:
-      name: sleek_circular_slider
-      sha256: "8844d036269a13e60dda4e16534d30d27cacaff8d2f10d042d9d61d111468b13"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
   sliver_tools:
     dependency: transitive
     description:
@@ -3307,14 +3243,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
-  week_of_year:
-    dependency: "direct main"
-    description:
-      name: week_of_year
-      sha256: "578d2a9c7d93264b363ff3b1789e1acbae42295e803e70d362cfa07fcb73d3d1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.0"
   widgetbook:
     dependency: "direct main"
     description:
