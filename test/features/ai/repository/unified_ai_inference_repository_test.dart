@@ -8,13 +8,11 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -24,8 +22,6 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
-
-class MockOllamaRepository extends Mock implements OllamaRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
@@ -48,16 +44,9 @@ class FakeImageData extends Fake implements ImageData {}
 
 class FakeAudioData extends Fake implements AudioData {}
 
-class FakeCreateChatCompletionStreamResponse extends Fake
-    implements CreateChatCompletionStreamResponse {}
-
 class FakeAiResponseData extends Fake implements AiResponseData {}
 
-// Mock class to simulate Ollama response chunk
-class MockCompletionChunk {
-  MockCompletionChunk({required this.text});
-  final String text;
-}
+class FakeJournalEntity extends Fake implements JournalEntity {}
 
 void main() {
   late UnifiedAiInferenceRepository repository;
@@ -65,7 +54,6 @@ void main() {
   late MockAiConfigRepository mockAiConfigRepo;
   late MockAiInputRepository mockAiInputRepo;
   late MockCloudInferenceRepository mockCloudInferenceRepo;
-  late MockOllamaRepository mockOllamaRepo;
   late MockJournalRepository mockJournalRepo;
   late MockJournalDb mockJournalDb;
 
@@ -79,6 +67,7 @@ void main() {
     registerFallbackValue(FakeAudioData());
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(FakeAiResponseData());
+    registerFallbackValue(FakeJournalEntity());
   });
 
   setUp(() {
@@ -86,7 +75,6 @@ void main() {
     mockAiConfigRepo = MockAiConfigRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockCloudInferenceRepo = MockCloudInferenceRepository();
-    mockOllamaRepo = MockOllamaRepository();
     mockJournalRepo = MockJournalRepository();
     mockJournalDb = MockJournalDb();
 
@@ -96,10 +84,6 @@ void main() {
     }
     getIt.registerSingleton<JournalDb>(mockJournalDb);
 
-    // Mock getConfigFlag to return false for cloud inference
-    when(() => mockJournalDb.getConfigFlag(useCloudInferenceFlag))
-        .thenAnswer((_) async => false);
-
     // Setup mock ref to return mocked repositories
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
@@ -107,8 +91,6 @@ void main() {
         .thenReturn(mockAiInputRepo);
     when(() => mockRef.read(cloudInferenceRepositoryProvider))
         .thenReturn(mockCloudInferenceRepo);
-    when(() => mockRef.read(ollamaRepositoryProvider))
-        .thenReturn(mockOllamaRepo);
     when(() => mockRef.read(journalRepositoryProvider))
         .thenReturn(mockJournalRepo);
 
@@ -218,6 +200,46 @@ void main() {
 
         expect(result.isEmpty, true);
       });
+
+      test('filters out archived prompts', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final activePrompt = _createPrompt(
+          id: 'active-prompt',
+          name: 'Active Task Prompt',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final archivedPrompt = _createPrompt(
+          id: 'archived-prompt',
+          name: 'Archived Task Prompt',
+          requiredInputData: [InputDataType.task],
+          archived: true,
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [activePrompt, archivedPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'active-prompt');
+      });
     });
 
     group('runInference', () {
@@ -257,34 +279,66 @@ void main() {
         final progressUpdates = <String>[];
         final statusChanges = <InferenceStatus>[];
 
+        // Mock the stream response from cloud inference
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                finishReason: null,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+          CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: ' world'),
+                finishReason: null,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+          CreateChatCompletionStreamResponse(
+            id: 'response-3',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: '!'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
         when(() => mockAiInputRepo.getEntity('test-id'))
             .thenAnswer((_) async => taskEntity);
         when(() => mockAiConfigRepo.getConfigById('model-1'))
             .thenAnswer((_) async => model);
         when(() => mockAiConfigRepo.getConfigById('provider-1'))
             .thenAnswer((_) async => provider);
-        when(
-          () => mockAiInputRepo.buildPrompt(
-            id: 'test-id',
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-        ).thenAnswer((_) async => 'Test prompt');
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
 
-        // Mock Ollama response stream
-        final streamResponse = Stream.fromIterable([
-          MockCompletionChunk(text: 'Hello'),
-          MockCompletionChunk(text: ' world'),
-          MockCompletionChunk(text: '!'),
-        ]);
-
+        // Mock cloud inference repository
         when(
-          () => mockOllamaRepo.generate(
+          () => mockCloudInferenceRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
-            images: any(named: 'images'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
           ),
-        ).thenAnswer((_) => streamResponse);
+        ).thenAnswer((_) => mockStream);
 
         when(
           () => mockAiInputRepo.createAiResponseEntry(
@@ -293,7 +347,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async => {});
+        ).thenAnswer((_) async {});
 
         await repository.runInference(
           entityId: 'test-id',
@@ -310,6 +364,18 @@ void main() {
             data: any(named: 'data'),
             start: any(named: 'start'),
             linkedId: 'test-id',
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).called(1);
+
+        verify(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: 'gpt-4',
+            temperature: 0.6,
+            baseUrl: 'https://api.example.com',
+            apiKey: 'test-api-key',
+            systemMessage: 'System message',
           ),
         ).called(1);
       });
@@ -356,6 +422,32 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
       });
+
+      test('handles entity not found error', () async {
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final statusChanges = <InferenceStatus>[];
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => null);
+
+        expect(
+          () => repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+      });
     });
   });
 }
@@ -377,6 +469,7 @@ AiConfigPrompt _createPrompt({
   String defaultModelId = 'model-1',
   List<InputDataType> requiredInputData = const [],
   AiResponseType aiResponseType = AiResponseType.taskSummary,
+  bool archived = false,
 }) {
   return AiConfigPrompt(
     id: id,
@@ -389,6 +482,7 @@ AiConfigPrompt _createPrompt({
     useReasoning: false,
     requiredInputData: requiredInputData,
     aiResponseType: aiResponseType,
+    archived: archived,
   );
 }
 
@@ -420,22 +514,5 @@ AiConfigInferenceProvider _createProvider({
     name: 'Test Provider',
     createdAt: DateTime.now(),
     inferenceProviderType: inferenceProviderType,
-  );
-}
-
-CreateChatCompletionStreamResponse _createStreamResponse(String content) {
-  return CreateChatCompletionStreamResponse(
-    id: 'test-response',
-    created: DateTime.now().millisecondsSinceEpoch,
-    model: 'test-model',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(
-          content: content,
-        ),
-        finishReason: null,
-      ),
-    ],
   );
 }

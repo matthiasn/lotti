@@ -61,6 +61,10 @@ class UnifiedAiModal {
       availablePromptsProvider(entity: journalEntity).future,
     );
 
+    if (!context.mounted) {
+      return;
+    }
+
     final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.aiAssistantTitle,
