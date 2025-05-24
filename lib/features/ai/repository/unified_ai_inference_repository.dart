@@ -126,10 +126,7 @@ class UnifiedAiInferenceRepository {
 
       Stream<dynamic> stream;
 
-      if (useCloudInference ||
-          provider.inferenceProviderType !=
-              InferenceProviderType.genericOpenAi) {
-        // Use cloud inference
+      if (useCloudInference) {
         stream = await _runCloudInference(
           prompt: prompt,
           model: model,
@@ -137,9 +134,9 @@ class UnifiedAiInferenceRepository {
           images: images,
           audioBase64: audioBase64,
           temperature: 0.6,
+          systemMessage: promptConfig.systemMessage,
         );
       } else {
-        // Use local Ollama
         stream = _runOllamaInference(
           prompt: prompt,
           model: model.providerModelId,
@@ -177,19 +174,9 @@ class UnifiedAiInferenceRepository {
     required AiConfigPrompt promptConfig,
     required JournalEntity entity,
   }) async {
-    // Use the existing AI input repository to build prompts
-    // This maintains compatibility with existing prompt building logic
     final aiInputRepo = ref.read(aiInputRepositoryProvider);
-
-    // For now, delegate to existing prompt building
-    // In the future, this can be enhanced to use the prompt template directly
-    final taskDetailsPromptSection =
-        await aiInputRepo.buildTaskDetailsPromptSection(
-      id: entity.id,
-      aiResponseType: promptConfig.aiResponseType,
-    );
-    final prompt = '${promptConfig.userMessage} $taskDetailsPromptSection';
-    print('Prompt: $prompt');
+    final jsonString = await aiInputRepo.buildTaskDetailsJson(id: entity.id);
+    final prompt = '${promptConfig.userMessage} \n $jsonString';
     return prompt;
   }
 
@@ -230,6 +217,7 @@ class UnifiedAiInferenceRepository {
   /// Run cloud inference
   Future<Stream<CreateChatCompletionStreamResponse>> _runCloudInference({
     required String prompt,
+    required String systemMessage,
     required AiConfigModel model,
     required AiConfigInferenceProvider provider,
     required List<String> images,
@@ -262,6 +250,7 @@ class UnifiedAiInferenceRepository {
         temperature: temperature,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
+        systemMessage: systemMessage,
       );
     }
   }

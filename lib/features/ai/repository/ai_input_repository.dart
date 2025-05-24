@@ -149,10 +149,7 @@ class AiInputRepository {
     return null;
   }
 
-  Future<String?> buildTaskDetailsPromptSection({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) async {
+  Future<String?> buildTaskDetailsJson({required String id}) async {
     final aiInput = await generate(id);
 
     if (aiInput == null) {
@@ -161,8 +158,7 @@ class AiInputRepository {
 
     const encoder = JsonEncoder.withIndent('    ');
     final jsonString = encoder.convert(aiInput);
-
-    return createTaskDetailsPromptSection(jsonString);
+    return jsonString;
   }
 }
 
