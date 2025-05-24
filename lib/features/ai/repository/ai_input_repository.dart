@@ -148,6 +148,22 @@ class AiInputRepository {
     }
     return null;
   }
+
+  Future<String?> buildTaskDetailsPromptSection({
+    required String id,
+    required AiResponseType aiResponseType,
+  }) async {
+    final aiInput = await generate(id);
+
+    if (aiInput == null) {
+      return null;
+    }
+
+    const encoder = JsonEncoder.withIndent('    ');
+    final jsonString = encoder.convert(aiInput);
+
+    return createTaskDetailsPromptSection(jsonString);
+  }
 }
 
 @riverpod

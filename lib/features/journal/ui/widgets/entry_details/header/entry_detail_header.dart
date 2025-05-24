@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
+import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
@@ -85,11 +86,16 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                 ),
               if (entry != null && entry is Task ||
                   entry is JournalImage ||
-                  entry is JournalAudio)
+                  entry is JournalAudio) ...[
                 AiPopUpMenu(
                   journalEntity: entry!,
                   linkedFromId: widget.linkedFromId,
                 ),
+                UnifiedAiPopUpMenu(
+                  journalEntity: entry!,
+                  linkedFromId: widget.linkedFromId,
+                ),
+              ],
               IconButton(
                 icon: Icon(
                   Icons.more_horiz,

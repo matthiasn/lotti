@@ -1,0 +1,160 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+
+/// Unified AI popup menu that shows available prompts for the current entity
+class UnifiedAiPopUpMenu extends ConsumerWidget {
+  const UnifiedAiPopUpMenu({
+    required this.journalEntity,
+    required this.linkedFromId,
+    super.key,
+  });
+
+  final JournalEntity journalEntity;
+  final String? linkedFromId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasPromptsAsync = ref.watch(
+      hasAvailablePromptsProvider(entity: journalEntity),
+    );
+
+    return hasPromptsAsync.when(
+      data: (hasPrompts) {
+        if (!hasPrompts) return const SizedBox.shrink();
+
+        return IconButton(
+          icon: Icon(
+            Icons.assistant_rounded,
+            color: context.colorScheme.outline,
+          ),
+          onPressed: () => UnifiedAiModal.show<void>(
+            context: context,
+            journalEntity: journalEntity,
+            linkedFromId: linkedFromId,
+            ref: ref,
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class UnifiedAiModal {
+  static Future<void> show<T>({
+    required BuildContext context,
+    required JournalEntity journalEntity,
+    required String? linkedFromId,
+    required WidgetRef ref,
+  }) async {
+    final pageIndexNotifier = ValueNotifier(0);
+    final promptsAsync = await ref.read(
+      availablePromptsProvider(entity: journalEntity).future,
+    );
+
+    final initialModalPage = ModalUtils.modalSheetPage(
+      context: context,
+      title: context.messages.aiAssistantTitle,
+      child: UnifiedAiPromptsList(
+        journalEntity: journalEntity,
+        linkedFromId: linkedFromId,
+        prompts: promptsAsync,
+        onPromptSelected: (prompt, index) {
+          pageIndexNotifier.value = index + 1;
+        },
+      ),
+    );
+
+    final promptPages = promptsAsync.asMap().entries.map((entry) {
+      final index = entry.key;
+      final prompt = entry.value;
+
+      return ModalUtils.modalSheetPage(
+        context: context,
+        title: prompt.name,
+        child: UnifiedAiProgressView(
+          entityId: journalEntity.id,
+          promptId: prompt.id,
+        ),
+        onTapBack: () => pageIndexNotifier.value = 0,
+      );
+    }).toList();
+
+    return WoltModalSheet.show<void>(
+      context: context,
+      pageListBuilder: (modalSheetContext) {
+        return [
+          initialModalPage,
+          ...promptPages,
+        ];
+      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      barrierDismissible: true,
+      pageIndexNotifier: pageIndexNotifier,
+    );
+  }
+}
+
+/// List of available AI prompts for the current entity
+class UnifiedAiPromptsList extends StatelessWidget {
+  const UnifiedAiPromptsList({
+    required this.journalEntity,
+    required this.prompts,
+    required this.onPromptSelected,
+    this.linkedFromId,
+    super.key,
+  });
+
+  final JournalEntity journalEntity;
+  final String? linkedFromId;
+  final List<AiConfigPrompt> prompts;
+  final void Function(AiConfigPrompt prompt, int index) onPromptSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ...prompts.asMap().entries.map((entry) {
+          final index = entry.key;
+          final prompt = entry.value;
+
+          return ListTile(
+            leading: Icon(_getIconForPrompt(prompt)),
+            title: Text(prompt.name),
+            subtitle: prompt.description != null
+                ? Text(
+                    prompt.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : null,
+            onTap: () => onPromptSelected(prompt, index),
+          );
+        }),
+        verticalModalSpacer,
+      ],
+    );
+  }
+
+  IconData _getIconForPrompt(AiConfigPrompt prompt) {
+    // Map prompt types to appropriate icons
+    if (prompt.requiredInputData.contains(InputDataType.images)) {
+      return Icons.image;
+    } else if (prompt.requiredInputData.contains(InputDataType.audioFiles)) {
+      return Icons.mic;
+    } else if (prompt.requiredInputData.contains(InputDataType.tasksList)) {
+      return Icons.checklist;
+    } else {
+      return Icons.chat_rounded;
+    }
+  }
+}
