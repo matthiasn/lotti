@@ -86,3 +86,13 @@ $jsonString
 ```
     ''';
 }
+
+String createTaskDetailsPromptSection(String jsonString) {
+  return '''
+
+**Task Details:**
+```json
+$jsonString
+```
+    ''';
+}

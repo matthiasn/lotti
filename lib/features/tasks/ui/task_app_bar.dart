@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_popup_menu.dart';
+import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
@@ -36,6 +37,7 @@ class TaskSliverAppBar extends ConsumerWidget {
       leading: const BackWidget(),
       actions: [
         AiPopUpMenu(journalEntity: item, linkedFromId: null),
+        UnifiedAiPopUpMenu(journalEntity: item, linkedFromId: null),
         IconButton(
           icon: Icon(
             Icons.more_horiz,

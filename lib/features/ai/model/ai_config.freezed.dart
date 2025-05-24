@@ -75,7 +75,8 @@ mixin _$AiConfig {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)
+            String? category,
+            bool archived)
         prompt,
   }) =>
       throw _privateConstructorUsedError;
@@ -118,7 +119,8 @@ mixin _$AiConfig {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
   }) =>
       throw _privateConstructorUsedError;
@@ -161,7 +163,8 @@ mixin _$AiConfig {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
     required TResult orElse(),
   }) =>
@@ -455,7 +458,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)
+            String? category,
+            bool archived)
         prompt,
   }) {
     return inferenceProvider(id, baseUrl, apiKey, name, createdAt,
@@ -502,7 +506,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
   }) {
     return inferenceProvider?.call(id, baseUrl, apiKey, name, createdAt,
@@ -549,7 +554,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
     required TResult orElse(),
   }) {
@@ -881,7 +887,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)
+            String? category,
+            bool archived)
         prompt,
   }) {
     return model(
@@ -937,7 +944,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
   }) {
     return model?.call(
@@ -993,7 +1001,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
     required TResult orElse(),
   }) {
@@ -1119,7 +1128,8 @@ abstract class _$$AiConfigPromptImplCopyWith<$Res>
       DateTime? updatedAt,
       String? description,
       Map<String, String>? defaultVariables,
-      String? category});
+      String? category,
+      bool archived});
 }
 
 /// @nodoc
@@ -1150,6 +1160,7 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
     Object? description = freezed,
     Object? defaultVariables = freezed,
     Object? category = freezed,
+    Object? archived = null,
   }) {
     return _then(_$AiConfigPromptImpl(
       id: null == id
@@ -1212,6 +1223,10 @@ class __$$AiConfigPromptImplCopyWithImpl<$Res>
           ? _value.category
           : category // ignore: cast_nullable_to_non_nullable
               as String?,
+      archived: null == archived
+          ? _value.archived
+          : archived // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1235,6 +1250,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       this.description,
       final Map<String, String>? defaultVariables,
       this.category,
+      this.archived = false,
       final String? $type})
       : _modelIds = modelIds,
         _requiredInputData = requiredInputData,
@@ -1295,13 +1311,16 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
 
   @override
   final String? category;
+  @override
+  @JsonKey()
+  final bool archived;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category)';
+    return 'AiConfig.prompt(id: $id, name: $name, systemMessage: $systemMessage, userMessage: $userMessage, defaultModelId: $defaultModelId, modelIds: $modelIds, createdAt: $createdAt, useReasoning: $useReasoning, requiredInputData: $requiredInputData, aiResponseType: $aiResponseType, comment: $comment, updatedAt: $updatedAt, description: $description, defaultVariables: $defaultVariables, category: $category, archived: $archived)';
   }
 
   @override
@@ -1334,7 +1353,9 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             const DeepCollectionEquality()
                 .equals(other._defaultVariables, _defaultVariables) &&
             (identical(other.category, category) ||
-                other.category == category));
+                other.category == category) &&
+            (identical(other.archived, archived) ||
+                other.archived == archived));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1355,7 +1376,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
       updatedAt,
       description,
       const DeepCollectionEquality().hash(_defaultVariables),
-      category);
+      category,
+      archived);
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -1406,7 +1428,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)
+            String? category,
+            bool archived)
         prompt,
   }) {
     return prompt(
@@ -1424,7 +1447,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         updatedAt,
         description,
         defaultVariables,
-        category);
+        category,
+        archived);
   }
 
   @override
@@ -1467,7 +1491,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
   }) {
     return prompt?.call(
@@ -1485,7 +1510,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
         updatedAt,
         description,
         defaultVariables,
-        category);
+        category,
+        archived);
   }
 
   @override
@@ -1528,7 +1554,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             DateTime? updatedAt,
             String? description,
             Map<String, String>? defaultVariables,
-            String? category)?
+            String? category,
+            bool archived)?
         prompt,
     required TResult orElse(),
   }) {
@@ -1548,7 +1575,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
           updatedAt,
           description,
           defaultVariables,
-          category);
+          category,
+          archived);
     }
     return orElse();
   }
@@ -1612,7 +1640,8 @@ abstract class AiConfigPrompt implements AiConfig {
       final DateTime? updatedAt,
       final String? description,
       final Map<String, String>? defaultVariables,
-      final String? category}) = _$AiConfigPromptImpl;
+      final String? category,
+      final bool archived}) = _$AiConfigPromptImpl;
 
   factory AiConfigPrompt.fromJson(Map<String, dynamic> json) =
       _$AiConfigPromptImpl.fromJson;
@@ -1637,6 +1666,7 @@ abstract class AiConfigPrompt implements AiConfig {
   String? get description;
   Map<String, String>? get defaultVariables;
   String? get category;
+  bool get archived;
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
