@@ -18,7 +18,6 @@ class CloudInferenceRepository {
     String? systemMessage,
     OpenAIClient? overrideClient,
   }) {
-    print('Generating: $model $baseUrl $systemMessage');
     final client = overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
