@@ -6,19 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -121,29 +117,15 @@ class UnifiedAiInferenceRepository {
 
       // Run the inference
       final buffer = StringBuffer();
-      final useCloudInference =
-          await getIt<JournalDb>().getConfigFlag(useCloudInferenceFlag);
-
-      Stream<dynamic> stream;
-
-      if (useCloudInference) {
-        stream = await _runCloudInference(
-          prompt: prompt,
-          model: model,
-          provider: provider,
-          images: images,
-          audioBase64: audioBase64,
-          temperature: 0.6,
-          systemMessage: promptConfig.systemMessage,
-        );
-      } else {
-        stream = _runOllamaInference(
-          prompt: prompt,
-          model: model.providerModelId,
-          images: images,
-          temperature: 0.6,
-        );
-      }
+      final stream = await _runCloudInference(
+        prompt: prompt,
+        model: model,
+        provider: provider,
+        images: images,
+        audioBase64: audioBase64,
+        temperature: 0.6,
+        systemMessage: promptConfig.systemMessage,
+      );
 
       // Process the stream
       await for (final chunk in stream) {
@@ -255,34 +237,9 @@ class UnifiedAiInferenceRepository {
     }
   }
 
-  /// Run Ollama inference
-  Stream<dynamic> _runOllamaInference({
-    required String prompt,
-    required String model,
-    required List<String> images,
-    required double temperature,
-  }) {
-    return ref.read(ollamaRepositoryProvider).generate(
-          prompt,
-          model: model,
-          temperature: temperature,
-          images: images.isNotEmpty ? images : null,
-        );
-  }
-
   /// Extract text from stream chunk
-  String _extractTextFromChunk(dynamic chunk) {
-    if (chunk is CreateChatCompletionStreamResponse) {
-      return chunk.choices[0].delta.content ?? '';
-    } else {
-      // Assume Ollama response with text property
-      try {
-        final text = (chunk as dynamic).text;
-        return text?.toString() ?? '';
-      } catch (_) {
-        return '';
-      }
-    }
+  String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) {
+    return chunk.choices[0].delta.content ?? '';
   }
 
   /// Process complete response and create appropriate entry
