@@ -67,7 +67,6 @@ class UnifiedAiModal {
       child: UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
-        prompts: promptsAsync,
         onPromptSelected: (prompt, index) {
           pageIndexNotifier.value = index + 1;
         },
@@ -75,7 +74,6 @@ class UnifiedAiModal {
     );
 
     final promptPages = promptsAsync.asMap().entries.map((entry) {
-      final index = entry.key;
       final prompt = entry.value;
 
       return ModalUtils.modalSheetPage(
@@ -105,10 +103,9 @@ class UnifiedAiModal {
 }
 
 /// List of available AI prompts for the current entity
-class UnifiedAiPromptsList extends StatelessWidget {
+class UnifiedAiPromptsList extends ConsumerWidget {
   const UnifiedAiPromptsList({
     required this.journalEntity,
-    required this.prompts,
     required this.onPromptSelected,
     this.linkedFromId,
     super.key,
@@ -116,11 +113,17 @@ class UnifiedAiPromptsList extends StatelessWidget {
 
   final JournalEntity journalEntity;
   final String? linkedFromId;
-  final List<AiConfigPrompt> prompts;
   final void Function(AiConfigPrompt prompt, int index) onPromptSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prompts = ref
+            .watch(
+              availablePromptsProvider(entity: journalEntity),
+            )
+            .valueOrNull ??
+        [];
+
     return Column(
       children: [
         ...prompts.asMap().entries.map((entry) {

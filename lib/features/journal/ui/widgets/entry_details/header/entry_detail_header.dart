@@ -92,7 +92,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                   linkedFromId: widget.linkedFromId,
                 ),
                 UnifiedAiPopUpMenu(
-                  journalEntity: entry!,
+                  journalEntity: entry,
                   linkedFromId: widget.linkedFromId,
                 ),
               ],

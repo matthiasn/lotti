@@ -395,8 +395,8 @@ $response
           );
           await journalRepo.updateJournalEntity(updated);
         }
-      default:
-      // No special post-processing needed
+      case AiResponseType.actionItemSuggestions:
+      case AiResponseType.taskSummary:
     }
   }
 }

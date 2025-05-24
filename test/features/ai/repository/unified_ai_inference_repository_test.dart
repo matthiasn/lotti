@@ -5,7 +5,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -17,7 +16,6 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:ollama/ollama.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
@@ -145,7 +143,6 @@ void main() {
           id: 'task-prompt',
           name: 'Task Summary',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final imagePrompt = _createPrompt(
@@ -181,7 +178,6 @@ void main() {
           id: 'task-prompt',
           name: 'Task Summary',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final imagePrompt = _createPrompt(
@@ -211,7 +207,6 @@ void main() {
           id: 'task-prompt',
           name: 'Task Summary',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
@@ -245,9 +240,7 @@ void main() {
         final promptConfig = _createPrompt(
           id: 'prompt-1',
           name: 'Task Summary',
-          defaultModelId: 'model-1',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final model = _createModel(
@@ -270,10 +263,12 @@ void main() {
             .thenAnswer((_) async => model);
         when(() => mockAiConfigRepo.getConfigById('provider-1'))
             .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildPrompt(
-              id: 'test-id',
-              aiResponseType: AiResponseType.taskSummary,
-            )).thenAnswer((_) async => 'Test prompt');
+        when(
+          () => mockAiInputRepo.buildPrompt(
+            id: 'test-id',
+            aiResponseType: AiResponseType.taskSummary,
+          ),
+        ).thenAnswer((_) async => 'Test prompt');
 
         // Mock Ollama response stream
         final streamResponse = Stream.fromIterable([
@@ -282,36 +277,41 @@ void main() {
           MockCompletionChunk(text: '!'),
         ]);
 
-        when(() => mockOllamaRepo.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              images: any(named: 'images'),
-            )).thenAnswer((_) => streamResponse);
+        when(
+          () => mockOllamaRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+          ),
+        ).thenAnswer((_) => streamResponse);
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => {});
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => {});
 
         await repository.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
-          onProgress: (progress) => progressUpdates.add(progress),
-          onStatusChange: (status) => statusChanges.add(status),
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
         );
 
         expect(progressUpdates, ['Hello', 'Hello world', 'Hello world!']);
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
 
-        verify(() => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: 'test-id',
-              categoryId: null,
-            )).called(1);
+        verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: 'test-id',
+          ),
+        ).called(1);
       });
 
       test('handles error during inference', () async {
@@ -333,9 +333,7 @@ void main() {
         final promptConfig = _createPrompt(
           id: 'prompt-1',
           name: 'Task Summary',
-          defaultModelId: 'model-1',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final statusChanges = <InferenceStatus>[];
@@ -350,12 +348,12 @@ void main() {
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
-            onStatusChange: (status) => statusChanges.add(status),
+            onStatusChange: statusChanges.add,
           ),
           throwsException,
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
       });
     });

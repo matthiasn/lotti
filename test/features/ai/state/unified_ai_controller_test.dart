@@ -48,18 +48,22 @@ void main() {
     );
 
     // Mock logging methods
-    when(() => mockLoggingService.captureEvent(
-          any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureEvent(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
 
-    when(() => mockLoggingService.captureException(
-          any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(() {
@@ -95,12 +99,14 @@ void main() {
         ],
       );
 
-      when(() => mockRepository.runInference(
-            entityId: any(named: 'entityId'),
-            promptConfig: any(named: 'promptConfig'),
-            onProgress: any(named: 'onProgress'),
-            onStatusChange: any(named: 'onStatusChange'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
         final onProgress =
             invocation.namedArguments[#onProgress] as void Function(String);
         final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -111,10 +117,10 @@ void main() {
         statusChangeCount++;
         onProgress('Starting inference...');
         progressUpdates.add('Starting inference...');
-        await Future.delayed(const Duration(milliseconds: 10));
+        await Future<void>.delayed(const Duration(milliseconds: 10));
         onProgress('Processing...');
         progressUpdates.add('Processing...');
-        await Future.delayed(const Duration(milliseconds: 10));
+        await Future<void>.delayed(const Duration(milliseconds: 10));
         onProgress('Complete!');
         progressUpdates.add('Complete!');
         onStatusChange(InferenceStatus.idle);
@@ -131,15 +137,17 @@ void main() {
       expect(initialState, ''); // Initial state should be empty
 
       // Wait for async operations - need more time for the delayed runInference
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // Verify inference was called
-      verify(() => mockRepository.runInference(
-            entityId: 'test-entity',
-            promptConfig: promptConfig,
-            onProgress: any(named: 'onProgress'),
-            onStatusChange: any(named: 'onStatusChange'),
-          )).called(1);
+      verify(
+        () => mockRepository.runInference(
+          entityId: 'test-entity',
+          promptConfig: promptConfig,
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).called(1);
 
       // Verify progress updates
       expect(progressUpdates.length, 3);
@@ -187,12 +195,14 @@ void main() {
         ],
       );
 
-      when(() => mockRepository.runInference(
-            entityId: any(named: 'entityId'),
-            promptConfig: any(named: 'promptConfig'),
-            onProgress: any(named: 'onProgress'),
-            onStatusChange: any(named: 'onStatusChange'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]
             as void Function(InferenceStatus);
         onStatusChange(InferenceStatus.running);
@@ -209,15 +219,17 @@ void main() {
       expect(initialState, ''); // Initial state should be empty
 
       // Wait for async operations - need more time for the delayed runInference
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // Verify error handling
-      verify(() => mockLoggingService.captureException(
-            any(),
-            domain: 'UnifiedAiController',
-            subDomain: 'runInference',
-            stackTrace: any(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: 'UnifiedAiController',
+          subDomain: 'runInference',
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).called(1);
 
       // Verify final state contains error
       final state = container.read(
@@ -268,18 +280,22 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.getActivePromptsForContext(
-            entity: taskEntity,
-          )).thenAnswer((_) async => expectedPrompts);
+      when(
+        () => mockRepository.getActivePromptsForContext(
+          entity: taskEntity,
+        ),
+      ).thenAnswer((_) async => expectedPrompts);
 
       final prompts = await container.read(
         availablePromptsProvider(entity: taskEntity).future,
       );
 
       expect(prompts, expectedPrompts);
-      verify(() => mockRepository.getActivePromptsForContext(
-            entity: taskEntity,
-          )).called(1);
+      verify(
+        () => mockRepository.getActivePromptsForContext(
+          entity: taskEntity,
+        ),
+      ).called(1);
     });
   });
 
@@ -306,22 +322,26 @@ void main() {
         ),
       );
 
-      when(() => mockRepository.getActivePromptsForContext(
-            entity: taskEntity,
-          )).thenAnswer((_) async => [
-            AiConfigPrompt(
-              id: 'prompt-1',
-              name: 'Test',
-              systemMessage: 'System',
-              userMessage: 'User',
-              defaultModelId: 'model-1',
-              modelIds: ['model-1'],
-              createdAt: DateTime.now(),
-              useReasoning: false,
-              requiredInputData: [],
-              aiResponseType: AiResponseType.taskSummary,
-            ),
-          ]);
+      when(
+        () => mockRepository.getActivePromptsForContext(
+          entity: taskEntity,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AiConfigPrompt(
+            id: 'prompt-1',
+            name: 'Test',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: DateTime.now(),
+            useReasoning: false,
+            requiredInputData: [],
+            aiResponseType: AiResponseType.taskSummary,
+          ),
+        ],
+      );
 
       final hasPrompts = await container.read(
         hasAvailablePromptsProvider(entity: taskEntity).future,
@@ -341,9 +361,11 @@ void main() {
         ),
       );
 
-      when(() => mockRepository.getActivePromptsForContext(
-            entity: journalEntry,
-          )).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getActivePromptsForContext(
+          entity: journalEntry,
+        ),
+      ).thenAnswer((_) async => []);
 
       final hasPrompts = await container.read(
         hasAvailablePromptsProvider(entity: journalEntry).future,
