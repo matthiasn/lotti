@@ -11,6 +11,7 @@ enum InferenceProviderType {
   nebiusAiStudio,
   openAi,
   openRouter,
+  ollama,
 }
 
 enum Modality {
