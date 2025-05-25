@@ -174,12 +174,9 @@ class ModalUtils {
                         child: FilledButton(
                           onPressed: () async {
                             confirmed = true;
-                            // Start the operation before showing progress
+                            pageIndexNotifier.value = 1;
                             await operation();
-                            if (context.mounted) {
-                              operationCompleted = true;
-                              pageIndexNotifier.value = 1;
-                            }
+                            operationCompleted = true;
                           },
                           style: FilledButton.styleFrom(
                             backgroundColor: theme.colorScheme.error,
@@ -218,9 +215,7 @@ class ModalUtils {
                 color: theme.colorScheme.onPrimaryContainer,
               ),
               onPressed: () {
-                if (operationCompleted) {
-                  Navigator.of(context).pop();
-                }
+                Navigator.of(context).pop();
               },
             ),
             child: Padding(
