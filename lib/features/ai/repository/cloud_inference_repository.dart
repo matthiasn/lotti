@@ -15,6 +15,7 @@ class CloudInferenceRepository {
     required double temperature,
     required String baseUrl,
     required String apiKey,
+    String? systemMessage,
     OpenAIClient? overrideClient,
   }) {
     final client = overrideClient ??
@@ -27,6 +28,8 @@ class CloudInferenceRepository {
       request: CreateChatCompletionRequest(
         frequencyPenalty: null,
         messages: [
+          if (systemMessage != null)
+            ChatCompletionMessage.system(content: systemMessage),
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string(prompt),
           ),

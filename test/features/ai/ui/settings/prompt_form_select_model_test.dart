@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
@@ -62,6 +63,8 @@ class FakePromptFormController
 class MockTextEditingController extends Mock implements TextEditingController {}
 
 class MockAiConfig extends Mock implements AiConfig {}
+
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 final AppLocalizations l10n = AppLocalizationsEn();
 
@@ -431,4 +434,268 @@ void main() {
 
   // TODO: Add more tests:
   // - Tapping manage button and modal interaction
+
+  group('Reasoning Model Filtering Tests', () {
+    late MockAiConfigRepository mockRepository;
+
+    setUp(() {
+      mockRepository = MockAiConfigRepository();
+    });
+
+    testWidgets('shows only reasoning models when prompt requires reasoning',
+        (WidgetTester tester) async {
+      final formStateWithReasoning = createFormState(
+        modelIds: ['model1'],
+        defaultModelId: 'model1',
+        useReasoning: true,
+      );
+      fakeFormController.onBuild =
+          ({String? configId}) async => formStateWithReasoning;
+
+      final reasoningModel = AiConfigModel(
+        id: 'reasoning-model',
+        name: 'Reasoning Model',
+        providerModelId: 'rm1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: true,
+      );
+
+      final nonReasoningModel = AiConfigModel(
+        id: 'non-reasoning-model',
+        name: 'Non-Reasoning Model',
+        providerModelId: 'nrm1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the repository to return both models
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([reasoningModel, nonReasoningModel]));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            promptFormControllerProviderInstance
+                .overrideWith(() => fakeFormController),
+            aiConfigByIdProvider('model1')
+                .overrideWith((ref) async => reasoningModel),
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: PromptFormSelectModel(),
+            ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the manage models button
+      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      await tester.pumpAndSettle();
+
+      // Verify that only the reasoning model is shown in the modal
+      // The reasoning model appears twice: once in the main list (selected) and once in the modal
+      expect(find.text('Reasoning Model'), findsNWidgets(2));
+      // The non-reasoning model should not appear anywhere since it's filtered out
+      expect(find.text('Non-Reasoning Model'), findsNothing);
+    });
+
+    testWidgets('shows all models when prompt does not require reasoning',
+        (WidgetTester tester) async {
+      final formStateWithoutReasoning = createFormState(
+        modelIds: ['model1'],
+        defaultModelId: 'model1',
+      );
+      fakeFormController.onBuild =
+          ({String? configId}) async => formStateWithoutReasoning;
+
+      final reasoningModel = AiConfigModel(
+        id: 'reasoning-model',
+        name: 'Reasoning Model',
+        providerModelId: 'rm1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: true,
+      );
+
+      final nonReasoningModel = AiConfigModel(
+        id: 'non-reasoning-model',
+        name: 'Non-Reasoning Model',
+        providerModelId: 'nrm1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the repository to return both models
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([reasoningModel, nonReasoningModel]));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            promptFormControllerProviderInstance
+                .overrideWith(() => fakeFormController),
+            aiConfigByIdProvider('model1')
+                .overrideWith((ref) async => reasoningModel),
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: PromptFormSelectModel(),
+            ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the manage models button
+      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      await tester.pumpAndSettle();
+
+      // Verify that both models are shown in the modal
+      // The reasoning model appears twice: once in the main list (selected) and once in the modal
+      expect(find.text('Reasoning Model'), findsNWidgets(2));
+      // The non-reasoning model appears once in the modal (not selected in main list)
+      expect(find.text('Non-Reasoning Model'), findsOneWidget);
+    });
+
+    testWidgets(
+        'shows no suitable models message when no models meet requirements',
+        (WidgetTester tester) async {
+      final formStateWithReasoning = createFormState(
+        modelIds: [],
+        defaultModelId: '',
+        useReasoning: true,
+      );
+      fakeFormController.onBuild =
+          ({String? configId}) async => formStateWithReasoning;
+
+      final nonReasoningModel = AiConfigModel(
+        id: 'non-reasoning-model',
+        name: 'Non-Reasoning Model',
+        providerModelId: 'nrm1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the repository to return only non-reasoning model
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([nonReasoningModel]));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            promptFormControllerProviderInstance
+                .overrideWith(() => fakeFormController),
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: PromptFormSelectModel(),
+            ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the manage models button
+      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      await tester.pumpAndSettle();
+
+      // Verify that the "no suitable models" message is shown
+      expect(find.text(l10n.aiConfigNoSuitableModelsAvailable), findsOneWidget);
+      // The non-reasoning model should not appear anywhere since it doesn't meet requirements
+      expect(find.text('Non-Reasoning Model'), findsNothing);
+    });
+
+    testWidgets('filters models based on required input modalities',
+        (WidgetTester tester) async {
+      final formStateWithImageRequirement = createFormState(
+        modelIds: [],
+        defaultModelId: '',
+        requiredInputData: [InputDataType.images],
+      );
+      fakeFormController.onBuild =
+          ({String? configId}) async => formStateWithImageRequirement;
+
+      final textOnlyModel = AiConfigModel(
+        id: 'text-only-model',
+        name: 'Text Only Model',
+        providerModelId: 'tom1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      final multiModalModel = AiConfigModel(
+        id: 'multi-modal-model',
+        name: 'Multi Modal Model',
+        providerModelId: 'mmm1',
+        inferenceProviderId: 'ip1',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text, Modality.image],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the repository to return both models
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([textOnlyModel, multiModalModel]));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            promptFormControllerProviderInstance
+                .overrideWith(() => fakeFormController),
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: PromptFormSelectModel(),
+            ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the manage models button
+      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      await tester.pumpAndSettle();
+
+      // Verify that only the multi-modal model is shown
+      // The multi-modal model appears once in the modal (not selected in main list)
+      expect(find.text('Multi Modal Model'), findsOneWidget);
+      // The text-only model should not appear in the modal since it doesn't meet requirements
+      expect(find.text('Text Only Model'), findsNothing);
+    });
+  });
 }
