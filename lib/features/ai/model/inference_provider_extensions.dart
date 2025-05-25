@@ -17,6 +17,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderNebiusAiStudioName;
       case InferenceProviderType.openRouter:
         return context.messages.aiProviderOpenRouterName;
+      case InferenceProviderType.ollama:
+        return context.messages.aiProviderOllamaName;
     }
   }
 
@@ -34,6 +36,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderNebiusAiStudioDescription;
       case InferenceProviderType.openRouter:
         return context.messages.aiProviderOpenRouterDescription;
+      case InferenceProviderType.ollama:
+        return context.messages.aiProviderOllamaDescription;
     }
   }
 
@@ -50,6 +54,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
       case InferenceProviderType.nebiusAiStudio:
         return Icons.assistant;
       case InferenceProviderType.openRouter:
+        return Icons.assistant;
+      case InferenceProviderType.ollama:
         return Icons.assistant;
     }
   }

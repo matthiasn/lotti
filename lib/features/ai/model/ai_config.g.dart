@@ -45,6 +45,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
   InferenceProviderType.openAi: 'openAi',
   InferenceProviderType.openRouter: 'openRouter',
+  InferenceProviderType.ollama: 'ollama',
 };
 
 _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>

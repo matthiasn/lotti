@@ -317,7 +317,7 @@ class _HasAvailablePromptsProviderElement
 }
 
 String _$unifiedAiControllerHash() =>
-    r'0b770541fbaf68280cd370e8d434652218c7408c';
+    r'2d0f190f01815dce3b459d7426a6a572adac60f3';
 
 abstract class _$UnifiedAiController
     extends BuildlessAutoDisposeNotifier<String> {

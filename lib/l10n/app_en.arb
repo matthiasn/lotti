@@ -147,6 +147,8 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "OpenRouter's models",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderOllamaDescription": "Run inference locally with Ollama",
+  "aiProviderOllamaName": "Ollama",
   "aiResponseTypeActionItemSuggestions": "Action Item Suggestions",
   "aiResponseTypeAudioTranscription": "Audio Transcription",
   "aiResponseTypeImageAnalysis": "Image Analysis",
