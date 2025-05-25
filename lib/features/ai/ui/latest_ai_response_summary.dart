@@ -4,7 +4,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
-import 'package:lotti/features/ai/ui/task_summary/ai_task_summary_view.dart';
+import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
@@ -39,23 +39,19 @@ class LatestAiResponseSummary extends ConsumerWidget {
 
     final isRunning = inferenceStatus == InferenceStatus.running;
 
-    void showThoughtsModal() {
+    void showThoughtsModal(String promptId) {
       ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.aiAssistantThinking,
-        builder: (_) => AiTaskSummaryView(id: id),
+        builder: (_) => UnifiedAiProgressView(
+          entityId: id,
+          promptId: promptId,
+        ),
       );
     }
 
-    final isOutdated = ref
-            .watch(
-              isLatestSummaryOutdatedControllerProvider(
-                id: id,
-                aiResponseType: aiResponseType,
-              ),
-            )
-            .valueOrNull ??
-        false;
+    // TODO: Uncomment when we have a way to check if the latest summary is outdated
+    const isOutdated = false;
 
     final dividerColor = context.colorScheme.outline.withAlpha(60);
 
@@ -80,6 +76,8 @@ class LatestAiResponseSummary extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
+        final promptId = aiResponse.data.promptId;
+
         return Column(
           children: [
             if (isRunning)
@@ -92,7 +90,9 @@ class LatestAiResponseSummary extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: showThoughtsModal,
+                    onPressed: promptId != null
+                        ? () => showThoughtsModal(promptId)
+                        : null,
                     icon: const SizedBox(
                       width: 14,
                       height: 14,
@@ -110,20 +110,22 @@ class LatestAiResponseSummary extends ConsumerWidget {
                       color: context.colorScheme.outline,
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.refresh,
-                      color: context.colorScheme.outline,
-                    ),
-                    onPressed: showThoughtsModal,
-                  ),
-                  if (isOutdated)
-                    Text(
-                      context.messages.checklistSuggestionsOutdated,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        color: Colors.red,
+                  if (promptId != null) ...[
+                    IconButton(
+                      icon: Icon(
+                        Icons.refresh,
+                        color: context.colorScheme.outline,
                       ),
+                      onPressed: () => showThoughtsModal(promptId),
                     ),
+                    if (isOutdated)
+                      // ignore: dead_code
+                      Text(
+                        context.messages.checklistSuggestionsOutdated,
+                        style: context.textTheme.titleSmall
+                            ?.copyWith(color: Colors.red),
+                      ),
+                  ],
                 ],
               ),
             AiResponseSummary(

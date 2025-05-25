@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/model_subtitle_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// A page that displays a list of AI configurations of a specific type.
@@ -152,16 +153,21 @@ class AiConfigListPage extends ConsumerWidget {
   }
 
   Widget _buildConfigListTile(BuildContext context, AiConfig config) {
+    final subtitle = config.map(
+      inferenceProvider: (_) => Text(
+        config.description ?? '',
+        maxLines: 2,
+      ),
+      model: (model) => ModelSubtitleWidget(model: model),
+      prompt: (prompt) => Text(
+        prompt.description ?? '',
+        maxLines: 2,
+      ),
+    );
+
     return ListTile(
       title: Text(config.name),
-      subtitle: Text(
-        maxLines: 2,
-        config.map(
-          inferenceProvider: (_) => config.description ?? '',
-          model: (model) => model.description ?? '',
-          prompt: (prompt) => prompt.description ?? '',
-        ),
-      ),
+      subtitle: subtitle,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       trailing: const Icon(Icons.chevron_right),
       onTap: onItemTap != null ? () => onItemTap!(config) : null,

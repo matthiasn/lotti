@@ -106,6 +106,13 @@ class InferenceProviderFormController
         nameController.text = 'Nebius AI Studio';
       }
     }
+    if (value == InferenceProviderType.ollama) {
+      baseUrlController.text = 'http://localhost:11434/v1';
+
+      if (nameController.text.isEmpty) {
+        nameController.text = 'Ollama (local)';
+      }
+    }
     _setAllFields(inferenceProviderType: value);
   }
 

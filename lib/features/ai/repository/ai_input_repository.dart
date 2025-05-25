@@ -148,6 +148,18 @@ class AiInputRepository {
     }
     return null;
   }
+
+  Future<String?> buildTaskDetailsJson({required String id}) async {
+    final aiInput = await generate(id);
+
+    if (aiInput == null) {
+      return null;
+    }
+
+    const encoder = JsonEncoder.withIndent('    ');
+    final jsonString = encoder.convert(aiInput);
+    return jsonString;
+  }
 }
 
 @riverpod
