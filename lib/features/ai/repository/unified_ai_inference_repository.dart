@@ -302,6 +302,7 @@ class UnifiedAiInferenceRepository {
       entity: entity,
       promptConfig: promptConfig,
       response: cleanResponse,
+      start: start,
     );
   }
 
@@ -310,6 +311,7 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
     required AiConfigPrompt promptConfig,
     required String response,
+    required DateTime start,
   }) async {
     final journalRepo = ref.read(journalRepositoryProvider);
 
@@ -341,7 +343,7 @@ $response
             model: '-',
             detectedLanguage: '-',
             transcript: response.trim(),
-            processingTime: DateTime.now().difference(DateTime.now()),
+            processingTime: DateTime.now().difference(start),
           );
           // Add transcript to audio
           final existingTranscripts = entity.data.transcripts ?? [];
