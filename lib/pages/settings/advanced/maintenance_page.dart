@@ -7,7 +7,6 @@ import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
@@ -18,7 +17,6 @@ class MaintenancePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
-    final notificationService = getIt<NotificationService>();
     Theme.of(context);
 
     return FutureBuilder<int>(
@@ -78,10 +76,6 @@ class MaintenancePage extends StatelessWidget {
                 },
               ),
               SettingsCard(
-                title: context.messages.maintenanceRecreateTagged,
-                onTap: maintenance.recreateTaggedLinks,
-              ),
-              SettingsCard(
                 title: context.messages.maintenanceStories,
                 onTap: maintenance.recreateStoryAssignment,
               ),
@@ -98,16 +92,8 @@ class MaintenancePage extends StatelessWidget {
                 onTap: maintenance.purgeAudioModels,
               ),
               SettingsCard(
-                title: context.messages.maintenanceCancelNotifications,
-                onTap: notificationService.cancelAll,
-              ),
-              SettingsCard(
                 title: context.messages.maintenanceRecreateFts5,
                 onTap: maintenance.recreateFts5,
-              ),
-              SettingsCard(
-                title: context.messages.maintenancePersistTaskCategories,
-                onTap: maintenance.persistTaskCategories,
               ),
               SettingsCard(
                 title: context.messages.maintenanceReSync,
