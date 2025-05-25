@@ -24,24 +24,6 @@ class Maintenance {
   final TagsService tagsService = getIt<TagsService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
-  Future<void> recreateTaggedLinks() async {
-    await createDbBackup(journalDbFileName);
-
-    final count = await _db.getJournalCount();
-    const pageSize = 100;
-    final pages = (count / pageSize).ceil();
-
-    for (var page = 0; page <= pages; page++) {
-      final dbEntities =
-          await _db.orderedJournal(pageSize, page * pageSize).get();
-
-      final entries = entityStreamMapper(dbEntities);
-      for (final entry in entries) {
-        await _db.addTagged(entry);
-      }
-    }
-  }
-
   Future<void> reSyncInterval({
     required DateTime start,
     required DateTime end,
@@ -267,42 +249,6 @@ class Maintenance {
         if (entry is JournalAudio) {
           if (entry.data.transcripts?.isEmpty ?? true) {
             await getIt<AsrService>().enqueue(entry: entry);
-          }
-        }
-      }
-    }
-  }
-
-  Future<void> persistTaskCategories() async {
-    await createDbBackup(journalDbFileName);
-
-    final count = await _db.getJournalCount();
-    const pageSize = 100;
-    final pages = (count / pageSize).ceil();
-
-    for (var page = 0; page <= pages; page++) {
-      final entries = await _db.getTasks(
-        taskStatuses: [
-          'OPEN',
-          'GROOMED',
-          'IN PROGRESS',
-          'BLOCKED',
-          'ON HOLD',
-          'DONE',
-          'REJECTED',
-        ],
-        starredStatuses: [true, false],
-        categoryIds: [''],
-        limit: 100000,
-      );
-
-      for (final entry in entries) {
-        if (entry is Task) {
-          if (entry.meta.categoryId != null) {
-            await _db.updateJournalEntity(
-              entry,
-              overrideComparison: true,
-            );
           }
         }
       }
