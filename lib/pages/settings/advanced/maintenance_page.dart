@@ -28,6 +28,7 @@ class MaintenancePage extends StatelessWidget {
         return SliverBoxAdapterPage(
           title: context.messages.settingsMaintenanceTitle,
           showBackButton: true,
+          padding: const EdgeInsets.symmetric(horizontal: 5),
           child: Column(
             children: [
               SettingsCard(
