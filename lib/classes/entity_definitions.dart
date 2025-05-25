@@ -174,6 +174,7 @@ class AiResponseData with _$AiResponseData {
     required String prompt,
     required String thoughts,
     required String response,
+    String? promptId,
     List<AiActionItem>? suggestedActionItems,
     AiResponseType? type,
     double? temperature,

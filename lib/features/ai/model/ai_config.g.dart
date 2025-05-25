@@ -45,6 +45,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
   InferenceProviderType.openAi: 'openAi',
   InferenceProviderType.openRouter: 'openRouter',
+  InferenceProviderType.ollama: 'ollama',
 };
 
 _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
@@ -117,6 +118,7 @@ _$AiConfigPromptImpl _$$AiConfigPromptImplFromJson(Map<String, dynamic> json) =>
         (k, e) => MapEntry(k, e as String),
       ),
       category: json['category'] as String?,
+      archived: json['archived'] as bool? ?? false,
       $type: json['runtimeType'] as String?,
     );
 
@@ -140,6 +142,7 @@ Map<String, dynamic> _$$AiConfigPromptImplToJson(
       'description': instance.description,
       'defaultVariables': instance.defaultVariables,
       'category': instance.category,
+      'archived': instance.archived,
       'runtimeType': instance.$type,
     };
 

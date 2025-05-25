@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/ui/task_summary/action_item_suggestions_view.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -41,16 +40,7 @@ class _ChecklistSuggestionsWidgetState
       ),
     );
 
-    final isOutdated = ref
-            .watch(
-              isLatestSummaryOutdatedControllerProvider(
-                id: widget.itemId,
-                aiResponseType: AiResponseType.actionItemSuggestions,
-              ),
-            )
-            .valueOrNull ??
-        false;
-
+    const isOutdated = false;
     final isRunning = suggestionsInferenceStatus == InferenceStatus.running;
 
     if (checklistItems == null) {
@@ -111,7 +101,9 @@ class _ChecklistSuggestionsWidgetState
                   showThoughtsModal();
                 },
               ),
+              // ignore: dead_code
               if (isOutdated)
+                // ignore: dead_code
                 Text(
                   context.messages.checklistSuggestionsOutdated,
                   style: context.textTheme.titleSmall?.copyWith(
