@@ -107,7 +107,7 @@ class InferenceProviderFormController
       }
     }
     if (value == InferenceProviderType.ollama) {
-      baseUrlController.text = 'http://localhost:11434';
+      baseUrlController.text = 'http://localhost:11434/v1';
 
       if (nameController.text.isEmpty) {
         nameController.text = 'Ollama (local)';
