@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -29,6 +32,10 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockRef extends Mock implements Ref {}
 
+class MockDirectory extends Mock implements Directory {}
+
+class MockFile extends Mock implements File {}
+
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 class FakeAiConfigModel extends Fake implements AiConfigModel {}
@@ -48,6 +55,8 @@ class FakeAiResponseData extends Fake implements AiResponseData {}
 
 class FakeJournalEntity extends Fake implements JournalEntity {}
 
+class FakeJournalAudio extends Fake implements JournalAudio {}
+
 void main() {
   late UnifiedAiInferenceRepository repository;
   late MockRef mockRef;
@@ -56,6 +65,7 @@ void main() {
   late MockCloudInferenceRepository mockCloudInferenceRepo;
   late MockJournalRepository mockJournalRepo;
   late MockJournalDb mockJournalDb;
+  late MockDirectory mockDirectory;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -68,6 +78,7 @@ void main() {
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(FakeAiResponseData());
     registerFallbackValue(FakeJournalEntity());
+    registerFallbackValue(FakeJournalAudio());
   });
 
   setUp(() {
@@ -77,12 +88,21 @@ void main() {
     mockCloudInferenceRepo = MockCloudInferenceRepository();
     mockJournalRepo = MockJournalRepository();
     mockJournalDb = MockJournalDb();
+    mockDirectory = MockDirectory();
 
     // Set up GetIt
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
-    getIt.registerSingleton<JournalDb>(mockJournalDb);
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    getIt
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<Directory>(mockDirectory);
+
+    // Mock directory path
+    when(() => mockDirectory.path).thenReturn('/mock/documents');
 
     // Setup mock ref to return mocked repositories
     when(() => mockRef.read(aiConfigRepositoryProvider))
@@ -100,6 +120,9 @@ void main() {
   tearDown(() {
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
     }
   });
 
@@ -152,7 +175,7 @@ void main() {
             capturedAt: DateTime.now(),
             imageId: 'test-image',
             imageFile: 'test.jpg',
-            imageDirectory: '/images',
+            imageDirectory: '/images/',
           ),
         );
 
@@ -180,9 +203,23 @@ void main() {
         expect(result.first.id, 'image-prompt');
       });
 
-      test('returns empty list when no prompts match', () async {
-        final journalEntry = JournalEntry(
+      test('returns prompts matching audio entity', () async {
+        final audioEntity = JournalAudio(
           meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final audioPrompt = _createPrompt(
+          id: 'audio-prompt',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final taskPrompt = _createPrompt(
@@ -192,10 +229,76 @@ void main() {
         );
 
         when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt]);
+            .thenAnswer((_) async => [audioPrompt, taskPrompt]);
 
         final result = await repository.getActivePromptsForContext(
-          entity: journalEntry,
+          entity: audioEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'audio-prompt');
+      });
+
+      test('returns prompts matching multiple input types', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final multiInputPrompt = _createPrompt(
+          id: 'multi-prompt',
+          name: 'Multi Input Prompt',
+          requiredInputData: [InputDataType.task, InputDataType.tasksList],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [multiInputPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'multi-prompt');
+      });
+
+      test('filters out prompts with mismatched input types', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final mismatchedPrompt = _createPrompt(
+          id: 'mismatched-prompt',
+          name: 'Mismatched Prompt',
+          requiredInputData: [InputDataType.task, InputDataType.images],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [mismatchedPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
         );
 
         expect(result.isEmpty, true);
@@ -239,6 +342,27 @@ void main() {
 
         expect(result.length, 1);
         expect(result.first.id, 'active-prompt');
+      });
+
+      test('returns empty list when no prompts match', () async {
+        final journalEntry = JournalEntry(
+          meta: _createMetadata(),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: journalEntry,
+        );
+
+        expect(result.isEmpty, true);
       });
     });
 
@@ -378,6 +502,817 @@ void main() {
             systemMessage: 'System message',
           ),
         ).called(1);
+      });
+
+      test('successfully runs inference with images', () async {
+        // Create a temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('image_test');
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final imageEntity = JournalImage(
+          meta: _createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime.now(),
+            imageId: 'test-image',
+            imageFile: 'test.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/images').createSync(recursive: true);
+        final imageFile = File('${tempDir.path}/images/test.jpg');
+        final mockImageBytes = Uint8List.fromList([1, 2, 3, 4]);
+        imageFile.writeAsBytesSync(mockImageBytes);
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4-vision',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta:
+                    ChatCompletionStreamResponseDelta(content: 'Image shows'),
+                finishReason: null,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+          CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: ' a cat'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => imageEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"image": "test.jpg"}');
+
+        when(
+          () => mockCloudInferenceRepo.generateWithImages(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        try {
+          await repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: progressUpdates.add,
+            onStatusChange: statusChanges.add,
+          );
+
+          expect(progressUpdates, ['Image shows', 'Image shows a cat']);
+          expect(
+            statusChanges,
+            [InferenceStatus.running, InferenceStatus.idle],
+          );
+
+          verify(
+            () => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              model: 'gpt-4-vision',
+              temperature: 0.6,
+              images: any(named: 'images'),
+              baseUrl: 'https://api.example.com',
+              apiKey: 'test-api-key',
+            ),
+          ).called(1);
+
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('successfully runs inference with audio', () async {
+        // Create a temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        final audioFile = File('${tempDir.path}/audio/test.mp3');
+        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
+        audioFile.writeAsBytesSync(mockAudioBytes);
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'whisper-1',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta:
+                    ChatCompletionStreamResponseDelta(content: 'Hello world'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => audioEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"audio": "test.mp3"}');
+
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        try {
+          await repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: progressUpdates.add,
+            onStatusChange: statusChanges.add,
+          );
+
+          expect(progressUpdates, ['Hello world']);
+          expect(
+            statusChanges,
+            [InferenceStatus.running, InferenceStatus.idle],
+          );
+
+          verify(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              any(),
+              model: 'whisper-1',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: 'https://api.example.com',
+              apiKey: 'test-api-key',
+            ),
+          ).called(1);
+
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('handles reasoning model response with thoughts', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content:
+                      '<think>Let me analyze this task</think>Task completed successfully',
+                ),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
+        );
+
+        expect(progressUpdates, [
+          '<think>Let me analyze this task</think>Task completed successfully',
+        ]);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+
+        // Verify that the AI response entry was created with extracted thoughts
+        final captured = verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: captureAny(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: 'test-id',
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).captured;
+
+        final data = captured.first as AiResponseData;
+        expect(data.thoughts, '<think>Let me analyze this task');
+        expect(data.response, 'Task completed successfully');
+      });
+
+      test('handles action item suggestions response type', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Action Item Suggestions',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.actionItemSuggestions,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content:
+                      'Here are some suggestions: [{"title": "Review code", "completed": false}]',
+                ),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
+        );
+
+        expect(progressUpdates, [
+          'Here are some suggestions: [{"title": "Review code", "completed": false}]',
+        ]);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+
+        // Verify that the AI response entry was created with parsed action items
+        final captured = verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: captureAny(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: 'test-id',
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).captured;
+
+        final data = captured.first as AiResponseData;
+        expect(data.suggestedActionItems, isNotNull);
+        expect(data.suggestedActionItems!.length, 1);
+        expect(data.suggestedActionItems!.first.title, 'Review code');
+      });
+
+      test('handles malformed action items JSON gracefully', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Action Item Suggestions',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.actionItemSuggestions,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Here are some suggestions: [invalid json}',
+                ),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
+        );
+
+        expect(progressUpdates, ['Here are some suggestions: [invalid json}']);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+
+        // Verify that the AI response entry was created with null action items
+        final captured = verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: captureAny(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: 'test-id',
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).captured;
+
+        final data = captured.first as AiResponseData;
+        expect(data.suggestedActionItems, isEmpty);
+      });
+
+      test('handles provider not found error', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final statusChanges = <InferenceStatus>[];
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => null);
+
+        expect(
+          () => repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+      });
+
+      test('handles build prompt failure', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final statusChanges = <InferenceStatus>[];
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => null);
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenThrow(Exception('Failed to build prompt'));
+
+        expect(
+          () => repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+      });
+
+      test('handles empty stream chunk content', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(),
+                finishReason: null,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+          CreateChatCompletionStreamResponse(
+            id: 'response-2',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
+        );
+
+        expect(progressUpdates, ['', 'Hello']);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
       });
 
       test('handles error during inference', () async {
