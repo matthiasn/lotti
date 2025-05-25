@@ -9,12 +9,14 @@ class SliverBoxAdapterPage extends StatefulWidget {
     required this.child,
     required this.title,
     this.showBackButton = false,
+    this.padding = EdgeInsets.zero,
     super.key,
   });
 
   final Widget child;
   final String title;
   final bool showBackButton;
+  final EdgeInsets padding;
 
   @override
   State<SliverBoxAdapterPage> createState() => _SliverBoxAdapterPageState();
@@ -42,9 +44,12 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
             showBackButton: widget.showBackButton,
           ),
           SliverToBoxAdapter(
-            child: widget.child
-                .animate()
-                .fadeIn(duration: const Duration(milliseconds: 500)),
+            child: Padding(
+              padding: widget.padding,
+              child: widget.child
+                  .animate()
+                  .fadeIn(duration: const Duration(milliseconds: 500)),
+            ),
           ),
         ],
       ),
@@ -100,10 +105,7 @@ class _SliverBoxAdapterShowcasePageState
             showBackButton: widget.showBackButton,
           ),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: widget.child,
-            ),
+            child: widget.child,
           ),
         ],
       ),
