@@ -43,6 +43,7 @@ class SyncModal extends ConsumerWidget {
                           height: 5,
                           child: LinearProgressIndicator(
                             value: progress / 100,
+                            borderRadius: BorderRadius.circular(8),
                             backgroundColor: Theme.of(context)
                                 .colorScheme
                                 .surfaceContainerHighest,
