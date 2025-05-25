@@ -283,6 +283,7 @@ class UnifiedAiInferenceRepository {
       temperature: 0.6,
       systemMessage: promptConfig.systemMessage,
       prompt: prompt,
+      promptId: promptConfig.id,
       thoughts: thoughts,
       response: cleanResponse,
       suggestedActionItems: suggestedActionItems,

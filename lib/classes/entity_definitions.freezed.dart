@@ -5521,6 +5521,7 @@ mixin _$AiResponseData {
   String get prompt => throw _privateConstructorUsedError;
   String get thoughts => throw _privateConstructorUsedError;
   String get response => throw _privateConstructorUsedError;
+  String? get promptId => throw _privateConstructorUsedError;
   List<AiActionItem>? get suggestedActionItems =>
       throw _privateConstructorUsedError;
   AiResponseType? get type => throw _privateConstructorUsedError;
@@ -5548,6 +5549,7 @@ abstract class $AiResponseDataCopyWith<$Res> {
       String prompt,
       String thoughts,
       String response,
+      String? promptId,
       List<AiActionItem>? suggestedActionItems,
       AiResponseType? type,
       double? temperature});
@@ -5573,6 +5575,7 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
     Object? prompt = null,
     Object? thoughts = null,
     Object? response = null,
+    Object? promptId = freezed,
     Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
@@ -5598,6 +5601,10 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
+      promptId: freezed == promptId
+          ? _value.promptId
+          : promptId // ignore: cast_nullable_to_non_nullable
+              as String?,
       suggestedActionItems: freezed == suggestedActionItems
           ? _value.suggestedActionItems
           : suggestedActionItems // ignore: cast_nullable_to_non_nullable
@@ -5628,6 +5635,7 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
       String prompt,
       String thoughts,
       String response,
+      String? promptId,
       List<AiActionItem>? suggestedActionItems,
       AiResponseType? type,
       double? temperature});
@@ -5651,6 +5659,7 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
     Object? prompt = null,
     Object? thoughts = null,
     Object? response = null,
+    Object? promptId = freezed,
     Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
@@ -5676,6 +5685,10 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as String,
+      promptId: freezed == promptId
+          ? _value.promptId
+          : promptId // ignore: cast_nullable_to_non_nullable
+              as String?,
       suggestedActionItems: freezed == suggestedActionItems
           ? _value._suggestedActionItems
           : suggestedActionItems // ignore: cast_nullable_to_non_nullable
@@ -5701,6 +5714,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
       required this.prompt,
       required this.thoughts,
       required this.response,
+      this.promptId,
       final List<AiActionItem>? suggestedActionItems,
       this.type,
       this.temperature})
@@ -5719,6 +5733,8 @@ class _$AiResponseDataImpl implements _AiResponseData {
   final String thoughts;
   @override
   final String response;
+  @override
+  final String? promptId;
   final List<AiActionItem>? _suggestedActionItems;
   @override
   List<AiActionItem>? get suggestedActionItems {
@@ -5737,7 +5753,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
 
   @override
   String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
   }
 
   @override
@@ -5753,6 +5769,8 @@ class _$AiResponseDataImpl implements _AiResponseData {
                 other.thoughts == thoughts) &&
             (identical(other.response, response) ||
                 other.response == response) &&
+            (identical(other.promptId, promptId) ||
+                other.promptId == promptId) &&
             const DeepCollectionEquality()
                 .equals(other._suggestedActionItems, _suggestedActionItems) &&
             (identical(other.type, type) || other.type == type) &&
@@ -5769,6 +5787,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
       prompt,
       thoughts,
       response,
+      promptId,
       const DeepCollectionEquality().hash(_suggestedActionItems),
       type,
       temperature);
@@ -5797,6 +5816,7 @@ abstract class _AiResponseData implements AiResponseData {
       required final String prompt,
       required final String thoughts,
       required final String response,
+      final String? promptId,
       final List<AiActionItem>? suggestedActionItems,
       final AiResponseType? type,
       final double? temperature}) = _$AiResponseDataImpl;
@@ -5814,6 +5834,8 @@ abstract class _AiResponseData implements AiResponseData {
   String get thoughts;
   @override
   String get response;
+  @override
+  String? get promptId;
   @override
   List<AiActionItem>? get suggestedActionItems;
   @override
