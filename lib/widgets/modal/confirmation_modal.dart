@@ -120,7 +120,6 @@ Future<bool> showConfirmationModal({
       ];
     },
     modalTypeBuilder: ModalUtils.modalTypeBuilder,
-    barrierDismissible: true,
   );
 
   return result ?? false;
