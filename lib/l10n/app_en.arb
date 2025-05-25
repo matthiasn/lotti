@@ -109,6 +109,7 @@
   "aiConfigNoModelsAvailable": "No AI models are configured yet. Please add one in settings.",
   "aiConfigNoModelsSelected": "No models selected. At least one model is required.",
   "aiConfigNoProvidersAvailable": "No API providers available. Please add an API provider first.",
+  "aiConfigNoSuitableModelsAvailable": "No models meet the requirements for this prompt. Please configure models that support the required capabilities.",
   "aiConfigOutputModalitiesFieldLabel": "Output Modalities",
   "aiConfigOutputModalitiesTitle": "Output Modalities",
   "aiConfigProviderFieldLabel": "Inference Provider",
