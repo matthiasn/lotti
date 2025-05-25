@@ -10,11 +10,13 @@ class ModelManagementModal extends ConsumerStatefulWidget {
     required this.currentSelectedIds,
     required this.currentDefaultId,
     required this.onSave,
+    this.promptConfig,
     super.key,
   });
 
   final List<String> currentSelectedIds;
   final String currentDefaultId;
+  final AiConfigPrompt? promptConfig;
   final void Function(List<String> newSelectedIds, String newDefaultId) onSave;
 
   @override
@@ -41,10 +43,24 @@ class _ModelManagementModalState extends ConsumerState<ModelManagementModal> {
 
     return allModelsAsync.when(
       data: (allModels) {
-        final modelConfigs = allModels.whereType<AiConfigModel>().toList();
+        final allModelConfigs = allModels.whereType<AiConfigModel>().toList();
+
+        // Filter models based on prompt requirements if promptConfig is provided
+        final modelConfigs = widget.promptConfig != null
+            ? allModelConfigs
+                .where(
+                  (model) => isModelSuitableForPrompt(
+                    model: model,
+                    prompt: widget.promptConfig!,
+                  ),
+                )
+                .toList()
+            : allModelConfigs;
 
         if (modelConfigs.isEmpty) {
-          final message = context.messages.aiConfigNoModelsAvailable;
+          final message = widget.promptConfig != null
+              ? context.messages.aiConfigNoSuitableModelsAvailable
+              : context.messages.aiConfigNoModelsAvailable;
 
           return Center(
             child: Padding(

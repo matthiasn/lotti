@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -26,13 +28,30 @@ class _PromptFormSelectModelState extends ConsumerState<PromptFormSelectModel> {
     required List<String> currentSelectedIds,
     required String currentDefaultId,
     required PromptFormController formController,
+    required PromptFormState formState,
   }) {
+    // Create a temporary prompt config to check model suitability
+    final tempPromptConfig = AiConfigPrompt(
+      id: 'temp',
+      name: 'temp',
+      systemMessage: '',
+      userMessage: '',
+      defaultModelId: '',
+      modelIds: [],
+      createdAt: DateTime.now(),
+      useReasoning: formState.useReasoning,
+      requiredInputData: formState.requiredInputData,
+      aiResponseType:
+          formState.aiResponseType.value ?? AiResponseType.taskSummary,
+    );
+
     ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.aiConfigManageModelsButton,
       builder: (modalContext) => ModelManagementModal(
         currentSelectedIds: currentSelectedIds,
         currentDefaultId: currentDefaultId,
+        promptConfig: tempPromptConfig,
         onSave: (List<String> newSelectedIds, String newDefaultIdFromModal) {
           formController.modelIdsChanged(newSelectedIds);
 
@@ -93,6 +112,7 @@ class _PromptFormSelectModelState extends ConsumerState<PromptFormSelectModel> {
                   currentSelectedIds: formState.modelIds,
                   currentDefaultId: formState.defaultModelId,
                   formController: formController,
+                  formState: formState,
                 );
               },
               child: Text(context.messages.aiConfigManageModelsButton),
