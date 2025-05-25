@@ -652,5 +652,11 @@
   "syncEntitiesStepMeasurables": "Syncing measurables...",
   "syncEntitiesStepCategories": "Syncing categories...",
   "syncEntitiesComplete": "All entities have been synced successfully.",
+  "syncStepTags": "Tags",
+  "syncStepMeasurables": "Measurables",
+  "syncStepDashboards": "Dashboards",
+  "syncStepHabits": "Habits",
+  "syncStepCategories": "Categories",
+  "syncStepComplete": "Complete",
   "done": "Done"
 }
