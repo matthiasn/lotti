@@ -367,7 +367,6 @@
   "maintenanceResetHostId": "Reset Host ID",
   "maintenanceReSync": "Re-sync messages",
   "maintenanceStories": "Assign stories from parent entries",
-  "maintenanceSyncCategories": "Sync categories",
   "maintenanceSyncDefinitions": "Sync tags, measurables, dashboards, habits, categories",
   "maintenanceSyncSkip": "Skip sync message",
   "manualLinkText": "Check out the manual for more information",
