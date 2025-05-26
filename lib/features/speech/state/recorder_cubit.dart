@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -39,6 +41,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   final _audioRecorder = AudioRecorder();
+  final _audioPlayerCubit = getIt<AudioPlayerCubit>();
   StreamSubscription<Amplitude>? _amplitudeSub;
   final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
@@ -54,6 +57,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
     try {
       if (await _audioRecorder.hasPermission()) {
+        if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
+          await _audioPlayerCubit.pause();
+        }
+
         if (await _audioRecorder.isPaused()) {
           await resume();
         } else if (await _audioRecorder.isRecording()) {
