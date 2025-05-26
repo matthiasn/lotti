@@ -215,17 +215,6 @@ void main() {
     );
 
     test(
-      'setConfigFlag updates flag status correctly',
-      () async {
-        expect(await db?.getConfigFlag(recordLocationFlag), false);
-        await db?.setConfigFlag(recordLocationFlag, value: true);
-        expect(await db?.getConfigFlag(recordLocationFlag), true);
-        await db?.setConfigFlag(recordLocationFlag, value: false);
-        expect(await db?.getConfigFlag(recordLocationFlag), false);
-      },
-    );
-
-    test(
       'watchActiveConfigFlagNames returns active flag names correctly',
       () async {
         final activeFlags = await db?.watchActiveConfigFlagNames().first;
@@ -400,46 +389,6 @@ void main() {
 
         final retrieved = await db?.journalEntityById(entry.meta.id);
         expect(retrieved?.meta.starred, false);
-      });
-
-      test('watchJournalEntityById streams entity updates', () async {
-        final entry = createJournalEntry('Stream test');
-        await db?.updateJournalEntity(entry);
-
-        // Setup stream for watching entity
-        final completer = Completer<JournalEntity>();
-
-        // Start listening to the stream
-        final subscription =
-            db!.watchJournalEntityById(entry.meta.id).listen((updated) {
-          if (updated != null && (updated.meta.starred ?? false)) {
-            completer.complete(updated);
-          }
-        });
-
-        // Update the entity with starred = true
-        final now = DateTime.now();
-        final updatedEntry = JournalEntity.journalEntry(
-          meta: Metadata(
-            id: entry.meta.id,
-            createdAt: entry.meta.createdAt,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-            starred: true,
-            private: false,
-          ),
-          entryText: const EntryText(plainText: 'Updated for stream'),
-        );
-
-        await db?.updateJournalEntity(updatedEntry);
-
-        // Wait for the stream to emit the updated entity
-        final updated =
-            await completer.future.timeout(const Duration(seconds: 2));
-        expect(updated.meta.starred, true);
-
-        await subscription.cancel();
       });
     });
 

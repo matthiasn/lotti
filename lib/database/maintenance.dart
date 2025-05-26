@@ -97,66 +97,6 @@ class Maintenance {
     }
   }
 
-  Future<void> syncDefinitions() async {
-    final outboxService = getIt<OutboxService>();
-    final tags = await _db.watchTags().first;
-    final measurables = await _db.watchMeasurableDataTypes().first;
-    final dashboards = await _db.watchDashboards().first;
-    final habits = await _db.watchHabitDefinitions().first;
-
-    for (final tag in tags) {
-      await outboxService.enqueueMessage(
-        SyncMessage.tagEntity(
-          tagEntity: tag,
-          status: SyncEntryStatus.update,
-        ),
-      );
-    }
-    for (final measurable in measurables) {
-      await outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: measurable,
-          status: SyncEntryStatus.update,
-        ),
-      );
-    }
-    for (final dashboard in dashboards) {
-      await outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: dashboard,
-          status: SyncEntryStatus.update,
-        ),
-      );
-    }
-    for (final habit in habits) {
-      await outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: habit,
-          status: SyncEntryStatus.update,
-        ),
-      );
-    }
-  }
-
-  Future<void> syncCategories() async {
-    final outboxService = getIt<OutboxService>();
-    final categories = await _db.watchCategories().first;
-
-    for (final category in categories) {
-      await outboxService.enqueueMessage(
-        SyncMessage.entityDefinition(
-          entityDefinition: category,
-          status: SyncEntryStatus.update,
-        ),
-      );
-    }
-  }
-
-  Future<void> deleteTaggedLinks() async {
-    await createDbBackup(journalDbFileName);
-    await _db.deleteTagged();
-  }
-
   Future<void> deleteEditorDb() async {
     final file = await getDatabaseFile(editorDbFileName);
     file.deleteSync();

@@ -244,20 +244,6 @@ class JournalDb extends _$JournalDb {
     return null;
   }
 
-  Stream<JournalEntity?> watchJournalEntityById(String id) {
-    final res = (select(journal)
-          ..where((t) => t.id.equals(id))
-          ..where((t) => t.deleted.equals(false)))
-        .watchSingleOrNull()
-        .map((dbEntity) => dbEntity != null ? fromDbEntity(dbEntity) : null);
-
-    return res;
-  }
-
-  Future<List<String>> entryIdsByTagId(String tagId) async {
-    return entryIdsForTagId(tagId).get();
-  }
-
   Future<List<JournalEntity>> getJournalEntities({
     required List<String> types,
     required List<bool> starredStatuses,
@@ -286,26 +272,6 @@ class JournalDb extends _$JournalDb {
   ) async {
     final res = await entriesForIds(ids.toList()).get();
     return res.map(fromDbEntity).toList();
-  }
-
-  Future<List<String>> getJournalEntityIds({
-    required List<String> types,
-    required List<bool> starredStatuses,
-    required List<bool> privateStatuses,
-    required List<int> flaggedStatuses,
-    required List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) async {
-    return _selectJournalEntityIds(
-      types: types,
-      starredStatuses: starredStatuses,
-      privateStatuses: privateStatuses,
-      flaggedStatuses: flaggedStatuses,
-      ids: ids,
-      limit: limit,
-      offset: offset,
-    ).get();
   }
 
   Selectable<JournalDbEntity> _selectJournalEntities({
@@ -350,37 +316,6 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Selectable<String> _selectJournalEntityIds({
-    required List<String> types,
-    required List<bool> starredStatuses,
-    required List<bool> privateStatuses,
-    required List<int> flaggedStatuses,
-    required List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) {
-    if (ids != null) {
-      return filteredJournalIds2(
-        types,
-        ids,
-        starredStatuses,
-        privateStatuses,
-        flaggedStatuses,
-        limit,
-        offset,
-      );
-    } else {
-      return filteredJournalIds(
-        types,
-        starredStatuses,
-        privateStatuses,
-        flaggedStatuses,
-        limit,
-        offset,
-      );
-    }
-  }
-
   Future<List<JournalEntity>> getTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
@@ -399,22 +334,6 @@ class JournalDb extends _$JournalDb {
     ).get();
 
     return res.map(fromDbEntity).toList();
-  }
-
-  Future<List<String>> getTasksIds({
-    required List<bool> starredStatuses,
-    required List<String> taskStatuses,
-    List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) async {
-    return _selectTaskIds(
-      starredStatuses: starredStatuses,
-      taskStatuses: taskStatuses,
-      ids: ids,
-      limit: limit,
-      offset: offset,
-    ).get();
   }
 
   Selectable<JournalDbEntity> _selectTasks({
@@ -448,33 +367,6 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Selectable<String> _selectTaskIds({
-    required List<bool> starredStatuses,
-    required List<String> taskStatuses,
-    List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) {
-    final types = <String>['Task'];
-    if (ids != null) {
-      return filteredTaskIds2(
-        types,
-        ids,
-        starredStatuses,
-        taskStatuses,
-        limit,
-        offset,
-      );
-    } else {
-      return filteredTaskIds(
-        types,
-        starredStatuses,
-        taskStatuses,
-        limit,
-        offset,
-      );
-    }
-  }
 
   Future<int> getWipCount() async {
     final res = await _selectTasks(
@@ -486,12 +378,6 @@ class JournalDb extends _$JournalDb {
     return res.length;
   }
 
-  FutureOr<List<String>> getSortedLinkedEntityIds(
-    List<String> linkedIds,
-  ) async {
-    final dbEntities = await journalEntitiesByIds(linkedIds).get();
-    return dbEntities.map((dbEntity) => dbEntity.id).toList();
-  }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final dbEntities = await linkedJournalEntities(linkedFrom).get();
@@ -702,13 +588,7 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Future<void> setConfigFlag(String flagName, {required bool value}) async {
-    final configFlag = await getConfigFlagByName(flagName);
 
-    if (configFlag != null) {
-      await upsertConfigFlag(configFlag.copyWith(status: value));
-    }
-  }
 
   Future<int> getCountImportFlagEntries() async {
     final res = await countImportFlagEntries().get();
