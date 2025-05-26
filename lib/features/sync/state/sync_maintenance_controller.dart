@@ -14,31 +14,57 @@ class SyncMaintenanceController extends StateNotifier<SyncState> {
   Future<void> syncAll() async {
     state = state.copyWith(isSyncing: true, progress: 0);
 
-    // Define all sync operations
+    // Define all sync operations with their weight in the total progress
     final syncOperations = [
-      (step: SyncStep.tags, operation: _repository.syncTags),
-      (step: SyncStep.measurables, operation: _repository.syncMeasurables),
-      (step: SyncStep.categories, operation: _repository.syncCategories),
-      (step: SyncStep.dashboards, operation: _repository.syncDashboards),
-      (step: SyncStep.habits, operation: _repository.syncHabits),
+      (step: SyncStep.tags, operation: _repository.syncTags, weight: 0.2),
+      (
+        step: SyncStep.measurables,
+        operation: _repository.syncMeasurables,
+        weight: 0.2
+      ),
+      (
+        step: SyncStep.categories,
+        operation: _repository.syncCategories,
+        weight: 0.2
+      ),
+      (
+        step: SyncStep.dashboards,
+        operation: _repository.syncDashboards,
+        weight: 0.2
+      ),
+      (step: SyncStep.habits, operation: _repository.syncHabits, weight: 0.2),
     ];
 
     try {
+      var totalProgress = 0.0;
+
       // Execute each sync operation
       for (var i = 0; i < syncOperations.length; i++) {
         final operation = syncOperations[i];
         state = state.copyWith(currentStep: operation.step);
-        await operation.operation();
 
-        // Calculate progress based on completed operations
-        final progress = ((i + 1) / syncOperations.length * 100).round();
-        state = state.copyWith(progress: progress);
+        // Calculate the base progress for this operation
+        final baseProgress = totalProgress;
+
+        await operation.operation(
+          onProgress: (progress) {
+            // Calculate the weighted progress for this operation
+            final weightedProgress =
+                baseProgress + (progress * operation.weight);
+            state = state.copyWith(progress: (weightedProgress * 100).round());
+          },
+        );
+
+        // Update total progress after operation completes
+        totalProgress += operation.weight;
+        state = state.copyWith(progress: (totalProgress * 100).round());
       }
 
       // Mark as complete
       state = state.copyWith(
         currentStep: SyncStep.complete,
         isSyncing: false,
+        progress: 100,
       );
     } catch (e, stackTrace) {
       final syncError = SyncError.fromException(

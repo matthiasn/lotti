@@ -80,7 +80,6 @@ class ModalUtils {
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
       modalDecorator: modalDecorator,
     );
   }
@@ -226,7 +225,6 @@ class ModalUtils {
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
       onModalDismissedWithBarrierTap: () {
         if (pageIndexNotifier.value == 0) {
           // On confirmation page, treat as cancel

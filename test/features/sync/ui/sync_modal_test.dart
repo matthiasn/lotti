@@ -38,16 +38,31 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Stub all repository methods to return successful futures
-    when(() => mockSyncMaintenanceRepository.syncTags())
-        .thenAnswer((_) async {});
-    when(() => mockSyncMaintenanceRepository.syncMeasurables())
-        .thenAnswer((_) async {});
-    when(() => mockSyncMaintenanceRepository.syncCategories())
-        .thenAnswer((_) async {});
-    when(() => mockSyncMaintenanceRepository.syncDashboards())
-        .thenAnswer((_) async {});
-    when(() => mockSyncMaintenanceRepository.syncHabits())
-        .thenAnswer((_) async {});
+    when(
+      () => mockSyncMaintenanceRepository.syncTags(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) => Future<void>.value());
+    when(
+      () => mockSyncMaintenanceRepository.syncMeasurables(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) => Future<void>.value());
+    when(
+      () => mockSyncMaintenanceRepository.syncCategories(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) => Future<void>.value());
+    when(
+      () => mockSyncMaintenanceRepository.syncDashboards(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) => Future<void>.value());
+    when(
+      () => mockSyncMaintenanceRepository.syncHabits(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) => Future<void>.value());
 
     // Stub logging service methods (optional, but good practice)
     when(
@@ -114,11 +129,31 @@ void main() {
         .pumpAndSettle(); // Wait for dialog to close and async operations
 
     // Verify that all sync methods on the repository were called
-    verify(() => mockSyncMaintenanceRepository.syncTags()).called(1);
-    verify(() => mockSyncMaintenanceRepository.syncMeasurables()).called(1);
-    verify(() => mockSyncMaintenanceRepository.syncCategories()).called(1);
-    verify(() => mockSyncMaintenanceRepository.syncDashboards()).called(1);
-    verify(() => mockSyncMaintenanceRepository.syncHabits()).called(1);
+    verify(
+      () => mockSyncMaintenanceRepository.syncTags(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+    verify(
+      () => mockSyncMaintenanceRepository.syncMeasurables(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+    verify(
+      () => mockSyncMaintenanceRepository.syncCategories(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+    verify(
+      () => mockSyncMaintenanceRepository.syncDashboards(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+    verify(
+      () => mockSyncMaintenanceRepository.syncHabits(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
   });
 
   testWidgets(
@@ -154,7 +189,11 @@ void main() {
       expect(find.text(messages.syncStepCategories), findsOneWidget);
 
       // Verify that the sync operation for categories was called
-      verify(() => mockSyncMaintenanceRepository.syncCategories()).called(1);
+      verify(
+        () => mockSyncMaintenanceRepository.syncCategories(
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
     },
   );
 }

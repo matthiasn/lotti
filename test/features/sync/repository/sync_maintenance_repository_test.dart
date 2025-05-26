@@ -18,6 +18,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class SyncMessageFake extends Fake implements SyncMessage {}
 
+class ExceptionFake extends Fake implements Exception {}
+
 // Fake classes for EntityDefinition parts
 class FakeMeasurableDataType extends Fake implements MeasurableDataType {
   FakeMeasurableDataType({required this.id, this.deletedAt});
@@ -60,6 +62,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(SyncMessageFake());
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(ExceptionFake());
   });
 
   setUp(() {
@@ -532,6 +535,213 @@ void main() {
           ),
         ).called(1);
       });
+    });
+  });
+
+  group('syncEntities', () {
+    test('reports progress correctly for multiple entities', () async {
+      // Create test entities
+      final testTags = [
+        TagEntity.genericTag(
+          id: '1',
+          tag: 'Tag 1',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+        TagEntity.genericTag(
+          id: '2',
+          tag: 'Tag 2',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+        TagEntity.genericTag(
+          id: '3',
+          tag: 'Tag 3',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+        TagEntity.genericTag(
+          id: '4',
+          tag: 'Tag 4',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+        TagEntity.genericTag(
+          id: '5',
+          tag: 'Tag 5',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+      ];
+
+      // Track progress updates
+      final progressUpdates = <double>[];
+
+      // Mock the fetch function
+      when(() => mockJournalDb.watchTags())
+          .thenAnswer((_) => Stream.value(testTags));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      // Test the sync
+      await syncMaintenanceRepository.syncTags(
+        onProgress: progressUpdates.add,
+      );
+
+      // Verify progress updates
+      expect(progressUpdates.length, 5); // One update per entity
+      expect(progressUpdates[0], 0.2); // 1/5 = 0.2
+      expect(progressUpdates[1], 0.4); // 2/5 = 0.4
+      expect(progressUpdates[2], 0.6); // 3/5 = 0.6
+      expect(progressUpdates[3], 0.8); // 4/5 = 0.8
+      expect(progressUpdates[4], 1.0); // 5/5 = 1.0
+    });
+
+    test(
+        'handles deleted entities correctly (progress for all, sync only non-deleted)',
+        () async {
+      // Create test entities with some deleted ones
+      final testTags = [
+        TagEntity.genericTag(
+          id: '1',
+          tag: 'Tag 1',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+        TagEntity.genericTag(
+          id: '2',
+          tag: 'Tag 2',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          deletedAt: DateTime.now(),
+          inactive: false,
+        ),
+        TagEntity.genericTag(
+          id: '3',
+          tag: 'Tag 3',
+          private: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          inactive: false,
+        ),
+      ];
+
+      // Track progress updates
+      final progressUpdates = <double>[];
+
+      // Mock the fetch function
+      when(() => mockJournalDb.watchTags())
+          .thenAnswer((_) => Stream.value(testTags));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      // Test the sync
+      await syncMaintenanceRepository.syncTags(
+        onProgress: progressUpdates.add,
+      );
+
+      // Progress should be reported for all entities
+      expect(progressUpdates.length, 3); // 3 entities, including deleted
+      expect(progressUpdates[0], closeTo(1 / 3, 0.001));
+      expect(progressUpdates[1], closeTo(2 / 3, 0.001));
+      expect(progressUpdates[2], closeTo(1.0, 0.001));
+
+      // Only non-deleted entities should be synced
+      verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+    });
+
+    test('skips syncing deleted entities', () async {
+      final deletedTag = TagEntity.genericTag(
+        id: '2',
+        tag: 'Tag 2',
+        private: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        deletedAt: DateTime.now(),
+        inactive: false,
+      );
+      final activeTag = TagEntity.genericTag(
+        id: '1',
+        tag: 'Tag 1',
+        private: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        inactive: false,
+      );
+      when(() => mockJournalDb.watchTags())
+          .thenAnswer((_) => Stream.value([deletedTag, activeTag]));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncTags();
+      // Only the active tag should be synced
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+    });
+
+    test('handles empty entity list', () async {
+      // Create empty test list
+      final testTags = <TagEntity>[];
+
+      // Track progress updates
+      final progressUpdates = <double>[];
+
+      // Mock the fetch function
+      when(() => mockJournalDb.watchTags())
+          .thenAnswer((_) => Stream.value(testTags));
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      // Test the sync
+      await syncMaintenanceRepository.syncTags(
+        onProgress: progressUpdates.add,
+      );
+
+      // Verify no progress updates for empty list
+      expect(progressUpdates.isEmpty, true);
+    });
+
+    test('handles errors correctly', () async {
+      // Mock the fetch function to throw an error
+      when(() => mockJournalDb.watchTags()).thenThrow(Exception('Test error'));
+
+      // Test the sync
+      expect(
+        () => syncMaintenanceRepository.syncTags(),
+        throwsException,
+      );
+
+      // Verify error was logged
+      verify(
+        () => mockLoggingService.captureException(
+          any<Exception>(),
+          domain: 'SYNC_SERVICE',
+          subDomain: 'syncTags',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 }
