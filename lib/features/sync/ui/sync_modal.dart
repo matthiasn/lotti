@@ -78,6 +78,12 @@ class SyncModal extends ConsumerWidget {
                 ),
                 _buildStepIndicator(
                   context,
+                  SyncStep.categories,
+                  currentStep,
+                  isSyncing,
+                ),
+                _buildStepIndicator(
+                  context,
                   SyncStep.dashboards,
                   currentStep,
                   isSyncing,
