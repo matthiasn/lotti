@@ -5,7 +5,10 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/repository/config_repository.dart';
+import 'package:lotti/database/repository/journal_repository.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -16,6 +19,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic_v2.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -34,6 +38,8 @@ Future<void> registerSingletons() async {
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<UserActivityService>(UserActivityService())
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
+    ..registerSingleton<LoggingDb>(LoggingDb())
+    ..registerSingleton<LoggingService>(LoggingService())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
@@ -53,6 +59,30 @@ Future<void> registerSingletons() async {
     ..registerSingleton<AiConfigRepository>(AiConfigRepository(AiConfigDb()))
     ..registerSingleton<NavService>(NavService())
     ..registerSingleton<AudioPlayerCubit>(AudioPlayerCubit());
+
+  // Register repository implementations
+  getIt
+    ..registerSingleton<IJournalRepository>(
+      JournalRepository(getIt<JournalDb>()),
+    )
+    ..registerSingleton<IConfigRepository>(
+      ConfigRepository(getIt<JournalDb>()),
+    );
+
+  // Register the new PersistenceLogicV2 (can coexist with the old one during migration)
+  getIt.registerSingleton<PersistenceLogicV2>(
+    PersistenceLogicV2(
+      journalDb: getIt<JournalDb>(),
+      journalRepository: getIt<IJournalRepository>(),
+      vectorClockService: getIt<VectorClockService>(),
+      loggingService: getIt<LoggingService>(),
+      updateNotifications: getIt<UpdateNotifications>(),
+      outboxService: getIt<OutboxService>(),
+      notificationService: getIt<NotificationService>(),
+      tagsService: getIt<TagsService>(),
+      fts5Db: getIt<Fts5Db>(),
+    ),
+  );
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
