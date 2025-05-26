@@ -1,168 +1,160 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
+/// Interface for entities that can be synced
+abstract class SyncableEntity {
+  bool get isDeleted;
+
+  String get id;
+}
+
+/// Wrapper class for syncable entities
+class SyncableEntityWrapper<T> implements SyncableEntity {
+  SyncableEntityWrapper(this.entity, this.isDeletedGetter);
+
+  final T entity;
+  final bool Function(T) isDeletedGetter;
+
+  @override
+  bool get isDeleted => isDeletedGetter(entity);
+
+  @override
+  String get id {
+    if (entity is EntityDefinition) {
+      return (entity as EntityDefinition).id;
+    } else if (entity is TagEntity) {
+      return (entity as TagEntity).id;
+    }
+    throw UnimplementedError('Entity type not supported');
+  }
+}
+
+/// Extension to make EntityDefinition syncable
+extension EntityDefinitionSyncable on EntityDefinition {
+  bool get isDeleted => deletedAt != null;
+}
+
+/// Extension to make TagEntity syncable
+extension TagEntitySyncable on TagEntity {
+  bool get isDeleted => deletedAt != null;
+}
+
 class SyncMaintenanceRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final OutboxService _outboxService = getIt<OutboxService>();
   final LoggingService _loggingService = getIt<LoggingService>();
 
-  Future<void> syncTags() async {
+  /// Generic method to sync any type of entity
+  Future<void> syncEntities<T>({
+    required Future<List<T>> Function() fetchEntities,
+    required Future<void> Function(T) enqueueSync,
+    required String domain,
+    void Function(double)? onProgress,
+  }) async {
     try {
-      // getting here all tags from the database
-      final tags = await _journalDb.watchTags().first;
+      final entities = await fetchEntities();
+      final total = entities.length;
+      var processed = 0;
 
-      // syncing each tag
-      for (final tag in tags) {
-        // Skip deleted
-        if (tag.deletedAt != null) {
-          continue;
+      for (final entity in entities) {
+        final isDeleted =
+            entity is EntityDefinition && entity.deletedAt != null ||
+                entity is TagEntity && entity.deletedAt != null;
+
+        if (!isDeleted) {
+          await enqueueSync(entity);
         }
 
-        // enqueue the tag for sync
-        await _outboxService.enqueueMessage(
-          SyncMessage.tagEntity(
-            tagEntity: tag,
-            status: SyncEntryStatus.update,
-          ),
-        );
+        processed++;
+        if (onProgress != null) {
+          onProgress(processed / total);
+        }
       }
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
         domain: 'SYNC_SERVICE',
-        subDomain: 'syncTags',
+        subDomain: domain,
         stackTrace: stackTrace,
       );
       rethrow;
     }
   }
 
-  Future<void> syncMeasurables() async {
-    try {
-      // getting here all measurables from the database
-      final measurables = await _journalDb.watchMeasurableDataTypes().first;
-
-      // syncing each measurable
-      for (final measurable in measurables) {
-        // Skip deleted measurables
-        if (measurable.deletedAt != null) {
-          continue;
-        }
-
-        // enqueue the measurable for sync
-        await _outboxService.enqueueMessage(
-          SyncMessage.entityDefinition(
-            entityDefinition: measurable,
-            status: SyncEntryStatus.update,
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      _loggingService.captureException(
-        e,
-        domain: 'SYNC_SERVICE',
-        subDomain: 'syncMeasurables',
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
+  Future<void> syncTags({void Function(double)? onProgress}) async {
+    return syncEntities<TagEntity>(
+      fetchEntities: () => _journalDb.watchTags().first,
+      enqueueSync: (tag) => _outboxService.enqueueMessage(
+        SyncMessage.tagEntity(
+          tagEntity: tag,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      domain: 'syncTags',
+      onProgress: onProgress,
+    );
   }
 
-  Future<void> syncCategories() async {
-    try {
-      // getting here all categories from the database
-      final categories = await _journalDb.watchCategories().first;
-
-      // syncing each category
-      for (final category in categories) {
-        // Skip deleted categories
-        if (category.deletedAt != null) {
-          continue;
-        }
-
-        // enqueue the category for sync
-        await _outboxService.enqueueMessage(
-          SyncMessage.entityDefinition(
-            entityDefinition: category,
-            status: SyncEntryStatus.update,
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      _loggingService.captureException(
-        e,
-        domain: 'SYNC_SERVICE',
-        subDomain: 'syncCategories',
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
+  Future<void> syncMeasurables({void Function(double)? onProgress}) async {
+    return syncEntities<EntityDefinition>(
+      fetchEntities: () => _journalDb.watchMeasurableDataTypes().first,
+      enqueueSync: (measurable) => _outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: measurable,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      domain: 'syncMeasurables',
+      onProgress: onProgress,
+    );
   }
 
-  Future<void> syncDashboards() async {
-    try {
-      // getting here all dashboards from the database
-      final dashboards = await _journalDb.watchDashboards().first;
-
-      // syncing each dashboard
-      for (final dashboard in dashboards) {
-        // Skip deleted dashboards
-        if (dashboard.deletedAt != null) {
-          continue;
-        }
-
-        // enqueue the dashboard for sync
-        await _outboxService.enqueueMessage(
-          SyncMessage.entityDefinition(
-            entityDefinition: dashboard,
-            status: SyncEntryStatus.update,
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      _loggingService.captureException(
-        e,
-        domain: 'SYNC_SERVICE',
-        subDomain: 'syncDashboards',
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
+  Future<void> syncCategories({void Function(double)? onProgress}) async {
+    return syncEntities<EntityDefinition>(
+      fetchEntities: () => _journalDb.watchCategories().first,
+      enqueueSync: (category) => _outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: category,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      domain: 'syncCategories',
+      onProgress: onProgress,
+    );
   }
 
-  Future<void> syncHabits() async {
-    try {
-      // getting here all habits from the database
-      final habits = await _journalDb.watchHabitDefinitions().first;
+  Future<void> syncDashboards({void Function(double)? onProgress}) async {
+    return syncEntities<EntityDefinition>(
+      fetchEntities: () => _journalDb.watchDashboards().first,
+      enqueueSync: (dashboard) => _outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: dashboard,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      domain: 'syncDashboards',
+      onProgress: onProgress,
+    );
+  }
 
-      // syncing each habit
-      for (final habit in habits) {
-        // Skip deleted habits
-        if (habit.deletedAt != null) {
-          continue;
-        }
-
-        // enqueue the habit for sync
-        await _outboxService.enqueueMessage(
-          SyncMessage.entityDefinition(
-            entityDefinition: habit,
-            status: SyncEntryStatus.update,
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      _loggingService.captureException(
-        e,
-        domain: 'SYNC_SERVICE',
-        subDomain: 'syncHabits',
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
+  Future<void> syncHabits({void Function(double)? onProgress}) async {
+    return syncEntities<EntityDefinition>(
+      fetchEntities: () => _journalDb.watchHabitDefinitions().first,
+      enqueueSync: (habit) => _outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: habit,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      domain: 'syncHabits',
+      onProgress: onProgress,
+    );
   }
 }
 
