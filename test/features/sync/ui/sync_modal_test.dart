@@ -120,4 +120,41 @@ void main() {
     verify(() => mockSyncMaintenanceRepository.syncDashboards()).called(1);
     verify(() => mockSyncMaintenanceRepository.syncHabits()).called(1);
   });
+
+  testWidgets(
+    'SyncModal shows categories step in sync indicator',
+    (WidgetTester tester) async {
+      // Build a simple widget that can show the dialog
+      await tester.pumpWidget(
+        createTestApp(
+          Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () => SyncModal.show(context),
+                child: const Text('Show Sync Modal'),
+              );
+            },
+          ),
+        ),
+      );
+
+      // Tap the button to show the modal
+      await tester.tap(find.text('Show Sync Modal'));
+      await tester.pumpAndSettle();
+
+      // Verify the confirmation dialog is shown with the correct message
+      expect(find.text(messages.syncEntitiesMessage), findsOneWidget);
+      expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
+
+      // Tap the confirm button
+      await tester.tap(find.text(messages.syncEntitiesConfirm));
+      await tester.pumpAndSettle();
+
+      // Verify that the categories step is shown in the sync indicator
+      expect(find.text(messages.syncStepCategories), findsOneWidget);
+
+      // Verify that the sync operation for categories was called
+      verify(() => mockSyncMaintenanceRepository.syncCategories()).called(1);
+    },
+  );
 }
