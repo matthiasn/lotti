@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:lotti/widgets/sync/matrix/device_card.dart';
+import 'package:lotti/widgets/sync/matrix/status_indicator.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 

@@ -1,25 +1,5 @@
 import 'package:flutter/material.dart';
 
-class StatusText extends StatelessWidget {
-  const StatusText(
-    this.text, {
-    super.key,
-  });
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Flexible(
-      child: Text(
-        text,
-        softWrap: true,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
 class StatusIndicator extends StatelessWidget {
   const StatusIndicator(
     this.statusColor, {
