@@ -77,10 +77,6 @@ class MaintenancePage extends StatelessWidget {
                 },
               ),
               SettingsCard(
-                title: context.messages.maintenanceStories,
-                onTap: maintenance.recreateStoryAssignment,
-              ),
-              SettingsCard(
                 title: context.messages.maintenanceSyncDefinitions,
                 onTap: () => SyncModal.show(context),
               ),

@@ -11,7 +11,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -62,35 +61,6 @@ class Maintenance {
               status: SyncEntryStatus.update,
               entryLink: entryLink,
             ),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> recreateStoryAssignment() async {
-    await createDbBackup(journalDbFileName);
-
-    final count = await _db.getJournalCount();
-    const pageSize = 100;
-    final pages = (count / pageSize).ceil();
-
-    for (var page = 0; page <= pages; page++) {
-      final dbEntities =
-          await _db.orderedJournal(pageSize, page * pageSize).get();
-
-      final entries = entityStreamMapper(dbEntities);
-      for (final entry in entries) {
-        final linkedTagIds = entry.meta.tagIds;
-
-        final storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
-
-        final linkedEntities = await _db.getLinkedEntities(entry.meta.id);
-
-        for (final linked in linkedEntities) {
-          await TagsRepository.addTags(
-            journalEntityId: linked.meta.id,
-            addedTagIds: storyTags,
           );
         }
       }
