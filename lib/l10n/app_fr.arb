@@ -197,7 +197,6 @@
   "maintenanceReprocessSync": "Retraiter les messages de synchronisation",
   "maintenanceResetHostId": "Réinitialiser l'ID de l'hôte",
   "maintenanceReSync": "Resynchroniser les messages",
-  "maintenanceStories": "Assign stories from parent entries",
   "maintenanceSyncSkip": "Ignorer le message de synchronisation",
   "manualLinkText": "Ouvrez le manuel pour plus d'informations",
   "measurableDeleteConfirm": "OUI, SUPPRIMER CET ÉLÉMENT MESURABLE",

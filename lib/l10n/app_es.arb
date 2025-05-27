@@ -195,7 +195,6 @@
   "maintenanceReprocessSync": "Reprocesar mensajes de sincronización",
   "maintenanceResetHostId": "Restablecer ID de host",
   "maintenanceReSync": "Volver a sincronizar mensajes",
-  "maintenanceStories": "Asignar historias de entradas principales",
   "maintenanceSyncSkip": "Omitir mensaje de sincronización",
   "manualLinkText": "Consulta el manual para obtener más información",
   "measurableDeleteConfirm": "SÍ, ELIMINAR ESTE MEDIBLE",
