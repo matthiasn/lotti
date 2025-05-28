@@ -98,7 +98,7 @@ class Maintenance {
     );
   }
 
-  Future<void> recreateFts5() async {
+  Future<void> recreateFts5({void Function(double)? onProgress}) async {
     try {
       await deleteFts5Db();
     } catch (e, stackTrace) {
@@ -122,25 +122,38 @@ class Maintenance {
     const pageSize = 500;
     final pages = (entryCount / pageSize).ceil();
     var completed = 0;
+    var lastReportedProgress = 0;
 
     for (var page = 0; page <= pages; page++) {
       final dbEntities =
           await _db.orderedJournal(pageSize, page * pageSize).get();
 
       final entries = entityStreamMapper(dbEntities);
-      completed = completed + entries.length;
 
-      for (final entry in entries) {
+      for (var i = 0; i < entries.length; i++) {
+        final entry = entries[i];
         await fts5Db.insertText(entry);
+        completed++;
+
+        // Calculate current progress percentage
+        final currentProgress = entryCount > 0 ? (completed / entryCount) : 0.0;
+        final currentPercentage = (currentProgress * 100).round();
+
+        // Only update if we've moved to a new percentage point
+        if (currentPercentage > lastReportedProgress) {
+          lastReportedProgress = currentPercentage;
+          onProgress?.call(currentProgress);
+
+          // Add a small delay to make the progress visible
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          getIt<LoggingService>().captureEvent(
+            'Progress: $currentPercentage%, $completed/$entryCount',
+            domain: 'MAINTENANCE',
+            subDomain: 'recreateFts5',
+          );
+        }
       }
-
-      final progress = entryCount > 0 ? completed / entryCount : 0;
-
-      getIt<LoggingService>().captureEvent(
-        'Progress: ${(progress * 100).floor()}%, $completed/$entryCount',
-        domain: 'MAINTENANCE',
-        subDomain: 'recreateFts5',
-      );
     }
   }
 
