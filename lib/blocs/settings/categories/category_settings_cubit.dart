@@ -22,7 +22,7 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
           ),
         );
 
-  final persistenceLogic = getIt<PersistenceLogic>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final BuildContext? context;
   CategoryDefinition categoryDefinition;
   bool _dirty = false;

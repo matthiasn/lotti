@@ -14,7 +14,7 @@ Stream<MatrixStats> matrixStatsStream(Ref ref) {
 
 @riverpod
 class MatrixStatsController extends _$MatrixStatsController {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   @override
   Future<MatrixStats> build() async {

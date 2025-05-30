@@ -16,7 +16,7 @@ class MatrixUnverifiedController extends _$MatrixUnverifiedController {
     });
   }
 
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   @override
   Future<List<DeviceKeys>> build() async {

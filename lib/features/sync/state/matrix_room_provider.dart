@@ -8,7 +8,7 @@ part 'matrix_room_provider.g.dart';
 
 @riverpod
 class MatrixRoomController extends _$MatrixRoomController {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   @override
   Future<String?> build() async {

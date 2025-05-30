@@ -30,12 +30,12 @@ class CategoryDetailsPage extends StatefulWidget {
 }
 
 class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
-  final _categoryNameKey = GlobalKey();
-  final _categoryPrivateFlagKey = GlobalKey();
-  final _categoryActiveFlagKey = GlobalKey();
-  final _categoryFavoriteFlagKey = GlobalKey();
-  final _categoryColorPickerKey = GlobalKey();
-  final _categoryDeleteKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _categoryNameKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _categoryPrivateFlagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _categoryActiveFlagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _categoryFavoriteFlagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _categoryColorPickerKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _categoryDeleteKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {

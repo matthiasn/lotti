@@ -9,3 +9,4 @@ coverage:
 ignore:
   - "**/*.g.dart"
   - "**/*.freezed.dart"
+  - "**/l10n/*.dart"

@@ -23,7 +23,7 @@ class IncomingVerificationModal extends StatefulWidget {
 }
 
 class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +155,7 @@ class IncomingVerificationWrapper extends StatefulWidget {
 
 class _IncomingVerificationWrapperState
     extends State<IncomingVerificationWrapper> {
-  final _stream = getIt<MatrixService>().getIncomingKeyVerificationStream();
+  final Stream<KeyVerification> _stream = getIt<MatrixService>().getIncomingKeyVerificationStream();
 
   @override
   void initState() {

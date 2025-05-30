@@ -30,7 +30,7 @@ class DayViewPage extends ConsumerStatefulWidget {
 }
 
 class DayViewPageState extends ConsumerState<DayViewPage> {
-  final _eventController = EventController();
+  final EventController<Object?> _eventController = EventController();
 
   @override
   void initState() {

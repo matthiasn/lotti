@@ -19,9 +19,9 @@ class ThemingPage extends StatefulWidget {
 }
 
 class _ThemingPageState extends State<ThemingPage> {
-  final _themeModeSelectorKey = GlobalKey();
-  final _lightThemeKey = GlobalKey();
-  final _darkThemeKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _themeModeSelectorKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _lightThemeKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _darkThemeKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 class TestFts5Controller extends StateNotifier<Fts5State>
     implements Fts5Controller {

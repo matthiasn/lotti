@@ -139,11 +139,11 @@ const monospaceTextStyle = TextStyle(
   ],
 );
 
-final monospaceTextStyleSmall = monospaceTextStyle.copyWith(
+final TextStyle monospaceTextStyleSmall = monospaceTextStyle.copyWith(
   fontSize: fontSizeSmall,
 );
 
-final monospaceTextStyleLarge = monospaceTextStyle.copyWith(
+final TextStyle monospaceTextStyleLarge = monospaceTextStyle.copyWith(
   fontSize: fontSizeLarge,
 );
 
@@ -186,7 +186,7 @@ const chartTitleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
-final chartTitleStyleMonospace = chartTitleStyle.copyWith(
+final TextStyle chartTitleStyleMonospace = chartTitleStyle.copyWith(
   fontFeatures: [
     const FontFeature.tabularFigures(),
   ],

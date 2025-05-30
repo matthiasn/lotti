@@ -41,7 +41,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   final _audioRecorder = AudioRecorder();
-  final _audioPlayerCubit = getIt<AudioPlayerCubit>();
+  final AudioPlayerCubit _audioPlayerCubit = getIt<AudioPlayerCubit>();
   StreamSubscription<Amplitude>? _amplitudeSub;
   final LoggingService _loggingService = getIt<LoggingService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
