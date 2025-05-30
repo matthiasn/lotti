@@ -15,7 +15,7 @@ class UnverifiedDevices extends StatefulWidget {
 }
 
 class _UnverifiedDevicesState extends State<UnverifiedDevices> {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
   List<DeviceKeys> _unverifiedDevices = [];
 
   @override

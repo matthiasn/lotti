@@ -34,7 +34,7 @@ class TaskDetailsPage extends ConsumerStatefulWidget {
 
 class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
   final _scrollController = ScrollController();
-  final _listener = getIt<UserActivityService>().updateActivity;
+  final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
 
   @override

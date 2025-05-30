@@ -33,17 +33,17 @@ class HabitDetailsPage extends StatefulWidget {
 }
 
 class _HabitDetailsPageState extends State<HabitDetailsPage> {
-  final _habitNameKey = GlobalKey();
-  final _habitDescKey = GlobalKey();
-  final _habitCateKey = GlobalKey();
-  final _habitDashKey = GlobalKey();
-  final _habitPriorKey = GlobalKey();
-  final _habitPrivKey = GlobalKey();
-  final _habitArchKey = GlobalKey();
-  final _habitStartDateKey = GlobalKey();
-  final _habitShowFromTimeKey = GlobalKey();
-  final _habitAlertAtKey = GlobalKey();
-  final _habitDeleKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitNameKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitDescKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitCateKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitDashKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitPriorKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitPrivKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitArchKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitStartDateKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitShowFromTimeKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitAlertAtKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _habitDeleKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {

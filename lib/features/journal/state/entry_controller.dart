@@ -74,7 +74,7 @@ class EntryController extends _$EntryController {
   }
 
   QuillController controller = QuillController.basic();
-  final _editorStateService = getIt<EditorStateService>();
+  final EditorStateService _editorStateService = getIt<EditorStateService>();
   final formKey = GlobalKey<FormBuilderState>();
 
   final FocusNode focusNode = FocusNode();

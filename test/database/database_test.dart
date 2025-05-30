@@ -28,7 +28,7 @@ Directory setupTestDirectory() {
   return directory;
 }
 
-final expectedActiveFlagNames = {
+final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableSyncFlag,
   enableTooltipFlag,

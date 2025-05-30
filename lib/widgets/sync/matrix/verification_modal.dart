@@ -23,7 +23,7 @@ class VerificationModal extends StatefulWidget {
 }
 
 class _VerificationModalState extends State<VerificationModal> {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
   KeyVerificationRunner? _runner;
 
   @override
