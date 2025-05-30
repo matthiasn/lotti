@@ -239,7 +239,7 @@ SPEC CHECKSUMS:
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
   flutter_local_notifications: a5a732f069baa862e728d839dd2ebb904737effb
   flutter_native_splash: 6cad9122ea0fad137d23137dd14b937f3e90b145
-  flutter_olm: dc9ebc19d23ed96b0f0a238db0716e4a628c26fd
+  flutter_olm: 381bdf22eaeb0b5120539a79fb45199e2dbef163
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   health: 5f06d2b77cede1909be85dcd588570668caa5be2
