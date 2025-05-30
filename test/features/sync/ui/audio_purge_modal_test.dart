@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/sync/ui/audio_purge_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMaintenance extends Mock implements Maintenance {}

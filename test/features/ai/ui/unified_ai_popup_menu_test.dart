@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}

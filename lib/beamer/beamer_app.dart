@@ -1,7 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/speech/ui/widgets/audio_recording_indicator.dart'
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
