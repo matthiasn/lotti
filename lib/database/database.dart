@@ -367,7 +367,6 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-
   Future<int> getWipCount() async {
     final res = await _selectTasks(
       starredStatuses: [true, false],
@@ -377,7 +376,6 @@ class JournalDb extends _$JournalDb {
     ).get();
     return res.length;
   }
-
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final dbEntities = await linkedJournalEntities(linkedFrom).get();
@@ -587,8 +585,6 @@ class JournalDb extends _$JournalDb {
       await upsertConfigFlag(configFlag.copyWith(status: !configFlag.status));
     }
   }
-
-
 
   Future<int> getCountImportFlagEntries() async {
     final res = await countImportFlagEntries().get();

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/sync/ui/audio_purge_modal.dart';
+import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
@@ -86,11 +88,11 @@ class MaintenancePage extends StatelessWidget {
               ),
               SettingsCard(
                 title: context.messages.maintenancePurgeAudioModels,
-                onTap: maintenance.purgeAudioModels,
+                onTap: () => AudioPurgeModal.show(context),
               ),
               SettingsCard(
                 title: context.messages.maintenanceRecreateFts5,
-                onTap: maintenance.recreateFts5,
+                onTap: () => Fts5RecreateModal.show(context),
               ),
               SettingsCard(
                 title: context.messages.maintenanceReSync,
