@@ -9,7 +9,7 @@ part 'matrix_config_controller.g.dart';
 
 @riverpod
 class MatrixConfigController extends _$MatrixConfigController {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   @override
   Future<MatrixConfig?> build() async {

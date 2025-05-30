@@ -14,7 +14,7 @@ part 'login_form_controller.g.dart';
 
 @riverpod
 class LoginFormController extends _$LoginFormController {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   final homeServerController = TextEditingController();
   final usernameController = TextEditingController();

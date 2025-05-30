@@ -34,12 +34,12 @@ class MeasurableDetailsPage extends StatefulWidget {
 }
 
 class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
-  final _measurableNameKey = GlobalKey();
-  final _measurableDescrKey = GlobalKey();
-  final _measurableUnitAbbrKey = GlobalKey();
-  final _measurablePrivateKey = GlobalKey();
-  final _measurableAggreTypeKey = GlobalKey();
-  final _measurableDeleteKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _measurableNameKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _measurableDescrKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _measurableUnitAbbrKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _measurablePrivateKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _measurableAggreTypeKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _measurableDeleteKey = GlobalKey();
 
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();

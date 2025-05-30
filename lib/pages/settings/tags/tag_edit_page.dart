@@ -35,11 +35,11 @@ class TagEditPage extends StatefulWidget {
 }
 
 class _TagEditPageState extends State<TagEditPage> {
-  final _tagNameKey = GlobalKey();
-  final _tagPrivateKey = GlobalKey();
-  final _tagHideKey = GlobalKey();
-  final _tagTypeTagKey = GlobalKey();
-  final _tagDeleteKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _tagNameKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _tagPrivateKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _tagHideKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _tagTypeTagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _tagDeleteKey = GlobalKey();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;

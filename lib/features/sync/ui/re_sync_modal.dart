@@ -14,7 +14,7 @@ class ReSyncModalContent extends StatefulWidget {
 }
 
 class _ReSyncModalContentState extends State<ReSyncModalContent> {
-  final _maintenanceService = getIt<Maintenance>();
+  final Maintenance _maintenanceService = getIt<Maintenance>();
 
   DateTime? _dateFrom;
   DateTime? _dateTo;

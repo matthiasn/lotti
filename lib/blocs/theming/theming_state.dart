@@ -4,7 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'theming_state.freezed.dart';
 
-final themes = {
+final Map<String, FlexScheme> themes = {
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,
   'Deep Blue': FlexScheme.deepBlue,

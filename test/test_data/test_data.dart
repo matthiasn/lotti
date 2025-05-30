@@ -217,7 +217,7 @@ final testTextEntryNoGeo = JournalEntry(
   entryText: const EntryText(plainText: 'test entry text'),
 );
 
-final testTextEntryWithTags = testTextEntry.copyWith(
+final JournalEntry testTextEntryWithTags = testTextEntry.copyWith(
   meta: testTextEntry.meta.copyWith(
     tagIds: [
       testStoryTag1.id,

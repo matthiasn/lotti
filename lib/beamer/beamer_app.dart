@@ -37,8 +37,8 @@ class AppScreen extends StatefulWidget {
 }
 
 class _AppScreenState extends State<AppScreen> {
-  final navService = getIt<NavService>();
-  final journalDb = getIt<JournalDb>();
+  final NavService navService = getIt<NavService>();
+  final JournalDb journalDb = getIt<JournalDb>();
 
   bool _isHabitsPageEnabled = true;
   bool _isDashboardsPageEnabled = true;

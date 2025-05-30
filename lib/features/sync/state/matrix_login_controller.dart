@@ -10,7 +10,7 @@ part 'matrix_login_controller.g.dart';
 
 @riverpod
 class MatrixLoginController extends _$MatrixLoginController {
-  final _matrixService = getIt<MatrixService>();
+  final MatrixService _matrixService = getIt<MatrixService>();
 
   @override
   Future<LoginState?> build() async {

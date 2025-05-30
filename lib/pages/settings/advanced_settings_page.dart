@@ -21,16 +21,16 @@ class AdvancedSettingsPage extends StatefulWidget {
 }
 
 class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
-  final _maxtrixsyncKey = GlobalKey();
-  final _syncoutBoxKey = GlobalKey();
-  final _synConflictsKey = GlobalKey();
-  final _logsKey = GlobalKey();
-  final _healthImportKey = GlobalKey();
-  final _maintenanceKey = GlobalKey();
-  final _aboutLottiKey = GlobalKey();
-  final _apikeyKey = GlobalKey();
-  final _modelsKey = GlobalKey();
-  final _promptsKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _maxtrixsyncKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _syncoutBoxKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _synConflictsKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _logsKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _healthImportKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _maintenanceKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _aboutLottiKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _apikeyKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _modelsKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _promptsKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
