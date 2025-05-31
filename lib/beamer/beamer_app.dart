@@ -199,7 +199,7 @@ class MyBeamerApp extends StatelessWidget {
             create: (BuildContext context) => AudioRecorderCubit(),
           ),
           BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
+            create: (BuildContext context) => getIt<AudioPlayerCubit>(),
           ),
           BlocProvider<ThemingCubit>(
             create: (BuildContext context) => ThemingCubit(),
