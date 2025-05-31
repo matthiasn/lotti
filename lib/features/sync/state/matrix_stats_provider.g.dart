@@ -25,7 +25,7 @@ final matrixStatsStreamProvider =
 // ignore: unused_element
 typedef MatrixStatsStreamRef = AutoDisposeStreamProviderRef<MatrixStats>;
 String _$matrixStatsControllerHash() =>
-    r'da8fe40c5a48b972f2732832d446bb88e67b4cb7';
+    r'f47aefcbef34c857fe26e5f1069c95f451b1517d';
 
 /// See also [MatrixStatsController].
 @ProviderFor(MatrixStatsController)

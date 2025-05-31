@@ -14,12 +14,15 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
+
+class MockAudioRecorder extends Mock implements AudioRecorder {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -217,6 +220,35 @@ void main() {
         isFalse,
       );
     });
+
+    test('should pause audio player before any recording attempt', () async {
+      // Arrange
+      when(() => mockAudioPlayerCubit.state).thenReturn(
+        AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: const Duration(minutes: 3),
+          progress: const Duration(seconds: 30),
+          pausedAt: Duration.zero,
+          speed: 1,
+          showTranscriptsList: false,
+        ),
+      );
+
+      // Create a recorder cubit instance
+      final recorderCubit = AudioRecorderCubit();
+
+      // Act
+      await recorderCubit.record();
+
+      // Assert
+      // Verify that pause was called before any recording attempt
+      // Note: In the test environment, the actual recording will fail
+      // due to MissingPluginException, but the pause should still happen
+      verify(() => mockAudioPlayerCubit.pause()).called(1);
+
+      // Clean up
+      await recorderCubit.close();
+    });
   });
 
   group('AudioRecorderCubit - Integration Tests', () {
@@ -260,6 +292,7 @@ void main() {
         () async {
       // This test verifies that when the AudioRecorder throws a platform exception
       // (which happens in test environment), the exception is properly caught and logged
+      // AND that the audio player is paused before the exception occurs
 
       final recorderCubit = AudioRecorderCubit();
 
@@ -281,9 +314,10 @@ void main() {
       // Call record method
       await recorderCubit.record();
 
-      // Since an exception occurred, the pause should not be called
-      // and the exception should be logged
-      verifyNever(() => mockAudioPlayerCubit.pause());
+      // Verify that pause was called before the exception
+      verify(() => mockAudioPlayerCubit.pause()).called(1);
+
+      // Verify that the exception was logged
       verify(
         () => mockLoggingService.captureException(
           any<dynamic>(),

@@ -53,9 +53,12 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   final GlobalKey<State<StatefulWidget>> _dashboardCateKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _dashboardHeartChartKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _dashboardSurveyChartKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardWorkoutChartKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardCopyDashboardKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardDeleteDashboardKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _dashboardWorkoutChartKey =
+      GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _dashboardCopyDashboardKey =
+      GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _dashboardDeleteDashboardKey =
+      GlobalKey();
 
   final TagsService tagsService = getIt<TagsService>();
   final JournalDb _db = getIt<JournalDb>();
