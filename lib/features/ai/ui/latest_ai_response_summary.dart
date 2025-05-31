@@ -50,7 +50,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
       );
     }
 
-    // TODO: Uncomment when we have a way to check if the latest summary is outdated
+    // TODO: implement showing if the latest summary is outdated
     const isOutdated = false;
 
     final dividerColor = context.colorScheme.outline.withAlpha(60);

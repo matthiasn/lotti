@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/ui/task_summary/action_item_suggestions_view.dart';
+import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -47,13 +48,30 @@ class _ChecklistSuggestionsWidgetState
       return const SizedBox.shrink();
     }
 
-    void showThoughtsModal() {
+    void showThoughtsModal(String? promptId) {
+      if (promptId == null) {
+        return;
+      }
       ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.aiAssistantThinking,
-        builder: (_) => ActionItemSuggestionsView(id: widget.itemId),
+        builder: (_) => UnifiedAiProgressView(
+          entityId: widget.itemId,
+          promptId: promptId,
+        ),
       );
     }
+
+    final aiResponse = ref
+        .watch(
+          latestSummaryControllerProvider(
+            id: widget.itemId,
+            aiResponseType: AiResponseType.actionItemSuggestions,
+          ),
+        )
+        .valueOrNull;
+
+    final promptId = aiResponse?.data.promptId;
 
     return Column(
       children: [
@@ -69,7 +87,8 @@ class _ChecklistSuggestionsWidgetState
                 ),
               ),
               IconButton(
-                onPressed: showThoughtsModal,
+                onPressed:
+                    promptId != null ? () => showThoughtsModal(promptId) : null,
                 icon: const SizedBox(
                   width: 14,
                   height: 14,
@@ -98,7 +117,7 @@ class _ChecklistSuggestionsWidgetState
                 ),
                 onPressed: () {
                   setState(() => removedItems = <String>{});
-                  showThoughtsModal();
+                  showThoughtsModal(promptId);
                 },
               ),
               // ignore: dead_code
