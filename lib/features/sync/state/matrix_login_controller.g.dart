@@ -57,7 +57,7 @@ final loggedInUserIdProvider = AutoDisposeFutureProvider<String?>.internal(
 // ignore: unused_element
 typedef LoggedInUserIdRef = AutoDisposeFutureProviderRef<String?>;
 String _$matrixLoginControllerHash() =>
-    r'3fb97078ff542a174f4a09aa988aae4be681b33d';
+    r'b6b08d979ec2e6ebfe25ecf9c11f05d81a69f134';
 
 /// See also [MatrixLoginController].
 @ProviderFor(MatrixLoginController)

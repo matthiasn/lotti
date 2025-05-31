@@ -56,7 +56,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     _linkedId = linkedId;
 
     try {
-      // Pause any playing audio first, regardless of permissions
+      // Pause any playing audio first
       if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
         await _audioPlayerCubit.pause();
       }
