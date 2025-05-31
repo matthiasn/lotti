@@ -22,15 +22,21 @@ class _FlagsPageState extends State<FlagsPage> {
   final GlobalKey<State<StatefulWidget>> _enableMatrixFlagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableTooltipFlagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _recordLocationFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _resendAttachmentsFlagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _resendAttachmentsFlagKey =
+      GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableLoggingFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _useCloudInferenceFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _enableNotificationFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _enableAutoTaskTldrFlagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _useCloudInferenceFlagKey =
+      GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _enableNotificationFlagKey =
+      GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _enableAutoTaskTldrFlagKey =
+      GlobalKey();
 
   final GlobalKey<State<StatefulWidget>> _enableHabitsPageFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _enableDashboardsPageFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _enableCalendarPageFlagKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _enableDashboardsPageFlagKey =
+      GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _enableCalendarPageFlagKey =
+      GlobalKey();
 
   static const List<String> displayedItems = [
     privateFlag,
