@@ -56,11 +56,12 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     _linkedId = linkedId;
 
     try {
-      if (await _audioRecorder.hasPermission()) {
-        if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
-          await _audioPlayerCubit.pause();
-        }
+      // Pause any playing audio first, regardless of permissions
+      if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
+        await _audioPlayerCubit.pause();
+      }
 
+      if (await _audioRecorder.hasPermission()) {
         if (await _audioRecorder.isPaused()) {
           await resume();
         } else if (await _audioRecorder.isRecording()) {

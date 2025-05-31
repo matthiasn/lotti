@@ -155,7 +155,8 @@ class IncomingVerificationWrapper extends StatefulWidget {
 
 class _IncomingVerificationWrapperState
     extends State<IncomingVerificationWrapper> {
-  final Stream<KeyVerification> _stream = getIt<MatrixService>().getIncomingKeyVerificationStream();
+  final Stream<KeyVerification> _stream =
+      getIt<MatrixService>().getIncomingKeyVerificationStream();
 
   @override
   void initState() {
