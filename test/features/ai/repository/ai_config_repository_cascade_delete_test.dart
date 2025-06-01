@@ -41,6 +41,13 @@ void main() {
     // Setup default mocks
     when(() => mockOutboxService.enqueueMessage(any()))
         .thenAnswer((_) async => {});
+
+    // Setup default transaction mock to execute the callback
+    when(() => mockDb.transaction<int>(any())).thenAnswer((invocation) async {
+      final callback =
+          invocation.positionalArguments[0] as Future<int> Function();
+      return callback();
+    });
   });
 
   tearDown(() {
@@ -214,7 +221,11 @@ void main() {
       // Act & Assert
       expect(
         () => repository.deleteInferenceProviderWithModels(providerId),
-        throwsException,
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('Database error'),
+        )),
       );
     });
 
@@ -262,6 +273,160 @@ void main() {
       }
 
       // Verify provider was deleted after models
+      verify(() => mockDb.deleteConfig(providerId)).called(1);
+    });
+
+    test('should rollback transaction when model deletion fails', () async {
+      // Arrange
+      const providerId = 'provider-rollback';
+
+      final model1 = AiConfigModel(
+        id: 'model-1',
+        name: 'Model 1',
+        providerModelId: 'provider-model-1',
+        inferenceProviderId: providerId,
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      final model2 = AiConfigModel(
+        id: 'model-2',
+        name: 'Model 2',
+        providerModelId: 'provider-model-2',
+        inferenceProviderId: providerId,
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the database responses
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
+          .thenAnswer((_) async => [
+                AiConfigDbEntity(
+                  id: model1.id,
+                  type: 'AiConfigModel',
+                  name: model1.name,
+                  serialized: jsonEncode(model1.toJson()),
+                  createdAt: model1.createdAt,
+                ),
+                AiConfigDbEntity(
+                  id: model2.id,
+                  type: 'AiConfigModel',
+                  name: model2.name,
+                  serialized: jsonEncode(model2.toJson()),
+                  createdAt: model2.createdAt,
+                ),
+              ]);
+
+      // Mock first model deletion to succeed, second to fail
+      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig('model-2'))
+          .thenThrow(Exception('Model deletion failed'));
+
+      // Act & Assert
+      expect(
+        () => repository.deleteInferenceProviderWithModels(providerId),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('Model deletion failed'),
+        )),
+      );
+
+      // Verify that the transaction was attempted
+      verify(() => mockDb.transaction<int>(any())).called(1);
+    });
+
+    test('should rollback transaction when provider deletion fails', () async {
+      // Arrange
+      const providerId = 'provider-delete-fail';
+
+      final model = AiConfigModel(
+        id: 'model-1',
+        name: 'Model 1',
+        providerModelId: 'provider-model-1',
+        inferenceProviderId: providerId,
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the database responses
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
+          .thenAnswer((_) async => [
+                AiConfigDbEntity(
+                  id: model.id,
+                  type: 'AiConfigModel',
+                  name: model.name,
+                  serialized: jsonEncode(model.toJson()),
+                  createdAt: model.createdAt,
+                ),
+              ]);
+
+      // Mock model deletion to succeed, provider deletion to fail
+      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(providerId))
+          .thenThrow(Exception('Provider deletion failed'));
+
+      // Act & Assert
+      expect(
+        () => repository.deleteInferenceProviderWithModels(providerId),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('Failed to delete provider $providerId'),
+        )),
+      );
+
+      // Verify that the transaction was attempted
+      verify(() => mockDb.transaction<int>(any())).called(1);
+    });
+
+    test('should use transaction for successful deletions', () async {
+      // Arrange
+      const providerId = 'provider-transaction';
+
+      final model = AiConfigModel(
+        id: 'model-1',
+        name: 'Model 1',
+        providerModelId: 'provider-model-1',
+        inferenceProviderId: providerId,
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      // Mock the database responses
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
+          .thenAnswer((_) async => [
+                AiConfigDbEntity(
+                  id: model.id,
+                  type: 'AiConfigModel',
+                  name: model.name,
+                  serialized: jsonEncode(model.toJson()),
+                  createdAt: model.createdAt,
+                ),
+              ]);
+
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+
+      // Act
+      final deletedCount =
+          await repository.deleteInferenceProviderWithModels(providerId);
+
+      // Assert
+      expect(deletedCount, equals(1));
+
+      // Verify that the transaction was used
+      verify(() => mockDb.transaction<int>(any())).called(1);
+
+      // Verify deletions happened within the transaction
+      verify(() => mockDb.deleteConfig('model-1')).called(1);
       verify(() => mockDb.deleteConfig(providerId)).called(1);
     });
   });

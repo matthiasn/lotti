@@ -51,32 +51,55 @@ class AiConfigRepository {
 
   /// Delete an inference provider and all its associated models.
   ///
-  /// This method performs cascade deletion:
+  /// This method performs cascade deletion within a transaction to ensure atomicity:
   /// 1. Fetches all models associated with the provider
   /// 2. Deletes each model
   /// 3. Deletes the provider itself
+  ///
+  /// If any deletion fails, the entire transaction is rolled back to maintain
+  /// data integrity and prevent partial deletions.
   ///
   /// Returns the number of models that were deleted.
   Future<int> deleteInferenceProviderWithModels(
     String providerId, {
     bool fromSync = false,
   }) async {
-    // Get all models to find those associated with this provider
-    final allModels = await getConfigsByType(AiConfigType.model);
-    final associatedModels = allModels
-        .whereType<AiConfigModel>()
-        .where((model) => model.inferenceProviderId == providerId)
-        .toList();
+    return _db.transaction(() async {
+      try {
+        // Get all models to find those associated with this provider
+        final allModels = await getConfigsByType(AiConfigType.model);
+        final associatedModels = allModels
+            .whereType<AiConfigModel>()
+            .where((model) => model.inferenceProviderId == providerId)
+            .toList();
 
-    // Delete all associated models
-    for (final model in associatedModels) {
-      await deleteConfig(model.id, fromSync: fromSync);
-    }
+        // Delete all associated models with detailed error tracking
+        for (final model in associatedModels) {
+          try {
+            await deleteConfig(model.id, fromSync: fromSync);
+          } catch (e) {
+            // Re-throw to trigger transaction rollback
+            rethrow;
+          }
+        }
 
-    // Delete the provider itself
-    await deleteConfig(providerId, fromSync: fromSync);
+        // Delete the provider itself
+        try {
+          await deleteConfig(providerId, fromSync: fromSync);
+        } catch (e) {
+          throw Exception('Failed to delete provider $providerId: $e');
+        }
 
-    return associatedModels.length;
+        return associatedModels.length;
+      } catch (e) {
+        // Log the error for debugging purposes
+        // Note: In a real implementation, you might want to use a proper logging framework
+        // ignore: avoid_print
+        print(
+            'Error in deleteInferenceProviderWithModels for provider $providerId: $e');
+        rethrow; // Re-throw to let the caller handle the error
+      }
+    });
   }
 
   /// Get an AI configuration by its ID
