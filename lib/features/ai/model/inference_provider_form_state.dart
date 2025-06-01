@@ -10,7 +10,7 @@ enum ProviderFormError {
 
 // Input validation classes
 class ApiKeyName extends FormzInput<String, ProviderFormError> {
-  const ApiKeyName.pure() : super.pure('');
+  const ApiKeyName.pure([super.value = '']) : super.pure();
   const ApiKeyName.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -20,7 +20,7 @@ class ApiKeyName extends FormzInput<String, ProviderFormError> {
 }
 
 class ApiKeyValue extends FormzInput<String, ProviderFormError> {
-  const ApiKeyValue.pure() : super.pure('');
+  const ApiKeyValue.pure([super.value = '']) : super.pure();
   const ApiKeyValue.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -30,7 +30,7 @@ class ApiKeyValue extends FormzInput<String, ProviderFormError> {
 }
 
 class DescriptionValue extends FormzInput<String, ProviderFormError> {
-  const DescriptionValue.pure() : super.pure('');
+  const DescriptionValue.pure([super.value = '']) : super.pure();
   const DescriptionValue.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -40,7 +40,7 @@ class DescriptionValue extends FormzInput<String, ProviderFormError> {
 }
 
 class BaseUrl extends FormzInput<String, ProviderFormError> {
-  const BaseUrl.pure() : super.pure('');
+  const BaseUrl.pure([super.value = '']) : super.pure();
   const BaseUrl.dirty([super.value = '']) : super.dirty();
 
   @override

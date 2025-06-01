@@ -177,36 +177,6 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
           ),
           maxLines: 3,
         ),
-        SizedBox(
-          height: 50,
-          child: formState.submitFailed
-              ? Text(
-                  context.messages.aiConfigFailedToSaveMessage,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    color: context.colorScheme.error,
-                  ),
-                )
-              : null,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FilledButton(
-              onPressed: formState.isValid &&
-                      (widget.config == null || formState.isDirty)
-                  ? () {
-                      final config = formState.toAiConfig();
-                      widget.onSave(config);
-                    }
-                  : null,
-              child: Text(
-                widget.config == null
-                    ? context.messages.apiKeyFormCreateButton
-                    : context.messages.apiKeyFormUpdateButton,
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }

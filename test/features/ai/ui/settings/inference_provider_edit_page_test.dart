@@ -136,23 +136,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find the form widget
-      final formWidget = tester
-          .widget<InferenceProviderForm>(find.byType(InferenceProviderForm));
-
-      // Create a config with known values
-      final config = AiConfig.inferenceProvider(
-        id: 'test-id-new',
-        name: 'New API',
-        baseUrl: 'https://new.example.com',
-        apiKey: 'new-api-key',
-        description: '',
-        createdAt: DateTime(2022),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
-
-      // Call the onSave function directly
-      formWidget.onSave(config);
+      // Find and tap the save button in the app bar
+      final saveButton = find.widgetWithText(TextButton, 'Save');
+      expect(saveButton, findsOneWidget);
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       // Verify saveConfig was called
@@ -176,38 +163,15 @@ void main() {
       await tester.pumpWidget(buildTestWidget(configId: 'test-id'));
       await tester.pumpAndSettle();
 
-      // Fill in the form fields
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Display Name'),
-        'Updated API',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Base URL'),
-        'https://updated.example.com',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'API Key'),
-        'updated-api-key',
-      );
+      // Modify a field to make the form dirty
+      final nameField = find.widgetWithText(TextField, 'Display Name');
+      await tester.enterText(nameField, 'Updated API');
       await tester.pumpAndSettle();
 
-      // Find the form widget
-      final formWidget = tester
-          .widget<InferenceProviderForm>(find.byType(InferenceProviderForm));
-
-      // Create a config with known values
-      final config = AiConfig.inferenceProvider(
-        id: 'test-id',
-        name: 'Updated API',
-        baseUrl: 'https://updated.example.com',
-        apiKey: 'updated-api-key',
-        description: '',
-        createdAt: DateTime(2022),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
-
-      // Call the onSave function directly
-      formWidget.onSave(config);
+      // Find and tap the save button in the app bar
+      final saveButton = find.widgetWithText(TextButton, 'Save');
+      expect(saveButton, findsOneWidget);
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       // Verify saveConfig was called

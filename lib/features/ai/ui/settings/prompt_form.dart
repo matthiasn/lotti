@@ -9,7 +9,6 @@ import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
 import 'package:lotti/features/ai/ui/widgets/copyable_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 
 class PromptForm extends ConsumerStatefulWidget {
   const PromptForm({
@@ -121,39 +120,6 @@ class _PromptFormState extends ConsumerState<PromptForm> {
             labelText: context.messages.aiConfigDescriptionFieldLabel,
           ),
           maxLines: 2,
-        ),
-        SizedBox(
-          height: 30,
-          child: formState.submitFailed
-              ? Text(
-                  context.messages.aiConfigFailedToSaveMessage,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    color: context.colorScheme.error,
-                  ),
-                )
-              : null,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FilledButton(
-              onPressed: formState.isValid &&
-                      formState.modelIds.isNotEmpty &&
-                      formState.defaultModelId.isNotEmpty &&
-                      formState.modelIds.contains(formState.defaultModelId) &&
-                      (configId == null || formState.isDirty)
-                  ? () {
-                      final config = formState.toAiConfig();
-                      widget.onSave(config);
-                    }
-                  : null,
-              child: Text(
-                configId == null
-                    ? context.messages.aiConfigCreateButtonLabel
-                    : context.messages.aiConfigUpdateButtonLabel,
-              ),
-            ),
-          ],
         ),
       ],
     );

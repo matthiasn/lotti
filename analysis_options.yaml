@@ -7,6 +7,7 @@ linter:
     flutter_style_todos: false
     document_ignores: false
     avoid_catches_without_on_clauses: false
+    avoid_redundant_argument_values: false
 
 analyzer:
   exclude:

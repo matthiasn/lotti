@@ -75,7 +75,8 @@ void main() {
     // Verify form fields are visible
     expect(find.byType(TextField), findsAtLeast(2)); // Name and description
     expect(find.byType(SwitchListTile), findsOneWidget); // Reasoning capability
-    expect(find.byType(FilledButton), findsOneWidget); // Save button
+    // Save button is now in the app bar, not in the form
+    // expect(find.byType(FilledButton), findsOneWidget); // Save button
     // The save button is initially disabled, so onSaveCalled would be false
     expect(onSaveCalled, isFalse);
   });
@@ -272,42 +273,5 @@ void main() {
     // Note: In a real test, we would need to also select a provider
     // but that might require additional mocking of the provider selection modal
     // For this test, we'll focus on the other aspects of the form
-  });
-
-  // Test create vs update button text
-  testWidgets(
-      'should show Save button text for new model (previously Create Prompt)',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
-    );
-
-    await tester.pump();
-
-    final l10n =
-        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
-  });
-
-  testWidgets('should show Save button text for new model',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
-    );
-
-    await tester.pump();
-
-    // Find the button and check its text for the CREATE case
-    final buttonFinder = find.byType(FilledButton);
-    expect(buttonFinder, findsOneWidget);
-    final buttonWidget = tester.widget<FilledButton>(buttonFinder);
-    final buttonTextWidget = buttonWidget.child! as Text;
-    final l10n =
-        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(buttonTextWidget.data, l10n.saveButtonLabel);
   });
 }

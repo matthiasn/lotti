@@ -11,7 +11,7 @@ enum PromptFormError {
 
 // Input validation classes
 class PromptName extends FormzInput<String, PromptFormError> {
-  const PromptName.pure() : super.pure('');
+  const PromptName.pure([super.value = '']) : super.pure();
   const PromptName.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -21,7 +21,7 @@ class PromptName extends FormzInput<String, PromptFormError> {
 }
 
 class PromptUserMessage extends FormzInput<String, PromptFormError> {
-  const PromptUserMessage.pure() : super.pure('');
+  const PromptUserMessage.pure([super.value = '']) : super.pure();
   const PromptUserMessage.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -31,7 +31,7 @@ class PromptUserMessage extends FormzInput<String, PromptFormError> {
 }
 
 class PromptSystemMessage extends FormzInput<String, PromptFormError> {
-  const PromptSystemMessage.pure() : super.pure('');
+  const PromptSystemMessage.pure([super.value = '']) : super.pure();
   const PromptSystemMessage.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -41,7 +41,7 @@ class PromptSystemMessage extends FormzInput<String, PromptFormError> {
 }
 
 class PromptDescription extends FormzInput<String, PromptFormError> {
-  const PromptDescription.pure() : super.pure('');
+  const PromptDescription.pure([super.value = '']) : super.pure();
   const PromptDescription.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -51,7 +51,7 @@ class PromptDescription extends FormzInput<String, PromptFormError> {
 }
 
 class PromptComment extends FormzInput<String, PromptFormError> {
-  const PromptComment.pure() : super.pure('');
+  const PromptComment.pure([super.value = '']) : super.pure();
   const PromptComment.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -61,7 +61,7 @@ class PromptComment extends FormzInput<String, PromptFormError> {
 }
 
 class PromptCategory extends FormzInput<String, PromptFormError> {
-  const PromptCategory.pure() : super.pure('');
+  const PromptCategory.pure([super.value = '']) : super.pure();
   const PromptCategory.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -72,7 +72,7 @@ class PromptCategory extends FormzInput<String, PromptFormError> {
 
 class PromptAiResponseType
     extends FormzInput<AiResponseType?, PromptFormError> {
-  const PromptAiResponseType.pure() : super.pure(null);
+  const PromptAiResponseType.pure([super.value]) : super.pure();
   const PromptAiResponseType.dirty([super.value]) : super.dirty();
 
   @override

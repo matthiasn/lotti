@@ -24,6 +24,18 @@ class InferenceModelEditPage extends ConsumerWidget {
         ? ref.watch(aiConfigByIdProvider(configId!))
         : const AsyncData<AiConfig?>(null);
 
+    // Watch the form state to enable/disable save button
+    final formState = ref
+        .watch(inferenceModelFormControllerProvider(configId: configId))
+        .valueOrNull;
+
+    final isFormValid = formState != null &&
+        formState.isValid &&
+        formState.inferenceProviderId.isNotEmpty &&
+        formState.inputModalities.isNotEmpty &&
+        formState.outputModalities.isNotEmpty &&
+        (configId == null || formState.isDirty);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -31,6 +43,36 @@ class InferenceModelEditPage extends ConsumerWidget {
               ? context.messages.modelAddPageTitle
               : context.messages.modelEditPageTitle,
         ),
+        actions: [
+          if (isFormValid)
+            TextButton(
+              onPressed: () async {
+                final config = formState.toAiConfig();
+                final controller = ref.read(
+                  inferenceModelFormControllerProvider(
+                    configId: configId,
+                  ).notifier,
+                );
+
+                if (configId == null) {
+                  await controller.addConfig(config);
+                } else {
+                  await controller.updateConfig(config);
+                }
+
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text(
+                context.messages.saveButtonLabel,
+                style: TextStyle(
+                  color: context.colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
       ),
       body: switch (configAsync) {
         AsyncData(value: final config) => _buildForm(context, ref, config),
@@ -54,20 +96,8 @@ class InferenceModelEditPage extends ConsumerWidget {
         child: InferenceModelForm(
           config: config,
           onSave: (updatedConfig) async {
-            final controller = ref.read(
-              inferenceModelFormControllerProvider(configId: config?.id)
-                  .notifier,
-            );
-
-            if (configId == null) {
-              await controller.addConfig(updatedConfig);
-            } else {
-              await controller.updateConfig(updatedConfig);
-            }
-
-            if (context.mounted) {
-              Navigator.of(context).pop();
-            }
+            // This onSave is now handled by the app bar action
+            // We keep this parameter to avoid breaking the InferenceModelForm interface
           },
         ),
       ),
