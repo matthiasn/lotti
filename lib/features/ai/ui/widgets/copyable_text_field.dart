@@ -1,6 +1,92 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Handles clipboard operations for text editing
+class ClipboardHandler {
+  ClipboardHandler(this.controller);
+
+  final TextEditingController controller;
+
+  /// Copies selected text or entire text if nothing is selected
+  void copy() {
+    final selection = controller.selection;
+    if (selection.isValid && selection.start != selection.end) {
+      final selectedText = selection.textInside(controller.text);
+      if (selectedText.isNotEmpty) {
+        Clipboard.setData(ClipboardData(text: selectedText));
+      }
+    } else {
+      // Copy entire text if nothing is selected
+      Clipboard.setData(ClipboardData(text: controller.text));
+    }
+  }
+
+  /// Pastes clipboard content at cursor position or replaces selected text
+  Future<void> paste() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final pasteText = data?.text;
+    if (pasteText != null) {
+      final text = controller.text;
+      final selection = controller.selection;
+
+      if (selection.isValid && selection.start != selection.end) {
+        // Replace selected text
+        final newText = text.replaceRange(
+          selection.start,
+          selection.end,
+          pasteText,
+        );
+        final newCursorPosition = selection.start + pasteText.length;
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: newCursorPosition),
+        );
+      } else {
+        // Insert at cursor position
+        final cursorPosition =
+            selection.isValid ? selection.baseOffset : text.length;
+        final newText = text.substring(0, cursorPosition) +
+            pasteText +
+            text.substring(cursorPosition);
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(
+            offset: cursorPosition + pasteText.length,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Cuts selected text to clipboard
+  void cut() {
+    final selection = controller.selection;
+    if (selection.isValid && selection.start != selection.end) {
+      final selectedText = selection.textInside(controller.text);
+      if (selectedText.isNotEmpty) {
+        Clipboard.setData(ClipboardData(text: selectedText));
+        final newText = controller.text.replaceRange(
+          selection.start,
+          selection.end,
+          '',
+        );
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: selection.start),
+        );
+      }
+    }
+  }
+
+  /// Selects all text
+  void selectAll() {
+    controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: controller.text.length,
+    );
+  }
+}
+
 /// A custom TextField widget that provides context menu support for copy/paste operations
 /// and handles keyboard shortcuts properly
 class CopyableTextField extends StatefulWidget {
@@ -27,6 +113,13 @@ class CopyableTextField extends StatefulWidget {
 
 class _CopyableTextFieldState extends State<CopyableTextField> {
   final FocusNode _focusNode = FocusNode();
+  late final ClipboardHandler _clipboardHandler;
+
+  @override
+  void initState() {
+    super.initState();
+    _clipboardHandler = ClipboardHandler(widget.controller);
+  }
 
   @override
   void dispose() {
@@ -34,81 +127,14 @@ class _CopyableTextFieldState extends State<CopyableTextField> {
     super.dispose();
   }
 
-  void _handleCopy() {
-    final selection = widget.controller.selection;
-    if (selection.isValid) {
-      final selectedText = selection.textInside(widget.controller.text);
-      if (selectedText.isNotEmpty) {
-        Clipboard.setData(ClipboardData(text: selectedText));
-      }
-    } else {
-      // Copy entire text if nothing is selected
-      Clipboard.setData(ClipboardData(text: widget.controller.text));
-    }
+  Future<void> _handlePasteWithCallback() async {
+    await _clipboardHandler.paste();
+    widget.onChanged?.call(widget.controller.text);
   }
 
-  Future<void> _handlePaste() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data != null && data.text != null) {
-      final text = widget.controller.text;
-      final selection = widget.controller.selection;
-
-      if (selection.isValid) {
-        // Replace selected text
-        final newText = text.replaceRange(
-          selection.start,
-          selection.end,
-          data.text!,
-        );
-        widget.controller.value = TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(
-            offset: selection.start + data.text!.length,
-          ),
-        );
-      } else {
-        // Insert at cursor position
-        final cursorPosition = selection.baseOffset;
-        final newText = text.substring(0, cursorPosition) +
-            data.text! +
-            text.substring(cursorPosition);
-        widget.controller.value = TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(
-            offset: cursorPosition + data.text!.length,
-          ),
-        );
-      }
-
-      widget.onChanged?.call(widget.controller.text);
-    }
-  }
-
-  void _handleCut() {
-    final selection = widget.controller.selection;
-    if (selection.isValid) {
-      final selectedText = selection.textInside(widget.controller.text);
-      if (selectedText.isNotEmpty) {
-        Clipboard.setData(ClipboardData(text: selectedText));
-        final newText = widget.controller.text.replaceRange(
-          selection.start,
-          selection.end,
-          '',
-        );
-        widget.controller.value = TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(offset: selection.start),
-        );
-        widget.onChanged?.call(widget.controller.text);
-      }
-    }
-  }
-
-  void _handleSelectAll() {
-    widget.controller.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: widget.controller.text.length,
-    );
+  void _handleCutWithCallback() {
+    _clipboardHandler.cut();
+    widget.onChanged?.call(widget.controller.text);
   }
 
   @override
@@ -116,12 +142,14 @@ class _CopyableTextFieldState extends State<CopyableTextField> {
     // Use CallbackShortcuts to avoid keyboard event conflicts
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyC, meta: true): _handleCopy,
+        const SingleActivator(LogicalKeyboardKey.keyC, meta: true):
+            _clipboardHandler.copy,
         const SingleActivator(LogicalKeyboardKey.keyV, meta: true):
-            _handlePaste,
-        const SingleActivator(LogicalKeyboardKey.keyX, meta: true): _handleCut,
+            _handlePasteWithCallback,
+        const SingleActivator(LogicalKeyboardKey.keyX, meta: true):
+            _handleCutWithCallback,
         const SingleActivator(LogicalKeyboardKey.keyA, meta: true):
-            _handleSelectAll,
+            _clipboardHandler.selectAll,
       },
       child: TextField(
         focusNode: _focusNode,
@@ -136,28 +164,28 @@ class _CopyableTextFieldState extends State<CopyableTextField> {
             ContextMenuButtonItem(
               label: 'Cut',
               onPressed: () {
-                _handleCut();
+                _handleCutWithCallback();
                 ContextMenuController.removeAny();
               },
             ),
             ContextMenuButtonItem(
               label: 'Copy',
               onPressed: () {
-                _handleCopy();
+                _clipboardHandler.copy();
                 ContextMenuController.removeAny();
               },
             ),
             ContextMenuButtonItem(
               label: 'Paste',
               onPressed: () {
-                _handlePaste();
+                _handlePasteWithCallback();
                 ContextMenuController.removeAny();
               },
             ),
             ContextMenuButtonItem(
               label: 'Select All',
               onPressed: () {
-                _handleSelectAll();
+                _clipboardHandler.selectAll();
                 ContextMenuController.removeAny();
               },
             ),
