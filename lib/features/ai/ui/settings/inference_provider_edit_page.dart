@@ -107,10 +107,6 @@ class InferenceProviderEditPage extends ConsumerWidget {
       child: SingleChildScrollView(
         child: InferenceProviderForm(
           config: config,
-          onSave: (updatedConfig) async {
-            // This onSave is now handled by the app bar action
-            // We keep this parameter to avoid breaking the InferenceProviderForm interface
-          },
         ),
       ),
     );

@@ -13,7 +13,6 @@ class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 void main() {
   Widget buildTestWidget({
-    required void Function(AiConfig) onSave,
     AiConfig? initialConfig,
   }) {
     return MaterialApp(
@@ -28,7 +27,6 @@ void main() {
         body: ProviderScope(
           child: InferenceProviderForm(
             config: initialConfig,
-            onSave: onSave,
           ),
         ),
       ),
@@ -39,14 +37,8 @@ void main() {
     testWidgets('should render all form fields including provider type field',
         (WidgetTester tester) async {
       // Arrange
-      // ignore: unused_local_variable
-      var onSaveCalled = false;
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {
-            onSaveCalled = true;
-          },
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -74,9 +66,7 @@ void main() {
         (WidgetTester tester) async {
       // Simpler test that just validates the form structure
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -100,9 +90,7 @@ void main() {
     testWidgets('should show correct error text when name is too short',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -143,9 +131,7 @@ void main() {
     testWidgets('should show correct error text when API key is empty',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -172,9 +158,7 @@ void main() {
     testWidgets('should show correct error text for invalid URL',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -214,9 +198,7 @@ void main() {
     testWidgets('tapping provider type field opens modal sheet',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -241,15 +223,8 @@ void main() {
     testWidgets('new form should properly initialize controller',
         (WidgetTester tester) async {
       // Create a controller to track the form state
-      // ignore: unused_local_variable
-      AiConfig? savedConfig;
-
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (config) {
-            savedConfig = config;
-          },
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load
@@ -353,9 +328,7 @@ void main() {
     testWidgets('validates name field - too short',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
+        buildTestWidget(),
       );
 
       await tester.pumpAndSettle(); // Allow time for async state to load

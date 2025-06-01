@@ -20,7 +20,6 @@ class FakeAiConfig extends Fake implements AiConfig {}
 
 // Helper to build a testable widget for create mode
 Widget buildTestWidget({
-  required void Function(AiConfig) onSave,
   AiConfig? config,
 }) {
   return MaterialApp(
@@ -40,7 +39,6 @@ Widget buildTestWidget({
         ],
         child: SingleChildScrollView(
           child: PromptForm(
-            onSave: onSave,
             configId: config?.id,
           ),
         ),
@@ -131,14 +129,9 @@ void main() {
     // Test name field validation error
     testWidgets('should display localized error when name is too short',
         (WidgetTester tester) async {
-      // ignore: unused_local_variable
-      var onSaveCalled = false;
-
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {
-            onSaveCalled = true;
-          },
+          config: null,
         ),
       );
 
@@ -172,7 +165,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
 
@@ -214,7 +207,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
 
@@ -258,7 +251,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
 
@@ -315,7 +308,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
 
@@ -397,7 +390,6 @@ void main() {
               ],
               child: SingleChildScrollView(
                 child: PromptForm(
-                  onSave: (_) {},
                   configId: config.id,
                 ),
               ),
@@ -454,7 +446,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -487,7 +479,6 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(
           config: existingPrompt,
-          onSave: (_) {},
         ),
       );
       await tester.pump();
@@ -503,7 +494,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -525,7 +516,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -572,7 +563,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -608,7 +599,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -645,7 +636,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -686,7 +677,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();
@@ -716,7 +707,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          config: null,
         ),
       );
       await tester.pumpAndSettle();

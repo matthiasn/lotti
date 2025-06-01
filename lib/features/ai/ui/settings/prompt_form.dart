@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/preconfigured_prompt_selection_modal.dart';
@@ -12,13 +11,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 class PromptForm extends ConsumerStatefulWidget {
   const PromptForm({
-    required this.onSave,
     this.configId,
     super.key,
   });
 
   final String? configId;
-  final void Function(AiConfig) onSave;
 
   @override
   ConsumerState<PromptForm> createState() => _PromptFormState();

@@ -11,7 +11,6 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 // Helper to build a testable widget
 Widget buildTestWidget({
-  required void Function(AiConfig) onSave,
   AiConfig? config,
 }) {
   return ProviderScope(
@@ -23,7 +22,6 @@ Widget buildTestWidget({
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: InferenceModelForm(
-          onSave: onSave,
           config: config,
         ),
       ),
@@ -58,14 +56,8 @@ AiConfig createMockModelConfig({
 void main() {
   // Basic rendering test
   testWidgets('should render form fields', (WidgetTester tester) async {
-    var onSaveCalled = false;
-
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {
-          onSaveCalled = true;
-        },
-      ),
+      buildTestWidget(),
     );
 
     // Wait for initial load
@@ -78,15 +70,12 @@ void main() {
     // Save button is now in the app bar, not in the form
     // expect(find.byType(FilledButton), findsOneWidget); // Save button
     // The save button is initially disabled, so onSaveCalled would be false
-    expect(onSaveCalled, isFalse);
   });
 
   // Form validation test
   testWidgets('should validate form fields', (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -108,9 +97,7 @@ void main() {
   testWidgets('should show correct error text when name is too short',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -153,9 +140,7 @@ void main() {
       'should show correct error text when provider model ID is too short',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -208,9 +193,7 @@ void main() {
   // Form interaction test
   testWidgets('should allow filling out the form', (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -255,11 +238,7 @@ void main() {
     AiConfig? savedConfig;
 
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (config) {
-          savedConfig = config;
-        },
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();

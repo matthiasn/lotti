@@ -11,13 +11,11 @@ import 'package:lotti/utils/modals.dart';
 
 class InferenceProviderForm extends ConsumerStatefulWidget {
   const InferenceProviderForm({
-    required this.onSave,
     this.config,
     super.key,
   });
 
   final AiConfig? config;
-  final void Function(AiConfig) onSave;
 
   @override
   ConsumerState<InferenceProviderForm> createState() =>
