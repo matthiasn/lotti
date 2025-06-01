@@ -91,7 +91,7 @@ class AiConfigListPage extends ConsumerWidget {
         }
         return false;
       },
-      child: _buildConfigListTile(context, config),
+      child: _buildConfigListTile(context, config, ref),
     );
   }
 
@@ -216,7 +216,8 @@ class AiConfigListPage extends ConsumerWidget {
     });
   }
 
-  Widget _buildConfigListTile(BuildContext context, AiConfig config) {
+  Widget _buildConfigListTile(
+      BuildContext context, AiConfig config, WidgetRef ref) {
     final subtitle = config.map(
       inferenceProvider: (_) => Text(
         config.description ?? '',
@@ -229,12 +230,46 @@ class AiConfigListPage extends ConsumerWidget {
       ),
     );
 
+    // Check if this is a prompt with invalid models
+    var hasInvalidModels = false;
+    if (config is AiConfigPrompt) {
+      // Check if any of the model IDs don't have corresponding model configs
+      hasInvalidModels = _promptHasInvalidModels(config, ref);
+    }
+
     return ListTile(
       title: Text(config.name),
       subtitle: subtitle,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasInvalidModels) ...[
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Theme.of(context).colorScheme.error,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+          ],
+          const Icon(Icons.chevron_right),
+        ],
+      ),
       onTap: onItemTap != null ? () => onItemTap!(config) : null,
     );
+  }
+
+  /// Checks if a prompt has any invalid model references
+  bool _promptHasInvalidModels(AiConfigPrompt prompt, WidgetRef ref) {
+    for (final modelId in prompt.modelIds) {
+      final modelAsync = ref.watch(aiConfigByIdProvider(modelId));
+
+      // If the model config is not found or has an error, it's invalid
+      if (modelAsync.hasError ||
+          (modelAsync.hasValue && modelAsync.value == null)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

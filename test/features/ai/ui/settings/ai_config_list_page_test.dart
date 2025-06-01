@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_list_page.dart';
@@ -519,6 +520,268 @@ void main() {
 
         // Dialog shouldn't appear for left-to-right swipe due to direction setting
         expect(find.byType(AlertDialog), findsNothing);
+      });
+    });
+
+    group('Invalid Model Warning Tests', () {
+      testWidgets(
+          'should show warning icon for prompts with invalid model references',
+          (WidgetTester tester) async {
+        // Create test prompts with model references
+        final promptWithValidModels = AiConfig.prompt(
+          id: 'prompt-valid',
+          name: 'Valid Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1', 'model-2'],
+          requiredInputData: const [],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final promptWithInvalidModels = AiConfig.prompt(
+          id: 'prompt-invalid',
+          name: 'Invalid Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-invalid',
+          modelIds: ['model-invalid', 'model-nonexistent'],
+          requiredInputData: const [],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final model1 = AiConfig.model(
+          id: 'model-1',
+          name: 'Model 1',
+          providerModelId: 'api-model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        final model2 = AiConfig.model(
+          id: 'model-2',
+          name: 'Model 2',
+          providerModelId: 'api-model-2',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        final promptsToShow = [promptWithValidModels, promptWithInvalidModels];
+
+        // Setup repository to return prompts
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) => Stream.value(promptsToShow));
+
+        // Setup repository to return models only for valid IDs
+        when(
+          () => mockRepository.getConfigById('model-1'),
+        ).thenAnswer((_) async => model1);
+
+        when(
+          () => mockRepository.getConfigById('model-2'),
+        ).thenAnswer((_) async => model2);
+
+        // Return null for invalid model IDs
+        when(
+          () => mockRepository.getConfigById('model-invalid'),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockRepository.getConfigById('model-nonexistent'),
+        ).thenAnswer((_) async => null);
+
+        // Create providers for the models
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          // Override individual model providers
+          aiConfigByIdProvider('model-1').overrideWith((ref) => model1),
+          aiConfigByIdProvider('model-2').overrideWith((ref) => model2),
+          aiConfigByIdProvider('model-invalid').overrideWith((ref) => null),
+          aiConfigByIdProvider('model-nonexistent').overrideWith((ref) => null),
+        ];
+
+        // Arrange
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: AiConfigType.prompt,
+                title: 'Test Prompts',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Assert - verify two list tiles are shown
+        expect(find.byType(ListTile), findsNWidgets(2));
+
+        // Find the warning icon - should only be shown for the invalid prompt
+        final warningIcons = find.byIcon(Icons.warning_amber_rounded);
+        expect(warningIcons, findsOneWidget);
+
+        // Verify the warning icon is associated with the invalid prompt
+        final invalidPromptTile = find.ancestor(
+          of: find.text('Invalid Prompt'),
+          matching: find.byType(ListTile),
+        );
+        expect(invalidPromptTile, findsOneWidget);
+
+        // Verify the warning icon is within the invalid prompt tile
+        final warningInInvalidTile = find.descendant(
+          of: invalidPromptTile,
+          matching: warningIcons,
+        );
+        expect(warningInInvalidTile, findsOneWidget);
+
+        // Verify no warning icon for valid prompt
+        final validPromptTile = find.ancestor(
+          of: find.text('Valid Prompt'),
+          matching: find.byType(ListTile),
+        );
+        expect(validPromptTile, findsOneWidget);
+
+        final warningInValidTile = find.descendant(
+          of: validPromptTile,
+          matching: find.byIcon(Icons.warning_amber_rounded),
+        );
+        expect(warningInValidTile, findsNothing);
+      });
+
+      testWidgets('should show warning icon with error color',
+          (WidgetTester tester) async {
+        // Create a prompt with invalid model reference
+        final promptWithInvalidModel = AiConfig.prompt(
+          id: 'prompt-invalid',
+          name: 'Invalid Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-invalid',
+          modelIds: ['model-invalid'],
+          requiredInputData: const [],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        // Setup repository
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) => Stream.value([promptWithInvalidModel]));
+
+        when(
+          () => mockRepository.getConfigById('model-invalid'),
+        ).thenAnswer((_) async => null);
+
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          aiConfigByIdProvider('model-invalid').overrideWith((ref) => null),
+        ];
+
+        // Arrange
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en', '')],
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSwatch().copyWith(
+                  error: Colors.red, // Set a specific error color for testing
+                ),
+              ),
+              home: const AiConfigListPage(
+                configType: AiConfigType.prompt,
+                title: 'Test Prompts',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Find the warning icon
+        final warningIcon = find.byIcon(Icons.warning_amber_rounded);
+        expect(warningIcon, findsOneWidget);
+
+        // Verify the icon has the error color
+        final iconWidget = tester.widget<Icon>(warningIcon);
+        expect(iconWidget.color, equals(Colors.red));
+      });
+
+      testWidgets('should not show warning icon for non-prompt configs',
+          (WidgetTester tester) async {
+        // Test with inference provider configs
+        final providerConfigs = [
+          AiConfig.inferenceProvider(
+            id: 'provider-1',
+            name: 'Test Provider',
+            baseUrl: 'https://api.example.com',
+            apiKey: 'test-key',
+            createdAt: DateTime.now(),
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+        ];
+
+        when(
+          () =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) => Stream.value(providerConfigs));
+
+        // Arrange
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: AiConfigType.inferenceProvider,
+                title: 'Test Providers',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Assert - no warning icons should be shown for non-prompt configs
+        expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
       });
     });
   });
