@@ -7,14 +7,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
+
+class MockUnifiedAiInferenceRepository extends Mock
+    implements UnifiedAiInferenceRepository {}
+
+class MockLoggingService extends Mock implements LoggingService {}
+
+class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
   late JournalEntity testTaskEntity;
@@ -23,15 +35,45 @@ void main() {
   late JournalEntity testAudioEntity;
   late List<AiConfigPrompt> testPrompts;
   late MockNavigatorObserver mockNavigatorObserver;
+  late MockUnifiedAiInferenceRepository mockInferenceRepository;
+  late MockLoggingService mockLoggingService;
 
   setUpAll(() {
     registerFallbackValue(
       StackTrace.current,
     );
+    registerFallbackValue(InferenceStatus.idle);
+    registerFallbackValue(FakeAiConfigPrompt());
   });
 
   setUp(() {
     mockNavigatorObserver = MockNavigatorObserver();
+    mockInferenceRepository = MockUnifiedAiInferenceRepository();
+    mockLoggingService = MockLoggingService();
+
+    // Set up GetIt
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+    // Mock logging methods
+    when(
+      () => mockLoggingService.captureEvent(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     // Create test entities
     final now = DateTime.now();
@@ -591,6 +633,18 @@ void main() {
 
     testWidgets('creates individual prompt pages correctly', (tester) async {
       // Arrange
+      // Mock the inference repository
+      when(
+        () => mockInferenceRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
+        // Just complete successfully
+      });
+
       await tester.pumpWidget(
         buildTestWidget(
           Consumer(
@@ -611,6 +665,10 @@ void main() {
           overrides: [
             availablePromptsProvider(entity: testTaskEntity)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockInferenceRepository),
+            aiConfigByIdProvider(testPrompts.first.id)
+                .overrideWith((ref) => testPrompts.first),
           ],
         ),
       );

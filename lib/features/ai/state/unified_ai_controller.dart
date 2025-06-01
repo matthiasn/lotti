@@ -119,3 +119,19 @@ Future<bool> hasAvailablePrompts(
   );
   return prompts.isNotEmpty;
 }
+
+/// Provider to trigger a new inference run by invalidating the controller
+@riverpod
+Future<void> triggerNewInference(
+  Ref ref, {
+  required String entityId,
+  required String promptId,
+}) async {
+  // Invalidate the controller to force a new instance and trigger inference
+  ref.invalidate(
+    unifiedAiControllerProvider(
+      entityId: entityId,
+      promptId: promptId,
+    ),
+  );
+}

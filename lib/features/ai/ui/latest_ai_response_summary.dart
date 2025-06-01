@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,13 +34,21 @@ class LatestAiResponseSummary extends ConsumerWidget {
     final inferenceStatus = ref.watch(
       inferenceStatusControllerProvider(
         id: id,
-        aiResponseType: AiResponseType.taskSummary,
+        aiResponseType: aiResponseType,
       ),
     );
 
     final isRunning = inferenceStatus == InferenceStatus.running;
 
     void showThoughtsModal(String promptId) {
+      // Trigger a new inference run by invalidating the controller
+      ref.read(
+        triggerNewInferenceProvider(
+          entityId: id,
+          promptId: promptId,
+        ),
+      );
+
       ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.aiAssistantThinking,
@@ -128,11 +137,12 @@ class LatestAiResponseSummary extends ConsumerWidget {
                   ],
                 ],
               ),
-            AiResponseSummary(
-              aiResponse,
-              linkedFromId: id,
-              fadeOut: false,
-            ),
+            if (!isRunning)
+              AiResponseSummary(
+                aiResponse,
+                linkedFromId: id,
+                fadeOut: false,
+              ),
             const SizedBox(height: 20),
             Divider(color: dividerColor),
           ],
