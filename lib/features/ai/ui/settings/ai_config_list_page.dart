@@ -129,7 +129,7 @@ class AiConfigListPage extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'This will also delete all models associated with this provider.',
+                            context.messages.aiConfigListCascadeDeleteWarning,
                             style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme

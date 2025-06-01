@@ -51,6 +51,7 @@
     }
   },
   "aiConfigListDeleteConfirmTitle": "Confirm Deletion",
+  "aiConfigListCascadeDeleteWarning": "This will also delete all models associated with this provider.",
   "aiConfigListEmptyState": "No configurations found. Add one to get started.",
   "aiConfigListErrorDeleting": "Error deleting {configName}: {error}",
   "@aiConfigListErrorDeleting": {
