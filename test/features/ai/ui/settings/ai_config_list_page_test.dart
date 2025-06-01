@@ -39,11 +39,15 @@ class FakeInferenceProviderFormController
   }
 
   @override
-  Future<void> deleteConfig(String id) async {
+  Future<CascadeDeletionResult> deleteConfig(String id) async {
     deleteConfigCalls.add(id);
     if (shouldFailDelete) {
       throw Exception('Deletion failed');
     }
+    return const CascadeDeletionResult(
+      deletedModels: [],
+      providerName: 'Test Provider',
+    );
   }
 
   @override

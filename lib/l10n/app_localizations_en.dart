@@ -152,6 +152,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiConfigListUndoDelete => 'UNDO';
 
   @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
+
+  @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
+
+  @override
   String get aiConfigManageModelsButton => 'Manage Models';
 
   @override
@@ -1592,6 +1607,27 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get aiAssistantTranscribeAudio => 'Transcribe audio';
 
   @override
+  String get aiConfigListUndoDelete => 'UNDO';
+
+  @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
+
+  @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
+
+  @override
+  String get aiConfigManageModelsButton => 'Manage Models';
+
+  @override
   String get aiTaskSummaryRunning => 'Thinking about summarising task...';
 
   @override
@@ -2184,7 +2220,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsDashboardsShowCasePrivateTooltip =>
-      'Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won’t be shared with others.';
+      'Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won\'t be shared with others.';
 
   @override
   String get settingsDashboardsShowCaseSurveyChartsTooltip =>
@@ -2368,7 +2404,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String settingsMatrixVerificationSuccessLabel(
       String deviceName, String deviceID) {
-    return 'You’ve successfully verified $deviceName ($deviceID)';
+    return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 
   @override
@@ -2556,7 +2592,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get speechModalTranscriptionProgress => 'Transcription Progress';
 
   @override
-  String get syncDeleteConfigConfirm => 'YES, I’M SURE';
+  String get syncDeleteConfigConfirm => 'YES, I\'M SURE';
 
   @override
   String get syncDeleteConfigQuestion =>

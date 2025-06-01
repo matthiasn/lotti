@@ -369,6 +369,18 @@ abstract class AppLocalizations {
   /// **'UNDO'**
   String get aiConfigListUndoDelete;
 
+  /// No description provided for @aiConfigProviderDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider deleted successfully'**
+  String get aiConfigProviderDeletedSuccessfully;
+
+  /// No description provided for @aiConfigAssociatedModelsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} associated model{count, plural, =1{} other{s}} removed'**
+  String aiConfigAssociatedModelsRemoved(int count);
+
   /// No description provided for @aiConfigManageModelsButton.
   ///
   /// In en, this message translates to:

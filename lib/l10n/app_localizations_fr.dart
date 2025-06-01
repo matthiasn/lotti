@@ -153,6 +153,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiConfigListUndoDelete => 'UNDO';
 
   @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
+
+  @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
+
+  @override
   String get aiConfigManageModelsButton => 'Manage Models';
 
   @override

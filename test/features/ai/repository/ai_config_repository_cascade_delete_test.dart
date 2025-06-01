@@ -43,11 +43,23 @@ void main() {
         .thenAnswer((_) async => {});
 
     // Setup default transaction mock to execute the callback
-    when(() => mockDb.transaction<int>(any())).thenAnswer((invocation) async {
-      final callback =
-          invocation.positionalArguments[0] as Future<int> Function();
+    when(() => mockDb.transaction<CascadeDeletionResult>(any()))
+        .thenAnswer((invocation) async {
+      final callback = invocation.positionalArguments[0]
+          as Future<CascadeDeletionResult> Function();
       return callback();
     });
+
+    // Setup default getConfigById mock to return a mock provider
+    when(() => mockDb.getConfigById(any()))
+        .thenAnswer((_) async => AiConfigInferenceProvider(
+              id: 'test-provider',
+              name: 'Test Provider',
+              baseUrl: 'https://test.com',
+              apiKey: 'test-key',
+              createdAt: DateTime.now(),
+              inferenceProviderType: InferenceProviderType.genericOpenAi,
+            ));
   });
 
   tearDown(() {
@@ -124,11 +136,15 @@ void main() {
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final deletedCount =
+      final result =
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(deletedCount, equals(2));
+      expect(result.deletedModelCount, equals(2));
+      expect(result.deletedModels.length, equals(2));
+      expect(result.deletedModels.map((m) => m.id),
+          containsAll(['model-1', 'model-2']));
+      expect(result.providerName, isNotEmpty);
 
       // Verify models were deleted
       verify(() => mockDb.deleteConfig('model-1')).called(1);
@@ -154,11 +170,13 @@ void main() {
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final deletedCount =
+      final result =
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(deletedCount, equals(0));
+      expect(result.deletedModelCount, equals(0));
+      expect(result.deletedModels.length, equals(0));
+      expect(result.providerName, isNotEmpty);
 
       // Verify only provider was deleted
       verify(() => mockDb.deleteConfig(providerId)).called(1);
@@ -195,13 +213,17 @@ void main() {
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final deletedCount = await repository.deleteInferenceProviderWithModels(
+      final result = await repository.deleteInferenceProviderWithModels(
         providerId,
         fromSync: true,
       );
 
       // Assert
-      expect(deletedCount, equals(1));
+      expect(result.deletedModelCount, equals(1));
+      expect(result.deletedModels.length, equals(1));
+      expect(
+          result.deletedModels.map((m) => m.id), containsAll(['model-sync']));
+      expect(result.providerName, isNotEmpty);
 
       // Verify deletions happened
       verify(() => mockDb.deleteConfig('model-sync')).called(1);
@@ -261,11 +283,15 @@ void main() {
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final deletedCount =
+      final result =
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(deletedCount, equals(5));
+      expect(result.deletedModelCount, equals(5));
+      expect(result.deletedModels.length, equals(5));
+      expect(result.deletedModels.map((m) => m.id),
+          containsAll(['model-0', 'model-1', 'model-2', 'model-3', 'model-4']));
+      expect(result.providerName, isNotEmpty);
 
       // Verify all models were deleted
       for (var i = 0; i < 5; i++) {
@@ -337,7 +363,7 @@ void main() {
       );
 
       // Verify that the transaction was attempted
-      verify(() => mockDb.transaction<int>(any())).called(1);
+      verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);
     });
 
     test('should rollback transaction when provider deletion fails', () async {
@@ -383,7 +409,7 @@ void main() {
       );
 
       // Verify that the transaction was attempted
-      verify(() => mockDb.transaction<int>(any())).called(1);
+      verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);
     });
 
     test('should use transaction for successful deletions', () async {
@@ -416,14 +442,17 @@ void main() {
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final deletedCount =
+      final result =
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(deletedCount, equals(1));
+      expect(result.deletedModelCount, equals(1));
+      expect(result.deletedModels.length, equals(1));
+      expect(result.deletedModels.map((m) => m.id), containsAll(['model-1']));
+      expect(result.providerName, isNotEmpty);
 
       // Verify that the transaction was used
-      verify(() => mockDb.transaction<int>(any())).called(1);
+      verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);
 
       // Verify deletions happened within the transaction
       verify(() => mockDb.deleteConfig('model-1')).called(1);

@@ -74,6 +74,15 @@
     }
   },
   "aiConfigListUndoDelete": "UNDO",
+  "aiConfigProviderDeletedSuccessfully": "Provider deleted successfully",
+  "aiConfigAssociatedModelsRemoved": "{count} associated model{count, plural, =1{} other{s}} removed",
+  "@aiConfigAssociatedModelsRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiConfigManageModelsButton": "Manage Models",
   "aiConfigModelRemovedMessage": "{modelName} removed from prompt",
   "@aiConfigModelRemovedMessage": {

@@ -180,9 +180,9 @@ class InferenceProviderFormController
   }
 
   /// Delete a configuration
-  Future<void> deleteConfig(String id) async {
+  Future<CascadeDeletionResult> deleteConfig(String id) async {
     final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.deleteInferenceProviderWithModels(id);
+    return repository.deleteInferenceProviderWithModels(id);
   }
 
   void reset() {

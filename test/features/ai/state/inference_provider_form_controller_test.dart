@@ -125,16 +125,34 @@ void main() {
 
     test('should delete a configuration', () async {
       // Arrange
+      final mockResult = CascadeDeletionResult(
+        deletedModels: [
+          AiConfigModel(
+            id: 'model-1',
+            name: 'Test Model',
+            providerModelId: 'test-model',
+            inferenceProviderId: 'test-id',
+            createdAt: DateTime.now(),
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+          ),
+        ],
+        providerName: 'Test Provider',
+      );
+
       when(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
-          .thenAnswer((_) async => 3); // Returns number of deleted models
+          .thenAnswer((_) async => mockResult);
 
       // Act
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await controller.deleteConfig('test-id');
+      final result = await controller.deleteConfig('test-id');
 
       // Assert
+      expect(result.deletedModelCount, equals(1));
+      expect(result.providerName, equals('Test Provider'));
       verify(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
           .called(1);
     });
