@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,22 @@ class MockInferenceModelFormController extends Mock {
 
 void main() {
   late MockAiConfigRepository mockRepository;
+
+  setUpAll(() {
+    // Register fallback value for mocktail
+    registerFallbackValue(
+      AiConfig.model(
+        id: 'fallback-id',
+        name: 'Fallback Model',
+        providerModelId: 'fallback-provider-model-id',
+        inferenceProviderId: 'fallback-provider',
+        createdAt: DateTime.now(),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      ),
+    );
+  });
 
   setUp(() {
     mockRepository = MockAiConfigRepository();
@@ -163,6 +180,90 @@ void main() {
 
       // Verify error message is shown
       expect(find.textContaining('Failed to load'), findsOneWidget);
+    });
+
+    testWidgets('keyboard shortcut structure is properly configured',
+        (WidgetTester tester) async {
+      // Build the widget in create mode
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: null,
+          repository: mockRepository,
+        ),
+      );
+
+      // Allow async operations to complete
+      await tester.pumpAndSettle();
+
+      // Verify CallbackShortcuts is present (there will be multiple due to CopyableTextField)
+      expect(find.byType(CallbackShortcuts), findsWidgets);
+
+      // Find all CallbackShortcuts widgets
+      final callbackShortcutsFinders = find.byType(CallbackShortcuts);
+      CallbackShortcuts? cmdSShortcuts;
+
+      // Find the one that contains CMD+S
+      for (var i = 0; i < callbackShortcutsFinders.evaluate().length; i++) {
+        final widget =
+            tester.widget<CallbackShortcuts>(callbackShortcutsFinders.at(i));
+        if (widget.bindings.keys.any((s) =>
+            s is SingleActivator &&
+            s.trigger == LogicalKeyboardKey.keyS &&
+            s.meta)) {
+          cmdSShortcuts = widget;
+          break;
+        }
+      }
+
+      // Verify we found the CMD+S shortcut
+      expect(cmdSShortcuts, isNotNull);
+      expect(cmdSShortcuts!.bindings.length, equals(1));
+    });
+
+    testWidgets('CMD+S shortcut does not trigger when form is invalid',
+        (WidgetTester tester) async {
+      // Build the widget in create mode
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: null,
+          repository: mockRepository,
+        ),
+      );
+
+      // Allow async operations to complete
+      await tester.pumpAndSettle();
+
+      // Verify save button is not visible (form is invalid)
+      expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+
+      // Find the CallbackShortcuts widget with CMD+S
+      final callbackShortcutsFinders = find.byType(CallbackShortcuts);
+      CallbackShortcuts? cmdSShortcuts;
+
+      for (var i = 0; i < callbackShortcutsFinders.evaluate().length; i++) {
+        final widget =
+            tester.widget<CallbackShortcuts>(callbackShortcutsFinders.at(i));
+        if (widget.bindings.keys.any((s) =>
+            s is SingleActivator &&
+            s.trigger == LogicalKeyboardKey.keyS &&
+            s.meta)) {
+          cmdSShortcuts = widget;
+          break;
+        }
+      }
+
+      expect(cmdSShortcuts, isNotNull);
+
+      // Get the shortcut callback
+      final shortcutCallback = cmdSShortcuts!.bindings.values.first;
+
+      // Try to trigger the shortcut
+      shortcutCallback();
+      await tester.pumpAndSettle();
+
+      // Verify no save was attempted (since we didn't mock saveConfig,
+      // if it was called it would throw)
+      verifyNever(() => mockRepository.saveConfig(any()));
     });
 
     // Note: Testing form submission would be better handled in integration tests
