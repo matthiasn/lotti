@@ -125,8 +125,8 @@ void main() {
 
     test('should delete a configuration', () async {
       // Arrange
-      when(() => mockRepository.deleteConfig('test-id'))
-          .thenAnswer((_) async {});
+      when(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
+          .thenAnswer((_) async => 3); // Returns number of deleted models
 
       // Act
       final controller = container.read(
@@ -135,7 +135,8 @@ void main() {
       await controller.deleteConfig('test-id');
 
       // Assert
-      verify(() => mockRepository.deleteConfig('test-id')).called(1);
+      verify(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
+          .called(1);
     });
 
     test('should reset form fields', () async {

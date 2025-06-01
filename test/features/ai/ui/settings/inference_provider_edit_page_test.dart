@@ -75,7 +75,8 @@ void main() {
   }
 
   group('ApiKeyEditPage Tests', () {
-    testWidgets('should display "Add API Key" title when configId is null',
+    testWidgets(
+        'should display "Add AI Inference Provider" title when configId is null',
         (WidgetTester tester) async {
       // Set a larger viewport size using the non-deprecated approach
       await tester.binding.setSurfaceSize(const Size(1024, 768));
@@ -86,11 +87,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Add API Key'), findsOneWidget);
+      expect(find.text('Add AI Inference Provider'), findsOneWidget);
       expect(find.byType(InferenceProviderForm), findsOneWidget);
     });
 
-    testWidgets('should display "Edit API Key" title when configId is provided',
+    testWidgets(
+        'should display "Edit AI Inference Provider" title when configId is provided',
         (WidgetTester tester) async {
       // Set a larger viewport size using the non-deprecated approach
       await tester.binding.setSurfaceSize(const Size(1024, 768));
@@ -101,7 +103,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Edit API Key'), findsOneWidget);
+      expect(find.text('Edit AI Inference Provider'), findsOneWidget);
       expect(find.byType(InferenceProviderForm), findsOneWidget);
     });
 

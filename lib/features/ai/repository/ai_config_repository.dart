@@ -49,6 +49,36 @@ class AiConfigRepository {
     }
   }
 
+  /// Delete an inference provider and all its associated models.
+  ///
+  /// This method performs cascade deletion:
+  /// 1. Fetches all models associated with the provider
+  /// 2. Deletes each model
+  /// 3. Deletes the provider itself
+  ///
+  /// Returns the number of models that were deleted.
+  Future<int> deleteInferenceProviderWithModels(
+    String providerId, {
+    bool fromSync = false,
+  }) async {
+    // Get all models to find those associated with this provider
+    final allModels = await getConfigsByType(AiConfigType.model);
+    final associatedModels = allModels
+        .whereType<AiConfigModel>()
+        .where((model) => model.inferenceProviderId == providerId)
+        .toList();
+
+    // Delete all associated models
+    for (final model in associatedModels) {
+      await deleteConfig(model.id, fromSync: fromSync);
+    }
+
+    // Delete the provider itself
+    await deleteConfig(providerId, fromSync: fromSync);
+
+    return associatedModels.length;
+  }
+
   /// Get an AI configuration by its ID
   Future<AiConfig?> getConfigById(String id) async {
     return _db.getConfigById(id);

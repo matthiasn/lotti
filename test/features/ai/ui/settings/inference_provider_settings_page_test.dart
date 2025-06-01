@@ -93,6 +93,15 @@ void main() {
   }
 
   group('ApiKeysSettingsPage Tests', () {
+    testWidgets('should display app bar with title',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Check that the app bar has the correct title
+      expect(find.text('AI Inference Providers'), findsOneWidget);
+    });
+
     testWidgets('should render with correct title and config type',
         (WidgetTester tester) async {
       // Arrange
@@ -100,7 +109,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('API Keys'), findsOneWidget);
+      expect(find.text('AI Inference Providers'), findsOneWidget);
 
       // Verify the correct config type was passed to AiConfigListPage
       final listPage = tester.widget<AiConfigListPage>(
@@ -127,7 +136,7 @@ void main() {
 
       // Verify we're on the edit page with null configId
       expect(find.byType(InferenceProviderEditPage), findsOneWidget);
-      expect(find.text('Add API Key'), findsOneWidget);
+      expect(find.text('Add AI Inference Provider'), findsOneWidget);
     });
 
     testWidgets('should navigate to edit page when item is tapped',
@@ -150,7 +159,7 @@ void main() {
 
       // Verify we're on the edit page with the correct configId
       expect(find.byType(InferenceProviderEditPage), findsOneWidget);
-      expect(find.text('Edit API Key'), findsOneWidget);
+      expect(find.text('Edit AI Inference Provider'), findsOneWidget);
     });
   });
 }

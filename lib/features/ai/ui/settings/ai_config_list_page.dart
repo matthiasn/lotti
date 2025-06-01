@@ -84,10 +84,12 @@ class AiConfigListPage extends ConsumerWidget {
         ),
       ),
       confirmDismiss: (direction) async {
-        return _showDeleteConfirmationDialog(context, config);
-      },
-      onDismissed: (direction) {
-        _deleteConfig(config, ref, context);
+        final shouldDelete =
+            await _showDeleteConfirmationDialog(context, config);
+        if (shouldDelete && context.mounted) {
+          _deleteConfig(config, ref, context);
+        }
+        return false;
       },
       child: _buildConfigListTile(context, config),
     );
@@ -97,6 +99,68 @@ class AiConfigListPage extends ConsumerWidget {
     BuildContext context,
     AiConfig config,
   ) async {
+    // Special handling for inference providers
+    if (config is AiConfigInferenceProvider) {
+      return await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(context.messages.aiConfigListDeleteConfirmTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.messages
+                        .aiConfigListDeleteConfirmMessage(config.name),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_outlined,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'This will also delete all models associated with this provider.',
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(context.messages.aiConfigListDeleteConfirmCancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: Text(context.messages.aiConfigListDeleteConfirmDelete),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+    }
+
+    // Regular confirmation for other config types
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
