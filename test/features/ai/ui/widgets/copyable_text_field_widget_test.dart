@@ -39,7 +39,6 @@ void main() {
             onChanged: (_) {},
             decoration: testDecoration,
             obscureText: true,
-            maxLines: 1,
             keyboardType: TextInputType.number,
           ),
         ),

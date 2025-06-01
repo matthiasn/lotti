@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/preconfigured_prompt_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
@@ -42,6 +43,23 @@ class _PromptFormState extends ConsumerState<PromptForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         const SizedBox(height: 5),
+        if (configId == null) ...[
+          FilledButton.icon(
+            onPressed: () async {
+              final selectedPrompt =
+                  await showPreconfiguredPromptSelectionModal(context);
+              if (selectedPrompt != null) {
+                formController.populateFromPreconfiguredPrompt(selectedPrompt);
+              }
+            },
+            icon: const Icon(Icons.auto_awesome_outlined),
+            label: const Text('Use Preconfigured Prompt'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         SizedBox(
           height: 70,
           child: CopyableTextField(

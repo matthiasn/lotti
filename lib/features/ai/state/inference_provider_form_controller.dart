@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'inference_provider_form_controller.g.dart';
@@ -120,6 +121,21 @@ class InferenceProviderFormController
   Future<void> addConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
     await repository.saveConfig(config);
+
+    // Pre-populate known models for this provider
+    if (config is AiConfigInferenceProvider) {
+      final prepopulationService = ModelPrepopulationService(
+        repository: repository,
+      );
+      final modelsCreated =
+          await prepopulationService.prepopulateModelsForProvider(config);
+
+      // Log the number of models created for debugging
+      if (modelsCreated > 0) {
+        debugPrint(
+            'Pre-populated $modelsCreated models for provider ${config.name}');
+      }
+    }
   }
 
   /// Update an existing configuration

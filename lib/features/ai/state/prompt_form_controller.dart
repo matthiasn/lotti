@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'prompt_form_controller.g.dart';
@@ -193,6 +194,28 @@ class PromptFormController extends _$PromptFormController {
   Future<void> deleteConfig(String id) async {
     final repository = ref.read(aiConfigRepositoryProvider);
     await repository.deleteConfig(id);
+  }
+
+  /// Populate the form with a preconfigured prompt template.
+  /// This method updates all form fields with the values from the template.
+  void populateFromPreconfiguredPrompt(PreconfiguredPrompt template) {
+    // Update the text controllers
+    nameController.text = template.name;
+    systemMessageController.text = template.systemMessage;
+    userMessageController.text = template.userMessage;
+    descriptionController.text = template.description;
+
+    // Update all form fields through the centralized method
+    _setAllFields(
+      name: template.name,
+      systemMessage: template.systemMessage,
+      userMessage: template.userMessage,
+      useReasoning: template.useReasoning,
+      requiredInputData: template.requiredInputData,
+      description: template.description,
+      defaultVariables: template.defaultVariables,
+      aiResponseType: template.aiResponseType,
+    );
   }
 
   void reset() {
