@@ -743,7 +743,6 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(
             initialState: AsyncData([providerConfig]),
-            configType: AiConfigType.inferenceProvider,
           ),
         );
 

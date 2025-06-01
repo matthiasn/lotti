@@ -40,7 +40,6 @@ void main() {
               controller: controller,
               onChanged: (_) {},
               decoration: testDecoration,
-              obscureText: false,
               maxLines: 3,
               keyboardType: TextInputType.number,
             ),
@@ -72,7 +71,6 @@ void main() {
               onChanged: (_) {},
               decoration: const InputDecoration(),
               obscureText: true,
-              maxLines: 1,
             ),
           ),
         );

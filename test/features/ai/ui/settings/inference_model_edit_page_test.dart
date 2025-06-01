@@ -357,9 +357,6 @@ void main() {
           providerModelId: const ProviderModelId.pure('provider-model-id'),
           description: const ModelDescription.pure('Test description'),
           inferenceProviderId: 'provider-1',
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         );
 
         final fakeFormController = FakeInferenceModelFormController()
@@ -446,7 +443,6 @@ void main() {
           (WidgetTester tester) async {
         final fakeFormController = FakeInferenceModelFormController()
           ..setInitialStateForBuild(InferenceModelFormState(
-            inferenceProviderId: '',
             inputModalities: [],
             outputModalities: [],
           ));
@@ -470,8 +466,6 @@ void main() {
             name: const ModelName.dirty('ab'), // Too short
             providerModelId: const ProviderModelId.dirty('valid-id'),
             inferenceProviderId: 'provider-1',
-            inputModalities: const [Modality.text],
-            outputModalities: const [Modality.text],
           ));
 
         await tester.pumpWidget(
@@ -493,8 +487,6 @@ void main() {
             name: const ModelName.dirty('Valid Name'),
             providerModelId: const ProviderModelId.dirty('ab'), // Too short
             inferenceProviderId: 'provider-1',
-            inputModalities: const [Modality.text],
-            outputModalities: const [Modality.text],
           ));
 
         await tester.pumpWidget(

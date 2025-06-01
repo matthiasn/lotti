@@ -242,7 +242,6 @@ class AiConfigListPage extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: colorScheme.outline.withValues(alpha: 0.3),
-                              width: 1,
                             ),
                           ),
                           child: Column(
@@ -332,7 +331,6 @@ class AiConfigListPage extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
               color: colorScheme.outline.withValues(alpha: 0.3),
-              width: 1,
             ),
           ),
           duration: const Duration(seconds: 5),

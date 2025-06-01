@@ -469,7 +469,6 @@ void main() {
         final fakeFormController = FakePromptFormController()
           ..setInitialStateForBuild(PromptFormState(
             modelIds: [],
-            defaultModelId: '',
           ));
 
         await tester.pumpWidget(
