@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
+import 'package:lotti/features/ai/ui/widgets/copyable_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -43,7 +44,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
         const SizedBox(height: 5),
         SizedBox(
           height: 70,
-          child: TextField(
+          child: CopyableTextField(
             onChanged: formController.nameChanged,
             controller: formController.nameController,
             decoration: InputDecoration(
@@ -58,7 +59,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
         ),
         PromptFormSelectModel(configId: configId),
         const SizedBox(height: 20),
-        TextField(
+        CopyableTextField(
           onChanged: formController.userMessageChanged,
           controller: formController.userMessageController,
           decoration: InputDecoration(
@@ -73,7 +74,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
           maxLines: 6,
         ),
         const SizedBox(height: 20),
-        TextField(
+        CopyableTextField(
           onChanged: formController.systemMessageChanged,
           controller: formController.systemMessageController,
           decoration: InputDecoration(
@@ -95,7 +96,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 5),
         ),
         const SizedBox(height: 16),
-        TextField(
+        CopyableTextField(
           onChanged: formController.descriptionChanged,
           controller: formController.descriptionController,
           decoration: InputDecoration(

@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
 import 'package:lotti/features/ai/ui/settings/provider_selection_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/copyable_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
@@ -105,7 +106,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
         children: <Widget>[
           SizedBox(
             height: 90,
-            child: TextField(
+            child: CopyableTextField(
               onChanged: formController.nameChanged,
               controller: formController.nameController,
               decoration: InputDecoration(
@@ -120,7 +121,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
           ),
           SizedBox(
             height: 90,
-            child: TextField(
+            child: CopyableTextField(
               onChanged: formController.providerModelIdChanged,
               controller: formController.providerModelIdController,
               decoration: InputDecoration(
@@ -208,7 +209,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
             onChanged: formController.isReasoningModelChanged,
           ),
           const SizedBox(height: 30),
-          TextField(
+          CopyableTextField(
             onChanged: formController.descriptionChanged,
             controller: formController.descriptionController,
             decoration: InputDecoration(
