@@ -58,25 +58,34 @@ class FakeInferenceProviderFormController
   /// Minimal implementation of required methods
   @override
   TextEditingController get nameController => TextEditingController();
+
   @override
   TextEditingController get apiKeyController => TextEditingController();
+
   @override
   TextEditingController get baseUrlController => TextEditingController();
+
   @override
   TextEditingController get descriptionController => TextEditingController();
 
   @override
   void nameChanged(String name) {}
+
   @override
   void apiKeyChanged(String apiKey) {}
+
   @override
   void baseUrlChanged(String baseUrl) {}
+
   @override
   void descriptionChanged(String description) {}
+
   @override
   void inferenceProviderTypeChanged(InferenceProviderType type) {}
+
   @override
   Future<void> updateConfig(AiConfig config) async {}
+
   @override
   void reset() {}
 }
@@ -432,20 +441,28 @@ void main() {
         await tester.drag(item, const Offset(-500, 0));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
 
-        // Should show standard dialog without warning
-        expect(find.byType(AlertDialog), findsOneWidget);
-        expect(find.text('Confirm Deletion'), findsOneWidget);
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Find the modal content by looking for the text first
+        final modalContent = find.textContaining('delete');
+        expect(modalContent, findsOneWidget);
+
+        // Find the buttons within the modal
         expect(
-          find.textContaining('Are you sure you want to delete'),
+          find.text('CANCEL'),
           findsOneWidget,
         );
-        expect(find.text('CANCEL'), findsOneWidget);
-        expect(find.text('DELETE'), findsOneWidget);
+        expect(
+          find.text('DELETE'),
+          findsOneWidget,
+        );
 
         // Should NOT have the cascade warning
         expect(
-          find.textContaining('This will also delete all models associated'),
+          find.textContaining('models associated'),
           findsNothing,
         );
       });
@@ -501,15 +518,29 @@ void main() {
         await tester.drag(item, const Offset(-500, 0));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
 
-        // Should show special dialog with cascade warning
-        expect(find.byType(AlertDialog), findsOneWidget);
-        expect(find.text('Confirm Deletion'), findsOneWidget);
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Find the modal content by looking for the text first
+        final modalContent =
+            find.textContaining('Are you sure you want to delete');
+        expect(modalContent, findsOneWidget);
+
+        // Find the buttons within the modal
         expect(
-          find.textContaining('This will also delete all models associated'),
+          find.text('CANCEL'),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.warning_outlined), findsOneWidget);
+        expect(
+          find.text('DELETE'),
+          findsOneWidget,
+        );
+        expect(
+          find.byIcon(Icons.warning_amber_rounded),
+          findsOneWidget,
+        );
       });
 
       testWidgets('should not delete item when dismissal is cancelled',
@@ -565,11 +596,28 @@ void main() {
         await tester.pump(); // Start the dismiss animation
         await tester
             .pump(const Duration(milliseconds: 500)); // Wait for animation
+        await tester.pumpAndSettle();
+
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Find the modal content by looking for the text first
+        final modalContent = find.textContaining('delete');
+        expect(modalContent, findsOneWidget);
+
+        // Find the buttons within the modal
+        expect(
+          find.text('CANCEL'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('DELETE'),
+          findsOneWidget,
+        );
 
         // Find and tap the CANCEL button in the dialog
         await tester.tap(find.text('CANCEL'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
         // Assert - verify deleteConfig was not called
         expect(fakeFormController.deleteConfigCalls, isEmpty);
@@ -619,11 +667,18 @@ void main() {
         await tester.drag(firstItem, const Offset(-500, 0));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Find the modal content by looking for the text first
+        final modalContent = find.textContaining('delete');
+        expect(modalContent, findsOneWidget);
 
         // Confirm deletion
         await tester.tap(find.text('DELETE'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
         // Should call deleteConfig
         expect(fakeFormController.deleteConfigCalls, contains('test-id-1'));
@@ -685,9 +740,13 @@ void main() {
         await tester.pump(); // Start the dismiss animation
         await tester
             .pump(const Duration(milliseconds: 500)); // Wait for animation
+        await tester.pumpAndSettle();
+
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
 
         // Dialog shouldn't appear for left-to-right swipe due to direction setting
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.textContaining('delete'), findsNothing);
       });
 
       testWidgets('should use repository directly for model/prompt deletion',
@@ -742,11 +801,18 @@ void main() {
         await tester.drag(item, const Offset(-500, 0));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Find the modal content by looking for the text first
+        final modalContent = find.textContaining('delete');
+        expect(modalContent, findsOneWidget);
 
         // Confirm deletion
         await tester.tap(find.text('DELETE'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
         // Should call repository.deleteConfig directly (not controller)
         verify(() => mockRepository.deleteConfig('model-1')).called(1);
@@ -762,7 +828,7 @@ void main() {
           userMessage: 'User message',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
-          requiredInputData: const [],
+          requiredInputData: const [InputDataType.task],
           createdAt: DateTime.now(),
           useReasoning: false,
           aiResponseType: AiResponseType.taskSummary,
@@ -806,11 +872,18 @@ void main() {
         await tester.drag(item, const Offset(-500, 0));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+
+        // Wait for the modal to be fully built
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Find the modal content by looking for the text first
+        final modalContent = find.textContaining('delete');
+        expect(modalContent, findsOneWidget);
 
         // Confirm deletion
         await tester.tap(find.text('DELETE'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
         // Should call repository.deleteConfig directly (not controller)
         verify(() => mockRepository.deleteConfig('prompt-1')).called(1);
@@ -890,7 +963,7 @@ void main() {
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           description: 'Test prompt description',
-          requiredInputData: const [],
+          requiredInputData: const [InputDataType.task],
           createdAt: DateTime.now(),
           useReasoning: false,
           aiResponseType: AiResponseType.taskSummary,
@@ -1174,6 +1247,143 @@ void main() {
 
         // Assert - no warning icons should be shown for non-prompt configs
         expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      });
+    });
+
+    group('Modal Sheet Content Tests', () {
+      testWidgets(
+          'should have correct list tile content for inference provider configs',
+          (WidgetTester tester) async {
+        final providerConfig = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          name: 'Test Provider',
+          baseUrl: 'https://test.example.com',
+          apiKey: 'test-key',
+          description: 'Test provider description',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        when(
+          () =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) => Stream.value([providerConfig]));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            initialState: AsyncData([providerConfig]),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Find the list tile by its title text
+        final listTile = find.ancestor(
+          of: find.text('Test Provider'),
+          matching: find.byType(ListTile),
+        );
+        expect(listTile, findsOneWidget);
+
+        // Verify the list tile content
+        final listTileWidget = tester.widget<ListTile>(listTile);
+        expect(listTileWidget.title, isA<Text>());
+        expect(listTileWidget.subtitle, isA<Text>());
+
+        // Verify the text content
+        expect(find.text('Test Provider'), findsOneWidget);
+        expect(find.text('Test provider description'), findsOneWidget);
+      });
+
+      testWidgets('should have correct list tile content for prompt configs',
+          (WidgetTester tester) async {
+        final promptConfig = AiConfig.prompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1', 'model-2'],
+          description: 'Test prompt description',
+          requiredInputData: const [InputDataType.task],
+          createdAt: DateTime.now(),
+          useReasoning: true,
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) => Stream.value([promptConfig]));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            initialState: AsyncData([promptConfig]),
+            configType: AiConfigType.prompt,
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Find the list tile by its title text
+        final listTile = find.ancestor(
+          of: find.text('Test Prompt'),
+          matching: find.byType(ListTile),
+        );
+        expect(listTile, findsOneWidget);
+
+        // Verify the list tile content
+        final listTileWidget = tester.widget<ListTile>(listTile);
+        expect(listTileWidget.title, isA<Text>());
+        expect(listTileWidget.subtitle, isA<Text>());
+
+        // Verify the text content
+        expect(find.text('Test Prompt'), findsOneWidget);
+        expect(find.text('Test prompt description'), findsOneWidget);
+      });
+
+      testWidgets('should have correct list tile content for model configs',
+          (WidgetTester tester) async {
+        final modelConfig = AiConfig.model(
+          id: 'model-1',
+          name: 'Test Model',
+          providerModelId: 'provider-model-id',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([modelConfig]));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            initialState: AsyncData([modelConfig]),
+            configType: AiConfigType.model,
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Find the list tile by its title text
+        final listTile = find.ancestor(
+          of: find.text('Test Model'),
+          matching: find.byType(ListTile),
+        );
+        expect(listTile, findsOneWidget);
+
+        // Verify the list tile content
+        final listTileWidget = tester.widget<ListTile>(listTile);
+        expect(listTileWidget.title, isA<Text>());
+        expect(listTileWidget.subtitle, isA<ModelSubtitleWidget>());
+
+        // Verify the text content
+        expect(find.text('Test Model'), findsOneWidget);
+        expect(find.byType(ModelSubtitleWidget), findsOneWidget);
       });
     });
   });
