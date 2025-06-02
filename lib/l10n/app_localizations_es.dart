@@ -129,6 +129,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiConfigListDeleteConfirmTitle => 'Confirm Deletion';
 
   @override
+  String get aiConfigListCascadeDeleteWarning =>
+      'This will also delete all models associated with this provider.';
+
+  @override
   String get aiConfigListEmptyState =>
       'No configurations found. Add one to get started.';
 
@@ -147,6 +151,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiConfigListUndoDelete => 'UNDO';
+
+  @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
+
+  @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
 
   @override
   String get aiConfigManageModelsButton => 'Manage Models';
@@ -322,13 +341,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiTaskSummaryTitle => 'Resumen de tareas de IA';
 
   @override
-  String get apiKeyAddPageTitle => 'Add API Key';
+  String get apiKeyAddPageTitle => 'Add AI Inference Provider';
 
   @override
   String get apiKeyEditLoadError => 'Failed to load API key configuration';
 
   @override
-  String get apiKeyEditPageTitle => 'Edit API Key';
+  String get apiKeyEditPageTitle => 'Edit AI Inference Provider';
 
   @override
   String get apiKeyFormCreateButton => 'Create';
@@ -337,7 +356,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get apiKeyFormUpdateButton => 'Update';
 
   @override
-  String get apiKeysSettingsPageTitle => 'API Keys';
+  String get apiKeysSettingsPageTitle => 'AI Inference Providers';
 
   @override
   String get cancelButton => 'Cancelar';
@@ -975,7 +994,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAdvancedTitle => 'Configuración avanzada';
 
   @override
-  String get settingsAiApiKeys => 'API Keys';
+  String get settingsAiApiKeys => 'AI Inference Providers';
 
   @override
   String get settingsAiModels => 'AI Models';

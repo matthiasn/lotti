@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,7 +76,8 @@ void main() {
   }
 
   group('ApiKeyEditPage Tests', () {
-    testWidgets('should display "Add API Key" title when configId is null',
+    testWidgets(
+        'should display "Add AI Inference Provider" title when configId is null',
         (WidgetTester tester) async {
       // Set a larger viewport size using the non-deprecated approach
       await tester.binding.setSurfaceSize(const Size(1024, 768));
@@ -86,11 +88,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Add API Key'), findsOneWidget);
+      expect(find.text('Add AI Inference Provider'), findsOneWidget);
       expect(find.byType(InferenceProviderForm), findsOneWidget);
     });
 
-    testWidgets('should display "Edit API Key" title when configId is provided',
+    testWidgets(
+        'should display "Edit AI Inference Provider" title when configId is provided',
         (WidgetTester tester) async {
       // Set a larger viewport size using the non-deprecated approach
       await tester.binding.setSurfaceSize(const Size(1024, 768));
@@ -101,7 +104,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Edit API Key'), findsOneWidget);
+      expect(find.text('Edit AI Inference Provider'), findsOneWidget);
       expect(find.byType(InferenceProviderForm), findsOneWidget);
     });
 
@@ -134,23 +137,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find the form widget
-      final formWidget = tester
-          .widget<InferenceProviderForm>(find.byType(InferenceProviderForm));
-
-      // Create a config with known values
-      final config = AiConfig.inferenceProvider(
-        id: 'test-id-new',
-        name: 'New API',
-        baseUrl: 'https://new.example.com',
-        apiKey: 'new-api-key',
-        description: '',
-        createdAt: DateTime(2022),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
-
-      // Call the onSave function directly
-      formWidget.onSave(config);
+      // Find and tap the save button in the app bar
+      final saveButton = find.widgetWithText(TextButton, 'Save');
+      expect(saveButton, findsOneWidget);
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       // Verify saveConfig was called
@@ -174,38 +164,15 @@ void main() {
       await tester.pumpWidget(buildTestWidget(configId: 'test-id'));
       await tester.pumpAndSettle();
 
-      // Fill in the form fields
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Display Name'),
-        'Updated API',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Base URL'),
-        'https://updated.example.com',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'API Key'),
-        'updated-api-key',
-      );
+      // Modify a field to make the form dirty
+      final nameField = find.widgetWithText(TextField, 'Display Name');
+      await tester.enterText(nameField, 'Updated API');
       await tester.pumpAndSettle();
 
-      // Find the form widget
-      final formWidget = tester
-          .widget<InferenceProviderForm>(find.byType(InferenceProviderForm));
-
-      // Create a config with known values
-      final config = AiConfig.inferenceProvider(
-        id: 'test-id',
-        name: 'Updated API',
-        baseUrl: 'https://updated.example.com',
-        apiKey: 'updated-api-key',
-        description: '',
-        createdAt: DateTime(2022),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
-
-      // Call the onSave function directly
-      formWidget.onSave(config);
+      // Find and tap the save button in the app bar
+      final saveButton = find.widgetWithText(TextButton, 'Save');
+      expect(saveButton, findsOneWidget);
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       // Verify saveConfig was called
@@ -383,6 +350,148 @@ void main() {
           expect(tile.trailing, isA<Icon>());
         }
       }
+    });
+
+    testWidgets('keyboard shortcut structure is properly configured',
+        (WidgetTester tester) async {
+      // Set a larger viewport size
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Build the widget in create mode
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Verify CallbackShortcuts is present (there will be multiple due to CopyableTextField)
+      expect(find.byType(CallbackShortcuts), findsWidgets);
+
+      // Find all CallbackShortcuts widgets
+      final callbackShortcutsFinders = find.byType(CallbackShortcuts);
+      CallbackShortcuts? cmdSShortcuts;
+
+      // Find the one that contains CMD+S
+      for (var i = 0; i < callbackShortcutsFinders.evaluate().length; i++) {
+        final widget =
+            tester.widget<CallbackShortcuts>(callbackShortcutsFinders.at(i));
+        if (widget.bindings.keys.any((s) =>
+            s is SingleActivator &&
+            s.trigger == LogicalKeyboardKey.keyS &&
+            s.meta)) {
+          cmdSShortcuts = widget;
+          break;
+        }
+      }
+
+      // Verify we found the CMD+S shortcut
+      expect(cmdSShortcuts, isNotNull);
+      expect(cmdSShortcuts!.bindings.length, equals(1));
+    });
+
+    testWidgets('CMD+S shortcut does not trigger when form is invalid',
+        (WidgetTester tester) async {
+      // Set a larger viewport size
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Clear previous interactions
+      reset(mockRepository);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      // Build the widget in create mode
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Verify save button is not visible (form is invalid)
+      expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+
+      // Find the CallbackShortcuts widget with CMD+S
+      final callbackShortcutsFinders = find.byType(CallbackShortcuts);
+      CallbackShortcuts? cmdSShortcuts;
+
+      for (var i = 0; i < callbackShortcutsFinders.evaluate().length; i++) {
+        final widget =
+            tester.widget<CallbackShortcuts>(callbackShortcutsFinders.at(i));
+        if (widget.bindings.keys.any((s) =>
+            s is SingleActivator &&
+            s.trigger == LogicalKeyboardKey.keyS &&
+            s.meta)) {
+          cmdSShortcuts = widget;
+          break;
+        }
+      }
+
+      expect(cmdSShortcuts, isNotNull);
+
+      // Get the shortcut callback
+      final shortcutCallback = cmdSShortcuts!.bindings.values.first;
+
+      // Try to trigger the shortcut
+      shortcutCallback();
+      await tester.pumpAndSettle();
+
+      // Verify no save was attempted
+      verifyNever(() => mockRepository.saveConfig(any()));
+    });
+
+    testWidgets('CMD+S shortcut triggers save when form is valid',
+        (WidgetTester tester) async {
+      // Set a larger viewport size
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Clear previous interactions
+      reset(mockRepository);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      // Arrange
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Fill in the form fields to make it valid
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Display Name'),
+        'New API',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Base URL'),
+        'https://new.example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'API Key'),
+        'new-api-key',
+      );
+      await tester.pumpAndSettle();
+
+      // Verify save button is visible now
+      expect(find.widgetWithText(TextButton, 'Save'), findsOneWidget);
+
+      // Find the CallbackShortcuts widget with CMD+S
+      final callbackShortcutsFinders = find.byType(CallbackShortcuts);
+      CallbackShortcuts? cmdSShortcuts;
+
+      for (var i = 0; i < callbackShortcutsFinders.evaluate().length; i++) {
+        final widget =
+            tester.widget<CallbackShortcuts>(callbackShortcutsFinders.at(i));
+        if (widget.bindings.keys.any((s) =>
+            s is SingleActivator &&
+            s.trigger == LogicalKeyboardKey.keyS &&
+            s.meta)) {
+          cmdSShortcuts = widget;
+          break;
+        }
+      }
+
+      expect(cmdSShortcuts, isNotNull);
+
+      // Get the shortcut callback
+      final shortcutCallback = cmdSShortcuts!.bindings.values.first;
+
+      // Trigger the shortcut
+      shortcutCallback();
+      await tester.pumpAndSettle();
+
+      // Verify saveConfig was called
+      verify(() => mockRepository.saveConfig(any())).called(1);
     });
   });
 }

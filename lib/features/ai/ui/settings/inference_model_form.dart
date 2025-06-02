@@ -6,19 +6,18 @@ import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
 import 'package:lotti/features/ai/ui/settings/provider_selection_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/copyable_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 
 class InferenceModelForm extends ConsumerStatefulWidget {
   const InferenceModelForm({
-    required this.onSave,
     this.config,
     super.key,
   });
 
   final AiConfig? config;
-  final void Function(AiConfig) onSave;
 
   @override
   ConsumerState<InferenceModelForm> createState() => _InferenceModelFormState();
@@ -105,7 +104,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
         children: <Widget>[
           SizedBox(
             height: 90,
-            child: TextField(
+            child: CopyableTextField(
               onChanged: formController.nameChanged,
               controller: formController.nameController,
               decoration: InputDecoration(
@@ -120,7 +119,7 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
           ),
           SizedBox(
             height: 90,
-            child: TextField(
+            child: CopyableTextField(
               onChanged: formController.providerModelIdChanged,
               controller: formController.providerModelIdController,
               decoration: InputDecoration(
@@ -208,42 +207,13 @@ class _InferenceModelFormState extends ConsumerState<InferenceModelForm> {
             onChanged: formController.isReasoningModelChanged,
           ),
           const SizedBox(height: 30),
-          TextField(
+          CopyableTextField(
             onChanged: formController.descriptionChanged,
             controller: formController.descriptionController,
             decoration: InputDecoration(
               labelText: context.messages.aiConfigCommentFieldLabel,
             ),
             maxLines: 3,
-          ),
-          SizedBox(
-            height: 50,
-            child: formState.submitFailed
-                ? Text(
-                    context.messages.aiConfigFailedToSaveMessage,
-                    style: context.textTheme.bodyLarge?.copyWith(
-                      color: context.colorScheme.error,
-                    ),
-                  )
-                : null,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilledButton(
-                onPressed: formState.isValid &&
-                        formState.inferenceProviderId.isNotEmpty &&
-                        formState.inputModalities.isNotEmpty &&
-                        formState.outputModalities.isNotEmpty &&
-                        (widget.config == null || formState.isDirty)
-                    ? () {
-                        final config = formState.toAiConfig();
-                        widget.onSave(config);
-                      }
-                    : null,
-                child: Text(context.messages.saveButtonLabel),
-              ),
-            ],
           ),
         ],
       ),

@@ -11,7 +11,6 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 // Helper to build a testable widget
 Widget buildTestWidget({
-  required void Function(AiConfig) onSave,
   AiConfig? config,
 }) {
   return ProviderScope(
@@ -23,7 +22,6 @@ Widget buildTestWidget({
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: InferenceModelForm(
-          onSave: onSave,
           config: config,
         ),
       ),
@@ -58,14 +56,8 @@ AiConfig createMockModelConfig({
 void main() {
   // Basic rendering test
   testWidgets('should render form fields', (WidgetTester tester) async {
-    var onSaveCalled = false;
-
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {
-          onSaveCalled = true;
-        },
-      ),
+      buildTestWidget(),
     );
 
     // Wait for initial load
@@ -75,17 +67,15 @@ void main() {
     // Verify form fields are visible
     expect(find.byType(TextField), findsAtLeast(2)); // Name and description
     expect(find.byType(SwitchListTile), findsOneWidget); // Reasoning capability
-    expect(find.byType(FilledButton), findsOneWidget); // Save button
+    // Save button is now in the app bar, not in the form
+    // expect(find.byType(FilledButton), findsOneWidget); // Save button
     // The save button is initially disabled, so onSaveCalled would be false
-    expect(onSaveCalled, isFalse);
   });
 
   // Form validation test
   testWidgets('should validate form fields', (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -107,9 +97,7 @@ void main() {
   testWidgets('should show correct error text when name is too short',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -152,9 +140,7 @@ void main() {
       'should show correct error text when provider model ID is too short',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -207,9 +193,7 @@ void main() {
   // Form interaction test
   testWidgets('should allow filling out the form', (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -254,11 +238,7 @@ void main() {
     AiConfig? savedConfig;
 
     await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (config) {
-          savedConfig = config;
-        },
-      ),
+      buildTestWidget(),
     );
 
     await tester.pump();
@@ -272,42 +252,5 @@ void main() {
     // Note: In a real test, we would need to also select a provider
     // but that might require additional mocking of the provider selection modal
     // For this test, we'll focus on the other aspects of the form
-  });
-
-  // Test create vs update button text
-  testWidgets(
-      'should show Save button text for new model (previously Create Prompt)',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
-    );
-
-    await tester.pump();
-
-    final l10n =
-        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(find.text(l10n.saveButtonLabel), findsOneWidget);
-  });
-
-  testWidgets('should show Save button text for new model',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      buildTestWidget(
-        onSave: (_) {},
-      ),
-    );
-
-    await tester.pump();
-
-    // Find the button and check its text for the CREATE case
-    final buttonFinder = find.byType(FilledButton);
-    expect(buttonFinder, findsOneWidget);
-    final buttonWidget = tester.widget<FilledButton>(buttonFinder);
-    final buttonTextWidget = buttonWidget.child! as Text;
-    final l10n =
-        AppLocalizations.of(tester.element(find.byType(InferenceModelForm)))!;
-    expect(buttonTextWidget.data, l10n.saveButtonLabel);
   });
 }

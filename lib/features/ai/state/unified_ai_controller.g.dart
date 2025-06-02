@@ -316,6 +316,166 @@ class _HasAvailablePromptsProviderElement
   JournalEntity get entity => (origin as HasAvailablePromptsProvider).entity;
 }
 
+String _$triggerNewInferenceHash() =>
+    r'a0aac25a770cf5fe0a1633ee9c9f6ad3e415b673';
+
+/// Provider to trigger a new inference run by invalidating the controller
+///
+/// Copied from [triggerNewInference].
+@ProviderFor(triggerNewInference)
+const triggerNewInferenceProvider = TriggerNewInferenceFamily();
+
+/// Provider to trigger a new inference run by invalidating the controller
+///
+/// Copied from [triggerNewInference].
+class TriggerNewInferenceFamily extends Family<AsyncValue<void>> {
+  /// Provider to trigger a new inference run by invalidating the controller
+  ///
+  /// Copied from [triggerNewInference].
+  const TriggerNewInferenceFamily();
+
+  /// Provider to trigger a new inference run by invalidating the controller
+  ///
+  /// Copied from [triggerNewInference].
+  TriggerNewInferenceProvider call({
+    required String entityId,
+    required String promptId,
+  }) {
+    return TriggerNewInferenceProvider(
+      entityId: entityId,
+      promptId: promptId,
+    );
+  }
+
+  @override
+  TriggerNewInferenceProvider getProviderOverride(
+    covariant TriggerNewInferenceProvider provider,
+  ) {
+    return call(
+      entityId: provider.entityId,
+      promptId: provider.promptId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'triggerNewInferenceProvider';
+}
+
+/// Provider to trigger a new inference run by invalidating the controller
+///
+/// Copied from [triggerNewInference].
+class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
+  /// Provider to trigger a new inference run by invalidating the controller
+  ///
+  /// Copied from [triggerNewInference].
+  TriggerNewInferenceProvider({
+    required String entityId,
+    required String promptId,
+  }) : this._internal(
+          (ref) => triggerNewInference(
+            ref as TriggerNewInferenceRef,
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          from: triggerNewInferenceProvider,
+          name: r'triggerNewInferenceProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$triggerNewInferenceHash,
+          dependencies: TriggerNewInferenceFamily._dependencies,
+          allTransitiveDependencies:
+              TriggerNewInferenceFamily._allTransitiveDependencies,
+          entityId: entityId,
+          promptId: promptId,
+        );
+
+  TriggerNewInferenceProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.entityId,
+    required this.promptId,
+  }) : super.internal();
+
+  final String entityId;
+  final String promptId;
+
+  @override
+  Override overrideWith(
+    FutureOr<void> Function(TriggerNewInferenceRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: TriggerNewInferenceProvider._internal(
+        (ref) => create(ref as TriggerNewInferenceRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        entityId: entityId,
+        promptId: promptId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<void> createElement() {
+    return _TriggerNewInferenceProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TriggerNewInferenceProvider &&
+        other.entityId == entityId &&
+        other.promptId == promptId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, entityId.hashCode);
+    hash = _SystemHash.combine(hash, promptId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin TriggerNewInferenceRef on AutoDisposeFutureProviderRef<void> {
+  /// The parameter `entityId` of this provider.
+  String get entityId;
+
+  /// The parameter `promptId` of this provider.
+  String get promptId;
+}
+
+class _TriggerNewInferenceProviderElement
+    extends AutoDisposeFutureProviderElement<void> with TriggerNewInferenceRef {
+  _TriggerNewInferenceProviderElement(super.provider);
+
+  @override
+  String get entityId => (origin as TriggerNewInferenceProvider).entityId;
+  @override
+  String get promptId => (origin as TriggerNewInferenceProvider).promptId;
+}
+
 String _$unifiedAiControllerHash() =>
     r'2d0f190f01815dce3b459d7426a6a572adac60f3';
 

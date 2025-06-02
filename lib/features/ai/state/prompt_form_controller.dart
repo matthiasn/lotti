@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'prompt_form_controller.g.dart';
@@ -39,18 +41,18 @@ class PromptFormController extends _$PromptFormController {
     if (_config != null) {
       return PromptFormState(
         id: _config!.id,
-        name: PromptName.dirty(_config!.name),
-        systemMessage: PromptSystemMessage.dirty(_config!.systemMessage),
-        userMessage: PromptUserMessage.dirty(_config!.userMessage),
+        name: PromptName.pure(_config!.name),
+        systemMessage: PromptSystemMessage.pure(_config!.systemMessage),
+        userMessage: PromptUserMessage.pure(_config!.userMessage),
         defaultModelId: _config!.defaultModelId,
         modelIds: _config!.modelIds,
         useReasoning: _config!.useReasoning,
         requiredInputData: _config!.requiredInputData,
-        comment: PromptComment.dirty(_config!.comment ?? ''),
-        description: PromptDescription.dirty(_config!.description ?? ''),
-        category: PromptCategory.dirty(_config!.category ?? ''),
+        comment: PromptComment.pure(_config!.comment ?? ''),
+        description: PromptDescription.pure(_config!.description ?? ''),
+        category: PromptCategory.pure(_config!.category ?? ''),
         defaultVariables: _config!.defaultVariables ?? {},
-        aiResponseType: PromptAiResponseType.dirty(_config!.aiResponseType),
+        aiResponseType: PromptAiResponseType.pure(_config!.aiResponseType),
       );
     }
 
@@ -74,6 +76,16 @@ class PromptFormController extends _$PromptFormController {
     final prev = state.valueOrNull;
     if (prev == null) return;
 
+    // Check if any non-FormzInput field is being changed
+    final isNonFormzFieldChanging =
+        (defaultModelId != null && defaultModelId != prev.defaultModelId) ||
+            (modelIds != null && !listEquals(modelIds, prev.modelIds)) ||
+            (useReasoning != null && useReasoning != prev.useReasoning) ||
+            (requiredInputData != null &&
+                !listEquals(requiredInputData, prev.requiredInputData)) ||
+            (defaultVariables != null &&
+                !mapEquals(defaultVariables, prev.defaultVariables));
+
     state = AsyncData(
       prev.copyWith(
         name: name != null ? PromptName.dirty(name) : prev.name,
@@ -90,7 +102,9 @@ class PromptFormController extends _$PromptFormController {
         comment: comment != null ? PromptComment.dirty(comment) : prev.comment,
         description: description != null
             ? PromptDescription.dirty(description)
-            : prev.description,
+            : (isNonFormzFieldChanging && prev.description.isPure
+                ? PromptDescription.dirty(prev.description.value)
+                : prev.description),
         category:
             category != null ? PromptCategory.dirty(category) : prev.category,
         defaultVariables: defaultVariables,
@@ -193,6 +207,28 @@ class PromptFormController extends _$PromptFormController {
   Future<void> deleteConfig(String id) async {
     final repository = ref.read(aiConfigRepositoryProvider);
     await repository.deleteConfig(id);
+  }
+
+  /// Populate the form with a preconfigured prompt template.
+  /// This method updates all form fields with the values from the template.
+  void populateFromPreconfiguredPrompt(PreconfiguredPrompt template) {
+    // Update the text controllers
+    nameController.text = template.name;
+    systemMessageController.text = template.systemMessage;
+    userMessageController.text = template.userMessage;
+    descriptionController.text = template.description;
+
+    // Update all form fields through the centralized method
+    _setAllFields(
+      name: template.name,
+      systemMessage: template.systemMessage,
+      userMessage: template.userMessage,
+      useReasoning: template.useReasoning,
+      requiredInputData: template.requiredInputData,
+      description: template.description,
+      defaultVariables: template.defaultVariables,
+      aiResponseType: template.aiResponseType,
+    );
   }
 
   void reset() {

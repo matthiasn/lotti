@@ -333,6 +333,12 @@ abstract class AppLocalizations {
   /// **'Confirm Deletion'**
   String get aiConfigListDeleteConfirmTitle;
 
+  /// No description provided for @aiConfigListCascadeDeleteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This will also delete all models associated with this provider.'**
+  String get aiConfigListCascadeDeleteWarning;
+
   /// No description provided for @aiConfigListEmptyState.
   ///
   /// In en, this message translates to:
@@ -362,6 +368,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'UNDO'**
   String get aiConfigListUndoDelete;
+
+  /// No description provided for @aiConfigProviderDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider deleted successfully'**
+  String get aiConfigProviderDeletedSuccessfully;
+
+  /// No description provided for @aiConfigAssociatedModelsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} associated model{count, plural, =1{} other{s}} removed'**
+  String aiConfigAssociatedModelsRemoved(int count);
 
   /// No description provided for @aiConfigManageModelsButton.
   ///
@@ -684,7 +702,7 @@ abstract class AppLocalizations {
   /// No description provided for @apiKeyAddPageTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add API Key'**
+  /// **'Add AI Inference Provider'**
   String get apiKeyAddPageTitle;
 
   /// No description provided for @apiKeyEditLoadError.
@@ -696,7 +714,7 @@ abstract class AppLocalizations {
   /// No description provided for @apiKeyEditPageTitle.
   ///
   /// In en, this message translates to:
-  /// **'Edit API Key'**
+  /// **'Edit AI Inference Provider'**
   String get apiKeyEditPageTitle;
 
   /// No description provided for @apiKeyFormCreateButton.
@@ -714,7 +732,7 @@ abstract class AppLocalizations {
   /// No description provided for @apiKeysSettingsPageTitle.
   ///
   /// In en, this message translates to:
-  /// **'API Keys'**
+  /// **'AI Inference Providers'**
   String get apiKeysSettingsPageTitle;
 
   /// No description provided for @cancelButton.
@@ -1854,7 +1872,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAdvancedShowCaseApiKeyTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Manage your API keys for various AI providers. Add, edit, or delete keys to configure integrations with supported services like OpenAI, Gemini, and more. Ensure secure handling of sensitive information.'**
+  /// **'Manage your AI inference providers for various AI services. Add, edit, or delete providers to configure integrations with supported services like OpenAI, Gemini, Nebius, Ollama, and more. Ensure secure handling of sensitive information.'**
   String get settingsAdvancedShowCaseApiKeyTooltip;
 
   /// No description provided for @settingsAdvancedShowCaseConflictsTooltip.
@@ -1908,7 +1926,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAiApiKeys.
   ///
   /// In en, this message translates to:
-  /// **'API Keys'**
+  /// **'AI Inference Providers'**
   String get settingsAiApiKeys;
 
   /// No description provided for @settingsAiModels.

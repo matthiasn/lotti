@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'inference_provider_form_controller.g.dart';
@@ -35,10 +36,18 @@ class InferenceProviderFormController
       descriptionController.dispose();
     });
 
-    return InferenceProviderFormState(
-      inferenceProviderType:
-          _config?.inferenceProviderType ?? InferenceProviderType.genericOpenAi,
-    );
+    if (_config != null) {
+      return InferenceProviderFormState(
+        id: _config!.id,
+        name: ApiKeyName.pure(_config!.name),
+        apiKey: ApiKeyValue.pure(_config!.apiKey),
+        baseUrl: BaseUrl.pure(_config!.baseUrl),
+        description: DescriptionValue.pure(_config!.description ?? ''),
+        inferenceProviderType: _config!.inferenceProviderType,
+      );
+    }
+
+    return InferenceProviderFormState();
   }
 
   void _setAllFields({
@@ -49,15 +58,24 @@ class InferenceProviderFormController
     InferenceProviderType? inferenceProviderType,
   }) {
     final prev = state.valueOrNull;
+    if (prev == null) return;
+
+    // Check if any non-FormzInput field is being changed
+    final isNonFormzFieldChanging = inferenceProviderType != null &&
+        inferenceProviderType != prev.inferenceProviderType;
+
     state = AsyncData(
-      (prev ?? InferenceProviderFormState()).copyWith(
-        name: ApiKeyName.dirty(name ?? nameController.text),
-        apiKey: ApiKeyValue.dirty(apiKey ?? apiKeyController.text),
-        baseUrl: BaseUrl.dirty(baseUrl ?? baseUrlController.text),
-        description:
-            DescriptionValue.dirty(description ?? descriptionController.text),
+      prev.copyWith(
+        name: name != null ? ApiKeyName.dirty(name) : prev.name,
+        apiKey: apiKey != null ? ApiKeyValue.dirty(apiKey) : prev.apiKey,
+        baseUrl: baseUrl != null ? BaseUrl.dirty(baseUrl) : prev.baseUrl,
+        description: description != null
+            ? DescriptionValue.dirty(description)
+            : (isNonFormzFieldChanging && prev.description.isPure
+                ? DescriptionValue.dirty(prev.description.value)
+                : prev.description),
         inferenceProviderType:
-            inferenceProviderType ?? prev?.inferenceProviderType,
+            inferenceProviderType ?? prev.inferenceProviderType,
       ),
     );
   }
@@ -91,35 +109,62 @@ class InferenceProviderFormController
   }
 
   void inferenceProviderTypeChanged(InferenceProviderType value) {
-    if (value == InferenceProviderType.gemini) {
-      baseUrlController.text =
-          'https://generativelanguage.googleapis.com/v1beta/openai';
+    String? newBaseUrl;
+    String? newName;
 
+    if (value == InferenceProviderType.gemini) {
+      newBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
       if (nameController.text.isEmpty) {
-        nameController.text = 'Gemini';
+        newName = 'Gemini';
       }
     }
     if (value == InferenceProviderType.nebiusAiStudio) {
-      baseUrlController.text = 'https://api.studio.nebius.com/v1';
-
+      newBaseUrl = 'https://api.studio.nebius.com/v1';
       if (nameController.text.isEmpty) {
-        nameController.text = 'Nebius AI Studio';
+        newName = 'Nebius AI Studio';
       }
     }
     if (value == InferenceProviderType.ollama) {
-      baseUrlController.text = 'http://localhost:11434/v1';
-
+      newBaseUrl = 'http://localhost:11434/v1';
       if (nameController.text.isEmpty) {
-        nameController.text = 'Ollama (local)';
+        newName = 'Ollama (local)';
       }
     }
-    _setAllFields(inferenceProviderType: value);
+
+    // Update text controllers if needed
+    if (newBaseUrl != null) {
+      baseUrlController.text = newBaseUrl;
+    }
+    if (newName != null) {
+      nameController.text = newName;
+    }
+
+    _setAllFields(
+      inferenceProviderType: value,
+      baseUrl: newBaseUrl,
+      name: newName,
+    );
   }
 
   /// Add a new configuration
   Future<void> addConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
     await repository.saveConfig(config);
+
+    // Pre-populate known models for this provider
+    if (config is AiConfigInferenceProvider) {
+      final prepopulationService = ModelPrepopulationService(
+        repository: repository,
+      );
+      final modelsCreated =
+          await prepopulationService.prepopulateModelsForProvider(config);
+
+      // Log the number of models created for debugging
+      if (modelsCreated > 0) {
+        debugPrint(
+            'Pre-populated $modelsCreated models for provider ${config.name}');
+      }
+    }
   }
 
   /// Update an existing configuration
@@ -135,9 +180,9 @@ class InferenceProviderFormController
   }
 
   /// Delete a configuration
-  Future<void> deleteConfig(String id) async {
+  Future<CascadeDeletionResult> deleteConfig(String id) async {
     final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.deleteConfig(id);
+    return repository.deleteInferenceProviderWithModels(id);
   }
 
   void reset() {

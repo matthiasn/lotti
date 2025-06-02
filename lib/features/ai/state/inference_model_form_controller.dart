@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_model_form_state.dart';
@@ -36,9 +37,9 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     if (_config != null) {
       return InferenceModelFormState(
         id: _config!.id,
-        name: ModelName.dirty(_config!.name),
-        providerModelId: ProviderModelId.dirty(_config!.providerModelId),
-        description: ModelDescription.dirty(_config!.description ?? ''),
+        name: ModelName.pure(_config!.name),
+        providerModelId: ProviderModelId.pure(_config!.providerModelId),
+        description: ModelDescription.pure(_config!.description ?? ''),
         inferenceProviderId: _config!.inferenceProviderId,
         inputModalities: _config!.inputModalities,
         outputModalities: _config!.outputModalities,
@@ -61,12 +62,23 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     final prev = state.valueOrNull;
     if (prev == null) return;
 
+    // Check if any non-FormzInput field is being changed
+    final isNonFormzFieldChanging = (inferenceProviderId != null &&
+            inferenceProviderId != prev.inferenceProviderId) ||
+        (inputModalities != null &&
+            !listEquals(inputModalities, prev.inputModalities)) ||
+        (outputModalities != null &&
+            !listEquals(outputModalities, prev.outputModalities)) ||
+        (isReasoningModel != null && isReasoningModel != prev.isReasoningModel);
+
     state = AsyncData(
       prev.copyWith(
         name: name != null ? ModelName.dirty(name) : prev.name,
         description: description != null
             ? ModelDescription.dirty(description)
-            : prev.description,
+            : (isNonFormzFieldChanging && prev.description.isPure
+                ? ModelDescription.dirty(prev.description.value)
+                : prev.description),
         providerModelId: providerModelId != null
             ? ProviderModelId.dirty(providerModelId)
             : prev.providerModelId,

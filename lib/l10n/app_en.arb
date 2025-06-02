@@ -51,6 +51,7 @@
     }
   },
   "aiConfigListDeleteConfirmTitle": "Confirm Deletion",
+  "aiConfigListCascadeDeleteWarning": "This will also delete all models associated with this provider.",
   "aiConfigListEmptyState": "No configurations found. Add one to get started.",
   "aiConfigListErrorDeleting": "Error deleting {configName}: {error}",
   "@aiConfigListErrorDeleting": {
@@ -73,6 +74,15 @@
     }
   },
   "aiConfigListUndoDelete": "UNDO",
+  "aiConfigProviderDeletedSuccessfully": "Provider deleted successfully",
+  "aiConfigAssociatedModelsRemoved": "{count} associated model{count, plural, =1{} other{s}} removed",
+  "@aiConfigAssociatedModelsRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiConfigManageModelsButton": "Manage Models",
   "aiConfigModelRemovedMessage": "{modelName} removed from prompt",
   "@aiConfigModelRemovedMessage": {
@@ -133,12 +143,12 @@
   "aiResponseTypeTaskSummary": "Task Summary",
   "aiTaskSummaryRunning": "Thinking about summarizing task...",
   "aiTaskSummaryTitle": "AI Task Summary",
-  "apiKeyAddPageTitle": "Add API Key",
+  "apiKeyAddPageTitle": "Add AI Inference Provider",
   "apiKeyEditLoadError": "Failed to load API key configuration",
-  "apiKeyEditPageTitle": "Edit API Key",
+  "apiKeyEditPageTitle": "Edit AI Inference Provider",
   "apiKeyFormCreateButton": "Create",
   "apiKeyFormUpdateButton": "Update",
-  "apiKeysSettingsPageTitle": "API Keys",
+  "apiKeysSettingsPageTitle": "AI Inference Providers",
   "cancelButton": "Cancel",
   "categoryDeleteConfirm": "YES, DELETE THIS CATEGORY",
   "categoryDeleteQuestion": "Do you want to delete this category?",
@@ -335,7 +345,7 @@
   "searchHint": "Search...",
   "settingsAboutTitle": "About Lotti",
   "settingsAdvancedShowCaseAboutLottiTooltip": "Learn more about the Lotti application, including version and credits.",
-  "settingsAdvancedShowCaseApiKeyTooltip": "Manage your API keys for various AI providers. Add, edit, or delete keys to configure integrations with supported services like OpenAI, Gemini, and more. Ensure secure handling of sensitive information.",
+  "settingsAdvancedShowCaseApiKeyTooltip": "Manage your AI inference providers for various AI services. Add, edit, or delete providers to configure integrations with supported services like OpenAI, Gemini, Nebius, Ollama, and more. Ensure secure handling of sensitive information.",
   "settingsAdvancedShowCaseConflictsTooltip": "Resolve synchronization conflicts to ensure data consistency.",
   "settingsAdvancedShowCaseHealthImportTooltip": "Import health-related data from external sources.",
   "settingsAdvancedShowCaseLogsTooltip": "Access and review application logs for debugging and monitoring.",
@@ -344,7 +354,7 @@
   "settingsAdvancedShowCaseModelsTooltip": "Define AI models that use inference providers",
   "settingsAdvancedShowCaseSyncOutboxTooltip": "View and manage items waiting to be synchronized in the outbox.",
   "settingsAdvancedTitle": "Advanced Settings",
-  "settingsAiApiKeys": "API Keys",
+  "settingsAiApiKeys": "AI Inference Providers",
   "settingsAiModels": "AI Models",
   "settingsCategoriesDetailsLabel": "Category Details",
   "settingsCategoriesDuplicateError": "Category exists already",

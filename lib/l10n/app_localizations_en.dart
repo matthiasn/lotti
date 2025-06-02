@@ -128,6 +128,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiConfigListDeleteConfirmTitle => 'Confirm Deletion';
 
   @override
+  String get aiConfigListCascadeDeleteWarning =>
+      'This will also delete all models associated with this provider.';
+
+  @override
   String get aiConfigListEmptyState =>
       'No configurations found. Add one to get started.';
 
@@ -146,6 +150,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiConfigListUndoDelete => 'UNDO';
+
+  @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
+
+  @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
 
   @override
   String get aiConfigManageModelsButton => 'Manage Models';
@@ -321,13 +340,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTaskSummaryTitle => 'AI Task Summary';
 
   @override
-  String get apiKeyAddPageTitle => 'Add API Key';
+  String get apiKeyAddPageTitle => 'Add AI Inference Provider';
 
   @override
   String get apiKeyEditLoadError => 'Failed to load API key configuration';
 
   @override
-  String get apiKeyEditPageTitle => 'Edit API Key';
+  String get apiKeyEditPageTitle => 'Edit AI Inference Provider';
 
   @override
   String get apiKeyFormCreateButton => 'Create';
@@ -336,7 +355,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiKeyFormUpdateButton => 'Update';
 
   @override
-  String get apiKeysSettingsPageTitle => 'API Keys';
+  String get apiKeysSettingsPageTitle => 'AI Inference Providers';
 
   @override
   String get cancelButton => 'Cancel';
@@ -933,7 +952,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAdvancedShowCaseApiKeyTooltip =>
-      'Manage your API keys for various AI providers. Add, edit, or delete keys to configure integrations with supported services like OpenAI, Gemini, and more. Ensure secure handling of sensitive information.';
+      'Manage your AI inference providers for various AI services. Add, edit, or delete providers to configure integrations with supported services like OpenAI, Gemini, Nebius, Ollama, and more. Ensure secure handling of sensitive information.';
 
   @override
   String get settingsAdvancedShowCaseConflictsTooltip =>
@@ -967,7 +986,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAdvancedTitle => 'Advanced Settings';
 
   @override
-  String get settingsAiApiKeys => 'API Keys';
+  String get settingsAiApiKeys => 'AI Inference Providers';
 
   @override
   String get settingsAiModels => 'AI Models';
@@ -1588,6 +1607,27 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get aiAssistantTranscribeAudio => 'Transcribe audio';
 
   @override
+  String get aiConfigListUndoDelete => 'UNDO';
+
+  @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
+
+  @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
+
+  @override
+  String get aiConfigManageModelsButton => 'Manage Models';
+
+  @override
   String get aiTaskSummaryRunning => 'Thinking about summarising task...';
 
   @override
@@ -2180,7 +2220,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsDashboardsShowCasePrivateTooltip =>
-      'Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won’t be shared with others.';
+      'Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won\'t be shared with others.';
 
   @override
   String get settingsDashboardsShowCaseSurveyChartsTooltip =>
@@ -2364,7 +2404,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String settingsMatrixVerificationSuccessLabel(
       String deviceName, String deviceID) {
-    return 'You’ve successfully verified $deviceName ($deviceID)';
+    return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 
   @override
@@ -2552,7 +2592,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get speechModalTranscriptionProgress => 'Transcription Progress';
 
   @override
-  String get syncDeleteConfigConfirm => 'YES, I’M SURE';
+  String get syncDeleteConfigConfirm => 'YES, I\'M SURE';
 
   @override
   String get syncDeleteConfigQuestion =>
