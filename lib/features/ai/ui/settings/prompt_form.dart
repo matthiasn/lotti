@@ -49,7 +49,7 @@ class _PromptFormState extends ConsumerState<PromptForm> {
               }
             },
             icon: const Icon(Icons.auto_awesome_outlined),
-            label: const Text('Use Preconfigured Prompt'),
+            label: Text(context.messages.promptUsePreconfiguredButton),
             style: FilledButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
             ),

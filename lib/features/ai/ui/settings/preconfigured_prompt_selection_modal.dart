@@ -7,6 +7,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/input_data_type_extensions.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -20,33 +22,17 @@ Future<PreconfiguredPrompt?> showPreconfiguredPromptSelectionModal(
 ) async {
   return showModalActionSheet<PreconfiguredPrompt>(
     context: context,
-    title: 'Select Preconfigured Prompt',
+    title: context.messages.promptSelectionModalTitle,
     actions: preconfiguredPrompts
         .map(
           (prompt) => ModalSheetAction<PreconfiguredPrompt>(
-            icon: _getIconForPromptType(prompt.type),
+            icon: prompt.aiResponseType.icon,
             label: prompt.name,
             key: prompt,
           ),
         )
         .toList(),
   );
-}
-
-/// Gets the appropriate icon for a prompt type
-IconData _getIconForPromptType(String type) {
-  switch (type) {
-    case 'task_summary':
-      return Icons.summarize_outlined;
-    case 'action_item_suggestions':
-      return Icons.checklist_outlined;
-    case 'image_analysis':
-      return Icons.image_outlined;
-    case 'audio_transcription':
-      return Icons.mic_outlined;
-    default:
-      return Icons.description_outlined;
-  }
 }
 
 /// Widget that displays information about a preconfigured prompt
@@ -74,7 +60,7 @@ class PreconfiguredPromptTile extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    _getIconForPromptType(prompt.type),
+                    prompt.aiResponseType.icon,
                     color: context.colorScheme.primary,
                   ),
                   const SizedBox(width: 12),
@@ -101,7 +87,7 @@ class PreconfiguredPromptTile extends StatelessWidget {
                   ...prompt.requiredInputData.map(
                     (inputType) => Chip(
                       label: Text(
-                        _getInputTypeLabel(inputType),
+                        _getInputTypeLabel(inputType, context),
                         style: context.textTheme.labelSmall,
                       ),
                       backgroundColor: context.colorScheme.secondaryContainer,
@@ -131,16 +117,7 @@ class PreconfiguredPromptTile extends StatelessWidget {
     );
   }
 
-  String _getInputTypeLabel(InputDataType type) {
-    switch (type) {
-      case InputDataType.task:
-        return 'Task';
-      case InputDataType.tasksList:
-        return 'Tasks List';
-      case InputDataType.audioFiles:
-        return 'Audio';
-      case InputDataType.images:
-        return 'Images';
-    }
+  String _getInputTypeLabel(InputDataType type, BuildContext context) {
+    return type.displayName(context);
   }
 }

@@ -10,21 +10,23 @@ void main() {
     });
 
     test('should contain all expected prompt types', () {
-      final promptTypes = preconfiguredPrompts.map((p) => p.type).toSet();
+      final promptTypes =
+          preconfiguredPrompts.map((p) => p.aiResponseType).toSet();
       expect(
         promptTypes,
         containsAll([
-          'task_summary',
-          'action_item_suggestions',
-          'image_analysis',
-          'audio_transcription',
+          AiResponseType.taskSummary,
+          AiResponseType.actionItemSuggestions,
+          AiResponseType.imageAnalysis,
+          AiResponseType.audioTranscription,
         ]),
       );
     });
 
     group('Task Summary Prompt', () {
       test('should have correct configuration', () {
-        expect(taskSummaryPrompt.type, equals('task_summary'));
+        expect(taskSummaryPrompt.aiResponseType,
+            equals(AiResponseType.taskSummary));
         expect(taskSummaryPrompt.name, equals('Task Summary'));
         expect(
             taskSummaryPrompt.requiredInputData, equals([InputDataType.task]));
@@ -52,15 +54,15 @@ void main() {
 
     group('Action Item Suggestions Prompt', () {
       test('should have correct configuration', () {
-        expect(actionItemSuggestionsPrompt.type,
-            equals('action_item_suggestions'));
+        expect(actionItemSuggestionsPrompt.aiResponseType,
+            equals(AiResponseType.actionItemSuggestions));
         expect(actionItemSuggestionsPrompt.name,
             equals('Action Item Suggestions'));
         expect(actionItemSuggestionsPrompt.requiredInputData,
             equals([InputDataType.task]));
         expect(actionItemSuggestionsPrompt.aiResponseType,
             equals(AiResponseType.actionItemSuggestions));
-        expect(actionItemSuggestionsPrompt.useReasoning, isFalse);
+        expect(actionItemSuggestionsPrompt.useReasoning, isTrue);
       });
 
       test('should have non-empty messages', () {
@@ -83,7 +85,8 @@ void main() {
 
     group('Image Analysis Prompt', () {
       test('should have correct configuration', () {
-        expect(imageAnalysisPrompt.type, equals('image_analysis'));
+        expect(imageAnalysisPrompt.aiResponseType,
+            equals(AiResponseType.imageAnalysis));
         expect(imageAnalysisPrompt.name, equals('Image Analysis'));
         expect(imageAnalysisPrompt.requiredInputData,
             equals([InputDataType.images]));
@@ -113,7 +116,8 @@ void main() {
 
     group('Audio Transcription Prompt', () {
       test('should have correct configuration', () {
-        expect(audioTranscriptionPrompt.type, equals('audio_transcription'));
+        expect(audioTranscriptionPrompt.aiResponseType,
+            equals(AiResponseType.audioTranscription));
         expect(audioTranscriptionPrompt.name, equals('Audio Transcription'));
         expect(audioTranscriptionPrompt.requiredInputData,
             equals([InputDataType.audioFiles]));
@@ -148,7 +152,6 @@ void main() {
     group('PreconfiguredPrompt Class', () {
       test('should create instance with all required fields', () {
         const testPrompt = PreconfiguredPrompt(
-          type: 'test_type',
           name: 'Test Prompt',
           systemMessage: 'System message',
           userMessage: 'User message',
@@ -158,7 +161,6 @@ void main() {
           description: 'Test description',
         );
 
-        expect(testPrompt.type, equals('test_type'));
         expect(testPrompt.name, equals('Test Prompt'));
         expect(testPrompt.systemMessage, equals('System message'));
         expect(testPrompt.userMessage, equals('User message'));
@@ -171,7 +173,6 @@ void main() {
 
       test('should create instance with optional defaultVariables', () {
         const testPrompt = PreconfiguredPrompt(
-          type: 'test_type',
           name: 'Test Prompt',
           systemMessage: 'System message',
           userMessage: 'User message',
@@ -188,7 +189,8 @@ void main() {
 
     group('Prompt Content Validation', () {
       test('all prompts should have unique types', () {
-        final types = preconfiguredPrompts.map((p) => p.type).toList();
+        final types =
+            preconfiguredPrompts.map((p) => p.aiResponseType).toList();
         expect(types.length, equals(types.toSet().length));
       });
 
