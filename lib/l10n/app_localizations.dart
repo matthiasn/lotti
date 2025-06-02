@@ -1839,6 +1839,18 @@ abstract class AppLocalizations {
   /// **'AI Prompts'**
   String get promptSettingsPageTitle;
 
+  /// No description provided for @promptSelectionModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Preconfigured Prompt'**
+  String get promptSelectionModalTitle;
+
+  /// No description provided for @promptUsePreconfiguredButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Preconfigured Prompt'**
+  String get promptUsePreconfiguredButton;
+
   /// No description provided for @saveButtonLabel.
   ///
   /// In en, this message translates to:

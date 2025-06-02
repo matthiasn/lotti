@@ -32,4 +32,18 @@ extension AiResponseTypeDisplay on AiResponseType {
         return l10n.aiResponseTypeAudioTranscription;
     }
   }
+
+  /// Returns the appropriate icon for this response type
+  IconData get icon {
+    switch (this) {
+      case AiResponseType.taskSummary:
+        return Icons.summarize_outlined;
+      case AiResponseType.actionItemSuggestions:
+        return Icons.checklist_outlined;
+      case AiResponseType.imageAnalysis:
+        return Icons.image_outlined;
+      case AiResponseType.audioTranscription:
+        return Icons.mic_outlined;
+    }
+  }
 }

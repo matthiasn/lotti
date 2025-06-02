@@ -17,7 +17,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 /// to quickly create common prompt types.
 class PreconfiguredPrompt {
   const PreconfiguredPrompt({
-    required this.type,
     required this.name,
     required this.systemMessage,
     required this.userMessage,
@@ -28,7 +27,6 @@ class PreconfiguredPrompt {
     this.defaultVariables,
   });
 
-  final String type;
   final String name;
   final String systemMessage;
   final String userMessage;
@@ -49,7 +47,6 @@ const List<PreconfiguredPrompt> preconfiguredPrompts = [
 
 /// Task Summary prompt template
 const taskSummaryPrompt = PreconfiguredPrompt(
-  type: 'task_summary',
   name: 'Task Summary',
   systemMessage: '''
 You are a helpful AI assistant that creates clear, concise task summaries. 
@@ -102,7 +99,6 @@ Annoyances:
 
 /// Action Item Suggestions prompt template
 const actionItemSuggestionsPrompt = PreconfiguredPrompt(
-  type: 'action_item_suggestions',
   name: 'Action Item Suggestions',
   systemMessage: '''
 You are a helpful AI assistant that identifies actionable items from task logs and conversations. 
@@ -141,14 +137,13 @@ If any is very similar to an item already listed in the actionItems array of the
 ```''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.actionItemSuggestions,
-  useReasoning: false,
+  useReasoning: true,
   description:
       "Extract actionable items from task logs that haven't been formally captured yet",
 );
 
 /// Image Analysis prompt template
 const imageAnalysisPrompt = PreconfiguredPrompt(
-  type: 'image_analysis',
   name: 'Image Analysis',
   systemMessage: '''
 You are a helpful AI assistant specialized in analyzing images. 
@@ -175,7 +170,6 @@ Image {{index}}: [Image will be provided]
 
 /// Audio Transcription prompt template
 const audioTranscriptionPrompt = PreconfiguredPrompt(
-  type: 'audio_transcription',
   name: 'Audio Transcription',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content. 

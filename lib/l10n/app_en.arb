@@ -340,6 +340,8 @@
   "promptEditLoadError": "Failed to load prompt",
   "promptEditPageTitle": "Edit Prompt",
   "promptSettingsPageTitle": "AI Prompts",
+  "promptSelectionModalTitle": "Select Preconfigured Prompt",
+  "promptUsePreconfiguredButton": "Use Preconfigured Prompt",
   "saveButtonLabel": "Save",
   "saveLabel": "Save",
   "searchHint": "Search...",

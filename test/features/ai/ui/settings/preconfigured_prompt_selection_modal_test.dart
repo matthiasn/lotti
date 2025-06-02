@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/preconfigured_prompt_selection_modal.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -22,6 +25,14 @@ void main() {
   Widget buildTestWidget({NavigatorObserver? navigatorObserver}) {
     return MaterialApp(
       navigatorObservers: navigatorObserver != null ? [navigatorObserver] : [],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        FormBuilderLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Builder(
           builder: (context) => ElevatedButton(
@@ -78,6 +89,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            FormBuilderLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -107,6 +126,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            FormBuilderLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -148,8 +175,8 @@ void main() {
     });
   });
 
-  group('_getIconForPromptType', () {
-    testWidgets('returns correct icons for known prompt types',
+  group('AiResponseType icon display', () {
+    testWidgets('displays correct icons for each response type',
         (WidgetTester tester) async {
       await tester.pumpWidget(buildTestWidget());
 
@@ -193,7 +220,6 @@ void main() {
 
   group('PreconfiguredPromptTile', () {
     const testPrompt = PreconfiguredPrompt(
-      type: 'test_type',
       name: 'Test Prompt',
       systemMessage: 'Test system message',
       userMessage: 'Test user message',
@@ -217,8 +243,8 @@ void main() {
       // Check that all prompt information is displayed
       expect(find.text('Test Prompt'), findsOneWidget);
       expect(find.text('Test description for the prompt'), findsOneWidget);
-      expect(find.byIcon(Icons.description_outlined),
-          findsOneWidget); // Default icon for unknown type
+      expect(find.byIcon(Icons.summarize_outlined),
+          findsOneWidget); // Icon for task summary response type
     });
 
     testWidgets('displays required input data chips',
@@ -257,7 +283,6 @@ void main() {
     testWidgets('does not display reasoning chip when useReasoning is false',
         (WidgetTester tester) async {
       const promptWithoutReasoning = PreconfiguredPrompt(
-        type: 'test_type',
         name: 'Test Prompt',
         systemMessage: 'Test system message',
         userMessage: 'Test user message',
@@ -296,11 +321,10 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('displays correct icons for different prompt types',
+    testWidgets('displays correct icons for different response types',
         (WidgetTester tester) async {
-      // Test task summary prompt
+      // Test task summary response type
       const taskPrompt = PreconfiguredPrompt(
-        type: 'task_summary',
         name: 'Task Summary',
         systemMessage: 'System',
         userMessage: 'User',
@@ -326,7 +350,6 @@ void main() {
       testWidgets('displays correct labels for input types',
           (WidgetTester tester) async {
         const promptWithAllInputTypes = PreconfiguredPrompt(
-          type: 'test_type',
           name: 'Test Prompt',
           systemMessage: 'System',
           userMessage: 'User',
@@ -353,7 +376,7 @@ void main() {
         // Check that all input type labels are displayed correctly
         expect(find.text('Task'), findsOneWidget);
         expect(find.text('Tasks List'), findsOneWidget);
-        expect(find.text('Audio'), findsOneWidget);
+        expect(find.text('Audio Files'), findsOneWidget);
         expect(find.text('Images'), findsOneWidget);
       });
     });
@@ -364,6 +387,14 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            FormBuilderLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
