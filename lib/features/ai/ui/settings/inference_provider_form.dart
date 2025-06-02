@@ -4,19 +4,18 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/ui/widgets/copyable_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 
 class InferenceProviderForm extends ConsumerStatefulWidget {
   const InferenceProviderForm({
-    required this.onSave,
     this.config,
     super.key,
   });
 
   final AiConfig? config;
-  final void Function(AiConfig) onSave;
 
   @override
   ConsumerState<InferenceProviderForm> createState() =>
@@ -112,7 +111,7 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
         ),
         SizedBox(
           height: 90,
-          child: TextField(
+          child: CopyableTextField(
             onChanged: formController.nameChanged,
             controller: formController.nameController,
             decoration: InputDecoration(
@@ -127,7 +126,7 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
         ),
         SizedBox(
           height: 90,
-          child: TextField(
+          child: CopyableTextField(
             onChanged: formController.baseUrlChanged,
             controller: formController.baseUrlController,
             decoration: InputDecoration(
@@ -142,7 +141,7 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
         ),
         SizedBox(
           height: 90,
-          child: TextField(
+          child: CopyableTextField(
             onChanged: formController.apiKeyChanged,
             controller: formController.apiKeyController,
             obscureText: !_showApiKey,
@@ -168,43 +167,13 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
             ),
           ),
         ),
-        TextField(
+        CopyableTextField(
           onChanged: formController.descriptionChanged,
           controller: formController.descriptionController,
           decoration: InputDecoration(
             labelText: context.messages.aiConfigCommentFieldLabel,
           ),
           maxLines: 3,
-        ),
-        SizedBox(
-          height: 50,
-          child: formState.submitFailed
-              ? Text(
-                  context.messages.aiConfigFailedToSaveMessage,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    color: context.colorScheme.error,
-                  ),
-                )
-              : null,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FilledButton(
-              onPressed: formState.isValid &&
-                      (widget.config == null || formState.isDirty)
-                  ? () {
-                      final config = formState.toAiConfig();
-                      widget.onSave(config);
-                    }
-                  : null,
-              child: Text(
-                widget.config == null
-                    ? context.messages.apiKeyFormCreateButton
-                    : context.messages.apiKeyFormUpdateButton,
-              ),
-            ),
-          ],
         ),
       ],
     );

@@ -12,7 +12,6 @@ Future<T?> showModalActionSheet<T>({
   bool useRootNavigator = true,
 }) {
   return showModalBottomSheet(
-    constraints: const BoxConstraints(maxHeight: 200),
     context: context,
     isDismissible: isDismissible,
     useRootNavigator: useRootNavigator,
@@ -55,13 +54,13 @@ Future<T?> showModalActionSheet<T>({
 
                   return Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: SizedBox(
                       width: double.infinity,
                       child: TextButton(
                         onPressed: pop,
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

@@ -205,7 +205,7 @@
   "settingsDashboardsShowCaseDescrTooltip": "Provide a detailed description for the dashboard. This helps in understanding the purpose and contents of the dashboard. Examples: 'Tracks daily wellness activities', 'Monitors work-related tasks and goals'.",
   "settingsDashboardsShowCaseHealthChartsTooltip": "Select the health charts you want to include in your dashboard. Examples: 'Weight', 'Body Fat Percentage'.",
   "settingsDashboardsShowCaseNameTooltip": "Enter a clear and relevant name for the dashboard. Keep it short and descriptive so you can easily identify its purpose. Examples: 'Wellness Track', 'Daily Goals', 'Work Schedule'.",
-  "settingsDashboardsShowCasePrivateTooltip": "Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won’t be shared with others.",
+  "settingsDashboardsShowCasePrivateTooltip": "Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won't be shared with others.",
   "settingsDashboardsShowCaseSurveyChartsTooltip": "Select the survey charts you want to include in your dashboard. Examples: 'Customer Satisfaction', 'Employee Feedback'.",
   "settingsDashboardsShowCaseWorkoutChartsTooltip": "Select the workout charts you want to include in your dashboard. Examples: 'Walking', 'Running', 'Swimming'.",
   "settingsDashboardsTitle": "Dashboards",
@@ -260,7 +260,7 @@
   "settingsMatrixUserNameTooShort": "User name too short",
   "settingsMatrixVerificationCancelledLabel": "Cancelled on other device…",
   "settingsMatrixVerificationSuccessConfirm": "Got it",
-  "settingsMatrixVerificationSuccessLabel": "You’ve successfully verified {deviceName} ({deviceID})",
+  "settingsMatrixVerificationSuccessLabel": "You've successfully verified {deviceName} ({deviceID})",
   "settingsMatrixVerifyConfirm": "Confirm on other device that the emojis below are displayed on both devices, in the same order:",
   "settingsMatrixVerifyIncomingConfirm": "Confirm that the emojis below are displayed on both devices, in the same order:",
   "settingsMatrixVerifyLabel": "Verify",
@@ -316,7 +316,7 @@
   "speechModalSelectLanguage": "Select Language",
   "speechModalTitle": "Speech Recognition",
   "speechModalTranscriptionProgress": "Transcription Progress",
-  "syncDeleteConfigConfirm": "YES, I’M SURE",
+  "syncDeleteConfigConfirm": "YES, I'M SURE",
   "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
@@ -335,5 +335,16 @@
   "taskStatusRejected": "Rejected",
   "timeByCategoryChartTitle": "Time by Category",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "aiConfigListUndoDelete": "UNDO",
+  "aiConfigProviderDeletedSuccessfully": "Provider deleted successfully",
+  "aiConfigAssociatedModelsRemoved": "{count} associated model{count, plural, =1{} other{s}} removed",
+  "@aiConfigAssociatedModelsRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiConfigManageModelsButton": "Manage Models"
 }

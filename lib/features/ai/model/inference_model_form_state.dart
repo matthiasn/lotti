@@ -8,7 +8,7 @@ enum ModelFormError {
 
 // Input validation classes
 class ModelName extends FormzInput<String, ModelFormError> {
-  const ModelName.pure() : super.pure('');
+  const ModelName.pure([super.value = '']) : super.pure();
   const ModelName.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -18,7 +18,7 @@ class ModelName extends FormzInput<String, ModelFormError> {
 }
 
 class ProviderModelId extends FormzInput<String, ModelFormError> {
-  const ProviderModelId.pure() : super.pure('');
+  const ProviderModelId.pure([super.value = '']) : super.pure();
   const ProviderModelId.dirty([super.value = '']) : super.dirty();
 
   @override
@@ -28,7 +28,7 @@ class ProviderModelId extends FormzInput<String, ModelFormError> {
 }
 
 class ModelDescription extends FormzInput<String, String> {
-  const ModelDescription.pure() : super.pure('');
+  const ModelDescription.pure([super.value = '']) : super.pure();
   const ModelDescription.dirty([super.value = '']) : super.dirty();
 
   @override

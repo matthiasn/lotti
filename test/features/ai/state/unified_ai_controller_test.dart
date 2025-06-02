@@ -374,4 +374,80 @@ void main() {
       expect(hasPrompts, false);
     });
   });
+
+  group('triggerNewInference provider', () {
+    test('invalidates the unifiedAiController', () async {
+      final promptConfig = AiConfigPrompt(
+        id: 'prompt-1',
+        name: 'Test Prompt',
+        systemMessage: 'System',
+        userMessage: 'User',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      // Override the aiConfigByIdProvider to return our test prompt
+      container = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigByIdProvider('prompt-1').overrideWith(
+            (ref) => Future.value(promptConfig),
+          ),
+        ],
+      );
+
+      var runInferenceCallCount = 0;
+
+      // Set up mock for runInference
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
+        runInferenceCallCount++;
+      });
+
+      // Create initial controller
+      container.read(
+        unifiedAiControllerProvider(
+          entityId: 'test-entity',
+          promptId: 'prompt-1',
+        ),
+      );
+
+      // Wait for initial inference to run
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(runInferenceCallCount, 1);
+
+      // Trigger new inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: 'test-entity',
+          promptId: 'prompt-1',
+        ).future,
+      );
+
+      // Read controller again - should create a new instance
+      container.read(
+        unifiedAiControllerProvider(
+          entityId: 'test-entity',
+          promptId: 'prompt-1',
+        ),
+      );
+
+      // Wait for new inference to run
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // runInference should have been called twice
+      expect(runInferenceCallCount, 2);
+    });
+  });
 }

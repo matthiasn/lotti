@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
@@ -24,26 +25,79 @@ class InferenceProviderEditPage extends ConsumerWidget {
         ? ref.watch(aiConfigByIdProvider(configId!))
         : const AsyncData<AiConfig?>(null);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          configId == null
-              ? context.messages.apiKeyAddPageTitle
-              : context.messages.apiKeyEditPageTitle,
+    // Watch the form state to enable/disable save button
+    final formState = ref
+        .watch(inferenceProviderFormControllerProvider(configId: configId))
+        .valueOrNull;
+
+    final isFormValid = formState != null &&
+        formState.isValid &&
+        (configId == null || formState.isDirty);
+
+    // Create save handler that can be used by both app bar action and keyboard shortcut
+    Future<void> handleSave() async {
+      if (!isFormValid) return;
+
+      final config = formState.toAiConfig();
+      final controller = ref.read(
+        inferenceProviderFormControllerProvider(
+          configId: configId,
+        ).notifier,
+      );
+
+      if (configId == null) {
+        await controller.addConfig(config);
+      } else {
+        await controller.updateConfig(config);
+      }
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () {
+          if (isFormValid) {
+            handleSave();
+          }
+        },
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            configId == null
+                ? context.messages.apiKeyAddPageTitle
+                : context.messages.apiKeyEditPageTitle,
+          ),
+          actions: [
+            if (isFormValid)
+              TextButton(
+                onPressed: handleSave,
+                child: Text(
+                  context.messages.saveButtonLabel,
+                  style: TextStyle(
+                    color: context.colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
         ),
-      ),
-      body: switch (configAsync) {
-        AsyncData(value: final config) => _buildForm(context, ref, config),
-        AsyncError() => Center(
-            child: Text(
-              context.messages.apiKeyEditLoadError,
-              style: context.textTheme.bodyLarge?.copyWith(
-                color: context.colorScheme.error,
+        body: switch (configAsync) {
+          AsyncData(value: final config) => _buildForm(context, ref, config),
+          AsyncError() => Center(
+              child: Text(
+                context.messages.apiKeyEditLoadError,
+                style: context.textTheme.bodyLarge?.copyWith(
+                  color: context.colorScheme.error,
+                ),
               ),
             ),
-          ),
-        _ => const Center(child: CircularProgressIndicator()),
-      },
+          _ => const Center(child: CircularProgressIndicator()),
+        },
+      ),
     );
   }
 
@@ -53,22 +107,6 @@ class InferenceProviderEditPage extends ConsumerWidget {
       child: SingleChildScrollView(
         child: InferenceProviderForm(
           config: config,
-          onSave: (updatedConfig) async {
-            final controller = ref.read(
-              inferenceProviderFormControllerProvider(configId: config?.id)
-                  .notifier,
-            );
-
-            if (configId == null) {
-              await controller.addConfig(updatedConfig);
-            } else {
-              await controller.updateConfig(updatedConfig);
-            }
-
-            if (context.mounted) {
-              Navigator.of(context).pop();
-            }
-          },
         ),
       ),
     );

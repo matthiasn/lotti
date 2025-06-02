@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,9 +15,11 @@ import 'package:mocktail/mocktail.dart';
 // Mock repositories
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
+// Fake class for fallback value registration
+class FakeAiConfig extends Fake implements AiConfig {}
+
 // Helper to build a testable widget for create mode
 Widget buildTestWidget({
-  required void Function(AiConfig) onSave,
   AiConfig? config,
 }) {
   return MaterialApp(
@@ -36,7 +39,6 @@ Widget buildTestWidget({
         ],
         child: SingleChildScrollView(
           child: PromptForm(
-            onSave: onSave,
             configId: config?.id,
           ),
         ),
@@ -110,33 +112,26 @@ AiConfig createTestPrompt({
 }
 
 void main() {
-  // Register a fallback value for AiConfig
+  late MockAiConfigRepository mockRepository;
+
   setUpAll(() {
-    registerFallbackValue(
-      createMockPromptConfig(
-        id: 'fallback-id',
-        name: 'Fallback Name',
-        systemMessage: 'Fallback System Message',
-        userMessage: 'Fallback User Message',
-        defaultModelId: 'fallback-model-id',
-      ),
-    );
-    // Register fallback for AiConfigPrompt for controller interactions if any
-    registerFallbackValue(createTestPrompt(id: 'fallback-prompt-id'));
+    registerFallbackValue(FakeAiConfig());
   });
+
+  setUp(() {
+    mockRepository = MockAiConfigRepository();
+    getIt.registerSingleton<AiConfigRepository>(mockRepository);
+  });
+
+  tearDown(getIt.reset);
 
   group('PromptForm ValidationErrors Tests', () {
     // Test name field validation error
     testWidgets('should display localized error when name is too short',
         (WidgetTester tester) async {
-      // ignore: unused_local_variable
-      var onSaveCalled = false;
-
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {
-            onSaveCalled = true;
-          },
+          
         ),
       );
 
@@ -170,7 +165,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          
         ),
       );
 
@@ -212,7 +207,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          
         ),
       );
 
@@ -256,7 +251,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          
         ),
       );
 
@@ -300,47 +295,12 @@ void main() {
       );
       // Removed Category and Comment label checks for now as their UI isn't standard TextFields
 
-      expect(find.byType(FilledButton), findsOneWidget);
-      expect(
-        find.text(context.messages.aiConfigCreateButtonLabel),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('submit button should be disabled with invalid form',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(
-          onSave: (_) {},
-        ),
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // Get the localized strings
-      final context = tester.element(find.byType(PromptForm));
-
-      // Make the form invalid with too short name
-      final nameField = find.ancestor(
-        of: find.text(context.messages.aiConfigNameFieldLabel),
-        matching: find.byType(TextField),
-      );
-      await tester.enterText(nameField, 'ab'); // Too short
-
-      await tester.pump();
-
-      // Find the submit button
-      final buttonFinder = find.byType(FilledButton);
-      expect(buttonFinder, findsOneWidget);
-
-      // Check if it's disabled
-      final button = tester.widget<FilledButton>(buttonFinder);
-      expect(
-        button.onPressed,
-        isNull,
-        reason: 'Button should be disabled with invalid form',
-      );
+      // Save button is now in the app bar, not in the form
+      // expect(find.byType(FilledButton), findsOneWidget);
+      // expect(
+      //   find.text(context.messages.aiConfigCreateButtonLabel),
+      //   findsOneWidget,
+      // );
     });
 
     testWidgets(
@@ -348,7 +308,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          onSave: (_) {},
+          
         ),
       );
 
@@ -411,8 +371,7 @@ void main() {
       );
       final configId = config.id;
 
-      final AiConfigRepository mockRepo = MockAiConfigRepository();
-      when(() => mockRepo.getConfigById(configId))
+      when(() => mockRepository.getConfigById(configId))
           .thenAnswer((_) async => config as AiConfigPrompt);
 
       await tester.pumpWidget(
@@ -427,11 +386,10 @@ void main() {
           home: Scaffold(
             body: ProviderScope(
               overrides: [
-                aiConfigRepositoryProvider.overrideWithValue(mockRepo),
+                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               ],
               child: SingleChildScrollView(
                 child: PromptForm(
-                  onSave: (_) {},
                   configId: config.id,
                 ),
               ),
@@ -447,18 +405,18 @@ void main() {
       final formController = ProviderScope.containerOf(context)
           .read(promptFormControllerProvider(configId: configId).notifier);
 
-      // Verify button label is "Update"
-      expect(
-        find.widgetWithText(
-          FilledButton,
-          context.messages.aiConfigUpdateButtonLabel,
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.text(context.messages.aiConfigCreateButtonLabel),
-        findsNothing,
-      );
+      // Save button is now in the app bar, not in the form
+      // expect(
+      //   find.widgetWithText(
+      //     FilledButton,
+      //     context.messages.aiConfigUpdateButtonLabel,
+      //   ),
+      //   findsOneWidget,
+      // );
+      // expect(
+      //   find.text(context.messages.aiConfigCreateButtonLabel),
+      //   findsNothing,
+      // );
 
       // Verify fields are pre-filled by checking controller text
       expect(formController.nameController.text, 'Edit Name');
@@ -478,6 +436,303 @@ void main() {
           .read(promptFormControllerProvider(configId: configId))
           .value;
       expect(formState?.useReasoning, isTrue);
+    });
+  });
+
+  group('PromptForm - Preconfigured Prompts', () {
+    testWidgets(
+        'should show preconfigured prompt button when creating new prompt',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('Use Preconfigured Prompt'), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+        'should not show preconfigured prompt button when editing existing prompt',
+        (WidgetTester tester) async {
+      // Arrange
+      final existingPrompt = AiConfigPrompt(
+        id: 'existing-id',
+        name: 'Existing Prompt',
+        systemMessage: 'System',
+        userMessage: 'User',
+        defaultModelId: 'model-id',
+        modelIds: ['model-id'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      when(() => mockRepository.getConfigById('existing-id'))
+          .thenAnswer((_) async => existingPrompt);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          config: existingPrompt,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Assert
+      expect(find.text('Use Preconfigured Prompt'), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_outlined), findsNothing);
+    });
+
+    testWidgets('should open modal when preconfigured prompt button is tapped',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('Select Preconfigured Prompt'), findsOneWidget);
+      expect(find.text('Task Summary'), findsOneWidget);
+      expect(find.text('Action Item Suggestions'), findsOneWidget);
+      expect(find.text('Image Analysis'), findsOneWidget);
+      expect(find.text('Audio Transcription'), findsOneWidget);
+    });
+
+    testWidgets('should populate form fields when task summary is selected',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Task Summary'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      final nameField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('Name') ?? false),
+      );
+      expect(tester.widget<TextField>(nameField).controller?.text,
+          equals('Task Summary'));
+
+      final systemMessageField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('System Message') ?? false),
+      );
+      expect(
+        tester.widget<TextField>(systemMessageField).controller?.text,
+        contains('helpful AI assistant'),
+      );
+
+      final userMessageField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('User Message') ?? false),
+      );
+      expect(
+        tester.widget<TextField>(userMessageField).controller?.text,
+        contains('Create a task summary'),
+      );
+    });
+
+    testWidgets(
+        'should populate form fields when action item suggestions is selected',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Action Item Suggestions'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      final nameField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('Name') ?? false),
+      );
+      expect(tester.widget<TextField>(nameField).controller?.text,
+          equals('Action Item Suggestions'));
+
+      final userMessageField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('User Message') ?? false),
+      );
+      expect(
+        tester.widget<TextField>(userMessageField).controller?.text,
+        contains('identify potential action items'),
+      );
+    });
+
+    testWidgets('should populate form fields when image analysis is selected',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Image Analysis'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      final nameField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('Name') ?? false),
+      );
+      expect(tester.widget<TextField>(nameField).controller?.text,
+          equals('Image Analysis'));
+
+      final userMessageField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('User Message') ?? false),
+      );
+      expect(
+        tester.widget<TextField>(userMessageField).controller?.text,
+        contains('analyze the provided image'),
+      );
+    });
+
+    testWidgets(
+        'should populate form fields when audio transcription is selected',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+
+      // Ensure the Audio Transcription option is visible
+      await tester.ensureVisible(find.text('Audio Transcription'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Audio Transcription'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      final nameField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('Name') ?? false),
+      );
+      expect(tester.widget<TextField>(nameField).controller?.text,
+          equals('Audio Transcription'));
+
+      final userMessageField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('User Message') ?? false),
+      );
+      expect(
+        tester.widget<TextField>(userMessageField).controller?.text,
+        contains('transcribe the provided audio'),
+      );
+    });
+
+    testWidgets('should allow editing populated fields after selection',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act - Select a preconfigured prompt
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Task Summary'));
+      await tester.pumpAndSettle();
+
+      // Act - Edit the name field
+      final nameField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('Name') ?? false),
+      );
+      await tester.enterText(nameField, 'Custom Task Summary');
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(tester.widget<TextField>(nameField).controller?.text,
+          equals('Custom Task Summary'));
+    });
+
+    testWidgets('should cancel modal when tapped outside',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Act - Open modal
+      await tester.tap(find.text('Use Preconfigured Prompt'));
+      await tester.pumpAndSettle();
+
+      // Verify modal is open
+      expect(find.text('Select Preconfigured Prompt'), findsOneWidget);
+
+      // Act - Tap outside modal (on the barrier)
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      // Assert - Modal should be closed
+      expect(find.text('Select Preconfigured Prompt'), findsNothing);
+
+      // Verify form fields are not populated
+      final nameField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            (widget.decoration?.labelText?.contains('Name') ?? false),
+      );
+      expect(tester.widget<TextField>(nameField).controller?.text, isEmpty);
     });
   });
 }
