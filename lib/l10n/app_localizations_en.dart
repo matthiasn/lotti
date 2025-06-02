@@ -935,6 +935,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptSettingsPageTitle => 'AI Prompts';
 
   @override
+  String get promptSelectionModalTitle => 'Select Preconfigured Prompt';
+
+  @override
+  String get promptUsePreconfiguredButton => 'Use Preconfigured Prompt';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

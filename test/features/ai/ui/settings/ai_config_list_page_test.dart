@@ -394,16 +394,16 @@ void main() {
           isReasoningModel: false,
         );
 
-        final fakeFormController = FakeInferenceProviderFormController();
-
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
         ).thenAnswer((_) => Stream.value([modelConfig]));
 
+        // Mock the repository deleteConfig method for models/prompts
+        when(() => mockRepository.deleteConfig(any())).thenAnswer((_) async {});
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
         final overrides = [
           aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          inferenceProviderFormControllerProvider(configId: 'model-1')
-              .overrideWith(() => fakeFormController),
         ];
 
         await tester.pumpWidget(
@@ -688,6 +688,132 @@ void main() {
 
         // Dialog shouldn't appear for left-to-right swipe due to direction setting
         expect(find.byType(AlertDialog), findsNothing);
+      });
+
+      testWidgets('should use repository directly for model/prompt deletion',
+          (WidgetTester tester) async {
+        // Create a model config (not inference provider)
+        final modelConfig = AiConfig.model(
+          id: 'model-1',
+          name: 'Test Model',
+          providerModelId: 'provider-model-id',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([modelConfig]));
+
+        // Mock the repository methods
+        when(() => mockRepository.deleteConfig(any())).thenAnswer((_) async {});
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        ];
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: AiConfigType.model,
+                title: 'Test Models',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final item = find.byType(ListTile).first;
+        await tester.drag(item, const Offset(-500, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Confirm deletion
+        await tester.tap(find.text('DELETE'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Should call repository.deleteConfig directly (not controller)
+        verify(() => mockRepository.deleteConfig('model-1')).called(1);
+      });
+
+      testWidgets('should use repository directly for prompt deletion',
+          (WidgetTester tester) async {
+        // Create a prompt config (not inference provider)
+        final promptConfig = AiConfig.prompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          systemMessage: 'System message',
+          userMessage: 'User message',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          requiredInputData: const [],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) => Stream.value([promptConfig]));
+
+        // Mock the repository methods
+        when(() => mockRepository.deleteConfig(any())).thenAnswer((_) async {});
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+        final overrides = [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        ];
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [Locale('en', '')],
+              home: AiConfigListPage(
+                configType: AiConfigType.prompt,
+                title: 'Test Prompts',
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final item = find.byType(ListTile).first;
+        await tester.drag(item, const Offset(-500, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Confirm deletion
+        await tester.tap(find.text('DELETE'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Should call repository.deleteConfig directly (not controller)
+        verify(() => mockRepository.deleteConfig('prompt-1')).called(1);
       });
     });
 
