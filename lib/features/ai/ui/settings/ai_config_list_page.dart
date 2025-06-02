@@ -345,11 +345,13 @@ class AiConfigListPage extends ConsumerWidget {
               label: messages.aiConfigListUndoDelete,
               textColor: colorScheme.primary,
               onPressed: () {
-                final controller = ref.read(
-                  inferenceProviderFormControllerProvider(configId: config.id)
-                      .notifier,
-                );
-                controller.addConfig(config);
+                ref
+                    .read(
+                      inferenceProviderFormControllerProvider(
+                              configId: config.id)
+                          .notifier,
+                    )
+                    .addConfig(config);
               },
             ),
           ),
