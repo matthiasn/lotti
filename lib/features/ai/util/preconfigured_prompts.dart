@@ -141,7 +141,7 @@ If any is very similar to an item already listed in the actionItems array of the
 ```''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.actionItemSuggestions,
-  useReasoning: false,
+  useReasoning: true,
   description:
       "Extract actionable items from task logs that haven't been formally captured yet",
 );
