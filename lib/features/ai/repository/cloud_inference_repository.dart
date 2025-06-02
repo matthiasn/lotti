@@ -70,7 +70,7 @@ class CloudInferenceRepository {
                   (image) {
                     return ChatCompletionMessageContentPart.image(
                       imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image;base64,{$image}',
+                        url: 'data:image/jpeg;base64,$image',
                       ),
                     );
                   },
