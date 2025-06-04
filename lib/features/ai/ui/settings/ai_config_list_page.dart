@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/model_subtitle_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 /// A page that displays a list of AI configurations of a specific type.
 /// Used in settings to manage configurations like API keys, etc.
@@ -85,12 +86,10 @@ class AiConfigListPage extends ConsumerWidget {
         ),
       ),
       confirmDismiss: (direction) async {
-        final shouldDelete =
-            await _showDeleteConfirmationDialog(context, config);
-        if (shouldDelete && context.mounted) {
-          _deleteConfig(config, ref, context);
-        }
-        return false;
+        return _showDeleteConfirmationDialog(context, config);
+      },
+      onDismissed: (direction) {
+        _deleteConfig(config, ref, context);
       },
       child: _buildConfigListTile(context, config, ref),
     );
@@ -100,88 +99,13 @@ class AiConfigListPage extends ConsumerWidget {
     BuildContext context,
     AiConfig config,
   ) async {
-    // Special handling for inference providers
-    if (config is AiConfigInferenceProvider) {
-      return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(context.messages.aiConfigListDeleteConfirmTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.messages
-                        .aiConfigListDeleteConfirmMessage(config.name),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_outlined,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            context.messages.aiConfigListCascadeDeleteWarning,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onErrorContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(context.messages.aiConfigListDeleteConfirmCancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                  child: Text(context.messages.aiConfigListDeleteConfirmDelete),
-                ),
-              ],
-            ),
-          ) ??
-          false;
-    }
-
-    // Regular confirmation for other config types
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(context.messages.aiConfigListDeleteConfirmTitle),
-            content: Text(
-              context.messages.aiConfigListDeleteConfirmMessage(config.name),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.messages.aiConfigListDeleteConfirmCancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.messages.aiConfigListDeleteConfirmDelete),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    return showConfirmationModal(
+      context: context,
+      title: context.messages.aiConfigListDeleteConfirmTitle,
+      message: context.messages.aiConfigListDeleteConfirmMessage(config.name),
+      confirmLabel: context.messages.aiConfigListDeleteConfirmDelete,
+      cancelLabel: context.messages.aiConfigListDeleteConfirmCancel,
+    );
   }
 
   void _deleteConfig(AiConfig config, WidgetRef ref, BuildContext context) {
@@ -202,126 +126,92 @@ class AiConfigListPage extends ConsumerWidget {
         // Show snackbar for the provider deletion
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(right: 12, top: 4),
-                    child: Icon(
-                      Icons.delete_outline,
-                      color: colorScheme.onInverseSurface,
-                      size: 24,
-                    ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Icon(
+                  Icons.delete_forever_outlined,
+                  size: 48,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  messages.aiConfigProviderDeletedSuccessfully,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
                   ),
-                  Expanded(
+                  textAlign: TextAlign.center,
+                ),
+                if (result.deletedModels.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.inversePrimary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          config.name,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onInverseSurface,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          messages.aiConfigProviderDeletedSuccessfully,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onInverseSurface
-                                .withValues(alpha: 0.85),
-                            height: 1.3,
-                          ),
-                        ),
-                        if (result.deletedModels.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: colorScheme.inverseSurface
-                                  .withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color:
-                                    colorScheme.outline.withValues(alpha: 0.3),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.analytics_outlined,
+                              size: 16,
+                              color: colorScheme.onSurface.withAlpha(230),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              messages.aiConfigAssociatedModelsRemoved(
+                                  result.deletedModels.length),
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface.withAlpha(242),
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                          ],
+                        ),
+                        if (result.deletedModels.length <= 4) ...[
+                          const SizedBox(height: 8),
+                          ...result.deletedModels.map((model) => Padding(
+                                padding: const EdgeInsets.only(bottom: 3),
+                                child: Row(
                                   children: [
-                                    Icon(
-                                      Icons.analytics_outlined,
-                                      size: 16,
-                                      color: colorScheme.onInverseSurface
-                                          .withValues(alpha: 0.9),
+                                    const SizedBox(width: 24),
+                                    Container(
+                                      width: 4,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.onSurface
+                                            .withAlpha(179),
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      messages.aiConfigAssociatedModelsRemoved(
-                                          result.deletedModels.length),
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: colorScheme.onInverseSurface
-                                            .withValues(alpha: 0.95),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        model.name,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          fontFamily: 'monospace',
+                                          color: colorScheme.onSurface
+                                              .withAlpha(204),
+                                          height: 1.3,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
                                 ),
-                                if (result.deletedModels.length <= 4) ...[
-                                  const SizedBox(height: 8),
-                                  ...result.deletedModels.map((model) =>
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 3),
-                                        child: Row(
-                                          children: [
-                                            const SizedBox(width: 24),
-                                            Container(
-                                              width: 4,
-                                              height: 4,
-                                              decoration: BoxDecoration(
-                                                color: colorScheme
-                                                    .onInverseSurface
-                                                    .withValues(alpha: 0.7),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                model.name,
-                                                style: textTheme.bodySmall
-                                                    ?.copyWith(
-                                                  fontFamily: 'monospace',
-                                                  color: colorScheme
-                                                      .onInverseSurface
-                                                      .withValues(alpha: 0.8),
-                                                  height: 1.3,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )),
-                                ] else ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Including: ${result.deletedModels.take(2).map((m) => m.name).join(', ')}${result.deletedModels.length > 2 ? ', and ${result.deletedModels.length - 2} more' : ''}',
-                                    style: textTheme.bodySmall?.copyWith(
-                                      fontFamily: 'monospace',
-                                      color: colorScheme.onInverseSurface
-                                          .withValues(alpha: 0.75),
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                              )),
+                        ] else ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Including: ${result.deletedModels.take(2).map((m) => m.name).join(', ')}${result.deletedModels.length > 2 ? ', and ${result.deletedModels.length - 2} more' : ''}',
+                            style: textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                              color: colorScheme.onSurface.withAlpha(191),
+                              height: 1.3,
                             ),
                           ),
                         ],
@@ -329,18 +219,16 @@ class AiConfigListPage extends ConsumerWidget {
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            backgroundColor: colorScheme.inverseSurface,
+            backgroundColor: colorScheme.inversePrimary,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: colorScheme.outline.withValues(alpha: 0.3),
-              ),
             ),
             duration: const Duration(seconds: 5),
+            dismissDirection: DismissDirection.down,
             action: SnackBarAction(
               label: messages.aiConfigListUndoDelete,
               textColor: colorScheme.primary,
@@ -359,10 +247,33 @@ class AiConfigListPage extends ConsumerWidget {
       }).catchError((dynamic error) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(
-              messages.aiConfigListErrorDeleting(config.name, error.toString()),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  messages.aiConfigListErrorDeleting(
+                      config.name, error.toString()),
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            backgroundColor: colorScheme.error,
+            backgroundColor: colorScheme.inversePrimary,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            dismissDirection: DismissDirection.down,
           ),
         );
       });
@@ -374,11 +285,36 @@ class AiConfigListPage extends ConsumerWidget {
         // Show simple success snackbar
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(
-              messages.aiConfigListItemDeleted(config.name),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Icon(
+                  Icons.delete_forever_outlined,
+                  size: 48,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  messages.aiConfigListItemDeleted(config.name),
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
+            backgroundColor: colorScheme.inversePrimary,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 5),
+            dismissDirection: DismissDirection.down,
             action: SnackBarAction(
               label: messages.aiConfigListUndoDelete,
+              textColor: colorScheme.primary,
               onPressed: () {
                 repository.saveConfig(config);
               },
@@ -388,10 +324,33 @@ class AiConfigListPage extends ConsumerWidget {
       }).catchError((dynamic error) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(
-              messages.aiConfigListErrorDeleting(config.name, error.toString()),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  messages.aiConfigListErrorDeleting(
+                      config.name, error.toString()),
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            backgroundColor: colorScheme.error,
+            backgroundColor: colorScheme.inversePrimary,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            dismissDirection: DismissDirection.down,
           ),
         );
       });

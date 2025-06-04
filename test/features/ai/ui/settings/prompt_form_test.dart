@@ -130,9 +130,7 @@ void main() {
     testWidgets('should display localized error when name is too short',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
 
       // Wait for the async operations and states to settle
@@ -164,9 +162,7 @@ void main() {
     testWidgets('should show error after clearing a valid name',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
 
       // Wait for the async operations and states to settle
@@ -206,9 +202,7 @@ void main() {
     testWidgets('should validate user message field',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
 
       await tester.pump();
@@ -250,9 +244,7 @@ void main() {
     testWidgets('should render all form fields correctly',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
 
       await tester.pump(); // Initial pump
@@ -307,9 +299,7 @@ void main() {
         'should be able to toggle Use Reasoning switch and reflect in state',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
 
       await tester.pump(); // Initial pump
@@ -445,9 +435,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -493,9 +481,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -515,9 +501,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -562,9 +546,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -598,9 +580,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -635,9 +615,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -676,9 +654,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
@@ -706,9 +682,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        buildTestWidget(
-          
-        ),
+        buildTestWidget(),
       );
       await tester.pumpAndSettle();
 
