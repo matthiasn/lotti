@@ -130,6 +130,12 @@ class InferenceProviderFormController
         newName = 'Ollama (local)';
       }
     }
+    if (value == InferenceProviderType.openAi) {
+      newBaseUrl = 'https://api.openai.com/v1';
+      if (nameController.text.isEmpty) {
+        newName = 'OpenAI';
+      }
+    }
 
     // Update text controllers if needed
     if (newBaseUrl != null) {
