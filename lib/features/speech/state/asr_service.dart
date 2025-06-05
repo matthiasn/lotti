@@ -11,6 +11,7 @@ import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/features/speech/services/fastwhisper_service.dart';
 
 class AsrService {
   AsrService() {
@@ -103,6 +104,33 @@ class AsrService {
     final start = DateTime.now();
 
     try {
+      // Try FastWhisper first if configured
+      final fastWhisperUrl =
+          await getIt<SettingsDb>().itemByKey('fastwhisper_url');
+      if (fastWhisperUrl != null) {
+        final fastWhisper = FastWhisperService(baseUrl: fastWhisperUrl);
+        final result = await fastWhisper.transcribe(audioFilePath);
+
+        final transcript = AudioTranscript(
+          created: DateTime.now(),
+          library: 'FastWhisper',
+          model: model,
+          detectedLanguage: result.language,
+          transcript: result.text.trim(),
+          processingTime: DateTime.now().difference(start),
+        );
+
+        await SpeechRepository.addAudioTranscript(
+          journalEntityId: entry.meta.id,
+          transcript: transcript,
+        );
+
+        progressController.add((result.text, TranscriptionStatus.done));
+        running = false;
+        return;
+      }
+
+      // Fall back to default WhisperKit implementation
       final result = await methodChannel.invokeMethod(
         'transcribe',
         {

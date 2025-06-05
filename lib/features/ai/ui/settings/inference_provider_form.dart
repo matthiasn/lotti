@@ -81,6 +81,14 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final isFormValid = formState != null &&
+        formState.isValid &&
+        (formState.inferenceProviderType == InferenceProviderType.ollama ||
+            formState.inferenceProviderType ==
+                InferenceProviderType.fastWhisper) &&
+        formState.name.isValid &&
+        formState.baseUrl.isValid;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -146,8 +154,17 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
             controller: formController.apiKeyController,
             obscureText: !_showApiKey,
             decoration: InputDecoration(
-              labelText: context.messages.aiConfigApiKeyFieldLabel,
-              errorText: formState.apiKey.isNotValid &&
+              labelText: (formState.inferenceProviderType ==
+                          InferenceProviderType.ollama ||
+                      formState.inferenceProviderType ==
+                          InferenceProviderType.fastWhisper)
+                  ? '${context.messages.aiConfigApiKeyFieldLabel} (Optional)'
+                  : context.messages.aiConfigApiKeyFieldLabel,
+              errorText: (formState.inferenceProviderType !=
+                              InferenceProviderType.ollama &&
+                          formState.inferenceProviderType !=
+                              InferenceProviderType.fastWhisper) &&
+                      formState.apiKey.isNotValid &&
                       !formState.apiKey.isPure &&
                       formState.apiKey.error == ProviderFormError.empty
                   ? context.messages.aiConfigApiKeyEmptyError
@@ -167,6 +184,10 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
             ),
           ),
         ),
+        if (formState.inferenceProviderType == InferenceProviderType.ollama ||
+            formState.inferenceProviderType ==
+                InferenceProviderType.fastWhisper)
+          const SizedBox(height: 0),
         CopyableTextField(
           onChanged: formController.descriptionChanged,
           controller: formController.descriptionController,
