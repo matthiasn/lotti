@@ -325,5 +325,34 @@ void main() {
         'https://generativelanguage.googleapis.com/v1beta/openai',
       );
     });
+
+    test('should set baseUrl when OpenAI provider type is selected', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('https://api.openai.com/v1'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('https://api.openai.com/v1'),
+      );
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.openAi),
+      );
+    });
   });
 }

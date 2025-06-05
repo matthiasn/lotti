@@ -8,6 +8,7 @@
 /// - Gemini: Google's models with multi-modal capabilities
 /// - Nebius: High-performance models for text and image tasks
 /// - Ollama: Local models for text processing
+/// - OpenAI: Advanced language and multimodal models
 library;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -55,6 +56,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.gemini: geminiModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
+  InferenceProviderType.openAi: openaiModels,
 };
 
 /// Gemini models - Google's multimodal AI models
@@ -116,6 +118,36 @@ const List<KnownModel> ollamaModels = [
     outputModalities: [Modality.text],
     isReasoningModel: true,
     description: 'Local reasoning model for complex analysis',
+  ),
+];
+
+/// OpenAI models - Advanced language and multimodal models
+const List<KnownModel> openaiModels = [
+  KnownModel(
+    providerModelId: 'gpt-4',
+    name: 'GPT-4',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'Most capable model for complex reasoning and analysis',
+  ),
+  KnownModel(
+    providerModelId: 'gpt-4-turbo',
+    name: 'GPT-4 Turbo',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Latest GPT-4 model with vision capabilities and 128K context window',
+  ),
+  KnownModel(
+    providerModelId: 'gpt-3.5-turbo',
+    name: 'GPT-3.5 Turbo',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description:
+        'Fast and efficient model with 16K context window for text-based tasks',
   ),
 ];
 
