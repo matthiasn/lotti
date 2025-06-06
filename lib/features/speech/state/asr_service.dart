@@ -8,10 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/speech/services/fastwhisper_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/features/speech/services/fastwhisper_service.dart';
 
 class AsrService {
   AsrService() {

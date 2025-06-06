@@ -130,6 +130,12 @@ class InferenceProviderFormController
         newName = 'Ollama (local)';
       }
     }
+    if (value == InferenceProviderType.fastWhisper) {
+      newBaseUrl = 'http://localhost:8000';
+      if (nameController.text.isEmpty) {
+        newName = 'FastWhisper (local)';
+      }
+    }
     if (value == InferenceProviderType.openAi) {
       newBaseUrl = 'https://api.openai.com/v1';
       if (nameController.text.isEmpty) {

@@ -58,6 +58,12 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
                   : null,
               onTap: () {
                 formController.inferenceProviderTypeChanged(type);
+                if (type == InferenceProviderType.ollama) {
+                  final currentBaseUrl = formState.baseUrl.value;
+                  if (!currentBaseUrl.endsWith('/v1')) {
+                    formController.baseUrlChanged('$currentBaseUrl/v1');
+                  }
+                }
                 Navigator.of(modalContext).pop();
               },
             );
@@ -80,14 +86,6 @@ class _InferenceProviderFormState extends ConsumerState<InferenceProviderForm> {
     if (formState == null) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    final isFormValid = formState != null &&
-        formState.isValid &&
-        (formState.inferenceProviderType == InferenceProviderType.ollama ||
-            formState.inferenceProviderType ==
-                InferenceProviderType.fastWhisper) &&
-        formState.name.isValid &&
-        formState.baseUrl.isValid;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

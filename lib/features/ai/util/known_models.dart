@@ -9,6 +9,7 @@
 /// - Nebius: High-performance models for text and image tasks
 /// - Ollama: Local models for text processing
 /// - OpenAI: Advanced language and multimodal models
+/// - FastWhisper: Local speech-to-text models
 library;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -57,6 +58,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
+  InferenceProviderType.fastWhisper: fastWhisperModels,
 };
 
 /// Gemini models - Google's multimodal AI models
@@ -148,6 +150,34 @@ const List<KnownModel> openaiModels = [
     isReasoningModel: true,
     description:
         'Fast and efficient model with 16K context window for text-based tasks',
+  ),
+];
+
+/// FastWhisper models - Local speech-to-text models
+const List<KnownModel> fastWhisperModels = [
+  KnownModel(
+    providerModelId: 'transcribe',
+    name: 'FastWhisper',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Local speech-to-text transcription model',
+  ),
+  KnownModel(
+    providerModelId: 'small',
+    name: 'FastWhisper Small',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Small model for faster transcription',
+  ),
+  KnownModel(
+    providerModelId: 'large-v3',
+    name: 'FastWhisper Large v3',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Large model for high-accuracy transcription',
   ),
 ];
 
