@@ -127,7 +127,7 @@ const List<KnownModel> ollamaModels = [
 const List<KnownModel> openaiModels = [
   KnownModel(
     providerModelId: 'gpt-4.1-2025-04-14',
-    name: 'GPT-4',
+    name: 'GPT-4.1',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
@@ -142,8 +142,8 @@ const List<KnownModel> openaiModels = [
     description: 'Our most powerful reasoning model',
   ),
   KnownModel(
-    providerModelId: 'o4-mini',
-    name: 'o4-mini-2025-04-16',
+    providerModelId: 'o4-mini-2025-04-16',
+    name: 'o4-mini',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,

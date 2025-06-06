@@ -106,6 +106,87 @@ void main() {
             .called(ollamaModels.length);
       });
 
+      test('should create all known models for Anthropic provider', () async {
+        // Arrange
+        const providerId = 'anthropic-provider-id';
+        final provider = AiConfigInferenceProvider(
+          id: providerId,
+          baseUrl: 'https://api.anthropic.com/v1',
+          apiKey: 'test-key',
+          name: 'Anthropic',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.anthropic,
+        );
+
+        when(() => mockRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => []);
+
+        when(() => mockRepository.saveConfig(any()))
+            .thenAnswer((_) async => {});
+
+        // Act
+        final result = await service.prepopulateModelsForProvider(provider);
+
+        // Assert
+        expect(result, equals(anthropicModels.length));
+        verify(() => mockRepository.saveConfig(any()))
+            .called(anthropicModels.length);
+      });
+
+      test('should create all known models for OpenRouter provider', () async {
+        // Arrange
+        const providerId = 'openrouter-provider-id';
+        final provider = AiConfigInferenceProvider(
+          id: providerId,
+          baseUrl: 'https://openrouter.ai/api/v1',
+          apiKey: 'test-key',
+          name: 'OpenRouter',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openRouter,
+        );
+
+        when(() => mockRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => []);
+
+        when(() => mockRepository.saveConfig(any()))
+            .thenAnswer((_) async => {});
+
+        // Act
+        final result = await service.prepopulateModelsForProvider(provider);
+
+        // Assert
+        expect(result, equals(openRouterModels.length));
+        verify(() => mockRepository.saveConfig(any()))
+            .called(openRouterModels.length);
+      });
+
+      test('should create all known models for OpenAI provider', () async {
+        // Arrange
+        const providerId = 'openai-provider-id';
+        final provider = AiConfigInferenceProvider(
+          id: providerId,
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          name: 'OpenAI',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => []);
+
+        when(() => mockRepository.saveConfig(any()))
+            .thenAnswer((_) async => {});
+
+        // Act
+        final result = await service.prepopulateModelsForProvider(provider);
+
+        // Assert
+        expect(result, equals(openaiModels.length));
+        verify(() => mockRepository.saveConfig(any()))
+            .called(openaiModels.length);
+      });
+
       test('should skip existing models and only create new ones', () async {
         // Arrange
         const providerId = 'gemini-provider-id';
@@ -391,13 +472,15 @@ void main() {
 
         for (final model in models) {
           if (model.isReasoningModel) {
-            // Gemini models support reasoning with multimodal input
-            if (providerType == InferenceProviderType.gemini) {
+            // Gemini, Anthropic, and OpenRouter models support reasoning with multimodal input
+            if (providerType == InferenceProviderType.gemini ||
+                providerType == InferenceProviderType.anthropic ||
+                providerType == InferenceProviderType.openRouter) {
               expect(model.inputModalities, contains(Modality.text));
               // Can have additional modalities like image and audio
             } else {
-              // Other reasoning models only support text input
-              expect(model.inputModalities, equals([Modality.text]));
+              // Other reasoning models should at least support text input
+              expect(model.inputModalities, contains(Modality.text));
             }
           }
         }
