@@ -57,6 +57,8 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
+  InferenceProviderType.anthropic: anthropicModels,
+  InferenceProviderType.openRouter: openRouterModels,
 };
 
 /// Gemini models - Google's multimodal AI models
@@ -124,30 +126,102 @@ const List<KnownModel> ollamaModels = [
 /// OpenAI models - Advanced language and multimodal models
 const List<KnownModel> openaiModels = [
   KnownModel(
-    providerModelId: 'gpt-4',
+    providerModelId: 'gpt-4.1-2025-04-14',
     name: 'GPT-4',
-    inputModalities: [Modality.text],
+    inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
-    isReasoningModel: true,
-    description: 'Most capable model for complex reasoning and analysis',
+    isReasoningModel: false,
+    description: 'Flagship GPT model for complex tasks',
   ),
   KnownModel(
-    providerModelId: 'gpt-4-turbo',
-    name: 'GPT-4 Turbo',
+    providerModelId: 'o3-2025-04-16',
+    name: 'o3',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'Our most powerful reasoning model',
+  ),
+  KnownModel(
+    providerModelId: 'o4-mini',
+    name: 'o4-mini-2025-04-16',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'Faster, more affordable reasoning model',
+  ),
+];
+
+/// Anthropic models - Advanced language and multimodal models
+const List<KnownModel> anthropicModels = [
+  KnownModel(
+    providerModelId: 'claude-opus-4-20250514',
+    name: 'Claude Opus 4',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'Highest level of intelligence and capability',
+  ),
+  KnownModel(
+    providerModelId: 'claude-sonnet-4-20250514',
+    name: 'Claude Sonnet 4',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'High intelligence and balanced performance',
+  ),
+  KnownModel(
+    providerModelId: 'claude-3-5-haiku-20241022',
+    name: 'Claude Haiku 3.5',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Intelligence at blazing speeds',
+  ),
+];
+
+/// OpenRouter models - Advanced language and multimodal models
+const List<KnownModel> openRouterModels = [
+  KnownModel(
+    providerModelId: 'anthropic/claude-opus-4',
+    name: 'Anthropic: Claude Opus 4',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'Highest level of intelligence and capability',
+  ),
+  KnownModel(
+    providerModelId: 'anthropic/claude-sonnet-4',
+    name: 'Anthropic: Claude Sonnet 4',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'High intelligence and balanced performance',
+  ),
+  KnownModel(
+    providerModelId: 'openai/o4-mini',
+    name: 'OpenAI: o4 Mini',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'OpenAI o4-mini is a compact reasoning model in the o-series.',
+  ),
+  KnownModel(
+    providerModelId: 'openai/o4-mini-high',
+    name: 'OpenAI: o4 Mini High',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description:
+        'OpenAI o4-mini-high is the same model as o4-mini with reasoning_effort set to high',
+  ),
+  KnownModel(
+    providerModelId: 'openai/gpt-4.1',
+    name: 'OpenAI: GPT-4.1',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'Latest GPT-4 model with vision capabilities and 128K context window',
-  ),
-  KnownModel(
-    providerModelId: 'gpt-3.5-turbo',
-    name: 'GPT-3.5 Turbo',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    description:
-        'Fast and efficient model with 16K context window for text-based tasks',
+        'GPT-4.1 is a flagship large language model optimized for advanced instruction following, real-world software engineering, and long-context reasoning.',
   ),
 ];
 
