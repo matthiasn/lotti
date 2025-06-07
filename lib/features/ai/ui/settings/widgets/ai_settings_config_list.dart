@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
+import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Widget that displays a list of AI configurations with proper loading and error states
@@ -27,7 +28,7 @@ import 'package:lotti/themes/theme.dart';
 ///   onConfigTap: (config) => navigateToEdit(config),
 /// )
 /// ```
-class AiSettingsConfigList<T extends AiConfig> extends StatelessWidget {
+class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
   const AiSettingsConfigList({
     required this.configsAsync,
     required this.filteredConfigs,
@@ -36,6 +37,7 @@ class AiSettingsConfigList<T extends AiConfig> extends StatelessWidget {
     required this.onConfigTap,
     this.showCapabilities = false,
     this.isCompact = false,
+    this.enableSwipeToDelete = true,
     super.key,
   });
 
@@ -60,17 +62,20 @@ class AiSettingsConfigList<T extends AiConfig> extends StatelessWidget {
   /// Whether to use compact card layout
   final bool isCompact;
 
+  /// Whether to enable swipe-to-delete functionality
+  final bool enableSwipeToDelete;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return configsAsync.when(
-      data: (configs) => _buildConfigList(context),
+      data: (configs) => _buildConfigList(context, ref),
       loading: () => _buildLoadingState(context),
       error: (error, stackTrace) => _buildErrorState(context, error),
     );
   }
 
   /// Builds the main configuration list
-  Widget _buildConfigList(BuildContext context) {
+  Widget _buildConfigList(BuildContext context, WidgetRef ref) {
     if (filteredConfigs.isEmpty) {
       return _buildEmptyState(context);
     }
@@ -81,13 +86,103 @@ class AiSettingsConfigList<T extends AiConfig> extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final config = filteredConfigs[index];
-        return AiConfigCard(
+        
+        if (!enableSwipeToDelete) {
+          return AiConfigCard(
+            config: config,
+            showCapabilities: showCapabilities,
+            isCompact: isCompact,
+            onTap: () => onConfigTap(config),
+          );
+        }
+
+        return _buildDismissibleCard(context, ref, config);
+      },
+    );
+  }
+
+  /// Builds a dismissible card with stylish delete background
+  Widget _buildDismissibleCard(
+    BuildContext context,
+    WidgetRef ref,
+    T config,
+  ) {
+    return Dismissible(
+      key: ValueKey(config.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        const deleteService = AiConfigDeleteService();
+        return deleteService.deleteConfig(
+          context: context,
+          ref: ref,
           config: config,
-          showCapabilities: showCapabilities,
-          isCompact: isCompact,
-          onTap: () => onConfigTap(config),
         );
       },
+      background: _buildDismissBackground(context),
+      child: AiConfigCard(
+        config: config,
+        showCapabilities: showCapabilities,
+        isCompact: isCompact,
+        onTap: () => onConfigTap(config),
+      ),
+    );
+  }
+
+  /// Builds the stylish delete background for dismissible cards
+  Widget _buildDismissBackground(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            context.colorScheme.errorContainer.withValues(alpha: 0.1),
+            context.colorScheme.error.withValues(alpha: 0.9),
+            context.colorScheme.error,
+          ],
+          stops: const [0.0, 0.7, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.error.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.onError.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.delete_forever_rounded,
+                    color: context.colorScheme.onError,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Delete',
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: context.colorScheme.onError,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
