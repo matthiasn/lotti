@@ -68,7 +68,8 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
+      when(() =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) => Stream.value([testConfigs[0]]));
       when(() => mockRepository.watchConfigsByType(AiConfigType.model))
           .thenAnswer((_) => Stream.value([testConfigs[1]]));
@@ -96,16 +97,18 @@ void main() {
       );
     }
 
-    testWidgets('should display title and search bar', (WidgetTester tester) async {
+    testWidgets('should display title and search bar',
+        (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
       expect(find.text('AI Settings'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Search...'), findsOneWidget);
+      expect(find.text('Search AI configurations...'), findsOneWidget);
     });
 
-    testWidgets('should display tab bar with three tabs', (WidgetTester tester) async {
+    testWidgets('should display tab bar with three tabs',
+        (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -136,7 +139,8 @@ void main() {
       expect(find.text('Task Summary'), findsOneWidget);
     });
 
-    testWidgets('should filter configs with search', (WidgetTester tester) async {
+    testWidgets('should filter configs with search',
+        (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -158,7 +162,8 @@ void main() {
       expect(find.text('Anthropic Provider'), findsOneWidget);
     });
 
-    testWidgets('should display capability filters on Models tab', (WidgetTester tester) async {
+    testWidgets('should display capability filters on Models tab',
+        (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 

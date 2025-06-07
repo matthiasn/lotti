@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -28,7 +26,6 @@ class AiConfigCard extends ConsumerWidget {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       child: Material(
-        elevation: 0,
         borderRadius: BorderRadius.circular(14),
         color: context.colorScheme.surface,
         child: InkWell(
@@ -42,7 +39,6 @@ class AiConfigCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: context.colorScheme.outline.withValues(alpha: 0.2),
-                width: 1,
               ),
             ),
             child: Row(
@@ -95,7 +91,8 @@ class AiConfigCard extends ConsumerWidget {
                       if (config is AiConfigModel) ...[
                         const SizedBox(height: 2),
                         _CompactProviderName(
-                          providerId: (config as AiConfigModel).inferenceProviderId,
+                          providerId:
+                              (config as AiConfigModel).inferenceProviderId,
                           isCompact: isCompact,
                         ),
                       ],
@@ -134,7 +131,8 @@ class AiConfigCard extends ConsumerWidget {
                 Icon(
                   Icons.chevron_right,
                   size: isCompact ? 18 : 20,
-                  color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  color: context.colorScheme.onSurfaceVariant
+                      .withValues(alpha: 0.6),
                 ),
               ],
             ),
@@ -278,48 +276,39 @@ class _CapabilityIndicators extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final capabilities = <Widget>[];
-
-    // Text support (always present)
-    capabilities.add(_buildCapabilityIcon(
-      context,
-      Icons.text_fields,
-      'Text',
-      true,
-    ));
-
-    // Vision support
-    final hasVision = model.inputModalities.contains(Modality.image);
-    capabilities.add(_buildCapabilityIcon(
-      context,
-      Icons.visibility,
-      'Vision',
-      hasVision,
-    ));
-
-    // Audio support
-    final hasAudio = model.inputModalities.contains(Modality.audio);
-    capabilities.add(_buildCapabilityIcon(
-      context,
-      Icons.hearing,
-      'Audio',
-      hasAudio,
-    ));
-
-    // Reasoning support
-    final hasReasoning = model.isReasoningModel;
-    if (hasReasoning) {
-      capabilities.add(_buildCapabilityIcon(
-        context,
-        Icons.psychology,
-        'Reasoning',
-        true,
-      ));
-    }
-
     return Wrap(
       spacing: isCompact ? 4 : 6,
-      children: capabilities,
+      children: [
+        // Text support (always present)
+        _buildCapabilityIcon(
+          context,
+          Icons.text_fields,
+          'Text',
+          true,
+        ),
+        // Vision support
+        _buildCapabilityIcon(
+          context,
+          Icons.visibility,
+          'Vision',
+          model.inputModalities.contains(Modality.image),
+        ),
+        // Audio support
+        _buildCapabilityIcon(
+          context,
+          Icons.hearing,
+          'Audio',
+          model.inputModalities.contains(Modality.audio),
+        ),
+        // Reasoning support (if applicable)
+        if (model.isReasoningModel)
+          _buildCapabilityIcon(
+            context,
+            Icons.psychology,
+            'Reasoning',
+            true,
+          ),
+      ],
     );
   }
 

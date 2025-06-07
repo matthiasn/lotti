@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
@@ -100,37 +100,45 @@ void main() {
     }
 
     group('Provider configuration', () {
-      testWidgets('displays provider name and icon', (WidgetTester tester) async {
+      testWidgets('displays provider name and icon',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(testProvider));
 
         expect(find.text(testProvider.name), findsOneWidget);
-        expect(find.byIcon(Icons.auto_awesome), findsOneWidget); // Anthropic icon
+        expect(
+            find.byIcon(Icons.auto_awesome), findsOneWidget); // Anthropic icon
       });
 
-      testWidgets('displays provider description when available', (WidgetTester tester) async {
+      testWidgets('displays provider description when available',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(testProvider));
         expect(find.text(testProvider.description!), findsOneWidget);
       });
     });
 
     group('Model configuration', () {
-      testWidgets('displays model name and description', (WidgetTester tester) async {
+      testWidgets('displays model name and description',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(testModel));
 
         expect(find.text(testModel.name), findsOneWidget);
         expect(find.text(testModel.description!), findsOneWidget);
       });
 
-      testWidgets('displays capabilities when showCapabilities is true', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(testModel, showCapabilities: true));
+      testWidgets('displays capabilities when showCapabilities is true',
+          (WidgetTester tester) async {
+        await tester
+            .pumpWidget(createTestWidget(testModel, showCapabilities: true));
 
         // Should show capability indicators
-        expect(find.byIcon(Icons.text_fields), findsOneWidget); // Text capability
+        expect(
+            find.byIcon(Icons.text_fields), findsOneWidget); // Text capability
       });
     });
 
     group('Prompt configuration', () {
-      testWidgets('displays prompt name and description', (WidgetTester tester) async {
+      testWidgets('displays prompt name and description',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(testPrompt));
 
         expect(find.text(testPrompt.name), findsOneWidget);
@@ -139,9 +147,10 @@ void main() {
     });
 
     group('Interaction', () {
-      testWidgets('calls onTap when card is tapped', (WidgetTester tester) async {
-        bool tapped = false;
-        
+      testWidgets('calls onTap when card is tapped',
+          (WidgetTester tester) async {
+        var tapped = false;
+
         final widget = MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -165,7 +174,7 @@ void main() {
 
         await tester.pumpWidget(widget);
         await tester.tap(find.byType(AiConfigCard));
-        
+
         expect(tapped, isTrue);
       });
 
@@ -176,9 +185,10 @@ void main() {
     });
 
     group('Compact mode', () {
-      testWidgets('uses smaller sizing in compact mode', (WidgetTester tester) async {
+      testWidgets('uses smaller sizing in compact mode',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(testProvider));
-        
+
         // Should render without errors and display the config name
         expect(find.text(testProvider.name), findsOneWidget);
       });

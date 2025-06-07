@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../test_utils.dart';
 
 void main() {
   group('AI Settings Core Functionality', () {
@@ -17,18 +12,7 @@ void main() {
     late List<AiConfig> testProviders;
     late List<AiConfig> testModels;
 
-    setUpAll(() {
-      registerFallbackValue(
-        AiConfig.inferenceProvider(
-          id: 'fallback-id',
-          name: 'Fallback Provider',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-          apiKey: 'test-key',
-          baseUrl: 'https://api.example.com',
-          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-        ),
-      );
-    });
+    setUpAll(AiTestSetup.registerFallbackValues);
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
@@ -79,7 +63,8 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
+      when(() =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) => Stream.value(testProviders));
       when(() => mockRepository.watchConfigsByType(AiConfigType.model))
           .thenAnswer((_) => Stream.value(testModels));
@@ -105,9 +90,10 @@ void main() {
       );
     }
 
-    testWidgets('AiConfigCard displays provider information correctly', (WidgetTester tester) async {
+    testWidgets('AiConfigCard displays provider information correctly',
+        (WidgetTester tester) async {
       final provider = testProviders.first;
-      
+
       await tester.pumpWidget(
         createTestWidget(
           child: AiConfigCard(
@@ -123,9 +109,10 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
-    testWidgets('AiConfigCard displays model capabilities', (WidgetTester tester) async {
+    testWidgets('AiConfigCard displays model capabilities',
+        (WidgetTester tester) async {
       final model = testModels.first;
-      
+
       await tester.pumpWidget(
         createTestWidget(
           child: AiConfigCard(
@@ -138,16 +125,17 @@ void main() {
 
       expect(find.text(model.name), findsOneWidget);
       expect(find.text(model.description!), findsOneWidget);
-      
+
       // Should show capability indicators
       expect(find.byIcon(Icons.text_fields), findsOneWidget); // Text
       expect(find.byIcon(Icons.visibility), findsOneWidget); // Vision
     });
 
-    testWidgets('AiConfigCard handles tap correctly', (WidgetTester tester) async {
-      bool tapped = false;
+    testWidgets('AiConfigCard handles tap correctly',
+        (WidgetTester tester) async {
+      var tapped = false;
       final provider = testProviders.first;
-      
+
       await tester.pumpWidget(
         createTestWidget(
           child: AiConfigCard(
@@ -161,7 +149,8 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('TabBar widget displays correctly', (WidgetTester tester) async {
+    testWidgets('TabBar widget displays correctly',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         createTestWidget(
           child: DefaultTabController(
@@ -216,8 +205,8 @@ void main() {
     });
 
     testWidgets('Search field filters correctly', (WidgetTester tester) async {
-      String searchQuery = '';
-      
+      var searchQuery = '';
+
       await tester.pumpWidget(
         createTestWidget(
           child: Column(
@@ -234,11 +223,14 @@ void main() {
               Expanded(
                 child: ListView(
                   children: testProviders
-                      .where((p) => searchQuery.isEmpty || 
-                          p.name.toLowerCase().contains(searchQuery.toLowerCase()))
+                      .where((p) =>
+                          searchQuery.isEmpty ||
+                          p.name
+                              .toLowerCase()
+                              .contains(searchQuery.toLowerCase()))
                       .map((provider) => ListTile(
-                          title: Text(provider.name),
-                        ))
+                            title: Text(provider.name),
+                          ))
                       .toList(),
                 ),
               ),
@@ -273,11 +265,14 @@ void main() {
               Expanded(
                 child: ListView(
                   children: testProviders
-                      .where((p) => searchQuery.isEmpty || 
-                          p.name.toLowerCase().contains(searchQuery.toLowerCase()))
+                      .where((p) =>
+                          searchQuery.isEmpty ||
+                          p.name
+                              .toLowerCase()
+                              .contains(searchQuery.toLowerCase()))
                       .map((provider) => ListTile(
-                          title: Text(provider.name),
-                        ))
+                            title: Text(provider.name),
+                          ))
                       .toList(),
                 ),
               ),
