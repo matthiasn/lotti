@@ -370,6 +370,8 @@ class _ModelManagementContentState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Add 10px spacing above the first card
+              const SizedBox(height: 10),
               // Models list with enhanced styling
               ...modelConfigs.map((model) {
                 final isSelected = _selectedIds.contains(model.id);
@@ -499,9 +501,8 @@ class _ModelCard extends StatelessWidget {
               border: Border.all(
                 color: isSelected
                     ? context.colorScheme.primary.withValues(alpha: 0.5)
-                    : context.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                width: isSelected ? 1.5 : 1,
+                    : context.colorScheme.surface,
+                width: 1.5,
               ),
             ),
             child: Row(
