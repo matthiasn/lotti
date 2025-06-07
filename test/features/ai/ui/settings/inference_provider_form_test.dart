@@ -249,7 +249,7 @@ void main() {
         ..baseUrlChanged('https://test.example.com')
         ..apiKeyChanged('test-api-key')
         ..descriptionChanged('Test description')
-        ..inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+        ..inferenceProviderTypeChanged(InferenceProviderType.genericOpenAi);
 
       // Verify the controller has the correct values
       final formState = controller.state.valueOrNull;
@@ -258,7 +258,8 @@ void main() {
       expect(formState.baseUrl.value, 'https://test.example.com');
       expect(formState.apiKey.value, 'test-api-key');
       expect(formState.description.value, 'Test description');
-      expect(formState.inferenceProviderType, InferenceProviderType.anthropic);
+      expect(
+          formState.inferenceProviderType, InferenceProviderType.genericOpenAi);
 
       // Convert to AiConfig and check values
       final config = formState.toAiConfig();
@@ -286,7 +287,7 @@ void main() {
           inferenceProvider: (c) => c.inferenceProviderType,
           orElse: () => null,
         ),
-        InferenceProviderType.anthropic,
+        InferenceProviderType.genericOpenAi,
       );
     });
 
@@ -363,6 +364,92 @@ void main() {
 
       // Error should still be shown
       expect(find.text('Name must be at least 3 characters'), findsOneWidget);
+    });
+
+    testWidgets(
+        'should auto-populate base URL when provider type changes to Anthropic',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(),
+      );
+
+      await tester.pumpAndSettle();
+
+      final formFinder = find.byType(InferenceProviderForm);
+      final providerContainer = ProviderScope.containerOf(
+        tester.element(formFinder),
+      );
+
+      final controller = providerContainer.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      )..inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+
+      // Verify auto-populated values
+      final formState = controller.state.valueOrNull;
+      expect(formState, isNotNull);
+      expect(formState!.baseUrl.value, 'https://api.anthropic.com/v1');
+      expect(formState.name.value, 'Anthropic');
+      expect(formState.inferenceProviderType, InferenceProviderType.anthropic);
+    });
+
+    testWidgets(
+        'should auto-populate base URL when provider type changes to OpenRouter',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(),
+      );
+
+      await tester.pumpAndSettle();
+
+      final formFinder = find.byType(InferenceProviderForm);
+      final providerContainer = ProviderScope.containerOf(
+        tester.element(formFinder),
+      );
+
+      final controller = providerContainer.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      // Change to OpenRouter provider type
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
+
+      // Verify auto-populated values
+      final formState = controller.state.valueOrNull;
+      expect(formState, isNotNull);
+      expect(formState!.baseUrl.value, 'https://openrouter.ai/api/v1');
+      expect(formState.name.value, 'OpenRouter');
+      expect(formState.inferenceProviderType, InferenceProviderType.openRouter);
+    });
+
+    testWidgets('should not override existing name when provider type changes',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(),
+      );
+
+      await tester.pumpAndSettle();
+
+      final formFinder = find.byType(InferenceProviderForm);
+      final providerContainer = ProviderScope.containerOf(
+        tester.element(formFinder),
+      );
+
+      final controller = providerContainer.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      // Set a custom name first
+      // ignore_for_file: cascade_invocations
+      controller.nameChanged('My Custom Provider');
+
+      // Change to Anthropic provider type
+      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+
+      // Verify the custom name is preserved
+      final formState = controller.state.valueOrNull;
+      expect(formState, isNotNull);
+      expect(formState!.name.value, 'My Custom Provider');
+      expect(formState.baseUrl.value, 'https://api.anthropic.com/v1');
     });
   });
 }

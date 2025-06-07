@@ -354,5 +354,131 @@ void main() {
         equals(InferenceProviderType.openAi),
       );
     });
+
+    test('should set baseUrl when Anthropic provider type is selected',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('https://api.anthropic.com/v1'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('https://api.anthropic.com/v1'),
+      );
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.anthropic),
+      );
+    });
+
+    test('should set baseUrl when OpenRouter provider type is selected',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('https://openrouter.ai/api/v1'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('https://openrouter.ai/api/v1'),
+      );
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.openRouter),
+      );
+    });
+
+    test(
+        'should set name when Anthropic provider type is selected and name is empty',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(controller.nameController.text, equals('Anthropic'));
+      expect(formState?.name.value, equals('Anthropic'));
+    });
+
+    test(
+        'should set name when OpenRouter provider type is selected and name is empty',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(controller.nameController.text, equals('OpenRouter'));
+      expect(formState?.name.value, equals('OpenRouter'));
+    });
+
+    test('should not override existing name when provider type is changed',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Set a custom name first
+      controller.nameChanged('My Custom Provider');
+
+      // Act
+      // ignore_for_file: cascade_invocations
+      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(controller.nameController.text, equals('My Custom Provider'));
+      expect(formState?.name.value, equals('My Custom Provider'));
+    });
   });
 }
