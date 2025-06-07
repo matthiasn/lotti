@@ -171,10 +171,11 @@ void main() {
       await tester.tap(find.text('Models'));
       await tester.pumpAndSettle();
 
-      // Should see capability filter options
-      expect(find.text('Capabilities:'), findsOneWidget);
+      // Should see capability filter chips (without the old "Capabilities:" label)
       expect(find.text('Vision'), findsOneWidget);
       expect(find.text('Audio'), findsOneWidget);
+      expect(find.text('Text'), findsOneWidget);
+      expect(find.text('Reasoning'), findsOneWidget);
     });
 
     testWidgets('should display floating action button with correct label',

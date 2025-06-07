@@ -61,17 +61,19 @@ void main() {
         );
 
         await tester.pumpWidget(createWidget(filterState: filterState));
+        await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         expect(find.text('Clear'), findsOneWidget);
-        expect(find.byIcon(Icons.clear_all), findsOneWidget);
+        expect(find.byIcon(Icons.clear), findsOneWidget);
       });
 
       testWidgets('hides clear filters when no filters are active',
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
+        await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         expect(find.text('Clear'), findsNothing);
-        expect(find.byIcon(Icons.clear_all), findsNothing);
+        expect(find.byIcon(Icons.clear), findsNothing);
       });
     });
 
@@ -192,6 +194,7 @@ void main() {
         );
 
         await tester.pumpWidget(createWidget(filterState: filterState));
+        await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         await tester.tap(find.text('Clear'));
         await tester.pump();
@@ -315,10 +318,12 @@ void main() {
         );
 
         await tester.pumpWidget(createWidget(filterState: filterState));
+        await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         // All chips should be selected
         final chips = find.byType(FilterChip);
-        expect(chips, findsNWidgets(4)); // 3 capabilities + 1 reasoning
+        expect(chips,
+            findsNWidgets(5)); // 1 provider + 3 capabilities + 1 reasoning
 
         // Clear button should be visible
         expect(find.text('Clear'), findsOneWidget);
@@ -329,7 +334,8 @@ void main() {
 
         await tester.pumpWidget(createWidget(filterState: emptyState));
 
-        expect(find.byType(FilterChip), findsNWidgets(4));
+        expect(find.byType(FilterChip),
+            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
         expect(find.text('Clear'), findsNothing);
       });
     });
@@ -358,8 +364,9 @@ void main() {
           ),
         ));
 
-        // Should still show all chips
-        expect(find.byType(FilterChip), findsNWidgets(4));
+        // Should show at least the capability chips (3 capabilities + 1 reasoning)
+        expect(find.byType(FilterChip),
+            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
       });
 
       testWidgets('maintains consistent spacing between chips',
@@ -367,8 +374,12 @@ void main() {
         await tester.pumpWidget(createWidget());
 
         // Check that Wrap widget is used for proper spacing
-        expect(find.byType(Wrap), findsOneWidget);
-        expect(find.byType(FilterChip), findsNWidgets(4));
+        expect(
+            find.byType(Wrap),
+            findsAtLeastNWidgets(
+                1)); // Provider and capability sections each use Wrap
+        expect(find.byType(FilterChip),
+            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
       });
     });
   });

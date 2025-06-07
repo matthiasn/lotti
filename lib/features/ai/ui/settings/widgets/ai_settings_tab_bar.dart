@@ -50,24 +50,26 @@ class AiSettingsTabBar extends StatelessWidget {
         },
         indicator: BoxDecoration(
           color: context.colorScheme.primary,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: const EdgeInsets.all(2),
+        indicatorPadding: const EdgeInsets.all(3),
         dividerColor: Colors.transparent,
         labelColor: context.colorScheme.onPrimary,
         unselectedLabelColor: context.colorScheme.onSurfaceVariant,
-        labelStyle: context.textTheme.bodyMedium?.copyWith(
+        labelStyle: context.textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.3,
+          letterSpacing: -0.2,
         ),
-        unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(
+        unselectedLabelStyle: context.textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w500,
-          letterSpacing: -0.3,
+          letterSpacing: -0.2,
         ),
         overlayColor: WidgetStateProperty.all(Colors.transparent),
+        tabAlignment: TabAlignment.fill,
         tabs: AiSettingsTab.values
             .map((tab) => Tab(
+                  height: 36, // Reduced height for more compact look
                   text: tab.displayName,
                 ))
             .toList(),

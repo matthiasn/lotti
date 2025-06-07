@@ -59,7 +59,7 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: TextField(
         controller: widget.controller,
         onChanged: widget.onChanged,

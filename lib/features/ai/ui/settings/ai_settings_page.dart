@@ -183,7 +183,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         color: context.colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: context.colorScheme.outline.withValues(alpha: 0.2),
+            color: context.colorScheme.outline.withValues(alpha: 0.15),
           ),
         ),
       ),
@@ -197,12 +197,13 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           ),
 
           // Tab Bar
-          AiSettingsTabBar(
-            controller: _tabController,
-            onTabChanged: _handleTabChange,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: AiSettingsTabBar(
+              controller: _tabController,
+              onTabChanged: _handleTabChange,
+            ),
           ),
-
-          const SizedBox(height: 16),
 
           // Model Filters (only shown on Models tab)
           if (_filterState.activeTab == AiSettingsTab.models)
