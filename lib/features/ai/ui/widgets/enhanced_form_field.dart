@@ -13,7 +13,8 @@ import 'package:lotti/themes/theme.dart';
 /// - Professional error handling with smooth transitions
 /// - Seamless integration with Formz validation
 /// - Accessibility optimizations
-class EnhancedFormField<T extends FormzInput<dynamic, dynamic>> extends StatefulWidget {
+class EnhancedFormField<T extends FormzInput<dynamic, dynamic>>
+    extends StatefulWidget {
   const EnhancedFormField({
     required this.controller,
     required this.labelText,
@@ -152,10 +153,12 @@ class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
 
     // Handle common validation errors
     switch (error.toString()) {
-      case 'ProviderFormError.tooShort':
-        return 'This field is too short';
+      case 'TestFormError.empty':
       case 'ProviderFormError.empty':
         return 'This field is required';
+      case 'TestFormError.tooShort':
+      case 'ProviderFormError.tooShort':
+        return 'This field is too short';
       case 'ProviderFormError.invalidUrl':
         return 'Please enter a valid URL';
       default:
