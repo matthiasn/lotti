@@ -31,7 +31,7 @@ class AiSettingsNavigationService {
   /// Navigates to the appropriate edit page based on the AI configuration type
   ///
   /// This method uses pattern matching to determine the correct edit page
-  /// and navigates using imperative navigation (Navigator.push).
+  /// and navigates using a smooth slide transition from right to left.
   ///
   /// **Parameters:**
   /// - [context]: BuildContext for navigation
@@ -42,13 +42,13 @@ class AiSettingsNavigationService {
   /// **Example:**
   /// ```dart
   /// await navigationService.navigateToConfigEdit(context, providerConfig);
-  /// // Will navigate to InferenceProviderEditPage with the provider's ID
+  /// // Will navigate to InferenceProviderEditPage with smooth slide transition
   /// ```
   Future<void> navigateToConfigEdit(
     BuildContext context,
     AiConfig config,
   ) async {
-    final route = _createEditRoute(config);
+    final route = _createEditRouteWithTransition(config);
     await Navigator.of(context).push(route);
   }
 
@@ -59,7 +59,7 @@ class AiSettingsNavigationService {
   ///
   /// **Returns:** Future that completes when navigation finishes
   Future<void> navigateToCreateProvider(BuildContext context) async {
-    final route = MaterialPageRoute<void>(
+    final route = _createSlideRoute(
       builder: (context) => const InferenceProviderEditPage(),
     );
     await Navigator.of(context).push(route);
@@ -72,7 +72,7 @@ class AiSettingsNavigationService {
   ///
   /// **Returns:** Future that completes when navigation finishes
   Future<void> navigateToCreateModel(BuildContext context) async {
-    final route = MaterialPageRoute<void>(
+    final route = _createSlideRoute(
       builder: (context) => const InferenceModelEditPage(),
     );
     await Navigator.of(context).push(route);
@@ -85,37 +85,37 @@ class AiSettingsNavigationService {
   ///
   /// **Returns:** Future that completes when navigation finishes
   Future<void> navigateToCreatePrompt(BuildContext context) async {
-    final route = MaterialPageRoute<void>(
+    final route = _createSlideRoute(
       builder: (context) => const PromptEditPage(),
     );
     await Navigator.of(context).push(route);
   }
 
-  /// Creates the appropriate MaterialPageRoute based on config type
+  /// Creates the appropriate route with slide transition based on config type
   ///
   /// This method uses pattern matching on the sealed AiConfig class
-  /// to determine which edit page to create.
+  /// to determine which edit page to create with smooth slide animation.
   ///
   /// **Parameters:**
   /// - [config]: The AI configuration to create a route for
   ///
-  /// **Returns:** MaterialPageRoute for the appropriate edit page
+  /// **Returns:** PageRoute with slide transition for the appropriate edit page
   ///
   /// **Throws:**
   /// - [ArgumentError] if config type is not supported
-  MaterialPageRoute<void> _createEditRoute(AiConfig config) {
+  PageRoute<void> _createEditRouteWithTransition(AiConfig config) {
     return switch (config) {
-      AiConfigInferenceProvider() => MaterialPageRoute<void>(
+      AiConfigInferenceProvider() => _createSlideRoute(
           builder: (context) => InferenceProviderEditPage(
             configId: config.id,
           ),
         ),
-      AiConfigModel() => MaterialPageRoute<void>(
+      AiConfigModel() => _createSlideRoute(
           builder: (context) => InferenceModelEditPage(
             configId: config.id,
           ),
         ),
-      AiConfigPrompt() => MaterialPageRoute<void>(
+      AiConfigPrompt() => _createSlideRoute(
           builder: (context) => PromptEditPage(
             configId: config.id,
           ),
@@ -124,6 +124,82 @@ class AiSettingsNavigationService {
           'Unsupported config type: ${config.runtimeType}',
         ),
     };
+  }
+
+  /// Creates a smooth slide transition route with both pages moving
+  ///
+  /// This method creates a PageRouteBuilder with a custom slide transition where:
+  /// - The new page slides in from the right
+  /// - The previous page slides out to the left
+  /// - Both animations happen simultaneously for a dynamic effect
+  ///
+  /// **Parameters:**
+  /// - [builder]: Widget builder function for the destination page
+  ///
+  /// **Returns:** PageRoute with smooth bidirectional slide transition
+  PageRoute<void> _createSlideRoute({
+    required Widget Function(BuildContext) builder,
+  }) {
+    return PageRouteBuilder<void>(
+      pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Primary transition: new page slides in from right
+        const primaryBegin = Offset(1, 0);
+        const primaryEnd = Offset.zero;
+        
+        // Secondary transition: old page slides out to left
+        const secondaryBegin = Offset.zero;
+        const secondaryEnd = Offset(-0.3, 0); // Slide out partially for depth effect
+        
+        const curve = Curves.easeInOut;
+
+        // Animation for the incoming page (current page being navigated to)
+        final primarySlideAnimation = Tween(
+          begin: primaryBegin, 
+          end: primaryEnd,
+        ).animate(
+          CurvedAnimation(parent: animation, curve: curve),
+        );
+
+        // Animation for the outgoing page (previous page being left behind)
+        final secondarySlideAnimation = Tween(
+          begin: secondaryBegin,
+          end: secondaryEnd,
+        ).animate(
+          CurvedAnimation(parent: secondaryAnimation, curve: curve),
+        );
+
+        // Fade effect for extra polish on the incoming page
+        final fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: const Interval(0, 0.8, curve: Curves.easeIn),
+          ),
+        );
+
+        // Stack both transitions: outgoing page behind, incoming page in front
+        return Stack(
+          children: [
+            // Background: Previous page sliding out to the left
+            SlideTransition(
+              position: secondarySlideAnimation,
+              child: Container(
+                color: Theme.of(context).colorScheme.surface,
+              ),
+            ),
+            
+            // Foreground: New page sliding in from the right with fade
+            SlideTransition(
+              position: primarySlideAnimation,
+              child: FadeTransition(
+                opacity: fadeAnimation,
+                child: child,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Returns the appropriate page title for create mode based on config type
