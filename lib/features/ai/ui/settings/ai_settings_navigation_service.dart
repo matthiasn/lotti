@@ -146,16 +146,17 @@ class AiSettingsNavigationService {
         // Primary transition: new page slides in from right
         const primaryBegin = Offset(1, 0);
         const primaryEnd = Offset.zero;
-        
+
         // Secondary transition: old page slides out to left
         const secondaryBegin = Offset.zero;
-        const secondaryEnd = Offset(-0.3, 0); // Slide out partially for depth effect
-        
+        const secondaryEnd =
+            Offset(-0.3, 0); // Slide out partially for depth effect
+
         const curve = Curves.easeInOut;
 
         // Animation for the incoming page (current page being navigated to)
         final primarySlideAnimation = Tween(
-          begin: primaryBegin, 
+          begin: primaryBegin,
           end: primaryEnd,
         ).animate(
           CurvedAnimation(parent: animation, curve: curve),
@@ -187,7 +188,7 @@ class AiSettingsNavigationService {
                 color: Theme.of(context).colorScheme.surface,
               ),
             ),
-            
+
             // Foreground: New page sliding in from the right with fade
             SlideTransition(
               position: primarySlideAnimation,

@@ -48,7 +48,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
             // Provider Filter
             _buildProviderFilter(context, ref),
 
-            // Capability Filters  
+            // Capability Filters
             _buildCapabilityFilters(context),
           ],
         ),
@@ -99,10 +99,11 @@ class AiSettingsFilterChips extends ConsumerWidget {
                   },
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   backgroundColor: Colors.transparent,
-                  selectedColor: context.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                  selectedColor: context.colorScheme.primaryContainer
+                      .withValues(alpha: 0.6),
                   checkmarkColor: context.colorScheme.primary,
                   side: BorderSide(
-                    color: isSelected 
+                    color: isSelected
                         ? context.colorScheme.primary
                         : context.colorScheme.outline.withValues(alpha: 0.4),
                     width: 0.8,
@@ -114,11 +115,12 @@ class AiSettingsFilterChips extends ConsumerWidget {
                         ? context.colorScheme.primary
                         : context.colorScheme.onSurfaceVariant,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   tooltip: 'Filter by ${provider.name}',
                 );
               }),
-              
+
               // Clear filters button - positioned in provider row when there are active filters
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -137,14 +139,16 @@ class AiSettingsFilterChips extends ConsumerWidget {
                         avatar: Icon(
                           Icons.clear,
                           size: 14,
-                          color: context.colorScheme.error.withValues(alpha: 0.7),
+                          color:
+                              context.colorScheme.error.withValues(alpha: 0.7),
                         ),
                         label: Text(
                           'Clear',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: context.colorScheme.error.withValues(alpha: 0.8),
+                            color: context.colorScheme.error
+                                .withValues(alpha: 0.8),
                           ),
                         ),
                         onPressed: () {
@@ -153,10 +157,12 @@ class AiSettingsFilterChips extends ConsumerWidget {
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         backgroundColor: Colors.transparent,
                         side: BorderSide(
-                          color: context.colorScheme.error.withValues(alpha: 0.3),
+                          color:
+                              context.colorScheme.error.withValues(alpha: 0.3),
                           width: 0.8,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         tooltip: 'Clear all filters',
                       )
                     : const SizedBox.shrink(key: ValueKey('no_clear_button')),
@@ -204,10 +210,11 @@ class AiSettingsFilterChips extends ConsumerWidget {
             },
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: Colors.transparent,
-            selectedColor: context.colorScheme.primaryContainer.withValues(alpha: 0.6),
+            selectedColor:
+                context.colorScheme.primaryContainer.withValues(alpha: 0.6),
             checkmarkColor: context.colorScheme.primary,
             side: BorderSide(
-              color: isSelected 
+              color: isSelected
                   ? context.colorScheme.primary
                   : context.colorScheme.outline.withValues(alpha: 0.4),
               width: 0.8,
@@ -236,10 +243,11 @@ class AiSettingsFilterChips extends ConsumerWidget {
           },
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           backgroundColor: Colors.transparent,
-          selectedColor: context.colorScheme.primaryContainer.withValues(alpha: 0.6),
+          selectedColor:
+              context.colorScheme.primaryContainer.withValues(alpha: 0.6),
           checkmarkColor: context.colorScheme.primary,
           side: BorderSide(
-            color: filterState.reasoningFilter 
+            color: filterState.reasoningFilter
                 ? context.colorScheme.primary
                 : context.colorScheme.outline.withValues(alpha: 0.4),
             width: 0.8,

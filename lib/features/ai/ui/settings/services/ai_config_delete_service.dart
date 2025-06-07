@@ -20,7 +20,7 @@ import 'package:lotti/themes/theme.dart';
 /// **Usage:**
 /// ```dart
 /// final deleteService = AiConfigDeleteService();
-/// 
+///
 /// await deleteService.deleteConfig(
 ///   context: context,
 ///   ref: ref,
@@ -100,184 +100,193 @@ class AiConfigDeleteService {
     AiConfig config,
   ) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: context.colorScheme.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.warning_amber_rounded,
-                color: context.colorScheme.error,
-                size: 24,
-              ),
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _getDeleteTitle(config),
-                style: context.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: context.colorScheme.error,
+                    size: 24,
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Warning message
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.colorScheme.errorContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.colorScheme.error.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'This action cannot be undone',
-                    style: context.textTheme.titleSmall?.copyWith(
-                      color: context.colorScheme.onErrorContainer,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _getDeleteTitle(config),
+                    style: context.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _getDeleteWarning(config),
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onErrorContainer
-                          .withValues(alpha: 0.8),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Warning message
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.errorContainer
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.colorScheme.error.withValues(alpha: 0.2),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Configuration details
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.colorScheme.outline.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          _getConfigIcon(config),
-                          color: context.colorScheme.primary,
-                          size: 18,
+                      Text(
+                        'This action cannot be undone',
+                        style: context.textTheme.titleSmall?.copyWith(
+                          color: context.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              config.name,
-                              style: context.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (config.description?.isNotEmpty ?? false) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                config.description!,
-                                style: context.textTheme.bodySmall?.copyWith(
-                                  color: context.colorScheme.onSurfaceVariant,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        _getDeleteWarning(config),
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.colorScheme.onErrorContainer
+                              .withValues(alpha: 0.8),
                         ),
                       ),
                     ],
                   ),
-                  
-                  // Show cascade warning for providers
-                  if (config is AiConfigInferenceProvider) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.secondary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
+                ),
+
+                const SizedBox(height: 16),
+
+                // Configuration details
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: context.colorScheme.secondary,
-                            size: 16,
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: context.colorScheme.primary
+                                  .withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              _getConfigIcon(config),
+                              color: context.colorScheme.primary,
+                              size: 18,
+                            ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              'Associated models will also be deleted',
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSecondaryContainer,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  config.name,
+                                  style:
+                                      context.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (config.description?.isNotEmpty ??
+                                    false) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    config.description!,
+                                    style:
+                                        context.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          context.colorScheme.onSurfaceVariant,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ],
+
+                      // Show cascade warning for providers
+                      if (config is AiConfigInferenceProvider) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: context.colorScheme.secondary
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: context.colorScheme.secondary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Associated models will also be deleted',
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: context
+                                        .colorScheme.onSecondaryContainer,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-            ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.colorScheme.error,
+                  foregroundColor: context.colorScheme.onError,
+                ),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colorScheme.error,
-              foregroundColor: context.colorScheme.onError,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   /// Shows success snackbar for provider deletion with cascade information
@@ -288,7 +297,7 @@ class AiConfigDeleteService {
     CascadeDeletionResult result,
   ) {
     final hasDeletedModels = result.deletedModels.isNotEmpty;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colorScheme.inversePrimary,
@@ -365,30 +374,33 @@ class AiConfigDeleteService {
                       if (result.deletedModels.length <= 4) ...[
                         const SizedBox(height: 8),
                         ...result.deletedModels.map((model) => Padding(
-                          padding: const EdgeInsets.only(left: 24, top: 2),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: context.colorScheme.onSurfaceVariant,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  model.name,
-                                  style: context.textTheme.bodySmall?.copyWith(
-                                    fontFamily: 'monospace',
-                                    color: context.colorScheme.onSurfaceVariant,
+                              padding: const EdgeInsets.only(left: 24, top: 2),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          context.colorScheme.onSurfaceVariant,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      model.name,
+                                      style:
+                                          context.textTheme.bodySmall?.copyWith(
+                                        fontFamily: 'monospace',
+                                        color: context
+                                            .colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        )),
+                            )),
                       ] else ...[
                         const SizedBox(height: 8),
                         Padding(
@@ -535,10 +547,10 @@ class AiConfigDeleteService {
   ) async {
     try {
       final repository = ref.read(aiConfigRepositoryProvider);
-      
+
       // Restore the provider first
       await repository.saveConfig(provider);
-      
+
       // Restore all deleted models
       for (final model in result.deletedModels) {
         await repository.saveConfig(model);
@@ -572,7 +584,8 @@ class AiConfigDeleteService {
     return switch (config) {
       AiConfigInferenceProvider() =>
         'This will permanently delete the provider and all associated models.',
-      AiConfigModel() => 'This will permanently delete the model configuration.',
+      AiConfigModel() =>
+        'This will permanently delete the model configuration.',
       AiConfigPrompt() => 'This will permanently delete the prompt template.',
       _ => 'This will permanently delete the configuration.',
     };

@@ -210,11 +210,11 @@ void main() {
       // Verify floating action button exists and is tappable
       final fabFinder = find.byType(FloatingActionButton);
       expect(fabFinder, findsOneWidget);
-      
+
       // Test that it's enabled (can be tapped without throwing)
       final fab = tester.widget<FloatingActionButton>(fabFinder);
       expect(fab.onPressed, isNotNull);
-      
+
       // Note: We don't actually tap here to avoid navigation issues in test context
       // In a real integration test with proper routing, we would test navigation
     });

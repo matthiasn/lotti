@@ -86,7 +86,7 @@ class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final config = filteredConfigs[index];
-        
+
         if (!enableSwipeToDelete) {
           return AiConfigCard(
             config: config,

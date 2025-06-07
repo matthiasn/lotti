@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:formz/formz.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Enhanced form field widget with modern Series A startup styling
-/// 
+///
 /// Features:
 /// - Modern card-based design with subtle elevation
 /// - Professional color scheme with proper contrast
@@ -14,7 +13,7 @@ import 'package:lotti/themes/theme.dart';
 /// - Professional error handling with smooth transitions
 /// - Seamless integration with Formz validation
 /// - Accessibility optimizations
-class EnhancedFormField<T extends FormzInput> extends StatefulWidget {
+class EnhancedFormField<T extends FormzInput<dynamic, dynamic>> extends StatefulWidget {
   const EnhancedFormField({
     required this.controller,
     required this.labelText,
@@ -52,15 +51,15 @@ class EnhancedFormField<T extends FormzInput> extends StatefulWidget {
   State<EnhancedFormField<T>> createState() => _EnhancedFormFieldState<T>();
 }
 
-class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormField<T>>
-    with TickerProviderStateMixin {
+class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
+    extends State<EnhancedFormField<T>> with TickerProviderStateMixin {
   final FocusNode _focusNode = FocusNode();
   late AnimationController _animationController;
   late AnimationController _errorAnimationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _errorFadeAnimation;
   late Animation<Offset> _errorSlideAnimation;
-  
+
   bool _isFocused = false;
   bool _hasError = false;
 
@@ -75,23 +74,23 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(
-      begin: 1.0,
+      begin: 1,
       end: 1.02,
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _errorFadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
+      begin: 0,
+      end: 1,
     ).animate(CurvedAnimation(
       parent: _errorAnimationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _errorSlideAnimation = Tween<Offset>(
       begin: const Offset(0, -0.5),
       end: Offset.zero,
@@ -99,14 +98,15 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
       parent: _errorAnimationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _focusNode.addListener(_handleFocusChange);
   }
 
   @override
   void dispose() {
-    _focusNode.removeListener(_handleFocusChange);
-    _focusNode.dispose();
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
     _animationController.dispose();
     _errorAnimationController.dispose();
     super.dispose();
@@ -115,7 +115,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
   @override
   void didUpdateWidget(EnhancedFormField<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     final newHasError = _getErrorText() != null;
     if (newHasError != _hasError) {
       _hasError = newHasError;
@@ -133,7 +133,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
     if (widget.customErrorText != null && widget.customErrorText!.isNotEmpty) {
       return widget.customErrorText;
     }
-    
+
     if (widget.formzField != null) {
       final field = widget.formzField!;
       if (field.isNotValid && !field.isPure) {
@@ -141,7 +141,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
         return _getFormzErrorMessage(field.error);
       }
     }
-    
+
     return null;
   }
 
@@ -149,7 +149,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
   String _getFormzErrorMessage(Object? error) {
     // This can be customized based on your error types
     if (error == null) return '';
-    
+
     // Handle common validation errors
     switch (error.toString()) {
       case 'ProviderFormError.tooShort':
@@ -168,7 +168,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
       setState(() {
         _isFocused = _focusNode.hasFocus;
       });
-      
+
       if (_isFocused) {
         _animationController.forward();
       } else {
@@ -181,8 +181,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
   Widget build(BuildContext context) {
     final errorText = _getErrorText();
     final hasError = errorText != null;
-    final hasContent = widget.controller.text.isNotEmpty;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -196,7 +195,8 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                   widget.labelText,
                   style: context.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: context.colorScheme.onSurface.withValues(alpha: 0.87),
+                    color:
+                        context.colorScheme.onSurface.withValues(alpha: 0.87),
                   ),
                 ),
                 if (widget.isRequired)
@@ -210,7 +210,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
               ],
             ),
           ),
-          
+
         // Main input field container
         AnimatedBuilder(
           animation: _scaleAnimation,
@@ -226,13 +226,15 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                         ? context.colorScheme.error
                         : _isFocused
                             ? context.colorScheme.primary
-                            : context.colorScheme.outline.withValues(alpha: 0.2),
+                            : context.colorScheme.outline
+                                .withValues(alpha: 0.2),
                     width: hasError || _isFocused ? 2 : 1,
                   ),
                   boxShadow: [
                     if (_isFocused)
                       BoxShadow(
-                        color: context.colorScheme.primary.withValues(alpha: 0.1),
+                        color:
+                            context.colorScheme.primary.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -259,7 +261,8 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                   decoration: InputDecoration(
                     hintText: 'Enter ${widget.labelText.toLowerCase()}',
                     hintStyle: context.textTheme.bodyLarge?.copyWith(
-                      color: context.colorScheme.onSurface.withValues(alpha: 0.5),
+                      color:
+                          context.colorScheme.onSurface.withValues(alpha: 0.5),
                       fontWeight: FontWeight.w400,
                     ),
                     prefixIcon: widget.prefixIcon != null
@@ -269,7 +272,8 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                               data: IconThemeData(
                                 color: _isFocused
                                     ? context.colorScheme.primary
-                                    : context.colorScheme.onSurface.withValues(alpha: 0.6),
+                                    : context.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
                                 size: 20,
                               ),
                               child: widget.prefixIcon!,
@@ -281,7 +285,8 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                             padding: const EdgeInsets.only(right: 16, left: 12),
                             child: IconTheme(
                               data: IconThemeData(
-                                color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: context.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                                 size: 20,
                               ),
                               child: widget.suffixIcon!,
@@ -290,7 +295,9 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                         : null,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: widget.prefixIcon != null ? 8 : 16,
-                      vertical: widget.maxLines != null && widget.maxLines! > 1 ? 16 : 14,
+                      vertical: widget.maxLines != null && widget.maxLines! > 1
+                          ? 16
+                          : 14,
                     ),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -303,7 +310,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
             );
           },
         ),
-        
+
         // Error message with animation
         if (hasError)
           SlideTransition(
@@ -322,7 +329,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        errorText!,
+                        errorText,
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.colorScheme.error,
                           fontWeight: FontWeight.w500,
@@ -334,7 +341,7 @@ class _EnhancedFormFieldState<T extends FormzInput> extends State<EnhancedFormFi
               ),
             ),
           ),
-          
+
         // Helper text
         if (widget.helperText != null && !hasError)
           Padding(
@@ -379,7 +386,7 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  
+
   bool _isPressed = false;
 
   @override
@@ -389,9 +396,9 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(
-      begin: 1.0,
+      begin: 1,
       end: 0.98,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -433,7 +440,7 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
             ],
           ),
         ),
-        
+
         // Selection field container
         AnimatedBuilder(
           animation: _scaleAnimation,
@@ -467,12 +474,14 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
                     boxShadow: [
                       if (_isPressed)
                         BoxShadow(
-                          color: context.colorScheme.primary.withValues(alpha: 0.1),
+                          color: context.colorScheme.primary
+                              .withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       BoxShadow(
-                        color: context.colorScheme.shadow.withValues(alpha: 0.04),
+                        color:
+                            context.colorScheme.shadow.withValues(alpha: 0.04),
                         blurRadius: 1,
                         offset: const Offset(0, 1),
                       ),
@@ -487,7 +496,8 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
                       if (widget.prefixIcon != null) ...[
                         IconTheme(
                           data: IconThemeData(
-                            color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: context.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
                             size: 20,
                           ),
                           child: widget.prefixIcon!,
@@ -505,7 +515,8 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
                       ),
                       Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: context.colorScheme.onSurface
+                            .withValues(alpha: 0.6),
                         size: 24,
                       ),
                     ],
@@ -515,7 +526,7 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
             );
           },
         ),
-        
+
         // Helper text
         if (widget.helperText != null)
           Padding(

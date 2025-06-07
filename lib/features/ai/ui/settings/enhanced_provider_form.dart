@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
-import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/widgets/enhanced_form_field.dart';
-import 'package:lotti/features/ai/ui/widgets/copyable_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 
 /// Enhanced inference provider form with modern Series A startup styling
-/// 
+///
 /// Features:
 /// - Professional card-based layout with proper spacing
 /// - Smooth animations and micro-interactions
@@ -32,7 +30,8 @@ class EnhancedInferenceProviderForm extends ConsumerStatefulWidget {
       _EnhancedInferenceProviderFormState();
 }
 
-class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenceProviderForm> {
+class _EnhancedInferenceProviderFormState
+    extends ConsumerState<EnhancedInferenceProviderForm> {
   bool _showApiKey = false;
 
   void _showProviderTypeModal() {
@@ -89,34 +88,38 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                       onPressed: () => Navigator.of(modalContext).pop(),
                       icon: Icon(
                         Icons.close_rounded,
-                        color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: context.colorScheme.onSurface
+                            .withValues(alpha: 0.6),
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               // Provider options
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
                   padding: const EdgeInsets.all(16),
                   itemCount: InferenceProviderType.values.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final type = InferenceProviderType.values[index];
                     final isSelected = formState.inferenceProviderType == type;
-                    
+
                     return Container(
                       decoration: BoxDecoration(
-                        color: isSelected 
-                            ? context.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                        color: isSelected
+                            ? context.colorScheme.primaryContainer
+                                .withValues(alpha: 0.3)
                             : context.colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? context.colorScheme.primary
-                              : context.colorScheme.outline.withValues(alpha: 0.2),
+                              : context.colorScheme.outline
+                                  .withValues(alpha: 0.2),
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -139,7 +142,8 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                           child: Text(
                             type.description(modalContext),
                             style: context.textTheme.bodyMedium?.copyWith(
-                              color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: context.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -147,7 +151,8 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? context.colorScheme.primary.withValues(alpha: 0.1)
+                                ? context.colorScheme.primary
+                                    .withValues(alpha: 0.1)
                                 : context.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -155,7 +160,8 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                             type.icon,
                             color: isSelected
                                 ? context.colorScheme.primary
-                                : context.colorScheme.onSurface.withValues(alpha: 0.7),
+                                : context.colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                             size: 24,
                           ),
                         ),
@@ -236,7 +242,8 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                   onTap: _showProviderTypeModal,
                   prefixIcon: Icon(formState.inferenceProviderType.icon),
                   isRequired: true,
-                  helperText: 'Choose the AI service provider for this configuration',
+                  helperText:
+                      'Choose the AI service provider for this configuration',
                 ),
                 const SizedBox(height: 24),
 
@@ -291,7 +298,8 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                     tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
                   ),
                   isRequired: true,
-                  helperText: 'Your API key for authenticating with this provider',
+                  helperText:
+                      'Your API key for authenticating with this provider',
                 ),
               ],
             ),
@@ -309,7 +317,8 @@ class _EnhancedInferenceProviderFormState extends ConsumerState<EnhancedInferenc
                   onChanged: formController.descriptionChanged,
                   maxLines: 3,
                   prefixIcon: const Icon(Icons.notes_outlined),
-                  helperText: 'Optional notes about this provider configuration',
+                  helperText:
+                      'Optional notes about this provider configuration',
                 ),
               ],
             ),
@@ -376,7 +385,7 @@ class _FormSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Section content
           ...children,
         ],

@@ -103,7 +103,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   /// Handles tab controller changes and updates filter state
   void _handleTabControllerChange() {
     if (_tabController.indexIsChanging) return;
-    
+
     final newTab = AiSettingsTab.values[_tabController.index];
     if (newTab != _filterState.activeTab) {
       _updateFilterState(_filterState.copyWith(activeTab: newTab));
@@ -121,7 +121,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   void _handleTabChange(AiSettingsTab tab) {
     final newState = _filterState.copyWith(activeTab: tab);
     _updateFilterState(newState);
-    
+
     // Sync the tab controller if needed (for programmatic tab changes)
     if (_tabController.index != tab.index) {
       _tabController.animateTo(tab.index);

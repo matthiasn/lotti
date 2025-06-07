@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/preconfigured_prompt_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
@@ -11,7 +10,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Enhanced prompt form with modern Series A startup styling
-/// 
+///
 /// Features:
 /// - Professional card-based layout with proper spacing
 /// - Smooth animations and micro-interactions
@@ -78,7 +77,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                       final selectedPrompt =
                           await showPreconfiguredPromptSelectionModal(context);
                       if (selectedPrompt != null) {
-                        formController.populateFromPreconfiguredPrompt(selectedPrompt);
+                        formController
+                            .populateFromPreconfiguredPrompt(selectedPrompt);
                       }
                     },
                   ),
@@ -125,7 +125,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   maxLines: 6,
                   prefixIcon: const Icon(Icons.chat_bubble_outline),
                   isRequired: true,
-                  helperText: 'The main prompt text. Use {{variables}} for dynamic content.',
+                  helperText:
+                      'The main prompt text. Use {{variables}} for dynamic content.',
                 ),
                 const SizedBox(height: 24),
 
@@ -136,7 +137,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   onChanged: formController.systemMessageChanged,
                   maxLines: 3,
                   prefixIcon: const Icon(Icons.settings_applications_outlined),
-                  helperText: 'Instructions that define the AI\'s behavior and response style',
+                  helperText:
+                      "Instructions that define the AI's behavior and response style",
                 ),
               ],
             ),
@@ -188,7 +190,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   onChanged: formController.descriptionChanged,
                   maxLines: 3,
                   prefixIcon: const Icon(Icons.notes_outlined),
-                  helperText: 'Optional notes about this prompt\'s purpose and usage',
+                  helperText:
+                      "Optional notes about this prompt's purpose and usage",
                 ),
               ],
             ),
@@ -264,7 +267,8 @@ class _PreconfiguredPromptButton extends StatelessWidget {
                       Text(
                         'Choose from ready-made prompt templates',
                         style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: context.colorScheme.onSurface
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -296,7 +300,8 @@ class _ModelSelectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        color:
+            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: context.colorScheme.outline.withValues(alpha: 0.12),
@@ -325,7 +330,8 @@ class _SelectionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        color:
+            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: context.colorScheme.outline.withValues(alpha: 0.12),
@@ -365,7 +371,8 @@ class _SelectionRow extends StatelessWidget {
                     Text(
                       subtitle,
                       style: context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: context.colorScheme.onSurface
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -395,7 +402,8 @@ class _ReasoningToggleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        color:
+            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: context.colorScheme.outline.withValues(alpha: 0.12),
@@ -503,7 +511,7 @@ class _FormSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Section content
           ...children,
         ],
