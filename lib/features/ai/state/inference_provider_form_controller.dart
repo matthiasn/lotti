@@ -136,6 +136,18 @@ class InferenceProviderFormController
         newName = 'OpenAI';
       }
     }
+    if (value == InferenceProviderType.anthropic) {
+      newBaseUrl = 'https://api.anthropic.com/v1';
+      if (nameController.text.isEmpty) {
+        newName = 'Anthropic';
+      }
+    }
+    if (value == InferenceProviderType.openRouter) {
+      newBaseUrl = 'https://openrouter.ai/api/v1';
+      if (nameController.text.isEmpty) {
+        newName = 'OpenRouter';
+      }
+    }
 
     // Update text controllers if needed
     if (newBaseUrl != null) {
