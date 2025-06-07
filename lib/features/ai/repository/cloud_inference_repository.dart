@@ -27,7 +27,6 @@ class CloudInferenceRepository {
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
         frequencyPenalty: null,
-        maxCompletionTokens: 2000,
         messages: [
           if (systemMessage != null)
             ChatCompletionMessage.system(content: systemMessage),
