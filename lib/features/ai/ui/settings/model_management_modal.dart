@@ -29,40 +29,63 @@ void showModelManagementModal({
         WoltModalSheetPage(
           backgroundColor: modalContext.colorScheme.surface,
           hasSabGradient: false,
-          navBarHeight: 60,
+          navBarHeight: 54,
+          leadingNavBarWidget: ValueListenableBuilder<Set<String>>(
+            valueListenable: selectedIds,
+            builder: (context, selectedIdsValue, _) {
+              final count = selectedIdsValue.length;
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SizedBox(
+                  width: 32,
+                  height: 24,
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: count > 0
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              key: const ValueKey('check_icon'),
+                              size: 24,
+                              color: modalContext.colorScheme.primary,
+                            )
+                          : Icon(
+                              Icons.warning_rounded,
+                              key: const ValueKey('warning_icon'),
+                              size: 24,
+                              color: modalContext.colorScheme.error,
+                            ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           topBarTitle: ValueListenableBuilder<Set<String>>(
             valueListenable: selectedIds,
             builder: (context, selectedIdsValue, _) {
               final count = selectedIdsValue.length;
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedOpacity(
-                    opacity: count > 0 ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: count > 0 ? 28 : 0,
-                      child: count > 0
-                          ? Icon(
-                              Icons.check_circle_rounded,
-                              size: 20,
-                              color: modalContext.colorScheme.primary,
-                            )
-                          : null,
-                    ),
-                  ),
-                  Text(
-                    '$count model${count == 1 ? '' : 's'} selected',
-                    style: modalContext.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                      color: count > 0
-                          ? modalContext.colorScheme.onSurface
-                          : modalContext.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              return Text(
+                '$count model${count == 1 ? '' : 's'} selected',
+                style: modalContext.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: -0.5,
+                  color: count > 0
+                      ? modalContext.colorScheme.onSurface
+                      : modalContext.colorScheme.onSurface
+                          .withValues(alpha: 0.5),
+                ),
               );
             },
           ),

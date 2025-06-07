@@ -213,7 +213,7 @@ void main() {
       expect(find.text('2 models selected'), findsOneWidget);
     });
 
-    testWidgets('checkbox icon visibility based on selection', (tester) async {
+    testWidgets('shows warning/check icon based on selection', (tester) async {
       await tester.pumpWidget(
         createTestApp(
           child: Builder(
@@ -241,21 +241,111 @@ void main() {
       // Open modal with no selection
       await openModalAndWaitForContent(tester);
 
-      // Check icon exists and find its opacity
-      final iconFinder = find.byIcon(Icons.check_circle_rounded);
+      // Should show warning icon when no models selected
+      expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
 
-      // The icon might be present with opacity 0
-      if (iconFinder.evaluate().isNotEmpty) {
-        final animatedOpacity = tester.widget<AnimatedOpacity>(
-          find
-              .ancestor(
-                of: iconFinder,
-                matching: find.byType(AnimatedOpacity),
-              )
-              .first,
-        );
-        expect(animatedOpacity.opacity, equals(0.0));
-      }
+      // Close modal
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      // Open modal with selection
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: ['model1'],
+                    currentDefaultId: 'model1',
+                    onSave: (selectedIds, defaultId) {},
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Should show check icon when models are selected
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.warning_rounded), findsNothing);
+    });
+
+    testWidgets('animates between warning and check icons', (tester) async {
+      // Create a mutable list to simulate changing selection
+      final selectedIds = <String>[];
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: StatefulBuilder(
+            builder: (context, setState) => Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => showModelManagementModal(
+                        context: context,
+                        currentSelectedIds: List.from(selectedIds),
+                        currentDefaultId:
+                            selectedIds.isNotEmpty ? selectedIds.first : '',
+                        onSave: (newSelectedIds, defaultId) {
+                          setState(() {
+                            selectedIds
+                              ..clear()
+                              ..addAll(newSelectedIds);
+                          });
+                        },
+                      ),
+                      child: const Text('Open Modal'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          if (selectedIds.isEmpty) {
+                            selectedIds.add('model1');
+                          } else {
+                            selectedIds.clear();
+                          }
+                        });
+                      },
+                      child: Text(selectedIds.isEmpty
+                          ? 'Add Selection'
+                          : 'Clear Selection'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+          ],
+        ),
+      );
+
+      // Open modal with no selection
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Verify warning icon is shown
+      expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+
+      // The AnimatedSwitcher should handle the transition smoothly
+      // We can't easily test the animation itself, but we can verify
+      // that the widget structure is correct
+      expect(find.byType(AnimatedSwitcher), findsAtLeastNWidgets(1));
     });
 
     testWidgets('save and cancel buttons work correctly', (tester) async {
@@ -378,59 +468,6 @@ void main() {
       final emptyStateIcon = find.byIcon(Icons.psychology_outlined);
       expect(emptyStateIcon, findsOneWidget);
     });
-
-    // TODO: Fix this test - it's causing hangs due to stream handling
-    // testWidgets('shows loading state correctly', (tester) async {
-    //   final controller = StreamController<List<AiConfig>>();
-
-    //   await tester.pumpWidget(
-    //     createTestApp(
-    //       child: Builder(
-    //         builder: (context) => Scaffold(
-    //           body: Center(
-    //             child: ElevatedButton(
-    //               onPressed: () => showModelManagementModal(
-    //                 context: context,
-    //                 currentSelectedIds: [],
-    //                 currentDefaultId: '',
-    //                 onSave: (selectedIds, defaultId) {},
-    //               ),
-    //               child: const Text('Open Modal'),
-    //             ),
-    //           ),
-    //         ),
-    //       ),
-    //       overrides: [
-    //         aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-    //             .overrideWith(() {
-    //           final mockController = MockAiConfigByTypeController([]);
-    //           when(() => mockController.build(configType: AiConfigType.model))
-    //               .thenAnswer((_) => controller.stream);
-    //           return mockController;
-    //         }),
-    //       ],
-    //     ),
-    //   );
-
-    //   // Open modal
-    //   await tester.tap(find.text('Open Modal'));
-    //   await tester.pump(); // Initial pump
-    //   await tester
-    //       .pump(const Duration(milliseconds: 50)); // Let modal start opening
-
-    //   // At this point, we should see the modal with loading state
-    //   // But the loading indicator might be inside the scrollable area
-
-    //   // Check if we at least have the modal open
-    //   expect(find.text('0 models selected'), findsOneWidget);
-
-    //   // Emit data and complete the test
-    //   controller.add(mockModels);
-    //   await tester.pumpAndSettle();
-
-    //   // Clean up
-    //   await controller.close();
-    // });
 
     testWidgets('shows error state and message', (tester) async {
       await tester.pumpWidget(
