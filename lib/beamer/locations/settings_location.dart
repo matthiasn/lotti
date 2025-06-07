@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_settings_page.dart';
@@ -38,6 +39,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
         '/settings',
+        '/settings/ai',
         '/settings/tags',
         '/settings/tags/:tagEntityId',
         '/settings/tags/create/:tagType',
@@ -80,6 +82,14 @@ class SettingsLocation extends BeamLocation<BeamState> {
         title: 'Settings',
         child: SettingsPage(),
       ),
+
+      // AI Settings
+      if (pathContains('ai') && !pathContains('advanced'))
+        const BeamPage(
+          key: ValueKey('settings-ai'),
+          title: 'AI Settings',
+          child: AiSettingsPage(),
+        ),
 
       // Categories
       if (pathContains('categories'))
