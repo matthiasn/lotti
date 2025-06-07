@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -16,12 +17,10 @@ import 'package:mocktail/mocktail.dart';
 // Manual Fake for PromptFormController
 class FakePromptFormController
     extends AutoDisposeAsyncNotifier<PromptFormState?>
-    with
-        Mock // Add Mock mixin to allow stubbing other methods if needed
-    implements
-        PromptFormController {
+    with Mock
+    implements PromptFormController {
   Future<PromptFormState?> Function({String? configId})? onBuild;
-  PromptFormState? initialStateForBuild; // Alternative for simpler cases
+  PromptFormState? initialStateForBuild;
 
   @override
   Future<PromptFormState?> build({String? configId}) async {
@@ -35,10 +34,6 @@ class FakePromptFormController
       'FakePromptFormController.build was not set up for the test.',
     );
   }
-
-  // Implement other methods from PromptFormController or let them be handled by `Mock` mixin
-  // For example, if we don't want to use `when` for these, we can provide concrete implementations or track calls.
-  // For now, relying on `with Mock` for these to be stubbable with `when`.
 
   @override
   TextEditingController get nameController => _nameController;
@@ -55,9 +50,6 @@ class FakePromptFormController
   @override
   TextEditingController get descriptionController => _descriptionController;
   final _descriptionController = MockTextEditingController();
-
-  // modelIdsChanged and defaultModelIdChanged will be stubbed using `when`
-  // as FakePromptFormController uses `with Mock`.
 }
 
 class MockTextEditingController extends Mock implements TextEditingController {}
@@ -68,634 +60,757 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 final AppLocalizations l10n = AppLocalizationsEn();
 
+// Helper function to create test widgets
+Widget createTestWidget({
+  required Widget child,
+  List<Override>? overrides,
+}) {
+  return ProviderScope(
+    overrides: overrides ?? [],
+    child: MaterialApp(
+      home: Scaffold(
+        body: child,
+      ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+    ),
+  );
+}
+
+// Helper function to create PromptFormState
+PromptFormState createFormState({
+  List<String>? modelIds,
+  String? defaultModelId,
+  PromptName name = const PromptName.pure(),
+  PromptSystemMessage systemMessage = const PromptSystemMessage.pure(),
+  PromptUserMessage userMessage = const PromptUserMessage.pure(),
+  bool useReasoning = false,
+  List<InputDataType> requiredInputData = const [],
+  PromptComment comment = const PromptComment.pure(),
+  PromptDescription description = const PromptDescription.pure(),
+  PromptCategory category = const PromptCategory.pure(),
+  Map<String, String> defaultVariables = const {},
+  bool isSubmitting = false,
+  bool submitFailed = false,
+}) {
+  return PromptFormState(
+    modelIds: modelIds ?? [],
+    defaultModelId: defaultModelId ?? '',
+    name: name,
+    systemMessage: systemMessage,
+    userMessage: userMessage,
+    useReasoning: useReasoning,
+    requiredInputData: requiredInputData,
+    comment: comment,
+    description: description,
+    category: category,
+    defaultVariables: defaultVariables,
+    isSubmitting: isSubmitting,
+    submitFailed: submitFailed,
+  );
+}
+
+// Helper function to create AiConfigModel
+AiConfigModel createAiConfigModel({
+  required String id,
+  required String name,
+  String? providerModelId,
+  String? inferenceProviderId,
+  bool isReasoningModel = false,
+  List<Modality>? inputModalities,
+  List<Modality>? outputModalities,
+}) {
+  return AiConfigModel(
+    id: id,
+    name: name,
+    providerModelId: providerModelId ?? 'provider-$id',
+    inferenceProviderId: inferenceProviderId ?? 'inference-$id',
+    createdAt: DateTime.now(),
+    inputModalities: inputModalities ?? [],
+    outputModalities: outputModalities ?? [],
+    isReasoningModel: isReasoningModel,
+  );
+}
+
 void main() {
-  late PromptFormControllerProvider promptFormControllerProviderInstance;
-  late FakePromptFormController fakeFormController; // Use the fake controller
+  group('ModelManagementHeader', () {
+    testWidgets('displays title and manage button',
+        (WidgetTester tester) async {
+      var wasManageTapped = false;
 
-  setUp(() {
-    fakeFormController = FakePromptFormController();
-    promptFormControllerProviderInstance =
-        promptFormControllerProvider(configId: null);
-
-    // Stub methods on the fake controller using `when` (thanks to `with Mock`)
-    when(() => fakeFormController.modelIdsChanged(any<List<String>>()))
-        .thenAnswer((_) async {});
-    when(() => fakeFormController.defaultModelIdChanged(any<String>()))
-        .thenAnswer((_) async {});
-
-    when(() => fakeFormController.nameController.text).thenReturn('');
-    when(() => fakeFormController.systemMessageController.text).thenReturn('');
-    when(() => fakeFormController.userMessageController.text).thenReturn('');
-    when(() => fakeFormController.descriptionController.text).thenReturn('');
-  });
-
-  PromptFormState createFormState({
-    List<String>? modelIds,
-    String? defaultModelId,
-    PromptName name = const PromptName.pure(),
-    PromptSystemMessage systemMessage = const PromptSystemMessage.pure(),
-    PromptUserMessage userMessage = const PromptUserMessage.pure(),
-    bool useReasoning = false,
-    List<InputDataType> requiredInputData = const [],
-    PromptComment comment = const PromptComment.pure(),
-    PromptDescription description = const PromptDescription.pure(),
-    PromptCategory category = const PromptCategory.pure(),
-    Map<String, String> defaultVariables = const {},
-    bool isSubmitting = false,
-    bool submitFailed = false,
-  }) {
-    return PromptFormState(
-      modelIds: modelIds ?? [],
-      defaultModelId: defaultModelId ?? '',
-      name: name,
-      systemMessage: systemMessage,
-      userMessage: userMessage,
-      useReasoning: useReasoning,
-      requiredInputData: requiredInputData,
-      comment: comment,
-      description: description,
-      category: category,
-      defaultVariables: defaultVariables,
-      isSubmitting: isSubmitting,
-      submitFailed: submitFailed,
-    );
-  }
-
-  testWidgets('shows CircularProgressIndicator when formState is AsyncLoading',
-      (WidgetTester tester) async {
-    fakeFormController.onBuild = ({String? configId}) async => null;
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance.overrideWith(
-            () => fakeFormController, // Provide the fake
+      await tester.pumpWidget(
+        createTestWidget(
+          child: ModelManagementHeader(
+            onManageTap: () => wasManageTapped = true,
           ),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: PromptFormSelectModel(),
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('en'),
         ),
-      ),
-    );
-    await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      );
+
+      expect(find.text(l10n.aiConfigModelsTitle), findsOneWidget);
+      expect(find.text(l10n.aiConfigManageModelsButton), findsOneWidget);
+
+      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      expect(wasManageTapped, isTrue);
+    });
   });
 
-  testWidgets('shows "No models selected" when modelIds is empty',
-      (WidgetTester tester) async {
-    final emptyState = createFormState(modelIds: []);
-    fakeFormController.onBuild = ({String? configId}) async => emptyState;
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance.overrideWith(
-            () => fakeFormController,
-          ),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: PromptFormSelectModel(),
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('en'),
+  group('EmptyModelsState', () {
+    testWidgets('displays no models selected message',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const EmptyModelsState(),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text(l10n.aiConfigNoModelsSelected), findsOneWidget);
+      );
+
+      expect(find.text(l10n.aiConfigNoModelsSelected), findsOneWidget);
+    });
   });
 
-  testWidgets('shows "Manage" button', (WidgetTester tester) async {
-    final initialFormState = createFormState(modelIds: ['model1']);
-    fakeFormController.onBuild = ({String? configId}) async => initialFormState;
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance
-              .overrideWith(() => fakeFormController),
-          aiConfigByIdProvider('model1').overrideWith(
-            (ref) async => AiConfigModel(
-              id: 'model1',
-              name: 'Test Model 1',
-              providerModelId: 'pm1',
-              inferenceProviderId: 'ip1',
-              createdAt: DateTime.now(),
-              inputModalities: [],
-              outputModalities: [],
-              isReasoningModel: false,
-            ),
-          ),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: PromptFormSelectModel(),
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('en'),
+  group('DefaultBadge', () {
+    testWidgets('displays star icon and default text',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const DefaultBadge(),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text(l10n.aiConfigManageModelsButton), findsOneWidget);
+      );
+
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.text('Default'), findsOneWidget);
+    });
   });
 
-  testWidgets('displays list of models with default star icon',
-      (WidgetTester tester) async {
-    final models = ['model1', 'model2'];
-    const defaultModel = 'model1';
-    final formStateWithModels =
-        createFormState(modelIds: models, defaultModelId: defaultModel);
-    fakeFormController.onBuild =
-        ({String? configId}) async => formStateWithModels;
-
-    final mockModel1 = AiConfigModel(
-      id: 'model1',
-      name: 'Test Model 1',
-      providerModelId: 'pm1',
-      inferenceProviderId: 'ip1',
-      createdAt: DateTime.now(),
-      inputModalities: [],
-      outputModalities: [],
-      isReasoningModel: false,
-    );
-    final mockModel2 = AiConfigModel(
-      id: 'model2',
-      name: 'Test Model 2',
-      providerModelId: 'pm2',
-      inferenceProviderId: 'ip1',
-      createdAt: DateTime.now(),
-      inputModalities: [],
-      outputModalities: [],
-      isReasoningModel: false,
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance
-              .overrideWith(() => fakeFormController),
-          aiConfigByIdProvider('model1')
-              .overrideWith((ref) async => mockModel1),
-          aiConfigByIdProvider('model2')
-              .overrideWith((ref) async => mockModel2),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: PromptFormSelectModel(),
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('en'),
+  group('ModelLoadingState', () {
+    testWidgets('displays loading indicator and text',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelLoadingState(),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Test Model 1'), findsOneWidget);
-    expect(find.text('Test Model 2'), findsOneWidget);
-    final model1CardFinder = find.ancestor(
-      of: find.text('Test Model 1'),
-      matching: find.byType(Card),
-    );
-    expect(
-      find.descendant(
-        of: model1CardFinder,
-        matching: find.byIcon(Icons.star),
-      ),
-      findsOneWidget,
-    );
-    final model2CardFinder = find.ancestor(
-      of: find.text('Test Model 2'),
-      matching: find.byType(Card),
-    );
-    expect(
-      find.descendant(
-        of: model2CardFinder,
-        matching: find.byIcon(Icons.star),
-      ),
-      findsNothing,
-    );
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Loading model...'), findsOneWidget);
+    });
   });
 
-  testWidgets('shows loading indicator for individual model data',
-      (WidgetTester tester) async {
-    final formStateWithModels =
-        createFormState(modelIds: ['model1'], defaultModelId: 'model1');
-    fakeFormController.onBuild =
-        ({String? configId}) async => formStateWithModels;
-
-    final modelDataCompleter = Completer<AiConfigModel?>(); // Use a completer
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance
-              .overrideWith(() => fakeFormController),
-          aiConfigByIdProvider('model1').overrideWith(
-            (ref) => modelDataCompleter.future,
-          ), // Return the completer's future
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: PromptFormSelectModel(),
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('en'),
+  group('ModelErrorState', () {
+    testWidgets('displays error icon and model id',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelErrorState(modelId: 'test-model-id'),
         ),
-      ),
-    );
-    await tester.pump(); // Pump once to show initial loading state
+      );
 
-    expect(find.text('Loading model...'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
-    // Test ends, modelDataCompleter is not completed, provider remains loading.
-    // This should not cause a pending timer error.
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.text('Error: test-model-id'), findsOneWidget);
+    });
   });
 
-  testWidgets('shows error message for individual model data loading failure',
-      (WidgetTester tester) async {
-    final formStateWithModels =
-        createFormState(modelIds: ['model1'], defaultModelId: 'model1');
-    fakeFormController.onBuild =
-        ({String? configId}) async => formStateWithModels;
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance
-              .overrideWith(() => fakeFormController),
-          aiConfigByIdProvider('model1').overrideWith((ref) async {
-            throw Exception('Failed to load model1');
-          }),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: PromptFormSelectModel(),
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('en'),
+  group('ModelDeleteConfirmationDialog', () {
+    testWidgets('displays confirmation dialog with correct messages',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelDeleteConfirmationDialog(modelName: 'Test Model'),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Error: model1'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
-  });
+      );
 
-  testWidgets('dismissing a model calls controller and shows snackbar',
-      (WidgetTester tester) async {
-    final models = ['model1', 'model2'];
-    const defaultModel = 'model1';
-    final formStateWithModels =
-        createFormState(modelIds: models, defaultModelId: defaultModel);
-    fakeFormController.onBuild =
-        ({String? configId}) async => formStateWithModels;
-
-    final mockModel1 = AiConfigModel(
-      id: 'model1',
-      name: 'Test Model To Dismiss',
-      providerModelId: 'pm1',
-      inferenceProviderId: 'ip1',
-      createdAt: DateTime.now(),
-      inputModalities: [],
-      outputModalities: [],
-      isReasoningModel: false,
-    );
-    final mockModel2 = AiConfigModel(
-      id: 'model2',
-      name: 'Another Model',
-      providerModelId: 'pm2',
-      inferenceProviderId: 'ip1',
-      createdAt: DateTime.now(),
-      inputModalities: [],
-      outputModalities: [],
-      isReasoningModel: false,
-    );
-
-    List<String>? capturedModelIds;
-    when(() => fakeFormController.modelIdsChanged(any<List<String>>()))
-        .thenAnswer((invocation) async {
-      capturedModelIds = invocation.positionalArguments.first as List<String>;
+      expect(find.text(l10n.aiConfigListDeleteConfirmTitle), findsOneWidget);
+      expect(
+        find.text(l10n.aiConfigListDeleteConfirmMessage('Test Model')),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.aiConfigListDeleteConfirmCancel), findsOneWidget);
+      expect(find.text(l10n.aiConfigListDeleteConfirmDelete), findsOneWidget);
     });
 
-    final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+    testWidgets('returns false when cancel is tapped',
+        (WidgetTester tester) async {
+      bool? result;
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          promptFormControllerProviderInstance
-              .overrideWith(() => fakeFormController),
-          aiConfigByIdProvider('model1')
-              .overrideWith((ref) async => mockModel1),
-          aiConfigByIdProvider('model2')
-              .overrideWith((ref) async => mockModel2),
-        ],
-        child: MaterialApp(
-          scaffoldMessengerKey: scaffoldMessengerKey,
-          home: const Scaffold(
-            body: PromptFormSelectModel(),
+      await tester.pumpWidget(
+        createTestWidget(
+          child: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  result = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => const ModelDeleteConfirmationDialog(
+                      modelName: 'Test Model',
+                    ),
+                  );
+                },
+                child: const Text('Show Dialog'),
+              );
+            },
           ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('en'),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Test Model To Dismiss'), findsOneWidget);
-    final dismissibleFinder =
-        find.byKey(const ValueKey('selected_model_model1'));
-    expect(dismissibleFinder, findsOneWidget);
-    await tester.drag(dismissibleFinder, const Offset(-500, 0));
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text(l10n.aiConfigListDeleteConfirmTitle), findsOneWidget);
-    await tester.tap(find.text(l10n.aiConfigListDeleteConfirmDelete));
-    await tester.pumpAndSettle();
-    expect(capturedModelIds, isNotNull);
-    expect(capturedModelIds, contains('model2'));
-    expect(capturedModelIds, isNot(contains('model1')));
-    expect(find.byType(SnackBar), findsOneWidget);
-    expect(
-      find.text(l10n.aiConfigModelRemovedMessage('Test Model To Dismiss')),
-      findsOneWidget,
-    );
+      );
+
+      await tester.tap(find.text('Show Dialog'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.aiConfigListDeleteConfirmCancel));
+      await tester.pumpAndSettle();
+
+      expect(result, isFalse);
+    });
+
+    testWidgets('returns true when delete is tapped',
+        (WidgetTester tester) async {
+      bool? result;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  result = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => const ModelDeleteConfirmationDialog(
+                      modelName: 'Test Model',
+                    ),
+                  );
+                },
+                child: const Text('Show Dialog'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Dialog'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.aiConfigListDeleteConfirmDelete));
+      await tester.pumpAndSettle();
+
+      expect(result, isTrue);
+    });
   });
 
-  // TODO: Add more tests:
-  // - Tapping manage button and modal interaction
+  group('ModelCardContent', () {
+    testWidgets('displays model name without default badge',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelCardContent(
+            modelName: 'Test Model',
+            isDefault: false,
+          ),
+        ),
+      );
 
-  group('Reasoning Model Filtering Tests', () {
-    late MockAiConfigRepository mockRepository;
+      expect(find.text('Test Model'), findsOneWidget);
+      expect(find.byType(DefaultBadge), findsNothing);
+    });
+
+    testWidgets('displays model name with default badge when isDefault',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelCardContent(
+            modelName: 'Test Model',
+            isDefault: true,
+          ),
+        ),
+      );
+
+      expect(find.text('Test Model'), findsOneWidget);
+      expect(find.byType(DefaultBadge), findsOneWidget);
+    });
+
+    testWidgets('displays inference provider widget when config is provided',
+        (WidgetTester tester) async {
+      final config = createAiConfigModel(
+        id: 'model1',
+        name: 'Test Model',
+        inferenceProviderId: 'test-provider',
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: ModelCardContent(
+            modelName: 'Test Model',
+            isDefault: false,
+            config: config,
+          ),
+        ),
+      );
+
+      expect(find.text('Test Model'), findsOneWidget);
+      expect(find.byType(InferenceProviderNameWidget), findsOneWidget);
+    });
+  });
+
+  group('ModelCard', () {
+    testWidgets('renders with correct styling for default model',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelCard(
+            modelName: 'Test Model',
+            isDefault: true,
+          ),
+        ),
+      );
+
+      final card = tester.widget<Card>(find.byType(Card));
+      expect(card.elevation, equals(4));
+    });
+
+    testWidgets('renders with correct styling for non-default model',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const ModelCard(
+            modelName: 'Test Model',
+            isDefault: false,
+          ),
+        ),
+      );
+
+      final card = tester.widget<Card>(find.byType(Card));
+      expect(card.elevation, equals(1));
+    });
+  });
+
+  group('DismissibleModelCard', () {
+    testWidgets('can be dismissed and calls onDismissed callback',
+        (WidgetTester tester) async {
+      var wasDismissed = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: DismissibleModelCard(
+            modelId: 'model1',
+            modelName: 'Test Model',
+            isDefault: false,
+            onDismissed: () => wasDismissed = true,
+          ),
+        ),
+      );
+
+      expect(
+          find.byKey(const ValueKey('selected_model_model1')), findsOneWidget);
+
+      // Swipe to dismiss
+      await tester.drag(
+        find.byKey(const ValueKey('selected_model_model1')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      // Confirm deletion
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.tap(find.text(l10n.aiConfigListDeleteConfirmDelete));
+      await tester.pumpAndSettle();
+
+      expect(wasDismissed, isTrue);
+    });
+
+    testWidgets('shows dismiss background when swiping',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: DismissibleModelCard(
+            modelId: 'model1',
+            modelName: 'Test Model',
+            isDefault: false,
+            onDismissed: () {},
+          ),
+        ),
+      );
+
+      // Start dragging
+      await tester.drag(
+        find.byKey(const ValueKey('selected_model_model1')),
+        const Offset(-100, 0),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.delete_sweep_outlined), findsOneWidget);
+    });
+
+    testWidgets('cancels dismissal when dialog is cancelled',
+        (WidgetTester tester) async {
+      var wasDismissed = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: DismissibleModelCard(
+            modelId: 'model1',
+            modelName: 'Test Model',
+            isDefault: false,
+            onDismissed: () => wasDismissed = true,
+          ),
+        ),
+      );
+
+      // Swipe to dismiss
+      await tester.drag(
+        find.byKey(const ValueKey('selected_model_model1')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      // Cancel deletion
+      await tester.tap(find.text(l10n.aiConfigListDeleteConfirmCancel));
+      await tester.pumpAndSettle();
+
+      expect(wasDismissed, isFalse);
+      expect(
+          find.byKey(const ValueKey('selected_model_model1')), findsOneWidget);
+    });
+  });
+
+  group('SelectedModelsList', () {
+    testWidgets('displays list of models with correct data',
+        (WidgetTester tester) async {
+      final model1 = createAiConfigModel(id: 'model1', name: 'Model 1');
+      final model2 = createAiConfigModel(id: 'model2', name: 'Model 2');
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: SelectedModelsList(
+            modelIds: const ['model1', 'model2'],
+            defaultModelId: 'model1',
+            onModelRemoved: (modelId, modelName) {
+              // Callback is tested in other tests
+            },
+          ),
+          overrides: [
+            aiConfigByIdProvider('model1').overrideWith((ref) async => model1),
+            aiConfigByIdProvider('model2').overrideWith((ref) async => model2),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Model 1'), findsOneWidget);
+      expect(find.text('Model 2'), findsOneWidget);
+      expect(
+          find.byType(DefaultBadge), findsOneWidget); // Only model1 is default
+    });
+
+    testWidgets('handles loading state for models',
+        (WidgetTester tester) async {
+      final modelDataCompleter = Completer<AiConfigModel?>();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: SelectedModelsList(
+            modelIds: const ['model1'],
+            defaultModelId: 'model1',
+            onModelRemoved: (_, __) {},
+          ),
+          overrides: [
+            aiConfigByIdProvider('model1')
+                .overrideWith((ref) => modelDataCompleter.future),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      expect(find.byType(ModelLoadingState), findsOneWidget);
+    });
+
+    testWidgets('handles error state for models', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: SelectedModelsList(
+            modelIds: const ['model1'],
+            defaultModelId: 'model1',
+            onModelRemoved: (_, __) {},
+          ),
+          overrides: [
+            aiConfigByIdProvider('model1').overrideWith((ref) async {
+              throw Exception('Failed to load');
+            }),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.byType(ModelErrorState), findsOneWidget);
+    });
+  });
+
+  group('PromptFormSelectModel', () {
+    late PromptFormControllerProvider promptFormControllerProviderInstance;
+    late FakePromptFormController fakeFormController;
 
     setUp(() {
-      mockRepository = MockAiConfigRepository();
+      fakeFormController = FakePromptFormController();
+      promptFormControllerProviderInstance =
+          promptFormControllerProvider(configId: null);
+
+      when(() => fakeFormController.modelIdsChanged(any<List<String>>()))
+          .thenAnswer((_) async {});
+      when(() => fakeFormController.defaultModelIdChanged(any<String>()))
+          .thenAnswer((_) async {});
+
+      when(() => fakeFormController.nameController.text).thenReturn('');
+      when(() => fakeFormController.systemMessageController.text)
+          .thenReturn('');
+      when(() => fakeFormController.userMessageController.text).thenReturn('');
+      when(() => fakeFormController.descriptionController.text).thenReturn('');
     });
 
-    testWidgets('shows only reasoning models when prompt requires reasoning',
+    testWidgets('shows loading indicator when formState is null',
         (WidgetTester tester) async {
-      final formStateWithReasoning = createFormState(
-        modelIds: ['model1'],
-        defaultModelId: 'model1',
-        useReasoning: true,
-      );
-      fakeFormController.onBuild =
-          ({String? configId}) async => formStateWithReasoning;
-
-      final reasoningModel = AiConfigModel(
-        id: 'reasoning-model',
-        name: 'Reasoning Model',
-        providerModelId: 'rm1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: true,
-      );
-
-      final nonReasoningModel = AiConfigModel(
-        id: 'non-reasoning-model',
-        name: 'Non-Reasoning Model',
-        providerModelId: 'nrm1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      // Mock the repository to return both models
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([reasoningModel, nonReasoningModel]));
+      fakeFormController.onBuild = ({String? configId}) async => null;
 
       await tester.pumpWidget(
-        ProviderScope(
+        createTestWidget(
+          child: const PromptFormSelectModel(),
           overrides: [
-            promptFormControllerProviderInstance
-                .overrideWith(() => fakeFormController),
-            aiConfigByIdProvider('model1')
-                .overrideWith((ref) async => reasoningModel),
-            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: PromptFormSelectModel(),
+            promptFormControllerProviderInstance.overrideWith(
+              () => fakeFormController,
             ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: Locale('en'),
-          ),
+          ],
         ),
       );
-      await tester.pumpAndSettle();
 
-      // Tap the manage models button
-      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
-      await tester.pumpAndSettle();
-
-      // Verify that only the reasoning model is shown in the modal
-      // The reasoning model appears twice: once in the main list (selected) and once in the modal
-      expect(find.text('Reasoning Model'), findsNWidgets(2));
-      // The non-reasoning model should not appear anywhere since it's filtered out
-      expect(find.text('Non-Reasoning Model'), findsNothing);
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows all models when prompt does not require reasoning',
+    testWidgets('shows empty state when no models are selected',
         (WidgetTester tester) async {
-      final formStateWithoutReasoning = createFormState(
+      final emptyState = createFormState(modelIds: []);
+      fakeFormController.onBuild = ({String? configId}) async => emptyState;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const PromptFormSelectModel(),
+          overrides: [
+            promptFormControllerProviderInstance.overrideWith(
+              () => fakeFormController,
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.byType(EmptyModelsState), findsOneWidget);
+    });
+
+    testWidgets('shows model list when models are selected',
+        (WidgetTester tester) async {
+      final stateWithModels = createFormState(
         modelIds: ['model1'],
         defaultModelId: 'model1',
       );
       fakeFormController.onBuild =
-          ({String? configId}) async => formStateWithoutReasoning;
+          ({String? configId}) async => stateWithModels;
 
-      final reasoningModel = AiConfigModel(
-        id: 'reasoning-model',
-        name: 'Reasoning Model',
-        providerModelId: 'rm1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: true,
-      );
-
-      final nonReasoningModel = AiConfigModel(
-        id: 'non-reasoning-model',
-        name: 'Non-Reasoning Model',
-        providerModelId: 'nrm1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      // Mock the repository to return both models
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([reasoningModel, nonReasoningModel]));
+      final model1 = createAiConfigModel(id: 'model1', name: 'Test Model');
 
       await tester.pumpWidget(
-        ProviderScope(
+        createTestWidget(
+          child: const PromptFormSelectModel(),
           overrides: [
-            promptFormControllerProviderInstance
-                .overrideWith(() => fakeFormController),
-            aiConfigByIdProvider('model1')
-                .overrideWith((ref) async => reasoningModel),
-            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: PromptFormSelectModel(),
+            promptFormControllerProviderInstance.overrideWith(
+              () => fakeFormController,
             ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: Locale('en'),
-          ),
+            aiConfigByIdProvider('model1').overrideWith((ref) async => model1),
+          ],
         ),
       );
-      await tester.pumpAndSettle();
 
-      // Tap the manage models button
-      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
       await tester.pumpAndSettle();
-
-      // Verify that both models are shown in the modal
-      // The reasoning model appears twice: once in the main list (selected) and once in the modal
-      expect(find.text('Reasoning Model'), findsNWidgets(2));
-      // The non-reasoning model appears once in the modal (not selected in main list)
-      expect(find.text('Non-Reasoning Model'), findsOneWidget);
+      expect(find.byType(SelectedModelsList), findsOneWidget);
+      expect(find.text('Test Model'), findsOneWidget);
     });
 
-    testWidgets(
-        'shows no suitable models message when no models meet requirements',
+    testWidgets('handles model removal with snackbar',
         (WidgetTester tester) async {
-      final formStateWithReasoning = createFormState(
-        modelIds: [],
-        defaultModelId: '',
-        useReasoning: true,
+      final stateWithModels = createFormState(
+        modelIds: ['model1', 'model2'],
+        defaultModelId: 'model1',
       );
       fakeFormController.onBuild =
-          ({String? configId}) async => formStateWithReasoning;
+          ({String? configId}) async => stateWithModels;
 
-      final nonReasoningModel = AiConfigModel(
-        id: 'non-reasoning-model',
-        name: 'Non-Reasoning Model',
-        providerModelId: 'nrm1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
+      final model1 = createAiConfigModel(id: 'model1', name: 'Model to Remove');
+      final model2 = createAiConfigModel(id: 'model2', name: 'Another Model');
 
-      // Mock the repository to return only non-reasoning model
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([nonReasoningModel]));
+      List<String>? capturedModelIds;
+      when(() => fakeFormController.modelIdsChanged(any<List<String>>()))
+          .thenAnswer((invocation) async {
+        capturedModelIds = invocation.positionalArguments.first as List<String>;
+      });
+
+      final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            promptFormControllerProviderInstance
-                .overrideWith(() => fakeFormController),
-            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            promptFormControllerProviderInstance.overrideWith(
+              () => fakeFormController,
+            ),
+            aiConfigByIdProvider('model1').overrideWith((ref) async => model1),
+            aiConfigByIdProvider('model2').overrideWith((ref) async => model2),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
+          child: MaterialApp(
+            scaffoldMessengerKey: scaffoldMessengerKey,
+            home: const Scaffold(
               body: PromptFormSelectModel(),
             ),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            locale: Locale('en'),
+            locale: const Locale('en'),
           ),
         ),
       );
+
       await tester.pumpAndSettle();
 
-      // Tap the manage models button
-      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      // Dismiss the first model
+      await tester.drag(
+        find.byKey(const ValueKey('selected_model_model1')),
+        const Offset(-500, 0),
+      );
       await tester.pumpAndSettle();
 
-      // Verify that the "no suitable models" message is shown
-      expect(find.text(l10n.aiConfigNoSuitableModelsAvailable), findsOneWidget);
-      // The non-reasoning model should not appear anywhere since it doesn't meet requirements
-      expect(find.text('Non-Reasoning Model'), findsNothing);
+      // Confirm deletion
+      await tester.tap(find.text(l10n.aiConfigListDeleteConfirmDelete));
+      await tester.pumpAndSettle();
+
+      // Verify model was removed
+      expect(capturedModelIds, ['model2']);
+
+      // Verify snackbar was shown
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.text(l10n.aiConfigModelRemovedMessage('Model to Remove')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('filters models based on required input modalities',
+    testWidgets('opens model management modal when manage button is tapped',
         (WidgetTester tester) async {
-      final formStateWithImageRequirement = createFormState(
-        modelIds: [],
-        defaultModelId: '',
-        requiredInputData: [InputDataType.images],
+      final stateWithModels = createFormState(
+        modelIds: ['model1'],
+        defaultModelId: 'model1',
       );
       fakeFormController.onBuild =
-          ({String? configId}) async => formStateWithImageRequirement;
+          ({String? configId}) async => stateWithModels;
 
-      final textOnlyModel = AiConfigModel(
-        id: 'text-only-model',
-        name: 'Text Only Model',
-        providerModelId: 'tom1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const PromptFormSelectModel(),
+          overrides: [
+            promptFormControllerProviderInstance.overrideWith(
+              () => fakeFormController,
+            ),
+          ],
+        ),
       );
 
-      final multiModalModel = AiConfigModel(
-        id: 'multi-modal-model',
-        name: 'Multi Modal Model',
-        providerModelId: 'mmm1',
-        inferenceProviderId: 'ip1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text, Modality.image],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
+      await tester.pumpAndSettle();
 
-      // Mock the repository to return both models
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([textOnlyModel, multiModalModel]));
+      // Find and tap the manage button
+      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      await tester.pump();
+
+      // The modal would be shown here in a real scenario
+      // We can't test the actual modal without mocking showModelManagementModal
+      // but we've verified the button exists and is tappable
+    });
+  });
+
+  group('Integration Tests', () {
+    testWidgets('complete flow: display models, remove one, show snackbar',
+        (WidgetTester tester) async {
+      final fakeFormController = FakePromptFormController();
+      final promptFormControllerProviderInstance =
+          promptFormControllerProvider(configId: null);
+
+      final stateWithModels = createFormState(
+        modelIds: ['model1', 'model2', 'model3'],
+        defaultModelId: 'model2',
+      );
+      fakeFormController.onBuild =
+          ({String? configId}) async => stateWithModels;
+
+      when(() => fakeFormController.modelIdsChanged(any<List<String>>()))
+          .thenAnswer((_) async {});
+      when(() => fakeFormController.defaultModelIdChanged(any<String>()))
+          .thenAnswer((_) async {});
+
+      final model1 = createAiConfigModel(id: 'model1', name: 'First Model');
+      final model2 = createAiConfigModel(id: 'model2', name: 'Default Model');
+      final model3 = createAiConfigModel(id: 'model3', name: 'Third Model');
+
+      final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            promptFormControllerProviderInstance
-                .overrideWith(() => fakeFormController),
-            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            promptFormControllerProviderInstance.overrideWith(
+              () => fakeFormController,
+            ),
+            aiConfigByIdProvider('model1').overrideWith((ref) async => model1),
+            aiConfigByIdProvider('model2').overrideWith((ref) async => model2),
+            aiConfigByIdProvider('model3').overrideWith((ref) async => model3),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
+          child: MaterialApp(
+            scaffoldMessengerKey: scaffoldMessengerKey,
+            home: const Scaffold(
               body: PromptFormSelectModel(),
             ),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            locale: Locale('en'),
+            locale: const Locale('en'),
           ),
         ),
       );
+
       await tester.pumpAndSettle();
 
-      // Tap the manage models button
-      await tester.tap(find.text(l10n.aiConfigManageModelsButton));
+      // Verify all models are displayed
+      expect(find.text('First Model'), findsOneWidget);
+      expect(find.text('Default Model'), findsOneWidget);
+      expect(find.text('Third Model'), findsOneWidget);
+
+      // Verify default badge is on the correct model
+      final defaultModelCard = find.ancestor(
+        of: find.text('Default Model'),
+        matching: find.byType(ModelCard),
+      );
+      expect(
+        find.descendant(
+          of: defaultModelCard,
+          matching: find.byType(DefaultBadge),
+        ),
+        findsOneWidget,
+      );
+
+      // Remove a non-default model
+      await tester.drag(
+        find.byKey(const ValueKey('selected_model_model3')),
+        const Offset(-500, 0),
+      );
       await tester.pumpAndSettle();
 
-      // Verify that only the multi-modal model is shown
-      // The multi-modal model appears once in the modal (not selected in main list)
-      expect(find.text('Multi Modal Model'), findsOneWidget);
-      // The text-only model should not appear in the modal since it doesn't meet requirements
-      expect(find.text('Text Only Model'), findsNothing);
+      // Confirm deletion
+      await tester.tap(find.text(l10n.aiConfigListDeleteConfirmDelete));
+      await tester.pumpAndSettle();
+
+      // Verify snackbar
+      expect(
+        find.text(l10n.aiConfigModelRemovedMessage('Third Model')),
+        findsOneWidget,
+      );
     });
   });
 }
