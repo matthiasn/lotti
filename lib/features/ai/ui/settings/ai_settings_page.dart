@@ -79,6 +79,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       vsync: this,
     );
 
+    // Listen to tab changes
+    _tabController.addListener(_handleTabControllerChange);
+
     // Listen to search changes with debouncing
     _searchController.addListener(_handleSearchChange);
   }
@@ -97,6 +100,16 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     }
   }
 
+  /// Handles tab controller changes and updates filter state
+  void _handleTabControllerChange() {
+    if (_tabController.indexIsChanging) return;
+    
+    final newTab = AiSettingsTab.values[_tabController.index];
+    if (newTab != _filterState.activeTab) {
+      _updateFilterState(_filterState.copyWith(activeTab: newTab));
+    }
+  }
+
   /// Updates the filter state and triggers UI rebuild
   void _updateFilterState(AiSettingsFilterState newState) {
     setState(() {
@@ -108,6 +121,11 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   void _handleTabChange(AiSettingsTab tab) {
     final newState = _filterState.copyWith(activeTab: tab);
     _updateFilterState(newState);
+    
+    // Sync the tab controller if needed (for programmatic tab changes)
+    if (_tabController.index != tab.index) {
+      _tabController.animateTo(tab.index);
+    }
   }
 
   /// Handles search bar clear action
@@ -119,6 +137,18 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   /// Handles configuration tap and navigates to edit page
   Future<void> _handleConfigTap(AiConfig config) async {
     await _navigationService.navigateToConfigEdit(context, config);
+  }
+
+  /// Handles add button tap and navigates to create page based on current tab
+  Future<void> _handleAddTap() async {
+    switch (_filterState.activeTab) {
+      case AiSettingsTab.providers:
+        await _navigationService.navigateToCreateProvider(context);
+      case AiSettingsTab.models:
+        await _navigationService.navigateToCreateModel(context);
+      case AiSettingsTab.prompts:
+        await _navigationService.navigateToCreatePrompt(context);
+    }
   }
 
   @override
@@ -142,6 +172,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           ),
         ],
       ),
+      floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
@@ -281,6 +312,44 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(
         child: Text('Error loading prompts: $error'),
+      ),
+    );
+  }
+
+  /// Builds a stylish floating action button with contextual icon and label
+  Widget _buildFloatingActionButton() {
+    final (icon, label) = switch (_filterState.activeTab) {
+      AiSettingsTab.providers => (Icons.hub, 'Add Provider'),
+      AiSettingsTab.models => (Icons.smart_toy, 'Add Model'),
+      AiSettingsTab.prompts => (Icons.psychology, 'Add Prompt'),
+    };
+
+    return FloatingActionButton.extended(
+      onPressed: _handleAddTap,
+      icon: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: context.colorScheme.onPrimary.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: context.colorScheme.onPrimary,
+        ),
+      ),
+      label: Text(
+        label,
+        style: context.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onPrimary,
+        ),
+      ),
+      backgroundColor: context.colorScheme.primary,
+      foregroundColor: context.colorScheme.onPrimary,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
     );
   }

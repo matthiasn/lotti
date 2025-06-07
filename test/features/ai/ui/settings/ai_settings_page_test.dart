@@ -176,5 +176,46 @@ void main() {
       expect(find.text('Vision'), findsOneWidget);
       expect(find.text('Audio'), findsOneWidget);
     });
+
+    testWidgets('should display floating action button with correct label',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should see "Add Provider" button on Providers tab
+      expect(find.text('Add Provider'), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+
+      // Switch to Models tab
+      await tester.tap(find.text('Models'));
+      await tester.pumpAndSettle();
+
+      // Should see "Add Model" button
+      expect(find.text('Add Model'), findsOneWidget);
+
+      // Switch to Prompts tab
+      await tester.tap(find.text('Prompts'));
+      await tester.pumpAndSettle();
+
+      // Should see "Add Prompt" button
+      expect(find.text('Add Prompt'), findsOneWidget);
+    });
+
+    testWidgets('should have tappable floating action button',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Verify floating action button exists and is tappable
+      final fabFinder = find.byType(FloatingActionButton);
+      expect(fabFinder, findsOneWidget);
+      
+      // Test that it's enabled (can be tapped without throwing)
+      final fab = tester.widget<FloatingActionButton>(fabFinder);
+      expect(fab.onPressed, isNotNull);
+      
+      // Note: We don't actually tap here to avoid navigation issues in test context
+      // In a real integration test with proper routing, we would test navigation
+    });
   });
 }
