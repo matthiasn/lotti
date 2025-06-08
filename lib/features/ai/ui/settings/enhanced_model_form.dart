@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/enhanced_form_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -53,163 +54,14 @@ class _EnhancedInferenceModelFormState
     required List<Modality> selectedModalities,
     required void Function(List<Modality>) onSave,
   }) {
-    final selectedModalitiesSet = selectedModalities.toSet();
-
     ModalUtils.showSinglePageModal<void>(
       context: context,
       title: title,
-      builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: context.colorScheme.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Modal header
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: context.colorScheme.outline
-                              .withValues(alpha: 0.1),
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: context.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: context.colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(modalContext).pop(),
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Modality options
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: Modality.values.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final modality = Modality.values[index];
-                        final isSelected =
-                            selectedModalitiesSet.contains(modality);
-
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? context.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.3)
-                                : context.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? context.colorScheme.primary
-                                  : context.colorScheme.outline
-                                      .withValues(alpha: 0.2),
-                              width: isSelected ? 2 : 1,
-                            ),
-                          ),
-                          child: CheckboxListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 8,
-                            ),
-                            title: Text(
-                              modality.displayName(context),
-                              style: context.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: isSelected
-                                    ? context.colorScheme.primary
-                                    : context.colorScheme.onSurface,
-                              ),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                modality.description(context),
-                                style: context.textTheme.bodyMedium?.copyWith(
-                                  color: context.colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ),
-                            value: isSelected,
-                            onChanged: (value) {
-                              if (value ?? false) {
-                                selectedModalitiesSet.add(modality);
-                              } else {
-                                selectedModalitiesSet.remove(modality);
-                              }
-                              setState(() {});
-                            },
-                            controlAffinity: ListTileControlAffinity.trailing,
-                            activeColor: context.colorScheme.primary,
-                            checkColor: context.colorScheme.onPrimary,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Save button
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          onSave(selectedModalitiesSet.toList());
-                          Navigator.of(modalContext).pop();
-                        },
-                        icon: const Icon(Icons.check_rounded, size: 20),
-                        label: Text(
-                          context.messages.saveButtonLabel,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.colorScheme.primary,
-                          foregroundColor: context.colorScheme.onPrimary,
-                          elevation: 2,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (modalContext) => ModalitySelectionModal(
+        title: title,
+        selectedModalities: selectedModalities,
+        onSave: onSave,
+      ),
     );
   }
 
