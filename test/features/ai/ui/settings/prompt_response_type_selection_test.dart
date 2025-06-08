@@ -328,23 +328,26 @@ void main() {
           );
 
           // Check if the type is selected by looking for radio button indicator
-          final typeOptionFinder = find.ancestor(
-            of: find.text(type.localizedNameFromContext(l10n)),
-            matching: find.byType(InkWell),
-          ).last;
-          
+          final typeOptionFinder = find
+              .ancestor(
+                of: find.text(type.localizedNameFromContext(l10n)),
+                matching: find.byType(InkWell),
+              )
+              .last;
+
           if (type == initiallySelected) {
             // Selected type should have a filled radio button center
             expect(
               find.descendant(
                 of: typeOptionFinder,
                 matching: find.byWidgetPredicate(
-                  (widget) => 
-                    widget is Container &&
-                    widget.constraints?.maxWidth == 10 &&
-                    widget.constraints?.maxHeight == 10 &&
-                    widget.decoration is BoxDecoration &&
-                    (widget.decoration as BoxDecoration).shape == BoxShape.circle,
+                  (widget) =>
+                      widget is Container &&
+                      widget.constraints?.maxWidth == 10 &&
+                      widget.constraints?.maxHeight == 10 &&
+                      widget.decoration is BoxDecoration &&
+                      (widget.decoration as BoxDecoration?)?.shape ==
+                          BoxShape.circle,
                 ),
               ),
               findsOneWidget,
@@ -356,10 +359,10 @@ void main() {
               find.descendant(
                 of: typeOptionFinder,
                 matching: find.byWidgetPredicate(
-                  (widget) => 
-                    widget is Container &&
-                    widget.constraints?.maxWidth == 10 &&
-                    widget.constraints?.maxHeight == 10,
+                  (widget) =>
+                      widget is Container &&
+                      widget.constraints?.maxWidth == 10 &&
+                      widget.constraints?.maxHeight == 10,
                 ),
               ),
               findsNothing,
@@ -378,24 +381,27 @@ void main() {
 
         const typeToSelect = AiResponseType.imageAnalysis;
 
-        final typeOptionFinder = find.ancestor(
-          of: find.text(typeToSelect.localizedNameFromContext(l10n)),
-          matching: find.byType(InkWell),
-        ).last;
+        final typeOptionFinder = find
+            .ancestor(
+              of: find.text(typeToSelect.localizedNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            )
+            .last;
 
         // Check initial state - should not have filled radio button
         expect(
           find.descendant(
             of: typeOptionFinder,
             matching: find.byWidgetPredicate(
-              (widget) => 
-                widget is Container &&
-                widget.constraints?.maxWidth == 10 &&
-                widget.constraints?.maxHeight == 10,
+              (widget) =>
+                  widget is Container &&
+                  widget.constraints?.maxWidth == 10 &&
+                  widget.constraints?.maxHeight == 10,
             ),
           ),
           findsNothing,
-          reason: 'Unselected type should not have filled radio button initially',
+          reason:
+              'Unselected type should not have filled radio button initially',
         );
 
         await tester.tap(typeOptionFinder);
@@ -406,12 +412,13 @@ void main() {
           find.descendant(
             of: typeOptionFinder,
             matching: find.byWidgetPredicate(
-              (widget) => 
-                widget is Container &&
-                widget.constraints?.maxWidth == 10 &&
-                widget.constraints?.maxHeight == 10 &&
-                widget.decoration is BoxDecoration &&
-                (widget.decoration as BoxDecoration).shape == BoxShape.circle,
+              (widget) =>
+                  widget is Container &&
+                  widget.constraints?.maxWidth == 10 &&
+                  widget.constraints?.maxHeight == 10 &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration?)?.shape ==
+                      BoxShape.circle,
             ),
           ),
           findsOneWidget,
@@ -421,13 +428,13 @@ void main() {
         // Check that the save button exists and is enabled by looking for the save text
         final saveButtonTextFinder = find.text(l10n.saveButtonLabel);
         expect(saveButtonTextFinder, findsOneWidget);
-        
+
         // Find the button ancestor of the save text
         final buttonFinder = find.ancestor(
           of: saveButtonTextFinder,
           matching: find.byType(ElevatedButton),
         );
-        
+
         if (buttonFinder.evaluate().isNotEmpty) {
           final saveButton = tester.widget<ElevatedButton>(buttonFinder);
           expect(saveButton.onPressed, isNotNull);
@@ -440,7 +447,8 @@ void main() {
         await openModal(tester);
 
         // Verify save button is disabled
-        final saveButtonFinder = find.widgetWithText(ElevatedButton, l10n.saveButtonLabel);
+        final saveButtonFinder =
+            find.widgetWithText(ElevatedButton, l10n.saveButtonLabel);
         if (saveButtonFinder.evaluate().isNotEmpty) {
           final saveButton = tester.widget<ElevatedButton>(saveButtonFinder);
           expect(saveButton.onPressed, isNull);
@@ -451,17 +459,21 @@ void main() {
 
         // Select an option
         const typeToSelect = AiResponseType.actionItemSuggestions;
-        final typeOptionFinder = find.ancestor(
-          of: find.text(typeToSelect.localizedNameFromContext(l10n)),
-          matching: find.byType(InkWell),
-        ).last;
+        final typeOptionFinder = find
+            .ancestor(
+              of: find.text(typeToSelect.localizedNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            )
+            .last;
         await tester.tap(typeOptionFinder);
         await tester.pumpAndSettle();
 
         // Verify save button is enabled
-        final enabledSaveButtonFinder = find.widgetWithText(ElevatedButton, l10n.saveButtonLabel);
+        final enabledSaveButtonFinder =
+            find.widgetWithText(ElevatedButton, l10n.saveButtonLabel);
         if (enabledSaveButtonFinder.evaluate().isNotEmpty) {
-          final enabledSaveButton = tester.widget<ElevatedButton>(enabledSaveButtonFinder);
+          final enabledSaveButton =
+              tester.widget<ElevatedButton>(enabledSaveButtonFinder);
           expect(enabledSaveButton.onPressed, isNotNull);
         } else {
           expect(find.text(l10n.saveButtonLabel), findsOneWidget);
@@ -493,10 +505,11 @@ void main() {
         final modalFinder = find.byType(ResponseTypeSelectionModal);
         final typeTextFinder = find.descendant(
           of: modalFinder,
-          matching: find.text(typeToSelectInModal.localizedNameFromContext(l10n)),
+          matching:
+              find.text(typeToSelectInModal.localizedNameFromContext(l10n)),
         );
         expect(typeTextFinder, findsOneWidget,
-          reason: 'Type option should be visible in modal');
+            reason: 'Type option should be visible in modal');
 
         // Find the InkWell ancestor of the type text
         final typeOptionFinder = find.ancestor(
@@ -504,34 +517,37 @@ void main() {
           matching: find.byType(InkWell),
         );
         expect(typeOptionFinder, findsWidgets,
-          reason: 'Should find InkWell for type option');
-        
+            reason: 'Should find InkWell for type option');
+
         // Tap the first InkWell found (which should be the type option)
         await tester.tap(typeOptionFinder.first);
         await tester.pumpAndSettle();
 
         // Verify the type was actually selected
         final selectedTypeFinder = find.descendant(
-          of: find.ancestor(
-            of: find.text(typeToSelectInModal.localizedNameFromContext(l10n)),
-            matching: find.byType(InkWell),
-          ).last,
+          of: find
+              .ancestor(
+                of: find
+                    .text(typeToSelectInModal.localizedNameFromContext(l10n)),
+                matching: find.byType(InkWell),
+              )
+              .last,
           matching: find.byWidgetPredicate(
-            (widget) => 
-              widget is Container &&
-              widget.constraints?.maxWidth == 10 &&
-              widget.constraints?.maxHeight == 10,
+            (widget) =>
+                widget is Container &&
+                widget.constraints?.maxWidth == 10 &&
+                widget.constraints?.maxHeight == 10,
           ),
         );
-        expect(selectedTypeFinder, findsOneWidget, 
-          reason: 'Selected type should have filled radio button');
+        expect(selectedTypeFinder, findsOneWidget,
+            reason: 'Selected type should have filled radio button');
 
         // Find the save button within the modal
         final saveButtonFinder = find.descendant(
           of: modalFinder,
           matching: find.byType(ElevatedButton),
         );
-        
+
         if (saveButtonFinder.evaluate().isEmpty) {
           // If no ElevatedButton, try finding by text
           final saveTextFinder = find.descendant(
@@ -539,26 +555,27 @@ void main() {
             matching: find.text(l10n.saveButtonLabel),
           );
           expect(saveTextFinder, findsOneWidget,
-            reason: 'Save button text should be visible');
-          
+              reason: 'Save button text should be visible');
+
           // Ensure save button is visible before tapping
           await tester.ensureVisible(saveTextFinder);
           await tester.pumpAndSettle();
-          
+
           await tester.tap(saveTextFinder, warnIfMissed: false);
         } else {
           expect(saveButtonFinder, findsOneWidget,
-            reason: 'Should find save button in modal');
-            
+              reason: 'Should find save button in modal');
+
           // Ensure save button is visible before tapping
           await tester.ensureVisible(saveButtonFinder);
           await tester.pumpAndSettle();
-          
+
           await tester.tap(saveButtonFinder, warnIfMissed: false);
         }
-        
+
         await tester.pump(); // First pump to trigger the callback
-        await tester.pump(const Duration(milliseconds: 100)); // Allow time for callback
+        await tester
+            .pump(const Duration(milliseconds: 100)); // Allow time for callback
         await tester.pumpAndSettle(); // Wait for animations
 
         // Verify that the callback was called with correct value

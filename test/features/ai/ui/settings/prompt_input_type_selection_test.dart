@@ -275,18 +275,17 @@ void main() {
           final isSelected = initiallySelected.contains(type);
           
           if (isSelected) {
-            // Look for checkmark icon next to this type's text
-            final checkmarkFinder = find.ancestor(
-              of: find.byIcon(Icons.check_rounded),
-              matching: find.byWidgetPredicate(
-                (widget) => widget.runtimeType.toString() == '_InputDataTypeOption',
-              ),
-            );
-            // Verify this checkmark is for the correct type
+            // Find the InkWell containing the type's text
+            final typeOption = find.ancestor(
+              of: find.text(type.displayNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            ).last;
+            
+            // Verify this option has a checkmark
             expect(
               find.descendant(
-                of: checkmarkFinder,
-                matching: find.text(type.displayNameFromContext(l10n)),
+                of: typeOption,
+                matching: find.byIcon(Icons.check_rounded),
               ),
               findsOneWidget,
               reason: 'Selected type ${type.name} should have a checkmark',
