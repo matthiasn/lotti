@@ -26,6 +26,7 @@ import 'package:lotti/themes/theme.dart';
 ///   emptyMessage: 'No AI models configured',
 ///   emptyIcon: Icons.smart_toy,
 ///   onConfigTap: (config) => navigateToEdit(config),
+///   onRetry: () => ref.invalidate(modelsProvider),
 /// )
 /// ```
 class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
@@ -38,6 +39,7 @@ class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
     this.showCapabilities = false,
     this.isCompact = false,
     this.enableSwipeToDelete = true,
+    this.onRetry,
     super.key,
   });
 
@@ -64,6 +66,9 @@ class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
 
   /// Whether to enable swipe-to-delete functionality
   final bool enableSwipeToDelete;
+
+  /// Optional callback for retry button in error state
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -236,10 +241,7 @@ class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: () {
-                // Trigger a rebuild to retry loading
-                // This would typically be handled by the parent widget
-              },
+              onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),

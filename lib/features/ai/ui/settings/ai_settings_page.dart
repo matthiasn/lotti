@@ -249,6 +249,11 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           emptyMessage: 'No AI providers configured',
           emptyIcon: Icons.hub,
           onConfigTap: _handleConfigTap,
+          onRetry: () => ref.invalidate(
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -279,6 +284,11 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           emptyIcon: Icons.smart_toy,
           onConfigTap: _handleConfigTap,
           showCapabilities: true,
+          onRetry: () => ref.invalidate(
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -308,6 +318,11 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           emptyMessage: 'No AI prompts configured',
           emptyIcon: Icons.psychology,
           onConfigTap: _handleConfigTap,
+          onRetry: () => ref.invalidate(
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
