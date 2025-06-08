@@ -6,7 +6,10 @@ void main() {
   group('SelectionOption', () {
     Widget createTestWidget({
       required String title,
-      required IconData icon, required bool isSelected, required VoidCallback onTap, String? description,
+      required IconData icon,
+      required bool isSelected,
+      required VoidCallback onTap,
+      String? description,
       Widget? selectionIndicator,
     }) {
       return MaterialApp(

@@ -41,9 +41,10 @@ class _EnhancedInferenceModelFormState
           .notifier,
     );
     final formState = ref
-        .watch(inferenceModelFormControllerProvider(configId: widget.config?.id))
+        .watch(
+            inferenceModelFormControllerProvider(configId: widget.config?.id))
         .valueOrNull;
-    
+
     ProviderSelectionModal.show(
       context: context,
       onProviderSelected: formController.inferenceProviderIdChanged,

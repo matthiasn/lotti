@@ -273,14 +273,16 @@ void main() {
 
           // Check if the type is selected by looking for the checkmark icon
           final isSelected = initiallySelected.contains(type);
-          
+
           if (isSelected) {
             // Find the InkWell containing the type's text
-            final typeOption = find.ancestor(
-              of: find.text(type.displayNameFromContext(l10n)),
-              matching: find.byType(InkWell),
-            ).last;
-            
+            final typeOption = find
+                .ancestor(
+                  of: find.text(type.displayNameFromContext(l10n)),
+                  matching: find.byType(InkWell),
+                )
+                .last;
+
             // Verify this option has a checkmark
             expect(
               find.descendant(
@@ -301,15 +303,17 @@ void main() {
         const typeToSelect = InputDataType.images;
 
         // Find the container for the type option using InkWell
-        final typeOptionFinder = find.ancestor(
-          of: find.text(typeToSelect.displayNameFromContext(l10n)),
-          matching: find.byType(InkWell),
-        ).last; // Get the InkWell inside the modal
-        
+        final typeOptionFinder = find
+            .ancestor(
+              of: find.text(typeToSelect.displayNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            )
+            .last; // Get the InkWell inside the modal
+
         // Ensure the option is visible before interacting with it
         await tester.ensureVisible(typeOptionFinder);
         await tester.pumpAndSettle();
-        
+
         // Verify no checkmark initially
         expect(
           find.descendant(
@@ -348,15 +352,17 @@ void main() {
         await openModal(tester, initialSelection: initiallySelected);
 
         // Find the type option to select
-        final typeOptionFinder = find.ancestor(
-          of: find.text(typeToNewlySelect.displayNameFromContext(l10n)),
-          matching: find.byType(InkWell),
-        ).last;
-        
+        final typeOptionFinder = find
+            .ancestor(
+              of: find.text(typeToNewlySelect.displayNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            )
+            .last;
+
         // Ensure the option is visible before tapping
         await tester.ensureVisible(typeOptionFinder);
         await tester.pumpAndSettle();
-        
+
         await tester.tap(typeOptionFinder, warnIfMissed: false);
         await tester.pumpAndSettle();
 
@@ -364,7 +370,7 @@ void main() {
         final saveButtonTextFinder = find.text(l10n.saveButtonLabel);
         await tester.ensureVisible(saveButtonTextFinder);
         await tester.pumpAndSettle();
-        
+
         await tester.tap(saveButtonTextFinder, warnIfMissed: false);
         await tester.pumpAndSettle();
 

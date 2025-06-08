@@ -156,7 +156,8 @@ class ModelManagementHeader extends StatelessWidget {
           icon: const Icon(Icons.tune_rounded, size: 18),
           label: Text(context.messages.aiConfigManageModelsButton),
           style: ElevatedButton.styleFrom(
-            backgroundColor: context.colorScheme.primaryContainer.withValues(alpha: 0.7),
+            backgroundColor:
+                context.colorScheme.primaryContainer.withValues(alpha: 0.7),
             foregroundColor: context.colorScheme.primary,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -355,9 +356,6 @@ class DismissibleModelCard extends StatelessWidget {
     );
   }
 }
-
-
-
 
 // Loading state for individual models
 class ModelLoadingState extends StatelessWidget {

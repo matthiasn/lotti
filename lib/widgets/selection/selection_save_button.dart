@@ -40,9 +40,9 @@ class SelectionSaveButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: context.colorScheme.primary,
           foregroundColor: context.colorScheme.onPrimary,
-          disabledBackgroundColor: 
+          disabledBackgroundColor:
               context.colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
-          disabledForegroundColor: 
+          disabledForegroundColor:
               context.colorScheme.onSurface.withValues(alpha: 0.4),
           elevation: onPressed != null ? 3 : 0,
           shadowColor: context.colorScheme.primary.withValues(alpha: 0.3),

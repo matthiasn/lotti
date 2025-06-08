@@ -110,9 +110,7 @@ void main() {
 
       testWidgets('shows disabled state when onPressed is null',
           (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          
-        ));
+        await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
         final saveButton = tester
@@ -137,9 +135,7 @@ void main() {
       });
 
       testWidgets('applies correct colors when disabled', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          
-        ));
+        await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
         // The disabled button should still be visible
@@ -165,9 +161,7 @@ void main() {
       testWidgets('does not call onPressed when disabled', (tester) async {
         const pressed = false;
 
-        await tester.pumpWidget(createTestWidget(
-          
-        ));
+        await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
         await tester.tap(find.byType(SelectionSaveButton));

@@ -145,7 +145,7 @@ void main() {
         // Check for InkWell structure in provider cards (new improved design)
         final inkWells = find.byType(InkWell);
         expect(inkWells, findsAtLeastNWidgets(1));
-        
+
         // Provider cards should have proper icons and text
         expect(find.byIcon(Icons.cloud_outlined), findsAtLeastNWidgets(1));
         // Note: No longer expect arrow icons since we use checkmarks for selection
@@ -176,14 +176,14 @@ void main() {
 
         // Find and tap a provider by looking for the text first
         expect(find.text('Test Provider 1'), findsOneWidget);
-        
+
         // Find the InkWell that contains the provider text
         final providerInkWell = find.ancestor(
           of: find.text('Test Provider 1'),
           matching: find.byType(InkWell),
         );
         expect(providerInkWell, findsOneWidget);
-        
+
         await tester.tap(providerInkWell);
         await tester.pumpAndSettle();
 
@@ -200,7 +200,7 @@ void main() {
 
         // Verify the modal exists and maintains state
         expect(find.byType(ProviderSelectionModal), findsOneWidget);
-        
+
         // The modal should remain functional
         expect(find.byType(Column), findsAtLeastNWidgets(1));
       });
@@ -229,7 +229,8 @@ void main() {
         }
       });
 
-      testWidgets('shows checkmark for selected provider and empty circle for others',
+      testWidgets(
+          'shows checkmark for selected provider and empty circle for others',
           (WidgetTester tester) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
@@ -252,7 +253,7 @@ void main() {
 
         // Should show checkmark for selected provider
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-        
+
         // Should show empty circles for non-selected providers
         // The empty circle is represented by a Container with border decoration
         final containers = tester.widgetList<Container>(find.byType(Container));
@@ -260,12 +261,12 @@ void main() {
           final decoration = container.decoration;
           if (decoration is BoxDecoration && decoration.border != null) {
             // Check if it's the empty circle style (width/height 28)
-            return container.constraints?.maxWidth == 28 || 
-                   container.constraints?.maxHeight == 28;
+            return container.constraints?.maxWidth == 28 ||
+                container.constraints?.maxHeight == 28;
           }
           return false;
         });
-        
+
         // Should have at least one empty circle (for non-selected provider)
         expect(emptyCircleContainers.length, greaterThan(0));
       });
@@ -294,7 +295,7 @@ void main() {
         // Both provider texts should be present
         expect(find.text('Test Provider 1'), findsOneWidget);
         expect(find.text('Test Provider 2'), findsOneWidget);
-        
+
         // Should have checkmark icon for selected provider
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       });
@@ -381,7 +382,7 @@ void main() {
         );
 
         expect(styledContainers.length, greaterThan(0));
-        
+
         // Should have proper padding structure
         expect(find.byType(Padding), findsAtLeastNWidgets(1));
       });
@@ -514,14 +515,14 @@ void main() {
 
         // Tapping providers should work even in test context (using new InkWell design)
         expect(find.text('Test Provider 1'), findsOneWidget);
-        
+
         // Find the InkWell that contains the provider text
         final providerInkWell = find.ancestor(
           of: find.text('Test Provider 1'),
           matching: find.byType(InkWell),
         );
         expect(providerInkWell, findsOneWidget);
-        
+
         await tester.tap(providerInkWell);
         await tester.pumpAndSettle();
 

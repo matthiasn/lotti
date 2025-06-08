@@ -141,8 +141,7 @@ void main() {
               name: 'Provider A',
               type: InferenceProviderType.openAi),
           AiTestDataFactory.createTestProvider(
-              id: 'provider-b',
-              name: 'Provider B'),
+              id: 'provider-b', name: 'Provider B'),
           AiTestDataFactory.createTestModel(id: 'model-a', name: 'Model A'),
           AiTestDataFactory.createTestModel(id: 'model-b', name: 'Model B'),
           AiTestDataFactory.createTestPrompt(id: 'prompt-a', name: 'Prompt A'),
@@ -174,8 +173,7 @@ void main() {
       });
 
       test('should work with different inference provider types', () {
-        final anthropicProvider = AiTestDataFactory.createTestProvider(
-            );
+        final anthropicProvider = AiTestDataFactory.createTestProvider();
         final openAiProvider = AiTestDataFactory.createTestProvider(
             type: InferenceProviderType.openAi);
         final genericProvider = AiTestDataFactory.createTestProvider(

@@ -101,10 +101,12 @@ class ResponseTypeSelectionModal extends StatefulWidget {
   }
 
   @override
-  State<ResponseTypeSelectionModal> createState() => _ResponseTypeSelectionModalState();
+  State<ResponseTypeSelectionModal> createState() =>
+      _ResponseTypeSelectionModalState();
 }
 
-class _ResponseTypeSelectionModalState extends State<ResponseTypeSelectionModal> {
+class _ResponseTypeSelectionModalState
+    extends State<ResponseTypeSelectionModal> {
   AiResponseType? _selectedType;
 
   @override
@@ -142,7 +144,8 @@ class _ResponseTypeSelectionModalState extends State<ResponseTypeSelectionModal>
               icon: _getTypeIcon(type),
               isSelected: isSelected,
               onTap: () => _selectType(type),
-              selectionIndicator: RadioSelectionIndicator(isSelected: isSelected),
+              selectionIndicator:
+                  RadioSelectionIndicator(isSelected: isSelected),
             );
           },
         ),

@@ -51,7 +51,6 @@ void main() {
       );
     }
 
-
     group('Form Structure and Layout', () {
       testWidgets('should render all form sections with proper hierarchy',
           (WidgetTester tester) async {

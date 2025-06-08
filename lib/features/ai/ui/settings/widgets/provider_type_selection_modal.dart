@@ -9,7 +9,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
 
 /// High-quality provider type selection modal with Series A startup design standards
-/// 
+///
 /// Features:
 /// - Wolt modal sheet with persistent title section
 /// - Premium card-based design with proper contrast
@@ -111,7 +111,8 @@ class _ProviderTypeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            : context.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
@@ -149,7 +150,8 @@ class _ProviderTypeCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.colorScheme.primary.withValues(alpha: 0.15)
-                        : context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
+                        : context.colorScheme.surfaceContainerHigh
+                            .withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
@@ -165,9 +167,9 @@ class _ProviderTypeCard extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Provider info
                 Expanded(
                   child: Column(
@@ -195,7 +197,7 @@ class _ProviderTypeCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Selection indicator
                 if (isSelected)
                   Container(
@@ -224,8 +226,8 @@ class _ProviderTypeCard extends StatelessWidget {
                     height: 28,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: context.colorScheme.outline
-                            .withValues(alpha: 0.3),
+                        color:
+                            context.colorScheme.outline.withValues(alpha: 0.3),
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(20),

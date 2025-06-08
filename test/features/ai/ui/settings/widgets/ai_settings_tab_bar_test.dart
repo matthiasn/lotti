@@ -350,11 +350,11 @@ void main() {
 
         final containerFinder = find.byType(Container);
         expect(containerFinder, findsOneWidget);
-        
+
         // Check that the container has proper height
         final containerBox = tester.renderObject<RenderBox>(containerFinder);
         expect(containerBox.size.height, 48.0);
-        
+
         // Check that it has decoration (not just margin/padding)
         final container = tester.widget<Container>(containerFinder);
         expect(container.decoration, isNotNull);

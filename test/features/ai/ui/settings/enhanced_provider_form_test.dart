@@ -207,7 +207,7 @@ void main() {
 
       // Assert - modal should be displayed with new design
       expect(find.text('Select Provider Type'), findsAtLeastNWidgets(1));
-      
+
       // Check for provider cards with InkWell (count may vary due to scrolling)
       expect(find.byType(InkWell), findsAtLeastNWidgets(6));
 

@@ -200,8 +200,7 @@ class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
                   widget.labelText,
                   style: context.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color:
-                        context.colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: context.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 if (widget.isRequired)
@@ -301,8 +300,9 @@ class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
                         : null,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: widget.prefixIcon != null ? 8 : 16,
-                      vertical: (widget.maxLines != null && widget.maxLines! > 1) || 
-                               (widget.minLines != null && widget.minLines! > 1)
+                      vertical: (widget.maxLines != null &&
+                                  widget.maxLines! > 1) ||
+                              (widget.minLines != null && widget.minLines! > 1)
                           ? 16
                           : 14,
                     ),

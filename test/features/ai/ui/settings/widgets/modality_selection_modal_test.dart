@@ -26,7 +26,8 @@ void main() {
     }
 
     group('Modal Structure', () {
-      testWidgets('displays modal content correctly', (WidgetTester tester) async {
+      testWidgets('displays modal content correctly',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(
           onSave: (_) {},
         ));
@@ -53,7 +54,8 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget); // Only save button
+        expect(find.byIcon(Icons.check_rounded),
+            findsOneWidget); // Only save button
         expect(find.text('Save'), findsOneWidget);
       });
 
@@ -79,7 +81,7 @@ void main() {
         expect(find.text('Text'), findsOneWidget);
         expect(find.text('Image'), findsOneWidget);
         expect(find.text('Audio'), findsOneWidget);
-        
+
         // Should have icons for all modalities
         expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
         expect(find.byIcon(Icons.image_rounded), findsOneWidget);
@@ -96,7 +98,8 @@ void main() {
 
         // Should show checkmarks for selected modalities (plus one in save button)
         final checkmarkIcons = find.byIcon(Icons.check_rounded);
-        expect(checkmarkIcons, findsNWidgets(3)); // text, image selected + save button
+        expect(checkmarkIcons,
+            findsNWidgets(3)); // text, image selected + save button
       });
 
       testWidgets('displays modality names and descriptions',
@@ -106,7 +109,7 @@ void main() {
 
         // Check for text modality (should always be present)
         expect(find.text('Text'), findsOneWidget);
-        
+
         // Should have modality cards with proper icons
         expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
         expect(find.byIcon(Icons.image_rounded), findsOneWidget);
@@ -123,7 +126,7 @@ void main() {
 
         // Should show checkmark for selected modality (plus one in save button)
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
-        
+
         // Should have styled containers with decorations
         final containers = tester.widgetList<Container>(find.byType(Container));
         expect(containers.length, greaterThan(3));
@@ -154,7 +157,8 @@ void main() {
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       });
 
-      testWidgets('can select multiple modalities', (WidgetTester tester) async {
+      testWidgets('can select multiple modalities',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(
           selectedModalities: [Modality.text],
           onSave: (_) {},
@@ -163,7 +167,7 @@ void main() {
 
         // Initially should have one checkmark plus save button
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
-        
+
         // Find and tap the Image modality card to select it
         final imageCard = find.ancestor(
           of: find.text('Image'),
@@ -179,7 +183,7 @@ void main() {
       testWidgets('calls onSave with correct modalities when save tapped',
           (WidgetTester tester) async {
         final savedModalities = <Modality>[];
-        
+
         await tester.pumpWidget(createTestWidget(
           selectedModalities: [Modality.text],
           onSave: savedModalities.addAll,
@@ -197,7 +201,7 @@ void main() {
       testWidgets('calls onSave with updated modalities after changes',
           (WidgetTester tester) async {
         final savedModalities = <Modality>[];
-        
+
         await tester.pumpWidget(createTestWidget(
           selectedModalities: [Modality.text],
           onSave: savedModalities.addAll,
@@ -248,7 +252,8 @@ void main() {
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
       });
 
-      testWidgets('handles empty initial selection', (WidgetTester tester) async {
+      testWidgets('handles empty initial selection',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(
           selectedModalities: <Modality>[],
           onSave: (_) {},
@@ -257,7 +262,7 @@ void main() {
 
         // Should only have save button checkmark, no selected modalities
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-        
+
         // Should have all modality text labels visible
         expect(find.text('Text'), findsOneWidget);
         expect(find.text('Image'), findsOneWidget);
@@ -273,7 +278,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should have checkmarks for all modalities plus save button
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(Modality.values.length + 1));
+        expect(find.byIcon(Icons.check_rounded),
+            findsNWidgets(Modality.values.length + 1));
       });
     });
 
@@ -288,10 +294,12 @@ void main() {
 
         // Should have save button (close button is part of Wolt modal wrapper)
         final saveButton = find.byIcon(Icons.check_rounded);
-        expect(saveButton, findsAtLeastNWidgets(1)); // At least one for save button
+        expect(saveButton,
+            findsAtLeastNWidgets(1)); // At least one for save button
       });
 
-      testWidgets('modality options are properly labeled', (WidgetTester tester) async {
+      testWidgets('modality options are properly labeled',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
         await tester.pumpAndSettle();
 
@@ -299,7 +307,7 @@ void main() {
         expect(find.text('Text'), findsOneWidget);
         expect(find.text('Image'), findsOneWidget);
         expect(find.text('Audio'), findsOneWidget);
-        
+
         // Should have icons for all modalities
         expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
         expect(find.byIcon(Icons.image_rounded), findsOneWidget);
@@ -308,7 +316,8 @@ void main() {
     });
 
     group('Visual Design', () {
-      testWidgets('uses proper spacing and layout', (WidgetTester tester) async {
+      testWidgets('uses proper spacing and layout',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
         await tester.pumpAndSettle();
 
@@ -319,7 +328,8 @@ void main() {
         expect(find.byType(Padding), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('has consistent visual hierarchy', (WidgetTester tester) async {
+      testWidgets('has consistent visual hierarchy',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(
           selectedModalities: <Modality>[], // No selections to avoid multiple checkmarks
           onSave: (_) {},
@@ -342,13 +352,14 @@ void main() {
         final styledContainers = containers.where(
           (container) => container.decoration != null,
         );
-        
+
         expect(styledContainers.length, greaterThan(0));
       });
     });
 
     group('Edge Cases', () {
-      testWidgets('handles rapid selection changes', (WidgetTester tester) async {
+      testWidgets('handles rapid selection changes',
+          (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(
           selectedModalities: [Modality.text],
           onSave: (_) {},
@@ -359,7 +370,7 @@ void main() {
           of: find.text('Text'),
           matching: find.byType(InkWell),
         );
-        
+
         // Rapidly toggle selection
         for (var i = 0; i < 5; i++) {
           await tester.tap(textCard);
@@ -392,7 +403,7 @@ void main() {
           of: find.text('Audio'),
           matching: find.byType(InkWell),
         );
-        
+
         await tester.tap(textCard);
         await tester.pump();
         await tester.tap(imageCard);
@@ -408,7 +419,7 @@ void main() {
       testWidgets('handles save with no modalities selected',
           (WidgetTester tester) async {
         final savedModalities = <Modality>[];
-        
+
         await tester.pumpWidget(createTestWidget(
           selectedModalities: <Modality>[],
           onSave: savedModalities.addAll,

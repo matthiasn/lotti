@@ -112,10 +112,12 @@ class InputDataTypeSelectionModal extends StatefulWidget {
   }
 
   @override
-  State<InputDataTypeSelectionModal> createState() => _InputDataTypeSelectionModalState();
+  State<InputDataTypeSelectionModal> createState() =>
+      _InputDataTypeSelectionModalState();
 }
 
-class _InputDataTypeSelectionModalState extends State<InputDataTypeSelectionModal> {
+class _InputDataTypeSelectionModalState
+    extends State<InputDataTypeSelectionModal> {
   late Set<InputDataType> _selectedTypesSet;
 
   @override

@@ -28,7 +28,7 @@ class ProviderSelectionModal extends ConsumerWidget {
 
   /// Callback when user selects a provider
   final ValueChanged<String> onProviderSelected;
-  
+
   /// Currently selected provider ID (for highlighting)
   final String selectedProviderId;
 
@@ -146,7 +146,8 @@ class _ProviderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            : context.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
@@ -184,7 +185,8 @@ class _ProviderCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.colorScheme.primary.withValues(alpha: 0.15)
-                        : context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
+                        : context.colorScheme.surfaceContainerHigh
+                            .withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
@@ -200,9 +202,9 @@ class _ProviderCard extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Provider info
                 Expanded(
                   child: Column(
@@ -234,7 +236,7 @@ class _ProviderCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Selection indicator - checkmark when selected, empty circle when not
                 if (isSelected)
                   Container(
@@ -263,8 +265,8 @@ class _ProviderCard extends StatelessWidget {
                     height: 28,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: context.colorScheme.outline
-                            .withValues(alpha: 0.3),
+                        color:
+                            context.colorScheme.outline.withValues(alpha: 0.3),
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(20),
