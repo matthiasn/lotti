@@ -19,6 +19,11 @@ class SettingsPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SettingsNavCard(
+              title: 'AI Settings',
+              semanticsLabel: 'AI Configuration',
+              path: '/settings/ai',
+            ),
             SettingsNavCard(
               title: context.messages.settingsHabitsTitle,
               semanticsLabel: 'Habit Management',
