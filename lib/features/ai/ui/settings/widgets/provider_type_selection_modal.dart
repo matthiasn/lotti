@@ -47,12 +47,21 @@ class ProviderTypeSelectionModal extends ConsumerWidget {
   ) {
     return WoltModalSheetPage(
       hasSabGradient: false,
+      backgroundColor: context.colorScheme.surfaceContainerHigh,
       topBarTitle: Text(
         context.messages.aiConfigSelectProviderTypeModalTitle,
         style: context.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
           color: context.colorScheme.onSurface,
         ),
+      ),
+      trailingNavBarWidget: IconButton(
+        onPressed: () => Navigator.of(context).pop(),
+        icon: Icon(
+          Icons.close,
+          color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+        tooltip: 'Close',
       ),
       isTopBarLayerAlwaysVisible: true,
       child: ProviderTypeSelectionModal(configId: configId),
@@ -93,59 +102,23 @@ class _ProviderTypeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          // Subtitle section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surfaceContainerLowest,
-              border: Border(
-                bottom: BorderSide(
-                  color: context.colorScheme.outline.withValues(alpha: 0.08),
-                ),
-              ),
+        children: InferenceProviderType.values.map((type) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: _ProviderTypeCard(
+              type: type,
+              isSelected: formState.inferenceProviderType == type,
+              onTap: () {
+                formController.inferenceProviderTypeChanged(type);
+                Navigator.of(context).pop();
+              },
             ),
-            child: Text(
-              'Choose the AI service provider for your configuration',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withValues(alpha: 0.7),
-                height: 1.4,
-              ),
-            ),
-          ),
-
-          // Provider options list
-          Flexible(
-            child: ColoredBox(
-              color: context.colorScheme.surfaceContainerLowest,
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                itemCount: InferenceProviderType.values.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final type = InferenceProviderType.values[index];
-                  return _ProviderTypeCard(
-                    type: type,
-                    isSelected: formState.inferenceProviderType == type,
-                    onTap: () {
-                      formController.inferenceProviderTypeChanged(type);
-                      Navigator.of(context).pop();
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -169,24 +142,24 @@ class _ProviderTypeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : context.colorScheme.surface.withValues(alpha: 0.9),
+            : context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
-              ? context.colorScheme.primary.withValues(alpha: 0.8)
-              : context.colorScheme.outline.withValues(alpha: 0.12),
+              ? context.colorScheme.primary.withValues(alpha: 0.6)
+              : context.colorScheme.outline.withValues(alpha: 0.1),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [
           if (isSelected)
             BoxShadow(
-              color: context.colorScheme.primary.withValues(alpha: 0.1),
-              blurRadius: 12,
+              color: context.colorScheme.primary.withValues(alpha: 0.12),
+              blurRadius: 16,
               offset: const Offset(0, 4),
             )
           else
             BoxShadow(
-              color: context.colorScheme.shadow.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -198,7 +171,7 @@ class _ProviderTypeCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(14),
             child: Row(
               children: [
                 // Provider icon
@@ -207,13 +180,12 @@ class _ProviderTypeCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.colorScheme.primary.withValues(alpha: 0.15)
-                        : context.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.8),
+                        : context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(12),
                     border: isSelected
                         ? Border.all(
                             color: context.colorScheme.primary
-                                .withValues(alpha: 0.2),
+                                .withValues(alpha: 0.3),
                           )
                         : null,
                   ),
@@ -308,25 +280,22 @@ class _LoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 200,
-      child: ColoredBox(
-        color: context.colorScheme.surfaceContainerLowest,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                color: context.colorScheme.primary,
-                strokeWidth: 3,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: context.colorScheme.primary,
+              strokeWidth: 3,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading providers...',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurface.withValues(alpha: 0.8),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Loading providers...',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
