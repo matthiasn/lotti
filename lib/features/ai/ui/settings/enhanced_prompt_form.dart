@@ -122,8 +122,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   labelText: 'User Message',
                   formzField: formState.userMessage,
                   onChanged: formController.userMessageChanged,
-                  maxLines: 6,
-                  prefixIcon: const Icon(Icons.chat_bubble_outline),
+                  maxLines: null,
+                  minLines: 3,
                   isRequired: true,
                   helperText:
                       'The main prompt text. Use {{variables}} for dynamic content.',
@@ -135,8 +135,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   controller: formController.systemMessageController,
                   labelText: 'System Message',
                   onChanged: formController.systemMessageChanged,
-                  maxLines: 3,
-                  prefixIcon: const Icon(Icons.settings_applications_outlined),
+                  maxLines: null,
+                  minLines: 3,
                   helperText:
                       "Instructions that define the AI's behavior and response style",
                 ),
@@ -188,7 +188,8 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   controller: formController.descriptionController,
                   labelText: 'Description',
                   onChanged: formController.descriptionChanged,
-                  maxLines: 3,
+                  maxLines: null,
+                  minLines: 3,
                   prefixIcon: const Icon(Icons.notes_outlined),
                   helperText:
                       "Optional notes about this prompt's purpose and usage",

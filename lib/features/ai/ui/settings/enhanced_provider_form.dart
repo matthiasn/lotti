@@ -315,7 +315,8 @@ class _EnhancedInferenceProviderFormState
                   controller: formController.descriptionController,
                   labelText: 'Description',
                   onChanged: formController.descriptionChanged,
-                  maxLines: 3,
+                  maxLines: null,
+                  minLines: 3,
                   prefixIcon: const Icon(Icons.notes_outlined),
                   helperText:
                       'Optional notes about this provider configuration',

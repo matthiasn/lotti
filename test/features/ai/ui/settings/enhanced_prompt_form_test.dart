@@ -550,12 +550,12 @@ void main() {
           .pumpWidget(buildTestWidget(formController: fakeFormController));
       await tester.pumpAndSettle();
 
-      // Assert - check for multiline text fields
-      final userMessageField = find.byWidgetPredicate((widget) =>
+      // Assert - check for multiline text fields (now using minLines instead of maxLines)
+      final multilineFields = find.byWidgetPredicate((widget) =>
           widget is EnhancedFormField &&
-          widget.maxLines != null &&
-          widget.maxLines! > 1);
-      expect(userMessageField,
+          widget.minLines != null &&
+          widget.minLines! >= 3);
+      expect(multilineFields,
           findsAtLeastNWidgets(1)); // User Message, System Message, Description
     });
   });

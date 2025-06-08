@@ -21,6 +21,7 @@ class EnhancedFormField<T extends FormzInput<dynamic, dynamic>>
     this.onChanged,
     this.obscureText = false,
     this.maxLines = 1,
+    this.minLines,
     this.keyboardType,
     this.formzField,
     this.customErrorText,
@@ -38,6 +39,7 @@ class EnhancedFormField<T extends FormzInput<dynamic, dynamic>>
   final ValueChanged<String>? onChanged;
   final bool obscureText;
   final int? maxLines;
+  final int? minLines;
   final TextInputType? keyboardType;
   final T? formzField;
   final String? customErrorText;
@@ -254,6 +256,7 @@ class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
                   onChanged: widget.onChanged,
                   obscureText: widget.obscureText,
                   maxLines: widget.maxLines,
+                  minLines: widget.minLines,
                   keyboardType: widget.keyboardType,
                   onTap: widget.onTap,
                   readOnly: widget.readOnly,
@@ -298,7 +301,8 @@ class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
                         : null,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: widget.prefixIcon != null ? 8 : 16,
-                      vertical: widget.maxLines != null && widget.maxLines! > 1
+                      vertical: (widget.maxLines != null && widget.maxLines! > 1) || 
+                               (widget.minLines != null && widget.minLines! > 1)
                           ? 16
                           : 14,
                     ),
