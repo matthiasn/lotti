@@ -6,7 +6,7 @@ import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:lotti/widgets/selection/selection_modal_base.dart';
 
 /// High-quality provider type selection modal with Series A startup design standards
 /// 
@@ -25,45 +25,14 @@ class ProviderTypeSelectionModal extends ConsumerWidget {
 
   final String? configId;
 
-  /// Shows the provider type selection modal using Wolt modal sheet
+  /// Shows the provider type selection modal using SelectionModalBase
   static void show({
     required BuildContext context,
     required String? configId,
   }) {
-    WoltModalSheet.show<void>(
+    SelectionModalBase.show(
       context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      pageListBuilder: (modalSheetContext) => [
-        _buildMainPage(modalSheetContext, configId),
-      ],
-    );
-  }
-
-  /// Builds the main page of the Wolt modal sheet
-  static WoltModalSheetPage _buildMainPage(
-    BuildContext context,
-    String? configId,
-  ) {
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      backgroundColor: context.colorScheme.surfaceContainerHigh,
-      topBarTitle: Text(
-        context.messages.aiConfigSelectProviderTypeModalTitle,
-        style: context.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onSurface,
-        ),
-      ),
-      trailingNavBarWidget: IconButton(
-        onPressed: () => Navigator.of(context).pop(),
-        icon: Icon(
-          Icons.close,
-          color: context.colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-        tooltip: 'Close',
-      ),
-      isTopBarLayerAlwaysVisible: true,
+      title: context.messages.aiConfigSelectProviderTypeModalTitle,
       child: ProviderTypeSelectionModal(configId: configId),
     );
   }

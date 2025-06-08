@@ -4,7 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:lotti/widgets/selection/selection_modal_base.dart';
 
 /// Modal for selecting an inference provider with modern styling
 ///
@@ -32,47 +32,15 @@ class ProviderSelectionModal extends ConsumerWidget {
   /// Currently selected provider ID (for highlighting)
   final String selectedProviderId;
 
-  /// Shows the provider selection modal using Wolt modal sheet
+  /// Shows the provider selection modal using SelectionModalBase
   static void show({
     required BuildContext context,
     required ValueChanged<String> onProviderSelected,
     required String selectedProviderId,
   }) {
-    WoltModalSheet.show<void>(
+    SelectionModalBase.show(
       context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      pageListBuilder: (modalSheetContext) => [
-        _buildMainPage(modalSheetContext, onProviderSelected, selectedProviderId),
-      ],
-    );
-  }
-
-  /// Builds the main page of the Wolt modal sheet
-  static WoltModalSheetPage _buildMainPage(
-    BuildContext context,
-    ValueChanged<String> onProviderSelected,
-    String selectedProviderId,
-  ) {
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      backgroundColor: context.colorScheme.surfaceContainerHigh,
-      topBarTitle: Text(
-        context.messages.aiConfigSelectProviderModalTitle,
-        style: context.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onSurface,
-        ),
-      ),
-      trailingNavBarWidget: IconButton(
-        onPressed: () => Navigator.of(context).pop(),
-        icon: Icon(
-          Icons.close,
-          color: context.colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-        tooltip: 'Close',
-      ),
-      isTopBarLayerAlwaysVisible: true,
+      title: context.messages.aiConfigSelectProviderModalTitle,
       child: ProviderSelectionModal(
         onProviderSelected: onProviderSelected,
         selectedProviderId: selectedProviderId,
