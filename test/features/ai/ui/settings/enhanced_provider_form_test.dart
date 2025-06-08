@@ -80,7 +80,8 @@ void main() {
 
   /// Helper function to build the widget under test
   Widget buildTestWidget({
-    required FakeInferenceProviderFormController formController, AiConfig? config,
+    required FakeInferenceProviderFormController formController,
+    AiConfig? config,
   }) {
     return ProviderScope(
       overrides: [

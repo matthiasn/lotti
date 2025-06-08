@@ -94,7 +94,8 @@ void main() {
 
   /// Helper function to build the widget under test
   Widget buildTestWidget({
-    required FakePromptFormController formController, String? configId,
+    required FakePromptFormController formController,
+    String? configId,
   }) {
     return ProviderScope(
       overrides: [
