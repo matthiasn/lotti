@@ -148,7 +148,7 @@ class _ProviderTypeCard extends StatelessWidget {
           color: isSelected
               ? context.colorScheme.primary.withValues(alpha: 0.6)
               : context.colorScheme.outline.withValues(alpha: 0.1),
-          width: isSelected ? 2 : 1,
+          width: 2, // Keep consistent border width to prevent breathing
         ),
         boxShadow: [
           if (isSelected)
@@ -182,12 +182,11 @@ class _ProviderTypeCard extends StatelessWidget {
                         ? context.colorScheme.primary.withValues(alpha: 0.15)
                         : context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(12),
-                    border: isSelected
-                        ? Border.all(
-                            color: context.colorScheme.primary
-                                .withValues(alpha: 0.3),
-                          )
-                        : null,
+                    border: Border.all(
+                      color: isSelected
+                          ? context.colorScheme.primary.withValues(alpha: 0.3)
+                          : Colors.transparent,
+                    ),
                   ),
                   child: Icon(
                     type.icon,

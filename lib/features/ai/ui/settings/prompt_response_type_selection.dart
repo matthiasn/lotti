@@ -176,7 +176,7 @@ class _ResponseTypeSelectionContentState
                           color: isSelected
                               ? context.colorScheme.primary
                               : context.colorScheme.outline.withValues(alpha: 0.2),
-                          width: isSelected ? 2 : 1,
+                          width: 2, // Keep consistent border width to prevent breathing
                         ),
                       ),
                       child: RadioListTile<AiResponseType>(

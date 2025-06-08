@@ -26,30 +26,34 @@ void main() {
     }
 
     group('Modal Structure', () {
-      testWidgets('displays title correctly', (WidgetTester tester) async {
-        const testTitle = 'Input Modalities';
+      testWidgets('displays modal content correctly', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(
-          title: testTitle,
           onSave: (_) {},
         ));
         await tester.pumpAndSettle();
 
-        expect(find.text(testTitle), findsOneWidget);
+        // The modal content should render (title is now in Wolt header)
+        expect(find.byType(ModalitySelectionModal), findsOneWidget);
       });
 
-      testWidgets('displays close button', (WidgetTester tester) async {
+      testWidgets('has proper widget structure', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        // Should have proper structure with padding and columns
+        expect(find.byType(ModalitySelectionModal), findsOneWidget);
+        expect(find.byType(Padding), findsAtLeastNWidgets(1));
       });
 
       testWidgets('displays save button with correct text',
           (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(onSave: (_) {}));
+        await tester.pumpWidget(createTestWidget(
+          onSave: (_) {},
+          selectedModalities: [], // No selections, so only save button has check icon
+        ));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget); // Only save button
         expect(find.text('Save'), findsOneWidget);
       });
 
@@ -71,9 +75,15 @@ void main() {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
         await tester.pumpAndSettle();
 
-        // Should have checkboxes for all modality values
-        final checkboxes = find.byType(CheckboxListTile);
-        expect(checkboxes, findsNWidgets(Modality.values.length));
+        // Should have text for all modalities
+        expect(find.text('Text'), findsOneWidget);
+        expect(find.text('Image'), findsOneWidget);
+        expect(find.text('Audio'), findsOneWidget);
+        
+        // Should have icons for all modalities
+        expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.image_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.audio_file_rounded), findsOneWidget);
       });
 
       testWidgets('shows correct initial selection state',
@@ -84,14 +94,9 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Find checkboxes and verify their states
-        final checkboxTiles = tester.widgetList<CheckboxListTile>(
-          find.byType(CheckboxListTile),
-        );
-
-        // Count selected checkboxes
-        final selectedCount = checkboxTiles.where((tile) => tile.value ?? false).length;
-        expect(selectedCount, equals(2));
+        // Should show checkmarks for selected modalities (plus one in save button)
+        final checkmarkIcons = find.byIcon(Icons.check_rounded);
+        expect(checkmarkIcons, findsNWidgets(3)); // text, image selected + save button
       });
 
       testWidgets('displays modality names and descriptions',
@@ -102,14 +107,10 @@ void main() {
         // Check for text modality (should always be present)
         expect(find.text('Text'), findsOneWidget);
         
-        // Check that we have subtitle text (descriptions)
-        final tiles = tester.widgetList<CheckboxListTile>(
-          find.byType(CheckboxListTile),
-        );
-        
-        // Verify tiles have subtitles
-        final tilesWithSubtitles = tiles.where((tile) => tile.subtitle != null);
-        expect(tilesWithSubtitles.length, equals(Modality.values.length));
+        // Should have modality cards with proper icons
+        expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.image_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.audio_file_rounded), findsOneWidget);
       });
 
       testWidgets('highlights selected modalities with different styling',
@@ -120,10 +121,11 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Find containers that should have different styling for selected items
-        final containers = tester.widgetList<Container>(find.byType(Container));
+        // Should show checkmark for selected modality (plus one in save button)
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
         
-        // Should have containers with different decorations
+        // Should have styled containers with decorations
+        final containers = tester.widgetList<Container>(find.byType(Container));
         expect(containers.length, greaterThan(3));
       });
     });
@@ -137,16 +139,19 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Find the first checkbox (should be for text modality)
-        final firstCheckbox = find.byType(CheckboxListTile).first;
-        
-        // Tap to unselect text modality
-        await tester.tap(firstCheckbox);
+        // Initially should have one checkmark (for text) plus save button
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+
+        // Find and tap the Text modality card to unselect it
+        final textCard = find.ancestor(
+          of: find.text('Text'),
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(textCard);
         await tester.pumpAndSettle();
 
-        // Verify the checkbox state changed visually
-        final checkboxWidget = tester.widget<CheckboxListTile>(firstCheckbox);
-        expect(checkboxWidget.value, isFalse);
+        // Should now have only save button checkmark (text unselected)
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       });
 
       testWidgets('can select multiple modalities', (WidgetTester tester) async {
@@ -156,18 +161,19 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        final checkboxes = find.byType(CheckboxListTile);
+        // Initially should have one checkmark plus save button
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
         
-        // Tap the second checkbox (should be for image modality)
-        if (checkboxes.evaluate().length > 1) {
-          await tester.tap(checkboxes.at(1));
-          await tester.pumpAndSettle();
+        // Find and tap the Image modality card to select it
+        final imageCard = find.ancestor(
+          of: find.text('Image'),
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(imageCard);
+        await tester.pumpAndSettle();
 
-          // Count selected checkboxes
-          final checkboxWidgets = tester.widgetList<CheckboxListTile>(checkboxes);
-          final selectedCount = checkboxWidgets.where((tile) => tile.value ?? false).length;
-          expect(selectedCount, equals(2));
-        }
+        // Should now have three checkmarks (text, image selected + save button)
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
       });
 
       testWidgets('calls onSave with correct modalities when save tapped',
@@ -180,8 +186,8 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Tap save button
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        // Tap save button by text
+        await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
 
         // Verify callback was called with initial selection
@@ -198,37 +204,24 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Select additional modality if available
-        final checkboxes = find.byType(CheckboxListTile);
-        if (checkboxes.evaluate().length > 1) {
-          await tester.tap(checkboxes.at(1));
-          await tester.pumpAndSettle();
-        }
+        // Find and tap the Image modality card to select it
+        final imageCard = find.ancestor(
+          of: find.text('Image'),
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(imageCard);
+        await tester.pumpAndSettle();
 
-        // Tap save button
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        // Tap save button by text
+        await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
 
         // Should have called onSave with updated selection
         expect(savedModalities.length, greaterThanOrEqualTo(1));
       });
 
-      testWidgets('closes modal without saving when close button tapped',
-          (WidgetTester tester) async {
-        var onSaveCalled = false;
-        
-        await tester.pumpWidget(createTestWidget(
-          onSave: (_) => onSaveCalled = true,
-        ));
-        await tester.pumpAndSettle();
-
-        // Tap close button
-        await tester.tap(find.byIcon(Icons.close_rounded));
-        await tester.pumpAndSettle();
-
-        // onSave should not have been called
-        expect(onSaveCalled, isFalse);
-      });
+      // Note: Close button test is not applicable since the close button is part of
+      // the Wolt modal wrapper, not the ModalitySelectionModal widget itself.
     });
 
     group('State Management', () {
@@ -240,18 +233,19 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Tap to deselect first modality
-        final firstCheckbox = find.byType(CheckboxListTile).first;
-        await tester.tap(firstCheckbox);
+        // Initially should have two checkmarks (for text and image) plus save button
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
+
+        // Tap to deselect text modality
+        final textCard = find.ancestor(
+          of: find.text('Text'),
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(textCard);
         await tester.pumpAndSettle();
 
-        // Verify state consistency
-        final checkboxWidgets = tester.widgetList<CheckboxListTile>(
-          find.byType(CheckboxListTile),
-        );
-        
-        final selectedCount = checkboxWidgets.where((tile) => tile.value ?? false).length;
-        expect(selectedCount, equals(1)); // Should have one less selected
+        // Should now have one checkmark (image) plus save button
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
       });
 
       testWidgets('handles empty initial selection', (WidgetTester tester) async {
@@ -261,13 +255,13 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // All checkboxes should be unselected
-        final checkboxWidgets = tester.widgetList<CheckboxListTile>(
-          find.byType(CheckboxListTile),
-        );
+        // Should only have save button checkmark, no selected modalities
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
         
-        final selectedCount = checkboxWidgets.where((tile) => tile.value ?? false).length;
-        expect(selectedCount, equals(0));
+        // Should have all modality text labels visible
+        expect(find.text('Text'), findsOneWidget);
+        expect(find.text('Image'), findsOneWidget);
+        expect(find.text('Audio'), findsOneWidget);
       });
 
       testWidgets('handles all modalities selected initially',
@@ -278,13 +272,8 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // All checkboxes should be selected
-        final checkboxWidgets = tester.widgetList<CheckboxListTile>(
-          find.byType(CheckboxListTile),
-        );
-        
-        final selectedCount = checkboxWidgets.where((tile) => tile.value ?? false).length;
-        expect(selectedCount, equals(Modality.values.length));
+        // Should have checkmarks for all modalities plus save button
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(Modality.values.length + 1));
       });
     });
 
@@ -293,31 +282,28 @@ void main() {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
         await tester.pumpAndSettle();
 
-        // Should have clickable checkboxes
-        final checkboxes = find.byType(CheckboxListTile);
-        expect(checkboxes, findsAtLeastNWidgets(1));
+        // Should have clickable InkWell areas
+        final inkWells = find.byType(InkWell);
+        expect(inkWells, findsAtLeastNWidgets(3)); // One for each modality
 
-        // Should have accessible buttons
-        final closeButton = find.byIcon(Icons.close_rounded);
+        // Should have save button (close button is part of Wolt modal wrapper)
         final saveButton = find.byIcon(Icons.check_rounded);
-        
-        expect(closeButton, findsOneWidget);
-        expect(saveButton, findsOneWidget);
+        expect(saveButton, findsAtLeastNWidgets(1)); // At least one for save button
       });
 
-      testWidgets('checkboxes are properly labeled', (WidgetTester tester) async {
+      testWidgets('modality options are properly labeled', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
         await tester.pumpAndSettle();
 
-        // Each checkbox should have title and subtitle
-        final checkboxTiles = tester.widgetList<CheckboxListTile>(
-          find.byType(CheckboxListTile),
-        );
-
-        for (final tile in checkboxTiles) {
-          expect(tile.title, isNotNull);
-          expect(tile.subtitle, isNotNull);
-        }
+        // Should have text labels for all modalities
+        expect(find.text('Text'), findsOneWidget);
+        expect(find.text('Image'), findsOneWidget);
+        expect(find.text('Audio'), findsOneWidget);
+        
+        // Should have icons for all modalities
+        expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.image_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.audio_file_rounded), findsOneWidget);
       });
     });
 
@@ -334,7 +320,10 @@ void main() {
       });
 
       testWidgets('has consistent visual hierarchy', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(onSave: (_) {}));
+        await tester.pumpWidget(createTestWidget(
+          selectedModalities: <Modality>[], // No selections to avoid multiple checkmarks
+          onSave: (_) {},
+        ));
         await tester.pumpAndSettle();
 
         // Should have header, content, and footer sections
@@ -366,11 +355,14 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        final firstCheckbox = find.byType(CheckboxListTile).first;
+        final textCard = find.ancestor(
+          of: find.text('Text'),
+          matching: find.byType(InkWell),
+        );
         
         // Rapidly toggle selection
         for (var i = 0; i < 5; i++) {
-          await tester.tap(firstCheckbox);
+          await tester.tap(textCard);
           await tester.pump();
         }
         await tester.pumpAndSettle();
@@ -387,20 +379,30 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        final checkboxes = find.byType(CheckboxListTile);
+        // Select all three modalities
+        final textCard = find.ancestor(
+          of: find.text('Text'),
+          matching: find.byType(InkWell),
+        );
+        final imageCard = find.ancestor(
+          of: find.text('Image'),
+          matching: find.byType(InkWell),
+        );
+        final audioCard = find.ancestor(
+          of: find.text('Audio'),
+          matching: find.byType(InkWell),
+        );
         
-        // Select multiple modalities
-        for (var i = 0; i < checkboxes.evaluate().length && i < 3; i++) {
-          await tester.tap(checkboxes.at(i));
-          await tester.pump();
-        }
+        await tester.tap(textCard);
+        await tester.pump();
+        await tester.tap(imageCard);
+        await tester.pump();
+        await tester.tap(audioCard);
+        await tester.pump();
         await tester.pumpAndSettle();
 
-        // Count selected items
-        final checkboxWidgets = tester.widgetList<CheckboxListTile>(checkboxes);
-        final selectedCount = checkboxWidgets.where((tile) => tile.value ?? false).length;
-        
-        expect(selectedCount, equals(3));
+        // Should have 3 selected checkmarks plus save button
+        expect(find.byIcon(Icons.check_rounded), findsNWidgets(4));
       });
 
       testWidgets('handles save with no modalities selected',
@@ -413,8 +415,8 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Tap save button with no selection
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        // Tap save button with no selection by text
+        await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
 
         // Should save empty list

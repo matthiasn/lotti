@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Modal for selecting input or output modalities with modern styling
 ///
@@ -10,9 +11,11 @@ import 'package:lotti/themes/theme.dart';
 /// which modalities (text, images, audio) a model supports for input or output.
 ///
 /// Features:
-/// - Clean modal design with proper header and close button
-/// - Checkbox list tiles with visual feedback
-/// - Selected state highlighting with primary color
+/// - Wolt Modal Sheet with persistent title section
+/// - Check marks for selected modalities (not checkboxes)
+/// - Series A quality styling with proper visual feedback
+/// - No breathing effect (consistent 2px border widths)
+/// - Visual highlighting for current selection
 /// - Descriptive text for each modality option
 /// - Save button to confirm selection
 /// - Proper accessibility support
@@ -32,6 +35,57 @@ class ModalitySelectionModal extends StatefulWidget {
 
   /// Callback when user saves their selection
   final ValueChanged<List<Modality>> onSave;
+
+  /// Shows the modality selection modal using Wolt modal sheet
+  static void show({
+    required BuildContext context,
+    required String title,
+    required List<Modality> selectedModalities,
+    required ValueChanged<List<Modality>> onSave,
+  }) {
+    WoltModalSheet.show<void>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      pageListBuilder: (modalSheetContext) => [
+        _buildMainPage(modalSheetContext, title, selectedModalities, onSave),
+      ],
+    );
+  }
+
+  /// Builds the main page of the Wolt modal sheet
+  static WoltModalSheetPage _buildMainPage(
+    BuildContext context,
+    String title,
+    List<Modality> selectedModalities,
+    ValueChanged<List<Modality>> onSave,
+  ) {
+    return WoltModalSheetPage(
+      hasSabGradient: false,
+      backgroundColor: context.colorScheme.surfaceContainerHigh,
+      topBarTitle: Text(
+        title,
+        style: context.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      trailingNavBarWidget: IconButton(
+        onPressed: () => Navigator.of(context).pop(),
+        icon: Icon(
+          Icons.close,
+          color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+        tooltip: 'Close',
+      ),
+      isTopBarLayerAlwaysVisible: true,
+      child: ModalitySelectionModal(
+        title: title,
+        selectedModalities: selectedModalities,
+        onSave: onSave,
+      ),
+    );
+  }
 
   @override
   State<ModalitySelectionModal> createState() => _ModalitySelectionModalState();
@@ -63,32 +117,15 @@ class _ModalitySelectionModalState extends State<ModalitySelectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface.withValues(alpha: 0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: context.colorScheme.shadow.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Modal header
-          _ModalHeader(
-            title: widget.title,
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
           // Modality options
           Flexible(
             child: ListView.separated(
               shrinkWrap: true,
-              padding: const EdgeInsets.all(16),
               itemCount: Modality.values.length,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
@@ -104,6 +141,8 @@ class _ModalitySelectionModalState extends State<ModalitySelectionModal> {
             ),
           ),
 
+          const SizedBox(height: 24),
+
           // Save button
           _SaveButton(onPressed: _handleSave),
         ],
@@ -112,52 +151,7 @@ class _ModalitySelectionModalState extends State<ModalitySelectionModal> {
   }
 }
 
-/// Header section of the modality selection modal
-class _ModalHeader extends StatelessWidget {
-  const _ModalHeader({
-    required this.title,
-    required this.onClose,
-  });
-
-  final String title;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.outline.withValues(alpha: 0.1),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: context.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurface.withValues(alpha: 0.9),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onClose,
-            icon: Icon(
-              Icons.close_rounded,
-              color: context.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Individual modality option with checkbox and description
+/// Individual modality option with checkmark and description
 class _ModalityOption extends StatelessWidget {
   const _ModalityOption({
     required this.modality,
@@ -174,46 +168,148 @@ class _ModalityOption extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isSelected
-            ? context.colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : context.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+            ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
+            : context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
-              ? context.colorScheme.primary
-              : context.colorScheme.outline.withValues(alpha: 0.2),
-          width: isSelected ? 2 : 1,
+              ? context.colorScheme.primary.withValues(alpha: 0.6)
+              : context.colorScheme.outline.withValues(alpha: 0.1),
+          width: 2, // Keep consistent border width to prevent breathing
         ),
+        boxShadow: [
+          if (isSelected)
+            BoxShadow(
+              color: context.colorScheme.primary.withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            )
+          else
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
-      child: CheckboxListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 8,
-        ),
-        title: Text(
-          modality.displayName(context),
-          style: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? context.colorScheme.primary
-                : context.colorScheme.onSurface,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            modality.description(context),
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onChanged(!isSelected),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Modality icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? context.colorScheme.primary.withValues(alpha: 0.15)
+                        : context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? context.colorScheme.primary.withValues(alpha: 0.3)
+                          : Colors.transparent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    _getModalityIcon(modality),
+                    color: isSelected
+                        ? context.colorScheme.primary
+                        : context.colorScheme.onSurface.withValues(alpha: 0.8),
+                    size: 24,
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Modality info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        modality.displayName(context),
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? context.colorScheme.primary
+                              : context.colorScheme.onSurface,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        modality.description(context),
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.onSurface
+                              .withValues(alpha: 0.7),
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Selection indicator - checkmark when selected, empty circle when not
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.colorScheme.primary
+                              .withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      color: context.colorScheme.onPrimary,
+                      size: 16,
+                    ),
+                  )
+                else
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: context.colorScheme.outline
+                            .withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
-        value: isSelected,
-        onChanged: onChanged,
-        controlAffinity: ListTileControlAffinity.trailing,
-        activeColor: context.colorScheme.primary,
-        checkColor: context.colorScheme.onPrimary,
       ),
     );
+  }
+
+  /// Returns appropriate icon for each modality
+  IconData _getModalityIcon(Modality modality) {
+    switch (modality) {
+      case Modality.text:
+        return Icons.text_format_rounded;
+      case Modality.image:
+        return Icons.image_rounded;
+      case Modality.audio:
+        return Icons.audio_file_rounded;
+    }
   }
 }
 
@@ -227,28 +323,26 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: onPressed,
-          icon: const Icon(Icons.check_rounded, size: 20),
-          label: Text(
-            context.messages.saveButtonLabel,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.check_rounded, size: 20),
+        label: Text(
+          context.messages.saveButtonLabel,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.colorScheme.primary,
-            foregroundColor: context.colorScheme.onPrimary,
-            elevation: 2,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: context.colorScheme.primary,
+          foregroundColor: context.colorScheme.onPrimary,
+          elevation: 3,
+          shadowColor: context.colorScheme.primary.withValues(alpha: 0.3),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

@@ -9,7 +9,6 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.d
 import 'package:lotti/features/ai/ui/widgets/enhanced_form_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
 
 /// Enhanced model form with modern Series A startup styling
 ///
@@ -57,13 +56,11 @@ class _EnhancedInferenceModelFormState
     required List<Modality> selectedModalities,
     required void Function(List<Modality>) onSave,
   }) {
-    ModalUtils.showSinglePageModal<void>(
+    ModalitySelectionModal.show(
       context: context,
-      builder: (modalContext) => ModalitySelectionModal(
-        title: title,
-        selectedModalities: selectedModalities,
-        onSave: onSave,
-      ),
+      title: title,
+      selectedModalities: selectedModalities,
+      onSave: onSave,
     );
   }
 
