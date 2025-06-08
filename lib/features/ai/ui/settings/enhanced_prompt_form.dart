@@ -47,7 +47,7 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerLowest,
+        color: context.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
@@ -190,7 +190,6 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                   onChanged: formController.descriptionChanged,
                   maxLines: null,
                   minLines: 3,
-                  prefixIcon: const Icon(Icons.notes_outlined),
                   helperText:
                       "Optional notes about this prompt's purpose and usage",
                 ),

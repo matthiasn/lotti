@@ -150,7 +150,7 @@ void main() {
       // Enter search text that doesn't match
       await tester.enterText(find.byType(TextField), 'nonexistent');
       await tester.pumpAndSettle();
-      
+
       // Wait for debounce timer (300ms + buffer)
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -160,7 +160,7 @@ void main() {
       // Clear search
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
-      
+
       // Wait for debounce timer (300ms + buffer)
       await tester.pump(const Duration(milliseconds: 350));
 

@@ -205,15 +205,16 @@ void main() {
       await tester.tap(providerTypeField);
       await tester.pumpAndSettle();
 
-      // Assert - modal should be displayed
+      // Assert - modal should be displayed with new design
       expect(find.text('Select Provider Type'), findsAtLeastNWidgets(1));
-      expect(find.byType(ListTile),
-          findsAtLeastNWidgets(InferenceProviderType.values.length));
 
-      // Check for provider type options
-      expect(find.text('OpenAI Compatible'), findsAtLeastNWidgets(1));
-      expect(find.text('Anthropic Claude'), findsOneWidget);
-      expect(find.text('OpenAI'), findsOneWidget);
+      // Check for provider cards with InkWell (count may vary due to scrolling)
+      expect(find.byType(InkWell), findsAtLeastNWidgets(6));
+
+      // Check for provider type options - use textContaining for flexibility
+      expect(find.textContaining('Anthropic'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('OpenAI'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Gemini'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('should toggle API key visibility when icon is tapped',

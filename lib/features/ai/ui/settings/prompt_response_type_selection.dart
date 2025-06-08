@@ -5,7 +5,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/selection/selection.dart';
 
 class PromptResponseTypeSelection extends ConsumerWidget {
   const PromptResponseTypeSelection({super.key, this.configId});
@@ -26,20 +26,12 @@ class PromptResponseTypeSelection extends ConsumerWidget {
     final selectedType = formState.aiResponseType.value;
 
     return InkWell(
-      onTap: () async {
-        final result = await ModalUtils.showSinglePageModal<AiResponseType>(
+      onTap: () {
+        ResponseTypeSelectionModal.show(
           context: context,
-          title: context.messages.aiConfigSelectResponseTypeTitle,
-          builder: (modalContext) {
-            return _ResponseTypeSelectionContent(
-              initialSelectedType: selectedType,
-            );
-          },
+          selectedType: selectedType,
+          onSave: formController.aiResponseTypeChanged,
         );
-
-        if (result != null) {
-          formController.aiResponseTypeChanged(result);
-        }
       },
       child: InputDecorator(
         decoration: InputDecoration(
@@ -67,92 +59,118 @@ class PromptResponseTypeSelection extends ConsumerWidget {
   }
 }
 
-class _ResponseTypeSelectionContent extends StatefulWidget {
-  const _ResponseTypeSelectionContent({
-    this.initialSelectedType,
+/// Modal for selecting AI response type with modern styling
+///
+/// This component provides a clean, accessible interface for users to select
+/// the type of response they expect from the AI.
+///
+/// Features:
+/// - Wolt Modal Sheet with persistent title section
+/// - Radio button style with check marks
+/// - Series A quality styling with proper visual feedback
+/// - Visual highlighting for current selection
+/// - Save button in the content area
+/// - Proper accessibility support
+class ResponseTypeSelectionModal extends StatefulWidget {
+  const ResponseTypeSelectionModal({
+    required this.selectedType,
+    required this.onSave,
+    super.key,
   });
 
-  final AiResponseType? initialSelectedType;
+  /// Currently selected response type
+  final AiResponseType? selectedType;
+
+  /// Callback when user saves their selection
+  final ValueChanged<AiResponseType> onSave;
+
+  /// Shows the response type selection modal using Wolt modal sheet
+  static void show({
+    required BuildContext context,
+    required AiResponseType? selectedType,
+    required ValueChanged<AiResponseType> onSave,
+  }) {
+    SelectionModalBase.show(
+      context: context,
+      title: context.messages.aiConfigSelectResponseTypeTitle,
+      child: ResponseTypeSelectionModal(
+        selectedType: selectedType,
+        onSave: onSave,
+      ),
+    );
+  }
 
   @override
-  State<_ResponseTypeSelectionContent> createState() =>
-      _ResponseTypeSelectionContentState();
+  State<ResponseTypeSelectionModal> createState() =>
+      _ResponseTypeSelectionModalState();
 }
 
-class _ResponseTypeSelectionContentState
-    extends State<_ResponseTypeSelectionContent> {
-  late final ValueNotifier<AiResponseType?> _pageSelectedTypeNotifier;
+class _ResponseTypeSelectionModalState
+    extends State<ResponseTypeSelectionModal> {
+  AiResponseType? _selectedType;
 
   @override
   void initState() {
     super.initState();
-    _pageSelectedTypeNotifier =
-        ValueNotifier<AiResponseType?>(widget.initialSelectedType);
+    _selectedType = widget.selectedType;
   }
 
-  @override
-  void dispose() {
-    _pageSelectedTypeNotifier.dispose();
-    super.dispose();
+  void _selectType(AiResponseType type) {
+    setState(() {
+      _selectedType = type;
+    });
+  }
+
+  void _handleSave() {
+    if (_selectedType != null) {
+      widget.onSave(_selectedType!);
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.zero,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Flexible(
-            child: ValueListenableBuilder<AiResponseType?>(
-              valueListenable: _pageSelectedTypeNotifier,
-              builder: (
-                BuildContext listContext,
-                AiResponseType? groupValue,
-                Widget? child,
-              ) {
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: AiResponseType.values.length,
-                  itemBuilder: (BuildContext itemBuilderContext, int index) {
-                    final type = AiResponseType.values[index];
-                    return RadioListTile<AiResponseType>(
-                      title: Text(type.localizedName(itemBuilderContext)),
-                      value: type,
-                      groupValue: groupValue,
-                      onChanged: (AiResponseType? value) {
-                        _pageSelectedTypeNotifier.value = value;
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ValueListenableBuilder<AiResponseType?>(
-                valueListenable: _pageSelectedTypeNotifier,
-                builder: (
-                  BuildContext btnContext,
-                  AiResponseType? currentSelection,
-                  Widget? child,
-                ) {
-                  return FilledButton(
-                    onPressed: currentSelection != null
-                        ? () => Navigator.of(context).pop(currentSelection)
-                        : null,
-                    child: Text(context.messages.saveButtonLabel),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+    return SelectionModalContent(
+      children: [
+        // Response type options
+        SelectionOptionsList(
+          itemCount: AiResponseType.values.length,
+          itemBuilder: (context, index) {
+            final type = AiResponseType.values[index];
+            final isSelected = _selectedType == type;
+
+            return SelectionOption(
+              title: type.localizedName(context),
+              icon: _getTypeIcon(type),
+              isSelected: isSelected,
+              onTap: () => _selectType(type),
+              selectionIndicator:
+                  RadioSelectionIndicator(isSelected: isSelected),
+            );
+          },
+        ),
+
+        const SizedBox(height: 24),
+
+        // Save button
+        SelectionSaveButton(
+          onPressed: _selectedType != null ? _handleSave : null,
+        ),
+      ],
     );
+  }
+
+  /// Returns appropriate icon for each response type
+  IconData _getTypeIcon(AiResponseType type) {
+    switch (type) {
+      case AiResponseType.actionItemSuggestions:
+        return Icons.lightbulb_outline_rounded;
+      case AiResponseType.taskSummary:
+        return Icons.summarize_rounded;
+      case AiResponseType.imageAnalysis:
+        return Icons.image_search_rounded;
+      case AiResponseType.audioTranscription:
+        return Icons.transcribe_rounded;
+    }
   }
 }

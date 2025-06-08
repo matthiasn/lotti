@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/selection/selection.dart';
 
 /// Modal for selecting input or output modalities with modern styling
 ///
@@ -10,9 +9,11 @@ import 'package:lotti/themes/theme.dart';
 /// which modalities (text, images, audio) a model supports for input or output.
 ///
 /// Features:
-/// - Clean modal design with proper header and close button
-/// - Checkbox list tiles with visual feedback
-/// - Selected state highlighting with primary color
+/// - Wolt Modal Sheet with persistent title section
+/// - Check marks for selected modalities (not checkboxes)
+/// - Series A quality styling with proper visual feedback
+/// - No breathing effect (consistent 2px border widths)
+/// - Visual highlighting for current selection
 /// - Descriptive text for each modality option
 /// - Save button to confirm selection
 /// - Proper accessibility support
@@ -33,6 +34,24 @@ class ModalitySelectionModal extends StatefulWidget {
   /// Callback when user saves their selection
   final ValueChanged<List<Modality>> onSave;
 
+  /// Shows the modality selection modal using Wolt modal sheet
+  static void show({
+    required BuildContext context,
+    required String title,
+    required List<Modality> selectedModalities,
+    required ValueChanged<List<Modality>> onSave,
+  }) {
+    SelectionModalBase.show(
+      context: context,
+      title: title,
+      child: ModalitySelectionModal(
+        title: title,
+        selectedModalities: selectedModalities,
+        onSave: onSave,
+      ),
+    );
+  }
+
   @override
   State<ModalitySelectionModal> createState() => _ModalitySelectionModalState();
 }
@@ -46,12 +65,12 @@ class _ModalitySelectionModalState extends State<ModalitySelectionModal> {
     _selectedModalitiesSet = widget.selectedModalities.toSet();
   }
 
-  void _toggleModality(Modality modality, bool? selected) {
+  void _toggleModality(Modality modality) {
     setState(() {
-      if (selected ?? false) {
-        _selectedModalitiesSet.add(modality);
-      } else {
+      if (_selectedModalitiesSet.contains(modality)) {
         _selectedModalitiesSet.remove(modality);
+      } else {
+        _selectedModalitiesSet.add(modality);
       }
     });
   }
@@ -63,188 +82,42 @@ class _ModalitySelectionModalState extends State<ModalitySelectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Modal header
-          _ModalHeader(
-            title: widget.title,
-            onClose: () => Navigator.of(context).pop(),
-          ),
+    return SelectionModalContent(
+      children: [
+        // Modality options
+        SelectionOptionsList(
+          itemCount: Modality.values.length,
+          itemBuilder: (context, index) {
+            final modality = Modality.values[index];
+            final isSelected = _selectedModalitiesSet.contains(modality);
 
-          // Modality options
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(16),
-              itemCount: Modality.values.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final modality = Modality.values[index];
-                final isSelected = _selectedModalitiesSet.contains(modality);
+            return SelectionOption(
+              title: modality.displayName(context),
+              description: modality.description(context),
+              icon: _getModalityIcon(modality),
+              isSelected: isSelected,
+              onTap: () => _toggleModality(modality),
+            );
+          },
+        ),
 
-                return _ModalityOption(
-                  modality: modality,
-                  isSelected: isSelected,
-                  onChanged: (selected) => _toggleModality(modality, selected),
-                );
-              },
-            ),
-          ),
+        const SizedBox(height: 24),
 
-          // Save button
-          _SaveButton(onPressed: _handleSave),
-        ],
-      ),
+        // Save button
+        SelectionSaveButton(onPressed: _handleSave),
+      ],
     );
   }
-}
 
-/// Header section of the modality selection modal
-class _ModalHeader extends StatelessWidget {
-  const _ModalHeader({
-    required this.title,
-    required this.onClose,
-  });
-
-  final String title;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.outline.withValues(alpha: 0.1),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: context.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onClose,
-            icon: Icon(
-              Icons.close_rounded,
-              color: context.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Individual modality option with checkbox and description
-class _ModalityOption extends StatelessWidget {
-  const _ModalityOption({
-    required this.modality,
-    required this.isSelected,
-    required this.onChanged,
-  });
-
-  final Modality modality;
-  final bool isSelected;
-  final ValueChanged<bool?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected
-            ? context.colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : context.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected
-              ? context.colorScheme.primary
-              : context.colorScheme.outline.withValues(alpha: 0.2),
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: CheckboxListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 8,
-        ),
-        title: Text(
-          modality.displayName(context),
-          style: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? context.colorScheme.primary
-                : context.colorScheme.onSurface,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            modality.description(context),
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-        ),
-        value: isSelected,
-        onChanged: onChanged,
-        controlAffinity: ListTileControlAffinity.trailing,
-        activeColor: context.colorScheme.primary,
-        checkColor: context.colorScheme.onPrimary,
-      ),
-    );
-  }
-}
-
-/// Save button at the bottom of the modal
-class _SaveButton extends StatelessWidget {
-  const _SaveButton({
-    required this.onPressed,
-  });
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: onPressed,
-          icon: const Icon(Icons.check_rounded, size: 20),
-          label: Text(
-            context.messages.saveButtonLabel,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.colorScheme.primary,
-            foregroundColor: context.colorScheme.onPrimary,
-            elevation: 2,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ),
-    );
+  /// Returns appropriate icon for each modality
+  IconData _getModalityIcon(Modality modality) {
+    switch (modality) {
+      case Modality.text:
+        return Icons.text_format_rounded;
+      case Modality.image:
+        return Icons.image_rounded;
+      case Modality.audio:
+        return Icons.audio_file_rounded;
+    }
   }
 }

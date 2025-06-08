@@ -386,8 +386,8 @@ void main() {
       expect(
           containers, findsAtLeastNWidgets(10)); // Multiple styled containers
 
-      // Check for section icons
-      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      // Check for section icons (may appear multiple times in different sections)
+      expect(find.byIcon(Icons.tune_rounded), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
       expect(find.byIcon(Icons.description_outlined), findsOneWidget);

@@ -61,7 +61,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
   // State
   AiSettingsFilterState _filterState = AiSettingsFilterState.initial();
-  
+
   // Debouncing
   Timer? _searchDebounceTimer;
 
@@ -102,7 +102,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   void _handleSearchChange() {
     // Cancel the previous timer if it exists
     _searchDebounceTimer?.cancel();
-    
+
     // Set up a new timer for debouncing (300ms delay)
     _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
       final newQuery = _searchController.text.toLowerCase();
@@ -166,6 +166,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.colorScheme.scrim,
       body: CustomScrollView(
         slivers: [
           // App bar with title and back button
@@ -192,25 +193,35 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   Widget _buildHeaderSection() {
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surface,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.colorScheme.surface,
+            context.colorScheme.scrim,
+          ],
+        ),
         border: Border(
           bottom: BorderSide(
-            color: context.colorScheme.outline.withValues(alpha: 0.15),
+            color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
           ),
         ),
       ),
       child: Column(
         children: [
           // Search Bar
-          AiSettingsSearchBar(
-            controller: _searchController,
-            onChanged: (_) => {}, // Handled by controller listener
-            onClear: _handleSearchClear,
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: AiSettingsSearchBar(
+              controller: _searchController,
+              onChanged: (_) => {}, // Handled by controller listener
+              onClear: _handleSearchClear,
+            ),
           ),
 
           // Tab Bar
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: AiSettingsTabBar(
               controller: _tabController,
               onTabChanged: _handleTabChange,
@@ -219,10 +230,15 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
           // Model Filters (only shown on Models tab)
           if (_filterState.activeTab == AiSettingsTab.models)
-            AiSettingsFilterChips(
-              filterState: _filterState,
-              onFilterChanged: _updateFilterState,
-            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: AiSettingsFilterChips(
+                filterState: _filterState,
+                onFilterChanged: _updateFilterState,
+              ),
+            )
+          else
+            const SizedBox(height: 16),
         ],
       ),
     );
@@ -347,37 +363,49 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   /// Builds a stylish floating action button with contextual icon and label
   Widget _buildFloatingActionButton() {
     final (icon, label) = switch (_filterState.activeTab) {
-      AiSettingsTab.providers => (Icons.hub, 'Add Provider'),
-      AiSettingsTab.models => (Icons.smart_toy, 'Add Model'),
-      AiSettingsTab.prompts => (Icons.psychology, 'Add Prompt'),
+      AiSettingsTab.providers => (Icons.add_link_rounded, 'Add Provider'),
+      AiSettingsTab.models => (Icons.auto_awesome_rounded, 'Add Model'),
+      AiSettingsTab.prompts => (Icons.edit_note_rounded, 'Add Prompt'),
     };
 
-    return FloatingActionButton.extended(
-      onPressed: _handleAddTap,
-      icon: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: context.colorScheme.onPrimary.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.only(right: 20, bottom: 20),
+      child: FloatingActionButton.extended(
+        onPressed: _handleAddTap,
+        icon: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                context.colorScheme.onPrimary.withValues(alpha: 0.2),
+                context.colorScheme.onPrimary.withValues(alpha: 0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: context.colorScheme.onPrimary,
+          ),
         ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: context.colorScheme.onPrimary,
+        label: Text(
+          label,
+          style: context.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+            color: context.colorScheme.onPrimary,
+          ),
         ),
-      ),
-      label: Text(
-        label,
-        style: context.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onPrimary,
+        backgroundColor: context.colorScheme.primary,
+        foregroundColor: context.colorScheme.onPrimary,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-      ),
-      backgroundColor: context.colorScheme.primary,
-      foregroundColor: context.colorScheme.onPrimary,
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
       ),
     );
   }

@@ -51,7 +51,6 @@ void main() {
       );
     }
 
-
     group('Form Structure and Layout', () {
       testWidgets('should render all form sections with proper hierarchy',
           (WidgetTester tester) async {
@@ -108,7 +107,7 @@ void main() {
         expect(find.byIcon(Icons.label_outline), findsOneWidget);
         expect(find.byIcon(Icons.fingerprint_outlined), findsOneWidget);
         expect(find.byIcon(Icons.cloud_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.notes_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.input_rounded), findsOneWidget);
       });
 
       testWidgets('should display helper text for all fields',
