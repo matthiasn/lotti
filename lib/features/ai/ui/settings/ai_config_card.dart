@@ -85,8 +85,16 @@ class AiConfigCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            context.colorScheme.surfaceContainer,
-            context.colorScheme.surface,
+            Color.lerp(
+              context.colorScheme.surfaceContainer,
+              context.colorScheme.surfaceContainerHigh,
+              0.3,
+            )!,
+            Color.lerp(
+              context.colorScheme.surface,
+              context.colorScheme.surfaceContainerLow,
+              0.5,
+            )!,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

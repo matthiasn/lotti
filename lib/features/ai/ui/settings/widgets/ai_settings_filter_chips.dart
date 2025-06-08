@@ -42,7 +42,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
             // Provider Filter
