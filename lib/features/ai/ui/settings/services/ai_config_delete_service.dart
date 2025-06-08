@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Service that handles stylish delete operations for AI configurations
@@ -557,6 +560,18 @@ class AiConfigDeleteService {
       }
     } catch (error) {
       // Handle undo errors silently - the config is already deleted
+      // Log for debugging purposes in case undo fails consistently
+      try {
+        getIt<LoggingService>().captureEvent(
+          'Undo provider deletion failed: ${provider.name} (${provider.id}), '
+          '${result.deletedModels.length} models, error: $error',
+          domain: 'AI_CONFIG',
+          subDomain: 'DELETE_SERVICE',
+          level: InsightLevel.warn,
+        );
+      } catch (_) {
+        // LoggingService not available (e.g., in tests) - ignore
+      }
     }
   }
 
@@ -567,6 +582,18 @@ class AiConfigDeleteService {
       await repository.saveConfig(config);
     } catch (error) {
       // Handle undo errors silently - the config is already deleted
+      // Log for debugging purposes in case undo fails consistently
+      try {
+        getIt<LoggingService>().captureEvent(
+          'Undo config deletion failed: ${config.name} (${config.id}), '
+          'type: ${config.runtimeType}, error: $error',
+          domain: 'AI_CONFIG',
+          subDomain: 'DELETE_SERVICE',
+          level: InsightLevel.warn,
+        );
+      } catch (_) {
+        // LoggingService not available (e.g., in tests) - ignore
+      }
     }
   }
 

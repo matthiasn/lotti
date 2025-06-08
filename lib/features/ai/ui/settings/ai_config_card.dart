@@ -4,6 +4,38 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Model family classifications for robust icon selection
+enum ModelFamily {
+  gpt,
+  claude,
+  gemini,
+  opus,
+  sonnet,
+  haiku,
+  generic,
+}
+
+/// Maps model families to their representative icons
+const Map<ModelFamily, IconData> _modelFamilyIcons = {
+  ModelFamily.gpt: Icons.psychology,
+  ModelFamily.claude: Icons.auto_awesome,
+  ModelFamily.gemini: Icons.diamond,
+  ModelFamily.opus: Icons.workspace_premium,
+  ModelFamily.sonnet: Icons.edit_note,
+  ModelFamily.haiku: Icons.flash_on,
+  ModelFamily.generic: Icons.smart_toy,
+};
+
+/// Maps common model patterns to their families for robust classification
+const Map<String, ModelFamily> _modelPatterns = {
+  'gpt': ModelFamily.gpt,
+  'claude': ModelFamily.claude,
+  'gemini': ModelFamily.gemini,
+  'opus': ModelFamily.opus,
+  'sonnet': ModelFamily.sonnet,
+  'haiku': ModelFamily.haiku,
+};
+
 /// A reusable card component for AI configurations (providers, models, prompts)
 /// with polished design matching the model selection modal
 class AiConfigCard extends ConsumerWidget {
@@ -19,6 +51,31 @@ class AiConfigCard extends ConsumerWidget {
   final VoidCallback onTap;
   final bool showCapabilities;
   final bool isCompact;
+
+  /// Determines the model family from a model configuration
+  /// 
+  /// This method provides a more robust way to classify models than string matching.
+  /// It first checks the provider model ID (which tends to be more standardized),
+  /// then falls back to the display name if needed.
+  static ModelFamily _getModelFamily(AiConfigModel model) {
+    // Check provider model ID first (more standardized)
+    final providerModelId = model.providerModelId.toLowerCase();
+    for (final entry in _modelPatterns.entries) {
+      if (providerModelId.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    
+    // Fall back to display name
+    final displayName = model.name.toLowerCase();
+    for (final entry in _modelPatterns.entries) {
+      if (displayName.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    
+    return ModelFamily.generic;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -163,14 +220,8 @@ class AiConfigCard extends ConsumerWidget {
       }
     } else if (config is AiConfigModel) {
       final model = config as AiConfigModel;
-      final modelName = model.name.toLowerCase();
-      if (modelName.contains('gpt')) return Icons.psychology;
-      if (modelName.contains('claude')) return Icons.auto_awesome;
-      if (modelName.contains('gemini')) return Icons.diamond;
-      if (modelName.contains('opus')) return Icons.workspace_premium;
-      if (modelName.contains('sonnet')) return Icons.edit_note;
-      if (modelName.contains('haiku')) return Icons.flash_on;
-      return Icons.smart_toy;
+      final family = _getModelFamily(model);
+      return _modelFamilyIcons[family] ?? Icons.smart_toy;
     } else if (config is AiConfigPrompt) {
       final prompt = config as AiConfigPrompt;
       // Return icon based on the primary input data type

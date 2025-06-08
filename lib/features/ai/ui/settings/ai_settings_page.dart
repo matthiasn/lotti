@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -59,6 +61,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
   // State
   AiSettingsFilterState _filterState = AiSettingsFilterState.initial();
+  
+  // Debouncing
+  Timer? _searchDebounceTimer;
 
   @override
   void initState() {
@@ -88,16 +93,23 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
   /// Properly disposes of controllers to prevent memory leaks
   void _disposeControllers() {
+    _searchDebounceTimer?.cancel();
     _tabController.dispose();
     _searchController.dispose();
   }
 
-  /// Handles search query changes and updates filter state
+  /// Handles search query changes with debouncing to avoid excessive filtering
   void _handleSearchChange() {
-    final newQuery = _searchController.text.toLowerCase();
-    if (newQuery != _filterState.searchQuery) {
-      _updateFilterState(_filterState.copyWith(searchQuery: newQuery));
-    }
+    // Cancel the previous timer if it exists
+    _searchDebounceTimer?.cancel();
+    
+    // Set up a new timer for debouncing (300ms delay)
+    _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      final newQuery = _searchController.text.toLowerCase();
+      if (newQuery != _filterState.searchQuery) {
+        _updateFilterState(_filterState.copyWith(searchQuery: newQuery));
+      }
+    });
   }
 
   /// Handles tab controller changes and updates filter state
