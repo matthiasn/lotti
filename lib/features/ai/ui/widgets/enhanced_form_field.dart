@@ -199,9 +199,9 @@ class _EnhancedFormFieldState<T extends FormzInput<dynamic, dynamic>>
                 Text(
                   widget.labelText,
                   style: context.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color:
-                        context.colorScheme.onSurface.withValues(alpha: 0.87),
+                        context.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 if (widget.isRequired)
@@ -432,8 +432,8 @@ class _EnhancedSelectionFieldState extends State<EnhancedSelectionField>
               Text(
                 widget.labelText,
                 style: context.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: context.colorScheme.onSurface.withValues(alpha: 0.87),
+                  fontWeight: FontWeight.w500,
+                  color: context.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               if (widget.isRequired)

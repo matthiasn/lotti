@@ -65,8 +65,15 @@ class _ModalitySelectionModalState extends State<ModalitySelectionModal> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surface,
+        color: context.colorScheme.surface.withValues(alpha: 0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -132,8 +139,8 @@ class _ModalHeader extends StatelessWidget {
             child: Text(
               title,
               style: context.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurface.withValues(alpha: 0.9),
               ),
             ),
           ),

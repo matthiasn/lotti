@@ -5,7 +5,7 @@ import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
+import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -146,11 +146,24 @@ class ModelManagementHeader extends StatelessWidget {
       children: [
         Text(
           context.messages.aiConfigModelsTitle,
-          style: context.textTheme.titleMedium,
+          style: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: context.colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: onManageTap,
-          child: Text(context.messages.aiConfigManageModelsButton),
+          icon: const Icon(Icons.tune_rounded, size: 18),
+          label: Text(context.messages.aiConfigManageModelsButton),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: context.colorScheme.primaryContainer.withValues(alpha: 0.7),
+            foregroundColor: context.colorScheme.primary,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
       ],
     );
@@ -163,11 +176,33 @@ class EmptyModelsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        context.messages.aiConfigNoModelsSelected,
-        style: context.textTheme.bodyMedium,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerLow.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context.messages.aiConfigNoModelsSelected,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -190,19 +225,26 @@ class SelectedModelsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: modelIds.map((modelId) {
+      children: modelIds.asMap().entries.map((entry) {
+        final index = entry.key;
+        final modelId = entry.value;
         final isDefault = modelId == defaultModelId;
         final modelDataAsync = ref.watch(aiConfigByIdProvider(modelId));
 
         return modelDataAsync.when(
           data: (config) {
             final modelName = (config as AiConfigModel?)?.name ?? modelId;
-            return DismissibleModelCard(
-              modelId: modelId,
-              modelName: modelName,
-              isDefault: isDefault,
-              config: config,
-              onDismissed: () => onModelRemoved(modelId, modelName),
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index < modelIds.length - 1 ? 12 : 0,
+              ),
+              child: DismissibleModelCard(
+                modelId: modelId,
+                modelName: modelName,
+                isDefault: isDefault,
+                config: config,
+                onDismissed: () => onModelRemoved(modelId, modelName),
+              ),
             );
           },
           loading: () => const ModelLoadingState(),
@@ -242,16 +284,61 @@ class DismissibleModelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (config == null) {
+      return const ModelLoadingState();
+    }
+
     return Dismissible(
       key: ValueKey('selected_model_$modelId'),
       direction: DismissDirection.endToStart,
       background: _buildDismissBackground(context),
       confirmDismiss: (_) => _confirmDismiss(context),
       onDismissed: (_) => onDismissed(),
-      child: ModelCard(
-        modelName: modelName,
-        isDefault: isDefault,
-        config: config,
+      child: Stack(
+        children: [
+          AiConfigCard(
+            config: config!,
+            onTap: () {}, // Models in this context are not editable directly
+            showCapabilities: true,
+          ),
+          if (isDefault)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.colorScheme.shadow.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star,
+                      size: 12,
+                      color: context.colorScheme.onPrimary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Default',
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: context.colorScheme.onPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -269,157 +356,8 @@ class DismissibleModelCard extends StatelessWidget {
   }
 }
 
-// Model card with content
-class ModelCard extends StatelessWidget {
-  const ModelCard({
-    required this.modelName,
-    required this.isDefault,
-    this.config,
-    super.key,
-  });
 
-  final String modelName;
-  final bool isDefault;
-  final AiConfigModel? config;
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: isDefault ? 4 : 1,
-      shadowColor: isDefault
-          ? context.colorScheme.primary.withValues(alpha: 0.3)
-          : context.colorScheme.shadow.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: isDefault
-              ? context.colorScheme.primary
-              : context.colorScheme.outline.withAlpha(64),
-          width: isDefault ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: isDefault
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.colorScheme.primaryContainer.withValues(alpha: 0.1),
-                    context.colorScheme.primaryContainer
-                        .withValues(alpha: 0.05),
-                  ],
-                )
-              : null,
-        ),
-        child: ModelCardContent(
-          modelName: modelName,
-          isDefault: isDefault,
-          config: config,
-        ),
-      ),
-    );
-  }
-}
-
-// Content inside the model card
-class ModelCardContent extends StatelessWidget {
-  const ModelCardContent({
-    required this.modelName,
-    required this.isDefault,
-    this.config,
-    super.key,
-  });
-
-  final String modelName;
-  final bool isDefault;
-  final AiConfigModel? config;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      modelName,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: context.colorScheme.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isDefault) ...[
-                    const SizedBox(width: 8),
-                    const DefaultBadge(),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (config != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: InferenceProviderNameWidget(
-                    providerId: config!.inferenceProviderId,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Default badge widget
-class DefaultBadge extends StatelessWidget {
-  const DefaultBadge({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: context.colorScheme.primary,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.star,
-            size: 12,
-            color: context.colorScheme.onPrimary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'Default',
-            style: context.textTheme.labelSmall?.copyWith(
-              color: context.colorScheme.onPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // Loading state for individual models
 class ModelLoadingState extends StatelessWidget {

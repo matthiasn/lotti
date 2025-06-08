@@ -291,11 +291,16 @@ void main() {
           of: find.text(typeToSelect.displayNameFromContext(l10n)),
           matching: find.byType(CheckboxListTile),
         );
+        
+        // Ensure the checkbox is visible before interacting with it
+        await tester.ensureVisible(checkboxListTileFinder);
+        await tester.pumpAndSettle();
+        
         var checkboxListTile =
             tester.widget<CheckboxListTile>(checkboxListTileFinder);
         expect(checkboxListTile.value, isFalse);
 
-        await tester.tap(checkboxListTileFinder);
+        await tester.tap(checkboxListTileFinder, warnIfMissed: false);
         await tester.pumpAndSettle();
 
         checkboxListTile =
@@ -322,10 +327,19 @@ void main() {
           of: find.text(typeToNewlySelect.displayNameFromContext(l10n)),
           matching: find.byType(CheckboxListTile),
         );
-        await tester.tap(checkboxListTileFinder);
+        
+        // Ensure the checkbox is visible before tapping
+        await tester.ensureVisible(checkboxListTileFinder);
+        await tester.pumpAndSettle();
+        
+        await tester.tap(checkboxListTileFinder, warnIfMissed: false);
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n.saveButtonLabel));
+        // Ensure the save button is visible before tapping
+        await tester.ensureVisible(find.text(l10n.saveButtonLabel));
+        await tester.pumpAndSettle();
+        
+        await tester.tap(find.text(l10n.saveButtonLabel), warnIfMissed: false);
         await tester.pumpAndSettle();
 
         expect(

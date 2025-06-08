@@ -29,9 +29,9 @@ class PromptResponseTypeSelection extends ConsumerWidget {
       onTap: () async {
         final result = await ModalUtils.showSinglePageModal<AiResponseType>(
           context: context,
-          title: context.messages.aiConfigSelectResponseTypeTitle,
           builder: (modalContext) {
             return _ResponseTypeSelectionContent(
+              title: context.messages.aiConfigSelectResponseTypeTitle,
               initialSelectedType: selectedType,
             );
           },
@@ -69,9 +69,11 @@ class PromptResponseTypeSelection extends ConsumerWidget {
 
 class _ResponseTypeSelectionContent extends StatefulWidget {
   const _ResponseTypeSelectionContent({
+    required this.title,
     this.initialSelectedType,
   });
 
+  final String title;
   final AiResponseType? initialSelectedType;
 
   @override
@@ -98,12 +100,55 @@ class _ResponseTypeSelectionContentState
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface.withValues(alpha: 0.95),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          // Modal header
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: context.colorScheme.outline.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: context.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: context.colorScheme.onSurface.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Response type options
           Flexible(
             child: ValueListenableBuilder<AiResponseType?>(
               valueListenable: _pageSelectedTypeNotifier,
@@ -112,44 +157,93 @@ class _ResponseTypeSelectionContentState
                 AiResponseType? groupValue,
                 Widget? child,
               ) {
-                return ListView.builder(
+                return ListView.separated(
                   shrinkWrap: true,
+                  padding: const EdgeInsets.all(16),
                   itemCount: AiResponseType.values.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 8),
                   itemBuilder: (BuildContext itemBuilderContext, int index) {
                     final type = AiResponseType.values[index];
-                    return RadioListTile<AiResponseType>(
-                      title: Text(type.localizedName(itemBuilderContext)),
-                      value: type,
-                      groupValue: groupValue,
-                      onChanged: (AiResponseType? value) {
-                        _pageSelectedTypeNotifier.value = value;
-                      },
+                    final isSelected = type == groupValue;
+                    
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? context.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                            : context.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? context.colorScheme.primary
+                              : context.colorScheme.outline.withValues(alpha: 0.2),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: RadioListTile<AiResponseType>(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        title: Text(
+                          type.localizedName(itemBuilderContext),
+                          style: context.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? context.colorScheme.primary
+                                : context.colorScheme.onSurface,
+                          ),
+                        ),
+                        value: type,
+                        groupValue: groupValue,
+                        activeColor: context.colorScheme.primary,
+                        onChanged: (AiResponseType? value) {
+                          _pageSelectedTypeNotifier.value = value;
+                        },
+                      ),
                     );
                   },
                 );
               },
             ),
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ValueListenableBuilder<AiResponseType?>(
+          // Save button
+          Container(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ValueListenableBuilder<AiResponseType?>(
                 valueListenable: _pageSelectedTypeNotifier,
                 builder: (
                   BuildContext btnContext,
                   AiResponseType? currentSelection,
                   Widget? child,
                 ) {
-                  return FilledButton(
+                  return ElevatedButton.icon(
                     onPressed: currentSelection != null
                         ? () => Navigator.of(context).pop(currentSelection)
                         : null,
-                    child: Text(context.messages.saveButtonLabel),
+                    icon: const Icon(Icons.check_rounded, size: 20),
+                    label: Text(
+                      context.messages.saveButtonLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.colorScheme.primary,
+                      foregroundColor: context.colorScheme.onPrimary,
+                      disabledBackgroundColor: context.colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   );
                 },
               ),
-            ],
+            ),
           ),
         ],
       ),

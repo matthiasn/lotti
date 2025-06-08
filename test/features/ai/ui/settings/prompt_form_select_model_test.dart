@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_name_widget.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -168,19 +167,7 @@ void main() {
     });
   });
 
-  group('DefaultBadge', () {
-    testWidgets('displays star icon and default text',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const DefaultBadge(),
-        ),
-      );
-
-      expect(find.byIcon(Icons.star), findsOneWidget);
-      expect(find.text('Default'), findsOneWidget);
-    });
-  });
+  // DefaultBadge is now part of DismissibleModelCard and not a separate widget
 
   group('ModelLoadingState', () {
     testWidgets('displays loading indicator and text',
@@ -295,96 +282,18 @@ void main() {
     });
   });
 
-  group('ModelCardContent', () {
-    testWidgets('displays model name without default badge',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const ModelCardContent(
-            modelName: 'Test Model',
-            isDefault: false,
-          ),
-        ),
-      );
+  // ModelCardContent has been replaced with AiConfigCard
 
-      expect(find.text('Test Model'), findsOneWidget);
-      expect(find.byType(DefaultBadge), findsNothing);
-    });
-
-    testWidgets('displays model name with default badge when isDefault',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const ModelCardContent(
-            modelName: 'Test Model',
-            isDefault: true,
-          ),
-        ),
-      );
-
-      expect(find.text('Test Model'), findsOneWidget);
-      expect(find.byType(DefaultBadge), findsOneWidget);
-    });
-
-    testWidgets('displays inference provider widget when config is provided',
-        (WidgetTester tester) async {
-      final config = createAiConfigModel(
-        id: 'model1',
-        name: 'Test Model',
-        inferenceProviderId: 'test-provider',
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          child: ModelCardContent(
-            modelName: 'Test Model',
-            isDefault: false,
-            config: config,
-          ),
-        ),
-      );
-
-      expect(find.text('Test Model'), findsOneWidget);
-      expect(find.byType(InferenceProviderNameWidget), findsOneWidget);
-    });
-  });
-
-  group('ModelCard', () {
-    testWidgets('renders with correct styling for default model',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const ModelCard(
-            modelName: 'Test Model',
-            isDefault: true,
-          ),
-        ),
-      );
-
-      final card = tester.widget<Card>(find.byType(Card));
-      expect(card.elevation, equals(4));
-    });
-
-    testWidgets('renders with correct styling for non-default model',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const ModelCard(
-            modelName: 'Test Model',
-            isDefault: false,
-          ),
-        ),
-      );
-
-      final card = tester.widget<Card>(find.byType(Card));
-      expect(card.elevation, equals(1));
-    });
-  });
+  // ModelCard has been replaced with AiConfigCard
 
   group('DismissibleModelCard', () {
     testWidgets('can be dismissed and calls onDismissed callback',
         (WidgetTester tester) async {
       var wasDismissed = false;
+      final config = createAiConfigModel(
+        id: 'model1',
+        name: 'Test Model',
+      );
 
       await tester.pumpWidget(
         createTestWidget(
@@ -392,6 +301,7 @@ void main() {
             modelId: 'model1',
             modelName: 'Test Model',
             isDefault: false,
+            config: config,
             onDismissed: () => wasDismissed = true,
           ),
         ),
@@ -417,12 +327,18 @@ void main() {
 
     testWidgets('shows dismiss background when swiping',
         (WidgetTester tester) async {
+      final config = createAiConfigModel(
+        id: 'model1',
+        name: 'Test Model',
+      );
+
       await tester.pumpWidget(
         createTestWidget(
           child: DismissibleModelCard(
             modelId: 'model1',
             modelName: 'Test Model',
             isDefault: false,
+            config: config,
             onDismissed: () {},
           ),
         ),
@@ -441,6 +357,10 @@ void main() {
     testWidgets('cancels dismissal when dialog is cancelled',
         (WidgetTester tester) async {
       var wasDismissed = false;
+      final config = createAiConfigModel(
+        id: 'model1',
+        name: 'Test Model',
+      );
 
       await tester.pumpWidget(
         createTestWidget(
@@ -448,6 +368,7 @@ void main() {
             modelId: 'model1',
             modelName: 'Test Model',
             isDefault: false,
+            config: config,
             onDismissed: () => wasDismissed = true,
           ),
         ),
@@ -496,8 +417,7 @@ void main() {
 
       expect(find.text('Model 1'), findsOneWidget);
       expect(find.text('Model 2'), findsOneWidget);
-      expect(
-          find.byType(DefaultBadge), findsOneWidget); // Only model1 is default
+      expect(find.text('Default'), findsOneWidget); // Only model1 is default
     });
 
     testWidgets('handles loading state for models',
@@ -783,17 +703,7 @@ void main() {
       expect(find.text('Third Model'), findsOneWidget);
 
       // Verify default badge is on the correct model
-      final defaultModelCard = find.ancestor(
-        of: find.text('Default Model'),
-        matching: find.byType(ModelCard),
-      );
-      expect(
-        find.descendant(
-          of: defaultModelCard,
-          matching: find.byType(DefaultBadge),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Default'), findsOneWidget);
 
       // Remove a non-default model
       await tester.drag(

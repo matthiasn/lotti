@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/enhanced_form_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -36,15 +37,15 @@ class EnhancedInferenceModelForm extends ConsumerStatefulWidget {
 class _EnhancedInferenceModelFormState
     extends ConsumerState<EnhancedInferenceModelForm> {
   void _showInferenceProviderModal() {
+    final formController = ref.read(
+      inferenceModelFormControllerProvider(configId: widget.config?.id)
+          .notifier,
+    );
+    
     ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: context.messages.aiConfigSelectProviderModalTitle,
-      builder: (modalContext) => _EnhancedProviderSelectionModal(
-        configId: widget.config?.id,
-        formController: ref.read(
-          inferenceModelFormControllerProvider(configId: widget.config?.id)
-              .notifier,
-        ),
+      builder: (modalContext) => ProviderSelectionModal(
+        onProviderSelected: formController.inferenceProviderIdChanged,
       ),
     );
   }
@@ -56,7 +57,6 @@ class _EnhancedInferenceModelFormState
   }) {
     ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: title,
       builder: (modalContext) => ModalitySelectionModal(
         title: title,
         selectedModalities: selectedModalities,
@@ -81,7 +81,7 @@ class _EnhancedInferenceModelFormState
 
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerLowest,
+        color: context.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
@@ -89,11 +89,11 @@ class _EnhancedInferenceModelFormState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header section - removed redundant title
+            // Header section
             Text(
               'Configure an AI model to make it available for use in prompts',
               style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: context.colorScheme.onSurface.withValues(alpha: 0.7),
                 height: 1.4,
                 fontSize: 14,
               ),
@@ -195,7 +195,6 @@ class _EnhancedInferenceModelFormState
                   onChanged: formController.descriptionChanged,
                   maxLines: null,
                   minLines: 3,
-                  prefixIcon: const Icon(Icons.notes_outlined),
                   helperText: 'Optional notes about this model configuration',
                 ),
               ],
@@ -231,11 +230,10 @@ class _ModalitySelectionCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.2),
+          color: context.colorScheme.surfaceContainerLow.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: context.colorScheme.outline.withValues(alpha: 0.12),
+            color: context.colorScheme.outline.withValues(alpha: 0.15),
           ),
         ),
         padding: const EdgeInsets.all(16),
@@ -332,11 +330,10 @@ class _ReasoningCapabilityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:
-            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        color: context.colorScheme.surfaceContainerLow.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: context.colorScheme.outline.withValues(alpha: 0.12),
+          color: context.colorScheme.outline.withValues(alpha: 0.15),
         ),
       ),
       padding: const EdgeInsets.all(16),
@@ -403,11 +400,18 @@ class _FormSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.colorScheme.surface,
+        color: context.colorScheme.surfaceContainerLow.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: context.colorScheme.outline.withValues(alpha: 0.08),
+          color: context.colorScheme.outline.withValues(alpha: 0.12),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -432,9 +436,10 @@ class _FormSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: context.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: context.colorScheme.onSurface,
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.colorScheme.onSurface.withValues(alpha: 0.8),
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -471,11 +476,10 @@ class _ProviderSelectionCard extends ConsumerWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.2),
+          color: context.colorScheme.surfaceContainerLow.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: context.colorScheme.outline.withValues(alpha: 0.12),
+            color: context.colorScheme.outline.withValues(alpha: 0.15),
           ),
         ),
         padding: const EdgeInsets.all(16),
@@ -596,234 +600,6 @@ class _ProviderSelectionCard extends ConsumerWidget {
             },
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Enhanced provider selection modal with modern styling
-class _EnhancedProviderSelectionModal extends ConsumerWidget {
-  const _EnhancedProviderSelectionModal({
-    required this.configId,
-    required this.formController,
-  });
-
-  final String? configId;
-  final InferenceModelFormController formController;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ),
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Modal header
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: context.colorScheme.outline.withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.messages.aiConfigSelectProviderModalTitle,
-                        style: context.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: context.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Choose which provider hosts this model',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.colorScheme.onSurface
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: context.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Provider list
-          Flexible(
-            child: providersAsync.when(
-              data: (providers) {
-                if (providers.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.cloud_off_rounded,
-                          size: 48,
-                          color: context.colorScheme.onSurface
-                              .withValues(alpha: 0.4),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No providers found',
-                          style: context.textTheme.titleMedium?.copyWith(
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Create an inference provider first',
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(20),
-                  itemCount: providers.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final provider = providers[index];
-
-                    return provider.maybeMap(
-                      inferenceProvider: (providerConfig) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: context.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: context.colorScheme.outline
-                                  .withValues(alpha: 0.12),
-                            ),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(16),
-                            leading: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.primary
-                                    .withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.cloud_outlined,
-                                color: context.colorScheme.primary,
-                                size: 24,
-                              ),
-                            ),
-                            title: Text(
-                              providerConfig.name,
-                              style: context.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: context.colorScheme.onSurface,
-                              ),
-                            ),
-                            subtitle: (providerConfig.description?.isNotEmpty ??
-                                    false)
-                                ? Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      providerConfig.description!,
-                                      style: context.textTheme.bodyMedium
-                                          ?.copyWith(
-                                        color: context.colorScheme.onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  )
-                                : null,
-                            trailing: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.primary
-                                    .withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Icon(
-                                Icons.arrow_forward_rounded,
-                                color: context.colorScheme.primary,
-                                size: 18,
-                              ),
-                            ),
-                            onTap: () {
-                              formController.inferenceProviderIdChanged(
-                                  providerConfig.id);
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        );
-                      },
-                      orElse: () => const SizedBox.shrink(),
-                    );
-                  },
-                );
-              },
-              loading: () => const Padding(
-                padding: EdgeInsets.all(40),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (error, stackTrace) => Container(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: context.colorScheme.error.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading providers',
-                      style: context.textTheme.titleMedium?.copyWith(
-                        color: context.colorScheme.error,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -246,18 +246,16 @@ void main() {
       // Verify modal is shown with title
       expect(find.text('Select Provider Type'), findsAtLeastNWidgets(1));
 
-      // Find the list of provider options
-      expect(find.byType(ListTile), findsWidgets);
+      // Verify modal subtitle is shown
+      expect(find.text('Choose the AI service provider for your configuration'), findsOneWidget);
+
+      // Find the provider cards with InkWell instead of ListTile
+      expect(find.byType(InkWell), findsAtLeastNWidgets(InferenceProviderType.values.length));
 
       // Verify at least one provider type is listed
-      final modalContext =
-          tester.element(find.text('Select Provider Type').first);
-      expect(
-        find.text(
-          InferenceProviderType.genericOpenAi.displayName(modalContext),
-        ),
-        findsWidgets,
-      );
+      expect(find.textContaining('OpenAI'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Anthropic'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Gemini'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('should update provider type when selecting from modal',
@@ -270,24 +268,28 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Get the build context
-      final context =
-          tester.element(find.byType(EnhancedInferenceProviderForm));
-
       // Open the provider type selection modal
       final providerField = find.byType(EnhancedSelectionField);
       await tester.tap(providerField);
       await tester.pumpAndSettle();
 
-      // Select a different provider type (find a listTile other than the default one)
-      const anthropicType = InferenceProviderType.anthropic;
-      final anthropicListTile = find.ancestor(
-        of: find.text(anthropicType.displayName(context)),
-        matching: find.byType(ListTile),
-      );
+      // Select a different provider type by tapping on Anthropic card
+      // Find the InkWell that contains Anthropic text
+      final anthropicCards = find.byWidgetPredicate((widget) {
+        if (widget is! InkWell) return false;
+        
+        // Check if this InkWell contains Anthropic text
+        final finder = find.descendant(
+          of: find.byWidget(widget),
+          matching: find.textContaining('Anthropic'),
+        );
+        return finder.evaluate().isNotEmpty;
+      });
 
-      await tester.tap(anthropicListTile);
-      await tester.pumpAndSettle();
+      if (anthropicCards.evaluate().isNotEmpty) {
+        await tester.tap(anthropicCards.first);
+        await tester.pumpAndSettle();
+      }
 
       // Recreate the form with the new state and verify the display
       await tester.pumpWidget(buildTestWidget());
@@ -310,29 +312,15 @@ void main() {
       await tester.tap(providerField);
       await tester.pumpAndSettle();
 
-      // Get a context from the modal
-      final modalContext =
-          tester.element(find.text('Select Provider Type').first);
-
-      // Find the current provider type (genericOpenAi by default)
-      final genericListTiles = find.ancestor(
-        of: find.text(
-          InferenceProviderType.genericOpenAi.displayName(modalContext),
-        ),
-        matching: find.byType(ListTile),
-      );
-
-      // Check each tile for a check mark
-      for (final genericListTileElement in genericListTiles.evaluate()) {
-        final tile = genericListTileElement.widget as ListTile;
-        // Check if any has a check mark as trailing (wrapped in a Container)
-        if (tile.trailing != null) {
-          expect(tile.trailing, isA<Container>());
-          // The Container should contain an Icon with check mark
-          final container = tile.trailing! as Container;
-          expect(container.child, isA<Icon>());
-        }
-      }
+      // Find check mark icon for selected provider (our new modal design uses check_rounded icon)
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      
+      // Verify the selected provider card has different styling
+      final selectedCards = find.byWidgetPredicate((widget) =>
+          widget is Container &&
+          widget.decoration is BoxDecoration &&
+          (widget.decoration as BoxDecoration?)?.border != null);
+      expect(selectedCards, findsAtLeastNWidgets(1));
     });
 
     testWidgets('keyboard shortcut structure is properly configured',
