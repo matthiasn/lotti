@@ -213,7 +213,6 @@ class _ModalityOption extends StatelessWidget {
                       color: isSelected
                           ? context.colorScheme.primary.withValues(alpha: 0.3)
                           : Colors.transparent,
-                      width: 1,
                     ),
                   ),
                   child: Icon(
