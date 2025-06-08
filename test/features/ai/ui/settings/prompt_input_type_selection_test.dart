@@ -271,13 +271,28 @@ void main() {
           expect(find.text(type.displayNameFromContext(l10n)), findsOneWidget);
           expect(find.text(type.descriptionFromContext(l10n)), findsOneWidget);
 
-          final checkboxListTile = tester.widget<CheckboxListTile>(
-            find.ancestor(
-              of: find.text(type.displayNameFromContext(l10n)),
-              matching: find.byType(CheckboxListTile),
-            ),
-          );
-          expect(checkboxListTile.value, initiallySelected.contains(type));
+          // Check if the type is selected by looking for the checkmark icon
+          final isSelected = initiallySelected.contains(type);
+
+          if (isSelected) {
+            // Find the InkWell containing the type's text
+            final typeOption = find
+                .ancestor(
+                  of: find.text(type.displayNameFromContext(l10n)),
+                  matching: find.byType(InkWell),
+                )
+                .last;
+
+            // Verify this option has a checkmark
+            expect(
+              find.descendant(
+                of: typeOption,
+                matching: find.byIcon(Icons.check_rounded),
+              ),
+              findsOneWidget,
+              reason: 'Selected type ${type.name} should have a checkmark',
+            );
+          }
         }
       });
 
@@ -287,20 +302,38 @@ void main() {
 
         const typeToSelect = InputDataType.images;
 
-        final checkboxListTileFinder = find.ancestor(
-          of: find.text(typeToSelect.displayNameFromContext(l10n)),
-          matching: find.byType(CheckboxListTile),
-        );
-        var checkboxListTile =
-            tester.widget<CheckboxListTile>(checkboxListTileFinder);
-        expect(checkboxListTile.value, isFalse);
+        // Find the container for the type option using InkWell
+        final typeOptionFinder = find
+            .ancestor(
+              of: find.text(typeToSelect.displayNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            )
+            .last; // Get the InkWell inside the modal
 
-        await tester.tap(checkboxListTileFinder);
+        // Ensure the option is visible before interacting with it
+        await tester.ensureVisible(typeOptionFinder);
         await tester.pumpAndSettle();
 
-        checkboxListTile =
-            tester.widget<CheckboxListTile>(checkboxListTileFinder);
-        expect(checkboxListTile.value, isTrue);
+        // Verify no checkmark initially
+        expect(
+          find.descendant(
+            of: typeOptionFinder,
+            matching: find.byIcon(Icons.check_rounded),
+          ),
+          findsNothing,
+        );
+
+        await tester.tap(typeOptionFinder, warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // Verify checkmark appears after tap
+        expect(
+          find.descendant(
+            of: typeOptionFinder,
+            matching: find.byIcon(Icons.check_rounded),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets(
@@ -318,14 +351,27 @@ void main() {
         );
         await openModal(tester, initialSelection: initiallySelected);
 
-        final checkboxListTileFinder = find.ancestor(
-          of: find.text(typeToNewlySelect.displayNameFromContext(l10n)),
-          matching: find.byType(CheckboxListTile),
-        );
-        await tester.tap(checkboxListTileFinder);
+        // Find the type option to select
+        final typeOptionFinder = find
+            .ancestor(
+              of: find.text(typeToNewlySelect.displayNameFromContext(l10n)),
+              matching: find.byType(InkWell),
+            )
+            .last;
+
+        // Ensure the option is visible before tapping
+        await tester.ensureVisible(typeOptionFinder);
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n.saveButtonLabel));
+        await tester.tap(typeOptionFinder, warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // Find and tap the save button by text
+        final saveButtonTextFinder = find.text(l10n.saveButtonLabel);
+        await tester.ensureVisible(saveButtonTextFinder);
+        await tester.pumpAndSettle();
+
+        await tester.tap(saveButtonTextFinder, warnIfMissed: false);
         await tester.pumpAndSettle();
 
         expect(

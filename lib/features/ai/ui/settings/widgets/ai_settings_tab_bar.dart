@@ -36,11 +36,20 @@ class AiSettingsTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      height: 48,
       decoration: BoxDecoration(
-        color:
-            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [
+            context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.6),
+            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+        ),
       ),
       child: TabBar(
         controller: controller,
@@ -49,27 +58,44 @@ class AiSettingsTabBar extends StatelessWidget {
           onTabChanged?.call(tab);
         },
         indicator: BoxDecoration(
-          color: context.colorScheme.primary,
-          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            colors: [
+              context.colorScheme.primary,
+              context.colorScheme.primary.withValues(alpha: 0.9),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: context.colorScheme.primary.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: const EdgeInsets.all(3),
+        indicatorPadding: const EdgeInsets.all(4),
         dividerColor: Colors.transparent,
         labelColor: context.colorScheme.onPrimary,
-        unselectedLabelColor: context.colorScheme.onSurfaceVariant,
-        labelStyle: context.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+        unselectedLabelColor:
+            context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+        labelStyle: context.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+          fontSize: 14,
         ),
-        unselectedLabelStyle: context.textTheme.bodySmall?.copyWith(
+        unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w500,
-          letterSpacing: -0.2,
+          letterSpacing: 0.3,
+          fontSize: 14,
         ),
         overlayColor: WidgetStateProperty.all(Colors.transparent),
         tabAlignment: TabAlignment.fill,
         tabs: AiSettingsTab.values
             .map((tab) => Tab(
-                  height: 36, // Reduced height for more compact look
+                  height: 40,
                   text: tab.displayName,
                 ))
             .toList(),

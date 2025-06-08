@@ -204,10 +204,10 @@ void main() {
         await tester.pump();
 
         // Clear button should appear
-        expect(find.byIcon(Icons.clear), findsOneWidget);
+        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
 
         // Tap clear button
-        await tester.tap(find.byIcon(Icons.clear));
+        await tester.tap(find.byIcon(Icons.clear_rounded));
         await tester.pump();
 
         // Text field should be empty
