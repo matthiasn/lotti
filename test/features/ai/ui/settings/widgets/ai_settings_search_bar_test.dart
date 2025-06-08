@@ -50,7 +50,7 @@ void main() {
       await tester.pumpWidget(createWidget());
 
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
       expect(find.text('Search AI configurations...'), findsOneWidget);
     });
 
@@ -77,14 +77,14 @@ void main() {
       await tester.pumpWidget(createWidget());
 
       // Initially no clear button
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(Icons.clear_rounded), findsNothing);
 
       // Enter text
       await tester.enterText(find.byType(TextField), 'test');
       await tester.pump();
 
       // Clear button should appear
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
     testWidgets('hides clear button when text is empty',
@@ -93,14 +93,14 @@ void main() {
       await tester.pumpWidget(createWidget());
 
       // Clear button should be visible
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
 
       // Clear the text
       await tester.enterText(find.byType(TextField), '');
       await tester.pump();
 
       // Clear button should be hidden
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(Icons.clear_rounded), findsNothing);
     });
 
     testWidgets('calls onClear when clear button is tapped',
@@ -109,7 +109,7 @@ void main() {
       await tester.pumpWidget(createWidget());
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
       await tester.pump();
 
       expect(onClearCalled, isTrue);
@@ -126,11 +126,11 @@ void main() {
       expect(controller.text, 'test query');
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
       await tester.pump();
 
       // Text should be cleared (assuming onClear implementation clears it)
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(Icons.clear_rounded), findsNothing);
     });
 
     testWidgets('has proper accessibility properties',
@@ -157,7 +157,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('external change'), findsOneWidget);
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
     testWidgets('handles empty hint text gracefully',
@@ -165,7 +165,7 @@ void main() {
       await tester.pumpWidget(createWidget(hintText: ''));
 
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
     testWidgets('maintains focus state correctly', (WidgetTester tester) async {
@@ -183,7 +183,7 @@ void main() {
 
       // The text should remain and clear button should be visible
       expect(find.text('test'), findsOneWidget);
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
     testWidgets('handles rapid text changes', (WidgetTester tester) async {
@@ -198,7 +198,7 @@ void main() {
       await tester.pump();
 
       expect(controller.text, 'abc');
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
     group('keyboard navigation', () {
@@ -259,7 +259,7 @@ void main() {
         await tester.pump();
 
         expect(controller.text, longText);
-        expect(find.byIcon(Icons.clear), findsOneWidget);
+        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
       });
     });
   });

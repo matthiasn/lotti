@@ -53,7 +53,7 @@ class AiConfigCard extends ConsumerWidget {
   final bool isCompact;
 
   /// Determines the model family from a model configuration
-  /// 
+  ///
   /// This method provides a more robust way to classify models than string matching.
   /// It first checks the provider model ID (which tends to be more standardized),
   /// then falls back to the display name if needed.
@@ -65,7 +65,7 @@ class AiConfigCard extends ConsumerWidget {
         return entry.value;
       }
     }
-    
+
     // Fall back to display name
     final displayName = model.name.toLowerCase();
     for (final entry in _modelPatterns.entries) {
@@ -73,7 +73,7 @@ class AiConfigCard extends ConsumerWidget {
         return entry.value;
       }
     }
-    
+
     return ModelFamily.generic;
   }
 
@@ -82,49 +82,71 @@ class AiConfigCard extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            context.colorScheme.surfaceContainer,
+            context.colorScheme.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Material(
-        borderRadius: BorderRadius.circular(14),
-        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           splashColor: context.colorScheme.primary.withValues(alpha: 0.1),
           highlightColor: context.colorScheme.primary.withValues(alpha: 0.05),
           child: Container(
-            padding: EdgeInsets.all(isCompact ? 10 : 12),
+            padding: EdgeInsets.all(isCompact ? 12 : 14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: context.colorScheme.outline.withValues(alpha: 0.2),
-              ),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
                 // Icon with premium container
                 Container(
-                  width: isCompact ? 28 : 32,
-                  height: isCompact ? 28 : 32,
+                  width: isCompact ? 36 : 40,
+                  height: isCompact ? 36 : 40,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        context.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.7),
-                        context.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
+                        context.colorScheme.primaryContainer
+                            .withValues(alpha: 0.3),
+                        context.colorScheme.primaryContainer
+                            .withValues(alpha: 0.2),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          context.colorScheme.primary.withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Icon(
                     _getConfigIcon(),
-                    size: isCompact ? 16 : 18,
-                    color: context.colorScheme.onSurfaceVariant,
+                    size: isCompact ? 18 : 20,
+                    color: context.colorScheme.primary.withValues(alpha: 0.9),
                   ),
                 ),
 
-                SizedBox(width: isCompact ? 8 : 10),
+                SizedBox(width: isCompact ? 10 : 12),
 
                 // Config info with enhanced typography
                 Expanded(
@@ -135,10 +157,11 @@ class AiConfigCard extends ConsumerWidget {
                       // Config name
                       Text(
                         config.name,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.3,
-                          fontSize: isCompact ? 14 : 15,
+                        style: context.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.1,
+                          fontSize: isCompact ? 15 : 16,
+                          color: context.colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -162,10 +185,10 @@ class AiConfigCard extends ConsumerWidget {
                           config.description!,
                           style: context.textTheme.bodySmall?.copyWith(
                             color: context.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                            fontSize: isCompact ? 10 : 11,
-                            height: 1.3,
-                            letterSpacing: -0.1,
+                                .withValues(alpha: 0.8),
+                            fontSize: isCompact ? 11 : 12,
+                            height: 1.4,
+                            letterSpacing: 0,
                           ),
                           maxLines: isCompact ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
@@ -259,18 +282,27 @@ class _CompactProviderName extends ConsumerWidget {
             vertical: 2,
           ),
           decoration: BoxDecoration(
-            color: context.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(5),
+            gradient: LinearGradient(
+              colors: [
+                context.colorScheme.primaryContainer.withValues(alpha: 0.25),
+                context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: context.colorScheme.primary.withValues(alpha: 0.1),
+              width: 0.5,
+            ),
           ),
           child: Text(
             providerName,
             style: context.textTheme.bodySmall?.copyWith(
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w500,
-              fontSize: isCompact ? 9 : 10,
-              letterSpacing: -0.1,
+              color: context.colorScheme.primary.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+              fontSize: isCompact ? 10 : 11,
+              letterSpacing: 0.1,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

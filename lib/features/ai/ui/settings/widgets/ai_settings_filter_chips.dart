@@ -98,25 +98,28 @@ class AiSettingsFilterChips extends ConsumerWidget {
                     ));
                   },
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: Colors.transparent,
+                  backgroundColor: context.colorScheme.surfaceContainerHigh
+                      .withValues(alpha: 0.5),
                   selectedColor: context.colorScheme.primaryContainer
-                      .withValues(alpha: 0.6),
-                  checkmarkColor: context.colorScheme.primary,
+                      .withValues(alpha: 0.7),
+                  checkmarkColor: context.colorScheme.onPrimaryContainer,
                   side: BorderSide(
                     color: isSelected
-                        ? context.colorScheme.primary
-                        : context.colorScheme.outline.withValues(alpha: 0.4),
-                    width: 0.8,
+                        ? context.colorScheme.primary.withValues(alpha: 0.8)
+                        : context.colorScheme.primaryContainer
+                            .withValues(alpha: 0.3),
                   ),
                   labelStyle: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
                     color: isSelected
-                        ? context.colorScheme.primary
-                        : context.colorScheme.onSurfaceVariant,
+                        ? context.colorScheme.onPrimaryContainer
+                        : context.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.8),
                   ),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   tooltip: 'Filter by ${provider.name}',
                 );
               }),
@@ -193,7 +196,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
           final isSelected =
               filterState.selectedCapabilities.contains(modality);
           return FilterChip(
-            avatar: Icon(icon, size: 14),
+            avatar: Icon(icon, size: 16),
             label: Text(label),
             selected: isSelected,
             onSelected: (selected) {
@@ -209,31 +212,32 @@ class AiSettingsFilterChips extends ConsumerWidget {
               ));
             },
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor: Colors.transparent,
+            backgroundColor:
+                context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
             selectedColor:
-                context.colorScheme.primaryContainer.withValues(alpha: 0.6),
-            checkmarkColor: context.colorScheme.primary,
+                context.colorScheme.primaryContainer.withValues(alpha: 0.7),
+            checkmarkColor: context.colorScheme.onPrimaryContainer,
             side: BorderSide(
               color: isSelected
-                  ? context.colorScheme.primary
-                  : context.colorScheme.outline.withValues(alpha: 0.4),
-              width: 0.8,
+                  ? context.colorScheme.primary.withValues(alpha: 0.8)
+                  : context.colorScheme.primaryContainer.withValues(alpha: 0.3),
             ),
             labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
               color: isSelected
-                  ? context.colorScheme.primary
-                  : context.colorScheme.onSurfaceVariant,
+                  ? context.colorScheme.onPrimaryContainer
+                  : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             tooltip: 'Filter by $label capability',
           );
         }),
 
         // Reasoning filter
         FilterChip(
-          avatar: const Icon(Icons.psychology, size: 14),
+          avatar: const Icon(Icons.psychology, size: 16),
           label: const Text('Reasoning'),
           selected: filterState.reasoningFilter,
           onSelected: (selected) {
@@ -242,24 +246,25 @@ class AiSettingsFilterChips extends ConsumerWidget {
             ));
           },
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: Colors.transparent,
+          backgroundColor:
+              context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
           selectedColor:
-              context.colorScheme.primaryContainer.withValues(alpha: 0.6),
-          checkmarkColor: context.colorScheme.primary,
+              context.colorScheme.primaryContainer.withValues(alpha: 0.7),
+          checkmarkColor: context.colorScheme.onPrimaryContainer,
           side: BorderSide(
             color: filterState.reasoningFilter
-                ? context.colorScheme.primary
-                : context.colorScheme.outline.withValues(alpha: 0.4),
-            width: 0.8,
+                ? context.colorScheme.primary.withValues(alpha: 0.8)
+                : context.colorScheme.primaryContainer.withValues(alpha: 0.3),
           ),
           labelStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
             color: filterState.reasoningFilter
-                ? context.colorScheme.primary
-                : context.colorScheme.onSurfaceVariant,
+                ? context.colorScheme.onPrimaryContainer
+                : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           tooltip: 'Filter by reasoning capability',
         ),
       ],

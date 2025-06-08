@@ -58,57 +58,80 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            context.colorScheme.surfaceContainer,
+            context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: TextField(
         controller: widget.controller,
         onChanged: widget.onChanged,
+        style: TextStyle(
+          color: context.colorScheme.onSurface,
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.3,
           ),
           prefixIcon: Icon(
-            Icons.search,
-            color: context.colorScheme.onSurfaceVariant,
+            Icons.search_rounded,
+            color: context.colorScheme.primary.withValues(alpha: 0.8),
+            size: 22,
             semanticLabel: 'Search icon',
           ),
           suffixIcon: widget.controller.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: context.colorScheme.onSurfaceVariant,
-                    semanticLabel: 'Clear search',
+              ? Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      widget.controller.clear();
+                      widget.onClear?.call();
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.clear_rounded,
+                        color: context.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.6),
+                        size: 20,
+                        semanticLabel: 'Clear search',
+                      ),
+                    ),
                   ),
-                  onPressed: () {
-                    widget.controller.clear();
-                    widget.onClear?.call();
-                  },
-                  tooltip: 'Clear search',
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: context.colorScheme.outline.withValues(alpha: 0.3),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: context.colorScheme.outline.withValues(alpha: 0.3),
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: context.colorScheme.primary,
-              width: 2,
-            ),
-          ),
-          filled: true,
-          fillColor: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.3),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: false,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 12,

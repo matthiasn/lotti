@@ -72,7 +72,8 @@ void main() {
 
         final decoration = containerWidget.decoration! as BoxDecoration;
         expect(decoration.borderRadius, isNotNull);
-        expect(decoration.color, isNotNull);
+        expect(decoration.gradient, isNotNull);
+        expect(decoration.gradient, isA<LinearGradient>());
       });
     });
 
@@ -347,9 +348,17 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
-        final container =
-            tester.widget<Container>(find.byType(Container).first);
-        expect(container.margin, const EdgeInsets.symmetric(horizontal: 16));
+        final containerFinder = find.byType(Container);
+        expect(containerFinder, findsOneWidget);
+        
+        // Check that the container has proper height
+        final containerBox = tester.renderObject<RenderBox>(containerFinder);
+        expect(containerBox.size.height, 48.0);
+        
+        // Check that it has decoration (not just margin/padding)
+        final container = tester.widget<Container>(containerFinder);
+        expect(container.decoration, isNotNull);
+        expect(container.margin, isNull); // No margin in new design
       });
     });
   });
