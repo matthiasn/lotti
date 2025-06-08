@@ -11,6 +11,9 @@
 *.env
 *.lock
 
+.claude/
+tmp/
+
 !Podfile.lock
 !pubspec.lock
 

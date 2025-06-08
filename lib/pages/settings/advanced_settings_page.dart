@@ -28,9 +28,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
   final GlobalKey<State<StatefulWidget>> _healthImportKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _maintenanceKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _aboutLottiKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _apikeyKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _modelsKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _promptsKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +43,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               _healthImportKey,
               _maintenanceKey,
               _aboutLottiKey,
-              _apikeyKey,
-              _modelsKey,
-              _promptsKey,
             ],
           );
         },
@@ -132,6 +126,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
             ),
             ShowcaseWithWidget(
               isTooltipTop: true,
+              endNav: true,
               showcaseKey: _aboutLottiKey,
               description: ShowcaseTextStyle(
                 descriptionText:
@@ -140,44 +135,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               child: SettingsNavCard(
                 title: context.messages.settingsAboutTitle,
                 path: '/settings/advanced/about',
-              ),
-            ),
-            ShowcaseWithWidget(
-              isTooltipTop: true,
-              showcaseKey: _apikeyKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseApiKeyTooltip,
-              ),
-              child: SettingsNavCard(
-                title: context.messages.settingsAiApiKeys,
-                path: '/settings/advanced/ai/api_keys',
-              ),
-            ),
-            ShowcaseWithWidget(
-              isTooltipTop: true,
-              endNav: true,
-              showcaseKey: _modelsKey,
-              description: ShowcaseTextStyle(
-                descriptionText:
-                    context.messages.settingsAdvancedShowCaseModelsTooltip,
-              ),
-              child: SettingsNavCard(
-                title: context.messages.settingsAiModels,
-                path: '/settings/advanced/ai/models',
-              ),
-            ),
-            ShowcaseWithWidget(
-              isTooltipTop: true,
-              endNav: true,
-              showcaseKey: _promptsKey,
-              description: const ShowcaseTextStyle(
-                descriptionText:
-                    'Manage AI prompts for use with different models.',
-              ),
-              child: SettingsNavCard(
-                title: context.messages.promptSettingsPageTitle,
-                path: '/settings/advanced/ai/prompts',
               ),
             ),
           ],

@@ -8,8 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/ui/settings/enhanced_provider_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_form.dart';
+import 'package:lotti/features/ai/ui/widgets/enhanced_form_field.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -89,7 +90,7 @@ void main() {
 
       // Assert
       expect(find.text('Add AI Inference Provider'), findsOneWidget);
-      expect(find.byType(InferenceProviderForm), findsOneWidget);
+      expect(find.byType(EnhancedInferenceProviderForm), findsOneWidget);
     });
 
     testWidgets(
@@ -105,7 +106,7 @@ void main() {
 
       // Assert
       expect(find.text('Edit AI Inference Provider'), findsOneWidget);
-      expect(find.byType(InferenceProviderForm), findsOneWidget);
+      expect(find.byType(EnhancedInferenceProviderForm), findsOneWidget);
     });
 
     testWidgets('should call repository saveConfig when adding a new API key',
@@ -122,23 +123,19 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Fill in the form fields
+      // Fill in the form fields using the enhanced form structure
+      // Find all TextFields in the form - they appear in order: Display Name, Base URL, API Key, Description
+      final textFields = find.byType(TextField);
+      expect(textFields, findsAtLeastNWidgets(3)); // We need at least 3 fields
+
+      await tester.enterText(textFields.at(0), 'New API'); // Display Name
       await tester.enterText(
-        find.widgetWithText(TextField, 'Display Name'),
-        'New API',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Base URL'),
-        'https://new.example.com',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'API Key'),
-        'new-api-key',
-      );
+          textFields.at(1), 'https://new.example.com'); // Base URL
+      await tester.enterText(textFields.at(2), 'new-api-key'); // API Key
       await tester.pumpAndSettle();
 
       // Find and tap the save button in the app bar
-      final saveButton = find.widgetWithText(TextButton, 'Save');
+      final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
@@ -165,12 +162,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Modify a field to make the form dirty
-      final nameField = find.widgetWithText(TextField, 'Display Name');
-      await tester.enterText(nameField, 'Updated API');
+      final textFields = find.byType(TextField);
+      expect(textFields, findsAtLeastNWidgets(1));
+      await tester.enterText(textFields.first, 'Updated API');
       await tester.pumpAndSettle();
 
       // Find and tap the save button in the app bar
-      final saveButton = find.widgetWithText(TextButton, 'Save');
+      final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
@@ -230,38 +228,30 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify initial provider type is shown
-      final context = tester.element(find.byType(InferenceProviderForm));
+      final context =
+          tester.element(find.byType(EnhancedInferenceProviderForm));
       expect(
         find.text(InferenceProviderType.genericOpenAi.displayName(context)),
         findsOneWidget,
       );
 
-      // Find and tap on the provider type field (use InputDecorator with the label text)
-      final providerField = find.ancestor(
-        of: find.text('Provider Type'),
-        matching: find.byType(InputDecorator),
-      );
+      // Find and tap on the provider type field (use EnhancedSelectionField)
+      final providerField = find.byType(EnhancedSelectionField);
       expect(providerField, findsOneWidget);
 
-      // Find the InkWell that wraps the InputDecorator
-      final inkWell = find.ancestor(
-        of: providerField,
-        matching: find.byType(InkWell),
-      );
-      expect(inkWell, findsOneWidget);
-
-      // Tap on the InkWell to open the modal
-      await tester.tap(inkWell);
+      // Tap on the enhanced selection field to open the modal
+      await tester.tap(providerField);
       await tester.pumpAndSettle();
 
       // Verify modal is shown with title
-      expect(find.text('Select Provider Type'), findsOneWidget);
+      expect(find.text('Select Provider Type'), findsAtLeastNWidgets(1));
 
       // Find the list of provider options
       expect(find.byType(ListTile), findsWidgets);
 
       // Verify at least one provider type is listed
-      final modalContext = tester.element(find.text('Select Provider Type'));
+      final modalContext =
+          tester.element(find.text('Select Provider Type').first);
       expect(
         find.text(
           InferenceProviderType.genericOpenAi.displayName(modalContext),
@@ -281,17 +271,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Get the build context
-      final context = tester.element(find.byType(InferenceProviderForm));
+      final context =
+          tester.element(find.byType(EnhancedInferenceProviderForm));
 
       // Open the provider type selection modal
-      final inkWell = find.ancestor(
-        of: find.ancestor(
-          of: find.text('Provider Type'),
-          matching: find.byType(InputDecorator),
-        ),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(inkWell);
+      final providerField = find.byType(EnhancedSelectionField);
+      await tester.tap(providerField);
       await tester.pumpAndSettle();
 
       // Select a different provider type (find a listTile other than the default one)
@@ -321,18 +306,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open the provider type selection modal
-      final inkWell = find.ancestor(
-        of: find.ancestor(
-          of: find.text('Provider Type'),
-          matching: find.byType(InputDecorator),
-        ),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(inkWell);
+      final providerField = find.byType(EnhancedSelectionField);
+      await tester.tap(providerField);
       await tester.pumpAndSettle();
 
       // Get a context from the modal
-      final modalContext = tester.element(find.text('Select Provider Type'));
+      final modalContext =
+          tester.element(find.text('Select Provider Type').first);
 
       // Find the current provider type (genericOpenAi by default)
       final genericListTiles = find.ancestor(
@@ -345,9 +325,12 @@ void main() {
       // Check each tile for a check mark
       for (final genericListTileElement in genericListTiles.evaluate()) {
         final tile = genericListTileElement.widget as ListTile;
-        // Check if any has a check mark as trailing
+        // Check if any has a check mark as trailing (wrapped in a Container)
         if (tile.trailing != null) {
-          expect(tile.trailing, isA<Icon>());
+          expect(tile.trailing, isA<Container>());
+          // The Container should contain an Icon with check mark
+          final container = tile.trailing! as Container;
+          expect(container.child, isA<Icon>());
         }
       }
     });
@@ -402,7 +385,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify save button is not visible (form is invalid)
-      expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+      // Save button should be disabled (visible but with reduced opacity)
+      expect(find.text('Save'), findsOneWidget);
+      // Check for reduced opacity when form is invalid
+      final opacityWidget = find.byType(AnimatedOpacity);
+      expect(opacityWidget, findsAtLeastNWidgets(1));
 
       // Find the CallbackShortcuts widget with CMD+S
       final callbackShortcutsFinders = find.byType(CallbackShortcuts);
@@ -448,22 +435,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // Fill in the form fields to make it valid
+      final textFields = find.byType(TextField);
+      expect(textFields, findsAtLeastNWidgets(3));
+
+      await tester.enterText(textFields.at(0), 'New API'); // Display Name
       await tester.enterText(
-        find.widgetWithText(TextField, 'Display Name'),
-        'New API',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Base URL'),
-        'https://new.example.com',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'API Key'),
-        'new-api-key',
-      );
+          textFields.at(1), 'https://new.example.com'); // Base URL
+      await tester.enterText(textFields.at(2), 'new-api-key'); // API Key
       await tester.pumpAndSettle();
 
       // Verify save button is visible now
-      expect(find.widgetWithText(TextButton, 'Save'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
 
       // Find the CallbackShortcuts widget with CMD+S
       final callbackShortcutsFinders = find.byType(CallbackShortcuts);

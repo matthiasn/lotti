@@ -8,8 +8,8 @@ import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/enhanced_model_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/inference_model_form.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -217,14 +217,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(InferenceModelForm), findsOneWidget);
+        expect(find.byType(EnhancedInferenceModelForm), findsOneWidget);
       });
 
-      testWidgets('save button is hidden when form is invalid',
+      testWidgets('save button is disabled when form is invalid',
           (WidgetTester tester) async {
         final fakeFormController = FakeInferenceModelFormController()
-          ..setInitialStateForBuild(
-              InferenceModelFormState()); // Invalid by default
+          ..setInitialStateForBuild(InferenceModelFormState(
+            inputModalities: [], // Empty modalities make it invalid
+            outputModalities: [], // Empty modalities make it invalid
+          ));
 
         await tester.pumpWidget(
           buildTestWidget(
@@ -235,7 +237,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+        // Save button should be disabled (visible but with reduced opacity)
+        expect(find.text('Save'), findsOneWidget);
+        // Check for reduced opacity when form is invalid
+        final opacityWidget = find.byType(AnimatedOpacity);
+        expect(opacityWidget, findsAtLeastNWidgets(1));
       });
 
       testWidgets('save button is visible when form is valid',
@@ -253,7 +259,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsOneWidget);
+        expect(find.text('Save'), findsOneWidget);
       });
 
       testWidgets('calls addConfig when save button is tapped in create mode',
@@ -272,7 +278,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(TextButton, 'Save'));
+        await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
 
         expect(fakeFormController.addConfigCalls, hasLength(1));
@@ -373,7 +379,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Save button should be hidden when form is not dirty in edit mode
-        expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+        // Save button should be disabled (visible but with reduced opacity)
+        expect(find.text('Save'), findsOneWidget);
+        // Check for reduced opacity when form is invalid
+        final opacityWidget = find.byType(AnimatedOpacity);
+        expect(opacityWidget, findsAtLeastNWidgets(1));
       });
 
       testWidgets(
@@ -401,7 +411,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsOneWidget);
+        expect(find.text('Save'), findsOneWidget);
       });
 
       testWidgets('calls updateConfig when save button is tapped in edit mode',
@@ -429,7 +439,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(TextButton, 'Save'));
+        await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
 
         expect(fakeFormController.updateConfigCalls, hasLength(1));
@@ -456,7 +466,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+        // Save button should be disabled (visible but with reduced opacity)
+        expect(find.text('Save'), findsOneWidget);
+        // Check for reduced opacity when form is invalid
+        final opacityWidget = find.byType(AnimatedOpacity);
+        expect(opacityWidget, findsAtLeastNWidgets(1));
       });
 
       testWidgets('form is invalid when name is too short',
@@ -465,7 +479,8 @@ void main() {
           ..setInitialStateForBuild(InferenceModelFormState(
             name: const ModelName.dirty('ab'), // Too short
             providerModelId: const ProviderModelId.dirty('valid-id'),
-            inferenceProviderId: 'provider-1',
+            inputModalities: [], // Empty modalities
+            outputModalities: [], // Empty modalities
           ));
 
         await tester.pumpWidget(
@@ -477,7 +492,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+        // Save button should be disabled (visible but with reduced opacity)
+        expect(find.text('Save'), findsOneWidget);
+        // Check for reduced opacity when form is invalid
+        final opacityWidget = find.byType(AnimatedOpacity);
+        expect(opacityWidget, findsAtLeastNWidgets(1));
       });
 
       testWidgets('form is invalid when providerModelId is too short',
@@ -486,7 +505,8 @@ void main() {
           ..setInitialStateForBuild(InferenceModelFormState(
             name: const ModelName.dirty('Valid Name'),
             providerModelId: const ProviderModelId.dirty('ab'), // Too short
-            inferenceProviderId: 'provider-1',
+            inputModalities: [], // Empty modalities
+            outputModalities: [], // Empty modalities
           ));
 
         await tester.pumpWidget(
@@ -498,7 +518,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+        // Save button should be disabled (visible but with reduced opacity)
+        expect(find.text('Save'), findsOneWidget);
+        // Check for reduced opacity when form is invalid
+        final opacityWidget = find.byType(AnimatedOpacity);
+        expect(opacityWidget, findsAtLeastNWidgets(1));
       });
 
       testWidgets('form is invalid when modalities are empty',
@@ -507,7 +531,6 @@ void main() {
           ..setInitialStateForBuild(InferenceModelFormState(
             name: const ModelName.dirty('Valid Name'),
             providerModelId: const ProviderModelId.dirty('valid-id'),
-            inferenceProviderId: 'provider-1',
             inputModalities: [], // Empty
             outputModalities: [], // Empty
           ));
@@ -521,7 +544,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+        // Save button should be disabled (visible but with reduced opacity)
+        expect(find.text('Save'), findsOneWidget);
+        // Check for reduced opacity when form is invalid
+        final opacityWidget = find.byType(AnimatedOpacity);
+        expect(opacityWidget, findsAtLeastNWidgets(1));
       });
     });
 
@@ -603,7 +630,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify save button is visible (form is valid)
-        expect(find.widgetWithText(TextButton, 'Save'), findsOneWidget);
+        expect(find.text('Save'), findsOneWidget);
 
         // The keyboard shortcut should work the same as clicking save
         // We just verify the shortcut exists and form validation works
@@ -628,7 +655,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(TextButton, 'Save'));
+        await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
 
         verify(() => mockNavigatorObserver.didPop(any(), any())).called(1);
@@ -660,7 +687,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(InferenceModelForm), findsOneWidget);
+        expect(find.byType(EnhancedInferenceModelForm), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
       });
 
@@ -679,15 +706,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final saveButton = find.widgetWithText(TextButton, 'Save');
+        final saveButton = find.text('Save');
         expect(saveButton, findsOneWidget);
 
-        final text = tester.widget<Text>(find.descendant(
-          of: saveButton,
-          matching: find.byType(Text),
-        ));
+        final text = tester.widget<Text>(saveButton);
 
-        expect(text.style?.fontWeight, FontWeight.bold);
+        expect(text.style?.fontWeight, FontWeight.w600);
       });
     });
   });

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_form.dart';
+import 'package:lotti/features/ai/ui/settings/enhanced_provider_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -65,34 +65,82 @@ class InferenceProviderEditPage extends ConsumerWidget {
         },
       },
       child: Scaffold(
+        backgroundColor: context.colorScheme.surfaceContainer,
         appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              color: context.colorScheme.onSurface,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
           title: Text(
             configId == null
                 ? context.messages.apiKeyAddPageTitle
                 : context.messages.apiKeyEditPageTitle,
+            style: context.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colorScheme.onSurface,
+            ),
           ),
           actions: [
-            if (isFormValid)
-              TextButton(
-                onPressed: handleSave,
-                child: Text(
-                  context.messages.saveButtonLabel,
-                  style: TextStyle(
-                    color: context.colorScheme.error,
-                    fontWeight: FontWeight.bold,
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: AnimatedScale(
+                scale: isFormValid ? 1.0 : 0.9,
+                duration: const Duration(milliseconds: 200),
+                child: AnimatedOpacity(
+                  opacity: isFormValid ? 1.0 : 0.6,
+                  duration: const Duration(milliseconds: 200),
+                  child: ElevatedButton.icon(
+                    onPressed: isFormValid ? handleSave : null,
+                    icon: const Icon(Icons.save_rounded, size: 18),
+                    label: Text(
+                      context.messages.saveButtonLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.colorScheme.primary,
+                      foregroundColor: context.colorScheme.onPrimary,
+                      disabledBackgroundColor:
+                          context.colorScheme.outline.withValues(alpha: 0.3),
+                      elevation: isFormValid ? 2 : 0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ),
+            ),
           ],
         ),
         body: switch (configAsync) {
           AsyncData(value: final config) => _buildForm(context, ref, config),
           AsyncError() => Center(
-              child: Text(
-                context.messages.apiKeyEditLoadError,
-                style: context.textTheme.bodyLarge?.copyWith(
-                  color: context.colorScheme.error,
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 48,
+                    color: context.colorScheme.error.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.messages.apiKeyEditLoadError,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: context.colorScheme.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           _ => const Center(child: CircularProgressIndicator()),
@@ -102,13 +150,8 @@ class InferenceProviderEditPage extends ConsumerWidget {
   }
 
   Widget _buildForm(BuildContext context, WidgetRef ref, AiConfig? config) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        child: InferenceProviderForm(
-          config: config,
-        ),
-      ),
+    return EnhancedInferenceProviderForm(
+      config: config,
     );
   }
 }

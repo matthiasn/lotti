@@ -1,8 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/ai/ui/settings/inference_model_settings_page.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_settings_page.dart';
-import 'package:lotti/features/ai/ui/settings/prompt_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/speech/ui/pages/speech_settings_page.dart';
 import 'package:lotti/pages/settings/advanced/about_page.dart';
@@ -38,6 +36,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
         '/settings',
+        '/settings/ai',
         '/settings/tags',
         '/settings/tags/:tagEntityId',
         '/settings/tags/create/:tagType',
@@ -64,9 +63,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
         '/settings/maintenance',
-        '/settings/advanced/ai/api_keys',
-        '/settings/advanced/ai/models',
-        '/settings/advanced/ai/prompts',
       ];
 
   @override
@@ -80,6 +76,14 @@ class SettingsLocation extends BeamLocation<BeamState> {
         title: 'Settings',
         child: SettingsPage(),
       ),
+
+      // AI Settings
+      if (pathContains('ai') && !pathContains('advanced'))
+        const BeamPage(
+          key: ValueKey('settings-ai'),
+          title: 'AI Settings',
+          child: AiSettingsPage(),
+        ),
 
       // Categories
       if (pathContains('categories'))
@@ -315,24 +319,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-maintenance'),
           child: MaintenancePage(),
-        ),
-
-      if (pathContains('advanced/ai/api_keys'))
-        const BeamPage(
-          key: ValueKey('settings-ai-api-keys'),
-          child: InferenceProviderSettingsPage(),
-        ),
-
-      if (pathContains('advanced/ai/models'))
-        const BeamPage(
-          key: ValueKey('settings-ai-models'),
-          child: InferenceModelSettingsPage(),
-        ),
-
-      if (pathContains('advanced/ai/prompts'))
-        const BeamPage(
-          key: ValueKey('settings-ai-prompts'),
-          child: PromptSettingsPage(),
         ),
     ];
   }
