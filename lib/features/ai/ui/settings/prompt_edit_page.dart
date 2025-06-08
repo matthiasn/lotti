@@ -334,7 +334,6 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
               ),
             );
           }),
-          const SizedBox(height: 16),
         ] else ...[
           // Empty state
           Container(
