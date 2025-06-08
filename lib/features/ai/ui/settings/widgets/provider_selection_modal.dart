@@ -140,19 +140,13 @@ class _ProvidersList extends StatelessWidget {
                   if (!isSelected) {
                     Future.delayed(const Duration(milliseconds: 150), () {
                       if (context.mounted) {
-                        try {
-                          Navigator.of(context).pop();
-                        } catch (e) {
-                          // Ignore navigation errors in test context
-                        }
+                        Navigator.of(context).pop();
                       }
                     });
                   } else {
                     // If already selected, close immediately
-                    try {
+                    if (context.mounted) {
                       Navigator.of(context).pop();
-                    } catch (e) {
-                      // Ignore navigation errors in test context
                     }
                   }
                 },
