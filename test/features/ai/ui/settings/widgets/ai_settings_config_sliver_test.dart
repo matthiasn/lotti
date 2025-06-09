@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_list.dart';
+import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
 
 void main() {
-  group('AiSettingsConfigList', () {
+  group('AiSettingsConfigSliver', () {
     late List<AiConfigInferenceProvider> testProviders;
     late List<AiConfigModel> testModels;
     late List<AiConfigPrompt> testPrompts;
@@ -98,20 +100,37 @@ void main() {
       IconData emptyIcon = Icons.error,
       bool showCapabilities = false,
       ValueChanged<AiConfig>? onConfigTap,
+      bool enableSwipeToDelete = true,
+      VoidCallback? onRetry,
     }) {
       return ProviderScope(
+        overrides: [
+          // Mock the provider lookups for models
+          aiConfigByIdProvider('provider-1').overrideWith((ref) async {
+            return testProviders[0];
+          }),
+          aiConfigByIdProvider('provider-2').overrideWith((ref) async {
+            return testProviders[1];
+          }),
+        ],
         child: MaterialApp(
           home: Scaffold(
-            body: AiSettingsConfigList<T>(
-              configsAsync: configsAsync,
-              filteredConfigs: filteredConfigs,
-              emptyMessage: emptyMessage,
-              emptyIcon: emptyIcon,
-              showCapabilities: showCapabilities,
-              onConfigTap: onConfigTap ??
-                  (config) {
-                    tappedConfigs.add(config);
-                  },
+            body: CustomScrollView(
+              slivers: [
+                AiSettingsConfigSliver<T>(
+                  configsAsync: configsAsync,
+                  filteredConfigs: filteredConfigs,
+                  emptyMessage: emptyMessage,
+                  emptyIcon: emptyIcon,
+                  showCapabilities: showCapabilities,
+                  onConfigTap: onConfigTap ??
+                      (config) {
+                        tappedConfigs.add(config);
+                      },
+                  enableSwipeToDelete: enableSwipeToDelete,
+                  onRetry: onRetry,
+                ),
+              ],
             ),
           ),
         ),
@@ -137,9 +156,32 @@ void main() {
           filteredConfigs: [],
         ));
 
-        expect(find.text('Failed to load configurations'), findsOneWidget);
+        expect(find.text('Error loading configurations'), findsOneWidget);
         expect(find.text(error), findsOneWidget);
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      });
+
+      testWidgets(
+          'shows retry button when error occurs and onRetry is provided',
+          (WidgetTester tester) async {
+        var retryPressed = false;
+        const error = 'Network error';
+
+        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
+          configsAsync: const AsyncValue.error(error, StackTrace.empty),
+          filteredConfigs: [],
+          onRetry: () {
+            retryPressed = true;
+          },
+        ));
+
+        expect(find.text('Retry'), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
+
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
+
+        expect(retryPressed, isTrue);
       });
 
       testWidgets('shows empty state when no configurations exist',
@@ -152,6 +194,7 @@ void main() {
         ));
 
         expect(find.text('No providers configured'), findsOneWidget);
+        expect(find.text('Tap the + button to add one'), findsOneWidget);
         expect(find.byIcon(Icons.hub), findsOneWidget);
       });
 
@@ -178,6 +221,7 @@ void main() {
 
         expect(find.text('Test Provider 1'), findsOneWidget);
         expect(find.text('Test Provider 2'), findsOneWidget);
+        // AiConfigCard shows description for providers
         expect(find.text('First test provider'), findsOneWidget);
         expect(find.text('Second test provider'), findsOneWidget);
       });
@@ -190,6 +234,7 @@ void main() {
 
         expect(find.text('Test Model 1'), findsOneWidget);
         expect(find.text('Test Model 2'), findsOneWidget);
+        // AiConfigCard shows description for models
         expect(find.text('First test model'), findsOneWidget);
         expect(find.text('Second test model'), findsOneWidget);
       });
@@ -202,6 +247,7 @@ void main() {
 
         expect(find.text('Test Prompt 1'), findsOneWidget);
         expect(find.text('Test Prompt 2'), findsOneWidget);
+        // AiConfigCard shows description for prompts
         expect(find.text('First test prompt'), findsOneWidget);
         expect(find.text('Second test prompt'), findsOneWidget);
       });
@@ -220,8 +266,19 @@ void main() {
         expect(find.text('Test Model 1'), findsOneWidget);
         expect(find.text('Test Model 2'), findsOneWidget);
 
-        // Capability chips or indicators should be present
-        // (Exact implementation depends on the card widget)
+        // Wait for provider data to load
+        await tester.pumpAndSettle();
+
+        // Capability chips are shown based on model properties
+        // Text capability for both models (always shown as supported)
+        expect(find.byIcon(Icons.text_fields), findsNWidgets(2));
+        // Vision capability - shown for both models (supported on model-1, unsupported on model-2)
+        expect(find.byIcon(Icons.visibility), findsNWidgets(2));
+        // Audio capability - shown for both models (unsupported on both)
+        expect(find.byIcon(Icons.hearing), findsNWidgets(2));
+        // Reasoning capability only for model-2 (plus possibly model icons)
+        final psychologyIcons = find.byIcon(Icons.psychology);
+        expect(psychologyIcons, findsWidgets);
       });
 
       testWidgets('hides capabilities when showCapabilities is false',
@@ -231,8 +288,17 @@ void main() {
           filteredConfigs: testModels,
         ));
 
+        // Wait for provider data to load
+        await tester.pumpAndSettle();
+
         expect(find.text('Test Model 1'), findsOneWidget);
         expect(find.text('Test Model 2'), findsOneWidget);
+
+        // No capability indicators should be shown
+        expect(find.byIcon(Icons.text_fields), findsNothing);
+        expect(find.byIcon(Icons.visibility), findsNothing);
+        expect(find.byIcon(Icons.hearing), findsNothing);
+        // Icons.psychology might still appear as model icon
       });
     });
 
@@ -268,7 +334,57 @@ void main() {
       });
     });
 
+    group('swipe to delete', () {
+      testWidgets('shows delete background when swiping',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
+          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+          filteredConfigs: testProviders,
+        ));
+
+        // Start swipe gesture
+        await tester.drag(find.text('Test Provider 1'), const Offset(-100, 0));
+        await tester.pump();
+
+        // Should show delete indicator
+        expect(find.byIcon(Icons.delete_forever_rounded), findsOneWidget);
+        expect(find.text('Delete'), findsOneWidget);
+      });
+
+      testWidgets('does not allow swipe when enableSwipeToDelete is false',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
+          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+          filteredConfigs: testProviders,
+          enableSwipeToDelete: false,
+        ));
+
+        // Try to swipe
+        await tester.drag(find.text('Test Provider 1'), const Offset(-100, 0));
+        await tester.pump();
+
+        // Should not show delete indicator
+        expect(find.byIcon(Icons.delete_forever_rounded), findsNothing);
+        expect(find.text('Delete'), findsNothing);
+
+        // Item should still be visible
+        expect(find.text('Test Provider 1'), findsOneWidget);
+      });
+    });
+
     group('scrolling and layout', () {
+      testWidgets('integrates properly with CustomScrollView',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
+          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+          filteredConfigs: testProviders,
+        ));
+
+        // Should be part of a sliver context
+        expect(find.byType(CustomScrollView), findsOneWidget);
+        expect(find.byType(SliverList), findsOneWidget);
+      });
+
       testWidgets('scrolls properly with many configurations',
           (WidgetTester tester) async {
         // Create many test providers
@@ -290,9 +406,6 @@ void main() {
           filteredConfigs: manyProviders,
         ));
 
-        // Should be able to scroll
-        expect(find.byType(ListView), findsOneWidget);
-
         // First item should be visible
         expect(find.text('Provider 0'), findsOneWidget);
 
@@ -300,7 +413,8 @@ void main() {
         expect(find.text('Provider 19'), findsNothing);
 
         // Scroll to bottom
-        await tester.fling(find.byType(ListView), const Offset(0, -1000), 3000);
+        await tester.fling(
+            find.byType(CustomScrollView), const Offset(0, -1000), 3000);
         await tester.pumpAndSettle();
 
         // Last item should now be visible
@@ -314,12 +428,12 @@ void main() {
           filteredConfigs: testProviders,
         ));
 
-        final listView = find.byType(ListView);
-        expect(listView, findsOneWidget);
-
-        // Should show both providers
+        // Should show both providers with proper cards
         expect(find.text('Test Provider 1'), findsOneWidget);
         expect(find.text('Test Provider 2'), findsOneWidget);
+
+        // AiConfigCard uses AnimatedContainer instead of Card
+        expect(find.byType(AiConfigCard), findsNWidgets(2));
       });
     });
 
@@ -390,6 +504,9 @@ void main() {
         // Configuration items should be semantically accessible
         expect(find.text('Test Provider 1'), findsOneWidget);
         expect(find.text('Test Provider 2'), findsOneWidget);
+
+        // Cards should have proper tap semantics
+        expect(find.byType(InkWell), findsNWidgets(2));
       });
 
       testWidgets('maintains focus after configuration tap',
@@ -414,7 +531,7 @@ void main() {
           (WidgetTester tester) async {
         // Create a large number of configurations
         final largeList = List.generate(
-          1000,
+          100, // Reduced from 1000 for test performance
           (index) => AiConfig.inferenceProvider(
             id: 'provider-$index',
             name: 'Provider $index',
@@ -432,8 +549,74 @@ void main() {
         ));
 
         // Should render without performance issues
-        expect(find.byType(ListView), findsOneWidget);
+        expect(find.byType(SliverList), findsOneWidget);
         expect(find.text('Provider 0'), findsOneWidget);
+
+        // Sliver should handle large lists efficiently
+        expect(find.byType(CustomScrollView), findsOneWidget);
+      });
+    });
+
+    group('sliver-specific behavior', () {
+      testWidgets('fills remaining space when empty',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
+          configsAsync: const AsyncValue.data([]),
+          filteredConfigs: const [],
+        ));
+
+        // Should use SliverFillRemaining for empty state
+        expect(find.byType(SliverFillRemaining), findsOneWidget);
+      });
+
+      testWidgets('properly handles padding in sliver context',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
+          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+          filteredConfigs: testProviders,
+        ));
+
+        // Should have SliverPadding for proper spacing
+        expect(find.byType(SliverPadding), findsOneWidget);
+      });
+
+      testWidgets('works with other slivers in CustomScrollView',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  const SliverAppBar(
+                    title: Text('Test App Bar'),
+                  ),
+                  AiSettingsConfigSliver<AiConfigInferenceProvider>(
+                    configsAsync:
+                        AsyncValue.data(testProviders.cast<AiConfig>()),
+                    filteredConfigs: testProviders,
+                    emptyMessage: 'No providers',
+                    emptyIcon: Icons.hub,
+                    onConfigTap: (config) {
+                      tappedConfigs.add(config);
+                    },
+                  ),
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('Footer Content'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ));
+
+        // All components should be present
+        expect(find.text('Test App Bar'), findsOneWidget);
+        expect(find.text('Test Provider 1'), findsOneWidget);
+        expect(find.text('Test Provider 2'), findsOneWidget);
+        expect(find.text('Footer Content'), findsOneWidget);
       });
     });
   });

@@ -26,6 +26,7 @@ class AiSettingsSearchBar extends StatefulWidget {
     this.onChanged,
     this.onClear,
     this.hintText = 'Search AI configurations...',
+    this.isCompact = false,
     super.key,
   });
 
@@ -40,6 +41,9 @@ class AiSettingsSearchBar extends StatefulWidget {
 
   /// Hint text displayed when field is empty
   final String hintText;
+  
+  /// Whether to use a more compact style (for app bar)
+  final bool isCompact;
 
   @override
   State<AiSettingsSearchBar> createState() => _AiSettingsSearchBarState();
@@ -59,9 +63,9 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: widget.isCompact ? 36 : 48,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: widget.isCompact ? null : LinearGradient(
           colors: [
             context.colorScheme.surfaceContainer,
             context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
@@ -69,11 +73,12 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.circular(16),
+        color: widget.isCompact ? context.colorScheme.surfaceContainer.withValues(alpha: 0.8) : null,
+        borderRadius: BorderRadius.circular(widget.isCompact ? 12 : 16),
         border: Border.all(
-          color: context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+          color: context.colorScheme.primaryContainer.withValues(alpha: widget.isCompact ? 0.1 : 0.2),
         ),
-        boxShadow: [
+        boxShadow: widget.isCompact ? [] : [
           BoxShadow(
             color: context.colorScheme.shadow.withValues(alpha: 0.2),
             blurRadius: 8,
@@ -86,21 +91,21 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
         onChanged: widget.onChanged,
         style: TextStyle(
           color: context.colorScheme.onSurface,
-          fontSize: 15,
+          fontSize: widget.isCompact ? 14 : 15,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(
             color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-            fontSize: 15,
+            fontSize: widget.isCompact ? 14 : 15,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.3,
           ),
           prefixIcon: Icon(
             Icons.search_rounded,
             color: context.colorScheme.primary.withValues(alpha: 0.8),
-            size: 22,
+            size: widget.isCompact ? 20 : 22,
             semanticLabel: 'Search icon',
           ),
           suffixIcon: widget.controller.text.isNotEmpty

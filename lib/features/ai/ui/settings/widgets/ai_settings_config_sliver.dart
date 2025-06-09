@@ -5,32 +5,13 @@ import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Widget that displays a list of AI configurations with proper loading and error states
+/// A sliver variant of AiSettingsConfigList that preserves all design and functionality
+/// while properly propagating scroll events in CustomScrollView
 ///
-/// This widget provides a consistent interface for displaying lists of AI configurations
-/// across all tabs (providers, models, prompts) with proper error handling and empty states.
-///
-/// **Features:**
-/// - Loading state with progress indicator
-/// - Error state with retry option
-/// - Empty state with helpful message and icon
-/// - Efficient ListView.separated for performance
-/// - Consistent spacing and animations
-///
-/// **Usage:**
-/// ```dart
-/// AiSettingsConfigList<AiConfigModel>(
-///   configsAsync: modelsAsyncValue,
-///   filteredConfigs: filteredModels,
-///   showCapabilities: true,
-///   emptyMessage: 'No AI models configured',
-///   emptyIcon: Icons.smart_toy,
-///   onConfigTap: (config) => navigateToEdit(config),
-///   onRetry: () => ref.invalidate(modelsProvider),
-/// )
-/// ```
-class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
-  const AiSettingsConfigList({
+/// This widget provides the same beautiful cards and swipe-to-delete functionality
+/// as AiSettingsConfigList but returns proper slivers for better scroll behavior.
+class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
+  const AiSettingsConfigSliver({
     required this.configsAsync,
     required this.filteredConfigs,
     required this.emptyMessage,
@@ -73,36 +54,48 @@ class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return configsAsync.when(
-      data: (configs) => _buildConfigList(context, ref),
-      loading: () => _buildLoadingState(context),
-      error: (error, stackTrace) => _buildErrorState(context, error),
+      data: (configs) {
+        if (filteredConfigs.isEmpty) {
+          return _buildEmptySliver(context);
+        }
+        return _buildConfigSliver(context, ref);
+      },
+      loading: _buildLoadingSliver,
+      error: (error, stackTrace) => _buildErrorSliver(context, error),
     );
   }
 
-  /// Builds the main configuration list
-  Widget _buildConfigList(BuildContext context, WidgetRef ref) {
-    if (filteredConfigs.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
-    return ListView.separated(
+  /// Builds the main configuration sliver
+  Widget _buildConfigSliver(BuildContext context, WidgetRef ref) {
+    return SliverPadding(
       padding: const EdgeInsets.all(16),
-      itemCount: filteredConfigs.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final config = filteredConfigs[index];
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index >= filteredConfigs.length * 2 - 1) return null;
+            
+            // Add spacing between cards
+            if (index.isOdd) {
+              return const SizedBox(height: 8);
+            }
+            
+            final configIndex = index ~/ 2;
+            final config = filteredConfigs[configIndex];
 
-        if (!enableSwipeToDelete) {
-          return AiConfigCard(
-            config: config,
-            showCapabilities: showCapabilities,
-            isCompact: isCompact,
-            onTap: () => onConfigTap(config),
-          );
-        }
+            if (!enableSwipeToDelete) {
+              return AiConfigCard(
+                config: config,
+                showCapabilities: showCapabilities,
+                isCompact: isCompact,
+                onTap: () => onConfigTap(config),
+              );
+            }
 
-        return _buildDismissibleCard(context, ref, config);
-      },
+            return _buildDismissibleCard(context, ref, config);
+          },
+          childCount: filteredConfigs.length * 2 - 1,
+        ),
+      ),
     );
   }
 
@@ -191,97 +184,98 @@ class AiSettingsConfigList<T extends AiConfig> extends ConsumerWidget {
     );
   }
 
-  /// Builds the loading state
-  Widget _buildLoadingState(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
+  /// Builds the empty state sliver
+  Widget _buildEmptySliver(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading configurations...'),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+                    context.colorScheme.primaryContainer.withValues(alpha: 0.25),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Icon(
+                emptyIcon,
+                size: 40,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              emptyMessage,
+              style: context.textTheme.titleMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap the + button to add one',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// Builds the error state
-  Widget _buildErrorState(BuildContext context, Object error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+  /// Builds the loading state sliver
+  Widget _buildLoadingSliver() {
+    return const SliverFillRemaining(
+      child: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  /// Builds the error state sliver
+  Widget _buildErrorSliver(BuildContext context, Object error) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.error_outline,
-              size: 48,
+              size: 64,
               color: context.colorScheme.error,
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load configurations',
+              'Error loading configurations',
               style: context.textTheme.titleMedium?.copyWith(
                 color: context.colorScheme.error,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Builds the empty state
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              emptyIcon,
-              size: 64,
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              emptyMessage,
-              style: context.textTheme.titleMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
+              style: context.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first configuration to get started',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color:
-                    context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
               ),
-              textAlign: TextAlign.center,
-            ),
+            ],
           ],
         ),
       ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -7,12 +8,11 @@ import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_list.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_tab_bar.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/sliver_show_case_title_bar.dart';
 
 /// Main AI Settings page providing a unified interface for managing AI configurations
 ///
@@ -54,6 +54,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   // Controllers
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   // Services
   final _filterService = const AiSettingsFilterService();
@@ -96,6 +97,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     _searchDebounceTimer?.cancel();
     _tabController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
   }
 
   /// Handles search query changes with debouncing to avoid excessive filtering
@@ -168,39 +170,60 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     return Scaffold(
       backgroundColor: context.colorScheme.scrim,
       body: CustomScrollView(
+        controller: _scrollController,
+        physics: const ClampingScrollPhysics(),
         slivers: [
-          // App bar with title and back button
-          const SliverShowCaseTitleBar(
-            title: 'AI Settings',
+          // Simple app bar with collapsing title
+          SliverAppBar(
+            expandedHeight: 100,
+            pinned: true,
+            backgroundColor: context.colorScheme.surface,
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: context.colorScheme.onSurface,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                'AI Settings',
+                style: TextStyle(
+                  color: context.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      context.colorScheme.surface,
+                      context.colorScheme.scrim,
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
 
-          // Search and tab bar
-          SliverToBoxAdapter(
-            child: _buildHeaderSection(),
-          ),
+          // Fixed header with search, tabs and filters
+          SliverPinnedToBoxAdapter(child: _buildFixedHeader()),
 
-          // Main content area
-          SliverFillRemaining(
-            child: _buildTabContent(),
-          ),
+          // Main content
+          ..._buildTabContentSlivers(),
         ],
       ),
       floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
-  /// Builds the header section with search bar and tabs
-  Widget _buildHeaderSection() {
+  /// Builds the fixed header with search, tabs, and filters
+  Widget _buildFixedHeader() {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            context.colorScheme.surface,
-            context.colorScheme.scrim,
-          ],
-        ),
+        color: context.colorScheme.surface,
         border: Border(
           bottom: BorderSide(
             color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
@@ -209,9 +232,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       ),
       child: Column(
         children: [
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          // Search bar - always visible
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: AiSettingsSearchBar(
               controller: _searchController,
               onChanged: (_) => {}, // Handled by controller listener
@@ -231,33 +254,36 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           // Model Filters (only shown on Models tab)
           if (_filterState.activeTab == AiSettingsTab.models)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: AiSettingsFilterChips(
-                filterState: _filterState,
-                onFilterChanged: _updateFilterState,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: AiSettingsFilterChips(
+                  filterState: _filterState,
+                  onFilterChanged: _updateFilterState,
+                ),
               ),
             )
           else
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
         ],
       ),
     );
   }
 
-  /// Builds the main tab content area
-  Widget _buildTabContent() {
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        _buildProvidersTab(),
-        _buildModelsTab(),
-        _buildPromptsTab(),
-      ],
-    );
+  /// Builds the main tab content area as slivers
+  List<Widget> _buildTabContentSlivers() {
+    switch (_filterState.activeTab) {
+      case AiSettingsTab.providers:
+        return [_buildProvidersSliver()];
+      case AiSettingsTab.models:
+        return [_buildModelsSliver()];
+      case AiSettingsTab.prompts:
+        return [_buildPromptsSliver()];
+    }
   }
 
-  /// Builds the providers tab content
-  Widget _buildProvidersTab() {
+  /// Builds the providers sliver
+  Widget _buildProvidersSliver() {
     final providersAsync = ref.watch(
       aiConfigByTypeControllerProvider(
         configType: AiConfigType.inferenceProvider,
@@ -271,7 +297,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         final filteredProviders =
             _filterService.filterProviders(providers, _filterState);
 
-        return AiSettingsConfigList<AiConfigInferenceProvider>(
+        return AiSettingsConfigSliver<AiConfigInferenceProvider>(
           configsAsync: providersAsync,
           filteredConfigs: filteredProviders,
           emptyMessage: 'No AI providers configured',
@@ -284,15 +310,19 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(
-        child: Text('Error loading providers: $error'),
+      loading: () => const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => SliverFillRemaining(
+        child: Center(
+          child: Text('Error loading providers: $error'),
+        ),
       ),
     );
   }
 
-  /// Builds the models tab content
-  Widget _buildModelsTab() {
+  /// Builds the models sliver
+  Widget _buildModelsSliver() {
     final modelsAsync = ref.watch(
       aiConfigByTypeControllerProvider(
         configType: AiConfigType.model,
@@ -305,7 +335,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         final filteredModels =
             _filterService.filterModels(models, _filterState);
 
-        return AiSettingsConfigList<AiConfigModel>(
+        return AiSettingsConfigSliver<AiConfigModel>(
           configsAsync: modelsAsync,
           filteredConfigs: filteredModels,
           emptyMessage: 'No AI models configured',
@@ -319,15 +349,19 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(
-        child: Text('Error loading models: $error'),
+      loading: () => const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => SliverFillRemaining(
+        child: Center(
+          child: Text('Error loading models: $error'),
+        ),
       ),
     );
   }
 
-  /// Builds the prompts tab content
-  Widget _buildPromptsTab() {
+  /// Builds the prompts sliver
+  Widget _buildPromptsSliver() {
     final promptsAsync = ref.watch(
       aiConfigByTypeControllerProvider(
         configType: AiConfigType.prompt,
@@ -340,7 +374,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         final filteredPrompts =
             _filterService.filterPrompts(prompts, _filterState);
 
-        return AiSettingsConfigList<AiConfigPrompt>(
+        return AiSettingsConfigSliver<AiConfigPrompt>(
           configsAsync: promptsAsync,
           filteredConfigs: filteredPrompts,
           emptyMessage: 'No AI prompts configured',
@@ -353,9 +387,13 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(
-        child: Text('Error loading prompts: $error'),
+      loading: () => const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => SliverFillRemaining(
+        child: Center(
+          child: Text('Error loading prompts: $error'),
+        ),
       ),
     );
   }
