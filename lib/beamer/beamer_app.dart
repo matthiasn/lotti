@@ -208,8 +208,13 @@ class MyBeamerApp extends StatelessWidget {
         child: BlocBuilder<ThemingCubit, ThemingState>(
           builder: (context, themingSnapshot) {
             if (themingSnapshot.darkTheme == null) {
-              return const MaterialApp(
-                home: EmptyScaffoldWithTitle(
+              return MaterialApp(
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData.dark().copyWith(
+                  scaffoldBackgroundColor:
+                      context.colorScheme.surfaceContainerLowest,
+                ),
+                home: const EmptyScaffoldWithTitle(
                   '...',
                   body: CircularProgressIndicator(),
                 ),

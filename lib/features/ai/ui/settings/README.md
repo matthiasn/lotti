@@ -29,8 +29,44 @@ lib/features/ai/ui/settings/
 │   ├── ai_settings_search_bar.dart         # Search input component
 │   ├── ai_settings_tab_bar.dart            # Tab navigation component
 │   ├── ai_settings_filter_chips.dart       # Filter UI components
-│   └── ai_settings_config_list.dart        # Config list component
+│   ├── ai_settings_config_sliver.dart      # Sliver-based config list
+│   ├── ai_settings_fixed_header.dart       # Fixed header component
+│   ├── ai_settings_floating_action_button.dart # Contextual FAB
+│   ├── config_empty_state.dart             # Empty state UI
+│   ├── config_error_state.dart             # Error state UI
+│   ├── config_loading_state.dart           # Loading state UI
+│   ├── dismiss_background.dart             # Swipe-to-delete background
+│   └── dismissible_config_card.dart        # Dismissible card wrapper
 └── README.md                               # This documentation
+```
+
+## Architecture Overview
+
+### Sliver-Based Layout
+
+The AI Settings page uses a modern sliver-based architecture for optimal scrolling performance and proper scroll event propagation. This architecture was implemented to solve scroll propagation issues that occurred with the previous box-based layout.
+
+**Key Benefits:**
+- Smooth, performant scrolling with large lists
+- Proper scroll event propagation throughout the widget tree
+- Collapsing app bar with animated title
+- Sticky header section for search, tabs, and filters
+- Memory-efficient rendering of configuration lists
+
+**Layout Structure:**
+```dart
+CustomScrollView(
+  slivers: [
+    SliverAppBar(           // Collapsing title bar
+      flexibleSpace: FlexibleSpaceBar(...),
+    ),
+    SliverPinnedToBoxAdapter( // Sticky header
+      child: AiSettingsFixedHeader(...),
+    ),
+    // Dynamic content slivers based on active tab
+    AiSettingsConfigSliver(...),
+  ],
+)
 ```
 
 ## Components
@@ -75,6 +111,64 @@ AiConfigCard(
   onTap: () => navigateToEdit(config),
 )
 ```
+
+#### `AiSettingsConfigSliver`
+A sliver-based configuration list that replaces the previous box-based implementation.
+
+**Features:**
+- Proper sliver implementation for scroll propagation
+- Swipe-to-delete with confirmation
+- Loading, error, and empty states
+- Generic type support for all config types
+
+**Usage:**
+```dart
+AiSettingsConfigSliver<AiConfigModel>(
+  configsAsync: modelsAsync,
+  filteredConfigs: filteredModels,
+  emptyMessage: 'No AI models configured',
+  emptyIcon: Icons.smart_toy,
+  showCapabilities: true,
+  onConfigTap: _handleConfigTap,
+  onRetry: () => refetchData(),
+)
+```
+
+#### `AiSettingsFixedHeader`
+The sticky header section containing search, tabs, and filters.
+
+**Features:**
+- Search bar for filtering configurations
+- Tab bar for navigation between config types
+- Context-aware filter chips (models tab only)
+- Stays pinned when scrolling
+
+**Usage:**
+```dart
+SliverPinnedToBoxAdapter(
+  child: AiSettingsFixedHeader(
+    searchController: _searchController,
+    tabController: _tabController,
+    filterState: _filterState,
+    onSearchClear: _handleSearchClear,
+    onTabChanged: _handleTabChange,
+    onFilterChanged: _updateFilterState,
+  ),
+)
+```
+
+#### `AiSettingsFloatingActionButton`
+A context-aware FAB that changes based on the active tab.
+
+**Features:**
+- Dynamic icon and label per tab
+- Gradient icon container
+- Consistent styling
+
+**Tab Configurations:**
+- Providers: "Add Provider" with link icon
+- Models: "Add Model" with auto-awesome icon
+- Prompts: "Add Prompt" with edit-note icon
 
 ### State Management
 
@@ -262,9 +356,11 @@ testWidgets('switches tabs and updates filters', (tester) async {
 - No memory leaks in navigation
 
 ### 3. Rendering Performance
-- ListView.separated for efficient scrolling
+- Sliver-based lists for optimal performance
+- Lazy loading with SliverList delegates
 - Minimal rebuilds with proper state management
-- Optimized search field updates
+- Optimized search field updates with debouncing
+- Efficient scroll event propagation
 
 ## Accessibility
 
@@ -323,6 +419,27 @@ The modular architecture allows easy extension:
 - Add new navigation targets in `AiSettingsNavigationService`
 - Add new UI components in `widgets/` directory
 - Extend filter state in `AiSettingsFilterState`
+- Create custom state widgets following the pattern of `ConfigEmptyState`, etc.
+- Add new sliver implementations for different list behaviors
+
+## Widget Extraction Pattern
+
+The AI Settings module follows a consistent pattern of extracting reusable widgets:
+
+1. **State Widgets**: `ConfigEmptyState`, `ConfigErrorState`, `ConfigLoadingState`
+   - Single responsibility for each state
+   - Consistent UI across the module
+   - Easy to test in isolation
+
+2. **Composite Widgets**: `AiSettingsFixedHeader`, `DismissibleConfigCard`
+   - Combine multiple UI elements
+   - Encapsulate complex behavior
+   - Reduce parent widget complexity
+
+3. **Behavioral Widgets**: `DismissBackground`, `AiSettingsFloatingActionButton`
+   - Specific UI behaviors
+   - Reusable across different contexts
+   - Self-contained logic
 
 ## Contributing
 
