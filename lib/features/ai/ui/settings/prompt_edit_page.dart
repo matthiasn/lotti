@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/input_data_type_extensions.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
+import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
+import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -44,6 +47,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
         formState.modelIds.isNotEmpty &&
         formState.defaultModelId.isNotEmpty &&
         formState.modelIds.contains(formState.defaultModelId) &&
+        formState.requiredInputData.isNotEmpty &&
+        formState.aiResponseType.value != null &&
         (widget.configId == null || formState.isDirty);
 
     // Create save handler that can be used by both app bar action and keyboard shortcut
@@ -165,11 +170,11 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Basic Information Section
+          // Prompt Details Section
           AiFormSection(
-            title: 'Basic Information',
+            title: 'Prompt Details',
             icon: Icons.info_rounded,
-            description: 'Configure prompt details and behavior',
+            description: 'Basic information about this prompt',
             children: [
               // Display Name
               AiTextField(
@@ -227,23 +232,54 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
           ),
           const SizedBox(height: 32),
 
-          // Model Configuration Section
+          // Prompt Behavior Section
           AiFormSection(
-            title: 'Model Configuration',
-            icon: Icons.model_training_rounded,
-            description: 'Select compatible models and default',
-            children: [
-              _buildModelManagementButton(context, formState, formController),
-            ],
-          ),
-          const SizedBox(height: 32),
-
-          // Settings Section
-          AiFormSection(
-            title: 'Settings',
+            title: 'Prompt Behavior',
             icon: Icons.tune_rounded,
-            description: 'Configure prompt behavior',
+            description: 'Configure how the prompt processes and responds',
             children: [
+              // Required Input Data Selection
+              _buildSelectionCard(
+                context: context,
+                label: 'Required Input Data',
+                description: 'Type of data this prompt expects',
+                icon: Icons.input_rounded,
+                value: formState.requiredInputData.isEmpty
+                    ? 'Select input type'
+                    : formState.requiredInputData
+                        .map((type) => type.displayName(context))
+                        .join(', '),
+                hasError: formState.requiredInputData.isEmpty,
+                onTap: () {
+                  InputDataTypeSelectionModal.show(
+                    context: context,
+                    selectedTypes: formState.requiredInputData,
+                    onSave: formController.requiredInputDataChanged,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // AI Response Type Selection
+              _buildSelectionCard(
+                context: context,
+                label: 'AI Response Type',
+                description: 'Format of the expected response',
+                icon: Icons.output_rounded,
+                value: formState.aiResponseType.value?.localizedName(context) ??
+                    'Select response type',
+                hasError: formState.aiResponseType.error != null,
+                errorText: formState.aiResponseType.error?.displayMessage,
+                onTap: () {
+                  ResponseTypeSelectionModal.show(
+                    context: context,
+                    selectedType: formState.aiResponseType.value,
+                    onSave: formController.aiResponseTypeChanged,
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+
               // Reasoning Mode Switch
               AiSwitchField(
                 label: 'Reasoning Mode',
@@ -252,6 +288,17 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 onChanged: formController.useReasoningChanged,
                 icon: Icons.psychology_rounded,
               ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Model Selection Section
+          AiFormSection(
+            title: 'Model Selection',
+            icon: Icons.model_training_rounded,
+            description: 'Choose compatible models for this prompt',
+            children: [
+              _buildModelManagementButton(context, formState, formController),
             ],
           ),
           const SizedBox(height: 40),
@@ -712,4 +759,162 @@ class _ModelListItem extends ConsumerWidget {
     if (name.contains('haiku')) return Icons.flash_on_rounded;
     return Icons.smart_toy_rounded;
   }
+}
+
+Widget _buildSelectionCard({
+  required BuildContext context,
+  required String label,
+  required String description,
+  required IconData icon,
+  required String value,
+  required VoidCallback onTap,
+  bool hasError = false,
+  String? errorText,
+}) {
+  final isPlaceholder =
+      value == 'Select input type' || value == 'Select response type';
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Label
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant,
+                letterSpacing: 0.3,
+              ),
+            ),
+            if (hasError) ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.error_outline_rounded,
+                size: 16,
+                color: context.colorScheme.error,
+              ),
+            ],
+          ],
+        ),
+      ),
+      // Selection Card
+      Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  context.colorScheme.surfaceContainer.withValues(alpha: 0.3),
+                  context.colorScheme.surfaceContainerHigh
+                      .withValues(alpha: 0.2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: hasError
+                    ? context.colorScheme.error.withValues(alpha: 0.5)
+                    : context.colorScheme.primaryContainer
+                        .withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        context.colorScheme.primaryContainer
+                            .withValues(alpha: 0.3),
+                        context.colorScheme.primaryContainer
+                            .withValues(alpha: 0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color:
+                          context.colorScheme.primary.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: context.colorScheme.primary.withValues(alpha: 0.9),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: isPlaceholder
+                              ? context.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6)
+                              : context.colorScheme.onSurface,
+                        ),
+                      ),
+                      if (description.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Arrow
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: context.colorScheme.onSurfaceVariant
+                      .withValues(alpha: 0.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // Error text
+      if (hasError && errorText != null) ...[
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            errorText,
+            style: TextStyle(
+              fontSize: 12,
+              color: context.colorScheme.error,
+            ),
+          ),
+        ),
+      ],
+    ],
+  );
 }

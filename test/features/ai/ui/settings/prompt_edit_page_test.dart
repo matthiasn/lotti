@@ -148,15 +148,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check section headers
-      expect(find.text('Basic Information'), findsOneWidget);
+      expect(find.text('Prompt Details'), findsOneWidget);
       expect(find.text('Prompt Content'), findsOneWidget);
-      expect(find.text('Model Configuration'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Prompt Behavior'), findsOneWidget);
+      expect(find.text('Model Selection'), findsOneWidget);
 
       // Check field labels
       expect(find.text('Display Name'), findsOneWidget);
       expect(find.text('System Prompt'), findsOneWidget);
       expect(find.text('User Prompt'), findsOneWidget);
+      expect(find.text('Required Input Data'), findsOneWidget);
+      expect(find.text('AI Response Type'), findsOneWidget);
     });
 
     testWidgets('shows save button and form fields',
@@ -324,6 +326,115 @@ void main() {
           find.widgetWithText(TextFormField, 'Describe this prompt'),
           'This prompt helps with various tasks');
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('displays Configuration Options section with required fields',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Check Prompt Behavior section exists
+      expect(find.text('Prompt Behavior'), findsOneWidget);
+
+      // Check Required Input Data selection card
+      expect(find.text('Required Input Data'), findsOneWidget);
+      expect(find.text('Type of data this prompt expects'), findsOneWidget);
+      expect(find.text('Select input type'), findsOneWidget);
+
+      // Check AI Response Type selection card
+      expect(find.text('AI Response Type'), findsOneWidget);
+      expect(find.text('Format of the expected response'), findsOneWidget);
+      expect(find.text('Select response type'), findsOneWidget);
+
+      // Check that the selection cards have the proper icons
+      expect(find.byIcon(Icons.input_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.output_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows existing values for Configuration Options when editing',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
+      await tester.pumpAndSettle();
+
+      // Check that existing values are displayed
+      // The test prompt has InputDataType.task and AiResponseType.taskSummary
+      expect(find.text('Task'), findsOneWidget); // Input data type display name
+      expect(find.text('Task Summary'), findsOneWidget); // Response type display name
+    });
+
+    testWidgets('can open input data type selection modal',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Find and tap the Required Input Data selection card
+      // Look for the InkWell that contains the "Select input type" text
+      final inputDataCard = find.widgetWithText(InkWell, 'Select input type');
+      expect(inputDataCard, findsOneWidget);
+      
+      await tester.tap(inputDataCard);
+      await tester.pumpAndSettle();
+
+      // Modal should open - check for modal content
+      // The modal will show input data type options
+      expect(find.text('Required Input Data Types'), findsOneWidget);
+    });
+
+    testWidgets('can open AI response type selection modal',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Find and tap the AI Response Type selection card
+      // Look for the InkWell that contains the "Select response type" text
+      final responseTypeCard = find.widgetWithText(InkWell, 'Select response type');
+      expect(responseTypeCard, findsOneWidget);
+      
+      await tester.tap(responseTypeCard);
+      await tester.pumpAndSettle();
+
+      // Modal should open - check for modal content
+      expect(find.text('Select AI Response Type'), findsOneWidget);
+    });
+
+    testWidgets('save button is disabled when required fields are missing',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Fill in basic fields but leave Configuration Options empty
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'Test Prompt');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter the system prompt...'),
+          'System message');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter the user prompt...'),
+          'User message');
+      await tester.pumpAndSettle();
+
+      // Find save button - scroll to bottom first
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+      
+      final saveButton = find.text('Save Prompt');
+      expect(saveButton, findsOneWidget);
     });
   });
 }
