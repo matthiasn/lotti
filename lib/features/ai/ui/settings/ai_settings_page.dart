@@ -11,6 +11,8 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dar
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_fixed_header.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Main AI Settings page providing a unified interface for managing AI configurations
@@ -271,11 +273,17 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         );
       },
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: ConfigLoadingState(),
       ),
       error: (error, _) => SliverFillRemaining(
-        child: Center(
-          child: Text('Error loading providers: $error'),
+        hasScrollBody: false,
+        child: ConfigErrorState(
+          error: error,
+          onRetry: () => ref.invalidate(
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ),
+          ),
         ),
       ),
     );
@@ -310,11 +318,18 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         );
       },
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: ConfigLoadingState(),
       ),
       error: (error, _) => SliverFillRemaining(
-        child: Center(
-          child: Text('Error loading models: $error'),
+        hasScrollBody: false,
+        child: ConfigErrorState(
+          error: error,
+          onRetry: () => ref.invalidate(
+            aiConfigByTypeControllerProvider(
+              // reload the models
+              configType: AiConfigType.model,
+            ),
+          ),
         ),
       ),
     );
@@ -348,11 +363,17 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         );
       },
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: ConfigLoadingState(),
       ),
       error: (error, _) => SliverFillRemaining(
-        child: Center(
-          child: Text('Error loading prompts: $error'),
+        hasScrollBody: false,
+        child: ConfigErrorState(
+          error: error,
+          onRetry: () => ref.invalidate(
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ),
+          ),
         ),
       ),
     );

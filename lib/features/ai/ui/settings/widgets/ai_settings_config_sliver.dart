@@ -7,13 +7,11 @@ import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/dismissible_config_card.dart';
 
-// ignore_for_file: comment_references
-
 /// A sliver-based configuration list for AI settings
 ///
 /// This widget provides a performant, sliver-based list implementation that works
 /// seamlessly with [CustomScrollView] and properly propagates scroll events.
-/// It replaces the previous box-based [AiSettingsConfigList] to solve scroll
+/// It replaces the previous box-based AiSettingsConfigList to solve scroll
 /// propagation issues in the new sliver-based layout architecture.
 ///
 /// Features:

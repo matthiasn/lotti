@@ -1,4 +1,5 @@
-import 'package:extended_sliver/extended_sliver.dart' show SliverPinnedToBoxAdapter;
+import 'package:extended_sliver/extended_sliver.dart'
+    show SliverPinnedToBoxAdapter;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';

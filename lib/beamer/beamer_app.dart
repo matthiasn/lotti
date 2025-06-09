@@ -211,7 +211,8 @@ class MyBeamerApp extends StatelessWidget {
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
                 theme: ThemeData.dark().copyWith(
-                  scaffoldBackgroundColor: const Color(0xFF333333),
+                  scaffoldBackgroundColor:
+                      context.colorScheme.surfaceContainerLowest,
                 ),
                 home: const EmptyScaffoldWithTitle(
                   '...',

@@ -50,14 +50,23 @@ class AiSettingsSearchBar extends StatefulWidget {
 }
 
 class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
+  late final VoidCallback _listener;
+
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(() {
+    _listener = () {
       setState(() {
         // Rebuild when text changes to show/hide clear button
       });
-    });
+    };
+    widget.controller.addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_listener);
+    super.dispose();
   }
 
   @override

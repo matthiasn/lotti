@@ -167,7 +167,7 @@ A context-aware FAB that changes based on the active tab.
 
 **Tab Configurations:**
 - Providers: "Add Provider" with link icon
-- Models: "Add Model" with auto-awesome icon  
+- Models: "Add Model" with auto-awesome icon
 - Prompts: "Add Prompt" with edit-note icon
 
 ### State Management
