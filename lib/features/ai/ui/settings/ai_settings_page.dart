@@ -9,9 +9,8 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_tab_bar.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_fixed_header.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Main AI Settings page providing a unified interface for managing AI configurations
@@ -209,63 +208,24 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           ),
 
           // Fixed header with search, tabs and filters
-          SliverPinnedToBoxAdapter(child: _buildFixedHeader()),
+          SliverPinnedToBoxAdapter(
+            child: AiSettingsFixedHeader(
+              searchController: _searchController,
+              tabController: _tabController,
+              filterState: _filterState,
+              onSearchClear: _handleSearchClear,
+              onTabChanged: _handleTabChange,
+              onFilterChanged: _updateFilterState,
+            ),
+          ),
 
           // Main content
           ..._buildTabContentSlivers(),
         ],
       ),
-      floatingActionButton: _buildFloatingActionButton(),
-    );
-  }
-
-  /// Builds the fixed header with search, tabs, and filters
-  Widget _buildFixedHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Search bar - always visible
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: AiSettingsSearchBar(
-              controller: _searchController,
-              onChanged: (_) => {}, // Handled by controller listener
-              onClear: _handleSearchClear,
-            ),
-          ),
-
-          // Tab Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: AiSettingsTabBar(
-              controller: _tabController,
-              onTabChanged: _handleTabChange,
-            ),
-          ),
-
-          // Model Filters (only shown on Models tab)
-          if (_filterState.activeTab == AiSettingsTab.models)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: AiSettingsFilterChips(
-                  filterState: _filterState,
-                  onFilterChanged: _updateFilterState,
-                ),
-              ),
-            )
-          else
-            const SizedBox(height: 10),
-        ],
+      floatingActionButton: AiSettingsFloatingActionButton(
+        activeTab: _filterState.activeTab,
+        onPressed: _handleAddTap,
       ),
     );
   }
@@ -393,56 +353,6 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       error: (error, _) => SliverFillRemaining(
         child: Center(
           child: Text('Error loading prompts: $error'),
-        ),
-      ),
-    );
-  }
-
-  /// Builds a stylish floating action button with contextual icon and label
-  Widget _buildFloatingActionButton() {
-    final (icon, label) = switch (_filterState.activeTab) {
-      AiSettingsTab.providers => (Icons.add_link_rounded, 'Add Provider'),
-      AiSettingsTab.models => (Icons.auto_awesome_rounded, 'Add Model'),
-      AiSettingsTab.prompts => (Icons.edit_note_rounded, 'Add Prompt'),
-    };
-
-    return Container(
-      margin: const EdgeInsets.only(right: 20, bottom: 20),
-      child: FloatingActionButton.extended(
-        onPressed: _handleAddTap,
-        icon: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                context.colorScheme.onPrimary.withValues(alpha: 0.2),
-                context.colorScheme.onPrimary.withValues(alpha: 0.1),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: context.colorScheme.onPrimary,
-          ),
-        ),
-        label: Text(
-          label,
-          style: context.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: context.colorScheme.onPrimary,
-          ),
-        ),
-        backgroundColor: context.colorScheme.primary,
-        foregroundColor: context.colorScheme.onPrimary,
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );

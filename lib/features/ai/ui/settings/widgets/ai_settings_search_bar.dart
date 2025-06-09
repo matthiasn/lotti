@@ -41,7 +41,7 @@ class AiSettingsSearchBar extends StatefulWidget {
 
   /// Hint text displayed when field is empty
   final String hintText;
-  
+
   /// Whether to use a more compact style (for app bar)
   final bool isCompact;
 
@@ -65,26 +65,34 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
     return Container(
       height: widget.isCompact ? 36 : 48,
       decoration: BoxDecoration(
-        gradient: widget.isCompact ? null : LinearGradient(
-          colors: [
-            context.colorScheme.surfaceContainer,
-            context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        color: widget.isCompact ? context.colorScheme.surfaceContainer.withValues(alpha: 0.8) : null,
+        gradient: widget.isCompact
+            ? null
+            : LinearGradient(
+                colors: [
+                  context.colorScheme.surfaceContainer,
+                  context.colorScheme.surfaceContainerHigh
+                      .withValues(alpha: 0.8),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+        color: widget.isCompact
+            ? context.colorScheme.surfaceContainer.withValues(alpha: 0.8)
+            : null,
         borderRadius: BorderRadius.circular(widget.isCompact ? 12 : 16),
         border: Border.all(
-          color: context.colorScheme.primaryContainer.withValues(alpha: widget.isCompact ? 0.1 : 0.2),
+          color: context.colorScheme.primaryContainer
+              .withValues(alpha: widget.isCompact ? 0.1 : 0.2),
         ),
-        boxShadow: widget.isCompact ? [] : [
-          BoxShadow(
-            color: context.colorScheme.shadow.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: widget.isCompact
+            ? []
+            : [
+                BoxShadow(
+                  color: context.colorScheme.shadow.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: TextField(
         controller: widget.controller,

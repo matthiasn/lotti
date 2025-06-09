@@ -2,14 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
-import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/config_empty_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/dismissible_config_card.dart';
 
-/// A sliver variant of AiSettingsConfigList that preserves all design and functionality
-/// while properly propagating scroll events in CustomScrollView
+// ignore_for_file: comment_references
+
+/// A sliver-based configuration list for AI settings
 ///
-/// This widget provides the same beautiful cards and swipe-to-delete functionality
-/// as AiSettingsConfigList but returns proper slivers for better scroll behavior.
+/// This widget provides a performant, sliver-based list implementation that works
+/// seamlessly with [CustomScrollView] and properly propagates scroll events.
+/// It replaces the previous box-based [AiSettingsConfigList] to solve scroll
+/// propagation issues in the new sliver-based layout architecture.
+///
+/// Features:
+/// - Proper sliver implementation for smooth scrolling
+/// - Beautiful card design with swipe-to-delete functionality
+/// - Loading, error, and empty states
+/// - Generic type support for all AI configuration types
+/// - Optional capability indicators for models
+///
+/// The widget uses extracted state components for better maintainability:
+/// - [ConfigLoadingState] for loading UI
+/// - [ConfigErrorState] for error UI with retry
+/// - [ConfigEmptyState] for empty list UI
+/// - [DismissibleConfigCard] for swipeable cards
 class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
   const AiSettingsConfigSliver({
     required this.configsAsync,
@@ -73,12 +91,12 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             if (index >= filteredConfigs.length * 2 - 1) return null;
-            
+
             // Add spacing between cards
             if (index.isOdd) {
               return const SizedBox(height: 8);
             }
-            
+
             final configIndex = index ~/ 2;
             final config = filteredConfigs[configIndex];
 
@@ -91,94 +109,14 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
               );
             }
 
-            return _buildDismissibleCard(context, ref, config);
+            return DismissibleConfigCard(
+              config: config,
+              showCapabilities: showCapabilities,
+              isCompact: isCompact,
+              onTap: () => onConfigTap(config),
+            );
           },
           childCount: filteredConfigs.length * 2 - 1,
-        ),
-      ),
-    );
-  }
-
-  /// Builds a dismissible card with stylish delete background
-  Widget _buildDismissibleCard(
-    BuildContext context,
-    WidgetRef ref,
-    T config,
-  ) {
-    return Dismissible(
-      key: ValueKey(config.id),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        const deleteService = AiConfigDeleteService();
-        return deleteService.deleteConfig(
-          context: context,
-          ref: ref,
-          config: config,
-        );
-      },
-      background: _buildDismissBackground(context),
-      child: AiConfigCard(
-        config: config,
-        showCapabilities: showCapabilities,
-        isCompact: isCompact,
-        onTap: () => onConfigTap(config),
-      ),
-    );
-  }
-
-  /// Builds the stylish delete background for dismissible cards
-  Widget _buildDismissBackground(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [
-            context.colorScheme.errorContainer.withValues(alpha: 0.1),
-            context.colorScheme.error.withValues(alpha: 0.9),
-            context.colorScheme.error,
-          ],
-          stops: const [0.0, 0.7, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: context.colorScheme.error.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.onError.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.delete_forever_rounded,
-                    color: context.colorScheme.onError,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Delete',
-                  style: context.textTheme.labelMedium?.copyWith(
-                    color: context.colorScheme.onError,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );
@@ -188,47 +126,9 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
   Widget _buildEmptySliver(BuildContext context) {
     return SliverFillRemaining(
       hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    context.colorScheme.primaryContainer.withValues(alpha: 0.15),
-                    context.colorScheme.primaryContainer.withValues(alpha: 0.25),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Icon(
-                emptyIcon,
-                size: 40,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              emptyMessage,
-              style: context.textTheme.titleMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the + button to add one',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
+      child: ConfigEmptyState(
+        message: emptyMessage,
+        icon: emptyIcon,
       ),
     );
   }
@@ -236,9 +136,7 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
   /// Builds the loading state sliver
   Widget _buildLoadingSliver() {
     return const SliverFillRemaining(
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: ConfigLoadingState(),
     );
   }
 
@@ -246,38 +144,9 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
   Widget _buildErrorSliver(BuildContext context, Object error) {
     return SliverFillRemaining(
       hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: context.colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading configurations',
-              style: context.textTheme.titleMedium?.copyWith(
-                color: context.colorScheme.error,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: context.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ],
-        ),
+      child: ConfigErrorState(
+        error: error,
+        onRetry: onRetry,
       ),
     );
   }

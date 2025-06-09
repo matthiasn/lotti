@@ -199,8 +199,7 @@ void main() {
       expect(find.byIcon(Icons.visibility_off_rounded), findsOneWidget);
     });
 
-    testWidgets('has cancel and save buttons',
-        (WidgetTester tester) async {
+    testWidgets('has cancel and save buttons', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -242,20 +241,21 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'), 'AB');
       await tester.pumpAndSettle();
-      
+
       // The form validates on change - validation errors may appear
-      
-      // Test URL validation - invalid format  
+
+      // Test URL validation - invalid format
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'not-a-url');
       await tester.pumpAndSettle();
-      
+
       // The form validates on change - validation errors may appear
-      
+
       // Enter valid data to verify errors disappear
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'), 'Valid Name');
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'Valid Name');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://valid.url.com');
@@ -338,8 +338,7 @@ void main() {
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://test.com');
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-key');
+          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
       await tester.pumpAndSettle();
 
       // Verify CallbackShortcuts widget exists

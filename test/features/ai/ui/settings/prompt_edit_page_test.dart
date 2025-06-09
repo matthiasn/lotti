@@ -172,12 +172,13 @@ void main() {
       expect(saveButton, findsOneWidget);
 
       // Verify form fields exist
-      expect(find.widgetWithText(TextFormField, 'Enter a friendly name'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Enter the system prompt...'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Enter the user prompt...'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Enter the system prompt...'),
+          findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Enter the user prompt...'),
+          findsOneWidget);
     });
-
-
 
     testWidgets('toggles reasoning mode switch', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
@@ -260,7 +261,6 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-
     testWidgets('saves modified prompt data', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -309,8 +309,7 @@ void main() {
       expect(find.byType(CallbackShortcuts), findsWidgets);
     });
 
-    testWidgets('displays description field',
-        (WidgetTester tester) async {
+    testWidgets('displays description field', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -319,7 +318,7 @@ void main() {
 
       // Check for description field
       expect(find.text('Description'), findsOneWidget);
-      
+
       // This should accept text input
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Describe this prompt'),
