@@ -193,7 +193,8 @@ void main() {
       );
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('${l10n.promptErrorLoadingModel}: test-model-id'), findsOneWidget);
+      expect(find.text('${l10n.promptErrorLoadingModel}: test-model-id'),
+          findsOneWidget);
     });
   });
 
@@ -417,7 +418,8 @@ void main() {
 
       expect(find.text('Model 1'), findsOneWidget);
       expect(find.text('Model 2'), findsOneWidget);
-      expect(find.text(l10n.promptDefaultModelBadge), findsOneWidget); // Only model1 is default
+      expect(find.text(l10n.promptDefaultModelBadge),
+          findsOneWidget); // Only model1 is default
     });
 
     testWidgets('handles loading state for models',

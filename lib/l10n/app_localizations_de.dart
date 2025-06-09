@@ -1074,6 +1074,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get enhancedPromptFormQuickStartTitle => 'Quick Start';
 
   @override
+  String get enhancedPromptFormQuickStartDescription =>
+      'Start with a pre-built template to save time';
+
+  @override
   String get enhancedPromptFormBasicConfigurationTitle => 'Basic Configuration';
 
   @override

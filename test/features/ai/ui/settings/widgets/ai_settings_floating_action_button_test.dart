@@ -40,13 +40,15 @@ void main() {
       ));
 
       await tester.pumpAndSettle(); // Wait for localization
-      
+
       expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
       // Check that FAB contains text (localized)
-      expect(find.descendant(
-        of: find.byType(FloatingActionButton),
-        matching: find.byType(Text),
-      ), findsOneWidget);
+      expect(
+          find.descendant(
+            of: find.byType(FloatingActionButton),
+            matching: find.byType(Text),
+          ),
+          findsOneWidget);
     });
 
     testWidgets('displays correct icon and label for models tab',
@@ -56,13 +58,15 @@ void main() {
       ));
 
       await tester.pumpAndSettle(); // Wait for localization
-      
+
       expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
       // Check that FAB contains text (localized)
-      expect(find.descendant(
-        of: find.byType(FloatingActionButton),
-        matching: find.byType(Text),
-      ), findsOneWidget);
+      expect(
+          find.descendant(
+            of: find.byType(FloatingActionButton),
+            matching: find.byType(Text),
+          ),
+          findsOneWidget);
     });
 
     testWidgets('displays correct icon and label for prompts tab',
@@ -72,13 +76,15 @@ void main() {
       ));
 
       await tester.pumpAndSettle(); // Wait for localization
-      
+
       expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
       // Check that FAB contains text (localized)
-      expect(find.descendant(
-        of: find.byType(FloatingActionButton),
-        matching: find.byType(Text),
-      ), findsOneWidget);
+      expect(
+          find.descendant(
+            of: find.byType(FloatingActionButton),
+            matching: find.byType(Text),
+          ),
+          findsOneWidget);
     });
 
     testWidgets('calls onPressed when tapped', (WidgetTester tester) async {
@@ -191,7 +197,7 @@ void main() {
       ));
 
       await tester.pumpAndSettle(); // Wait for localization
-      
+
       final text = tester.widget<Text>(find.descendant(
         of: find.byType(FloatingActionButton),
         matching: find.byType(Text),
@@ -218,7 +224,7 @@ void main() {
       ));
 
       await tester.pumpAndSettle();
-      
+
       // Check correct icon for providers
       expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
       expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
