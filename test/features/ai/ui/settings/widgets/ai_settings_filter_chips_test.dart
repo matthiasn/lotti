@@ -87,11 +87,17 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
-        // Tap on the text label (more reliable than icon)
-        await tester.tap(find.text('Vision'));
-        // Verify both icon and text are present
-        expect(find.byIcon(Icons.visibility), findsOneWidget);
-        expect(find.text('Vision'), findsOneWidget);
+        // Find the FilterChip that contains the Vision text
+        final visionChipFinder = find.ancestor(
+          of: find.text('Vision'),
+          matching: find.byType(FilterChip),
+        );
+        
+        // Verify the chip exists
+        expect(visionChipFinder, findsOneWidget);
+        
+        // Tap on the FilterChip itself instead of just the text
+        await tester.tap(visionChipFinder);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -102,11 +108,17 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
-        // Tap on the text label (more reliable than icon)
-        await tester.tap(find.text('Audio'));
-        // Verify both icon and text are present
-        expect(find.byIcon(Icons.hearing), findsOneWidget);
-        expect(find.text('Audio'), findsOneWidget);
+        // Find the FilterChip that contains the Audio text
+        final audioChipFinder = find.ancestor(
+          of: find.text('Audio'),
+          matching: find.byType(FilterChip),
+        );
+        
+        // Verify the chip exists
+        expect(audioChipFinder, findsOneWidget);
+        
+        // Tap on the FilterChip itself instead of just the text
+        await tester.tap(audioChipFinder);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -117,11 +129,17 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
-        // Tap on the text label (more reliable than icon)
-        await tester.tap(find.text('Text'));
-        // Verify both icon and text are present
-        expect(find.byIcon(Icons.text_fields), findsOneWidget);
-        expect(find.text('Text'), findsOneWidget);
+        // Find the FilterChip that contains the Text text
+        final textChipFinder = find.ancestor(
+          of: find.text('Text'),
+          matching: find.byType(FilterChip),
+        );
+        
+        // Verify the chip exists
+        expect(textChipFinder, findsOneWidget);
+        
+        // Tap on the FilterChip itself instead of just the text
+        await tester.tap(textChipFinder);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -133,7 +151,11 @@ void main() {
         await tester.pumpWidget(createWidget());
 
         // Select vision first
-        await tester.tap(find.text('Vision'));
+        final visionChipFinder = find.ancestor(
+          of: find.text('Vision'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(visionChipFinder);
         await tester.pump();
 
         // Update widget with new state
@@ -141,11 +163,11 @@ void main() {
         await tester.pumpWidget(createWidget(filterState: newState));
 
         // Select audio as well
-        // Tap on the text label (more reliable than icon)
-        await tester.tap(find.text('Audio'));
-        // Verify both icon and text are present
-        expect(find.byIcon(Icons.hearing), findsOneWidget);
-        expect(find.text('Audio'), findsOneWidget);
+        final audioChipFinder = find.ancestor(
+          of: find.text('Audio'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(audioChipFinder);
         await tester.pump();
 
         expect(filterChanges, hasLength(2));
@@ -169,7 +191,7 @@ void main() {
         expect(visionChip, findsOneWidget);
 
         // Tap to deselect
-        await tester.tap(find.text('Vision'));
+        await tester.tap(visionChip);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));

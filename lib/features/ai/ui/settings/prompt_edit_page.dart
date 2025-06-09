@@ -250,6 +250,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                     : formState.requiredInputData
                         .map((type) => type.displayName(context))
                         .join(', '),
+                isPlaceholderValue: formState.requiredInputData.isEmpty,
                 hasError: formState.requiredInputData.isEmpty,
                 onTap: () {
                   InputDataTypeSelectionModal.show(
@@ -269,6 +270,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 icon: Icons.output_rounded,
                 value: formState.aiResponseType.value?.localizedName(context) ??
                     context.messages.promptSelectResponseTypeHint,
+                isPlaceholderValue: formState.aiResponseType.value == null,
                 hasError: formState.aiResponseType.error != null,
                 errorText: formState.aiResponseType.error?.displayMessage,
                 onTap: () {
@@ -770,12 +772,12 @@ Widget _buildSelectionCard({
   required String description,
   required IconData icon,
   required String value,
+  required bool isPlaceholderValue,
   required VoidCallback onTap,
   bool hasError = false,
   String? errorText,
 }) {
-  final isPlaceholder = value == context.messages.promptSelectInputTypeHint ||
-      value == context.messages.promptSelectResponseTypeHint;
+  final isPlaceholder = isPlaceholderValue;
 
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
