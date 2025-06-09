@@ -123,29 +123,31 @@ class _EnhancedInferenceProviderFormState
               title: 'Authentication',
               icon: Icons.security_outlined,
               children: [
-                // API Key
-                EnhancedFormField(
-                  controller: formController.apiKeyController,
-                  labelText: 'API Key',
-                  formzField: formState.apiKey,
-                  onChanged: formController.apiKeyChanged,
-                  obscureText: !_showApiKey,
-                  prefixIcon: const Icon(Icons.key_outlined),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _showApiKey
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+                // API Key - only show for non-FastWhisper providers
+                if (formState.inferenceProviderType !=
+                    InferenceProviderType.fastWhisper)
+                  EnhancedFormField(
+                    controller: formController.apiKeyController,
+                    labelText: 'API Key',
+                    formzField: formState.apiKey,
+                    onChanged: formController.apiKeyChanged,
+                    obscureText: !_showApiKey,
+                    prefixIcon: const Icon(Icons.key_outlined),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _showApiKey
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      onPressed: () => setState(() {
+                        _showApiKey = !_showApiKey;
+                      }),
+                      tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
                     ),
-                    onPressed: () => setState(() {
-                      _showApiKey = !_showApiKey;
-                    }),
-                    tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
+                    isRequired: true,
+                    helperText:
+                        'Your API key for authenticating with this provider',
                   ),
-                  isRequired: true,
-                  helperText:
-                      'Your API key for authenticating with this provider',
-                ),
               ],
             ),
 

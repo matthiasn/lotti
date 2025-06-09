@@ -15,10 +15,10 @@ import 'package:lotti/themes/theme.dart';
 class SelectionOption extends StatelessWidget {
   const SelectionOption({
     required this.title,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
     this.description,
+    this.icon,
     this.selectionIndicator,
     super.key,
   });
@@ -30,7 +30,7 @@ class SelectionOption extends StatelessWidget {
   final String? description;
 
   /// Icon to display
-  final IconData icon;
+  final IconData? icon;
 
   /// Whether this option is currently selected
   final bool isSelected;
@@ -43,82 +43,56 @@ class SelectionOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected
-            ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : context.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.6),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected
-              ? context.colorScheme.primary.withValues(alpha: 0.6)
-              : context.colorScheme.outline.withValues(alpha: 0.1),
-          width: 2,
-        ),
-        boxShadow: [
-          if (isSelected)
-            BoxShadow(
-              color: context.colorScheme.primary.withValues(alpha: 0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            )
-          else
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? context.colorScheme.primaryContainer : null,
+            border: Border.all(
+              color: isSelected
+                  ? context.colorScheme.primary
+                  : context.colorScheme.outline.withValues(alpha: 0.3),
+              width: 2,
             ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: context.colorScheme.primary.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                // Icon container
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? context.colorScheme.primary.withValues(alpha: 0.15)
-                        : context.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? context.colorScheme.primary.withValues(alpha: 0.3)
-                          : Colors.transparent,
-                    ),
-                  ),
-                  child: Icon(
+                if (icon != null) ...[
+                  Icon(
                     icon,
+                    size: 24,
                     color: isSelected
                         ? context.colorScheme.primary
-                        : context.colorScheme.onSurface.withValues(alpha: 0.8),
-                    size: 24,
+                        : context.colorScheme.onSurfaceVariant,
                   ),
-                ),
-
-                const SizedBox(width: 16),
-
-                // Content
+                  const SizedBox(width: 16),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: context.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style: context.textTheme.bodyLarge?.copyWith(
                           color: isSelected
                               ? context.colorScheme.primary
                               : context.colorScheme.onSurface,
-                          height: 1.3,
+                          fontWeight: isSelected ? FontWeight.w600 : null,
                         ),
                       ),
                       if (description != null) ...[
@@ -126,9 +100,7 @@ class SelectionOption extends StatelessWidget {
                         Text(
                           description!,
                           style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
-                            height: 1.4,
+                            color: context.colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -137,64 +109,25 @@ class SelectionOption extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // Selection indicator
-                if (selectionIndicator != null)
-                  selectionIndicator!
-                else
-                  _DefaultSelectionIndicator(isSelected: isSelected),
+                if (selectionIndicator != null) ...[
+                  const SizedBox(width: 16),
+                  selectionIndicator!,
+                ] else ...[
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.check_rounded,
+                    color: isSelected
+                        ? context.colorScheme.primary
+                        : Colors.transparent,
+                    size: 24,
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-/// Default selection indicator (checkmark when selected, empty circle when not)
-class _DefaultSelectionIndicator extends StatelessWidget {
-  const _DefaultSelectionIndicator({
-    required this.isSelected,
-  });
-
-  final bool isSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isSelected) {
-      return Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: context.colorScheme.primary,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: context.colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.check_rounded,
-          color: context.colorScheme.onPrimary,
-          size: 16,
-        ),
-      );
-    } else {
-      return Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: context.colorScheme.outline.withValues(alpha: 0.3),
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-      );
-    }
   }
 }
 

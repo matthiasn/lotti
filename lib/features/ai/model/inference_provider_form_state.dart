@@ -112,7 +112,7 @@ class InferenceProviderFormState with FormzMixin {
   @override
   List<FormzInput<String, dynamic>> get inputs => [
         name,
-        apiKey,
+        if (inferenceProviderType != InferenceProviderType.fastWhisper) apiKey,
         baseUrl,
         description,
       ];
@@ -122,7 +122,9 @@ class InferenceProviderFormState with FormzMixin {
     return AiConfig.inferenceProvider(
       id: id ?? uuid.v1(),
       name: name.value,
-      apiKey: apiKey.value,
+      apiKey: inferenceProviderType == InferenceProviderType.fastWhisper
+          ? ''
+          : apiKey.value,
       baseUrl: baseUrl.value,
       description: description.value,
       createdAt: DateTime.now(),

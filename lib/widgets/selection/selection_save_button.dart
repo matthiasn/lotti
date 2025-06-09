@@ -25,31 +25,46 @@ class SelectionSaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEnabled = onPressed != null;
+    final colorScheme = context.colorScheme;
+
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
+      child: FilledButton(
         onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        label: Text(
-          label ?? context.messages.saveButtonLabel,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: context.colorScheme.primary,
-          foregroundColor: context.colorScheme.onPrimary,
-          disabledBackgroundColor:
-              context.colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
-          disabledForegroundColor:
-              context.colorScheme.onSurface.withValues(alpha: 0.4),
-          elevation: onPressed != null ? 3 : 0,
-          shadowColor: context.colorScheme.primary.withValues(alpha: 0.3),
+        style: FilledButton.styleFrom(
+          backgroundColor: isEnabled
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
+          foregroundColor:
+              isEnabled ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: isEnabled
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label ?? context.messages.saveButtonLabel,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: isEnabled
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
