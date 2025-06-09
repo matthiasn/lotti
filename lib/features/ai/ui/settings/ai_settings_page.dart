@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_fixed_header.d
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Main AI Settings page providing a unified interface for managing AI configurations
@@ -188,7 +189,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             ),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                'AI Settings',
+                context.messages.aiSettingsPageTitle,
                 style: TextStyle(
                   color: context.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
@@ -262,7 +263,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         return AiSettingsConfigSliver<AiConfigInferenceProvider>(
           configsAsync: providersAsync,
           filteredConfigs: filteredProviders,
-          emptyMessage: 'No AI providers configured',
+          emptyMessage: context.messages.aiSettingsNoProvidersConfigured,
           emptyIcon: Icons.hub,
           onConfigTap: _handleConfigTap,
           onRetry: () => ref.invalidate(
@@ -306,7 +307,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         return AiSettingsConfigSliver<AiConfigModel>(
           configsAsync: modelsAsync,
           filteredConfigs: filteredModels,
-          emptyMessage: 'No AI models configured',
+          emptyMessage: context.messages.aiSettingsNoModelsConfigured,
           emptyIcon: Icons.smart_toy,
           onConfigTap: _handleConfigTap,
           showCapabilities: true,
@@ -352,7 +353,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         return AiSettingsConfigSliver<AiConfigPrompt>(
           configsAsync: promptsAsync,
           filteredConfigs: filteredPrompts,
-          emptyMessage: 'No AI prompts configured',
+          emptyMessage: context.messages.aiSettingsNoPromptsConfigured,
           emptyIcon: Icons.psychology,
           onConfigTap: _handleConfigTap,
           onRetry: () => ref.invalidate(

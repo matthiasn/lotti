@@ -172,14 +172,14 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
         children: [
           // Prompt Details Section
           AiFormSection(
-            title: 'Prompt Details',
+            title: context.messages.promptDetailsTitle,
             icon: Icons.info_rounded,
-            description: 'Basic information about this prompt',
+            description: context.messages.promptDetailsDescription,
             children: [
               // Display Name
               AiTextField(
-                label: 'Display Name',
-                hint: 'Enter a friendly name',
+                label: context.messages.promptDisplayNameLabel,
+                hint: context.messages.promptDisplayNameHint,
                 controller: formController.nameController,
                 onChanged: formController.nameChanged,
                 validator: (_) => formState.name.error?.displayMessage,
@@ -189,8 +189,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
               // Description
               AiTextField(
-                label: 'Description',
-                hint: 'Describe this prompt',
+                label: context.messages.promptDescriptionLabel,
+                hint: context.messages.promptDescriptionHint,
                 controller: formController.descriptionController,
                 onChanged: formController.descriptionChanged,
                 validator: (_) => formState.description.error?.displayMessage,
@@ -204,14 +204,14 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
           // Prompt Content Section
           AiFormSection(
-            title: 'Prompt Content',
+            title: context.messages.promptContentTitle,
             icon: Icons.edit_note_rounded,
-            description: 'Define the system and user prompts',
+            description: context.messages.promptContentDescription,
             children: [
               // System Prompt
               AiTextField(
-                label: 'System Prompt',
-                hint: 'Enter the system prompt...',
+                label: context.messages.promptSystemPromptLabel,
+                hint: context.messages.promptSystemPromptHint,
                 controller: formController.systemMessageController,
                 onChanged: formController.systemMessageChanged,
                 validator: (_) => formState.systemMessage.error?.displayMessage,
@@ -221,8 +221,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
               // User Prompt
               AiTextField(
-                label: 'User Prompt',
-                hint: 'Enter the user prompt...',
+                label: context.messages.promptUserPromptLabel,
+                hint: context.messages.promptUserPromptHint,
                 controller: formController.userMessageController,
                 onChanged: formController.userMessageChanged,
                 validator: (_) => formState.userMessage.error?.displayMessage,
@@ -234,18 +234,19 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
           // Prompt Behavior Section
           AiFormSection(
-            title: 'Prompt Behavior',
+            title: context.messages.promptBehaviorTitle,
             icon: Icons.tune_rounded,
-            description: 'Configure how the prompt processes and responds',
+            description: context.messages.promptBehaviorDescription,
             children: [
               // Required Input Data Selection
               _buildSelectionCard(
                 context: context,
-                label: 'Required Input Data',
-                description: 'Type of data this prompt expects',
+                label: context.messages.promptRequiredInputDataLabel,
+                description:
+                    context.messages.promptRequiredInputDataDescription,
                 icon: Icons.input_rounded,
                 value: formState.requiredInputData.isEmpty
-                    ? 'Select input type'
+                    ? context.messages.promptSelectInputTypeHint
                     : formState.requiredInputData
                         .map((type) => type.displayName(context))
                         .join(', '),
@@ -263,11 +264,11 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
               // AI Response Type Selection
               _buildSelectionCard(
                 context: context,
-                label: 'AI Response Type',
-                description: 'Format of the expected response',
+                label: context.messages.promptAiResponseTypeLabel,
+                description: context.messages.promptAiResponseTypeDescription,
                 icon: Icons.output_rounded,
                 value: formState.aiResponseType.value?.localizedName(context) ??
-                    'Select response type',
+                    context.messages.promptSelectResponseTypeHint,
                 hasError: formState.aiResponseType.error != null,
                 errorText: formState.aiResponseType.error?.displayMessage,
                 onTap: () {
@@ -282,8 +283,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
               // Reasoning Mode Switch
               AiSwitchField(
-                label: 'Reasoning Mode',
-                description: 'Enable for prompts requiring deep thinking',
+                label: context.messages.promptReasoningModeLabel,
+                description: context.messages.promptReasoningModeDescription,
                 value: formState.useReasoning,
                 onChanged: formController.useReasoningChanged,
                 icon: Icons.psychology_rounded,
@@ -294,9 +295,9 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
           // Model Selection Section
           AiFormSection(
-            title: 'Model Selection',
+            title: context.messages.promptModelSelectionTitle,
             icon: Icons.model_training_rounded,
-            description: 'Choose compatible models for this prompt',
+            description: context.messages.promptModelSelectionDescription,
             children: [
               _buildModelManagementButton(context, formState, formController),
             ],
@@ -308,7 +309,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
             children: [
               Expanded(
                 child: AiFormButton(
-                  label: 'Cancel',
+                  label: context.messages.promptCancelButton,
                   onPressed: () => Navigator.of(context).pop(),
                   style: AiButtonStyle.secondary,
                   fullWidth: true,
@@ -317,7 +318,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AiFormButton(
-                  label: 'Save Prompt',
+                  label: context.messages.promptSaveButton,
                   onPressed: isFormValid ? handleSave : null,
                   icon: Icons.save_rounded,
                   fullWidth: true,
@@ -402,7 +403,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'No models selected. Select at least one model.',
+                    context.messages.promptNoModelsSelectedError,
                     style: TextStyle(
                       color: context.colorScheme.error,
                       fontWeight: FontWeight.w500,
@@ -417,7 +418,9 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
 
         // Manage Models Button
         AiFormButton(
-          label: modelCount > 0 ? 'Add or Remove Models' : 'Select Models',
+          label: modelCount > 0
+              ? context.messages.promptAddOrRemoveModelsButton
+              : context.messages.promptSelectModelsButton,
           onPressed: () {
             showModelManagementModal(
               context: context,
@@ -472,7 +475,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Please try again or contact support',
+              context.messages.promptTryAgainMessage,
               style: TextStyle(
                 fontSize: 14,
                 color: context.colorScheme.onSurfaceVariant,
@@ -481,7 +484,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
             ),
             const SizedBox(height: 24),
             AiFormButton(
-              label: 'Go Back',
+              label: context.messages.promptGoBackButton,
               onPressed: () => Navigator.of(context).pop(),
               icon: Icons.arrow_back_rounded,
               style: AiButtonStyle.secondary,
@@ -635,7 +638,7 @@ class _ModelListItem extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Default',
+                            context.messages.promptDefaultModelBadge,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -663,7 +666,7 @@ class _ModelListItem extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Set Default',
+                            context.messages.promptSetDefaultButton,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -710,15 +713,15 @@ class _ModelListItem extends ConsumerWidget {
           color: context.colorScheme.surfaceContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 12),
-            Text('Loading model...'),
+            const SizedBox(width: 12),
+            Text(context.messages.promptLoadingModel),
           ],
         ),
       ),
@@ -740,7 +743,7 @@ class _ModelListItem extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Error loading model',
+              context.messages.promptErrorLoadingModel,
               style: TextStyle(color: context.colorScheme.error),
             ),
           ],
@@ -771,8 +774,8 @@ Widget _buildSelectionCard({
   bool hasError = false,
   String? errorText,
 }) {
-  final isPlaceholder =
-      value == 'Select input type' || value == 'Select response type';
+  final isPlaceholder = value == context.messages.promptSelectInputTypeHint ||
+      value == context.messages.promptSelectResponseTypeHint;
 
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,

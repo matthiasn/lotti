@@ -65,7 +65,8 @@ import 'app_localizations_ro.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -73,7 +74,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -85,7 +87,8 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -1848,6 +1851,420 @@ abstract class AppLocalizations {
   /// **'Use Preconfigured Prompt'**
   String get promptUsePreconfiguredButton;
 
+  /// No description provided for @promptDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Details'**
+  String get promptDetailsTitle;
+
+  /// No description provided for @promptDetailsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information about this prompt'**
+  String get promptDetailsDescription;
+
+  /// No description provided for @promptContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Content'**
+  String get promptContentTitle;
+
+  /// No description provided for @promptContentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the system and user prompts'**
+  String get promptContentDescription;
+
+  /// No description provided for @promptBehaviorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Behavior'**
+  String get promptBehaviorTitle;
+
+  /// No description provided for @promptBehaviorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure how the prompt processes and responds'**
+  String get promptBehaviorDescription;
+
+  /// No description provided for @promptModelSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model Selection'**
+  String get promptModelSelectionTitle;
+
+  /// No description provided for @promptModelSelectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose compatible models for this prompt'**
+  String get promptModelSelectionDescription;
+
+  /// No description provided for @promptDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get promptDisplayNameLabel;
+
+  /// No description provided for @promptDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a friendly name'**
+  String get promptDisplayNameHint;
+
+  /// No description provided for @promptDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get promptDescriptionLabel;
+
+  /// No description provided for @promptDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe this prompt'**
+  String get promptDescriptionHint;
+
+  /// No description provided for @promptSystemPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System Prompt'**
+  String get promptSystemPromptLabel;
+
+  /// No description provided for @promptSystemPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the system prompt...'**
+  String get promptSystemPromptHint;
+
+  /// No description provided for @promptUserPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User Prompt'**
+  String get promptUserPromptLabel;
+
+  /// No description provided for @promptUserPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the user prompt...'**
+  String get promptUserPromptHint;
+
+  /// No description provided for @promptRequiredInputDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Required Input Data'**
+  String get promptRequiredInputDataLabel;
+
+  /// No description provided for @promptRequiredInputDataDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Type of data this prompt expects'**
+  String get promptRequiredInputDataDescription;
+
+  /// No description provided for @promptSelectInputTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select input type'**
+  String get promptSelectInputTypeHint;
+
+  /// No description provided for @promptAiResponseTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Response Type'**
+  String get promptAiResponseTypeLabel;
+
+  /// No description provided for @promptAiResponseTypeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Format of the expected response'**
+  String get promptAiResponseTypeDescription;
+
+  /// No description provided for @promptSelectResponseTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select response type'**
+  String get promptSelectResponseTypeHint;
+
+  /// No description provided for @promptReasoningModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning Mode'**
+  String get promptReasoningModeLabel;
+
+  /// No description provided for @promptReasoningModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable for prompts requiring deep thinking'**
+  String get promptReasoningModeDescription;
+
+  /// No description provided for @promptCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get promptCancelButton;
+
+  /// No description provided for @promptSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Prompt'**
+  String get promptSaveButton;
+
+  /// No description provided for @promptNoModelsSelectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'No models selected. Select at least one model.'**
+  String get promptNoModelsSelectedError;
+
+  /// No description provided for @promptAddOrRemoveModelsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add or Remove Models'**
+  String get promptAddOrRemoveModelsButton;
+
+  /// No description provided for @promptSelectModelsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Models'**
+  String get promptSelectModelsButton;
+
+  /// No description provided for @promptDefaultModelBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get promptDefaultModelBadge;
+
+  /// No description provided for @promptSetDefaultButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Default'**
+  String get promptSetDefaultButton;
+
+  /// No description provided for @promptLoadingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading model...'**
+  String get promptLoadingModel;
+
+  /// No description provided for @promptErrorLoadingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading model'**
+  String get promptErrorLoadingModel;
+
+  /// No description provided for @promptGoBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get promptGoBackButton;
+
+  /// No description provided for @promptTryAgainMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again or contact support'**
+  String get promptTryAgainMessage;
+
+  /// No description provided for @modelManagementSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} model{count, plural, =1{} other{s}} selected'**
+  String modelManagementSelectedCount(int count);
+
+  /// No description provided for @enhancedPromptFormDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create custom prompts that can be used with your AI models to generate specific types of responses'**
+  String get enhancedPromptFormDescription;
+
+  /// No description provided for @enhancedPromptFormQuickStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Start'**
+  String get enhancedPromptFormQuickStartTitle;
+
+  /// No description provided for @enhancedPromptFormBasicConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Configuration'**
+  String get enhancedPromptFormBasicConfigurationTitle;
+
+  /// No description provided for @enhancedPromptFormPromptConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Configuration'**
+  String get enhancedPromptFormPromptConfigurationTitle;
+
+  /// No description provided for @enhancedPromptFormConfigurationOptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration Options'**
+  String get enhancedPromptFormConfigurationOptionsTitle;
+
+  /// No description provided for @enhancedPromptFormAdditionalDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details'**
+  String get enhancedPromptFormAdditionalDetailsTitle;
+
+  /// No description provided for @enhancedPromptFormDisplayNameHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'A descriptive name for this prompt template'**
+  String get enhancedPromptFormDisplayNameHelperText;
+
+  /// No description provided for @enhancedPromptFormUserMessageHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'The main prompt text.'**
+  String get enhancedPromptFormUserMessageHelperText;
+
+  /// No description provided for @enhancedPromptFormSystemMessageHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions that define the AI\'s behavior and response style'**
+  String get enhancedPromptFormSystemMessageHelperText;
+
+  /// No description provided for @enhancedPromptFormDescriptionHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional notes about this prompt\'s purpose and usage'**
+  String get enhancedPromptFormDescriptionHelperText;
+
+  /// No description provided for @enhancedPromptFormPreconfiguredPromptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from ready-made prompt templates'**
+  String get enhancedPromptFormPreconfiguredPromptDescription;
+
+  /// No description provided for @enhancedPromptFormRequiredInputDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type of data this prompt expects'**
+  String get enhancedPromptFormRequiredInputDataSubtitle;
+
+  /// No description provided for @enhancedPromptFormAiResponseTypeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Format of the expected response'**
+  String get enhancedPromptFormAiResponseTypeSubtitle;
+
+  /// No description provided for @aiSettingsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Settings'**
+  String get aiSettingsPageTitle;
+
+  /// No description provided for @aiSettingsNoProvidersConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI providers configured'**
+  String get aiSettingsNoProvidersConfigured;
+
+  /// No description provided for @aiSettingsNoModelsConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI models configured'**
+  String get aiSettingsNoModelsConfigured;
+
+  /// No description provided for @aiSettingsNoPromptsConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI prompts configured'**
+  String get aiSettingsNoPromptsConfigured;
+
+  /// No description provided for @aiSettingsTabProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get aiSettingsTabProviders;
+
+  /// No description provided for @aiSettingsTabModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get aiSettingsTabModels;
+
+  /// No description provided for @aiSettingsTabPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompts'**
+  String get aiSettingsTabPrompts;
+
+  /// No description provided for @aiSettingsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search AI configurations...'**
+  String get aiSettingsSearchHint;
+
+  /// No description provided for @aiSettingsFilterByProviderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {provider}'**
+  String aiSettingsFilterByProviderTooltip(String provider);
+
+  /// No description provided for @aiSettingsClearFiltersButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get aiSettingsClearFiltersButton;
+
+  /// No description provided for @aiSettingsClearAllFiltersTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all filters'**
+  String get aiSettingsClearAllFiltersTooltip;
+
+  /// No description provided for @aiSettingsModalityText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get aiSettingsModalityText;
+
+  /// No description provided for @aiSettingsModalityVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision'**
+  String get aiSettingsModalityVision;
+
+  /// No description provided for @aiSettingsModalityAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get aiSettingsModalityAudio;
+
+  /// No description provided for @aiSettingsReasoningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning'**
+  String get aiSettingsReasoningLabel;
+
+  /// No description provided for @aiSettingsFilterByCapabilityTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {capability} capability'**
+  String aiSettingsFilterByCapabilityTooltip(String capability);
+
+  /// No description provided for @aiSettingsFilterByReasoningTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by reasoning capability'**
+  String get aiSettingsFilterByReasoningTooltip;
+
+  /// No description provided for @aiSettingsAddProviderButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Provider'**
+  String get aiSettingsAddProviderButton;
+
+  /// No description provided for @aiSettingsAddModelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Model'**
+  String get aiSettingsAddModelButton;
+
+  /// No description provided for @aiSettingsAddPromptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Prompt'**
+  String get aiSettingsAddPromptButton;
+
   /// No description provided for @saveButtonLabel.
   ///
   /// In en, this message translates to:
@@ -2410,7 +2827,8 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'You\'ve successfully verified {deviceName} ({deviceID})'**
-  String settingsMatrixVerificationSuccessLabel(String deviceName, String deviceID);
+  String settingsMatrixVerificationSuccessLabel(
+      String deviceName, String deviceID);
 
   /// No description provided for @settingsMatrixVerifyConfirm.
   ///
@@ -2923,7 +3341,8 @@ abstract class AppLocalizations {
   String get viewMenuTitle;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -2932,37 +3351,43 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr', 'ro'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['de', 'en', 'es', 'fr', 'ro'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
   // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
-    case 'en': {
-  switch (locale.countryCode) {
-    case 'GB': return AppLocalizationsEnGb();
-   }
-  break;
-   }
+    case 'en':
+      {
+        switch (locale.countryCode) {
+          case 'GB':
+            return AppLocalizationsEnGb();
+        }
+        break;
+      }
   }
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'de': return AppLocalizationsDe();
-    case 'en': return AppLocalizationsEn();
-    case 'es': return AppLocalizationsEs();
-    case 'fr': return AppLocalizationsFr();
-    case 'ro': return AppLocalizationsRo();
+    case 'de':
+      return AppLocalizationsDe();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'ro':
+      return AppLocalizationsRo();
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

@@ -77,7 +77,7 @@ void showModelManagementModal({
             builder: (context, selectedIdsValue, _) {
               final count = selectedIdsValue.length;
               return Text(
-                '$count model${count == 1 ? '' : 's'} selected',
+                context.messages.modelManagementSelectedCount(count),
                 style: modalContext.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w400,
                   letterSpacing: -0.5,
@@ -608,7 +608,7 @@ class _ModelCard extends StatelessWidget {
                                 ],
                               ),
                               child: Text(
-                                'Default',
+                                context.messages.promptDefaultModelBadge,
                                 style: context.textTheme.labelSmall?.copyWith(
                                   color: context.colorScheme.onPrimary,
                                   fontWeight: FontWeight.w600,

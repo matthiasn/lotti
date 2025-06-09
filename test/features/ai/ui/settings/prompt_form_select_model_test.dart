@@ -179,7 +179,7 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading model...'), findsOneWidget);
+      expect(find.text(l10n.promptLoadingModel), findsOneWidget);
     });
   });
 
@@ -193,7 +193,7 @@ void main() {
       );
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('Error: test-model-id'), findsOneWidget);
+      expect(find.text('${l10n.promptErrorLoadingModel}: test-model-id'), findsOneWidget);
     });
   });
 
@@ -417,7 +417,7 @@ void main() {
 
       expect(find.text('Model 1'), findsOneWidget);
       expect(find.text('Model 2'), findsOneWidget);
-      expect(find.text('Default'), findsOneWidget); // Only model1 is default
+      expect(find.text(l10n.promptDefaultModelBadge), findsOneWidget); // Only model1 is default
     });
 
     testWidgets('handles loading state for models',
@@ -703,7 +703,7 @@ void main() {
       expect(find.text('Third Model'), findsOneWidget);
 
       // Verify default badge is on the correct model
-      expect(find.text('Default'), findsOneWidget);
+      expect(find.text(l10n.promptDefaultModelBadge), findsOneWidget);
 
       // Remove a non-default model
       await tester.drag(

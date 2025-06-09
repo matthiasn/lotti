@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_tab_bar.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// The fixed header section of the AI Settings page
@@ -85,13 +86,18 @@ class AiSettingsFixedHeader extends StatelessWidget {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: AiSettingsSearchBar(
-        controller: searchController,
-        onChanged: (_) => {}, // Handled by controller listener
-        onClear: onSearchClear,
-      ),
+    return Builder(
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: AiSettingsSearchBar(
+            controller: searchController,
+            onChanged: (_) => {}, // Handled by controller listener
+            onClear: onSearchClear,
+            hintText: context.messages.aiSettingsSearchHint,
+          ),
+        );
+      },
     );
   }
 

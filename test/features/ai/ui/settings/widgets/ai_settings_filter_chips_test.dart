@@ -42,9 +42,13 @@ void main() {
         await tester.pumpWidget(createWidget());
 
         // Should show capability chips for text, image, audio
+        // Check both icons and labels
         expect(find.text('Text'), findsOneWidget);
+        expect(find.byIcon(Icons.text_fields), findsOneWidget);
         expect(find.text('Vision'), findsOneWidget);
+        expect(find.byIcon(Icons.visibility), findsOneWidget);
         expect(find.text('Audio'), findsOneWidget);
+        expect(find.byIcon(Icons.hearing), findsOneWidget);
       });
 
       testWidgets('displays reasoning filter chip',
@@ -52,6 +56,7 @@ void main() {
         await tester.pumpWidget(createWidget());
 
         expect(find.text('Reasoning'), findsOneWidget);
+        expect(find.byIcon(Icons.psychology), findsOneWidget);
       });
 
       testWidgets('shows clear filters action when filters are active',
@@ -82,7 +87,11 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
+        // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Vision'));
+        // Verify both icon and text are present
+        expect(find.byIcon(Icons.visibility), findsOneWidget);
+        expect(find.text('Vision'), findsOneWidget);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -93,7 +102,11 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
+        // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Audio'));
+        // Verify both icon and text are present
+        expect(find.byIcon(Icons.hearing), findsOneWidget);
+        expect(find.text('Audio'), findsOneWidget);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -104,7 +117,11 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
+        // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Text'));
+        // Verify both icon and text are present
+        expect(find.byIcon(Icons.text_fields), findsOneWidget);
+        expect(find.text('Text'), findsOneWidget);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -124,7 +141,11 @@ void main() {
         await tester.pumpWidget(createWidget(filterState: newState));
 
         // Select audio as well
+        // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Audio'));
+        // Verify both icon and text are present
+        expect(find.byIcon(Icons.hearing), findsOneWidget);
+        expect(find.text('Audio'), findsOneWidget);
         await tester.pump();
 
         expect(filterChanges, hasLength(2));
@@ -160,7 +181,11 @@ void main() {
       testWidgets('toggles reasoning filter on', (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
+        // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Reasoning'));
+        // Verify both icon and text are present
+        expect(find.byIcon(Icons.psychology), findsOneWidget);
+        expect(find.text('Reasoning'), findsOneWidget);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -174,7 +199,11 @@ void main() {
 
         await tester.pumpWidget(createWidget(filterState: filterState));
 
+        // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Reasoning'));
+        // Verify both icon and text are present
+        expect(find.byIcon(Icons.psychology), findsOneWidget);
+        expect(find.text('Reasoning'), findsOneWidget);
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
@@ -271,11 +300,15 @@ void main() {
           (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
-        // Check that chips are semantically labeled
+        // Check that chips have proper icons and labels
         expect(find.text('Text'), findsOneWidget);
+        expect(find.byIcon(Icons.text_fields), findsOneWidget);
         expect(find.text('Vision'), findsOneWidget);
+        expect(find.byIcon(Icons.visibility), findsOneWidget);
         expect(find.text('Audio'), findsOneWidget);
+        expect(find.byIcon(Icons.hearing), findsOneWidget);
         expect(find.text('Reasoning'), findsOneWidget);
+        expect(find.byIcon(Icons.psychology), findsOneWidget);
       });
 
       testWidgets('maintains focus after chip selection',
@@ -344,25 +377,20 @@ void main() {
       testWidgets('wraps chips properly when space is constrained',
           (WidgetTester tester) async {
         // Create a narrow container to test wrapping
-        await tester.pumpWidget(ProviderScope(
-          overrides: [
-            aiConfigByTypeControllerProvider(
-                    configType: AiConfigType.inferenceProvider)
-                .overrideWith(
-                    () => MockAiConfigByTypeController(mockProviders)),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 200, // Narrow width to force wrapping
-                child: AiSettingsFilterChips(
-                  filterState: initialFilterState,
-                  onFilterChanged: (_) {},
-                ),
+        await tester.pumpWidget(
+          AiTestSetup.createTestApp(
+            providerOverrides: AiTestSetup.createControllerOverrides(
+              providers: mockProviders,
+            ),
+            child: SizedBox(
+              width: 200, // Narrow width to force wrapping
+              child: AiSettingsFilterChips(
+                filterState: initialFilterState,
+                onFilterChanged: (_) {},
               ),
             ),
           ),
-        ));
+        );
 
         // Should show at least the capability chips (3 capabilities + 1 reasoning)
         expect(find.byType(FilterChip),

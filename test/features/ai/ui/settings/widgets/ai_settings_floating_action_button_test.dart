@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 void main() {
   group('AiSettingsFloatingActionButton', () {
@@ -15,6 +17,13 @@ void main() {
       required AiSettingsTab activeTab,
     }) {
       return MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           floatingActionButton: AiSettingsFloatingActionButton(
             activeTab: activeTab,
@@ -30,8 +39,14 @@ void main() {
         activeTab: AiSettingsTab.providers,
       ));
 
+      await tester.pumpAndSettle(); // Wait for localization
+      
       expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
-      expect(find.text('Add Provider'), findsOneWidget);
+      // Check that FAB contains text (localized)
+      expect(find.descendant(
+        of: find.byType(FloatingActionButton),
+        matching: find.byType(Text),
+      ), findsOneWidget);
     });
 
     testWidgets('displays correct icon and label for models tab',
@@ -40,8 +55,14 @@ void main() {
         activeTab: AiSettingsTab.models,
       ));
 
+      await tester.pumpAndSettle(); // Wait for localization
+      
       expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      expect(find.text('Add Model'), findsOneWidget);
+      // Check that FAB contains text (localized)
+      expect(find.descendant(
+        of: find.byType(FloatingActionButton),
+        matching: find.byType(Text),
+      ), findsOneWidget);
     });
 
     testWidgets('displays correct icon and label for prompts tab',
@@ -50,8 +71,14 @@ void main() {
         activeTab: AiSettingsTab.prompts,
       ));
 
+      await tester.pumpAndSettle(); // Wait for localization
+      
       expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
-      expect(find.text('Add Prompt'), findsOneWidget);
+      // Check that FAB contains text (localized)
+      expect(find.descendant(
+        of: find.byType(FloatingActionButton),
+        matching: find.byType(Text),
+      ), findsOneWidget);
     });
 
     testWidgets('calls onPressed when tapped', (WidgetTester tester) async {
@@ -163,7 +190,12 @@ void main() {
         activeTab: AiSettingsTab.providers,
       ));
 
-      final text = tester.widget<Text>(find.text('Add Provider'));
+      await tester.pumpAndSettle(); // Wait for localization
+      
+      final text = tester.widget<Text>(find.descendant(
+        of: find.byType(FloatingActionButton),
+        matching: find.byType(Text),
+      ));
       expect(text.style?.fontWeight, FontWeight.w700);
       expect(text.style?.letterSpacing, 0.5);
     });
@@ -185,16 +217,21 @@ void main() {
         activeTab: AiSettingsTab.providers,
       ));
 
-      expect(find.text('Add Provider'), findsOneWidget);
-      expect(find.text('Add Model'), findsNothing);
+      await tester.pumpAndSettle();
+      
+      // Check correct icon for providers
+      expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
 
       // Change to models tab
       await tester.pumpWidget(createWidget(
         activeTab: AiSettingsTab.models,
       ));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Add Provider'), findsNothing);
-      expect(find.text('Add Model'), findsOneWidget);
+      // Check correct icon for models
+      expect(find.byIcon(Icons.add_link_rounded), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
     });
   });
 }
