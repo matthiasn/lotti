@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/preconfigured_prompt_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -98,7 +99,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+                titlePadding: const EdgeInsets.only(bottom: 16),
                 title: Text(
                   widget.configId == null
                       ? context.messages.promptAddPageTitle
@@ -170,6 +171,23 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
+          // Quick Start Section (only for new prompts)
+          if (widget.configId == null) ...[
+            AiFormSection(
+              title: context.messages.enhancedPromptFormQuickStartTitle,
+              icon: Icons.rocket_launch_rounded,
+              description:
+                  context.messages.enhancedPromptFormQuickStartDescription,
+              children: [
+                PreconfiguredPromptButton(
+                  onPromptSelected:
+                      formController.populateFromPreconfiguredPrompt,
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
+
           // Prompt Details Section
           AiFormSection(
             title: context.messages.promptDetailsTitle,

@@ -92,10 +92,10 @@ void main() {
           of: find.text('Vision'),
           matching: find.byType(FilterChip),
         );
-        
+
         // Verify the chip exists
         expect(visionChipFinder, findsOneWidget);
-        
+
         // Tap on the FilterChip itself instead of just the text
         await tester.tap(visionChipFinder);
         await tester.pump();
@@ -113,10 +113,10 @@ void main() {
           of: find.text('Audio'),
           matching: find.byType(FilterChip),
         );
-        
+
         // Verify the chip exists
         expect(audioChipFinder, findsOneWidget);
-        
+
         // Tap on the FilterChip itself instead of just the text
         await tester.tap(audioChipFinder);
         await tester.pump();
@@ -134,10 +134,10 @@ void main() {
           of: find.text('Text'),
           matching: find.byType(FilterChip),
         );
-        
+
         // Verify the chip exists
         expect(textChipFinder, findsOneWidget);
-        
+
         // Tap on the FilterChip itself instead of just the text
         await tester.tap(textChipFinder);
         await tester.pump();

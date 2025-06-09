@@ -2079,6 +2079,12 @@ abstract class AppLocalizations {
   /// **'Quick Start'**
   String get enhancedPromptFormQuickStartTitle;
 
+  /// No description provided for @enhancedPromptFormQuickStartDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with a pre-built template to save time'**
+  String get enhancedPromptFormQuickStartDescription;
+
   /// No description provided for @enhancedPromptFormBasicConfigurationTitle.
   ///
   /// In en, this message translates to:

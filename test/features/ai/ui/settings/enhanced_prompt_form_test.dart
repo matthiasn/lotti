@@ -183,8 +183,8 @@ void main() {
 
       // Assert - Quick Start section should be visible
       expect(find.textContaining('Quick Start'), findsOneWidget);
-      expect(
-          find.textContaining('Choose from ready-made prompt templates'), findsOneWidget);
+      expect(find.textContaining('Choose from ready-made prompt templates'),
+          findsOneWidget);
       expect(find.byIcon(Icons.rocket_launch_outlined), findsOneWidget);
     });
 
@@ -224,8 +224,10 @@ void main() {
 
       // Check field labels - using textContaining for localized strings
       expect(find.textContaining('Display Name'), findsOneWidget);
-      expect(find.textContaining('User'), findsAtLeastNWidgets(1)); // User Message/Prompt
-      expect(find.textContaining('System'), findsAtLeastNWidgets(1)); // System Message/Prompt
+      expect(find.textContaining('User'),
+          findsAtLeastNWidgets(1)); // User Message/Prompt
+      expect(find.textContaining('System'),
+          findsAtLeastNWidgets(1)); // System Message/Prompt
       expect(find.textContaining('Description'), findsOneWidget);
 
       // Check for model selection
@@ -265,12 +267,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - check for helper texts (using partial matches for localization)
-      expect(find.textContaining('descriptive name'),
-          findsOneWidget);
+      expect(find.textContaining('descriptive name'), findsOneWidget);
       expect(find.textContaining('main prompt text'), findsOneWidget);
-      expect(
-          find.textContaining(
-              "Instructions that define the AI's behavior"),
+      expect(find.textContaining("Instructions that define the AI's behavior"),
           findsOneWidget);
       expect(find.textContaining("Optional notes about this prompt's purpose"),
           findsOneWidget);
@@ -336,10 +335,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - check for configuration option titles and icons
-      expect(find.textContaining('Required Input Data'), findsAtLeastNWidgets(1));
+      expect(
+          find.textContaining('Required Input Data'), findsAtLeastNWidgets(1));
       expect(find.textContaining('AI Response Type'), findsAtLeastNWidgets(1));
-      expect(find.textContaining('Type of data this prompt expects'), findsOneWidget);
-      expect(find.textContaining('Format of the expected response'), findsOneWidget);
+      expect(find.textContaining('Type of data this prompt expects'),
+          findsOneWidget);
+      expect(find.textContaining('Format of the expected response'),
+          findsOneWidget);
 
       // Check for icons
       expect(find.byIcon(Icons.input_rounded), findsOneWidget);
