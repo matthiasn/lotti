@@ -387,6 +387,7 @@
   },
   "enhancedPromptFormDescription": "Create custom prompts that can be used with your AI models to generate specific types of responses",
   "enhancedPromptFormQuickStartTitle": "Quick Start",
+  "enhancedPromptFormQuickStartDescription": "Start with a pre-built template to save time",
   "enhancedPromptFormBasicConfigurationTitle": "Basic Configuration",
   "enhancedPromptFormPromptConfigurationTitle": "Prompt Configuration",
   "enhancedPromptFormConfigurationOptionsTitle": "Configuration Options",

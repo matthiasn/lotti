@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/prompt_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/preconfigured_prompt_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_form_select_model.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_input_type_selection.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_response_type_selection.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/preconfigured_prompt_button.dart';
 import 'package:lotti/features/ai/ui/widgets/enhanced_form_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -72,15 +72,9 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
                 title: context.messages.enhancedPromptFormQuickStartTitle,
                 icon: Icons.rocket_launch_outlined,
                 children: [
-                  _PreconfiguredPromptButton(
-                    onPressed: () async {
-                      final selectedPrompt =
-                          await showPreconfiguredPromptSelectionModal(context);
-                      if (selectedPrompt != null) {
-                        formController
-                            .populateFromPreconfiguredPrompt(selectedPrompt);
-                      }
-                    },
+                  PreconfiguredPromptButton(
+                    onPromptSelected:
+                        formController.populateFromPreconfiguredPrompt,
                   ),
                 ],
               ),
@@ -203,91 +197,6 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
             const SizedBox(height: 40),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Preconfigured prompt selection button
-class _PreconfiguredPromptButton extends StatelessWidget {
-  const _PreconfiguredPromptButton({
-    required this.onPressed,
-  });
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.colorScheme.primaryContainer.withValues(alpha: 0.3),
-            context.colorScheme.primaryContainer.withValues(alpha: 0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: context.colorScheme.primary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.auto_awesome_rounded,
-                    color: context.colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.messages.promptUsePreconfiguredButton,
-                        style: context.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: context.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        context.messages
-                            .enhancedPromptFormPreconfiguredPromptDescription,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.colorScheme.onSurface
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: context.colorScheme.primary,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

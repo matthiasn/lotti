@@ -97,7 +97,7 @@ class _InferenceProviderEditPageState
                 onPressed: () => Navigator.of(context).pop(),
               ),
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+                titlePadding: const EdgeInsets.only(bottom: 16),
                 title: Text(
                   widget.configId == null
                       ? context.messages.apiKeyAddPageTitle

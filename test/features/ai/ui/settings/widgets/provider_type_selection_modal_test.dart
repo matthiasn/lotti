@@ -185,7 +185,7 @@ void main() {
           of: find.textContaining('Anthropic'),
           matching: find.byType(InkWell),
         );
-        
+
         // Test tapping a card (it should close the modal)
         await tester.tap(anthropicCard.first);
         await tester.pumpAndSettle();

@@ -191,6 +191,10 @@ void main() {
       // Find reasoning mode switch
       final reasoningSwitch = find.byType(Switch);
       if (reasoningSwitch.evaluate().isNotEmpty) {
+        // Ensure the switch is visible by scrolling
+        await tester.ensureVisible(reasoningSwitch.first);
+        await tester.pumpAndSettle();
+
         // Tap to toggle
         await tester.tap(reasoningSwitch.first);
         await tester.pumpAndSettle();
@@ -364,7 +368,8 @@ void main() {
       // Check that existing values are displayed
       // The test prompt has InputDataType.task and AiResponseType.taskSummary
       expect(find.text('Task'), findsOneWidget); // Input data type display name
-      expect(find.text('Task Summary'), findsOneWidget); // Response type display name
+      expect(find.text('Task Summary'),
+          findsOneWidget); // Response type display name
     });
 
     testWidgets('can open input data type selection modal',
@@ -379,7 +384,7 @@ void main() {
       // Look for the InkWell that contains the "Select input type" text
       final inputDataCard = find.widgetWithText(InkWell, 'Select input type');
       expect(inputDataCard, findsOneWidget);
-      
+
       await tester.tap(inputDataCard);
       await tester.pumpAndSettle();
 
@@ -398,9 +403,10 @@ void main() {
 
       // Find and tap the AI Response Type selection card
       // Look for the InkWell that contains the "Select response type" text
-      final responseTypeCard = find.widgetWithText(InkWell, 'Select response type');
+      final responseTypeCard =
+          find.widgetWithText(InkWell, 'Select response type');
       expect(responseTypeCard, findsOneWidget);
-      
+
       await tester.tap(responseTypeCard);
       await tester.pumpAndSettle();
 
@@ -431,7 +437,7 @@ void main() {
       // Find save button - scroll to bottom first
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
-      
+
       final saveButton = find.text('Save Prompt');
       expect(saveButton, findsOneWidget);
     });

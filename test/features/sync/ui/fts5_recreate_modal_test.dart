@@ -135,9 +135,6 @@ void main() {
     await tester.tap(find.text(confirmText));
     await tester.pumpAndSettle();
 
-    // Debug print to inspect the widget tree
-    debugDumpApp();
-
     // Should show error state
     expect(find.text('Test error'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);

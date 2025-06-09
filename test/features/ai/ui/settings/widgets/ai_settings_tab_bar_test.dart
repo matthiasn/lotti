@@ -58,7 +58,7 @@ void main() {
         // Check that we have the correct number of tabs
         final tabs = find.byType(Tab);
         expect(tabs, findsNWidgets(3));
-        
+
         // Since the text is localized, we'll verify by checking tab structure
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
         expect(tabBar.tabs.length, 3);
