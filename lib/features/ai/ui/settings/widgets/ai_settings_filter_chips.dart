@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Widget that displays filter chips for AI model filtering
@@ -120,7 +121,8 @@ class AiSettingsFilterChips extends ConsumerWidget {
                   ),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  tooltip: 'Filter by ${provider.name}',
+                  tooltip: context.messages
+                      .aiSettingsFilterByProviderTooltip(provider.name),
                 );
               }),
 
@@ -146,7 +148,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                               context.colorScheme.error.withValues(alpha: 0.7),
                         ),
                         label: Text(
-                          'Clear',
+                          context.messages.aiSettingsClearFiltersButton,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -166,7 +168,8 @@ class AiSettingsFilterChips extends ConsumerWidget {
                         ),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
-                        tooltip: 'Clear all filters',
+                        tooltip:
+                            context.messages.aiSettingsClearAllFiltersTooltip,
                       )
                     : const SizedBox.shrink(key: ValueKey('no_clear_button')),
               ),
@@ -182,9 +185,17 @@ class AiSettingsFilterChips extends ConsumerWidget {
   /// Builds the capability filters section
   Widget _buildCapabilityFilters(BuildContext context) {
     final capabilities = [
-      (Modality.text, Icons.text_fields, 'Text'),
-      (Modality.image, Icons.visibility, 'Vision'),
-      (Modality.audio, Icons.hearing, 'Audio'),
+      (
+        Modality.text,
+        Icons.text_fields,
+        context.messages.aiSettingsModalityText
+      ),
+      (
+        Modality.image,
+        Icons.visibility,
+        context.messages.aiSettingsModalityVision
+      ),
+      (Modality.audio, Icons.hearing, context.messages.aiSettingsModalityAudio),
     ];
 
     return Wrap(
@@ -231,14 +242,15 @@ class AiSettingsFilterChips extends ConsumerWidget {
                   : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            tooltip: 'Filter by $label capability',
+            tooltip:
+                context.messages.aiSettingsFilterByCapabilityTooltip(label),
           );
         }),
 
         // Reasoning filter
         FilterChip(
           avatar: const Icon(Icons.psychology, size: 16),
-          label: const Text('Reasoning'),
+          label: Text(context.messages.aiSettingsReasoningLabel),
           selected: filterState.reasoningFilter,
           onSelected: (selected) {
             onFilterChanged(filterState.copyWith(
@@ -265,7 +277,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                 : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          tooltip: 'Filter by reasoning capability',
+          tooltip: context.messages.aiSettingsFilterByReasoningTooltip,
         ),
       ],
     );

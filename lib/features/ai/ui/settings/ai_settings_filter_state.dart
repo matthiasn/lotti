@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 part 'ai_settings_filter_state.freezed.dart';
 
@@ -92,4 +94,19 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
         selectedCapabilities: const {},
         reasoningFilter: false,
       );
+}
+
+/// Extension to add localized display names for AiSettingsTab
+extension AiSettingsTabX on AiSettingsTab {
+  /// Returns the localized display name for the tab
+  String getLocalizedDisplayName(BuildContext context) {
+    switch (this) {
+      case AiSettingsTab.providers:
+        return context.messages.aiSettingsTabProviders;
+      case AiSettingsTab.models:
+        return context.messages.aiSettingsTabModels;
+      case AiSettingsTab.prompts:
+        return context.messages.aiSettingsTabPrompts;
+    }
+  }
 }

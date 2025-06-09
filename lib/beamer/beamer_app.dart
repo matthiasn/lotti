@@ -210,13 +210,10 @@ class MyBeamerApp extends StatelessWidget {
             if (themingSnapshot.darkTheme == null) {
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
-                theme: ThemeData.dark().copyWith(
-                  scaffoldBackgroundColor:
-                      context.colorScheme.surfaceContainerLowest,
-                ),
+                theme: ThemeData.dark()
+                    .copyWith(scaffoldBackgroundColor: Colors.black87),
                 home: const EmptyScaffoldWithTitle(
-                  '...',
-                  body: CircularProgressIndicator(),
+                  'Loading...',
                 ),
               );
             }

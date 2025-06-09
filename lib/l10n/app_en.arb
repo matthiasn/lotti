@@ -342,6 +342,96 @@
   "promptSettingsPageTitle": "AI Prompts",
   "promptSelectionModalTitle": "Select Preconfigured Prompt",
   "promptUsePreconfiguredButton": "Use Preconfigured Prompt",
+  "promptDetailsTitle": "Prompt Details",
+  "promptDetailsDescription": "Basic information about this prompt",
+  "promptContentTitle": "Prompt Content",
+  "promptContentDescription": "Define the system and user prompts",
+  "promptBehaviorTitle": "Prompt Behavior",
+  "promptBehaviorDescription": "Configure how the prompt processes and responds",
+  "promptModelSelectionTitle": "Model Selection",
+  "promptModelSelectionDescription": "Choose compatible models for this prompt",
+  "promptDisplayNameLabel": "Display Name",
+  "promptDisplayNameHint": "Enter a friendly name",
+  "promptDescriptionLabel": "Description",
+  "promptDescriptionHint": "Describe this prompt",
+  "promptSystemPromptLabel": "System Prompt",
+  "promptSystemPromptHint": "Enter the system prompt...",
+  "promptUserPromptLabel": "User Prompt",
+  "promptUserPromptHint": "Enter the user prompt...",
+  "promptRequiredInputDataLabel": "Required Input Data",
+  "promptRequiredInputDataDescription": "Type of data this prompt expects",
+  "promptSelectInputTypeHint": "Select input type",
+  "promptAiResponseTypeLabel": "AI Response Type",
+  "promptAiResponseTypeDescription": "Format of the expected response",
+  "promptSelectResponseTypeHint": "Select response type",
+  "promptReasoningModeLabel": "Reasoning Mode",
+  "promptReasoningModeDescription": "Enable for prompts requiring deep thinking",
+  "promptCancelButton": "Cancel",
+  "promptSaveButton": "Save Prompt",
+  "promptNoModelsSelectedError": "No models selected. Select at least one model.",
+  "promptAddOrRemoveModelsButton": "Add or Remove Models",
+  "promptSelectModelsButton": "Select Models",
+  "promptDefaultModelBadge": "Default",
+  "promptSetDefaultButton": "Set Default",
+  "promptLoadingModel": "Loading model...",
+  "promptErrorLoadingModel": "Error loading model",
+  "promptGoBackButton": "Go Back",
+  "promptTryAgainMessage": "Please try again or contact support",
+  "modelManagementSelectedCount": "{count} model{count, plural, =1{} other{s}} selected",
+  "@modelManagementSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "enhancedPromptFormDescription": "Create custom prompts that can be used with your AI models to generate specific types of responses",
+  "enhancedPromptFormQuickStartTitle": "Quick Start",
+  "enhancedPromptFormBasicConfigurationTitle": "Basic Configuration",
+  "enhancedPromptFormPromptConfigurationTitle": "Prompt Configuration",
+  "enhancedPromptFormConfigurationOptionsTitle": "Configuration Options",
+  "enhancedPromptFormAdditionalDetailsTitle": "Additional Details",
+  "enhancedPromptFormDisplayNameHelperText": "A descriptive name for this prompt template",
+  "enhancedPromptFormUserMessageHelperText": "The main prompt text.",
+  "enhancedPromptFormSystemMessageHelperText": "Instructions that define the AI's behavior and response style",
+  "enhancedPromptFormDescriptionHelperText": "Optional notes about this prompt's purpose and usage",
+  "enhancedPromptFormPreconfiguredPromptDescription": "Choose from ready-made prompt templates",
+  "enhancedPromptFormRequiredInputDataSubtitle": "Type of data this prompt expects",
+  "enhancedPromptFormAiResponseTypeSubtitle": "Format of the expected response",
+  "aiSettingsPageTitle": "AI Settings",
+  "aiSettingsNoProvidersConfigured": "No AI providers configured",
+  "aiSettingsNoModelsConfigured": "No AI models configured", 
+  "aiSettingsNoPromptsConfigured": "No AI prompts configured",
+  "aiSettingsTabProviders": "Providers",
+  "aiSettingsTabModels": "Models",
+  "aiSettingsTabPrompts": "Prompts",
+  "aiSettingsSearchHint": "Search AI configurations...",
+  "aiSettingsFilterByProviderTooltip": "Filter by {provider}",
+  "@aiSettingsFilterByProviderTooltip": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "aiSettingsClearFiltersButton": "Clear",
+  "aiSettingsClearAllFiltersTooltip": "Clear all filters",
+  "aiSettingsModalityText": "Text",
+  "aiSettingsModalityVision": "Vision", 
+  "aiSettingsModalityAudio": "Audio",
+  "aiSettingsReasoningLabel": "Reasoning",
+  "aiSettingsFilterByCapabilityTooltip": "Filter by {capability} capability",
+  "@aiSettingsFilterByCapabilityTooltip": {
+    "placeholders": {
+      "capability": {
+        "type": "String"
+      }
+    }
+  },
+  "aiSettingsFilterByReasoningTooltip": "Filter by reasoning capability",
+  "aiSettingsAddProviderButton": "Add Provider",
+  "aiSettingsAddModelButton": "Add Model",
+  "aiSettingsAddPromptButton": "Add Prompt",
   "saveButtonLabel": "Save",
   "saveLabel": "Save",
   "searchHint": "Search...",

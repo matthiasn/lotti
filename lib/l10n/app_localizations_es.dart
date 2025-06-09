@@ -949,6 +949,241 @@ class AppLocalizationsEs extends AppLocalizations {
   String get promptUsePreconfiguredButton => 'Use Preconfigured Prompt';
 
   @override
+  String get promptDetailsTitle => 'Prompt Details';
+
+  @override
+  String get promptDetailsDescription => 'Basic information about this prompt';
+
+  @override
+  String get promptContentTitle => 'Prompt Content';
+
+  @override
+  String get promptContentDescription => 'Define the system and user prompts';
+
+  @override
+  String get promptBehaviorTitle => 'Prompt Behavior';
+
+  @override
+  String get promptBehaviorDescription =>
+      'Configure how the prompt processes and responds';
+
+  @override
+  String get promptModelSelectionTitle => 'Model Selection';
+
+  @override
+  String get promptModelSelectionDescription =>
+      'Choose compatible models for this prompt';
+
+  @override
+  String get promptDisplayNameLabel => 'Display Name';
+
+  @override
+  String get promptDisplayNameHint => 'Enter a friendly name';
+
+  @override
+  String get promptDescriptionLabel => 'Description';
+
+  @override
+  String get promptDescriptionHint => 'Describe this prompt';
+
+  @override
+  String get promptSystemPromptLabel => 'System Prompt';
+
+  @override
+  String get promptSystemPromptHint => 'Enter the system prompt...';
+
+  @override
+  String get promptUserPromptLabel => 'User Prompt';
+
+  @override
+  String get promptUserPromptHint => 'Enter the user prompt...';
+
+  @override
+  String get promptRequiredInputDataLabel => 'Required Input Data';
+
+  @override
+  String get promptRequiredInputDataDescription =>
+      'Type of data this prompt expects';
+
+  @override
+  String get promptSelectInputTypeHint => 'Select input type';
+
+  @override
+  String get promptAiResponseTypeLabel => 'AI Response Type';
+
+  @override
+  String get promptAiResponseTypeDescription =>
+      'Format of the expected response';
+
+  @override
+  String get promptSelectResponseTypeHint => 'Select response type';
+
+  @override
+  String get promptReasoningModeLabel => 'Reasoning Mode';
+
+  @override
+  String get promptReasoningModeDescription =>
+      'Enable for prompts requiring deep thinking';
+
+  @override
+  String get promptCancelButton => 'Cancel';
+
+  @override
+  String get promptSaveButton => 'Save Prompt';
+
+  @override
+  String get promptNoModelsSelectedError =>
+      'No models selected. Select at least one model.';
+
+  @override
+  String get promptAddOrRemoveModelsButton => 'Add or Remove Models';
+
+  @override
+  String get promptSelectModelsButton => 'Select Models';
+
+  @override
+  String get promptDefaultModelBadge => 'Default';
+
+  @override
+  String get promptSetDefaultButton => 'Set Default';
+
+  @override
+  String get promptLoadingModel => 'Loading model...';
+
+  @override
+  String get promptErrorLoadingModel => 'Error loading model';
+
+  @override
+  String get promptGoBackButton => 'Go Back';
+
+  @override
+  String get promptTryAgainMessage => 'Please try again or contact support';
+
+  @override
+  String modelManagementSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count model$_temp0 selected';
+  }
+
+  @override
+  String get enhancedPromptFormDescription =>
+      'Create custom prompts that can be used with your AI models to generate specific types of responses';
+
+  @override
+  String get enhancedPromptFormQuickStartTitle => 'Quick Start';
+
+  @override
+  String get enhancedPromptFormBasicConfigurationTitle => 'Basic Configuration';
+
+  @override
+  String get enhancedPromptFormPromptConfigurationTitle =>
+      'Prompt Configuration';
+
+  @override
+  String get enhancedPromptFormConfigurationOptionsTitle =>
+      'Configuration Options';
+
+  @override
+  String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
+
+  @override
+  String get enhancedPromptFormDisplayNameHelperText =>
+      'A descriptive name for this prompt template';
+
+  @override
+  String get enhancedPromptFormUserMessageHelperText => 'The main prompt text.';
+
+  @override
+  String get enhancedPromptFormSystemMessageHelperText =>
+      'Instructions that define the AI\'s behavior and response style';
+
+  @override
+  String get enhancedPromptFormDescriptionHelperText =>
+      'Optional notes about this prompt\'s purpose and usage';
+
+  @override
+  String get enhancedPromptFormPreconfiguredPromptDescription =>
+      'Choose from ready-made prompt templates';
+
+  @override
+  String get enhancedPromptFormRequiredInputDataSubtitle =>
+      'Type of data this prompt expects';
+
+  @override
+  String get enhancedPromptFormAiResponseTypeSubtitle =>
+      'Format of the expected response';
+
+  @override
+  String get aiSettingsPageTitle => 'AI Settings';
+
+  @override
+  String get aiSettingsNoProvidersConfigured => 'No AI providers configured';
+
+  @override
+  String get aiSettingsNoModelsConfigured => 'No AI models configured';
+
+  @override
+  String get aiSettingsNoPromptsConfigured => 'No AI prompts configured';
+
+  @override
+  String get aiSettingsTabProviders => 'Providers';
+
+  @override
+  String get aiSettingsTabModels => 'Models';
+
+  @override
+  String get aiSettingsTabPrompts => 'Prompts';
+
+  @override
+  String get aiSettingsSearchHint => 'Search AI configurations...';
+
+  @override
+  String aiSettingsFilterByProviderTooltip(String provider) {
+    return 'Filter by $provider';
+  }
+
+  @override
+  String get aiSettingsClearFiltersButton => 'Clear';
+
+  @override
+  String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
+
+  @override
+  String get aiSettingsModalityText => 'Text';
+
+  @override
+  String get aiSettingsModalityVision => 'Vision';
+
+  @override
+  String get aiSettingsModalityAudio => 'Audio';
+
+  @override
+  String get aiSettingsReasoningLabel => 'Reasoning';
+
+  @override
+  String aiSettingsFilterByCapabilityTooltip(String capability) {
+    return 'Filter by $capability capability';
+  }
+
+  @override
+  String get aiSettingsFilterByReasoningTooltip =>
+      'Filter by reasoning capability';
+
+  @override
+  String get aiSettingsAddProviderButton => 'Add Provider';
+
+  @override
+  String get aiSettingsAddModelButton => 'Add Model';
+
+  @override
+  String get aiSettingsAddPromptButton => 'Add Prompt';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

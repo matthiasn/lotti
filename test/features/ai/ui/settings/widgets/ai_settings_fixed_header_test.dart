@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_fixed_header.dart';
+
+import '../../../../../test_helper.dart';
 
 void main() {
   group('AiSettingsFixedHeader', () {
@@ -28,37 +29,33 @@ void main() {
     Widget createWidget({
       AiSettingsFilterState? filterState,
     }) {
-      return ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: DefaultTabController(
-              length: 3,
-              child: Builder(
-                builder: (context) {
-                  tabController = DefaultTabController.of(context);
-                  // Simulate the sliver layout with a CustomScrollView
-                  return CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: AiSettingsFixedHeader(
-                          searchController: searchController,
-                          tabController: tabController,
-                          filterState:
-                              filterState ?? AiSettingsFilterState.initial(),
-                          onSearchClear: () => searchCleared = true,
-                          onTabChanged: (tab) => tabChangedTo = tab,
-                          onFilterChanged: (state) => filterChangedTo = state,
-                        ),
-                      ),
-                      // Add a spacer to give the scroll view content
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 500),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+      return RiverpodWidgetTestBench(
+        child: DefaultTabController(
+          length: 3,
+          child: Builder(
+            builder: (context) {
+              tabController = DefaultTabController.of(context);
+              // Simulate the sliver layout with a CustomScrollView
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: AiSettingsFixedHeader(
+                      searchController: searchController,
+                      tabController: tabController,
+                      filterState:
+                          filterState ?? AiSettingsFilterState.initial(),
+                      onSearchClear: () => searchCleared = true,
+                      onTabChanged: (tab) => tabChangedTo = tab,
+                      onFilterChanged: (state) => filterChangedTo = state,
+                    ),
+                  ),
+                  // Add a spacer to give the scroll view content
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 500),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       );
@@ -72,9 +69,9 @@ void main() {
 
       // Should have tabs
       expect(find.byType(TabBar), findsOneWidget);
-      expect(find.text('Providers'), findsOneWidget);
-      expect(find.text('Models'), findsOneWidget);
-      expect(find.text('Prompts'), findsOneWidget);
+      // Tab labels are now localized - check for TabBar instead of specific text
+      final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+      expect(tabBar.tabs.length, 3);
     });
 
     testWidgets('search functionality works correctly',
@@ -102,12 +99,18 @@ void main() {
     testWidgets('tab selection triggers callback', (WidgetTester tester) async {
       await tester.pumpWidget(createWidget());
 
-      await tester.tap(find.text('Models'));
+      // Find tab bar and tap on tabs by index since text is localized
+      final tabs = tester.widgetList<Tab>(find.byType(Tab)).toList();
+      expect(tabs.length, 3);
+
+      // Tap on second tab (Models)
+      await tester.tap(find.byType(Tab).at(1));
       await tester.pump();
 
       expect(tabChangedTo, AiSettingsTab.models);
 
-      await tester.tap(find.text('Prompts'));
+      // Tap on third tab (Prompts)
+      await tester.tap(find.byType(Tab).at(2));
       await tester.pump();
 
       expect(tabChangedTo, AiSettingsTab.prompts);

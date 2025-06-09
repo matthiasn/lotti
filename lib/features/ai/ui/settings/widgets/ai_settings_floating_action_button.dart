@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// A context-aware floating action button for the AI Settings page
@@ -40,7 +41,7 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, label) = _getIconAndLabel();
+    final (icon, label) = _getIconAndLabel(context);
 
     return Container(
       margin: const EdgeInsets.only(right: 20, bottom: 20),
@@ -59,11 +60,20 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
   }
 
   /// Returns the appropriate icon and label for the active tab
-  (IconData, String) _getIconAndLabel() {
+  (IconData, String) _getIconAndLabel(BuildContext context) {
     return switch (activeTab) {
-      AiSettingsTab.providers => (Icons.add_link_rounded, 'Add Provider'),
-      AiSettingsTab.models => (Icons.auto_awesome_rounded, 'Add Model'),
-      AiSettingsTab.prompts => (Icons.edit_note_rounded, 'Add Prompt'),
+      AiSettingsTab.providers => (
+          Icons.add_link_rounded,
+          context.messages.aiSettingsAddProviderButton
+        ),
+      AiSettingsTab.models => (
+          Icons.auto_awesome_rounded,
+          context.messages.aiSettingsAddModelButton
+        ),
+      AiSettingsTab.prompts => (
+          Icons.edit_note_rounded,
+          context.messages.aiSettingsAddPromptButton
+        ),
     };
   }
 

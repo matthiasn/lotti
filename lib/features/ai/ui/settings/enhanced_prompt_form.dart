@@ -57,7 +57,7 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
           children: [
             // Header section - removed redundant title
             Text(
-              'Create custom prompts that can be used with your AI models to generate specific types of responses',
+              context.messages.enhancedPromptFormDescription,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurface.withValues(alpha: 0.6),
                 height: 1.4,
@@ -69,7 +69,7 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
             // Quick Start Section (only for new prompts)
             if (configId == null) ...[
               _FormSection(
-                title: 'Quick Start',
+                title: context.messages.enhancedPromptFormQuickStartTitle,
                 icon: Icons.rocket_launch_outlined,
                 children: [
                   _PreconfiguredPromptButton(
@@ -89,18 +89,19 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
             // Basic Configuration Section
             _FormSection(
-              title: 'Basic Configuration',
+              title: context.messages.enhancedPromptFormBasicConfigurationTitle,
               icon: Icons.tune_rounded,
               children: [
                 // Display Name
                 EnhancedFormField(
                   controller: formController.nameController,
-                  labelText: 'Display Name',
+                  labelText: context.messages.promptDisplayNameLabel,
                   formzField: formState.name,
                   onChanged: formController.nameChanged,
                   prefixIcon: const Icon(Icons.label_outline),
                   isRequired: true,
-                  helperText: 'A descriptive name for this prompt template',
+                  helperText:
+                      context.messages.enhancedPromptFormDisplayNameHelperText,
                 ),
                 const SizedBox(height: 24),
 
@@ -113,32 +114,33 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
             // Prompt Configuration Section
             _FormSection(
-              title: 'Prompt Configuration',
+              title:
+                  context.messages.enhancedPromptFormPromptConfigurationTitle,
               icon: Icons.edit_note_rounded,
               children: [
                 // User Message
                 EnhancedFormField(
                   controller: formController.userMessageController,
-                  labelText: 'User Message',
+                  labelText: context.messages.promptUserPromptLabel,
                   formzField: formState.userMessage,
                   onChanged: formController.userMessageChanged,
                   maxLines: null,
                   minLines: 3,
                   isRequired: true,
                   helperText:
-                      'The main prompt text. Use {{variables}} for dynamic content.',
+                      context.messages.enhancedPromptFormUserMessageHelperText,
                 ),
                 const SizedBox(height: 24),
 
                 // System Message
                 EnhancedFormField(
                   controller: formController.systemMessageController,
-                  labelText: 'System Message',
+                  labelText: context.messages.promptSystemPromptLabel,
                   onChanged: formController.systemMessageChanged,
                   maxLines: null,
                   minLines: 3,
-                  helperText:
-                      "Instructions that define the AI's behavior and response style",
+                  helperText: context
+                      .messages.enhancedPromptFormSystemMessageHelperText,
                 ),
               ],
             ),
@@ -147,13 +149,15 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
             // Configuration Options Section
             _FormSection(
-              title: 'Configuration Options',
+              title:
+                  context.messages.enhancedPromptFormConfigurationOptionsTitle,
               icon: Icons.settings_outlined,
               children: [
                 // Input Type Selection
                 _SelectionRow(
-                  title: 'Required Input Data',
-                  subtitle: 'Type of data this prompt expects',
+                  title: context.messages.promptRequiredInputDataLabel,
+                  subtitle: context
+                      .messages.enhancedPromptFormRequiredInputDataSubtitle,
                   icon: Icons.input_rounded,
                   child: PromptInputTypeSelection(configId: configId),
                 ),
@@ -161,8 +165,9 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
                 // Response Type Selection
                 _SelectionRow(
-                  title: 'AI Response Type',
-                  subtitle: 'Format of the expected response',
+                  title: context.messages.promptAiResponseTypeLabel,
+                  subtitle:
+                      context.messages.enhancedPromptFormAiResponseTypeSubtitle,
                   icon: Icons.output_rounded,
                   child: PromptResponseTypeSelection(configId: configId),
                 ),
@@ -180,18 +185,18 @@ class _EnhancedPromptFormState extends ConsumerState<EnhancedPromptForm> {
 
             // Additional Details Section
             _FormSection(
-              title: 'Additional Details',
+              title: context.messages.enhancedPromptFormAdditionalDetailsTitle,
               icon: Icons.description_outlined,
               children: [
                 // Description
                 EnhancedFormField(
                   controller: formController.descriptionController,
-                  labelText: 'Description',
+                  labelText: context.messages.promptDescriptionLabel,
                   onChanged: formController.descriptionChanged,
                   maxLines: null,
                   minLines: 3,
                   helperText:
-                      "Optional notes about this prompt's purpose and usage",
+                      context.messages.enhancedPromptFormDescriptionHelperText,
                 ),
               ],
             ),
@@ -265,7 +270,8 @@ class _PreconfiguredPromptButton extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Choose from ready-made prompt templates',
+                        context.messages
+                            .enhancedPromptFormPreconfiguredPromptDescription,
                         style: context.textTheme.bodyMedium?.copyWith(
                           color: context.colorScheme.onSurface
                               .withValues(alpha: 0.7),
