@@ -49,7 +49,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('AI Settings'), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
       });
 
       testWidgets('displays search bar and tab bar',
