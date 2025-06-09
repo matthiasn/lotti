@@ -329,7 +329,7 @@ class DismissibleModelCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Default',
+                      context.messages.promptDefaultModelBadge,
                       style: context.textTheme.labelSmall?.copyWith(
                         color: context.colorScheme.onPrimary,
                         fontWeight: FontWeight.w500,
@@ -363,17 +363,17 @@ class ModelLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          SizedBox(width: 12),
-          Text('Loading model...'),
+          const SizedBox(width: 12),
+          Text(context.messages.promptLoadingModel),
         ],
       ),
     );
@@ -401,7 +401,7 @@ class ModelErrorState extends StatelessWidget {
             size: 20,
           ),
           const SizedBox(width: 12),
-          Text('Error: $modelId'),
+          Text('${context.messages.promptErrorLoadingModel}: $modelId'),
         ],
       ),
     );

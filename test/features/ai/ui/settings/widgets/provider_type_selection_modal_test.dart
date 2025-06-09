@@ -180,9 +180,14 @@ void main() {
         final providerCards = find.byType(InkWell);
         expect(providerCards, findsAtLeastNWidgets(6));
 
+        // Find a provider card by its text content to ensure we're tapping the right element
+        final anthropicCard = find.ancestor(
+          of: find.textContaining('Anthropic'),
+          matching: find.byType(InkWell),
+        );
+        
         // Test tapping a card (it should close the modal)
-        final firstCard = providerCards.first;
-        await tester.tap(firstCard);
+        await tester.tap(anthropicCard.first);
         await tester.pumpAndSettle();
 
         // Modal should be closed after tap

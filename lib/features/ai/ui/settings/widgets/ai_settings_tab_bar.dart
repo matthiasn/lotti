@@ -96,7 +96,7 @@ class AiSettingsTabBar extends StatelessWidget {
         tabs: AiSettingsTab.values
             .map((tab) => Tab(
                   height: 40,
-                  text: tab.displayName,
+                  text: tab.getLocalizedDisplayName(context),
                 ))
             .toList(),
       ),
