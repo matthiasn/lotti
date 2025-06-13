@@ -178,12 +178,6 @@ def transcribe_audio(
                     device=device
                 )
                 
-                # Apply BetterTransformer optimization for supported models
-                try:
-                    pipe.model = pipe.model.to_bettertransformer()
-                    logger.info("BetterTransformer optimization applied")
-                except Exception as e:
-                    logger.warning(f"BetterTransformer optimization failed: {e}")
             
             pipeline_time = time.time() - pipeline_start
             logger.info(f"Pipeline loaded successfully in {pipeline_time:.2f}s on {device}")
@@ -241,8 +235,8 @@ def transcribe_audio(
             if 'chunks' in outputs and outputs['chunks']:
                 results['timestamps'] = [
                     {
-                        'start': chunk.get('timestamp', [0, 0])[0] if chunk.get('timestamp') else 0,
-                        'end': chunk.get('timestamp', [0, 0])[1] if chunk.get('timestamp') else 0,
+                        'start': chunk.get('timestamp')[0] if chunk.get('timestamp') and isinstance(chunk.get('timestamp'), (list, tuple)) and len(chunk.get('timestamp')) >= 1 else None,
+                        'end': chunk.get('timestamp')[1] if chunk.get('timestamp') and isinstance(chunk.get('timestamp'), (list, tuple)) and len(chunk.get('timestamp')) >= 2 else None,
                         'text': chunk.get('text', '')
                     }
                     for chunk in outputs['chunks']

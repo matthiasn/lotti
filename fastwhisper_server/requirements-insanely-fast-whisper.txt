@@ -4,14 +4,13 @@
 # Core dependencies
 torch==2.7.1
 transformers>=4.21.0
+transformers<4.49.0
 numpy>=1.24.0
 
 # Audio processing (required by transformers pipeline for audio)
 librosa>=0.9.0
 soundfile>=0.12.0
 
-# Optional performance optimizations
-optimum>=1.8.0
 
 # Use CPU-optimized PyTorch by default
 --extra-index-url https://download.pytorch.org/whl/cpu
