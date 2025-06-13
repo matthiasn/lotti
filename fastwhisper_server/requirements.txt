@@ -1,0 +1,7 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+faster-whisper==1.1.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.1
+numpy>=1.24.0 

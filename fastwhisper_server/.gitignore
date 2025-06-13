@@ -1,0 +1,27 @@
+# PyInstaller build directories
+dist/
+build/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test files
+test_*.py
+*.test
+.pytest_cache/
+
+# Environment files
+.env
+.venv
+env/
+venv/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db 
