@@ -158,9 +158,10 @@ class HealthImport {
     if (isDesktop) {
       return false;
     }
+    final allowed = health.requestAuthorization(types);
     await health.requestHealthDataHistoryAuthorization();
     await health.requestHealthDataInBackgroundAuthorization();
-    return health.requestAuthorization(types);
+    return allowed;
   }
 
   Future<void> fetchHealthData({
