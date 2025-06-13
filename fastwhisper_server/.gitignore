@@ -8,8 +8,6 @@ __pycache__/
 *$py.class
 
 # Test files
-test_*.py
-*.test
 .pytest_cache/
 
 # Environment files
