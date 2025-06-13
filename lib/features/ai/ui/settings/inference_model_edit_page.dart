@@ -251,7 +251,8 @@ class _InferenceModelEditPageState
                 hint: 'Optional - leave empty for unlimited',
                 controller: formController.maxCompletionTokensController,
                 onChanged: formController.maxCompletionTokensChanged,
-                validator: (_) => formState.maxCompletionTokens.error?.name,
+                validator: (_) =>
+                    formState.maxCompletionTokens.error?.displayMessage,
                 keyboardType: TextInputType.number,
                 prefixIcon: Icons.numbers_rounded,
               ),

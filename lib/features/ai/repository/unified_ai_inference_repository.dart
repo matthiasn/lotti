@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -252,7 +252,11 @@ class UnifiedAiInferenceRepository {
       return choices.firstOrNull?.delta?.content ?? '';
     } catch (e) {
       // Log error but continue processing stream
-      debugPrint('Error extracting text from chunk: $e');
+      developer.log(
+        'Error extracting text from chunk',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+      );
       return '';
     }
   }
