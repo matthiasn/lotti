@@ -4,6 +4,7 @@ import 'package:lotti/utils/file_utils.dart';
 
 enum ModelFormError {
   tooShort,
+  invalidNumber,
 }
 
 // Input validation classes
@@ -37,6 +38,19 @@ class ModelDescription extends FormzInput<String, String> {
   }
 }
 
+class MaxCompletionTokens extends FormzInput<String, ModelFormError> {
+  const MaxCompletionTokens.pure([super.value = '']) : super.pure();
+  const MaxCompletionTokens.dirty([super.value = '']) : super.dirty();
+
+  @override
+  ModelFormError? validator(String value) {
+    if (value.isEmpty) return null; // Optional field
+    final intValue = int.tryParse(value);
+    if (intValue == null || intValue <= 0) return ModelFormError.invalidNumber;
+    return null;
+  }
+}
+
 // Form state class
 class InferenceModelFormState with FormzMixin {
   InferenceModelFormState({
@@ -44,6 +58,7 @@ class InferenceModelFormState with FormzMixin {
     this.name = const ModelName.pure(),
     this.providerModelId = const ProviderModelId.pure(),
     this.description = const ModelDescription.pure(),
+    this.maxCompletionTokens = const MaxCompletionTokens.pure(),
     this.inferenceProviderId = '',
     this.inputModalities = const [Modality.text],
     this.outputModalities = const [Modality.text],
@@ -56,6 +71,7 @@ class InferenceModelFormState with FormzMixin {
   final ModelName name;
   final ProviderModelId providerModelId;
   final ModelDescription description;
+  final MaxCompletionTokens maxCompletionTokens;
   final String inferenceProviderId;
   final List<Modality> inputModalities;
   final List<Modality> outputModalities;
@@ -68,6 +84,7 @@ class InferenceModelFormState with FormzMixin {
     ModelName? name,
     ProviderModelId? providerModelId,
     ModelDescription? description,
+    MaxCompletionTokens? maxCompletionTokens,
     String? inferenceProviderId,
     List<Modality>? inputModalities,
     List<Modality>? outputModalities,
@@ -79,6 +96,7 @@ class InferenceModelFormState with FormzMixin {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      maxCompletionTokens: maxCompletionTokens ?? this.maxCompletionTokens,
       providerModelId: providerModelId ?? this.providerModelId,
       inferenceProviderId: inferenceProviderId ?? this.inferenceProviderId,
       inputModalities: inputModalities ?? this.inputModalities,
@@ -94,6 +112,7 @@ class InferenceModelFormState with FormzMixin {
         name,
         providerModelId,
         description,
+        maxCompletionTokens,
       ];
 
   // Convert form state to AiConfig model
@@ -108,6 +127,9 @@ class InferenceModelFormState with FormzMixin {
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
+      maxCompletionTokens: maxCompletionTokens.value.isEmpty
+          ? null
+          : int.tryParse(maxCompletionTokens.value),
     );
   }
 }

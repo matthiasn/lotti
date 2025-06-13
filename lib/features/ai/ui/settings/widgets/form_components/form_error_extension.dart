@@ -7,6 +7,8 @@ extension ModelFormErrorExtension on ModelFormError {
     switch (this) {
       case ModelFormError.tooShort:
         return 'Must be at least 3 characters';
+      case ModelFormError.invalidNumber:
+        return 'Please enter a valid number';
     }
   }
 }

@@ -244,6 +244,17 @@ class _InferenceModelEditPageState
                 minLines: 2,
                 prefixIcon: Icons.description_rounded,
               ),
+
+              // Max Completion Tokens
+              AiTextField(
+                label: 'Max Completion Tokens',
+                hint: 'Optional - leave empty for unlimited',
+                controller: formController.maxCompletionTokensController,
+                onChanged: formController.maxCompletionTokensChanged,
+                validator: (_) => formState.maxCompletionTokens.error?.name,
+                keyboardType: TextInputType.number,
+                prefixIcon: Icons.numbers_rounded,
+              ),
             ],
           ),
           const SizedBox(height: 32),

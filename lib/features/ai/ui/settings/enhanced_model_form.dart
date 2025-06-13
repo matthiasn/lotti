@@ -197,6 +197,18 @@ class _EnhancedInferenceModelFormState
                   minLines: 3,
                   helperText: 'Optional notes about this model configuration',
                 ),
+
+                const SizedBox(height: 24),
+
+                // Max Completion Tokens
+                EnhancedFormField(
+                  controller: formController.maxCompletionTokensController,
+                  labelText: 'Max Completion Tokens',
+                  onChanged: formController.maxCompletionTokensChanged,
+                  keyboardType: TextInputType.number,
+                  helperText:
+                      'Optional limit for response length (leave empty for unlimited)',
+                ),
               ],
             ),
 

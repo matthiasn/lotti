@@ -145,6 +145,7 @@ dependencies:
   wolt_modal_sheet: ^0.11.0
 
 dependency_overrides:
+  analyzer_plugin: ^0.13.1
   flutter_math_fork: 0.7.3
   get_it: ^8.0.2
   rxdart: ^0.28.0
