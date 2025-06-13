@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/selection/selection_option.dart';
-import 'package:lotti/themes/theme.dart';
 
 void main() {
   group('SelectionOption', () {
@@ -29,7 +28,7 @@ void main() {
     }
 
     group('Rendering', () {
-      testWidgets('renders all required elements', skip: true, (tester) async {
+      testWidgets('renders all required elements', (tester) async {
         await tester.pumpWidget(createTestWidget(
           title: 'Test Option',
           icon: Icons.settings,
@@ -67,8 +66,7 @@ void main() {
         expect(find.text('This is a description'), findsNothing);
       });
 
-      testWidgets('truncates long description with ellipsis', skip: true,
-          (tester) async {
+      testWidgets('truncates long description with ellipsis', (tester) async {
         final longDescription =
             'This is a very long description that should be truncated after two lines. ' *
                 10;
@@ -95,7 +93,7 @@ void main() {
 
     group('Selection State', () {
       testWidgets('shows checkmark when selected with default indicator',
-          skip: true, (tester) async {
+          (tester) async {
         await tester.pumpWidget(createTestWidget(
           title: 'Test Option',
           icon: Icons.settings,
@@ -107,7 +105,7 @@ void main() {
       });
 
       testWidgets('shows empty circle when not selected with default indicator',
-          skip: true, (tester) async {
+          (tester) async {
         await tester.pumpWidget(createTestWidget(
           title: 'Test Option',
           icon: Icons.settings,
@@ -156,8 +154,7 @@ void main() {
         expect(find.byIcon(Icons.check_rounded), findsNothing);
       });
 
-      testWidgets('applies different styling when selected', skip: true,
-          (tester) async {
+      testWidgets('applies different styling when selected', (tester) async {
         await tester.pumpWidget(createTestWidget(
           title: 'Test Option',
           icon: Icons.settings,
@@ -197,7 +194,7 @@ void main() {
         expect(tapped, true);
       });
 
-      testWidgets('shows ink splash on tap', skip: true, (tester) async {
+      testWidgets('shows ink splash on tap', (tester) async {
         await tester.pumpWidget(createTestWidget(
           title: 'Test Option',
           icon: Icons.settings,
@@ -252,7 +249,7 @@ void main() {
         expect(colorScheme.brightness, Brightness.dark);
       });
 
-      testWidgets('uses correct icon size', skip: true, (tester) async {
+      testWidgets('uses correct icon size', (tester) async {
         await tester.pumpWidget(createTestWidget(
           title: 'Test Option',
           icon: Icons.settings,
@@ -343,167 +340,6 @@ void main() {
         expect(find.byType(SelectionOption), findsOneWidget);
       });
     });
-
-    testWidgets('renders basic option correctly', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              isSelected: false,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Test Option'), findsOneWidget);
-      expect(find.byType(InkWell), findsOneWidget);
-    });
-
-    testWidgets('shows selected state correctly', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              isSelected: true,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
-
-      final text = tester.widget<Text>(find.text('Test Option'));
-      expect(
-        text.style?.color,
-        ThemeData.light().colorScheme.primary,
-      );
-    });
-
-    testWidgets('displays icon when provided', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              isSelected: false,
-              onTap: () {},
-              icon: Icons.star,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byIcon(Icons.star), findsOneWidget);
-    });
-
-    testWidgets('displays description when provided', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              description: 'Test Description',
-              isSelected: false,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Test Description'), findsOneWidget);
-    });
-
-    testWidgets('displays custom selection indicator', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              isSelected: true,
-              onTap: () {},
-              selectionIndicator: const Icon(Icons.check),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byIcon(Icons.check), findsOneWidget);
-    });
-
-    testWidgets('calls onTap when pressed', (tester) async {
-      var tapped = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              isSelected: false,
-              onTap: () => tapped = true,
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.byType(InkWell));
-      expect(tapped, true);
-    });
-
-    testWidgets('maintains proper spacing', skip: true, (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              description: 'Test Description',
-              isSelected: false,
-              onTap: () {},
-              icon: Icons.star,
-            ),
-          ),
-        ),
-      );
-
-      // Verify padding
-      final padding = tester.widget<Padding>(find.byType(Padding));
-      expect(
-        padding.padding,
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      );
-
-      // Verify spacing between elements
-      expect(find.byType(SizedBox),
-          findsNWidgets(2)); // Icon spacing and description spacing
-    });
-
-    testWidgets('adapts to theme changes', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            body: SelectionOption(
-              title: 'Test Option',
-              isSelected: true,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
-
-      final text = tester.widget<Text>(find.text('Test Option'));
-      expect(
-        text.style?.color,
-        ThemeData.dark().colorScheme.primary,
-      );
-    });
   });
 
   group('RadioSelectionIndicator', () {
@@ -568,64 +404,6 @@ void main() {
       final context = tester.element(find.byType(RadioSelectionIndicator));
       final colorScheme = Theme.of(context).colorScheme;
       expect(colorScheme.brightness, Brightness.dark);
-    });
-
-    testWidgets('renders unselected state correctly', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: RadioSelectionIndicator(isSelected: false),
-          ),
-        ),
-      );
-
-      final container = tester.widget<Container>(find.byType(Container).first);
-      final decoration = container.decoration as BoxDecoration;
-      expect(decoration.shape, BoxShape.circle);
-      expect(decoration.border?.top.width, 2);
-    });
-
-    testWidgets('renders selected state correctly', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: RadioSelectionIndicator(isSelected: true),
-          ),
-        ),
-      );
-
-      // Should have two containers (outer and inner)
-      expect(find.byType(Container), findsNWidgets(2));
-
-      // Inner container should be filled
-      final innerContainer =
-          tester.widget<Container>(find.byType(Container).last);
-      final innerDecoration = innerContainer.decoration as BoxDecoration;
-      expect(innerDecoration.shape, BoxShape.circle);
-      expect(innerDecoration.color, ThemeData.light().colorScheme.primary);
-    });
-
-    testWidgets('maintains proper dimensions', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: RadioSelectionIndicator(isSelected: true),
-          ),
-        ),
-      );
-
-      final outerContainer =
-          tester.widget<Container>(find.byType(Container).first);
-      expect(outerContainer.constraints?.maxWidth, 20);
-      expect(outerContainer.constraints?.maxHeight, 20);
-
-      final innerContainer =
-          tester.widget<Container>(find.byType(Container).last);
-      expect(innerContainer.constraints?.maxWidth, 10);
-      expect(innerContainer.constraints?.maxHeight, 10);
     });
   });
 }

@@ -102,6 +102,35 @@ class CloudInferenceRepository {
           apiKey: apiKey,
         );
 
+    // For FastWhisper, we need to send the audio data in a specific format
+    if (baseUrl.contains('localhost:8000')) {
+      return client
+          .createChatCompletionStream(
+            request: CreateChatCompletionRequest(
+              frequencyPenalty: null,
+              messages: [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.parts(
+                    [
+                      ChatCompletionMessageContentPart.text(text: prompt),
+                      ChatCompletionMessageContentPart.audio(
+                        inputAudio: ChatCompletionMessageInputAudio(
+                          data: audioBase64,
+                          format: ChatCompletionMessageInputAudioFormat.mp3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              model: ChatCompletionModel.modelId(model),
+              stream: true,
+            ),
+          )
+          .asBroadcastStream();
+    }
+
+    // For other providers, use the original format
     return client
         .createChatCompletionStream(
           request: CreateChatCompletionRequest(

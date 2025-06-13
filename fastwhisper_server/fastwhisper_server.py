@@ -10,7 +10,7 @@ import base64
 import json
 import tempfile
 import logging
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from functools import lru_cache
 
 # Configure logging
@@ -42,9 +42,11 @@ def get_model(model_name: str) -> WhisperModel:
     Uses LRU cache to avoid reloading models for each request.
     """
     valid_models = ["tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3"]
-    if model_name not in valid_models:
+    # Extract base model name if it's a full model ID
+    base_model = model_name.split('_')[0] if '_' in model_name else model_name
+    if base_model not in valid_models:
         raise ValueError(f"Invalid model name. Must be one of: {', '.join(valid_models)}")
-    return WhisperModel(model_name)
+    return WhisperModel(base_model)
 
 class TranscriptionSegment:
     def __init__(self, id: int, start: float, end: float, text: str):
@@ -62,9 +64,49 @@ class TranscriptionSegment:
         }
 
 class TranscribeRequest(BaseModel):
-    audio: str
+    audio: Optional[str] = None
     model: str = "base"  # Default to base model
     language: str = "auto"
+    messages: Optional[List[Dict[str, Any]]] = None
+    audio_options: Optional[Dict[str, Any]] = None
+
+    def get_audio(self) -> str:
+        # First check if audio is directly provided
+        if self.audio:
+            return self.audio
+            
+        # Check if audio is in audio_options
+        if self.audio_options and "data" in self.audio_options:
+            return self.audio_options["data"]
+            
+        # Check messages array
+        if self.messages:
+            logger.info("Processing messages array")
+            for msg in self.messages:
+                logger.info(f"Message content type: {type(msg.get('content'))}")
+                if isinstance(msg.get("content"), list):
+                    logger.info("Content is a list, checking parts")
+                    for part in msg["content"]:
+                        logger.info(f"Part type: {part.get('type')}")
+                        logger.info(f"Part content: {json.dumps(part, indent=2)}")
+                        if part.get("type") in ["audio", "input_audio"]:
+                            # Handle both formats: inputAudio.data and direct data field
+                            if "inputAudio" in part and "data" in part["inputAudio"]:
+                                logger.info("Found audio in inputAudio.data")
+                                return part["inputAudio"]["data"]
+                            elif "data" in part:
+                                logger.info("Found audio in part.data")
+                                return part["data"]
+                elif isinstance(msg.get("content"), dict):
+                    logger.info("Content is a dict, checking for data")
+                    if "data" in msg["content"]:
+                        logger.info("Found audio in content.data")
+                        return msg["content"]["data"]
+                    elif "format" in msg["content"] and "data" in msg["content"]:
+                        logger.info("Found audio in content with format")
+                        return msg["content"]["data"]
+        logger.error("No audio data found in request structure")
+        raise ValueError("No audio data found in request")
 
 @app.post("/transcribe")
 async def transcribe(request: TranscribeRequest):
@@ -78,7 +120,7 @@ async def transcribe(request: TranscribeRequest):
 
         # Decode base64 audio
         try:
-            audio_bytes = base64.b64decode(request.audio)
+            audio_bytes = base64.b64decode(request.get_audio())
         except Exception as e:
             logger.error(f"Failed to decode base64 audio: {str(e)}")
             raise HTTPException(
@@ -167,8 +209,15 @@ async def transcribe(request: TranscribeRequest):
                 # Log cleanup errors but don't raise them
                 logger.error(f"Error cleaning up temporary file {temp_file_path}: {str(e)}")
 
-@app.post("/transcribe/chat/completions")
-async def transcribe_chat_completions(request: TranscribeRequest):
+@app.post("/chat/completions")
+async def chat_completions(request: TranscribeRequest):
+    """OpenAI-style compatibility endpoint that proxies to /transcribe."""
+    return await transcribe(request)
+
+# Added for compatibility with openai_dart package which automatically prepends /v1
+@app.post("/v1/chat/completions")
+async def chat_completions_v1(request: TranscribeRequest):
+    """OpenAI-style compatibility endpoint with /v1 prefix that proxies to /transcribe."""
     return await transcribe(request)
 
 if __name__ == "__main__":
