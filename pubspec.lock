@@ -1260,10 +1260,10 @@ packages:
     dependency: "direct main"
     description:
       name: health
-      sha256: "0432c4e5c5348164adff57e78ca3191c88f0cdf7c2b0d72b6785a6af965177ac"
+      sha256: "8f809e4f3483353976e4e3e50f5755af8bc6ae8f2e8b82f6d88c818617311bde"
       url: "https://pub.dev"
     source: hosted
-    version: "12.2.1"
+    version: "13.1.0"
   hotkey_manager:
     dependency: "direct main"
     description:
