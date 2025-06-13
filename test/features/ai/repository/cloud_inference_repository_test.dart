@@ -50,7 +50,6 @@ void main() {
                 delta: ChatCompletionStreamResponseDelta(
                   content: 'Test response',
                 ),
-                finishReason: null,
                 index: 0,
               ),
             ],
@@ -99,7 +98,6 @@ void main() {
               delta: ChatCompletionStreamResponseDelta(
                 content: 'Hello',
               ),
-              finishReason: null,
               index: 0,
             ),
           ],
@@ -113,7 +111,6 @@ void main() {
               delta: ChatCompletionStreamResponseDelta(
                 content: ' World!',
               ),
-              finishReason: null,
               index: 0,
             ),
           ],
@@ -160,7 +157,6 @@ void main() {
                 delta: ChatCompletionStreamResponseDelta(
                   content: 'Test image response',
                 ),
-                finishReason: null,
                 index: 0,
               ),
             ],
@@ -221,7 +217,6 @@ void main() {
                 delta: ChatCompletionStreamResponseDelta(
                   content: 'Test audio response',
                 ),
-                finishReason: null,
                 index: 0,
               ),
             ],

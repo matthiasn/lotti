@@ -239,7 +239,7 @@ class UnifiedAiInferenceRepository {
 
   /// Extract text from stream chunk
   String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) {
-    return chunk.choices[0].delta.content ?? '';
+    return chunk.choices.firstOrNull?.delta?.content ?? '';
   }
 
   /// Process complete response and create appropriate entry

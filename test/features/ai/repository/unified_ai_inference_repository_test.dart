@@ -411,7 +411,6 @@ void main() {
             choices: [
               const ChatCompletionStreamResponseChoice(
                 delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-                finishReason: null,
                 index: 0,
               ),
             ],
@@ -423,7 +422,6 @@ void main() {
             choices: [
               const ChatCompletionStreamResponseChoice(
                 delta: ChatCompletionStreamResponseDelta(content: ' world'),
-                finishReason: null,
                 index: 0,
               ),
             ],
@@ -556,7 +554,6 @@ void main() {
               const ChatCompletionStreamResponseChoice(
                 delta:
                     ChatCompletionStreamResponseDelta(content: 'Image shows'),
-                finishReason: null,
                 index: 0,
               ),
             ],
@@ -1255,7 +1252,6 @@ void main() {
             choices: [
               const ChatCompletionStreamResponseChoice(
                 delta: ChatCompletionStreamResponseDelta(),
-                finishReason: null,
                 index: 0,
               ),
             ],
