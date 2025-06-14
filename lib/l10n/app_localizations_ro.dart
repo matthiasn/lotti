@@ -98,8 +98,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get aiConfigFailedToSaveMessage =>
-      'Failed to save configuration. Please try again.';
+  String get aiConfigFailedToSaveMessage => 'Failed to save configuration. Please try again.';
 
   @override
   String get aiConfigInputDataTypesTitle => 'Required Input Data Types';
@@ -128,12 +127,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigListDeleteConfirmTitle => 'Confirm Deletion';
 
   @override
-  String get aiConfigListCascadeDeleteWarning =>
-      'This will also delete all models associated with this provider.';
+  String get aiConfigListCascadeDeleteWarning => 'This will also delete all models associated with this provider.';
 
   @override
-  String get aiConfigListEmptyState =>
-      'No configurations found. Add one to get started.';
+  String get aiConfigListEmptyState => 'No configurations found. Add one to get started.';
 
   @override
   String aiConfigListErrorDeleting(String configName, String error) {
@@ -152,8 +149,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigListUndoDelete => 'UNDO';
 
   @override
-  String get aiConfigProviderDeletedSuccessfully =>
-      'Provider deleted successfully';
+  String get aiConfigProviderDeletedSuccessfully => 'Provider deleted successfully';
 
   @override
   String aiConfigAssociatedModelsRemoved(int count) {
@@ -184,20 +180,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigNameTooShortError => 'Name must be at least 3 characters';
 
   @override
-  String get aiConfigNoModelsAvailable =>
-      'No AI models are configured yet. Please add one in settings.';
+  String get aiConfigNoModelsAvailable => 'No AI models are configured yet. Please add one in settings.';
 
   @override
-  String get aiConfigNoModelsSelected =>
-      'No models selected. At least one model is required.';
+  String get aiConfigNoModelsSelected => 'No models selected. At least one model is required.';
 
   @override
-  String get aiConfigNoProvidersAvailable =>
-      'No API providers available. Please add an API provider first.';
+  String get aiConfigNoProvidersAvailable => 'No API providers available. Please add an API provider first.';
 
   @override
-  String get aiConfigNoSuitableModelsAvailable =>
-      'No models meet the requirements for this prompt. Please configure models that support the required capabilities.';
+  String get aiConfigNoSuitableModelsAvailable => 'No models meet the requirements for this prompt. Please configure models that support the required capabilities.';
 
   @override
   String get aiConfigOutputModalitiesFieldLabel => 'Output Modalities';
@@ -212,15 +204,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigProviderModelIdFieldLabel => 'Provider Model ID';
 
   @override
-  String get aiConfigProviderModelIdTooShortError =>
-      'ProviderModelId must be at least 3 characters';
+  String get aiConfigProviderModelIdTooShortError => 'ProviderModelId must be at least 3 characters';
 
   @override
   String get aiConfigProviderTypeFieldLabel => 'Provider Type';
 
   @override
-  String get aiConfigReasoningCapabilityDescription =>
-      'Model can perform step-by-step reasoning';
+  String get aiConfigReasoningCapabilityDescription => 'Model can perform step-by-step reasoning';
 
   @override
   String get aiConfigReasoningCapabilityFieldLabel => 'Reasoning Capability';
@@ -232,15 +222,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigResponseTypeFieldLabel => 'AI Response Type';
 
   @override
-  String get aiConfigResponseTypeNotSelectedError =>
-      'Please select a response type';
+  String get aiConfigResponseTypeNotSelectedError => 'Please select a response type';
 
   @override
   String get aiConfigResponseTypeSelectHint => 'Select response type';
 
   @override
-  String get aiConfigSelectInputDataTypesPrompt =>
-      'Select required data types...';
+  String get aiConfigSelectInputDataTypesPrompt => 'Select required data types...';
 
   @override
   String get aiConfigSelectModalitiesPrompt => 'Select modalities';
@@ -264,8 +252,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigUpdateButtonLabel => 'Update Prompt';
 
   @override
-  String get aiConfigUseReasoningDescription =>
-      'If enabled, the model will use its reasoning capabilities for this prompt.';
+  String get aiConfigUseReasoningDescription => 'If enabled, the model will use its reasoning capabilities for this prompt.';
 
   @override
   String get aiConfigUseReasoningFieldLabel => 'Use Reasoning';
@@ -277,8 +264,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigUserMessageFieldLabel => 'User Message';
 
   @override
-  String get aiProviderAnthropicDescription =>
-      'Anthropic\'s Claude family of AI assistants';
+  String get aiProviderAnthropicDescription => 'Anthropic\'s Claude family of AI assistants';
 
   @override
   String get aiProviderAnthropicName => 'Anthropic Claude';
@@ -290,15 +276,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
-  String get aiProviderGenericOpenAiDescription =>
-      'API compatible with OpenAI format';
+  String get aiProviderGenericOpenAiDescription => 'API compatible with OpenAI format';
 
   @override
   String get aiProviderGenericOpenAiName => 'OpenAI Compatible';
 
   @override
-  String get aiProviderNebiusAiStudioDescription =>
-      'Nebius AI Studio\'s models';
+  String get aiProviderNebiusAiStudioDescription => 'Nebius AI Studio\'s models';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
@@ -385,8 +369,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirmă';
 
   @override
-  String get checklistItemDeleteWarning =>
-      'Această acțiune nu poate fi anulată.';
+  String get checklistItemDeleteWarning => 'Această acțiune nu poate fi anulată.';
 
   @override
   String get checklistItemDrag => 'Trage sugestiile în lista de verificare';
@@ -401,8 +384,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistSuggestionsOutdated => 'Depășite';
 
   @override
-  String get checklistSuggestionsRunning =>
-      'Se gândește la sugestii netrimise...';
+  String get checklistSuggestionsRunning => 'Se gândește la sugestii netrimise...';
 
   @override
   String get checklistSuggestionsTitle => 'Sugestii de acțiuni';
@@ -426,67 +408,52 @@ class AppLocalizationsRo extends AppLocalizations {
   String get completeHabitSuccessButton => 'Succes';
 
   @override
-  String get configFlagAttemptEmbeddingDescription =>
-      'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
+  String get configFlagAttemptEmbeddingDescription => 'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
 
   @override
-  String get configFlagAutoTranscribeDescription =>
-      'Transcrie automat înregistrările audio din intrările dvs. Acest lucru necesită o conexiune la internet.';
+  String get configFlagAutoTranscribeDescription => 'Transcrie automat înregistrările audio din intrările dvs. Acest lucru necesită o conexiune la internet.';
 
   @override
-  String get configFlagEnableAutoTaskTldrDescription =>
-      'Generează automat rezumate pentru sarcinile dvs. pentru a vă ajuta să înțelegeți rapid starea lor.';
+  String get configFlagEnableAutoTaskTldrDescription => 'Generează automat rezumate pentru sarcinile dvs. pentru a vă ajuta să înțelegeți rapid starea lor.';
 
   @override
-  String get configFlagEnableCalendarPageDescription =>
-      'Afișează pagina Calendar în navigarea principală. Vizualizați și gestionați-vă intrările într-o vizualizare calendaristică.';
+  String get configFlagEnableCalendarPageDescription => 'Afișează pagina Calendar în navigarea principală. Vizualizați și gestionați-vă intrările într-o vizualizare calendaristică.';
 
   @override
-  String get configFlagEnableDashboardsPageDescription =>
-      'Afișează pagina Tablouri de bord în navigarea principală. Vizualizați datele și informațiile dvs. în tablouri de bord personalizabile.';
+  String get configFlagEnableDashboardsPageDescription => 'Afișează pagina Tablouri de bord în navigarea principală. Vizualizați datele și informațiile dvs. în tablouri de bord personalizabile.';
 
   @override
-  String get configFlagEnableHabitsPageDescription =>
-      'Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.';
+  String get configFlagEnableHabitsPageDescription => 'Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.';
 
   @override
-  String get configFlagEnableLoggingDescription =>
-      'Activează înregistrarea detaliată pentru depanare. Acest lucru poate afecta performanța.';
+  String get configFlagEnableLoggingDescription => 'Activează înregistrarea detaliată pentru depanare. Acest lucru poate afecta performanța.';
 
   @override
-  String get configFlagEnableMatrixDescription =>
-      'Activează integrarea Matrix pentru a sincroniza intrările dvs. pe diferite dispozitive și cu alți utilizatori Matrix.';
+  String get configFlagEnableMatrixDescription => 'Activează integrarea Matrix pentru a sincroniza intrările dvs. pe diferite dispozitive și cu alți utilizatori Matrix.';
 
   @override
-  String get configFlagEnableNotifications =>
-      'Activează notificările pe desktop?';
+  String get configFlagEnableNotifications => 'Activează notificările pe desktop?';
 
   @override
-  String get configFlagEnableNotificationsDescription =>
-      'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
+  String get configFlagEnableNotificationsDescription => 'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
   @override
-  String get configFlagEnableTooltipDescription =>
-      'Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.';
+  String get configFlagEnableTooltipDescription => 'Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.';
 
   @override
   String get configFlagPrivate => 'Arată articolele private?';
 
   @override
-  String get configFlagPrivateDescription =>
-      'Activați această opțiune pentru a face intrările dvs. private în mod implicit. Intrările private sunt vizibile numai pentru dvs.';
+  String get configFlagPrivateDescription => 'Activați această opțiune pentru a face intrările dvs. private în mod implicit. Intrările private sunt vizibile numai pentru dvs.';
 
   @override
-  String get configFlagRecordLocationDescription =>
-      'Înregistrează automat locația dvs. cu intrări noi. Acest lucru ajută la organizarea și căutarea pe baza locației.';
+  String get configFlagRecordLocationDescription => 'Înregistrează automat locația dvs. cu intrări noi. Acest lucru ajută la organizarea și căutarea pe baza locației.';
 
   @override
-  String get configFlagResendAttachmentsDescription =>
-      'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
+  String get configFlagResendAttachmentsDescription => 'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
-  String get configFlagUseCloudInferenceDescription =>
-      'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
+  String get configFlagUseCloudInferenceDescription => 'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
 
   @override
   String get conflictsResolved => 'rezolvat';
@@ -546,8 +513,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardCategoryLabel => 'Categorie:';
 
   @override
-  String get dashboardCopyHint =>
-      'Salvează și copiază configurația tabloului de bord';
+  String get dashboardCopyHint => 'Salvează și copiază configurația tabloului de bord';
 
   @override
   String get dashboardDeleteConfirm => 'DA, ȘTERGE ACEST TABLOU DE BORD';
@@ -676,8 +642,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inputDataTypeTaskName => 'Task';
 
   @override
-  String get inputDataTypeTasksListDescription =>
-      'Use a list of tasks as input';
+  String get inputDataTypeTasksListDescription => 'Use a list of tasks as input';
 
   @override
   String get inputDataTypeTasksListName => 'Tasks List';
@@ -707,8 +672,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalDeleteHint => 'Șterge intrare';
 
   @override
-  String get journalDeleteQuestion =>
-      'Vrei să ștergi această intrare în jurnal?';
+  String get journalDeleteQuestion => 'Vrei să ștergi această intrare în jurnal?';
 
   @override
   String get journalDurationLabel => 'Durată:';
@@ -786,8 +750,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalUnlinkHint => 'Despărțiți';
 
   @override
-  String get journalUnlinkQuestion =>
-      'Sigur doriți să despărțiți această intrare?';
+  String get journalUnlinkQuestion => 'Sigur doriți să despărțiți această intrare?';
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
@@ -810,8 +773,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenancePurgeAudioModels => 'Eliminați modelele audio';
 
   @override
-  String get maintenancePurgeAudioModelsMessage =>
-      'Are you sure you want to purge all audio models? This action cannot be undone.';
+  String get maintenancePurgeAudioModelsMessage => 'Are you sure you want to purge all audio models? This action cannot be undone.';
 
   @override
   String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
@@ -823,15 +785,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
-  String get maintenancePurgeDeletedMessage =>
-      'Are you sure you want to purge all deleted items? This action cannot be undone.';
+  String get maintenancePurgeDeletedMessage => 'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
   String get maintenanceRecreateFts5 => 'Recreați indexul full-text';
 
   @override
-  String get maintenanceRecreateFts5Message =>
-      'Are you sure you want to recreate the full-text index? This may take some time.';
+  String get maintenanceRecreateFts5Message => 'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
   String get maintenanceRecreateFts5Confirm => 'YES, RECREATE INDEX';
@@ -840,15 +800,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceReSync => 'Resincronizați mesajele';
 
   @override
-  String get maintenanceSyncDefinitions =>
-      'Sync tags, measurables, dashboards, habits, categories';
+  String get maintenanceSyncDefinitions => 'Sync tags, measurables, dashboards, habits, categories';
 
   @override
   String get measurableDeleteConfirm => 'DA, CONFIRM STERGEREA';
 
   @override
-  String get measurableDeleteQuestion =>
-      'Vrei sa stergi acest tip de masuratoare?';
+  String get measurableDeleteQuestion => 'Vrei sa stergi acest tip de masuratoare?';
 
   @override
   String get measurableNotFound => 'Masuratoarea nu a fost gasita';
@@ -959,15 +917,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptBehaviorTitle => 'Prompt Behavior';
 
   @override
-  String get promptBehaviorDescription =>
-      'Configure how the prompt processes and responds';
+  String get promptBehaviorDescription => 'Configure how the prompt processes and responds';
 
   @override
   String get promptModelSelectionTitle => 'Model Selection';
 
   @override
-  String get promptModelSelectionDescription =>
-      'Choose compatible models for this prompt';
+  String get promptModelSelectionDescription => 'Choose compatible models for this prompt';
 
   @override
   String get promptDisplayNameLabel => 'Display Name';
@@ -997,8 +953,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptRequiredInputDataLabel => 'Required Input Data';
 
   @override
-  String get promptRequiredInputDataDescription =>
-      'Type of data this prompt expects';
+  String get promptRequiredInputDataDescription => 'Type of data this prompt expects';
 
   @override
   String get promptSelectInputTypeHint => 'Select input type';
@@ -1007,8 +962,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptAiResponseTypeLabel => 'AI Response Type';
 
   @override
-  String get promptAiResponseTypeDescription =>
-      'Format of the expected response';
+  String get promptAiResponseTypeDescription => 'Format of the expected response';
 
   @override
   String get promptSelectResponseTypeHint => 'Select response type';
@@ -1017,8 +971,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptReasoningModeLabel => 'Reasoning Mode';
 
   @override
-  String get promptReasoningModeDescription =>
-      'Enable for prompts requiring deep thinking';
+  String get promptReasoningModeDescription => 'Enable for prompts requiring deep thinking';
 
   @override
   String get promptCancelButton => 'Cancel';
@@ -1027,8 +980,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptSaveButton => 'Save Prompt';
 
   @override
-  String get promptNoModelsSelectedError =>
-      'No models selected. Select at least one model.';
+  String get promptNoModelsSelectedError => 'No models selected. Select at least one model.';
 
   @override
   String get promptAddOrRemoveModelsButton => 'Add or Remove Models';
@@ -1066,56 +1018,46 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get enhancedPromptFormDescription =>
-      'Create custom prompts that can be used with your AI models to generate specific types of responses';
+  String get enhancedPromptFormDescription => 'Create custom prompts that can be used with your AI models to generate specific types of responses';
 
   @override
   String get enhancedPromptFormQuickStartTitle => 'Quick Start';
 
   @override
-  String get enhancedPromptFormQuickStartDescription =>
-      'Start with a pre-built template to save time';
+  String get enhancedPromptFormQuickStartDescription => 'Start with a pre-built template to save time';
 
   @override
   String get enhancedPromptFormBasicConfigurationTitle => 'Basic Configuration';
 
   @override
-  String get enhancedPromptFormPromptConfigurationTitle =>
-      'Prompt Configuration';
+  String get enhancedPromptFormPromptConfigurationTitle => 'Prompt Configuration';
 
   @override
-  String get enhancedPromptFormConfigurationOptionsTitle =>
-      'Configuration Options';
+  String get enhancedPromptFormConfigurationOptionsTitle => 'Configuration Options';
 
   @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
 
   @override
-  String get enhancedPromptFormDisplayNameHelperText =>
-      'A descriptive name for this prompt template';
+  String get enhancedPromptFormDisplayNameHelperText => 'A descriptive name for this prompt template';
 
   @override
   String get enhancedPromptFormUserMessageHelperText => 'The main prompt text.';
 
   @override
-  String get enhancedPromptFormSystemMessageHelperText =>
-      'Instructions that define the AI\'s behavior and response style';
+  String get enhancedPromptFormSystemMessageHelperText => 'Instructions that define the AI\'s behavior and response style';
 
   @override
-  String get enhancedPromptFormDescriptionHelperText =>
-      'Optional notes about this prompt\'s purpose and usage';
+  String get enhancedPromptFormDescriptionHelperText => 'Optional notes about this prompt\'s purpose and usage';
 
   @override
-  String get enhancedPromptFormPreconfiguredPromptDescription =>
-      'Choose from ready-made prompt templates';
+  String get enhancedPromptFormPreconfiguredPromptDescription => 'Choose from ready-made prompt templates';
 
   @override
-  String get enhancedPromptFormRequiredInputDataSubtitle =>
-      'Type of data this prompt expects';
+  String get enhancedPromptFormRequiredInputDataSubtitle => 'Type of data this prompt expects';
 
   @override
-  String get enhancedPromptFormAiResponseTypeSubtitle =>
-      'Format of the expected response';
+  String get enhancedPromptFormAiResponseTypeSubtitle => 'Format of the expected response';
 
   @override
   String get aiSettingsPageTitle => 'AI Settings';
@@ -1170,8 +1112,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get aiSettingsFilterByReasoningTooltip =>
-      'Filter by reasoning capability';
+  String get aiSettingsFilterByReasoningTooltip => 'Filter by reasoning capability';
 
   @override
   String get aiSettingsAddProviderButton => 'Add Provider';
@@ -1195,40 +1136,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAboutTitle => 'Despre Lotti';
 
   @override
-  String get settingsAdvancedShowCaseAboutLottiTooltip =>
-      'Aflați mai multe despre aplicația Lotti, inclusiv versiunea și creditele.';
+  String get settingsAdvancedShowCaseAboutLottiTooltip => 'Aflați mai multe despre aplicația Lotti, inclusiv versiunea și creditele.';
 
   @override
-  String get settingsAdvancedShowCaseApiKeyTooltip =>
-      'Administrați cheile API pentru diverși furnizori de inteligență artificială. Adăugați, editați sau ștergeți chei pentru a configura integrări cu servicii compatibile precum OpenAI, Gemini și altele. Asigurați-vă că informațiile sensibile sunt gestionate în siguranță.';
+  String get settingsAdvancedShowCaseApiKeyTooltip => 'Administrați cheile API pentru diverși furnizori de inteligență artificială. Adăugați, editați sau ștergeți chei pentru a configura integrări cu servicii compatibile precum OpenAI, Gemini și altele. Asigurați-vă că informațiile sensibile sunt gestionate în siguranță.';
 
   @override
-  String get settingsAdvancedShowCaseConflictsTooltip =>
-      'Rezolvați conflictele de sincronizare pentru a asigura consecvența datelor.';
+  String get settingsAdvancedShowCaseConflictsTooltip => 'Rezolvați conflictele de sincronizare pentru a asigura consecvența datelor.';
 
   @override
-  String get settingsAdvancedShowCaseHealthImportTooltip =>
-      'Importați date legate de sănătate din surse externe.';
+  String get settingsAdvancedShowCaseHealthImportTooltip => 'Importați date legate de sănătate din surse externe.';
 
   @override
-  String get settingsAdvancedShowCaseLogsTooltip =>
-      'Accesați și revizuiți jurnalele aplicației pentru depanare și monitorizare.';
+  String get settingsAdvancedShowCaseLogsTooltip => 'Accesați și revizuiți jurnalele aplicației pentru depanare și monitorizare.';
 
   @override
-  String get settingsAdvancedShowCaseMaintenanceTooltip =>
-      'Efectuați sarcini de întreținere pentru a optimiza performanța aplicației.';
+  String get settingsAdvancedShowCaseMaintenanceTooltip => 'Efectuați sarcini de întreținere pentru a optimiza performanța aplicației.';
 
   @override
-  String get settingsAdvancedShowCaseMatrixSyncTooltip =>
-      'Configurați și gestionați setările de sincronizare Matrix pentru o integrare perfectă a datelor.';
+  String get settingsAdvancedShowCaseMatrixSyncTooltip => 'Configurați și gestionați setările de sincronizare Matrix pentru o integrare perfectă a datelor.';
 
   @override
-  String get settingsAdvancedShowCaseModelsTooltip =>
-      'Define AI models that use inference providers';
+  String get settingsAdvancedShowCaseModelsTooltip => 'Define AI models that use inference providers';
 
   @override
-  String get settingsAdvancedShowCaseSyncOutboxTooltip =>
-      'Vizualizați și gestionați elementele care așteaptă să fie sincronizate în căsuța de ieșire.';
+  String get settingsAdvancedShowCaseSyncOutboxTooltip => 'Vizualizați și gestionați elementele care așteaptă să fie sincronizate în căsuța de ieșire.';
 
   @override
   String get settingsAdvancedTitle => 'Setari Avansate';
@@ -1252,32 +1184,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categorii';
 
   @override
-  String get settingsCategoryShowCaseActiveTooltip =>
-      'Comutați această opțiune pentru a marca categoria ca activă. Categoriile active sunt utilizate în prezent și vor fi afișate proeminent pentru o accesibilitate mai ușoară.';
+  String get settingsCategoryShowCaseActiveTooltip => 'Comutați această opțiune pentru a marca categoria ca activă. Categoriile active sunt utilizate în prezent și vor fi afișate proeminent pentru o accesibilitate mai ușoară.';
 
   @override
-  String get settingsCategoryShowCaseColorTooltip =>
-      'Selectează o culoare pentru a reprezenta această categorie. Poți introduce un cod de culoare HEX valid (de exemplu, #FF5733) sau poți utiliza selectorul de culori din dreapta pentru a alege o culoare vizual.';
+  String get settingsCategoryShowCaseColorTooltip => 'Selectează o culoare pentru a reprezenta această categorie. Poți introduce un cod de culoare HEX valid (de exemplu, #FF5733) sau poți utiliza selectorul de culori din dreapta pentru a alege o culoare vizual.';
 
   @override
-  String get settingsCategoryShowCaseDelTooltip =>
-      'Apasă acest buton pentru a șterge categoria. Reține că această acțiune este ireversibilă, așa că asigură-te că vrei să elimini categoria înainte de a continua.';
+  String get settingsCategoryShowCaseDelTooltip => 'Apasă acest buton pentru a șterge categoria. Reține că această acțiune este ireversibilă, așa că asigură-te că vrei să elimini categoria înainte de a continua.';
 
   @override
-  String get settingsCategoryShowCaseFavTooltip =>
-      'Activează această opțiune pentru a marca categoria ca favorită. Categoriile favorite sunt mai ușor de accesat și sunt evidențiate pentru o referință rapidă.';
+  String get settingsCategoryShowCaseFavTooltip => 'Activează această opțiune pentru a marca categoria ca favorită. Categoriile favorite sunt mai ușor de accesat și sunt evidențiate pentru o referință rapidă.';
 
   @override
-  String get settingsCategoryShowCaseNameTooltip =>
-      'Introdu un nume clar și relevant pentru categorie. Păstrează-l scurt și descriptiv, astfel încât să poți identifica cu ușurință scopul său.';
+  String get settingsCategoryShowCaseNameTooltip => 'Introdu un nume clar și relevant pentru categorie. Păstrează-l scurt și descriptiv, astfel încât să poți identifica cu ușurință scopul său.';
 
   @override
-  String get settingsCategoryShowCasePrivateTooltip =>
-      'Activează această opțiune pentru a marca categoria ca privată. Categoriile private sunt vizibile doar pentru tine și te ajută să organizezi în siguranță obiceiuri și sarcini sensibile sau personale.';
+  String get settingsCategoryShowCasePrivateTooltip => 'Activează această opțiune pentru a marca categoria ca privată. Categoriile private sunt vizibile doar pentru tine și te ajută să organizezi în siguranță obiceiuri și sarcini sensibile sau personale.';
 
   @override
-  String get settingsConflictsResolutionTitle =>
-      'Rezolvarea Conflictelor de Sincronizare';
+  String get settingsConflictsResolutionTitle => 'Rezolvarea Conflictelor de Sincronizare';
 
   @override
   String get settingsConflictsTitle => 'Sync cu conflicte';
@@ -1289,44 +1214,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Save';
 
   @override
-  String get settingsDashboardsShowCaseActiveTooltip =>
-      'Comută acest buton pentru a marca tabloul de bord ca activ. Tablourile de bord active sunt utilizate în prezent și vor fi afișate proeminent pentru o accesibilitate mai ușoară.';
+  String get settingsDashboardsShowCaseActiveTooltip => 'Comută acest buton pentru a marca tabloul de bord ca activ. Tablourile de bord active sunt utilizate în prezent și vor fi afișate proeminent pentru o accesibilitate mai ușoară.';
 
   @override
-  String get settingsDashboardsShowCaseCatTooltip =>
-      'Selectează o categorie care descrie cel mai bine tabloul de bord. Acest lucru ajută la organizarea și clasificarea eficientă a tablourilor de bord. Exemple: \"Sănătate\", \"Productivitate\", \"Muncă\".';
+  String get settingsDashboardsShowCaseCatTooltip => 'Selectează o categorie care descrie cel mai bine tabloul de bord. Acest lucru ajută la organizarea și clasificarea eficientă a tablourilor de bord. Exemple: \"Sănătate\", \"Productivitate\", \"Muncă\".';
 
   @override
-  String get settingsDashboardsShowCaseCopyTooltip =>
-      'Atinge pentru a copia acest tablou de bord. Acest lucru îți va permite să duplici tabloul de bord și să îl utilizezi în altă parte.';
+  String get settingsDashboardsShowCaseCopyTooltip => 'Atinge pentru a copia acest tablou de bord. Acest lucru îți va permite să duplici tabloul de bord și să îl utilizezi în altă parte.';
 
   @override
-  String get settingsDashboardsShowCaseDelTooltip =>
-      'Atinge acest buton pentru a șterge definitiv tabloul de bord. Fii atent, deoarece această acțiune nu poate fi anulată și toate datele aferente vor fi eliminate.';
+  String get settingsDashboardsShowCaseDelTooltip => 'Atinge acest buton pentru a șterge definitiv tabloul de bord. Fii atent, deoarece această acțiune nu poate fi anulată și toate datele aferente vor fi eliminate.';
 
   @override
-  String get settingsDashboardsShowCaseDescrTooltip =>
-      'Oferă o descriere detaliată pentru tabloul de bord. Acest lucru ajută la înțelegerea scopului și a conținutului tabloului de bord. Exemple: \"Urmărește activitățile zilnice de wellness\", \"Monitorizează sarcinile și obiectivele legate de muncă\".';
+  String get settingsDashboardsShowCaseDescrTooltip => 'Oferă o descriere detaliată pentru tabloul de bord. Acest lucru ajută la înțelegerea scopului și a conținutului tabloului de bord. Exemple: \"Urmărește activitățile zilnice de wellness\", \"Monitorizează sarcinile și obiectivele legate de muncă\".';
 
   @override
-  String get settingsDashboardsShowCaseHealthChartsTooltip =>
-      'Selectează diagramele de sănătate pe care dorești să le incluzi în tabloul de bord. Exemple: \"Greutate\", \"Procentaj de grăsime corporală\".';
+  String get settingsDashboardsShowCaseHealthChartsTooltip => 'Selectează diagramele de sănătate pe care dorești să le incluzi în tabloul de bord. Exemple: \"Greutate\", \"Procentaj de grăsime corporală\".';
 
   @override
-  String get settingsDashboardsShowCaseNameTooltip =>
-      'Introdu un nume clar și relevant pentru tabloul de bord. Păstrează-l scurt și descriptiv, astfel încât să poți identifica cu ușurință scopul său. Exemple: \"Urmărire Wellness\", \"Obiective Zilnice\", \"Program de Lucru\".';
+  String get settingsDashboardsShowCaseNameTooltip => 'Introdu un nume clar și relevant pentru tabloul de bord. Păstrează-l scurt și descriptiv, astfel încât să poți identifica cu ușurință scopul său. Exemple: \"Urmărire Wellness\", \"Obiective Zilnice\", \"Program de Lucru\".';
 
   @override
-  String get settingsDashboardsShowCasePrivateTooltip =>
-      'Comută acest buton pentru a face tabloul de bord privat. Tablourile de bord private sunt vizibile doar pentru tine și nu vor fi partajate cu alții.';
+  String get settingsDashboardsShowCasePrivateTooltip => 'Comută acest buton pentru a face tabloul de bord privat. Tablourile de bord private sunt vizibile doar pentru tine și nu vor fi partajate cu alții.';
 
   @override
-  String get settingsDashboardsShowCaseSurveyChartsTooltip =>
-      'Selectează diagramele de sondaj pe care dorești să le incluzi în tabloul de bord. Exemple: \"Satisfacția clienților\", \"Feedbackul angajaților\".';
+  String get settingsDashboardsShowCaseSurveyChartsTooltip => 'Selectează diagramele de sondaj pe care dorești să le incluzi în tabloul de bord. Exemple: \"Satisfacția clienților\", \"Feedbackul angajaților\".';
 
   @override
-  String get settingsDashboardsShowCaseWorkoutChartsTooltip =>
-      'Selectează diagramele de antrenament pe care dorești să le incluzi în tabloul de bord. Exemple: \"Mers pe jos\", \"Alergare\", \"Înot\".';
+  String get settingsDashboardsShowCaseWorkoutChartsTooltip => 'Selectează diagramele de antrenament pe care dorești să le incluzi în tabloul de bord. Exemple: \"Mers pe jos\", \"Alergare\", \"Înot\".';
 
   @override
   String get settingsDashboardsTitle => 'Panouri de bord';
@@ -1353,48 +1268,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsSaveLabel => 'Salvează';
 
   @override
-  String get settingsHabitsShowCaseAlertTimeTooltip =>
-      'Setează ora specifică la care dorești să primești o mementă sau o alertă pentru acest obicei. Acest lucru asigură că nu uiți niciodată să îl finalizezi. Exemplu: \"20:00\".';
+  String get settingsHabitsShowCaseAlertTimeTooltip => 'Setează ora specifică la care dorești să primești o mementă sau o alertă pentru acest obicei. Acest lucru asigură că nu uiți niciodată să îl finalizezi. Exemplu: \"20:00\".';
 
   @override
-  String get settingsHabitsShowCaseArchivedTooltip =>
-      'Comută acest buton pentru a arhiva obiceiul. Obiceiurile arhivate nu mai sunt active, dar rămân salvate pentru referințe sau revizuiri ulterioare. Exemple: \"Învață chitară\", \"Curs finalizat\".';
+  String get settingsHabitsShowCaseArchivedTooltip => 'Comută acest buton pentru a arhiva obiceiul. Obiceiurile arhivate nu mai sunt active, dar rămân salvate pentru referințe sau revizuiri ulterioare. Exemple: \"Învață chitară\", \"Curs finalizat\".';
 
   @override
-  String get settingsHabitsShowCaseCatTooltip =>
-      'Alege o categorie care descrie cel mai bine obiceiul tău sau creează una nouă selectând butonul [+].\nExemple: \"Sănătate\", \"Productivitate\", \"Exerciții fizice\".';
+  String get settingsHabitsShowCaseCatTooltip => 'Alege o categorie care descrie cel mai bine obiceiul tău sau creează una nouă selectând butonul [+].\nExemple: \"Sănătate\", \"Productivitate\", \"Exerciții fizice\".';
 
   @override
-  String get settingsHabitsShowCaseDashTooltip =>
-      'Selectați un tablou de bord pentru a vă organiza și urmări obiceiurile sau creați un tablou de bord nou folosind butonul [+].\nExemple: \"Monitorizare bunăstare\", \"Obiective zilnice\", \"Program de lucru\".';
+  String get settingsHabitsShowCaseDashTooltip => 'Selectați un tablou de bord pentru a vă organiza și urmări obiceiurile sau creați un tablou de bord nou folosind butonul [+].\nExemple: \"Monitorizare bunăstare\", \"Obiective zilnice\", \"Program de lucru\".';
 
   @override
-  String get settingsHabitsShowCaseDelHabitTooltip =>
-      'Atingeți acest buton pentru a șterge definitiv obiceiul. Fiți precaut, deoarece această acțiune nu poate fi anulată și toate datele aferente vor fi eliminate.';
+  String get settingsHabitsShowCaseDelHabitTooltip => 'Atingeți acest buton pentru a șterge definitiv obiceiul. Fiți precaut, deoarece această acțiune nu poate fi anulată și toate datele aferente vor fi eliminate.';
 
   @override
-  String get settingsHabitsShowCaseDescrTooltip =>
-      'Furnizați o descriere scurtă și semnificativă a obiceiului. Includeți orice detalii relevante sau\ncontext pentru a defini clar scopul și importanța obiceiului.\nExemple: \"Alergați 30 de minute în fiecare dimineață pentru a vă îmbunătăți condiția fizică\" sau \"Citiți un capitol pe zi pentru a vă îmbunătăți cunoștințele și concentrarea\".';
+  String get settingsHabitsShowCaseDescrTooltip => 'Furnizați o descriere scurtă și semnificativă a obiceiului. Includeți orice detalii relevante sau\ncontext pentru a defini clar scopul și importanța obiceiului.\nExemple: \"Alergați 30 de minute în fiecare dimineață pentru a vă îmbunătăți condiția fizică\" sau \"Citiți un capitol pe zi pentru a vă îmbunătăți cunoștințele și concentrarea\".';
 
   @override
-  String get settingsHabitsShowCaseNameTooltip =>
-      'Introduceți un nume clar și descriptiv pentru obicei.\nEvitați numele prea lungi și faceți-l suficient de concis pentru a identifica ușor obiceiul.\nExemple: \"Alergări de dimineață\", \"Citit zilnic\".';
+  String get settingsHabitsShowCaseNameTooltip => 'Introduceți un nume clar și descriptiv pentru obicei.\nEvitați numele prea lungi și faceți-l suficient de concis pentru a identifica ușor obiceiul.\nExemple: \"Alergări de dimineață\", \"Citit zilnic\".';
 
   @override
-  String get settingsHabitsShowCasePriorTooltip =>
-      'Comutați pentru a atribui prioritate obiceiului. Obiceiurile cu prioritate ridicată reprezintă adesea sarcini esențiale sau urgente pe care doriți să vă concentrați. Exemple: \"Exerciții zilnice\", \"Lucru la proiect\".';
+  String get settingsHabitsShowCasePriorTooltip => 'Comutați pentru a atribui prioritate obiceiului. Obiceiurile cu prioritate ridicată reprezintă adesea sarcini esențiale sau urgente pe care doriți să vă concentrați. Exemple: \"Exerciții zilnice\", \"Lucru la proiect\".';
 
   @override
-  String get settingsHabitsShowCasePrivateTooltip =>
-      'Utilizați acest comutator pentru a marca obiceiul ca privat. Obiceiurile private sunt vizibile numai pentru dvs. și nu vor fi partajate cu alte persoane. Exemple: \"Jurnal personal\", \"Meditație\".';
+  String get settingsHabitsShowCasePrivateTooltip => 'Utilizați acest comutator pentru a marca obiceiul ca privat. Obiceiurile private sunt vizibile numai pentru dvs. și nu vor fi partajate cu alte persoane. Exemple: \"Jurnal personal\", \"Meditație\".';
 
   @override
-  String get settingsHabitsShowCaseStarDateTooltip =>
-      'Selectați data de la care doriți să începeți urmărirea acestui obicei. Acest lucru ajută la definirea momentului în care începe obiceiul și permite monitorizarea exactă a progresului. Exemplu: \"1 iulie 2025\".';
+  String get settingsHabitsShowCaseStarDateTooltip => 'Selectați data de la care doriți să începeți urmărirea acestui obicei. Acest lucru ajută la definirea momentului în care începe obiceiul și permite monitorizarea exactă a progresului. Exemplu: \"1 iulie 2025\".';
 
   @override
-  String get settingsHabitsShowCaseStartTimeTooltip =>
-      'Setați ora de la care acest obicei ar trebui să fie vizibil sau să înceapă să apară în programul dvs. Acest lucru vă ajută să vă organizați ziua eficient. Exemplu: \"7:00 AM\".';
+  String get settingsHabitsShowCaseStartTimeTooltip => 'Setați ora de la care acest obicei ar trebui să fie vizibil sau să înceapă să apară în programul dvs. Acest lucru vă ajută să vă organizați ziua eficient. Exemplu: \"7:00 AM\".';
 
   @override
   String get settingsHabitsTitle => 'Obiceiuri';
@@ -1415,8 +1319,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMaintenanceTitle => 'Mentenanță';
 
   @override
-  String get settingsMatrixAcceptVerificationLabel =>
-      'Celălalt dispozitiv afișează emoji, continuați';
+  String get settingsMatrixAcceptVerificationLabel => 'Celălalt dispozitiv afișează emoji, continuați';
 
   @override
   String get settingsMatrixCancel => 'Anulare';
@@ -1425,8 +1328,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixCancelVerificationLabel => 'Anulează verificarea';
 
   @override
-  String get settingsMatrixContinueVerificationLabel =>
-      'Acceptați pe celălalt dispozitiv pentru a continua';
+  String get settingsMatrixContinueVerificationLabel => 'Acceptați pe celălalt dispozitiv pentru a continua';
 
   @override
   String get settingsMatrixDeleteLabel => 'Șterge';
@@ -1438,8 +1340,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixEnterValidUrl => 'Introduceți o adresă URL validă';
 
   @override
-  String get settingsMatrixHomeserverConfigTitle =>
-      'Configurare Matrix Homeserver';
+  String get settingsMatrixHomeserverConfigTitle => 'Configurare Matrix Homeserver';
 
   @override
   String get settingsMatrixHomeServerLabel => 'Homeserver';
@@ -1472,12 +1373,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixPreviousPage => 'Pagina anterioară';
 
   @override
-  String get settingsMatrixQrTextPage =>
-      'Scanați acest cod QR pentru a invita dispozitivul într-o cameră de sincronizare.';
+  String get settingsMatrixQrTextPage => 'Scanați acest cod QR pentru a invita dispozitivul într-o cameră de sincronizare.';
 
   @override
-  String get settingsMatrixRoomConfigTitle =>
-      'Configurare cameră de sincronizare Matrix';
+  String get settingsMatrixRoomConfigTitle => 'Configurare cameră de sincronizare Matrix';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Începe verificarea';
@@ -1495,29 +1394,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixUserLabel => 'Utilizator';
 
   @override
-  String get settingsMatrixUserNameTooShort =>
-      'Numele de utilizator este prea scurt';
+  String get settingsMatrixUserNameTooShort => 'Numele de utilizator este prea scurt';
 
   @override
-  String get settingsMatrixVerificationCancelledLabel =>
-      'Anulat pe celălalt dispozitiv...';
+  String get settingsMatrixVerificationCancelledLabel => 'Anulat pe celălalt dispozitiv...';
 
   @override
   String get settingsMatrixVerificationSuccessConfirm => 'Am înțeles';
 
   @override
-  String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+  String settingsMatrixVerificationSuccessLabel(String deviceName, String deviceID) {
     return 'Ați verificat cu succes $deviceName ($deviceID)';
   }
 
   @override
-  String get settingsMatrixVerifyConfirm =>
-      'Confirmați pe celălalt dispozitiv că emoji-urile de mai jos sunt afișate pe ambele dispozitive, în aceeași ordine:';
+  String get settingsMatrixVerifyConfirm => 'Confirmați pe celălalt dispozitiv că emoji-urile de mai jos sunt afișate pe ambele dispozitive, în aceeași ordine:';
 
   @override
-  String get settingsMatrixVerifyIncomingConfirm =>
-      'Confirmați că emoji-urile de mai jos sunt afișate pe ambele dispozitive, în aceeași ordine:';
+  String get settingsMatrixVerifyIncomingConfirm => 'Confirmați că emoji-urile de mai jos sunt afișate pe ambele dispozitive, în aceeași ordine:';
 
   @override
   String get settingsMatrixVerifyLabel => 'Verifică';
@@ -1547,28 +1441,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Salvare';
 
   @override
-  String get settingsMeasurableShowCaseAggreTypeTooltip =>
-      'Selectați tipul implicit de agregare pentru datele măsurabile. Aceasta determină modul în care datele vor fi rezumate în timp. \nOpțiuni: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.';
+  String get settingsMeasurableShowCaseAggreTypeTooltip => 'Selectați tipul implicit de agregare pentru datele măsurabile. Aceasta determină modul în care datele vor fi rezumate în timp. \nOpțiuni: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.';
 
   @override
-  String get settingsMeasurableShowCaseDelTooltip =>
-      'Faceți clic pe acest buton pentru a șterge tipul măsurabil. Rețineți că această acțiune este ireversibilă, așa că asigurați-vă că doriți să eliminați tipul măsurabil înainte de a continua.';
+  String get settingsMeasurableShowCaseDelTooltip => 'Faceți clic pe acest buton pentru a șterge tipul măsurabil. Rețineți că această acțiune este ireversibilă, așa că asigurați-vă că doriți să eliminați tipul măsurabil înainte de a continua.';
 
   @override
-  String get settingsMeasurableShowCaseDescrTooltip =>
-      'Furnizați o descriere scurtă și semnificativă a tipului măsurabil. Includeți orice detalii relevante sau context pentru a defini clar scopul și importanța acestuia. \nExemple: \'Greutatea corporală măsurată în kilograme\'';
+  String get settingsMeasurableShowCaseDescrTooltip => 'Furnizați o descriere scurtă și semnificativă a tipului măsurabil. Includeți orice detalii relevante sau context pentru a defini clar scopul și importanța acestuia. \nExemple: \'Greutatea corporală măsurată în kilograme\'';
 
   @override
-  String get settingsMeasurableShowCaseNameTooltip =>
-      'Introduceți un nume clar și descriptiv pentru tipul măsurabil.\nEvitați numele prea lungi și faceți-l suficient de concis pentru a identifica cu ușurință tipul măsurabil. \nExemple: \'Greutate\', \'Tensiune arterială\'.';
+  String get settingsMeasurableShowCaseNameTooltip => 'Introduceți un nume clar și descriptiv pentru tipul măsurabil.\nEvitați numele prea lungi și faceți-l suficient de concis pentru a identifica cu ușurință tipul măsurabil. \nExemple: \'Greutate\', \'Tensiune arterială\'.';
 
   @override
-  String get settingsMeasurableShowCasePrivateTooltip =>
-      'Comutați această opțiune pentru a marca tipul măsurabil ca privat. Tipurile măsurabile private sunt vizibile numai pentru dvs. și vă ajută să organizați în siguranță datele sensibile sau personale.';
+  String get settingsMeasurableShowCasePrivateTooltip => 'Comutați această opțiune pentru a marca tipul măsurabil ca privat. Tipurile măsurabile private sunt vizibile numai pentru dvs. și vă ajută să organizați în siguranță datele sensibile sau personale.';
 
   @override
-  String get settingsMeasurableShowCaseUnitTooltip =>
-      'Introduceți o abreviere clară și concisă a unității pentru tipul măsurabil. Acest lucru ajută la identificarea cu ușurință a unității de măsură.';
+  String get settingsMeasurableShowCaseUnitTooltip => 'Introduceți o abreviere clară și concisă a unității pentru tipul măsurabil. Acest lucru ajută la identificarea cu ușurință a unității de măsură.';
 
   @override
   String get settingsMeasurablesTitle => 'Măsurători';
@@ -1577,19 +1465,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Unitatea abrevierii:';
 
   @override
-  String get settingsSpeechAudioWithoutTranscript =>
-      'Intrări audio fără transcriere:';
+  String get settingsSpeechAudioWithoutTranscript => 'Intrări audio fără transcriere:';
 
   @override
-  String get settingsSpeechAudioWithoutTranscriptButton =>
-      'Găsește și transcrie';
+  String get settingsSpeechAudioWithoutTranscriptButton => 'Găsește și transcrie';
 
   @override
   String get settingsSpeechLastActivity => 'Ultima activitate de transcriere:';
 
   @override
-  String get settingsSpeechModelSelectionTitle =>
-      'Model de recunoaștere vocală Whisper:';
+  String get settingsSpeechModelSelectionTitle => 'Model de recunoaștere vocală Whisper:';
 
   @override
   String get settingsSpeechTitle => 'Setări vorbire';
@@ -1613,24 +1498,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsTagsSaveLabel => 'Salveaza eticheta';
 
   @override
-  String get settingsTagsShowCaseDeleteTooltip =>
-      'Eliminați această etichetă definitiv. Această acțiune nu poate fi anulată.';
+  String get settingsTagsShowCaseDeleteTooltip => 'Eliminați această etichetă definitiv. Această acțiune nu poate fi anulată.';
 
   @override
-  String get settingsTagsShowCaseHideTooltip =>
-      'Activați această opțiune pentru a ascunde această etichetă din sugestii. Utilizați-o pentru etichetele personale sau care nu sunt necesare în mod obișnuit.';
+  String get settingsTagsShowCaseHideTooltip => 'Activați această opțiune pentru a ascunde această etichetă din sugestii. Utilizați-o pentru etichetele personale sau care nu sunt necesare în mod obișnuit.';
 
   @override
-  String get settingsTagsShowCaseNameTooltip =>
-      'Introduceți un nume clar și relevant pentru etichetă. Păstrați-l scurt și descriptiv, astfel încât să puteți clasifica cu ușurință obiceiurile dvs. Exemple: \"Sănătate\", \"Productivitate\", \"Mindfulness\".';
+  String get settingsTagsShowCaseNameTooltip => 'Introduceți un nume clar și relevant pentru etichetă. Păstrați-l scurt și descriptiv, astfel încât să puteți clasifica cu ușurință obiceiurile dvs. Exemple: \"Sănătate\", \"Productivitate\", \"Mindfulness\".';
 
   @override
-  String get settingsTagsShowCasePrivateTooltip =>
-      'Activați această opțiune pentru a face eticheta privată. Etichetele private sunt vizibile numai pentru dvs. și nu vor fi partajate cu alții.';
+  String get settingsTagsShowCasePrivateTooltip => 'Activați această opțiune pentru a face eticheta privată. Etichetele private sunt vizibile numai pentru dvs. și nu vor fi partajate cu alții.';
 
   @override
-  String get settingsTagsShowCaseTypeTooltip =>
-      'Selectați tipul de etichetă pentru a o clasifica corect: \n[Etichetă]-> Categorii generale precum \'Sănătate\' sau \'Productivitate\'. \n[Persoană]-> Utilizați pentru etichetarea anumitor persoane. \n[Poveste]-> Atașați etichete la povești pentru o mai bună organizare.';
+  String get settingsTagsShowCaseTypeTooltip => 'Selectați tipul de etichetă pentru a o clasifica corect: \n[Etichetă]-> Categorii generale precum \'Sănătate\' sau \'Productivitate\'. \n[Persoană]-> Utilizați pentru etichetarea anumitor persoane. \n[Poveste]-> Atașați etichete la povești pentru o mai bună organizare.';
 
   @override
   String get settingsTagsTagName => 'Etichete:';
@@ -1660,16 +1540,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsThemingLight => 'Aspect luminos';
 
   @override
-  String get settingsThemingShowCaseDarkTooltip =>
-      'Alegeți tema întunecată pentru un aspect mai întunecat.';
+  String get settingsThemingShowCaseDarkTooltip => 'Alegeți tema întunecată pentru un aspect mai întunecat.';
 
   @override
-  String get settingsThemingShowCaseLightTooltip =>
-      'Alegeți tema luminoasă pentru un aspect mai luminos.';
+  String get settingsThemingShowCaseLightTooltip => 'Alegeți tema luminoasă pentru un aspect mai luminos.';
 
   @override
-  String get settingsThemingShowCaseModeTooltip =>
-      'Selectați modul de temă preferat: Luminos, Întunecat sau Automat.';
+  String get settingsThemingShowCaseModeTooltip => 'Selectați modul de temă preferat: Luminos, Întunecat sau Automat.';
 
   @override
   String get settingsThemingTitle => 'Tematică';
@@ -1705,15 +1582,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncDeleteConfigConfirm => 'DA, SUNT SIGUR';
 
   @override
-  String get syncDeleteConfigQuestion =>
-      'Doriți să ștergeți configurația de sincronizare?';
+  String get syncDeleteConfigQuestion => 'Doriți să ștergeți configurația de sincronizare?';
 
   @override
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage =>
-      'This will sync all tags, measurables, and categories. Do you want to continue?';
+  String get syncEntitiesMessage => 'This will sync all tags, measurables, and categories. Do you want to continue?';
 
   @override
   String get syncStepCategories => 'Categories';
@@ -1791,50 +1666,43 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiInferenceErrorConnectionFailedTitle => 'Connection Failed';
 
   @override
-  String get aiInferenceErrorConnectionFailedMessage =>
-      'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
+  String get aiInferenceErrorConnectionFailedMessage => 'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
 
   @override
   String get aiInferenceErrorTimeoutTitle => 'Request Timed Out';
 
   @override
-  String get aiInferenceErrorTimeoutMessage =>
-      'The request took too long to complete. Please try again or check if the service is responding.';
+  String get aiInferenceErrorTimeoutMessage => 'The request took too long to complete. Please try again or check if the service is responding.';
 
   @override
   String get aiInferenceErrorAuthenticationTitle => 'Authentication Failed';
 
   @override
-  String get aiInferenceErrorAuthenticationMessage =>
-      'Authentication failed. Please check your API key and ensure it is valid.';
+  String get aiInferenceErrorAuthenticationMessage => 'Authentication failed. Please check your API key and ensure it is valid.';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Rate Limit Exceeded';
 
   @override
-  String get aiInferenceErrorRateLimitMessage =>
-      'You have exceeded the rate limit. Please wait a moment before trying again.';
+  String get aiInferenceErrorRateLimitMessage => 'You have exceeded the rate limit. Please wait a moment before trying again.';
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Invalid Request';
 
   @override
-  String get aiInferenceErrorInvalidRequestMessage =>
-      'The request was invalid. Please check your configuration and try again.';
+  String get aiInferenceErrorInvalidRequestMessage => 'The request was invalid. Please check your configuration and try again.';
 
   @override
   String get aiInferenceErrorServerTitle => 'Server Error';
 
   @override
-  String get aiInferenceErrorServerMessage =>
-      'The AI service encountered an error. Please try again later.';
+  String get aiInferenceErrorServerMessage => 'The AI service encountered an error. Please try again later.';
 
   @override
   String get aiInferenceErrorUnknownTitle => 'Error';
 
   @override
-  String get aiInferenceErrorUnknownMessage =>
-      'An unexpected error occurred. Please try again.';
+  String get aiInferenceErrorUnknownMessage => 'An unexpected error occurred. Please try again.';
 
   @override
   String get aiInferenceErrorRetryButton => 'Try Again';

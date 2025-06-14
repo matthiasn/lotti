@@ -179,6 +179,50 @@ void main() {
 
         expect(result.originalError, error);
       });
+
+      test('handles Ollama model not found error', () {
+        const error = '''
+OpenAIClientException({
+  "uri": "http://localhost:11434/v1/chat/completions",
+  "method": "POST",
+  "code": 404,
+  "message": "Unsuccessful response",
+  "body": {
+    "error": {
+      "message": "model "gemma3:12b-it-qat" not found, try pulling it first",
+      "type": "api_error",
+      "param": null,
+      "code": null
+    }
+  }
+})''';
+
+        final result = AiErrorUtils.categorizeError(error);
+
+        expect(result.type, InferenceErrorType.invalidRequest);
+        expect(result.message, contains('model "gemma3:12b-it-qat" not found'));
+        expect(result.message, contains('try pulling it first'));
+      });
+
+      test('handles generic model not found error', () {
+        const error = '''
+OpenAIClientException({
+  "uri": "https://api.openai.com/v1/chat/completions",
+  "method": "POST",
+  "code": 404,
+  "message": "Not Found",
+  "body": {
+    "error": {
+      "message": "The model gpt-5 not found"
+    }
+  }
+})''';
+
+        final result = AiErrorUtils.categorizeError(error);
+
+        expect(result.type, InferenceErrorType.invalidRequest);
+        expect(result.message, contains('The model gpt-5 not found'));
+      });
     });
 
     group('extractDetailedErrorMessage', () {
@@ -208,6 +252,32 @@ void main() {
         expect(
           AiErrorUtils.extractDetailedErrorMessage(error),
           equals('Detailed error from JSON string'),
+        );
+      });
+
+      test('extracts message from nested error.message structure', () {
+        final error = TestErrorWithBody(
+          body: {
+            'error': {
+              'message': 'model "llama2" not found, try pulling it first',
+              'type': 'api_error',
+            },
+          },
+        );
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(error),
+          equals('model "llama2" not found, try pulling it first'),
+        );
+      });
+
+      test('extracts message from nested error structure in JSON string', () {
+        final error = TestErrorWithBody(
+          body:
+              '{"error": {"message": "Model not available", "code": "model_not_found"}}',
+        );
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(error),
+          equals('Model not available'),
         );
       });
 

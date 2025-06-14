@@ -36,18 +36,41 @@ class AiErrorUtils {
       dynamic detailContent;
 
       if (errorBody != null) {
-        if (errorBody is Map && errorBody.containsKey('detail')) {
-          detailContent = errorBody['detail'];
-          specificFieldWasAccessed = true;
+        if (errorBody is Map) {
+          // Check for nested error.message structure (OpenAI format)
+          if (errorBody.containsKey('error') && errorBody['error'] is Map) {
+            final errorObj = errorBody['error'] as Map;
+            if (errorObj.containsKey('message')) {
+              detailContent = errorObj['message'];
+              specificFieldWasAccessed = true;
+            }
+          } else if (errorBody.containsKey('detail')) {
+            detailContent = errorBody['detail'];
+            specificFieldWasAccessed = true;
+          } else if (errorBody.containsKey('message')) {
+            detailContent = errorBody['message'];
+            specificFieldWasAccessed = true;
+          }
         } else if (errorBody is String) {
           try {
             final decodedBody = jsonDecode(errorBody) as Map<String, dynamic>;
-            if (decodedBody.containsKey('detail')) {
+            // Check for nested error.message structure
+            if (decodedBody.containsKey('error') &&
+                decodedBody['error'] is Map) {
+              final errorObj = decodedBody['error'] as Map;
+              if (errorObj.containsKey('message')) {
+                detailContent = errorObj['message'];
+                specificFieldWasAccessed = true;
+              }
+            } else if (decodedBody.containsKey('detail')) {
               detailContent = decodedBody['detail'];
+              specificFieldWasAccessed = true;
+            } else if (decodedBody.containsKey('message')) {
+              detailContent = decodedBody['message'];
               specificFieldWasAccessed = true;
             }
           } catch (_) {
-            // JSON decoding failed, or not a map, or no 'detail' key
+            // JSON decoding failed, or not a map
           }
         }
       }
@@ -148,8 +171,23 @@ class AiErrorUtils {
       return _handleApiError(error, stackTrace);
     }
 
-    // HTTP status code errors
+    // Check for 404 model not found errors (common with Ollama)
     final errorString = error.toString();
+    if (errorString.contains('404') || errorString.contains('Not Found')) {
+      final detailedMessage = extractDetailedErrorMessage(error);
+      // Check if this is a model not found error
+      if (detailedMessage.contains('not found') &&
+          detailedMessage.contains('model')) {
+        return InferenceError(
+          message: detailedMessage,
+          type: InferenceErrorType.invalidRequest,
+          originalError: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    // HTTP status code errors
     if (errorString.contains('401') || errorString.contains('Unauthorized')) {
       return InferenceError(
         message: 'Authentication failed. Please check your API key.',
@@ -230,6 +268,28 @@ class AiErrorUtils {
   ) {
     // Try to extract status code from error
     final errorString = error.toString();
+
+    // Handle 404 errors (model not found, etc.)
+    if (errorString.contains('404') || errorString.contains('Not Found')) {
+      final detailedMessage = extractDetailedErrorMessage(error);
+      // Check if this is a model not found error
+      if (detailedMessage.contains('not found') &&
+          detailedMessage.contains('model')) {
+        return InferenceError(
+          message: detailedMessage,
+          type: InferenceErrorType.invalidRequest,
+          originalError: error,
+          stackTrace: stackTrace,
+        );
+      }
+      return InferenceError(
+        message: extractDetailedErrorMessage(error,
+            defaultMessage: 'The requested resource was not found.'),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
 
     if (errorString.contains('401') || errorString.contains('Unauthorized')) {
       return InferenceError(

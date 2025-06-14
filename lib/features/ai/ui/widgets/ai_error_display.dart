@@ -54,8 +54,8 @@ class AiErrorDisplay extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Error message
-          Text(
+          // Error message - selectable for copying
+          SelectableText(
             error.message,
             style: context.textTheme.bodyMedium?.copyWith(
               color: context.colorScheme.onSurface.withValues(alpha: 0.8),
@@ -94,7 +94,7 @@ class AiErrorDisplay extends StatelessWidget {
                               style: context.textTheme.bodySmall,
                             ),
                             Expanded(
-                              child: Text(
+                              child: SelectableText(
                                 suggestion,
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.colorScheme.onSurface
@@ -175,6 +175,31 @@ class AiErrorDisplay extends StatelessWidget {
           'Reduce the frequency of requests',
         ];
       case InferenceErrorType.invalidRequest:
+        // Check if this is a model not found error
+        if (error.message.contains('not found') &&
+            error.message.contains('model')) {
+          // Extract model name if present
+          final modelMatch =
+              RegExp(r'model "([^"]+)"').firstMatch(error.message);
+          final modelName = modelMatch?.group(1) ?? 'the model';
+
+          if (error.message.contains('pulling')) {
+            // Ollama-specific error
+            return [
+              'Run: ollama pull $modelName',
+              'Make sure Ollama is running',
+              'Check if the model name is correct',
+              'Visit ollama.ai/library for available models',
+            ];
+          } else {
+            return [
+              'Model "$modelName" is not available',
+              'Check if the model name is correct',
+              'Verify the model is installed/accessible',
+              'Try selecting a different model',
+            ];
+          }
+        }
         return [
           'Check your model configuration',
           'Verify the selected model is available',
