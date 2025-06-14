@@ -64,12 +64,12 @@ class UnifiedAiController extends _$UnifiedAiController {
             },
           );
     } catch (e, stackTrace) {
-      final errorMessage = AiErrorUtils.extractDetailedErrorMessage(
-        e,
-        defaultMessage: e.toString(),
-      );
+      // Categorize the error for better user feedback
+      final inferenceError =
+          AiErrorUtils.categorizeError(e, stackTrace: stackTrace);
 
-      state = errorMessage;
+      // Set the error message to display
+      state = inferenceError.message;
 
       // Try to set error status if we have prompt config
       try {
@@ -89,7 +89,7 @@ class UnifiedAiController extends _$UnifiedAiController {
       }
 
       loggingService.captureException(
-        e,
+        inferenceError.originalError ?? e,
         domain: 'UnifiedAiController',
         subDomain: 'runInference',
         stackTrace: stackTrace,

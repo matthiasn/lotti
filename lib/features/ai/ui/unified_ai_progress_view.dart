@@ -5,6 +5,8 @@ import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Progress view for unified AI inference
@@ -56,18 +58,32 @@ class UnifiedAiProgressView extends ConsumerWidget {
         final isError = inferenceStatus == InferenceStatus.error;
         final isRunning = inferenceStatus == InferenceStatus.running;
 
-        TextStyle textStyle;
+        // If there's an error, try to parse it as an InferenceError
         if (isError) {
-          textStyle = monospaceTextStyleSmall.copyWith(
-            color: Colors.red,
-            fontSize: fontSizeMediumLarge,
-            fontWeight: FontWeight.w300,
-          );
-        } else {
-          textStyle = monospaceTextStyleSmall.copyWith(
-            fontWeight: FontWeight.w300,
-          );
+          try {
+            // Try to create an InferenceError from the state string
+            final inferenceError = AiErrorUtils.categorizeError(state);
+
+            return AiErrorDisplay(
+              error: inferenceError,
+              onRetry: () {
+                // Retry the inference
+                ref.invalidate(
+                  unifiedAiControllerProvider(
+                    entityId: entityId,
+                    promptId: promptId,
+                  ),
+                );
+              },
+            );
+          } catch (_) {
+            // If we can't parse it as InferenceError, fall back to text display
+          }
         }
+
+        final textStyle = monospaceTextStyleSmall.copyWith(
+          fontWeight: FontWeight.w300,
+        );
 
         return ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 240),

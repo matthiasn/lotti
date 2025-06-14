@@ -63,6 +63,10 @@ class CloudInferenceRepository {
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
+          headers: {
+            'X-Title': 'Lotti',
+          },
+          queryParams: {},
         );
 
     final res = client.createChatCompletionStream(
@@ -98,6 +102,10 @@ class CloudInferenceRepository {
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
+          headers: {
+            'X-Title': 'Lotti',
+          },
+          queryParams: {},
         );
 
     final res = client.createChatCompletionStream(
@@ -143,6 +151,10 @@ class CloudInferenceRepository {
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
+          headers: {
+            'X-Title': 'Lotti',
+          },
+          queryParams: {},
         );
 
     return client

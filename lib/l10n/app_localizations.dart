@@ -3345,6 +3345,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get viewMenuTitle;
+
+  /// No description provided for @aiInferenceErrorConnectionFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Failed'**
+  String get aiInferenceErrorConnectionFailedTitle;
+
+  /// No description provided for @aiInferenceErrorConnectionFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.'**
+  String get aiInferenceErrorConnectionFailedMessage;
+
+  /// No description provided for @aiInferenceErrorTimeoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Timed Out'**
+  String get aiInferenceErrorTimeoutTitle;
+
+  /// No description provided for @aiInferenceErrorTimeoutMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The request took too long to complete. Please try again or check if the service is responding.'**
+  String get aiInferenceErrorTimeoutMessage;
+
+  /// No description provided for @aiInferenceErrorAuthenticationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication Failed'**
+  String get aiInferenceErrorAuthenticationTitle;
+
+  /// No description provided for @aiInferenceErrorAuthenticationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Please check your API key and ensure it is valid.'**
+  String get aiInferenceErrorAuthenticationMessage;
+
+  /// No description provided for @aiInferenceErrorRateLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Limit Exceeded'**
+  String get aiInferenceErrorRateLimitTitle;
+
+  /// No description provided for @aiInferenceErrorRateLimitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have exceeded the rate limit. Please wait a moment before trying again.'**
+  String get aiInferenceErrorRateLimitMessage;
+
+  /// No description provided for @aiInferenceErrorInvalidRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid Request'**
+  String get aiInferenceErrorInvalidRequestTitle;
+
+  /// No description provided for @aiInferenceErrorInvalidRequestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was invalid. Please check your configuration and try again.'**
+  String get aiInferenceErrorInvalidRequestMessage;
+
+  /// No description provided for @aiInferenceErrorServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Error'**
+  String get aiInferenceErrorServerTitle;
+
+  /// No description provided for @aiInferenceErrorServerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI service encountered an error. Please try again later.'**
+  String get aiInferenceErrorServerMessage;
+
+  /// No description provided for @aiInferenceErrorUnknownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get aiInferenceErrorUnknownTitle;
+
+  /// No description provided for @aiInferenceErrorUnknownMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred. Please try again.'**
+  String get aiInferenceErrorUnknownMessage;
+
+  /// No description provided for @aiInferenceErrorRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get aiInferenceErrorRetryButton;
+
+  /// No description provided for @aiInferenceErrorSuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions:'**
+  String get aiInferenceErrorSuggestionsTitle;
 }
 
 class _AppLocalizationsDelegate

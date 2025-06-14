@@ -6,7 +6,6 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:matcher/matcher.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
@@ -478,7 +477,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Force multiple pump cycles to ensure state propagates
-      for (int i = 0; i < 5; i++) {
+      for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
       await tester.pumpAndSettle();

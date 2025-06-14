@@ -146,8 +146,17 @@ class UnifiedAiInferenceRepository {
       );
 
       onStatusChange(InferenceStatus.idle);
-    } catch (e) {
+    } catch (e, stackTrace) {
       onStatusChange(InferenceStatus.error);
+
+      // Log additional error details
+      developer.log(
+        'Inference failed',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
       rethrow;
     }
   }

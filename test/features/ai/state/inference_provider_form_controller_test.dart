@@ -574,9 +574,6 @@ void main() {
       );
 
       // Act
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: 'ollama-id').notifier,
-      );
       final formState = await container.read(
         inferenceProviderFormControllerProvider(configId: 'ollama-id').future,
       );
