@@ -62,6 +62,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.openAi: openaiModels,
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
+  InferenceProviderType.fastWhisper: fastWhisperModels,
 };
 
 /// Gemini models - Google's multimodal AI models
@@ -237,6 +238,34 @@ const List<KnownModel> openRouterModels = [
     isReasoningModel: false,
     description:
         'GPT-4.1 is a flagship large language model optimized for advanced instruction following, real-world software engineering, and long-context reasoning.',
+  ),
+];
+
+/// FastWhisper models - Local speech recognition models
+const List<KnownModel> fastWhisperModels = [
+  KnownModel(
+    providerModelId: 'base',
+    name: 'Base',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Balanced model for accurate transcription',
+  ),
+  KnownModel(
+    providerModelId: 'small',
+    name: 'Small',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Improved accuracy for complex audio',
+  ),
+  KnownModel(
+    providerModelId: 'large-v3',
+    name: 'Large V3',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Most accurate model for demanding transcription tasks',
   ),
 ];
 

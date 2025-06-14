@@ -258,6 +258,8 @@ class AiConfigCard extends ConsumerWidget {
           return Icons.cloud;
         case InferenceProviderType.nebiusAiStudio:
           return Icons.rocket_launch;
+        case InferenceProviderType.fastWhisper:
+          return Icons.mic;
       }
     } else if (config is AiConfigModel) {
       final model = config as AiConfigModel;

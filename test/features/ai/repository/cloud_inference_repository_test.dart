@@ -233,7 +233,6 @@ void main() {
         baseUrl: baseUrl,
         apiKey: apiKey,
         audioBase64: audioBase64,
-        overrideClient: mockClient,
       );
 
       // Capture call  for verification
@@ -395,7 +394,6 @@ void main() {
         baseUrl: baseUrl,
         apiKey: apiKey,
         maxCompletionTokens: maxCompletionTokens,
-        overrideClient: mockClient,
       );
 
       // Capture call for verification

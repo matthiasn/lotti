@@ -81,6 +81,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigApiKeyFieldLabel => 'API Key';
 
   @override
+  String aiConfigAssociatedModelsRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count associated model$_temp0 removed';
+  }
+
+  @override
   String get aiConfigBaseUrlFieldLabel => 'Base URL';
 
   @override
@@ -114,6 +125,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigInvalidUrlError => 'Please enter a valid URL';
 
   @override
+  String get aiConfigListCascadeDeleteWarning =>
+      'This will also delete all models associated with this provider.';
+
+  @override
   String get aiConfigListDeleteConfirmCancel => 'CANCEL';
 
   @override
@@ -126,10 +141,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiConfigListDeleteConfirmTitle => 'Confirm Deletion';
-
-  @override
-  String get aiConfigListCascadeDeleteWarning =>
-      'This will also delete all models associated with this provider.';
 
   @override
   String get aiConfigListEmptyState =>
@@ -150,21 +161,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiConfigListUndoDelete => 'UNDO';
-
-  @override
-  String get aiConfigProviderDeletedSuccessfully =>
-      'Provider deleted successfully';
-
-  @override
-  String aiConfigAssociatedModelsRemoved(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 's',
-      one: '',
-    );
-    return '$count associated model$_temp0 removed';
-  }
 
   @override
   String get aiConfigManageModelsButton => 'Manage Models';
@@ -204,6 +200,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiConfigOutputModalitiesTitle => 'Output Modalities';
+
+  @override
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
 
   @override
   String get aiConfigProviderFieldLabel => 'Inference Provider';
@@ -277,11 +277,82 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigUserMessageFieldLabel => 'User Message';
 
   @override
+  String get aiFormCancel => 'Cancel';
+
+  @override
+  String get aiFormFixErrors => 'Please fix errors before saving';
+
+  @override
+  String get aiFormNoChanges => 'No unsaved changes';
+
+  @override
+  String get aiInferenceErrorAuthenticationMessage =>
+      'Authentication failed. Please check your API key and ensure it is valid.';
+
+  @override
+  String get aiInferenceErrorAuthenticationTitle => 'Authentication Failed';
+
+  @override
+  String get aiInferenceErrorConnectionFailedMessage =>
+      'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
+
+  @override
+  String get aiInferenceErrorConnectionFailedTitle => 'Connection Failed';
+
+  @override
+  String get aiInferenceErrorInvalidRequestMessage =>
+      'The request was invalid. Please check your configuration and try again.';
+
+  @override
+  String get aiInferenceErrorInvalidRequestTitle => 'Invalid Request';
+
+  @override
+  String get aiInferenceErrorRateLimitMessage =>
+      'You have exceeded the rate limit. Please wait a moment before trying again.';
+
+  @override
+  String get aiInferenceErrorRateLimitTitle => 'Rate Limit Exceeded';
+
+  @override
+  String get aiInferenceErrorRetryButton => 'Try Again';
+
+  @override
+  String get aiInferenceErrorServerMessage =>
+      'The AI service encountered an error. Please try again later.';
+
+  @override
+  String get aiInferenceErrorServerTitle => 'Server Error';
+
+  @override
+  String get aiInferenceErrorSuggestionsTitle => 'Suggestions:';
+
+  @override
+  String get aiInferenceErrorTimeoutMessage =>
+      'The request took too long to complete. Please try again or check if the service is responding.';
+
+  @override
+  String get aiInferenceErrorTimeoutTitle => 'Request Timed Out';
+
+  @override
+  String get aiInferenceErrorUnknownMessage =>
+      'An unexpected error occurred. Please try again.';
+
+  @override
+  String get aiInferenceErrorUnknownTitle => 'Error';
+
+  @override
   String get aiProviderAnthropicDescription =>
       'Anthropic\'s Claude family of AI assistants';
 
   @override
   String get aiProviderAnthropicName => 'Anthropic Claude';
+
+  @override
+  String get aiProviderFastWhisperDescription =>
+      'Local speech recognition with FastWhisper';
+
+  @override
+  String get aiProviderFastWhisperName => 'FastWhisper';
 
   @override
   String get aiProviderGeminiDescription => 'Google\'s Gemini AI models';
@@ -332,6 +403,71 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiResponseTypeTaskSummary => 'Task Summary';
+
+  @override
+  String get aiSettingsAddModelButton => 'Add Model';
+
+  @override
+  String get aiSettingsAddPromptButton => 'Add Prompt';
+
+  @override
+  String get aiSettingsAddProviderButton => 'Add Provider';
+
+  @override
+  String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
+
+  @override
+  String get aiSettingsClearFiltersButton => 'Clear';
+
+  @override
+  String aiSettingsFilterByCapabilityTooltip(String capability) {
+    return 'Filter by $capability capability';
+  }
+
+  @override
+  String aiSettingsFilterByProviderTooltip(String provider) {
+    return 'Filter by $provider';
+  }
+
+  @override
+  String get aiSettingsFilterByReasoningTooltip =>
+      'Filter by reasoning capability';
+
+  @override
+  String get aiSettingsModalityAudio => 'Audio';
+
+  @override
+  String get aiSettingsModalityText => 'Text';
+
+  @override
+  String get aiSettingsModalityVision => 'Vision';
+
+  @override
+  String get aiSettingsNoModelsConfigured => 'No AI models configured';
+
+  @override
+  String get aiSettingsNoPromptsConfigured => 'No AI prompts configured';
+
+  @override
+  String get aiSettingsNoProvidersConfigured => 'No AI providers configured';
+
+  @override
+  String get aiSettingsPageTitle => 'AI Settings';
+
+  @override
+  String get aiSettingsReasoningLabel => 'Reasoning';
+
+  @override
+  String get aiSettingsSearchHint => 'Search AI configurations...';
+
+  @override
+  String get aiSettingsTabModels => 'Models';
+
+  @override
+  String get aiSettingsTabPrompts => 'Prompts';
+
+  @override
+  String get aiSettingsTabProviders => 'Providers';
 
   @override
   String get aiTaskSummaryRunning =>
@@ -397,9 +533,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine vorgeschlagenen Aktionspunkte';
 
   @override
-  String get checklistsTitle => 'Checklisten';
-
-  @override
   String get checklistSuggestionsOutdated => 'Veraltet';
 
   @override
@@ -408,6 +541,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistSuggestionsTitle => 'Vorgeschlagene Aktionspunkte';
+
+  @override
+  String get checklistsTitle => 'Checklisten';
 
   @override
   String get colorLabel => 'Farbe:';
@@ -584,6 +720,58 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editorPlaceholder => 'Notizen eingeben...';
 
   @override
+  String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
+
+  @override
+  String get enhancedPromptFormAiResponseTypeSubtitle =>
+      'Format of the expected response';
+
+  @override
+  String get enhancedPromptFormBasicConfigurationTitle => 'Basic Configuration';
+
+  @override
+  String get enhancedPromptFormConfigurationOptionsTitle =>
+      'Configuration Options';
+
+  @override
+  String get enhancedPromptFormDescription =>
+      'Create custom prompts that can be used with your AI models to generate specific types of responses';
+
+  @override
+  String get enhancedPromptFormDescriptionHelperText =>
+      'Optional notes about this prompt\'s purpose and usage';
+
+  @override
+  String get enhancedPromptFormDisplayNameHelperText =>
+      'A descriptive name for this prompt template';
+
+  @override
+  String get enhancedPromptFormPreconfiguredPromptDescription =>
+      'Choose from ready-made prompt templates';
+
+  @override
+  String get enhancedPromptFormPromptConfigurationTitle =>
+      'Prompt Configuration';
+
+  @override
+  String get enhancedPromptFormQuickStartDescription =>
+      'Start with a pre-built template to save time';
+
+  @override
+  String get enhancedPromptFormQuickStartTitle => 'Quick Start';
+
+  @override
+  String get enhancedPromptFormRequiredInputDataSubtitle =>
+      'Type of data this prompt expects';
+
+  @override
+  String get enhancedPromptFormSystemMessageHelperText =>
+      'Instructions that define the AI\'s behavior and response style';
+
+  @override
+  String get enhancedPromptFormUserMessageHelperText => 'The main prompt text.';
+
+  @override
   String get entryActions => 'Aktionen';
 
   @override
@@ -632,6 +820,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitPriorityLabel => 'Priorität:';
 
   @override
+  String get habitShowAlertAtLabel => 'Alarm anzeigen um';
+
+  @override
+  String get habitShowFromLabel => 'Anzeigen ab';
+
+  @override
   String get habitsCompletedHeader => 'Abgeschlossen';
 
   @override
@@ -645,12 +839,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsFilterPendingLater => 'später';
-
-  @override
-  String get habitShowAlertAtLabel => 'Alarm anzeigen um';
-
-  @override
-  String get habitShowFromLabel => 'Anzeigen ab';
 
   @override
   String get habitsOpenHeader => 'Jetzt fällig';
@@ -724,6 +912,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalHideMapHint => 'Karte ausblenden';
 
   @override
+  String get journalLinkFromHint => 'Verknüpfen von';
+
+  @override
+  String get journalLinkToHint => 'Verknüpfen mit';
+
+  @override
   String get journalLinkedEntriesAiLabel => 'KI-generierte Einträge anzeigen:';
 
   @override
@@ -734,12 +928,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Verknüpft von:';
-
-  @override
-  String get journalLinkFromHint => 'Verknüpfen von';
-
-  @override
-  String get journalLinkToHint => 'Verknüpfen mit';
 
   @override
   String get journalPrivateTooltip => 'nur privat';
@@ -811,11 +999,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenancePurgeAudioModels => 'Audiomodelle löschen';
 
   @override
-  String get maintenancePurgeAudioModelsMessage =>
-      'Are you sure you want to purge all audio models? This action cannot be undone.';
+  String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
 
   @override
-  String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
+  String get maintenancePurgeAudioModelsMessage =>
+      'Are you sure you want to purge all audio models? This action cannot be undone.';
 
   @override
   String get maintenancePurgeDeleted => 'Gelöschte Elemente löschen';
@@ -828,17 +1016,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
-  String get maintenanceRecreateFts5 => 'Volltextindex neu erstellen';
+  String get maintenanceReSync => 'Nachrichten erneut synchronisieren';
 
   @override
-  String get maintenanceRecreateFts5Message =>
-      'Are you sure you want to recreate the full-text index? This may take some time.';
+  String get maintenanceRecreateFts5 => 'Volltextindex neu erstellen';
 
   @override
   String get maintenanceRecreateFts5Confirm => 'YES, RECREATE INDEX';
 
   @override
-  String get maintenanceReSync => 'Nachrichten erneut synchronisieren';
+  String get maintenanceRecreateFts5Message =>
+      'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -880,6 +1068,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get modelEditPageTitle => 'Edit Model';
+
+  @override
+  String modelManagementSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count model$_temp0 selected';
+  }
 
   @override
   String get modelsSettingsPageTitle => 'AI Models';
@@ -927,7 +1126,54 @@ class AppLocalizationsDe extends AppLocalizations {
   String get outboxMonitorSwitchLabel => 'aktiviert';
 
   @override
+  String get promptAddOrRemoveModelsButton => 'Add or Remove Models';
+
+  @override
   String get promptAddPageTitle => 'Add Prompt';
+
+  @override
+  String get promptAiResponseTypeDescription =>
+      'Format of the expected response';
+
+  @override
+  String get promptAiResponseTypeLabel => 'AI Response Type';
+
+  @override
+  String get promptBehaviorDescription =>
+      'Configure how the prompt processes and responds';
+
+  @override
+  String get promptBehaviorTitle => 'Prompt Behavior';
+
+  @override
+  String get promptCancelButton => 'Cancel';
+
+  @override
+  String get promptContentDescription => 'Define the system and user prompts';
+
+  @override
+  String get promptContentTitle => 'Prompt Content';
+
+  @override
+  String get promptDefaultModelBadge => 'Default';
+
+  @override
+  String get promptDescriptionHint => 'Describe this prompt';
+
+  @override
+  String get promptDescriptionLabel => 'Description';
+
+  @override
+  String get promptDetailsDescription => 'Basic information about this prompt';
+
+  @override
+  String get promptDetailsTitle => 'Prompt Details';
+
+  @override
+  String get promptDisplayNameHint => 'Enter a friendly name';
+
+  @override
+  String get promptDisplayNameLabel => 'Display Name';
 
   @override
   String get promptEditLoadError => 'Failed to load prompt';
@@ -936,261 +1182,77 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptEditPageTitle => 'Edit Prompt';
 
   @override
-  String get promptSettingsPageTitle => 'AI Prompts';
-
-  @override
-  String get promptSelectionModalTitle => 'Select Preconfigured Prompt';
-
-  @override
-  String get promptUsePreconfiguredButton => 'Use Preconfigured Prompt';
-
-  @override
-  String get promptDetailsTitle => 'Prompt Details';
-
-  @override
-  String get promptDetailsDescription => 'Basic information about this prompt';
-
-  @override
-  String get promptContentTitle => 'Prompt Content';
-
-  @override
-  String get promptContentDescription => 'Define the system and user prompts';
-
-  @override
-  String get promptBehaviorTitle => 'Prompt Behavior';
-
-  @override
-  String get promptBehaviorDescription =>
-      'Configure how the prompt processes and responds';
-
-  @override
-  String get promptModelSelectionTitle => 'Model Selection';
-
-  @override
-  String get promptModelSelectionDescription =>
-      'Choose compatible models for this prompt';
-
-  @override
-  String get promptDisplayNameLabel => 'Display Name';
-
-  @override
-  String get promptDisplayNameHint => 'Enter a friendly name';
-
-  @override
-  String get promptDescriptionLabel => 'Description';
-
-  @override
-  String get promptDescriptionHint => 'Describe this prompt';
-
-  @override
-  String get promptSystemPromptLabel => 'System Prompt';
-
-  @override
-  String get promptSystemPromptHint => 'Enter the system prompt...';
-
-  @override
-  String get promptUserPromptLabel => 'User Prompt';
-
-  @override
-  String get promptUserPromptHint => 'Enter the user prompt...';
-
-  @override
-  String get promptRequiredInputDataLabel => 'Required Input Data';
-
-  @override
-  String get promptRequiredInputDataDescription =>
-      'Type of data this prompt expects';
-
-  @override
-  String get promptSelectInputTypeHint => 'Select input type';
-
-  @override
-  String get promptAiResponseTypeLabel => 'AI Response Type';
-
-  @override
-  String get promptAiResponseTypeDescription =>
-      'Format of the expected response';
-
-  @override
-  String get promptSelectResponseTypeHint => 'Select response type';
-
-  @override
-  String get promptReasoningModeLabel => 'Reasoning Mode';
-
-  @override
-  String get promptReasoningModeDescription =>
-      'Enable for prompts requiring deep thinking';
-
-  @override
-  String get promptCancelButton => 'Cancel';
-
-  @override
-  String get promptSaveButton => 'Save Prompt';
-
-  @override
-  String get aiFormNoChanges => 'No unsaved changes';
-
-  @override
-  String get aiFormFixErrors => 'Please fix errors before saving';
-
-  @override
-  String get aiFormCancel => 'Cancel';
-
-  @override
-  String get promptNoModelsSelectedError =>
-      'No models selected. Select at least one model.';
-
-  @override
-  String get promptAddOrRemoveModelsButton => 'Add or Remove Models';
-
-  @override
-  String get promptSelectModelsButton => 'Select Models';
-
-  @override
-  String get promptDefaultModelBadge => 'Default';
-
-  @override
-  String get promptSetDefaultButton => 'Set Default';
-
-  @override
-  String get promptLoadingModel => 'Loading model...';
-
-  @override
   String get promptErrorLoadingModel => 'Error loading model';
 
   @override
   String get promptGoBackButton => 'Go Back';
 
   @override
-  String get promptTryAgainMessage => 'Please try again or contact support';
+  String get promptLoadingModel => 'Loading model...';
 
   @override
-  String modelManagementSelectedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 's',
-      one: '',
-    );
-    return '$count model$_temp0 selected';
-  }
+  String get promptModelSelectionDescription =>
+      'Choose compatible models for this prompt';
 
   @override
-  String get enhancedPromptFormDescription =>
-      'Create custom prompts that can be used with your AI models to generate specific types of responses';
+  String get promptModelSelectionTitle => 'Model Selection';
 
   @override
-  String get enhancedPromptFormQuickStartTitle => 'Quick Start';
+  String get promptNoModelsSelectedError =>
+      'No models selected. Select at least one model.';
 
   @override
-  String get enhancedPromptFormQuickStartDescription =>
-      'Start with a pre-built template to save time';
+  String get promptReasoningModeDescription =>
+      'Enable for prompts requiring deep thinking';
 
   @override
-  String get enhancedPromptFormBasicConfigurationTitle => 'Basic Configuration';
+  String get promptReasoningModeLabel => 'Reasoning Mode';
 
   @override
-  String get enhancedPromptFormPromptConfigurationTitle =>
-      'Prompt Configuration';
-
-  @override
-  String get enhancedPromptFormConfigurationOptionsTitle =>
-      'Configuration Options';
-
-  @override
-  String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
-
-  @override
-  String get enhancedPromptFormDisplayNameHelperText =>
-      'A descriptive name for this prompt template';
-
-  @override
-  String get enhancedPromptFormUserMessageHelperText => 'The main prompt text.';
-
-  @override
-  String get enhancedPromptFormSystemMessageHelperText =>
-      'Instructions that define the AI\'s behavior and response style';
-
-  @override
-  String get enhancedPromptFormDescriptionHelperText =>
-      'Optional notes about this prompt\'s purpose and usage';
-
-  @override
-  String get enhancedPromptFormPreconfiguredPromptDescription =>
-      'Choose from ready-made prompt templates';
-
-  @override
-  String get enhancedPromptFormRequiredInputDataSubtitle =>
+  String get promptRequiredInputDataDescription =>
       'Type of data this prompt expects';
 
   @override
-  String get enhancedPromptFormAiResponseTypeSubtitle =>
-      'Format of the expected response';
+  String get promptRequiredInputDataLabel => 'Required Input Data';
 
   @override
-  String get aiSettingsPageTitle => 'AI Settings';
+  String get promptSaveButton => 'Save Prompt';
 
   @override
-  String get aiSettingsNoProvidersConfigured => 'No AI providers configured';
+  String get promptSelectInputTypeHint => 'Select input type';
 
   @override
-  String get aiSettingsNoModelsConfigured => 'No AI models configured';
+  String get promptSelectModelsButton => 'Select Models';
 
   @override
-  String get aiSettingsNoPromptsConfigured => 'No AI prompts configured';
+  String get promptSelectResponseTypeHint => 'Select response type';
 
   @override
-  String get aiSettingsTabProviders => 'Providers';
+  String get promptSelectionModalTitle => 'Select Preconfigured Prompt';
 
   @override
-  String get aiSettingsTabModels => 'Models';
+  String get promptSetDefaultButton => 'Set Default';
 
   @override
-  String get aiSettingsTabPrompts => 'Prompts';
+  String get promptSettingsPageTitle => 'AI Prompts';
 
   @override
-  String get aiSettingsSearchHint => 'Search AI configurations...';
+  String get promptSystemPromptHint => 'Enter the system prompt...';
 
   @override
-  String aiSettingsFilterByProviderTooltip(String provider) {
-    return 'Filter by $provider';
-  }
+  String get promptSystemPromptLabel => 'System Prompt';
 
   @override
-  String get aiSettingsClearFiltersButton => 'Clear';
+  String get promptTryAgainMessage => 'Please try again or contact support';
 
   @override
-  String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
+  String get promptUsePreconfiguredButton => 'Use Preconfigured Prompt';
 
   @override
-  String get aiSettingsModalityText => 'Text';
+  String get promptUserPromptHint => 'Enter the user prompt...';
 
   @override
-  String get aiSettingsModalityVision => 'Vision';
-
-  @override
-  String get aiSettingsModalityAudio => 'Audio';
-
-  @override
-  String get aiSettingsReasoningLabel => 'Reasoning';
-
-  @override
-  String aiSettingsFilterByCapabilityTooltip(String capability) {
-    return 'Filter by $capability capability';
-  }
-
-  @override
-  String get aiSettingsFilterByReasoningTooltip =>
-      'Filter by reasoning capability';
-
-  @override
-  String get aiSettingsAddProviderButton => 'Add Provider';
-
-  @override
-  String get aiSettingsAddModelButton => 'Add Model';
-
-  @override
-  String get aiSettingsAddPromptButton => 'Add Prompt';
+  String get promptUserPromptLabel => 'User Prompt';
 
   @override
   String get saveButtonLabel => 'Save';
@@ -1200,6 +1262,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get searchHint => 'Suchen...';
+
+  @override
+  String get settingThemingDark => 'Dunkles Design';
+
+  @override
+  String get settingThemingLight => 'Helles Design';
 
   @override
   String get settingsAboutTitle => 'Über Lotti';
@@ -1448,11 +1516,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixEnterValidUrl => 'Bitte gib eine gültige URL ein';
 
   @override
-  String get settingsMatrixHomeserverConfigTitle =>
-      'Matrix-Homeserver-Einrichtung';
+  String get settingsMatrixHomeServerLabel => 'Homeserver';
 
   @override
-  String get settingsMatrixHomeServerLabel => 'Homeserver';
+  String get settingsMatrixHomeserverConfigTitle =>
+      'Matrix-Homeserver-Einrichtung';
 
   @override
   String get settingsMatrixListUnverifiedLabel => 'Nicht verifizierte Geräte';
@@ -1582,10 +1650,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Geben Sie eine klare und prägnante Einheitenabkürzung für die Messgröße ein. Dies hilft, die Maßeinheit leicht zu identifizieren.';
 
   @override
-  String get settingsMeasurablesTitle => 'Messgrößen';
+  String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional):';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional):';
+  String get settingsMeasurablesTitle => 'Messgrößen';
 
   @override
   String get settingsSpeechAudioWithoutTranscript =>
@@ -1686,12 +1754,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemingTitle => 'Farbschema';
 
   @override
-  String get settingThemingDark => 'Dunkles Design';
-
-  @override
-  String get settingThemingLight => 'Helles Design';
-
-  @override
   String get showcaseCloseButton => 'Schließen';
 
   @override
@@ -1760,9 +1822,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskNameHint => 'Geben Sie einen Namen für die Aufgabe ein';
 
   @override
-  String get tasksFilterTitle => 'Aufgabenfilter';
-
-  @override
   String get taskStatusAll => 'Alle';
 
   @override
@@ -1790,6 +1849,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskStatusRejected => 'Abgelehnt';
 
   @override
+  String get tasksFilterTitle => 'Aufgabenfilter';
+
+  @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';
 
   @override
@@ -1797,59 +1859,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'Ansicht';
-
-  @override
-  String get aiInferenceErrorConnectionFailedTitle => 'Connection Failed';
-
-  @override
-  String get aiInferenceErrorConnectionFailedMessage =>
-      'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
-
-  @override
-  String get aiInferenceErrorTimeoutTitle => 'Request Timed Out';
-
-  @override
-  String get aiInferenceErrorTimeoutMessage =>
-      'The request took too long to complete. Please try again or check if the service is responding.';
-
-  @override
-  String get aiInferenceErrorAuthenticationTitle => 'Authentication Failed';
-
-  @override
-  String get aiInferenceErrorAuthenticationMessage =>
-      'Authentication failed. Please check your API key and ensure it is valid.';
-
-  @override
-  String get aiInferenceErrorRateLimitTitle => 'Rate Limit Exceeded';
-
-  @override
-  String get aiInferenceErrorRateLimitMessage =>
-      'You have exceeded the rate limit. Please wait a moment before trying again.';
-
-  @override
-  String get aiInferenceErrorInvalidRequestTitle => 'Invalid Request';
-
-  @override
-  String get aiInferenceErrorInvalidRequestMessage =>
-      'The request was invalid. Please check your configuration and try again.';
-
-  @override
-  String get aiInferenceErrorServerTitle => 'Server Error';
-
-  @override
-  String get aiInferenceErrorServerMessage =>
-      'The AI service encountered an error. Please try again later.';
-
-  @override
-  String get aiInferenceErrorUnknownTitle => 'Error';
-
-  @override
-  String get aiInferenceErrorUnknownMessage =>
-      'An unexpected error occurred. Please try again.';
-
-  @override
-  String get aiInferenceErrorRetryButton => 'Try Again';
-
-  @override
-  String get aiInferenceErrorSuggestionsTitle => 'Suggestions:';
 }

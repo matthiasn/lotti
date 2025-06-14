@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -130,45 +132,87 @@ class CloudInferenceRepository {
     return res.asBroadcastStream();
   }
 
-  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+  Future<Stream<CreateChatCompletionStreamResponse>> generateWithAudio(
     String prompt, {
-    required String baseUrl,
-    required String apiKey,
     required String model,
     required String audioBase64,
+    required String baseUrl,
+    required String apiKey,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
-  }) {
-    final client = overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
+  }) async {
+    final client = OpenAIClient(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+    );
 
-    return client
-        .createChatCompletionStream(
-          request: CreateChatCompletionRequest(
-            messages: [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.parts(
-                  [
-                    ChatCompletionMessageContentPart.text(text: prompt),
-                    ChatCompletionMessageContentPart.audio(
-                      inputAudio: ChatCompletionMessageInputAudio(
-                        data: audioBase64,
-                        format: ChatCompletionMessageInputAudioFormat.mp3,
-                      ),
-                    ),
-                  ],
+    // For FastWhisper, we need to handle the audio transcription differently
+    if (baseUrl.contains('localhost:8083')) {
+      // FastWhisper uses a different API format
+      final response = await http.post(
+        Uri.parse('$baseUrl/transcribe'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'model': model,
+          'audio': audioBase64,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to transcribe audio: ${response.body}');
+      }
+
+      final result = jsonDecode(response.body) as Map<String, dynamic>;
+      final text = result['text'] as String;
+
+      // Create a mock stream response to match the expected format
+      return Future.value(
+        Stream.value(
+          CreateChatCompletionStreamResponse(
+            id: 'fastwhisper-${DateTime.now().millisecondsSinceEpoch}',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: text,
                 ),
+                index: 0,
               ),
             ],
-            model: ChatCompletionModel.modelId(model),
-            maxCompletionTokens: maxCompletionTokens,
-            stream: true,
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           ),
-        )
-        .asBroadcastStream();
+        ),
+      );
+    }
+
+    // For other providers, use the standard OpenAI-compatible format
+    return Future.value(
+      client
+          .createChatCompletionStream(
+            request: CreateChatCompletionRequest(
+              messages: [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.parts(
+                    [
+                      ChatCompletionMessageContentPart.text(text: prompt),
+                      ChatCompletionMessageContentPart.audio(
+                        inputAudio: ChatCompletionMessageInputAudio(
+                          data: audioBase64,
+                          format: ChatCompletionMessageInputAudioFormat.mp3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              model: ChatCompletionModel.modelId(model),
+              maxCompletionTokens: maxCompletionTokens,
+              stream: true,
+            ),
+          )
+          .asBroadcastStream(),
+    );
   }
 }
 
