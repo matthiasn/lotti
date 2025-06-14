@@ -66,6 +66,7 @@ _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['updatedAt'] as String),
       description: json['description'] as String?,
+      maxCompletionTokens: (json['maxCompletionTokens'] as num?)?.toInt(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -83,6 +84,7 @@ Map<String, dynamic> _$$AiConfigModelImplToJson(_$AiConfigModelImpl instance) =>
       'isReasoningModel': instance.isReasoningModel,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'description': instance.description,
+      'maxCompletionTokens': instance.maxCompletionTokens,
       'runtimeType': instance.$type,
     };
 

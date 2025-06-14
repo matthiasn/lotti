@@ -23,6 +23,7 @@ class KnownModel {
     required this.outputModalities,
     required this.isReasoningModel,
     required this.description,
+    this.maxCompletionTokens,
   });
 
   final String providerModelId;
@@ -31,6 +32,7 @@ class KnownModel {
   final List<Modality> outputModalities;
   final bool isReasoningModel;
   final String description;
+  final int? maxCompletionTokens;
 
   /// Creates an AiConfigModel from this known model configuration
   AiConfigModel toAiConfigModel({
@@ -47,6 +49,7 @@ class KnownModel {
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
       description: description,
+      maxCompletionTokens: maxCompletionTokens,
     );
   }
 }
@@ -160,6 +163,7 @@ const List<KnownModel> anthropicModels = [
     outputModalities: [Modality.text],
     isReasoningModel: true,
     description: 'Highest level of intelligence and capability',
+    maxCompletionTokens: 2000,
   ),
   KnownModel(
     providerModelId: 'claude-sonnet-4-20250514',
@@ -168,6 +172,7 @@ const List<KnownModel> anthropicModels = [
     outputModalities: [Modality.text],
     isReasoningModel: true,
     description: 'High intelligence and balanced performance',
+    maxCompletionTokens: 2000,
   ),
   KnownModel(
     providerModelId: 'claude-3-5-haiku-20241022',
@@ -176,6 +181,7 @@ const List<KnownModel> anthropicModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'Intelligence at blazing speeds',
+    maxCompletionTokens: 2000,
   ),
 ];
 

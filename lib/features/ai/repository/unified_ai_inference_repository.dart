@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -215,6 +216,7 @@ class UnifiedAiInferenceRepository {
         audioBase64: audioBase64,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
+        maxCompletionTokens: model.maxCompletionTokens,
       );
     } else if (images.isNotEmpty) {
       return cloudRepo.generateWithImages(
@@ -224,6 +226,7 @@ class UnifiedAiInferenceRepository {
         images: images,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
+        maxCompletionTokens: model.maxCompletionTokens,
       );
     } else {
       return cloudRepo.generate(
@@ -233,13 +236,29 @@ class UnifiedAiInferenceRepository {
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
         systemMessage: systemMessage,
+        maxCompletionTokens: model.maxCompletionTokens,
       );
     }
   }
 
   /// Extract text from stream chunk
   String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) {
-    return chunk.choices.firstOrNull?.delta?.content ?? '';
+    try {
+      // Handle potential null values in Anthropic's response
+      final choices = chunk.choices;
+      if (choices.isEmpty) {
+        return '';
+      }
+      return choices.firstOrNull?.delta?.content ?? '';
+    } catch (e) {
+      // Log error but continue processing stream
+      developer.log(
+        'Error extracting text from chunk',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+      );
+      return '';
+    }
   }
 
   /// Process complete response and create appropriate entry

@@ -23,6 +23,7 @@ void main() {
     outputModalities: [Modality.text],
     isReasoningModel: true,
     description: 'Test description',
+    maxCompletionTokens: 4000,
   );
 
   setUpAll(() {
@@ -63,6 +64,7 @@ void main() {
         equals('test-provider-model-id'),
       );
       expect(controller.descriptionController.text, equals('Test description'));
+      expect(controller.maxCompletionTokensController.text, equals('4000'));
       expect(formState?.inferenceProviderId, equals(testProviderId));
       expect(formState?.inputModalities, equals([Modality.text]));
       expect(formState?.outputModalities, equals([Modality.text]));
@@ -83,6 +85,7 @@ void main() {
       expect(controller.nameController.text, isEmpty);
       expect(controller.providerModelIdController.text, isEmpty);
       expect(controller.descriptionController.text, isEmpty);
+      expect(controller.maxCompletionTokensController.text, isEmpty);
       expect(formState?.inferenceProviderId, isEmpty);
       expect(formState?.inputModalities, equals([Modality.text]));
       expect(formState?.outputModalities, equals([Modality.text]));
@@ -130,6 +133,7 @@ void main() {
         outputModalities: [Modality.text],
         isReasoningModel: false,
         description: 'Updated description',
+        maxCompletionTokens: 8000,
       );
 
       // Act
@@ -171,6 +175,7 @@ void main() {
       // Verify fields are populated
       expect(controller.nameController.text, isNotEmpty);
       expect(controller.descriptionController.text, isNotEmpty);
+      expect(controller.maxCompletionTokensController.text, isNotEmpty);
 
       // Act
       controller.reset();
@@ -178,6 +183,7 @@ void main() {
       // Assert
       expect(controller.nameController.text, isEmpty);
       expect(controller.descriptionController.text, isEmpty);
+      expect(controller.maxCompletionTokensController.text, isEmpty);
     });
 
     test('should update form state when name is changed', () async {
@@ -214,6 +220,25 @@ void main() {
 
       // Assert
       expect(formState?.description.value, equals('New description'));
+    });
+
+    test('should update form state when maxCompletionTokens is changed',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceModelFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceModelFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.maxCompletionTokensChanged('2000');
+      final formState = container
+          .read(inferenceModelFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.maxCompletionTokens.value, equals('2000'));
     });
 
     test('should update form state when inferenceProviderId is changed',

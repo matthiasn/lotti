@@ -256,6 +256,159 @@ void main() {
       expect(requestString.contains('mp3'), isTrue);
     });
 
+    test('generate with maxCompletionTokens sets maxTokens parameter correctly',
+        () {
+      // Arrange
+      const maxCompletionTokens = 2000;
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      repository.generate(
+        prompt,
+        model: model,
+        temperature: temperature,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        maxCompletionTokens: maxCompletionTokens,
+        overrideClient: mockClient,
+      );
+
+      // Capture call for verification
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.maxCompletionTokens, equals(maxCompletionTokens));
+    });
+
+    test(
+        'generateWithImages with maxCompletionTokens sets maxTokens parameter correctly',
+        () {
+      // Arrange
+      const maxCompletionTokens = 3000;
+      const images = ['base64ImageData'];
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      repository.generateWithImages(
+        prompt,
+        model: model,
+        temperature: temperature,
+        images: images,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        maxCompletionTokens: maxCompletionTokens,
+        overrideClient: mockClient,
+      );
+
+      // Capture call for verification
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      // Note: generateWithImages uses maxTokens instead of maxCompletionTokens
+      expect(request.maxTokens, equals(maxCompletionTokens));
+    });
+
+    test(
+        'generateWithAudio with maxCompletionTokens sets maxCompletionTokens parameter correctly',
+        () {
+      // Arrange
+      const maxCompletionTokens = 4000;
+      const audioBase64 = 'base64AudioData';
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      repository.generateWithAudio(
+        prompt,
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        maxCompletionTokens: maxCompletionTokens,
+        overrideClient: mockClient,
+      );
+
+      // Capture call for verification
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.maxCompletionTokens, equals(maxCompletionTokens));
+    });
+
     test('cloudInferenceRepository provider creates instance correctly', () {
       final repository = container.read(cloudInferenceRepositoryProvider);
       expect(repository, isA<CloudInferenceRepository>());

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -9,6 +12,43 @@ class CloudInferenceRepository {
 
   final Ref ref;
 
+  /// Filters out Anthropic ping messages from the stream
+  Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
+    Stream<CreateChatCompletionStreamResponse> stream,
+  ) {
+    // Use where to filter out errors instead of handleError
+    final controller = StreamController<CreateChatCompletionStreamResponse>();
+
+    stream.listen(
+      controller.add,
+      onError: (Object error, StackTrace stackTrace) {
+        // Check if this is specifically an Anthropic ping message error
+        final errorString = error.toString();
+
+        // Anthropic ping messages cause a specific null subtype error when parsing choices
+        final isAnthropicPingError = errorString.contains(
+                "type 'Null' is not a subtype of type 'List<dynamic>'") &&
+            errorString.contains('choices');
+
+        if (isAnthropicPingError) {
+          // Log but don't propagate the error
+          developer.log(
+            'Skipping Anthropic ping message',
+            name: 'CloudInferenceRepository',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          return;
+        }
+        // Propagate other errors
+        controller.addError(error, stackTrace);
+      },
+      onDone: controller.close,
+    );
+
+    return controller.stream;
+  }
+
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
     required String model,
@@ -16,6 +56,7 @@ class CloudInferenceRepository {
     required String baseUrl,
     required String apiKey,
     String? systemMessage,
+    int? maxCompletionTokens,
     OpenAIClient? overrideClient,
   }) {
     final client = overrideClient ??
@@ -35,11 +76,12 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
         stream: true,
       ),
     );
 
-    return res.asBroadcastStream();
+    return _filterAnthropicPings(res).asBroadcastStream();
   }
 
   Stream<CreateChatCompletionStreamResponse> generateWithImages(
@@ -49,6 +91,7 @@ class CloudInferenceRepository {
     required String model,
     required double temperature,
     required List<String> images,
+    int? maxCompletionTokens,
     OpenAIClient? overrideClient,
   }) {
     final client = overrideClient ??
@@ -79,6 +122,7 @@ class CloudInferenceRepository {
         ],
         model: ChatCompletionModel.modelId(model),
         temperature: temperature,
+        maxTokens: maxCompletionTokens,
         stream: true,
       ),
     );
@@ -92,6 +136,7 @@ class CloudInferenceRepository {
     required String apiKey,
     required String model,
     required String audioBase64,
+    int? maxCompletionTokens,
     OpenAIClient? overrideClient,
   }) {
     final client = overrideClient ??
@@ -119,6 +164,7 @@ class CloudInferenceRepository {
               ),
             ],
             model: ChatCompletionModel.modelId(model),
+            maxCompletionTokens: maxCompletionTokens,
             stream: true,
           ),
         )

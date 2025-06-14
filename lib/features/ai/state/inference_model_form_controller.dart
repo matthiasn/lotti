@@ -12,6 +12,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   final nameController = TextEditingController();
   final providerModelIdController = TextEditingController();
   final descriptionController = TextEditingController();
+  final maxCompletionTokensController = TextEditingController();
 
   AiConfigModel? _config;
 
@@ -27,11 +28,14 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     nameController.text = _config?.name ?? '';
     providerModelIdController.text = _config?.providerModelId ?? '';
     descriptionController.text = _config?.description ?? '';
+    maxCompletionTokensController.text =
+        _config?.maxCompletionTokens?.toString() ?? '';
 
     ref.onDispose(() {
       nameController.dispose();
       providerModelIdController.dispose();
       descriptionController.dispose();
+      maxCompletionTokensController.dispose();
     });
 
     if (_config != null) {
@@ -40,6 +44,8 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         name: ModelName.pure(_config!.name),
         providerModelId: ProviderModelId.pure(_config!.providerModelId),
         description: ModelDescription.pure(_config!.description ?? ''),
+        maxCompletionTokens: MaxCompletionTokens.pure(
+            _config!.maxCompletionTokens?.toString() ?? ''),
         inferenceProviderId: _config!.inferenceProviderId,
         inputModalities: _config!.inputModalities,
         outputModalities: _config!.outputModalities,
@@ -54,6 +60,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     String? description,
     String? name,
     String? providerModelId,
+    String? maxCompletionTokens,
     String? inferenceProviderId,
     List<Modality>? inputModalities,
     List<Modality>? outputModalities,
@@ -82,6 +89,11 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         providerModelId: providerModelId != null
             ? ProviderModelId.dirty(providerModelId)
             : prev.providerModelId,
+        maxCompletionTokens: maxCompletionTokens != null
+            ? MaxCompletionTokens.dirty(maxCompletionTokens)
+            : (isNonFormzFieldChanging && prev.maxCompletionTokens.isPure
+                ? MaxCompletionTokens.dirty(prev.maxCompletionTokens.value)
+                : prev.maxCompletionTokens),
         inferenceProviderId: inferenceProviderId,
         inputModalities: inputModalities,
         outputModalities: outputModalities,
@@ -109,6 +121,13 @@ class InferenceModelFormController extends _$InferenceModelFormController {
       descriptionController.text = value;
     }
     _setAllFields(description: value);
+  }
+
+  void maxCompletionTokensChanged(String value) {
+    if (maxCompletionTokensController.text != value) {
+      maxCompletionTokensController.text = value;
+    }
+    _setAllFields(maxCompletionTokens: value);
   }
 
   void inferenceProviderIdChanged(String value) {
@@ -155,6 +174,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   void reset() {
     nameController.clear();
     descriptionController.clear();
+    maxCompletionTokensController.clear();
     state = AsyncData(InferenceModelFormState());
   }
 }
