@@ -244,28 +244,28 @@ const List<KnownModel> openRouterModels = [
 /// FastWhisper models - Local speech recognition models
 const List<KnownModel> fastWhisperModels = [
   KnownModel(
-    providerModelId: 'base',
-    name: 'Base',
-    inputModalities: [Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description: 'Balanced model for accurate transcription',
-  ),
-  KnownModel(
     providerModelId: 'small',
-    name: 'Small',
+    name: 'Whisper Small',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Improved accuracy for complex audio',
+    description: 'Relatively accurate for simple audio',
   ),
   KnownModel(
-    providerModelId: 'large-v3',
-    name: 'Large V3',
+    providerModelId: 'medium',
+    name: 'Whisper Medium',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Most accurate model for demanding transcription tasks',
+    description: 'Balanced Whisper model, good for general use',
+  ),
+  KnownModel(
+    providerModelId: 'large',
+    name: 'Whisper Large',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Most accurate Whisper model',
   ),
 ];
 

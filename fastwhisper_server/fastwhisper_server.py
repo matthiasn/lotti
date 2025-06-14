@@ -37,11 +37,9 @@ app.add_middleware(
 
 # Supported models
 SUPPORTED_MODELS = {
-    'base': 'openai/whisper-base',
-    'base.en': 'openai/whisper-base.en',
     'small': 'openai/whisper-small',
-    'small.en': 'openai/whisper-small.en',
-    'large-v3': 'openai/whisper-large-v3'
+    'medium': 'openai/whisper-medium',
+    'large': 'openai/whisper-large-v3'
 }
 
 def get_optimal_device() -> str:
@@ -202,8 +200,6 @@ async def transcribe(request: TranscribeRequest):
                     "num_beams": 1,
                 }
             )
-            processing_time = time.time() - start_time
-            logger.info(f"Transcription completed in {processing_time:.2f}s")
 
             # Process outputs
             if isinstance(outputs, dict):
@@ -217,6 +213,9 @@ async def transcribe(request: TranscribeRequest):
                     }
                     for chunk in chunks
                 ]
+                processing_time = time.time() - start_time
+                logger.info(f"Transcription completed in {processing_time:.2f}s")
+
             else:
                 text = str(outputs)
                 timestamps = []
