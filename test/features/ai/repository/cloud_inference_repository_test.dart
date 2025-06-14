@@ -200,7 +200,7 @@ void main() {
     });
 
     test('generateWithAudio calls OpenAIClient with correct audio parameters',
-        () async {
+        () {
       // Arrange
       const audioBase64 = 'audio-base64-string';
 
@@ -227,7 +227,7 @@ void main() {
       );
 
       // Act
-      await repository.generateWithAudio(
+      repository.generateWithAudio(
         prompt,
         model: model,
         baseUrl: baseUrl,
@@ -360,7 +360,7 @@ void main() {
 
     test(
         'generateWithAudio with maxCompletionTokens sets maxCompletionTokens parameter correctly',
-        () async {
+        () {
       // Arrange
       const maxCompletionTokens = 4000;
       const audioBase64 = 'base64AudioData';
@@ -388,7 +388,7 @@ void main() {
       );
 
       // Act
-      await repository.generateWithAudio(
+      repository.generateWithAudio(
         prompt,
         model: model,
         audioBase64: audioBase64,

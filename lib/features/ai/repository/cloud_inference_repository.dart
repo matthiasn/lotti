@@ -132,7 +132,7 @@ class CloudInferenceRepository {
     return res.asBroadcastStream();
   }
 
-  Future<Stream<CreateChatCompletionStreamResponse>> generateWithAudio(
+  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
     String prompt, {
     required String model,
     required String audioBase64,
@@ -140,7 +140,7 @@ class CloudInferenceRepository {
     required String apiKey,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
-  }) async {
+  }) {
     final client = overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
@@ -150,28 +150,29 @@ class CloudInferenceRepository {
     // For FastWhisper, we need to handle the audio transcription differently
     if (baseUrl.contains('localhost:8083')) {
       // FastWhisper uses a different API format
-      final response = await http.post(
-        Uri.parse('$baseUrl/transcribe'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      );
+      // Create a stream that performs the async operation
+      return Stream.fromFuture(
+        () async {
+          final response = await http.post(
+            Uri.parse('$baseUrl/transcribe'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to transcribe audio: ${response.body}');
-      }
+          if (response.statusCode != 200) {
+            throw Exception('Failed to transcribe audio: ${response.body}');
+          }
 
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      final text = result['text'] as String;
+          final result = jsonDecode(response.body) as Map<String, dynamic>;
+          final text = result['text'] as String;
 
-      // Create a mock stream response to match the expected format
-      return Future.value(
-        Stream.value(
-          CreateChatCompletionStreamResponse(
+          // Create a mock stream response to match the expected format
+          return CreateChatCompletionStreamResponse(
             id: 'fastwhisper-${DateTime.now().millisecondsSinceEpoch}',
             choices: [
               ChatCompletionStreamResponseChoice(
@@ -183,38 +184,36 @@ class CloudInferenceRepository {
             ],
             object: 'chat.completion.chunk',
             created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ),
-      );
+          );
+        }(),
+      ).asBroadcastStream();
     }
 
     // For other providers, use the standard OpenAI-compatible format
-    return Future.value(
-      client
-          .createChatCompletionStream(
-            request: CreateChatCompletionRequest(
-              messages: [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.parts(
-                    [
-                      ChatCompletionMessageContentPart.text(text: prompt),
-                      ChatCompletionMessageContentPart.audio(
-                        inputAudio: ChatCompletionMessageInputAudio(
-                          data: audioBase64,
-                          format: ChatCompletionMessageInputAudioFormat.mp3,
-                        ),
+    return client
+        .createChatCompletionStream(
+          request: CreateChatCompletionRequest(
+            messages: [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.parts(
+                  [
+                    ChatCompletionMessageContentPart.text(text: prompt),
+                    ChatCompletionMessageContentPart.audio(
+                      inputAudio: ChatCompletionMessageInputAudio(
+                        data: audioBase64,
+                        format: ChatCompletionMessageInputAudioFormat.mp3,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-              model: ChatCompletionModel.modelId(model),
-              maxCompletionTokens: maxCompletionTokens,
-              stream: true,
-            ),
-          )
-          .asBroadcastStream(),
-    );
+              ),
+            ],
+            model: ChatCompletionModel.modelId(model),
+            maxCompletionTokens: maxCompletionTokens,
+            stream: true,
+          ),
+        )
+        .asBroadcastStream();
   }
 }
 

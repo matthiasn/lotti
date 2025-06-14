@@ -716,7 +716,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
           ),
-        ).thenAnswer((_) => Future.value(mockStream));
+        ).thenAnswer((_) => mockStream);
 
         when(
           () => mockAiInputRepo.createAiResponseEntry(
@@ -1460,7 +1460,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
           ),
-        ).thenAnswer((_) => Future.value(mockStream));
+        ).thenAnswer((_) => mockStream);
 
         when(
           () => mockAiInputRepo.createAiResponseEntry(
@@ -1617,7 +1617,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
           ),
-        ).thenAnswer((_) => Future.value(mockStream));
+        ).thenAnswer((_) => mockStream);
 
         when(
           () => mockAiInputRepo.createAiResponseEntry(
