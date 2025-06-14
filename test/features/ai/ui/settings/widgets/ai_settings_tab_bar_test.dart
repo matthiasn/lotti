@@ -397,5 +397,196 @@ void main() {
         expect(container.margin, isNull); // No margin in new design
       });
     });
+
+    group('theme variations', () {
+      testWidgets('renders correctly in light theme',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(MaterialApp(
+          theme: ThemeData.light(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DefaultTabController(
+            length: AiSettingsTab.values.length,
+            child: Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return Scaffold(
+                  body: AiSettingsTabBar(
+                    controller: controller,
+                  ),
+                );
+              },
+            ),
+          ),
+        ));
+
+        // Should render without errors
+        expect(find.byType(TabBar), findsOneWidget);
+
+        // Check light theme specific styling
+        final container =
+            tester.widget<Container>(find.byType(Container).first);
+        final decoration = container.decoration as BoxDecoration?;
+        expect(decoration?.color, isNotNull);
+
+        // Indicator should not have shadow in light theme
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+        final indicatorDecoration = tabBar.indicator as BoxDecoration?;
+        expect(indicatorDecoration?.boxShadow, isEmpty);
+      });
+
+      testWidgets('renders correctly in dark theme',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(MaterialApp(
+          theme: ThemeData.dark(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DefaultTabController(
+            length: AiSettingsTab.values.length,
+            child: Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return Scaffold(
+                  body: AiSettingsTabBar(
+                    controller: controller,
+                  ),
+                );
+              },
+            ),
+          ),
+        ));
+
+        // Should render without errors
+        expect(find.byType(TabBar), findsOneWidget);
+
+        // Check dark theme specific styling
+        final container =
+            tester.widget<Container>(find.byType(Container).first);
+        final decoration = container.decoration as BoxDecoration?;
+        expect(decoration?.color, isNotNull);
+
+        // Indicator should have shadow in dark theme
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+        final indicatorDecoration = tabBar.indicator as BoxDecoration?;
+        expect(indicatorDecoration?.boxShadow, isNotEmpty);
+      });
+    });
+
+    group('tab properties', () {
+      testWidgets('tabs have correct height', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabs = tester.widgetList<Tab>(find.byType(Tab));
+
+        for (final tab in tabs) {
+          expect(tab.height, 40.0);
+        }
+      });
+
+      testWidgets('tab alignment is set to fill', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+        expect(tabBar.tabAlignment, TabAlignment.fill);
+      });
+
+      testWidgets('indicator padding is correct', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+        expect(tabBar.indicatorPadding, const EdgeInsets.all(4));
+      });
+    });
+
+    group('localization', () {
+      testWidgets('displays localized tab names', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+        await tester.pumpAndSettle();
+
+        // Verify all tabs have text
+        final tabs = tester.widgetList<Tab>(find.byType(Tab));
+        for (final tab in tabs) {
+          expect(tab.text, isNotNull);
+          expect(tab.text!.isNotEmpty, isTrue);
+        }
+      });
+
+      testWidgets('tab names match AiSettingsTab enum order',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+        await tester.pumpAndSettle();
+
+        final tabs = tester.widgetList<Tab>(find.byType(Tab)).toList();
+        expect(tabs.length, AiSettingsTab.values.length);
+
+        // The order should match the enum order
+        // We can't test exact names due to localization, but we can verify count
+        expect(tabs[0].text, isNotNull); // providers
+        expect(tabs[1].text, isNotNull); // models
+        expect(tabs[2].text, isNotNull); // prompts
+      });
+    });
+
+    group('widget state properties', () {
+      testWidgets('overlay color is transparent for all states',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+
+        // Test various widget states
+        const states = [
+          WidgetState.pressed,
+          WidgetState.hovered,
+          WidgetState.focused,
+          WidgetState.selected,
+        ];
+
+        for (final state in states) {
+          final color = tabBar.overlayColor?.resolve({state});
+          expect(color, Colors.transparent);
+        }
+      });
+
+      testWidgets('label styles have correct font weights',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+
+        expect(tabBar.labelStyle?.fontWeight, FontWeight.w700);
+        expect(tabBar.unselectedLabelStyle?.fontWeight, FontWeight.w500);
+      });
+
+      testWidgets('label styles have correct font sizes',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+
+        expect(tabBar.labelStyle?.fontSize, 14);
+        expect(tabBar.unselectedLabelStyle?.fontSize, 14);
+      });
+
+      testWidgets('label styles have correct letter spacing',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+
+        expect(tabBar.labelStyle?.letterSpacing, 0.5);
+        expect(tabBar.unselectedLabelStyle?.letterSpacing, 0.3);
+      });
+    });
   });
 }

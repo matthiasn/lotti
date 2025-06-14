@@ -180,7 +180,7 @@ class AiErrorDisplay extends StatelessWidget {
             error.message.contains('model')) {
           // Extract model name if present
           final modelMatch =
-              RegExp('model "([^"]+)"').firstMatch(error.message);
+              RegExp(r'model\s*"([^"]+)"').firstMatch(error.message);
           final modelName = modelMatch?.group(1) ?? 'the model';
 
           if (error.message.contains('pulling')) {

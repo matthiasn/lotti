@@ -9,7 +9,9 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -485,6 +487,310 @@ void main() {
 
       // The content should be in a scrollable view
       expect(find.byType(SingleChildScrollView), findsOneWidget);
+    });
+
+    testWidgets('shows running animation when inference is running',
+        (tester) async {
+      // Arrange - keep inference in running state
+      final completer = Completer<void>();
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(String);
+        final onStatusChange = invocation.namedArguments[#onStatusChange]
+            as void Function(InferenceStatus);
+
+        onStatusChange(InferenceStatus.running);
+        onProgress('Processing...');
+        // Keep it in running state until test completes
+        await completer.future;
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Assert - should show the running animation
+      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
+
+      // Complete the future to avoid pending timers
+      completer.complete();
+    });
+
+    testWidgets('does not show running animation when inference is idle',
+        (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert - should not show the running animation
+      expect(find.byType(AiRunningAnimationWrapper), findsNothing);
+    });
+
+    testWidgets('displays error widget and retry works correctly',
+        (tester) async {
+      // Arrange - simulate an error that can be parsed as InferenceError
+      var retryCount = 0;
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(String);
+        final onStatusChange = invocation.namedArguments[#onStatusChange]
+            as void Function(InferenceStatus);
+
+        onStatusChange(InferenceStatus.running);
+
+        if (retryCount == 0) {
+          // First attempt fails with a timeout error (which allows retry)
+          onProgress('Connection timed out');
+          onStatusChange(InferenceStatus.error);
+          retryCount++;
+        } else {
+          // Retry succeeds
+          onProgress('Retry successful!');
+          onStatusChange(InferenceStatus.idle);
+        }
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show error display (AiErrorUtils.categorizeError always returns an InferenceError)
+      expect(find.byType(AiErrorDisplay), findsOneWidget);
+
+      // Debug: print the widget tree to see what's there
+      // final errorDisplay = tester.widget<AiErrorDisplay>(find.byType(AiErrorDisplay));
+      // print('Error type: ${errorDisplay.error.type}');
+
+      // Find and tap retry button - just look for the text since it might be nested
+      final retryButton = find.text('Try Again');
+      expect(retryButton, findsOneWidget);
+
+      await tester.tap(retryButton);
+      await tester.pumpAndSettle();
+
+      // Should now show success message
+      expect(find.text('Retry successful!'), findsOneWidget);
+      expect(find.byType(AiErrorDisplay), findsNothing);
+    });
+
+    testWidgets('always shows AiErrorDisplay for errors', (tester) async {
+      // Arrange - simulate any error (AiErrorUtils.categorizeError handles all errors)
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(String);
+        final onStatusChange = invocation.namedArguments[#onStatusChange]
+            as void Function(InferenceStatus);
+
+        onStatusChange(InferenceStatus.running);
+        onProgress('Some error occurred');
+        onStatusChange(InferenceStatus.error);
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should always show AiErrorDisplay since AiErrorUtils.categorizeError never throws
+      expect(find.byType(AiErrorDisplay), findsOneWidget);
+    });
+
+    testWidgets('constraints are properly applied', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the ConstrainedBox widgets within UnifiedAiProgressView
+      final constrainedBoxes = find.descendant(
+        of: find.byType(UnifiedAiProgressView),
+        matching: find.byType(ConstrainedBox),
+      );
+      expect(constrainedBoxes, findsNWidgets(2)); // One outer, one inner
+
+      // Check the outer constraint
+      final outerConstrainedBox = tester.widget<ConstrainedBox>(
+        constrainedBoxes.first,
+      );
+      expect(outerConstrainedBox.constraints.maxHeight, 240);
+
+      // Check the inner constraint
+      final innerConstrainedBox = tester.widget<ConstrainedBox>(
+        constrainedBoxes.last,
+      );
+      expect(innerConstrainedBox.constraints.minWidth, 600);
+    });
+
+    testWidgets('padding is correctly applied', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the Padding widget
+      final padding = find.byType(Padding);
+      expect(padding, findsOneWidget);
+
+      final paddingWidget = tester.widget<Padding>(padding);
+      final edgeInsets = paddingWidget.padding as EdgeInsets;
+
+      expect(edgeInsets.top, 10);
+      expect(edgeInsets.bottom, 55);
+      expect(edgeInsets.left, 20);
+      expect(edgeInsets.right, 20);
+    });
+
+    testWidgets('Stack properly layers content and animation', (tester) async {
+      // Arrange - keep in running state to show animation
+      final completer = Completer<void>();
+      when(
+        () => mockRepository.runInference(
+          entityId: any(named: 'entityId'),
+          promptConfig: any(named: 'promptConfig'),
+          onProgress: any(named: 'onProgress'),
+          onStatusChange: any(named: 'onStatusChange'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(String);
+        final onStatusChange = invocation.namedArguments[#onStatusChange]
+            as void Function(InferenceStatus);
+
+        onStatusChange(InferenceStatus.running);
+        onProgress('Running...');
+        await completer.future;
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressView(
+            entityId: testEntityId,
+            promptId: testPromptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) => Future.value(testPromptConfig),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Find the Stack widget within UnifiedAiProgressView
+      final stack = find.descendant(
+        of: find.byType(UnifiedAiProgressView),
+        matching: find.byType(Stack),
+      );
+      expect(stack, findsOneWidget);
+
+      // Check that it contains both the scroll view and animation
+      final stackWidget = tester.widget<Stack>(stack);
+      expect(stackWidget.children.length, 2);
+
+      // First child should be SingleChildScrollView
+      expect(stackWidget.children[0], isA<SingleChildScrollView>());
+
+      // Second child should be Align with animation (conditionally rendered)
+      expect(stackWidget.children[1], isA<Align>());
+
+      // Complete the future to avoid pending timers
+      completer.complete();
     });
   });
 }

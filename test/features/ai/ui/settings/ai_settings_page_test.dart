@@ -224,5 +224,303 @@ void main() {
       // Note: We don't actually tap here to avoid navigation issues in test context
       // In a real integration test with proper routing, we would test navigation
     });
+
+    testWidgets('should show loading state', (WidgetTester tester) async {
+      // Mock repository to return loading stream
+      when(() =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump(); // Don't settle to keep loading state
+
+      // Should show loading indicator
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('should show error state with retry',
+        (WidgetTester tester) async {
+      // Mock repository to return error
+      when(() =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) => Stream.error('Test error'));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should show error message
+      expect(find.textContaining('Test error'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('should clear search when clear button is tapped',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Enter search text
+      await tester.enterText(find.byType(TextField), 'test search');
+      await tester.pumpAndSettle();
+
+      // Clear button should appear
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+
+      // Tap clear button
+      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.pumpAndSettle();
+
+      // Search field should be empty
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, '');
+    });
+
+    testWidgets('should handle tab controller properly',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Verify we're on the right tab
+      expect(find.text('Anthropic Provider'), findsOneWidget);
+
+      // Switch tabs programmatically
+      await tester.tap(find.text('Models'));
+      await tester.pumpAndSettle();
+
+      // Should be on models tab
+      expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
+    });
+
+    testWidgets('should show capability indicators on model cards',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Switch to Models tab
+      await tester.tap(find.text('Models'));
+      await tester.pumpAndSettle();
+
+      // Should show capability icons for the model
+      expect(find.byIcon(Icons.text_fields),
+          findsAtLeastNWidgets(1)); // Text capability
+      expect(find.byIcon(Icons.visibility),
+          findsAtLeastNWidgets(1)); // Vision capability
+    });
+
+    testWidgets('should handle theme correctly in light mode',
+        (WidgetTester tester) async {
+      final widget = MaterialApp(
+        theme: ThemeData.light(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ProviderScope(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const AiSettingsPage(),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Should render without errors
+      expect(find.text('AI Settings'), findsOneWidget);
+    });
+
+    testWidgets('should handle theme correctly in dark mode',
+        (WidgetTester tester) async {
+      final widget = MaterialApp(
+        theme: ThemeData.dark(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ProviderScope(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const AiSettingsPage(),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Should render without errors
+      expect(find.text('AI Settings'), findsOneWidget);
+    });
+
+    testWidgets('should properly dispose controllers',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Navigate away to dispose the page
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(body: Text('Different Page')),
+      ));
+      await tester.pumpAndSettle();
+
+      // Should have disposed without errors
+      expect(find.text('Different Page'), findsOneWidget);
+    });
+
+    testWidgets('should handle config tap navigation',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Tap on a config card - this triggers navigation
+      await tester.tap(find.text('Anthropic Provider'));
+
+      // Don't use pumpAndSettle as navigation will fail in test context
+      // This test verifies that the tap handler is attached and doesn't crash
+    });
+
+    testWidgets('should filter models by capability',
+        (WidgetTester tester) async {
+      // Add another model without vision capability
+      final textOnlyModel = AiConfig.model(
+        id: 'text-only-model',
+        name: 'Text Only Model',
+        providerModelId: 'text-model-1',
+        inferenceProviderId: 'anthropic-provider',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([testConfigs[1], textOnlyModel]));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Switch to Models tab
+      await tester.tap(find.text('Models'));
+      await tester.pumpAndSettle();
+
+      // Should see both models initially
+      expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
+      expect(find.text('Text Only Model'), findsOneWidget);
+
+      // Tap Vision filter
+      await tester.tap(find.text('Vision'));
+      await tester.pumpAndSettle();
+
+      // Should only see model with vision capability
+      expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
+      expect(find.text('Text Only Model'), findsNothing);
+    });
+
+    testWidgets('should filter prompts with search',
+        (WidgetTester tester) async {
+      // Add another prompt with different response type
+      final imagePrompt = AiConfig.prompt(
+        id: 'image-prompt',
+        name: 'Image Analysis',
+        systemMessage: 'Analyze images',
+        userMessage: 'Analyze this image',
+        defaultModelId: 'claude-model',
+        modelIds: ['claude-model'],
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        useReasoning: false,
+        requiredInputData: [InputDataType.images],
+        aiResponseType: AiResponseType.imageAnalysis,
+      );
+
+      when(() => mockRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value([testConfigs[2], imagePrompt]));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Switch to Prompts tab
+      await tester.tap(find.text('Prompts'));
+      await tester.pumpAndSettle();
+
+      // Should see both prompts initially
+      expect(find.text('Task Summary'), findsOneWidget);
+      expect(find.text('Image Analysis'), findsOneWidget);
+
+      // Search for "Task"
+      await tester.enterText(find.byType(TextField), 'Task');
+      await tester.pumpAndSettle();
+
+      // Wait for debounce timer
+      await tester.pump(const Duration(milliseconds: 350));
+
+      // Should only see task summary prompt
+      expect(find.text('Task Summary'), findsOneWidget);
+      expect(find.text('Image Analysis'), findsNothing);
+    });
+
+    testWidgets('should filter providers with search',
+        (WidgetTester tester) async {
+      // Add another provider with different type
+      final openAiProvider = AiConfig.inferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI Provider',
+        inferenceProviderType: InferenceProviderType.openAi,
+        apiKey: 'test-key',
+        baseUrl: 'https://api.openai.com',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      );
+
+      when(() =>
+              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) => Stream.value([testConfigs[0], openAiProvider]));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should see both providers initially
+      expect(find.text('Anthropic Provider'), findsOneWidget);
+      expect(find.text('OpenAI Provider'), findsOneWidget);
+
+      // Search for "Anthropic"
+      await tester.enterText(find.byType(TextField), 'Anthropic');
+      await tester.pumpAndSettle();
+
+      // Wait for debounce timer
+      await tester.pump(const Duration(milliseconds: 350));
+
+      // Should only see Anthropic provider
+      expect(find.text('Anthropic Provider'), findsOneWidget);
+      expect(find.text('OpenAI Provider'), findsNothing);
+    });
+
+    testWidgets('should handle back navigation', (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Tap back button
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      // Navigation should be triggered (but won't actually navigate in test)
+    });
+
+    testWidgets('should show app bar title animation',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should have SliverAppBar with FlexibleSpaceBar
+      expect(find.byType(SliverAppBar), findsOneWidget);
+      expect(find.byType(FlexibleSpaceBar), findsOneWidget);
+
+      // Title should be visible
+      expect(find.text('AI Settings'), findsOneWidget);
+    });
   });
 }

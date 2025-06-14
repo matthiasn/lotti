@@ -417,8 +417,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Modal should open - check for modal content
-      // TODO: Fix this test - modal title might have changed
-      // expect(find.text('Select AI Response Type'), findsOneWidget);
+      expect(find.text('Select AI Response Type'), findsOneWidget);
     });
 
     testWidgets('save button is disabled when required fields are missing',

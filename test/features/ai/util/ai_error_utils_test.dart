@@ -53,6 +53,26 @@ class TestErrorToStringReturnsEmpty {
   String toString() => '  '; // Whitespace
 }
 
+// Mock OpenAI error for runtime type testing
+class _MockOpenAIError {
+  _MockOpenAIError(this.code, this.message);
+  final String code;
+  final String message;
+
+  @override
+  String toString() => 'OpenAIError: $code $message';
+}
+
+// Mock RequestException for runtime type testing
+class _MockRequestException {
+  _MockRequestException(this.code, this.message);
+  final String code;
+  final String message;
+
+  @override
+  String toString() => 'RequestException: $code $message';
+}
+
 void main() {
   group('AiErrorUtils', () {
     group('categorizeError', () {
@@ -222,6 +242,149 @@ OpenAIClientException({
 
         expect(result.type, InferenceErrorType.invalidRequest);
         expect(result.message, contains('The model gpt-5 not found'));
+      });
+
+      test('handles network errors with different messages', () {
+        const connectionClosedError = 'SocketException: Connection closed';
+        final result1 = AiErrorUtils.categorizeError(connectionClosedError);
+        expect(result1.type, InferenceErrorType.networkConnection);
+        expect(result1.message, contains('Connection was closed unexpectedly'));
+
+        const noAddressError = 'No address associated with hostname';
+        final result2 = AiErrorUtils.categorizeError(noAddressError);
+        expect(result2.type, InferenceErrorType.networkConnection);
+        expect(
+            result2.message, contains('Unable to resolve the server address'));
+
+        const genericNetworkError = 'SocketException: Network error';
+        final result3 = AiErrorUtils.categorizeError(genericNetworkError);
+        expect(result3.type, InferenceErrorType.networkConnection);
+        expect(
+            result3.message, contains('Unable to connect to the AI service'));
+      });
+
+      test('handles OpenAI API errors with different runtime types', () {
+        // Mock error with OpenAI runtime type
+        final openAiError = _MockOpenAIError('401', 'Unauthorized');
+        final result1 = AiErrorUtils.categorizeError(openAiError);
+        expect(result1.type, InferenceErrorType.authentication);
+
+        // Mock error with RequestException runtime type
+        final requestError =
+            _MockRequestException('429', 'Rate limit exceeded');
+        final result2 = AiErrorUtils.categorizeError(requestError);
+        expect(result2.type, InferenceErrorType.rateLimit);
+      });
+
+      test('handles 404 errors that are not model related', () {
+        const error = 'HTTP 404 Not Found - Endpoint does not exist';
+        final result = AiErrorUtils.categorizeError(error);
+        // This gets categorized as unknown because it doesn't match OpenAI/RequestException pattern
+        // and the 404 check happens after the API error type check
+        expect(result.type, InferenceErrorType.unknown);
+        expect(result.message, contains('HTTP 404 Not Found'));
+      });
+
+      test('handles server errors with different status codes', () {
+        const error504 = 'HTTP 504 Gateway Timeout';
+        final result1 = AiErrorUtils.categorizeError(error504);
+        expect(result1.type, InferenceErrorType.serverError);
+        expect(result1.message, contains('AI service is experiencing issues'));
+
+        const badGatewayError = 'Bad Gateway error occurred';
+        final result2 = AiErrorUtils.categorizeError(badGatewayError);
+        expect(result2.type, InferenceErrorType.serverError);
+
+        const serviceUnavailableError = 'Service Unavailable';
+        final result3 = AiErrorUtils.categorizeError(serviceUnavailableError);
+        expect(result3.type, InferenceErrorType.serverError);
+      });
+
+      test('categorizeError preserves originalError for all error types', () {
+        final testCases = [
+          (
+            const SocketException('Network error'),
+            InferenceErrorType.networkConnection
+          ),
+          ('TimeoutException', InferenceErrorType.timeout),
+          ('401 Unauthorized', InferenceErrorType.authentication),
+          ('429 Rate limit', InferenceErrorType.rateLimit),
+          ('400 Bad Request', InferenceErrorType.invalidRequest),
+          ('500 Server Error', InferenceErrorType.serverError),
+          ('Unknown error', InferenceErrorType.unknown),
+        ];
+
+        for (final (error, expectedType) in testCases) {
+          final result = AiErrorUtils.categorizeError(error);
+          expect(result.originalError, error);
+          expect(result.type, expectedType);
+        }
+      });
+
+      test('handles API errors through _handleApiError', () {
+        // Test 404 resource not found (non-model)
+        final notFoundError = _MockOpenAIError('404', 'Not Found');
+        final result1 = AiErrorUtils.categorizeError(notFoundError);
+        expect(
+            result1.type,
+            InferenceErrorType
+                .invalidRequest); // 404 errors are categorized as invalidRequest
+        expect(result1.message, contains('Not Found'));
+
+        // Test 500 server error through API error handler
+        final serverError = _MockOpenAIError('500', 'Internal Server Error');
+        final result2 = AiErrorUtils.categorizeError(serverError);
+        expect(result2.type, InferenceErrorType.serverError);
+
+        // Test 502 Bad Gateway through API error handler
+        final badGatewayError = _MockOpenAIError('502', 'Bad Gateway');
+        final result3 = AiErrorUtils.categorizeError(badGatewayError);
+        expect(result3.type, InferenceErrorType.serverError);
+
+        // Test 503 Service Unavailable through API error handler
+        final unavailableError = _MockOpenAIError('503', 'Service Unavailable');
+        final result4 = AiErrorUtils.categorizeError(unavailableError);
+        expect(result4.type, InferenceErrorType.serverError);
+
+        // Test 504 Gateway Timeout through API error handler
+        final timeoutError = _MockOpenAIError('504', 'Gateway Timeout');
+        final result5 = AiErrorUtils.categorizeError(timeoutError);
+        expect(result5.type, InferenceErrorType.serverError);
+      });
+
+      test('handles timeout variations', () {
+        const timeoutVariations = [
+          'Operation timed out',
+          'Request timeout',
+          'The operation has timed out',
+        ];
+
+        for (final error in timeoutVariations) {
+          final result = AiErrorUtils.categorizeError(error);
+          expect(result.type, InferenceErrorType.timeout);
+          expect(result.message, contains('timed out'));
+        }
+      });
+
+      test('handles edge cases in error detection', () {
+        // Error message containing multiple status codes
+        const multiStatusError =
+            'Error: 401 Unauthorized, then 500 Server Error';
+        final result1 = AiErrorUtils.categorizeError(multiStatusError);
+        // Should match first status code found
+        expect(result1.type, InferenceErrorType.authentication);
+
+        // Empty error string
+        const emptyError = '';
+        final result2 = AiErrorUtils.categorizeError(emptyError);
+        expect(result2.type, InferenceErrorType.unknown);
+        expect(result2.message, '');
+
+        // Error with only whitespace
+        const whitespaceError = '   ';
+        final result3 = AiErrorUtils.categorizeError(whitespaceError);
+        expect(result3.type, InferenceErrorType.unknown);
+        expect(result3.message, '   ');
       });
     });
 
@@ -407,21 +570,20 @@ OpenAIClientException({
         );
       });
 
-      test('prioritizes body.detail over message', () {
-        // final error = { // This variable is unused
-        //   'body': {'detail': 'Detail is king'},
-        //   'message': 'Message is secondary'
-        // };
-        // For simplicity, using a helper that mimics the dynamic access
-        // In a real scenario, this would be an instance of a specific error class from a library
+      test('prioritizes error.message in body over top-level message', () {
+        // When body contains error.message structure, it's prioritized
         final dynamicError = TestErrorWithBodyAndMessage(
-          body: {'detail': 'Detail is king'},
-          message: 'Message is secondary',
+          body: {
+            'error': {
+              'message': 'Error message from body',
+            },
+          },
+          message: 'Top level message',
         );
 
         expect(
           AiErrorUtils.extractDetailedErrorMessage(dynamicError),
-          equals('Detail is king'),
+          equals('Error message from body'),
         );
       });
 
@@ -545,6 +707,147 @@ OpenAIClientException({
           ), // Utility should return the actual toString() if it's not literally "null" or empty
         );
       });
+
+      test('handles error.body.message when detail is not present', () {
+        final error = TestErrorWithBody(body: {'message': 'Message from body'});
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(error),
+          equals('Message from body'),
+        );
+      });
+
+      test('handles extraction exceptions gracefully', () {
+        // Create an error that throws when accessing properties
+        final throwingError = _ThrowingError();
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(throwingError),
+          equals('ThrowingError'),
+        );
+      });
+
+      test('handles complex nested error structures', () {
+        // Test deeply nested error structure
+        final complexError = TestErrorWithBody(
+          body: {
+            'error': {
+              'details': {
+                'message': 'Should not find this',
+              },
+              'message': 'This is the correct message',
+            },
+          },
+        );
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(complexError),
+          equals('This is the correct message'),
+        );
+      });
+
+      test('handles mixed error formats', () {
+        // Error with both body.detail and body.error.message
+        final mixedError = TestErrorWithBody(
+          body: {
+            'detail': 'Detail message',
+            'error': {
+              'message': 'Error message',
+            },
+          },
+        );
+        // The current implementation checks error.message first, then detail
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(mixedError),
+          equals('Error message'),
+        );
+      });
+
+      test('handles body as invalid JSON string', () {
+        final invalidJsonError = TestErrorWithBody(
+          body: '{"detail": "Missing closing brace"',
+        );
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(invalidJsonError),
+          equals('TestErrorWithBody: {"detail": "Missing closing brace"'),
+        );
+      });
+
+      test('handles various null and empty combinations', () {
+        // Body exists but detail is explicitly null - with default message
+        final nullDetailError = TestErrorWithBody(
+          body: {'detail': null},
+        );
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(
+            nullDetailError,
+            defaultMessage: 'Default message',
+          ),
+          equals('Default message'),
+        );
+
+        // Message field exists but is null
+        final nullMessageError = TestErrorWithMessage();
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(
+            nullMessageError,
+            defaultMessage: 'Default for null',
+          ),
+          equals('Default for null'),
+        );
+      });
+
+      test('handles non-string detail values', () {
+        // Detail is a number
+        final numberDetail = TestErrorWithBody(body: {'detail': 404});
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(numberDetail),
+          equals('404'),
+        );
+
+        // Detail is a boolean
+        final boolDetail = TestErrorWithBody(body: {'detail': false});
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(boolDetail),
+          equals('false'),
+        );
+
+        // Detail is a list
+        final listDetail = TestErrorWithBody(body: {
+          'detail': ['error1', 'error2']
+        });
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(listDetail),
+          equals('[error1, error2]'),
+        );
+
+        // Detail is a nested map
+        final mapDetail = TestErrorWithBody(body: {
+          'detail': {'code': 'E123', 'msg': 'Error'}
+        });
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(mapDetail),
+          equals('{code: E123, msg: Error}'),
+        );
+      });
+
+      test('extraction does not modify the original error', () {
+        final mutableError = TestErrorWithBody(
+          body: {'detail': 'Original message'},
+        );
+
+        final message1 = AiErrorUtils.extractDetailedErrorMessage(mutableError);
+        final message2 = AiErrorUtils.extractDetailedErrorMessage(mutableError);
+
+        expect(message1, equals(message2));
+        expect(message1, equals('Original message'));
+      });
     });
   });
+}
+
+// Helper class that throws when properties are accessed
+class _ThrowingError {
+  dynamic get body => throw Exception('Cannot access body');
+  dynamic get message => throw Exception('Cannot access message');
+
+  @override
+  String toString() => 'ThrowingError';
 }

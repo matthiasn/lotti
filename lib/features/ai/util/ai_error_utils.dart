@@ -166,6 +166,9 @@ class AiErrorUtils {
     }
 
     // Check for OpenAI-style API errors by examining the error structure
+    // Note: We use string-based type checking here because the openai_dart package
+    // doesn't expose specific exception types that we can check with 'is'.
+    // This approach is brittle but necessary given the current library constraints.
     if (error.runtimeType.toString().contains('OpenAI') ||
         error.runtimeType.toString().contains('RequestException')) {
       return _handleApiError(error, stackTrace);
