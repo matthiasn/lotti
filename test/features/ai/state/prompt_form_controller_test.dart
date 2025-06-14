@@ -62,6 +62,30 @@ void main() {
       when(() => mockAiConfigRepository.getConfigById(testConfigId))
           .thenAnswer((_) async => testConfig);
 
+      // Mock model configs for validation
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+      when(() => mockAiConfigRepository.getConfigById('model2'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model2',
+                name: 'Model 2',
+                providerModelId: 'provider-model-2',
+                inferenceProviderId: 'provider-2',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+
       final controller = container.read(
         promptFormControllerProvider(configId: testConfigId).notifier,
       );
@@ -217,6 +241,30 @@ void main() {
       ).thenAnswer(
         (_) async => testConfig,
       ); // testConfig has defaultModelId: 'model1', modelIds: ['model1', 'model2']
+
+      // Mock model configs for validation
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+      when(() => mockAiConfigRepository.getConfigById('model2'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model2',
+                name: 'Model 2',
+                providerModelId: 'provider-model-2',
+                inferenceProviderId: 'provider-2',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
       await container
           .read(promptFormControllerProvider(configId: testConfigId).future);
       container
@@ -238,6 +286,28 @@ void main() {
       );
       when(() => mockAiConfigRepository.getConfigById(testConfigId))
           .thenAnswer((_) async => testConfig);
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+      when(() => mockAiConfigRepository.getConfigById('model2'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model2',
+                name: 'Model 2',
+                providerModelId: 'provider-model-2',
+                inferenceProviderId: 'provider-2',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
       await container
           .read(promptFormControllerProvider(configId: testConfigId).future);
       container
@@ -262,6 +332,28 @@ void main() {
       );
       when(() => mockAiConfigRepository.getConfigById(testConfigId))
           .thenAnswer((_) async => testConfig);
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+      when(() => mockAiConfigRepository.getConfigById('model2'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model2',
+                name: 'Model 2',
+                providerModelId: 'provider-model-2',
+                inferenceProviderId: 'provider-2',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
       await container
           .read(promptFormControllerProvider(configId: testConfigId).future);
       container
@@ -306,6 +398,28 @@ void main() {
       // Initialize with an existing config
       when(() => mockAiConfigRepository.getConfigById(testConfigId))
           .thenAnswer((_) async => testConfig);
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+      when(() => mockAiConfigRepository.getConfigById('model2'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model2',
+                name: 'Model 2',
+                providerModelId: 'provider-model-2',
+                inferenceProviderId: 'provider-2',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
       await container
           .read(promptFormControllerProvider(configId: testConfigId).future);
       final controller = container
@@ -401,6 +515,28 @@ void main() {
       // Setup initial state by loading a config
       when(() => mockAiConfigRepository.getConfigById(testConfigId))
           .thenAnswer((_) async => testConfig);
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
+      when(() => mockAiConfigRepository.getConfigById('model2'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model2',
+                name: 'Model 2',
+                providerModelId: 'provider-model-2',
+                inferenceProviderId: 'provider-2',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
       await container
           .read(promptFormControllerProvider(configId: testConfigId).future);
       final controller = container

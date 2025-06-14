@@ -170,7 +170,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colorScheme.scrim,
+      backgroundColor: Theme.of(context).brightness == Brightness.light
+          ? context.colorScheme.surfaceContainerLowest
+          : context.colorScheme.scrim,
       body: CustomScrollView(
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
@@ -180,6 +182,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             expandedHeight: 100,
             pinned: true,
             backgroundColor: context.colorScheme.surface,
+            surfaceTintColor: Colors.transparent,
             leading: IconButton(
               icon: Icon(
                 Icons.arrow_back,
@@ -200,10 +203,15 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      context.colorScheme.surface,
-                      context.colorScheme.scrim,
-                    ],
+                    colors: Theme.of(context).brightness == Brightness.light
+                        ? [
+                            context.colorScheme.surface,
+                            context.colorScheme.surface,
+                          ]
+                        : [
+                            context.colorScheme.surface,
+                            context.colorScheme.scrim,
+                          ],
                   ),
                 ),
               ),

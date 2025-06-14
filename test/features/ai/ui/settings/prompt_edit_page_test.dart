@@ -82,6 +82,12 @@ void main() {
         .thenAnswer((_) async => testPrompt);
     when(() => mockRepository.getConfigsByType(AiConfigType.model))
         .thenAnswer((_) async => testModels);
+
+    // Mock model config fetches for validation
+    when(() => mockRepository.getConfigById('model-1'))
+        .thenAnswer((_) async => testModels[0]);
+    when(() => mockRepository.getConfigById('model-2'))
+        .thenAnswer((_) async => testModels[1]);
   });
 
   Widget buildTestWidget({String? configId}) {
@@ -169,7 +175,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the save button
-      final saveButton = find.text('Save Prompt');
+      final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
 
       // Verify form fields exist
@@ -218,7 +224,7 @@ void main() {
 
       // Verify both buttons exist
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Save Prompt'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
     });
 
     testWidgets('shows error state when loading fails',
@@ -279,7 +285,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to save button
-      final saveButton = find.text('Save Prompt');
+      final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
       await tester.pumpAndSettle();
 
@@ -438,7 +444,7 @@ void main() {
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
 
-      final saveButton = find.text('Save Prompt');
+      final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
     });
   });

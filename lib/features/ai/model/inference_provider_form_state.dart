@@ -20,11 +20,18 @@ class ApiKeyName extends FormzInput<String, ProviderFormError> {
 }
 
 class ApiKeyValue extends FormzInput<String, ProviderFormError> {
-  const ApiKeyValue.pure([super.value = '']) : super.pure();
-  const ApiKeyValue.dirty([super.value = '']) : super.dirty();
+  const ApiKeyValue.pure([super.value = '', this.providerType]) : super.pure();
+  const ApiKeyValue.dirty([super.value = '', this.providerType])
+      : super.dirty();
+
+  final InferenceProviderType? providerType;
 
   @override
   ProviderFormError? validator(String value) {
+    // API key is not required for Ollama
+    if (providerType == InferenceProviderType.ollama) {
+      return null;
+    }
     return value.isEmpty ? ProviderFormError.empty : null;
   }
 }
@@ -75,7 +82,8 @@ class InferenceProviderFormState with FormzMixin {
     this.isSubmitting = false,
     this.submitFailed = false,
     this.inferenceProviderType = InferenceProviderType.genericOpenAi,
-  });
+    DateTime? lastUpdated,
+  }) : lastUpdated = lastUpdated ?? DateTime.now();
 
   final String? id; // null for new API keys
   final ApiKeyName name;
@@ -85,6 +93,7 @@ class InferenceProviderFormState with FormzMixin {
   final bool isSubmitting;
   final bool submitFailed;
   final InferenceProviderType inferenceProviderType;
+  final DateTime lastUpdated;
 
   InferenceProviderFormState copyWith({
     String? id,
@@ -106,6 +115,7 @@ class InferenceProviderFormState with FormzMixin {
       submitFailed: submitFailed ?? this.submitFailed,
       inferenceProviderType:
           inferenceProviderType ?? this.inferenceProviderType,
+      lastUpdated: DateTime.now(),
     );
   }
 

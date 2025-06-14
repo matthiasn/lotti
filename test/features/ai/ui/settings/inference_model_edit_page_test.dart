@@ -147,7 +147,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the save button
-      final saveButton = find.text('Save Model');
+      final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
 
       // Verify form fields exist by checking labels
@@ -218,7 +218,7 @@ void main() {
 
       // Verify both buttons exist
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Save Model'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
     });
 
     testWidgets('shows error state when loading fails',
@@ -266,7 +266,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to save button
-      final saveButton = find.text('Save Model');
+      final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
       await tester.pumpAndSettle();
 

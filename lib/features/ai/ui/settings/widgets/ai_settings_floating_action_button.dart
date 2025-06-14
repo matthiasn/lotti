@@ -49,8 +49,8 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
         onPressed: onPressed,
         icon: _buildIconContainer(context, icon),
         label: _buildLabel(context, label),
-        backgroundColor: context.colorScheme.primary,
-        foregroundColor: context.colorScheme.onPrimary,
+        backgroundColor: context.colorScheme.primaryContainer,
+        foregroundColor: context.colorScheme.onPrimaryContainer,
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -84,8 +84,8 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            context.colorScheme.onPrimary.withValues(alpha: 0.2),
-            context.colorScheme.onPrimary.withValues(alpha: 0.1),
+            context.colorScheme.onPrimaryContainer.withValues(alpha: 0.2),
+            context.colorScheme.onPrimaryContainer.withValues(alpha: 0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -95,7 +95,7 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
       child: Icon(
         icon,
         size: 20,
-        color: context.colorScheme.onPrimary,
+        color: context.colorScheme.onPrimaryContainer,
       ),
     );
   }
@@ -106,7 +106,7 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
       style: context.textTheme.labelLarge?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
-        color: context.colorScheme.onPrimary,
+        color: context.colorScheme.onPrimaryContainer,
       ),
     );
   }

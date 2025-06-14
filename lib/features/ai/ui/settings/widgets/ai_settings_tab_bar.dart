@@ -38,17 +38,12 @@ class AiSettingsTabBar extends StatelessWidget {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.6),
-            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+        color: Theme.of(context).brightness == Brightness.light
+            ? context.colorScheme.surfaceContainerHighest
+            : context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+          color: context.colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: TabBar(
@@ -58,29 +53,28 @@ class AiSettingsTabBar extends StatelessWidget {
           onTabChanged?.call(tab);
         },
         indicator: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              context.colorScheme.primary,
-              context.colorScheme.primary.withValues(alpha: 0.9),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).brightness == Brightness.light
+              ? context.colorScheme.primaryContainer
+              : context.colorScheme.primary,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: context.colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.light
+              ? []
+              : [
+                  BoxShadow(
+                    color: context.colorScheme.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         indicatorPadding: const EdgeInsets.all(4),
         dividerColor: Colors.transparent,
-        labelColor: context.colorScheme.onPrimary,
+        labelColor: Theme.of(context).brightness == Brightness.light
+            ? context.colorScheme.onPrimaryContainer
+            : context.colorScheme.onPrimary,
         unselectedLabelColor:
-            context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
         labelStyle: context.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,

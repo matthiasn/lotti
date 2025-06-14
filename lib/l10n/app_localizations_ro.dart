@@ -1027,6 +1027,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptSaveButton => 'Save Prompt';
 
   @override
+  String get aiFormNoChanges => 'No unsaved changes';
+
+  @override
+  String get aiFormFixErrors => 'Please fix errors before saving';
+
+  @override
+  String get aiFormCancel => 'Cancel';
+
+  @override
   String get promptNoModelsSelectedError =>
       'No models selected. Select at least one model.';
 
@@ -1786,4 +1795,59 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'Vizualizare';
+
+  @override
+  String get aiInferenceErrorConnectionFailedTitle => 'Connection Failed';
+
+  @override
+  String get aiInferenceErrorConnectionFailedMessage =>
+      'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
+
+  @override
+  String get aiInferenceErrorTimeoutTitle => 'Request Timed Out';
+
+  @override
+  String get aiInferenceErrorTimeoutMessage =>
+      'The request took too long to complete. Please try again or check if the service is responding.';
+
+  @override
+  String get aiInferenceErrorAuthenticationTitle => 'Authentication Failed';
+
+  @override
+  String get aiInferenceErrorAuthenticationMessage =>
+      'Authentication failed. Please check your API key and ensure it is valid.';
+
+  @override
+  String get aiInferenceErrorRateLimitTitle => 'Rate Limit Exceeded';
+
+  @override
+  String get aiInferenceErrorRateLimitMessage =>
+      'You have exceeded the rate limit. Please wait a moment before trying again.';
+
+  @override
+  String get aiInferenceErrorInvalidRequestTitle => 'Invalid Request';
+
+  @override
+  String get aiInferenceErrorInvalidRequestMessage =>
+      'The request was invalid. Please check your configuration and try again.';
+
+  @override
+  String get aiInferenceErrorServerTitle => 'Server Error';
+
+  @override
+  String get aiInferenceErrorServerMessage =>
+      'The AI service encountered an error. Please try again later.';
+
+  @override
+  String get aiInferenceErrorUnknownTitle => 'Error';
+
+  @override
+  String get aiInferenceErrorUnknownMessage =>
+      'An unexpected error occurred. Please try again.';
+
+  @override
+  String get aiInferenceErrorRetryButton => 'Try Again';
+
+  @override
+  String get aiInferenceErrorSuggestionsTitle => 'Suggestions:';
 }
