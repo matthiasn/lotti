@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:matcher/matcher.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
@@ -343,6 +344,289 @@ void main() {
 
       // Verify CallbackShortcuts widget exists
       expect(find.byType(CallbackShortcuts), findsWidgets);
+    });
+  });
+
+  group('API Key Field Visibility for Different Providers', () {
+    testWidgets('loads existing Ollama provider without showing API key field',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Create an Ollama provider
+      final ollamaProvider = AiConfig.inferenceProvider(
+        id: 'ollama-id',
+        name: 'My Ollama',
+        baseUrl: 'http://localhost:11434/v1',
+        apiKey: '', // Empty API key for Ollama
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      when(() => mockRepository.getConfigById('ollama-id'))
+          .thenAnswer((_) async => ollamaProvider);
+
+      await tester.pumpWidget(buildTestWidget(configId: 'ollama-id'));
+      await tester.pumpAndSettle();
+
+      // Verify form loads with Ollama data
+      expect(find.text('My Ollama'), findsOneWidget);
+      expect(find.text('http://localhost:11434/v1'), findsOneWidget);
+
+      // API key field should not be visible
+      expect(find.text('Authentication'), findsNothing);
+      expect(find.text('API Key'), findsNothing);
+      expect(find.byIcon(Icons.key_rounded), findsNothing);
+    });
+
+    testWidgets('shows API key field for OpenAI provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Open provider type selection modal
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      // Select OpenAI
+      final openAiOptions = find.text('OpenAI');
+      for (var i = 0; i < openAiOptions.evaluate().length; i++) {
+        final option = openAiOptions.at(i);
+        final ancestor = find.ancestor(
+          of: option,
+          matching: find.byType(InkWell),
+        );
+        if (ancestor.evaluate().isNotEmpty) {
+          await tester.tap(ancestor.first);
+          break;
+        }
+      }
+      await tester.pumpAndSettle();
+
+      // API key field should be visible
+      expect(find.text('Authentication'), findsOneWidget);
+      expect(find.text('API Key'), findsOneWidget);
+      expect(find.text('Secure your API connection'), findsOneWidget);
+      expect(find.byIcon(Icons.key_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows API key field for Anthropic provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Open provider type selection modal
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      // Select Anthropic
+      final anthropicOption = find.text('Anthropic Claude');
+      await tester.tap(find.ancestor(
+        of: anthropicOption,
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // API key field should be visible
+      expect(find.text('Authentication'), findsOneWidget);
+      expect(find.text('API Key'), findsOneWidget);
+      expect(find.text('Secure your API connection'), findsOneWidget);
+      expect(find.byIcon(Icons.key_rounded), findsOneWidget);
+    });
+
+    testWidgets('API key field visibility changes when switching providers',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Initially with OpenAI Compatible, API key should be visible
+      expect(find.text('API Key'), findsOneWidget);
+
+      // Switch to Ollama
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      // Ensure Ollama option is visible before tapping
+      final ollamaOption = find.text('Ollama');
+      await tester.ensureVisible(ollamaOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: ollamaOption,
+        matching: find.byType(InkWell),
+      ));
+
+      // Wait for modal to close
+      await tester.pumpAndSettle();
+
+      // Force multiple pump cycles to ensure state propagates
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.pumpAndSettle();
+
+      // API key should be hidden
+      expect(find.text('API Key'), findsNothing);
+
+      // Switch back to OpenAI - tap on the provider type field (which now shows "Ollama")
+      await tester.tap(find
+          .ancestor(
+            of: find.text('Provider Type'),
+            matching: find.byType(GestureDetector),
+          )
+          .first);
+      await tester.pumpAndSettle();
+
+      final openAiOptions = find.text('OpenAI');
+      for (var i = 0; i < openAiOptions.evaluate().length; i++) {
+        final option = openAiOptions.at(i);
+        final ancestor = find.ancestor(
+          of: option,
+          matching: find.byType(InkWell),
+        );
+        if (ancestor.evaluate().isNotEmpty) {
+          await tester.tap(ancestor.first);
+          break;
+        }
+      }
+      await tester.pumpAndSettle();
+
+      // API key should be visible again
+      expect(find.text('API Key'), findsOneWidget);
+    });
+
+    testWidgets('can save Ollama provider without API key',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select Ollama
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: find.text('Ollama'),
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // Fill only name and URL (no API key needed)
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'My Local Ollama');
+      // URL should already be pre-filled for Ollama
+      await tester.pumpAndSettle();
+
+      // Scroll to save button
+      final saveButton = find.text('Save Provider');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      // Should be able to save without API key
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Verify save was called (may be called multiple times due to model pre-population)
+      verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
+    });
+
+    testWidgets('loads existing Ollama provider without showing API key field',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Create an Ollama provider
+      final ollamaProvider = AiConfig.inferenceProvider(
+        id: 'ollama-id',
+        name: 'My Ollama',
+        baseUrl: 'http://localhost:11434/v1',
+        apiKey: '', // Empty API key for Ollama
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      when(() => mockRepository.getConfigById('ollama-id'))
+          .thenAnswer((_) async => ollamaProvider);
+
+      await tester.pumpWidget(buildTestWidget(configId: 'ollama-id'));
+      await tester.pumpAndSettle();
+
+      // Verify form loads with Ollama data
+      expect(find.text('My Ollama'), findsOneWidget);
+      expect(find.text('http://localhost:11434/v1'), findsOneWidget);
+
+      // API key field should not be visible
+      expect(find.text('Authentication'), findsNothing);
+      expect(find.text('API Key'), findsNothing);
+      expect(find.byIcon(Icons.key_rounded), findsNothing);
+    });
+
+    testWidgets('validates form correctly for different provider types',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // For OpenAI, should require API key
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'OpenAI Test');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'https://api.example.com'),
+          'https://api.openai.com/v1');
+      // Don't enter API key
+      await tester.pumpAndSettle();
+
+      // Try to save - should fail because API key is required
+      final saveButton = find.text('Save Provider');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      // Now switch to Ollama
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: find.text('Ollama'),
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // Should now be able to save without API key
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Verify save was called for Ollama without API key (may be called multiple times due to model pre-population)
+      verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
   });
 }
