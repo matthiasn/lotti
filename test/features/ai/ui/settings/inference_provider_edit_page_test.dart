@@ -130,7 +130,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially save button should be disabled
-      final saveButton = find.text('Save Provider');
+      final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
 
       // Fill in required fields
@@ -208,7 +208,7 @@ void main() {
 
       // Verify both buttons exist
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Save Provider'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
     });
 
     testWidgets('shows error state when loading fails',
@@ -311,7 +311,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to make save button visible
-      final saveButton = find.text('Save Provider');
+      final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
       await tester.pumpAndSettle();
 
@@ -541,7 +541,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to save button
-      final saveButton = find.text('Save Provider');
+      final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
       await tester.pumpAndSettle();
 
@@ -603,7 +603,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Try to save - should fail because API key is required
-      final saveButton = find.text('Save Provider');
+      final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
       await tester.pumpAndSettle();
 

@@ -86,8 +86,8 @@ void main() {
 
         final decoration = containerWidget.decoration! as BoxDecoration;
         expect(decoration.borderRadius, isNotNull);
-        expect(decoration.gradient, isNotNull);
-        expect(decoration.gradient, isA<LinearGradient>());
+        expect(decoration.color, isNotNull);
+        expect(decoration.border, isNotNull);
       });
     });
 

@@ -81,7 +81,9 @@ class _InferenceModelEditPageState
         },
       },
       child: Scaffold(
-        backgroundColor: context.colorScheme.scrim,
+        backgroundColor: Theme.of(context).brightness == Brightness.light
+            ? context.colorScheme.surfaceContainerLowest
+            : context.colorScheme.scrim,
         body: Column(
           children: [
             Expanded(
@@ -91,7 +93,10 @@ class _InferenceModelEditPageState
                   SliverAppBar(
                     expandedHeight: 120,
                     pinned: true,
-                    backgroundColor: context.colorScheme.scrim,
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.light
+                            ? context.colorScheme.surfaceContainerLowest
+                            : context.colorScheme.scrim,
                     surfaceTintColor: Colors.transparent,
                     leading: IconButton(
                       icon: Icon(
@@ -116,15 +121,22 @@ class _InferenceModelEditPageState
                       ),
                       background: Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              context.colorScheme.primaryContainer
-                                  .withValues(alpha: 0.1),
-                              context.colorScheme.scrim,
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
+                          gradient:
+                              Theme.of(context).brightness == Brightness.light
+                                  ? null // No gradient in light mode
+                                  : LinearGradient(
+                                      colors: [
+                                        context.colorScheme.primaryContainer
+                                            .withValues(alpha: 0.1),
+                                        context.colorScheme.scrim,
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
+                          color:
+                              Theme.of(context).brightness == Brightness.light
+                                  ? context.colorScheme.surfaceContainerLowest
+                                  : null,
                         ),
                       ),
                     ),
