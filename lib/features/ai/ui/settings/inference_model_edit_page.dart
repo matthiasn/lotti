@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_model_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
@@ -81,63 +82,76 @@ class _InferenceModelEditPageState
       },
       child: Scaffold(
         backgroundColor: context.colorScheme.scrim,
-        body: CustomScrollView(
-          slivers: [
-            // Modern App Bar
-            SliverAppBar(
-              expandedHeight: 120,
-              pinned: true,
-              backgroundColor: context.colorScheme.scrim,
-              surfaceTintColor: Colors.transparent,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.chevron_left_rounded,
-                  color: context.colorScheme.onSurface,
-                  size: 28,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(bottom: 16),
-                title: Text(
-                  widget.configId == null
-                      ? context.messages.modelAddPageTitle
-                      : context.messages.modelEditPageTitle,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: context.colorScheme.onSurface,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.1),
-                        context.colorScheme.scrim,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+        body: Column(
+          children: [
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // Modern App Bar
+                  SliverAppBar(
+                    expandedHeight: 120,
+                    pinned: true,
+                    backgroundColor: context.colorScheme.scrim,
+                    surfaceTintColor: Colors.transparent,
+                    leading: IconButton(
+                      icon: Icon(
+                        Icons.chevron_left_rounded,
+                        color: context.colorScheme.onSurface,
+                        size: 28,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    flexibleSpace: FlexibleSpaceBar(
+                      titlePadding: const EdgeInsets.only(bottom: 16),
+                      title: Text(
+                        widget.configId == null
+                            ? context.messages.modelAddPageTitle
+                            : context.messages.modelEditPageTitle,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: context.colorScheme.onSurface,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      background: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              context.colorScheme.primaryContainer
+                                  .withValues(alpha: 0.1),
+                              context.colorScheme.scrim,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Form Content
+                  SliverToBoxAdapter(
+                    child: switch (configAsync) {
+                      AsyncData(value: final config) => _buildForm(context, ref,
+                          config, formState, isFormValid, handleSave),
+                      AsyncError() => _buildErrorState(context),
+                      _ => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(48),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    },
+                  ),
+                ],
               ),
             ),
-            // Form Content
-            SliverToBoxAdapter(
-              child: switch (configAsync) {
-                AsyncData(value: final config) => _buildForm(
-                    context, ref, config, formState, isFormValid, handleSave),
-                AsyncError() => _buildErrorState(context),
-                _ => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(48),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-              },
+            // Fixed bottom bar
+            FormBottomBar(
+              onSave: isFormValid ? handleSave : null,
+              onCancel: () => Navigator.of(context).pop(),
+              isFormValid: isFormValid,
+              isDirty: widget.configId == null || (formState?.isDirty ?? false),
             ),
           ],
         ),
@@ -332,32 +346,7 @@ class _InferenceModelEditPageState
           ),
           const SizedBox(height: 32),
 
-          const SizedBox(height: 40),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: AiFormButton(
-                  label: 'Cancel',
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: AiButtonStyle.secondary,
-                  fullWidth: true,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AiFormButton(
-                  label: 'Save Model',
-                  onPressed: isFormValid ? handleSave : null,
-                  icon: Icons.save_rounded,
-                  fullWidth: true,
-                  enabled: isFormValid,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40), // Extra padding at bottom
+          const SizedBox(height: 20),
         ],
       ),
     );

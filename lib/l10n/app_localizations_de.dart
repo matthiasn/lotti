@@ -98,7 +98,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get aiConfigFailedToSaveMessage => 'Failed to save configuration. Please try again.';
+  String get aiConfigFailedToSaveMessage =>
+      'Failed to save configuration. Please try again.';
 
   @override
   String get aiConfigInputDataTypesTitle => 'Required Input Data Types';
@@ -127,10 +128,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigListDeleteConfirmTitle => 'Confirm Deletion';
 
   @override
-  String get aiConfigListCascadeDeleteWarning => 'This will also delete all models associated with this provider.';
+  String get aiConfigListCascadeDeleteWarning =>
+      'This will also delete all models associated with this provider.';
 
   @override
-  String get aiConfigListEmptyState => 'No configurations found. Add one to get started.';
+  String get aiConfigListEmptyState =>
+      'No configurations found. Add one to get started.';
 
   @override
   String aiConfigListErrorDeleting(String configName, String error) {
@@ -149,7 +152,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigListUndoDelete => 'UNDO';
 
   @override
-  String get aiConfigProviderDeletedSuccessfully => 'Provider deleted successfully';
+  String get aiConfigProviderDeletedSuccessfully =>
+      'Provider deleted successfully';
 
   @override
   String aiConfigAssociatedModelsRemoved(int count) {
@@ -180,16 +184,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigNameTooShortError => 'Name must be at least 3 characters';
 
   @override
-  String get aiConfigNoModelsAvailable => 'No AI models are configured yet. Please add one in settings.';
+  String get aiConfigNoModelsAvailable =>
+      'No AI models are configured yet. Please add one in settings.';
 
   @override
-  String get aiConfigNoModelsSelected => 'No models selected. At least one model is required.';
+  String get aiConfigNoModelsSelected =>
+      'No models selected. At least one model is required.';
 
   @override
-  String get aiConfigNoProvidersAvailable => 'No API providers available. Please add an API provider first.';
+  String get aiConfigNoProvidersAvailable =>
+      'No API providers available. Please add an API provider first.';
 
   @override
-  String get aiConfigNoSuitableModelsAvailable => 'No models meet the requirements for this prompt. Please configure models that support the required capabilities.';
+  String get aiConfigNoSuitableModelsAvailable =>
+      'No models meet the requirements for this prompt. Please configure models that support the required capabilities.';
 
   @override
   String get aiConfigOutputModalitiesFieldLabel => 'Output Modalities';
@@ -204,13 +212,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigProviderModelIdFieldLabel => 'Provider Model ID';
 
   @override
-  String get aiConfigProviderModelIdTooShortError => 'ProviderModelId must be at least 3 characters';
+  String get aiConfigProviderModelIdTooShortError =>
+      'ProviderModelId must be at least 3 characters';
 
   @override
   String get aiConfigProviderTypeFieldLabel => 'Provider Type';
 
   @override
-  String get aiConfigReasoningCapabilityDescription => 'Model can perform step-by-step reasoning';
+  String get aiConfigReasoningCapabilityDescription =>
+      'Model can perform step-by-step reasoning';
 
   @override
   String get aiConfigReasoningCapabilityFieldLabel => 'Reasoning Capability';
@@ -222,13 +232,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigResponseTypeFieldLabel => 'AI Response Type';
 
   @override
-  String get aiConfigResponseTypeNotSelectedError => 'Please select a response type';
+  String get aiConfigResponseTypeNotSelectedError =>
+      'Please select a response type';
 
   @override
   String get aiConfigResponseTypeSelectHint => 'Select response type';
 
   @override
-  String get aiConfigSelectInputDataTypesPrompt => 'Select required data types...';
+  String get aiConfigSelectInputDataTypesPrompt =>
+      'Select required data types...';
 
   @override
   String get aiConfigSelectModalitiesPrompt => 'Select modalities';
@@ -252,7 +264,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigUpdateButtonLabel => 'Update Prompt';
 
   @override
-  String get aiConfigUseReasoningDescription => 'If enabled, the model will use its reasoning capabilities for this prompt.';
+  String get aiConfigUseReasoningDescription =>
+      'If enabled, the model will use its reasoning capabilities for this prompt.';
 
   @override
   String get aiConfigUseReasoningFieldLabel => 'Use Reasoning';
@@ -264,7 +277,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigUserMessageFieldLabel => 'User Message';
 
   @override
-  String get aiProviderAnthropicDescription => 'Anthropic\'s Claude family of AI assistants';
+  String get aiProviderAnthropicDescription =>
+      'Anthropic\'s Claude family of AI assistants';
 
   @override
   String get aiProviderAnthropicName => 'Anthropic Claude';
@@ -276,13 +290,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
-  String get aiProviderGenericOpenAiDescription => 'API compatible with OpenAI format';
+  String get aiProviderGenericOpenAiDescription =>
+      'API compatible with OpenAI format';
 
   @override
   String get aiProviderGenericOpenAiName => 'OpenAI Compatible';
 
   @override
-  String get aiProviderNebiusAiStudioDescription => 'Nebius AI Studio\'s models';
+  String get aiProviderNebiusAiStudioDescription =>
+      'Nebius AI Studio\'s models';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
@@ -318,7 +334,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Task Summary';
 
   @override
-  String get aiTaskSummaryRunning => 'Denke über die Zusammenfassung der Aufgabe nach...';
+  String get aiTaskSummaryRunning =>
+      'Denke über die Zusammenfassung der Aufgabe nach...';
 
   @override
   String get aiTaskSummaryTitle => 'KI-Aufgabenzusammenfassung';
@@ -369,13 +386,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Bestätigen';
 
   @override
-  String get checklistItemDeleteWarning => 'Diese Aktion kann nicht rückgängig gemacht werden.';
+  String get checklistItemDeleteWarning =>
+      'Diese Aktion kann nicht rückgängig gemacht werden.';
 
   @override
   String get checklistItemDrag => 'Vorschläge in die Checkliste ziehen';
 
   @override
-  String get checklistNoSuggestionsTitle => 'Keine vorgeschlagenen Aktionspunkte';
+  String get checklistNoSuggestionsTitle =>
+      'Keine vorgeschlagenen Aktionspunkte';
 
   @override
   String get checklistsTitle => 'Checklisten';
@@ -384,7 +403,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistSuggestionsOutdated => 'Veraltet';
 
   @override
-  String get checklistSuggestionsRunning => 'Denke über nicht verfolgte Vorschläge nach...';
+  String get checklistSuggestionsRunning =>
+      'Denke über nicht verfolgte Vorschläge nach...';
 
   @override
   String get checklistSuggestionsTitle => 'Vorgeschlagene Aktionspunkte';
@@ -408,52 +428,66 @@ class AppLocalizationsDe extends AppLocalizations {
   String get completeHabitSuccessButton => 'Erfolgreich';
 
   @override
-  String get configFlagAttemptEmbeddingDescription => 'Wenn aktiviert, versucht die App, Einbettungen für Ihre Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.';
+  String get configFlagAttemptEmbeddingDescription =>
+      'Wenn aktiviert, versucht die App, Einbettungen für Ihre Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.';
 
   @override
-  String get configFlagAutoTranscribeDescription => 'Transkribiert automatisch Audioaufnahmen in Ihren Einträgen. Dies erfordert eine Internetverbindung.';
+  String get configFlagAutoTranscribeDescription =>
+      'Transkribiert automatisch Audioaufnahmen in Ihren Einträgen. Dies erfordert eine Internetverbindung.';
 
   @override
-  String get configFlagEnableAutoTaskTldrDescription => 'Generiert automatisch Zusammenfassungen für Ihre Aufgaben, damit Sie deren Status schnell erfassen können.';
+  String get configFlagEnableAutoTaskTldrDescription =>
+      'Generiert automatisch Zusammenfassungen für Ihre Aufgaben, damit Sie deren Status schnell erfassen können.';
 
   @override
-  String get configFlagEnableCalendarPageDescription => 'Zeigt die Kalenderseite in der Hauptnavigation an. Zeigen und verwalten Sie Ihre Einträge in einer Kalenderansicht.';
+  String get configFlagEnableCalendarPageDescription =>
+      'Zeigt die Kalenderseite in der Hauptnavigation an. Zeigen und verwalten Sie Ihre Einträge in einer Kalenderansicht.';
 
   @override
-  String get configFlagEnableDashboardsPageDescription => 'Zeigt die Dashboard-Seite in der Hauptnavigation an. Zeigen Sie Ihre Daten und Erkenntnisse in anpassbaren Dashboards an.';
+  String get configFlagEnableDashboardsPageDescription =>
+      'Zeigt die Dashboard-Seite in der Hauptnavigation an. Zeigen Sie Ihre Daten und Erkenntnisse in anpassbaren Dashboards an.';
 
   @override
-  String get configFlagEnableHabitsPageDescription => 'Zeigt die Seite \"Gewohnheiten\" in der Hauptnavigation an. Verfolgen und verwalten Sie hier Ihre täglichen Gewohnheiten.';
+  String get configFlagEnableHabitsPageDescription =>
+      'Zeigt die Seite \"Gewohnheiten\" in der Hauptnavigation an. Verfolgen und verwalten Sie hier Ihre täglichen Gewohnheiten.';
 
   @override
-  String get configFlagEnableLoggingDescription => 'Aktiviert die detaillierte Protokollierung für Debugging-Zwecke. Dies kann die Leistung beeinträchtigen.';
+  String get configFlagEnableLoggingDescription =>
+      'Aktiviert die detaillierte Protokollierung für Debugging-Zwecke. Dies kann die Leistung beeinträchtigen.';
 
   @override
-  String get configFlagEnableMatrixDescription => 'Aktiviert die Matrix-Integration, um Ihre Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.';
+  String get configFlagEnableMatrixDescription =>
+      'Aktiviert die Matrix-Integration, um Ihre Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.';
 
   @override
   String get configFlagEnableNotifications => 'Benachrichtigungen aktivieren?';
 
   @override
-  String get configFlagEnableNotificationsDescription => 'Erhalten Sie Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.';
+  String get configFlagEnableNotificationsDescription =>
+      'Erhalten Sie Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.';
 
   @override
-  String get configFlagEnableTooltipDescription => 'Zeigt hilfreiche Tooltips in der gesamten App an, um Sie durch die Funktionen zu führen.';
+  String get configFlagEnableTooltipDescription =>
+      'Zeigt hilfreiche Tooltips in der gesamten App an, um Sie durch die Funktionen zu führen.';
 
   @override
   String get configFlagPrivate => 'Private Einträge anzeigen?';
 
   @override
-  String get configFlagPrivateDescription => 'Aktivieren Sie diese Option, um Ihre Einträge standardmäßig privat zu machen. Private Einträge sind nur für Sie sichtbar.';
+  String get configFlagPrivateDescription =>
+      'Aktivieren Sie diese Option, um Ihre Einträge standardmäßig privat zu machen. Private Einträge sind nur für Sie sichtbar.';
 
   @override
-  String get configFlagRecordLocationDescription => 'Zeichnet automatisch Ihren Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.';
+  String get configFlagRecordLocationDescription =>
+      'Zeichnet automatisch Ihren Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.';
 
   @override
-  String get configFlagResendAttachmentsDescription => 'Aktivieren Sie diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
+  String get configFlagResendAttachmentsDescription =>
+      'Aktivieren Sie diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
-  String get configFlagUseCloudInferenceDescription => 'Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.';
+  String get configFlagUseCloudInferenceDescription =>
+      'Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.';
 
   @override
   String get conflictsResolved => 'gelöst';
@@ -513,7 +547,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardCategoryLabel => 'Kategorie:';
 
   @override
-  String get dashboardCopyHint => 'Dashboard-Konfiguration speichern & kopieren';
+  String get dashboardCopyHint =>
+      'Dashboard-Konfiguration speichern & kopieren';
 
   @override
   String get dashboardDeleteConfirm => 'JA, DIESES DASHBOARD LÖSCHEN';
@@ -642,7 +677,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inputDataTypeTaskName => 'Task';
 
   @override
-  String get inputDataTypeTasksListDescription => 'Use a list of tasks as input';
+  String get inputDataTypeTasksListDescription =>
+      'Use a list of tasks as input';
 
   @override
   String get inputDataTypeTasksListName => 'Tasks List';
@@ -672,7 +708,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalDeleteHint => 'Eintrag löschen';
 
   @override
-  String get journalDeleteQuestion => 'Möchten Sie diesen Journaleintrag löschen?';
+  String get journalDeleteQuestion =>
+      'Möchten Sie diesen Journaleintrag löschen?';
 
   @override
   String get journalDurationLabel => 'Dauer:';
@@ -750,7 +787,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalUnlinkHint => 'Trennen';
 
   @override
-  String get journalUnlinkQuestion => 'Möchten Sie diesen Eintrag wirklich trennen?';
+  String get journalUnlinkQuestion =>
+      'Möchten Sie diesen Eintrag wirklich trennen?';
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
@@ -773,7 +811,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenancePurgeAudioModels => 'Audiomodelle löschen';
 
   @override
-  String get maintenancePurgeAudioModelsMessage => 'Are you sure you want to purge all audio models? This action cannot be undone.';
+  String get maintenancePurgeAudioModelsMessage =>
+      'Are you sure you want to purge all audio models? This action cannot be undone.';
 
   @override
   String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
@@ -785,13 +824,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
-  String get maintenancePurgeDeletedMessage => 'Are you sure you want to purge all deleted items? This action cannot be undone.';
+  String get maintenancePurgeDeletedMessage =>
+      'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
   String get maintenanceRecreateFts5 => 'Volltextindex neu erstellen';
 
   @override
-  String get maintenanceRecreateFts5Message => 'Are you sure you want to recreate the full-text index? This may take some time.';
+  String get maintenanceRecreateFts5Message =>
+      'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
   String get maintenanceRecreateFts5Confirm => 'YES, RECREATE INDEX';
@@ -800,13 +841,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenanceReSync => 'Nachrichten erneut synchronisieren';
 
   @override
-  String get maintenanceSyncDefinitions => 'Sync tags, measurables, dashboards, habits, categories';
+  String get maintenanceSyncDefinitions =>
+      'Sync tags, measurables, dashboards, habits, categories';
 
   @override
   String get measurableDeleteConfirm => 'JA, DIESE MESSGRÖSSE LÖSCHEN';
 
   @override
-  String get measurableDeleteQuestion => 'Möchten Sie diesen Messgrößen-Datentyp löschen?';
+  String get measurableDeleteQuestion =>
+      'Möchten Sie diesen Messgrößen-Datentyp löschen?';
 
   @override
   String get measurableNotFound => 'Messgröße nicht gefunden';
@@ -917,13 +960,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptBehaviorTitle => 'Prompt Behavior';
 
   @override
-  String get promptBehaviorDescription => 'Configure how the prompt processes and responds';
+  String get promptBehaviorDescription =>
+      'Configure how the prompt processes and responds';
 
   @override
   String get promptModelSelectionTitle => 'Model Selection';
 
   @override
-  String get promptModelSelectionDescription => 'Choose compatible models for this prompt';
+  String get promptModelSelectionDescription =>
+      'Choose compatible models for this prompt';
 
   @override
   String get promptDisplayNameLabel => 'Display Name';
@@ -953,7 +998,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptRequiredInputDataLabel => 'Required Input Data';
 
   @override
-  String get promptRequiredInputDataDescription => 'Type of data this prompt expects';
+  String get promptRequiredInputDataDescription =>
+      'Type of data this prompt expects';
 
   @override
   String get promptSelectInputTypeHint => 'Select input type';
@@ -962,7 +1008,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptAiResponseTypeLabel => 'AI Response Type';
 
   @override
-  String get promptAiResponseTypeDescription => 'Format of the expected response';
+  String get promptAiResponseTypeDescription =>
+      'Format of the expected response';
 
   @override
   String get promptSelectResponseTypeHint => 'Select response type';
@@ -971,7 +1018,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptReasoningModeLabel => 'Reasoning Mode';
 
   @override
-  String get promptReasoningModeDescription => 'Enable for prompts requiring deep thinking';
+  String get promptReasoningModeDescription =>
+      'Enable for prompts requiring deep thinking';
 
   @override
   String get promptCancelButton => 'Cancel';
@@ -980,7 +1028,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptSaveButton => 'Save Prompt';
 
   @override
-  String get promptNoModelsSelectedError => 'No models selected. Select at least one model.';
+  String get aiFormNoChanges => 'No unsaved changes';
+
+  @override
+  String get aiFormFixErrors => 'Please fix errors before saving';
+
+  @override
+  String get aiFormCancel => 'Cancel';
+
+  @override
+  String get promptNoModelsSelectedError =>
+      'No models selected. Select at least one model.';
 
   @override
   String get promptAddOrRemoveModelsButton => 'Add or Remove Models';
@@ -1018,46 +1076,56 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get enhancedPromptFormDescription => 'Create custom prompts that can be used with your AI models to generate specific types of responses';
+  String get enhancedPromptFormDescription =>
+      'Create custom prompts that can be used with your AI models to generate specific types of responses';
 
   @override
   String get enhancedPromptFormQuickStartTitle => 'Quick Start';
 
   @override
-  String get enhancedPromptFormQuickStartDescription => 'Start with a pre-built template to save time';
+  String get enhancedPromptFormQuickStartDescription =>
+      'Start with a pre-built template to save time';
 
   @override
   String get enhancedPromptFormBasicConfigurationTitle => 'Basic Configuration';
 
   @override
-  String get enhancedPromptFormPromptConfigurationTitle => 'Prompt Configuration';
+  String get enhancedPromptFormPromptConfigurationTitle =>
+      'Prompt Configuration';
 
   @override
-  String get enhancedPromptFormConfigurationOptionsTitle => 'Configuration Options';
+  String get enhancedPromptFormConfigurationOptionsTitle =>
+      'Configuration Options';
 
   @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
 
   @override
-  String get enhancedPromptFormDisplayNameHelperText => 'A descriptive name for this prompt template';
+  String get enhancedPromptFormDisplayNameHelperText =>
+      'A descriptive name for this prompt template';
 
   @override
   String get enhancedPromptFormUserMessageHelperText => 'The main prompt text.';
 
   @override
-  String get enhancedPromptFormSystemMessageHelperText => 'Instructions that define the AI\'s behavior and response style';
+  String get enhancedPromptFormSystemMessageHelperText =>
+      'Instructions that define the AI\'s behavior and response style';
 
   @override
-  String get enhancedPromptFormDescriptionHelperText => 'Optional notes about this prompt\'s purpose and usage';
+  String get enhancedPromptFormDescriptionHelperText =>
+      'Optional notes about this prompt\'s purpose and usage';
 
   @override
-  String get enhancedPromptFormPreconfiguredPromptDescription => 'Choose from ready-made prompt templates';
+  String get enhancedPromptFormPreconfiguredPromptDescription =>
+      'Choose from ready-made prompt templates';
 
   @override
-  String get enhancedPromptFormRequiredInputDataSubtitle => 'Type of data this prompt expects';
+  String get enhancedPromptFormRequiredInputDataSubtitle =>
+      'Type of data this prompt expects';
 
   @override
-  String get enhancedPromptFormAiResponseTypeSubtitle => 'Format of the expected response';
+  String get enhancedPromptFormAiResponseTypeSubtitle =>
+      'Format of the expected response';
 
   @override
   String get aiSettingsPageTitle => 'AI Settings';
@@ -1112,7 +1180,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get aiSettingsFilterByReasoningTooltip => 'Filter by reasoning capability';
+  String get aiSettingsFilterByReasoningTooltip =>
+      'Filter by reasoning capability';
 
   @override
   String get aiSettingsAddProviderButton => 'Add Provider';
@@ -1136,31 +1205,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAboutTitle => 'Über Lotti';
 
   @override
-  String get settingsAdvancedShowCaseAboutLottiTooltip => 'Erfahren Sie mehr über die Lotti-Anwendung, einschließlich Version und Credits.';
+  String get settingsAdvancedShowCaseAboutLottiTooltip =>
+      'Erfahren Sie mehr über die Lotti-Anwendung, einschließlich Version und Credits.';
 
   @override
-  String get settingsAdvancedShowCaseApiKeyTooltip => 'Verwalten Sie Ihre API-Schlüssel für verschiedene KI-Anbieter. Fügen Sie Schlüssel hinzu, bearbeiten oder löschen Sie sie, um Integrationen mit unterstützten Diensten wie OpenAI, Gemini und mehr zu konfigurieren. Stellen Sie eine sichere Handhabung sensibler Informationen sicher.';
+  String get settingsAdvancedShowCaseApiKeyTooltip =>
+      'Verwalten Sie Ihre API-Schlüssel für verschiedene KI-Anbieter. Fügen Sie Schlüssel hinzu, bearbeiten oder löschen Sie sie, um Integrationen mit unterstützten Diensten wie OpenAI, Gemini und mehr zu konfigurieren. Stellen Sie eine sichere Handhabung sensibler Informationen sicher.';
 
   @override
-  String get settingsAdvancedShowCaseConflictsTooltip => 'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten.';
+  String get settingsAdvancedShowCaseConflictsTooltip =>
+      'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten.';
 
   @override
-  String get settingsAdvancedShowCaseHealthImportTooltip => 'Gesundheitsbezogene Daten aus externen Quellen importieren.';
+  String get settingsAdvancedShowCaseHealthImportTooltip =>
+      'Gesundheitsbezogene Daten aus externen Quellen importieren.';
 
   @override
-  String get settingsAdvancedShowCaseLogsTooltip => 'Zugriff auf Anwendungsprotokolle für Debugging und Überwachung.';
+  String get settingsAdvancedShowCaseLogsTooltip =>
+      'Zugriff auf Anwendungsprotokolle für Debugging und Überwachung.';
 
   @override
-  String get settingsAdvancedShowCaseMaintenanceTooltip => 'Wartungsaufgaben durchführen, um die Anwendungsleistung zu optimieren.';
+  String get settingsAdvancedShowCaseMaintenanceTooltip =>
+      'Wartungsaufgaben durchführen, um die Anwendungsleistung zu optimieren.';
 
   @override
-  String get settingsAdvancedShowCaseMatrixSyncTooltip => 'Konfigurieren und verwalten Sie die Matrix-Synchronisierungseinstellungen für eine nahtlose Datenintegration.';
+  String get settingsAdvancedShowCaseMatrixSyncTooltip =>
+      'Konfigurieren und verwalten Sie die Matrix-Synchronisierungseinstellungen für eine nahtlose Datenintegration.';
 
   @override
-  String get settingsAdvancedShowCaseModelsTooltip => 'Define AI models that use inference providers';
+  String get settingsAdvancedShowCaseModelsTooltip =>
+      'Define AI models that use inference providers';
 
   @override
-  String get settingsAdvancedShowCaseSyncOutboxTooltip => 'Elemente anzeigen und verwalten, die in der Outbox auf die Synchronisierung warten.';
+  String get settingsAdvancedShowCaseSyncOutboxTooltip =>
+      'Elemente anzeigen und verwalten, die in der Outbox auf die Synchronisierung warten.';
 
   @override
   String get settingsAdvancedTitle => 'Erweiterte Einstellungen';
@@ -1184,25 +1262,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesTitle => 'Kategorien';
 
   @override
-  String get settingsCategoryShowCaseActiveTooltip => 'Aktivieren Sie diese Option, um die Kategorie als aktiv zu markieren. Aktive Kategorien sind derzeit in Verwendung und werden für eine bessere Zugänglichkeit gut sichtbar angezeigt.';
+  String get settingsCategoryShowCaseActiveTooltip =>
+      'Aktivieren Sie diese Option, um die Kategorie als aktiv zu markieren. Aktive Kategorien sind derzeit in Verwendung und werden für eine bessere Zugänglichkeit gut sichtbar angezeigt.';
 
   @override
-  String get settingsCategoryShowCaseColorTooltip => 'Wählen Sie eine Farbe aus, die diese Kategorie repräsentiert. Sie können entweder einen gültigen HEX-Farbcode eingeben (z. B. #FF5733) oder die Farbauswahl rechts verwenden, um eine Farbe visuell auszuwählen.';
+  String get settingsCategoryShowCaseColorTooltip =>
+      'Wählen Sie eine Farbe aus, die diese Kategorie repräsentiert. Sie können entweder einen gültigen HEX-Farbcode eingeben (z. B. #FF5733) oder die Farbauswahl rechts verwenden, um eine Farbe visuell auszuwählen.';
 
   @override
-  String get settingsCategoryShowCaseDelTooltip => 'Klicken Sie auf diese Schaltfläche, um die Kategorie zu löschen. Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann. Stellen Sie daher sicher, dass Sie die Kategorie entfernen möchten, bevor Sie fortfahren.';
+  String get settingsCategoryShowCaseDelTooltip =>
+      'Klicken Sie auf diese Schaltfläche, um die Kategorie zu löschen. Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann. Stellen Sie daher sicher, dass Sie die Kategorie entfernen möchten, bevor Sie fortfahren.';
 
   @override
-  String get settingsCategoryShowCaseFavTooltip => 'Aktivieren Sie diese Option, um die Kategorie als Favorit zu markieren. Lieblingskategorien sind leichter zugänglich und werden zur schnellen Referenz hervorgehoben.';
+  String get settingsCategoryShowCaseFavTooltip =>
+      'Aktivieren Sie diese Option, um die Kategorie als Favorit zu markieren. Lieblingskategorien sind leichter zugänglich und werden zur schnellen Referenz hervorgehoben.';
 
   @override
-  String get settingsCategoryShowCaseNameTooltip => 'Geben Sie einen klaren und relevanten Namen für die Kategorie ein. Halten Sie ihn kurz und beschreibend, damit Sie seinen Zweck leicht erkennen können.';
+  String get settingsCategoryShowCaseNameTooltip =>
+      'Geben Sie einen klaren und relevanten Namen für die Kategorie ein. Halten Sie ihn kurz und beschreibend, damit Sie seinen Zweck leicht erkennen können.';
 
   @override
-  String get settingsCategoryShowCasePrivateTooltip => 'Aktivieren Sie diese Option, um die Kategorie als privat zu markieren. Private Kategorien sind nur für Sie sichtbar und helfen Ihnen, sensible oder persönliche Gewohnheiten und Aufgaben sicher zu organisieren.';
+  String get settingsCategoryShowCasePrivateTooltip =>
+      'Aktivieren Sie diese Option, um die Kategorie als privat zu markieren. Private Kategorien sind nur für Sie sichtbar und helfen Ihnen, sensible oder persönliche Gewohnheiten und Aufgaben sicher zu organisieren.';
 
   @override
-  String get settingsConflictsResolutionTitle => 'Lösung von Synchronisierungskonflikten';
+  String get settingsConflictsResolutionTitle =>
+      'Lösung von Synchronisierungskonflikten';
 
   @override
   String get settingsConflictsTitle => 'Synchronisierungskonflikte';
@@ -1214,34 +1299,44 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Save';
 
   @override
-  String get settingsDashboardsShowCaseActiveTooltip => 'Aktivieren Sie diesen Schalter, um das Dashboard als aktiv zu markieren. Aktive Dashboards sind derzeit in Verwendung und werden für eine bessere Zugänglichkeit gut sichtbar angezeigt.';
+  String get settingsDashboardsShowCaseActiveTooltip =>
+      'Aktivieren Sie diesen Schalter, um das Dashboard als aktiv zu markieren. Aktive Dashboards sind derzeit in Verwendung und werden für eine bessere Zugänglichkeit gut sichtbar angezeigt.';
 
   @override
-  String get settingsDashboardsShowCaseCatTooltip => 'Wählen Sie eine Kategorie aus, die das Dashboard am besten beschreibt. Dies hilft Ihnen, Ihre Dashboards effektiv zu organisieren und zu kategorisieren. Beispiele: \'Gesundheit\', \'Produktivität\', \'Arbeit\'.';
+  String get settingsDashboardsShowCaseCatTooltip =>
+      'Wählen Sie eine Kategorie aus, die das Dashboard am besten beschreibt. Dies hilft Ihnen, Ihre Dashboards effektiv zu organisieren und zu kategorisieren. Beispiele: \'Gesundheit\', \'Produktivität\', \'Arbeit\'.';
 
   @override
-  String get settingsDashboardsShowCaseCopyTooltip => 'Tippen Sie hier, um dieses Dashboard zu kopieren. Dadurch können Sie das Dashboard duplizieren und an anderer Stelle verwenden.';
+  String get settingsDashboardsShowCaseCopyTooltip =>
+      'Tippen Sie hier, um dieses Dashboard zu kopieren. Dadurch können Sie das Dashboard duplizieren und an anderer Stelle verwenden.';
 
   @override
-  String get settingsDashboardsShowCaseDelTooltip => 'Tippen Sie auf diese Schaltfläche, um das Dashboard dauerhaft zu löschen. Seien Sie vorsichtig, da diese Aktion nicht rückgängig gemacht werden kann und alle zugehörigen Daten entfernt werden.';
+  String get settingsDashboardsShowCaseDelTooltip =>
+      'Tippen Sie auf diese Schaltfläche, um das Dashboard dauerhaft zu löschen. Seien Sie vorsichtig, da diese Aktion nicht rückgängig gemacht werden kann und alle zugehörigen Daten entfernt werden.';
 
   @override
-  String get settingsDashboardsShowCaseDescrTooltip => 'Geben Sie eine detaillierte Beschreibung für das Dashboard an. Dies hilft Ihnen, den Zweck und den Inhalt des Dashboards zu verstehen. Beispiele: \'Verfolgt tägliche Wellness-Aktivitäten\', \'Überwacht arbeitsbezogene Aufgaben und Ziele\'.';
+  String get settingsDashboardsShowCaseDescrTooltip =>
+      'Geben Sie eine detaillierte Beschreibung für das Dashboard an. Dies hilft Ihnen, den Zweck und den Inhalt des Dashboards zu verstehen. Beispiele: \'Verfolgt tägliche Wellness-Aktivitäten\', \'Überwacht arbeitsbezogene Aufgaben und Ziele\'.';
 
   @override
-  String get settingsDashboardsShowCaseHealthChartsTooltip => 'Wählen Sie die Gesundheitsdiagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Gewicht\', \'Körperfettanteil\'.';
+  String get settingsDashboardsShowCaseHealthChartsTooltip =>
+      'Wählen Sie die Gesundheitsdiagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Gewicht\', \'Körperfettanteil\'.';
 
   @override
-  String get settingsDashboardsShowCaseNameTooltip => 'Geben Sie einen klaren und relevanten Namen für das Dashboard ein. Halten Sie ihn kurz und beschreibend, damit Sie seinen Zweck leicht erkennen können. Beispiele: \'Wellness-Tracker\', \'Tagesziele\', \'Arbeitsplan\'.';
+  String get settingsDashboardsShowCaseNameTooltip =>
+      'Geben Sie einen klaren und relevanten Namen für das Dashboard ein. Halten Sie ihn kurz und beschreibend, damit Sie seinen Zweck leicht erkennen können. Beispiele: \'Wellness-Tracker\', \'Tagesziele\', \'Arbeitsplan\'.';
 
   @override
-  String get settingsDashboardsShowCasePrivateTooltip => 'Aktivieren Sie diesen Schalter, um das Dashboard privat zu machen. Private Dashboards sind nur für Sie sichtbar und werden nicht mit anderen geteilt.';
+  String get settingsDashboardsShowCasePrivateTooltip =>
+      'Aktivieren Sie diesen Schalter, um das Dashboard privat zu machen. Private Dashboards sind nur für Sie sichtbar und werden nicht mit anderen geteilt.';
 
   @override
-  String get settingsDashboardsShowCaseSurveyChartsTooltip => 'Wählen Sie die Umfragediagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Kundenzufriedenheit\', \'Mitarbeiterfeedback\'.';
+  String get settingsDashboardsShowCaseSurveyChartsTooltip =>
+      'Wählen Sie die Umfragediagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Kundenzufriedenheit\', \'Mitarbeiterfeedback\'.';
 
   @override
-  String get settingsDashboardsShowCaseWorkoutChartsTooltip => 'Wählen Sie die Trainingsdiagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Gehen\', \'Laufen\', \'Schwimmen\'.';
+  String get settingsDashboardsShowCaseWorkoutChartsTooltip =>
+      'Wählen Sie die Trainingsdiagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Gehen\', \'Laufen\', \'Schwimmen\'.';
 
   @override
   String get settingsDashboardsTitle => 'Dashboards';
@@ -1268,37 +1363,48 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsHabitsSaveLabel => 'Speichern';
 
   @override
-  String get settingsHabitsShowCaseAlertTimeTooltip => 'Legen Sie die Uhrzeit fest, zu der Sie eine Erinnerung oder einen Alarm für diese Gewohnheit erhalten möchten. So stellen Sie sicher, dass Sie die Ausführung nie verpassen. Beispiel: \'20:00 Uhr\'.';
+  String get settingsHabitsShowCaseAlertTimeTooltip =>
+      'Legen Sie die Uhrzeit fest, zu der Sie eine Erinnerung oder einen Alarm für diese Gewohnheit erhalten möchten. So stellen Sie sicher, dass Sie die Ausführung nie verpassen. Beispiel: \'20:00 Uhr\'.';
 
   @override
-  String get settingsHabitsShowCaseArchivedTooltip => 'Diesen Schalter umschalten, um die Gewohnheit zu archivieren. Archivierte Gewohnheiten sind nicht mehr aktiv, bleiben aber für spätere Referenz oder Überprüfung gespeichert. Beispiele: \'Gitarre lernen\', \'Abgeschlossener Kurs\'.';
+  String get settingsHabitsShowCaseArchivedTooltip =>
+      'Diesen Schalter umschalten, um die Gewohnheit zu archivieren. Archivierte Gewohnheiten sind nicht mehr aktiv, bleiben aber für spätere Referenz oder Überprüfung gespeichert. Beispiele: \'Gitarre lernen\', \'Abgeschlossener Kurs\'.';
 
   @override
-  String get settingsHabitsShowCaseCatTooltip => 'Wähle eine Kategorie, die deine Gewohnheit am besten beschreibt, oder erstelle eine neue, indem du die Schaltfläche [+] auswählst.\nBeispiele: \'Gesundheit\', \'Produktivität\', \'Sport\'.';
+  String get settingsHabitsShowCaseCatTooltip =>
+      'Wähle eine Kategorie, die deine Gewohnheit am besten beschreibt, oder erstelle eine neue, indem du die Schaltfläche [+] auswählst.\nBeispiele: \'Gesundheit\', \'Produktivität\', \'Sport\'.';
 
   @override
-  String get settingsHabitsShowCaseDashTooltip => 'Wähle ein Dashboard aus, um deine Gewohnheit zu organisieren und zu verfolgen, oder erstelle ein neues Dashboard mit der Schaltfläche [+].\nBeispiele: \'Wellness-Tracker\', \'Tägliche Ziele\', \'Arbeitsplan\'.';
+  String get settingsHabitsShowCaseDashTooltip =>
+      'Wähle ein Dashboard aus, um deine Gewohnheit zu organisieren und zu verfolgen, oder erstelle ein neues Dashboard mit der Schaltfläche [+].\nBeispiele: \'Wellness-Tracker\', \'Tägliche Ziele\', \'Arbeitsplan\'.';
 
   @override
-  String get settingsHabitsShowCaseDelHabitTooltip => 'Tippe auf diese Schaltfläche, um die Gewohnheit dauerhaft zu löschen. Seien Sie vorsichtig, da diese Aktion nicht rückgängig gemacht werden kann und alle zugehörigen Daten entfernt werden.';
+  String get settingsHabitsShowCaseDelHabitTooltip =>
+      'Tippe auf diese Schaltfläche, um die Gewohnheit dauerhaft zu löschen. Seien Sie vorsichtig, da diese Aktion nicht rückgängig gemacht werden kann und alle zugehörigen Daten entfernt werden.';
 
   @override
-  String get settingsHabitsShowCaseDescrTooltip => 'Gib eine kurze und aussagekräftige Beschreibung der Gewohnheit an. Füge alle relevanten Details oder\nKontext hinzu, um den Zweck und die Bedeutung der Gewohnheit klar zu definieren.\nBeispiele: \'Jeden Morgen 30 Minuten joggen, um die Fitness zu steigern\' oder \'Täglich ein Kapitel lesen, um Wissen und Konzentration zu verbessern\'.';
+  String get settingsHabitsShowCaseDescrTooltip =>
+      'Gib eine kurze und aussagekräftige Beschreibung der Gewohnheit an. Füge alle relevanten Details oder\nKontext hinzu, um den Zweck und die Bedeutung der Gewohnheit klar zu definieren.\nBeispiele: \'Jeden Morgen 30 Minuten joggen, um die Fitness zu steigern\' oder \'Täglich ein Kapitel lesen, um Wissen und Konzentration zu verbessern\'.';
 
   @override
-  String get settingsHabitsShowCaseNameTooltip => 'Gib einen klaren und beschreibenden Namen für die Gewohnheit ein.\nVermeide zu lange Namen und halte ihn kurz genug, um die Gewohnheit leicht zu identifizieren.\nBeispiele: \'Morgenjoggen\', \'Täglich lesen\'.';
+  String get settingsHabitsShowCaseNameTooltip =>
+      'Gib einen klaren und beschreibenden Namen für die Gewohnheit ein.\nVermeide zu lange Namen und halte ihn kurz genug, um die Gewohnheit leicht zu identifizieren.\nBeispiele: \'Morgenjoggen\', \'Täglich lesen\'.';
 
   @override
-  String get settingsHabitsShowCasePriorTooltip => 'Schalte den Schalter um, um der Gewohnheit Priorität zuzuweisen. Gewohnheiten mit hoher Priorität stellen oft wichtige oder dringende Aufgaben dar, auf die du dich konzentrieren möchtest. Beispiele: \'Täglich trainieren\', \'An Projekt arbeiten\'.';
+  String get settingsHabitsShowCasePriorTooltip =>
+      'Schalte den Schalter um, um der Gewohnheit Priorität zuzuweisen. Gewohnheiten mit hoher Priorität stellen oft wichtige oder dringende Aufgaben dar, auf die du dich konzentrieren möchtest. Beispiele: \'Täglich trainieren\', \'An Projekt arbeiten\'.';
 
   @override
-  String get settingsHabitsShowCasePrivateTooltip => 'Verwende diesen Schalter, um die Gewohnheit als privat zu markieren. Private Gewohnheiten sind nur für dich sichtbar und werden nicht mit anderen geteilt. Beispiele: \'Persönliches Tagebuch\', \'Meditation\'.';
+  String get settingsHabitsShowCasePrivateTooltip =>
+      'Verwende diesen Schalter, um die Gewohnheit als privat zu markieren. Private Gewohnheiten sind nur für dich sichtbar und werden nicht mit anderen geteilt. Beispiele: \'Persönliches Tagebuch\', \'Meditation\'.';
 
   @override
-  String get settingsHabitsShowCaseStarDateTooltip => 'Wähle das Datum aus, an dem du mit der Verfolgung dieser Gewohnheit beginnen möchtest. Dies hilft, den Beginn der Gewohnheit zu definieren und ermöglicht eine genaue Fortschrittsüberwachung. Beispiel: \'1. Juli 2025\'.';
+  String get settingsHabitsShowCaseStarDateTooltip =>
+      'Wähle das Datum aus, an dem du mit der Verfolgung dieser Gewohnheit beginnen möchtest. Dies hilft, den Beginn der Gewohnheit zu definieren und ermöglicht eine genaue Fortschrittsüberwachung. Beispiel: \'1. Juli 2025\'.';
 
   @override
-  String get settingsHabitsShowCaseStartTimeTooltip => 'Stelle die Uhrzeit ein, ab der diese Gewohnheit in deinem Zeitplan sichtbar sein oder erscheinen soll. Dies hilft, deinen Tag effektiv zu organisieren. Beispiel: \'7:00 Uhr\'.';
+  String get settingsHabitsShowCaseStartTimeTooltip =>
+      'Stelle die Uhrzeit ein, ab der diese Gewohnheit in deinem Zeitplan sichtbar sein oder erscheinen soll. Dies hilft, deinen Tag effektiv zu organisieren. Beispiel: \'7:00 Uhr\'.';
 
   @override
   String get settingsHabitsTitle => 'Gewohnheiten';
@@ -1319,7 +1425,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMaintenanceTitle => 'Wartung';
 
   @override
-  String get settingsMatrixAcceptVerificationLabel => 'Anderes Gerät zeigt Emojis, fortfahren';
+  String get settingsMatrixAcceptVerificationLabel =>
+      'Anderes Gerät zeigt Emojis, fortfahren';
 
   @override
   String get settingsMatrixCancel => 'Abbrechen';
@@ -1328,7 +1435,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixCancelVerificationLabel => 'Verifizierung abbrechen';
 
   @override
-  String get settingsMatrixContinueVerificationLabel => 'Auf anderem Gerät akzeptieren, um fortzufahren';
+  String get settingsMatrixContinueVerificationLabel =>
+      'Auf anderem Gerät akzeptieren, um fortzufahren';
 
   @override
   String get settingsMatrixDeleteLabel => 'Löschen';
@@ -1340,7 +1448,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixEnterValidUrl => 'Bitte gib eine gültige URL ein';
 
   @override
-  String get settingsMatrixHomeserverConfigTitle => 'Matrix-Homeserver-Einrichtung';
+  String get settingsMatrixHomeserverConfigTitle =>
+      'Matrix-Homeserver-Einrichtung';
 
   @override
   String get settingsMatrixHomeServerLabel => 'Homeserver';
@@ -1361,7 +1470,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixNextPage => 'Nächste Seite';
 
   @override
-  String get settingsMatrixNoUnverifiedLabel => 'Keine nicht verifizierten Geräte';
+  String get settingsMatrixNoUnverifiedLabel =>
+      'Keine nicht verifizierten Geräte';
 
   @override
   String get settingsMatrixPasswordLabel => 'Passwort';
@@ -1373,10 +1483,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixPreviousPage => 'Vorherige Seite';
 
   @override
-  String get settingsMatrixQrTextPage => 'Scanne diesen QR-Code, um das Gerät zu einem Synchronisierungsraum einzuladen.';
+  String get settingsMatrixQrTextPage =>
+      'Scanne diesen QR-Code, um das Gerät zu einem Synchronisierungsraum einzuladen.';
 
   @override
-  String get settingsMatrixRoomConfigTitle => 'Matrix-Synchronisierungsraum-Einrichtung';
+  String get settingsMatrixRoomConfigTitle =>
+      'Matrix-Synchronisierungsraum-Einrichtung';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Verifizierung starten';
@@ -1397,27 +1509,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixUserNameTooShort => 'Benutzername zu kurz';
 
   @override
-  String get settingsMatrixVerificationCancelledLabel => 'Auf anderem Gerät abgebrochen...';
+  String get settingsMatrixVerificationCancelledLabel =>
+      'Auf anderem Gerät abgebrochen...';
 
   @override
   String get settingsMatrixVerificationSuccessConfirm => 'Verstanden';
 
   @override
-  String settingsMatrixVerificationSuccessLabel(String deviceName, String deviceID) {
+  String settingsMatrixVerificationSuccessLabel(
+      String deviceName, String deviceID) {
     return 'Sie haben $deviceName ($deviceID) erfolgreich verifiziert';
   }
 
   @override
-  String get settingsMatrixVerifyConfirm => 'Bestätigen Sie auf dem anderen Gerät, dass die unten stehenden Emojis auf beiden Geräten in der gleichen Reihenfolge angezeigt werden:';
+  String get settingsMatrixVerifyConfirm =>
+      'Bestätigen Sie auf dem anderen Gerät, dass die unten stehenden Emojis auf beiden Geräten in der gleichen Reihenfolge angezeigt werden:';
 
   @override
-  String get settingsMatrixVerifyIncomingConfirm => 'Bestätigen Sie, dass die unten stehenden Emojis auf beiden Geräten in der gleichen Reihenfolge angezeigt werden:';
+  String get settingsMatrixVerifyIncomingConfirm =>
+      'Bestätigen Sie, dass die unten stehenden Emojis auf beiden Geräten in der gleichen Reihenfolge angezeigt werden:';
 
   @override
   String get settingsMatrixVerifyLabel => 'Verifizieren';
 
   @override
-  String get settingsMeasurableAggregationLabel => 'Standard-Aggregationsart (optional):';
+  String get settingsMeasurableAggregationLabel =>
+      'Standard-Aggregationsart (optional):';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Messgröße löschen';
@@ -1441,22 +1558,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Speichern';
 
   @override
-  String get settingsMeasurableShowCaseAggreTypeTooltip => 'Wählen Sie die Standardaggregationsart für die Messdaten. Dies bestimmt, wie die Daten im Zeitverlauf zusammengefasst werden. \nOptionen: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.';
+  String get settingsMeasurableShowCaseAggreTypeTooltip =>
+      'Wählen Sie die Standardaggregationsart für die Messdaten. Dies bestimmt, wie die Daten im Zeitverlauf zusammengefasst werden. \nOptionen: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.';
 
   @override
-  String get settingsMeasurableShowCaseDelTooltip => 'Klicken Sie auf diese Schaltfläche, um die Messgröße zu löschen. Bitte beachten Sie, dass diese Aktion unwiderruflich ist. Stellen Sie daher sicher, dass Sie die Messgröße entfernen möchten, bevor Sie fortfahren.';
+  String get settingsMeasurableShowCaseDelTooltip =>
+      'Klicken Sie auf diese Schaltfläche, um die Messgröße zu löschen. Bitte beachten Sie, dass diese Aktion unwiderruflich ist. Stellen Sie daher sicher, dass Sie die Messgröße entfernen möchten, bevor Sie fortfahren.';
 
   @override
-  String get settingsMeasurableShowCaseDescrTooltip => 'Geben Sie eine kurze und aussagekräftige Beschreibung der Messgröße an. Fügen Sie alle relevanten Details oder Kontext hinzu, um deren Zweck und Bedeutung klar zu definieren. \nBeispiele: \'Körpergewicht in Kilogramm gemessen\'';
+  String get settingsMeasurableShowCaseDescrTooltip =>
+      'Geben Sie eine kurze und aussagekräftige Beschreibung der Messgröße an. Fügen Sie alle relevanten Details oder Kontext hinzu, um deren Zweck und Bedeutung klar zu definieren. \nBeispiele: \'Körpergewicht in Kilogramm gemessen\'';
 
   @override
-  String get settingsMeasurableShowCaseNameTooltip => 'Geben Sie einen klaren und beschreibenden Namen für die Messgröße ein.\nVermeiden Sie zu lange Namen und machen Sie ihn prägnant genug, um die Messgröße leicht zu identifizieren. \nBeispiele: \'Gewicht\', \'Blutdruck\'.';
+  String get settingsMeasurableShowCaseNameTooltip =>
+      'Geben Sie einen klaren und beschreibenden Namen für die Messgröße ein.\nVermeiden Sie zu lange Namen und machen Sie ihn prägnant genug, um die Messgröße leicht zu identifizieren. \nBeispiele: \'Gewicht\', \'Blutdruck\'.';
 
   @override
-  String get settingsMeasurableShowCasePrivateTooltip => 'Aktivieren Sie diese Option, um die Messgröße als privat zu markieren. Private Messgrößen sind nur für Sie sichtbar und helfen Ihnen, sensible oder persönliche Daten sicher zu verwalten.';
+  String get settingsMeasurableShowCasePrivateTooltip =>
+      'Aktivieren Sie diese Option, um die Messgröße als privat zu markieren. Private Messgrößen sind nur für Sie sichtbar und helfen Ihnen, sensible oder persönliche Daten sicher zu verwalten.';
 
   @override
-  String get settingsMeasurableShowCaseUnitTooltip => 'Geben Sie eine klare und prägnante Einheitenabkürzung für die Messgröße ein. Dies hilft, die Maßeinheit leicht zu identifizieren.';
+  String get settingsMeasurableShowCaseUnitTooltip =>
+      'Geben Sie eine klare und prägnante Einheitenabkürzung für die Messgröße ein. Dies hilft, die Maßeinheit leicht zu identifizieren.';
 
   @override
   String get settingsMeasurablesTitle => 'Messgrößen';
@@ -1465,16 +1588,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional):';
 
   @override
-  String get settingsSpeechAudioWithoutTranscript => 'Audioeinträge ohne Transkript:';
+  String get settingsSpeechAudioWithoutTranscript =>
+      'Audioeinträge ohne Transkript:';
 
   @override
-  String get settingsSpeechAudioWithoutTranscriptButton => 'Suchen & transkribieren';
+  String get settingsSpeechAudioWithoutTranscriptButton =>
+      'Suchen & transkribieren';
 
   @override
   String get settingsSpeechLastActivity => 'Letzte Transkriptionsaktivität:';
 
   @override
-  String get settingsSpeechModelSelectionTitle => 'Whisper Spracherkennungsmodell:';
+  String get settingsSpeechModelSelectionTitle =>
+      'Whisper Spracherkennungsmodell:';
 
   @override
   String get settingsSpeechTitle => 'Spracheinstellungen';
@@ -1498,19 +1624,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTagsSaveLabel => 'Speichern';
 
   @override
-  String get settingsTagsShowCaseDeleteTooltip => 'Entfernen Sie dieses Tag dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.';
+  String get settingsTagsShowCaseDeleteTooltip =>
+      'Entfernen Sie dieses Tag dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.';
 
   @override
-  String get settingsTagsShowCaseHideTooltip => 'Aktivieren Sie diese Option, um dieses Tag in Vorschlägen auszublenden. Verwenden Sie es für Tags, die persönlich sind oder nicht häufig benötigt werden.';
+  String get settingsTagsShowCaseHideTooltip =>
+      'Aktivieren Sie diese Option, um dieses Tag in Vorschlägen auszublenden. Verwenden Sie es für Tags, die persönlich sind oder nicht häufig benötigt werden.';
 
   @override
-  String get settingsTagsShowCaseNameTooltip => 'Geben Sie einen klaren und relevanten Namen für das Tag ein. Halten Sie es kurz und beschreibend, damit Sie Ihre Gewohnheiten leicht kategorisieren können. Beispiele: \"Gesundheit\", \"Produktivität\", \"Achtsamkeit\".';
+  String get settingsTagsShowCaseNameTooltip =>
+      'Geben Sie einen klaren und relevanten Namen für das Tag ein. Halten Sie es kurz und beschreibend, damit Sie Ihre Gewohnheiten leicht kategorisieren können. Beispiele: \"Gesundheit\", \"Produktivität\", \"Achtsamkeit\".';
 
   @override
-  String get settingsTagsShowCasePrivateTooltip => 'Aktivieren Sie diese Option, um das Tag privat zu machen. Private Tags sind nur für Sie sichtbar und werden nicht mit anderen geteilt.';
+  String get settingsTagsShowCasePrivateTooltip =>
+      'Aktivieren Sie diese Option, um das Tag privat zu machen. Private Tags sind nur für Sie sichtbar und werden nicht mit anderen geteilt.';
 
   @override
-  String get settingsTagsShowCaseTypeTooltip => 'Wählen Sie den Typ des Tags, um es richtig zu kategorisieren: \n[Tag]-> Allgemeine Kategorien wie \'Gesundheit\' oder \'Produktivität\'. \n[Person]-> Verwendung zum Markieren bestimmter Personen. \n[Story]-> Tags an Storys anhängen, um die Organisation zu verbessern.';
+  String get settingsTagsShowCaseTypeTooltip =>
+      'Wählen Sie den Typ des Tags, um es richtig zu kategorisieren: \n[Tag]-> Allgemeine Kategorien wie \'Gesundheit\' oder \'Produktivität\'. \n[Person]-> Verwendung zum Markieren bestimmter Personen. \n[Story]-> Tags an Storys anhängen, um die Organisation zu verbessern.';
 
   @override
   String get settingsTagsTagName => 'Tag:';
@@ -1540,13 +1671,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemingLight => 'Helles Erscheinungsbild';
 
   @override
-  String get settingsThemingShowCaseDarkTooltip => 'Wählen Sie das dunkle Thema für ein dunkleres Erscheinungsbild.';
+  String get settingsThemingShowCaseDarkTooltip =>
+      'Wählen Sie das dunkle Thema für ein dunkleres Erscheinungsbild.';
 
   @override
-  String get settingsThemingShowCaseLightTooltip => 'Wählen Sie das helle Thema für ein helleres Erscheinungsbild.';
+  String get settingsThemingShowCaseLightTooltip =>
+      'Wählen Sie das helle Thema für ein helleres Erscheinungsbild.';
 
   @override
-  String get settingsThemingShowCaseModeTooltip => 'Wählen Sie Ihren bevorzugten Themenmodus: Hell, Dunkel oder Automatisch.';
+  String get settingsThemingShowCaseModeTooltip =>
+      'Wählen Sie Ihren bevorzugten Themenmodus: Hell, Dunkel oder Automatisch.';
 
   @override
   String get settingsThemingTitle => 'Farbschema';
@@ -1582,13 +1716,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncDeleteConfigConfirm => 'JA, ICH BIN SICHER';
 
   @override
-  String get syncDeleteConfigQuestion => 'Möchten Sie die Synchronisierungskonfiguration löschen?';
+  String get syncDeleteConfigQuestion =>
+      'Möchten Sie die Synchronisierungskonfiguration löschen?';
 
   @override
   String get syncEntitiesConfirm => 'YES, SYNC ALL';
 
   @override
-  String get syncEntitiesMessage => 'This will sync all tags, measurables, and categories. Do you want to continue?';
+  String get syncEntitiesMessage =>
+      'This will sync all tags, measurables, and categories. Do you want to continue?';
 
   @override
   String get syncStepCategories => 'Categories';
@@ -1666,43 +1802,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiInferenceErrorConnectionFailedTitle => 'Connection Failed';
 
   @override
-  String get aiInferenceErrorConnectionFailedMessage => 'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
+  String get aiInferenceErrorConnectionFailedMessage =>
+      'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
 
   @override
   String get aiInferenceErrorTimeoutTitle => 'Request Timed Out';
 
   @override
-  String get aiInferenceErrorTimeoutMessage => 'The request took too long to complete. Please try again or check if the service is responding.';
+  String get aiInferenceErrorTimeoutMessage =>
+      'The request took too long to complete. Please try again or check if the service is responding.';
 
   @override
   String get aiInferenceErrorAuthenticationTitle => 'Authentication Failed';
 
   @override
-  String get aiInferenceErrorAuthenticationMessage => 'Authentication failed. Please check your API key and ensure it is valid.';
+  String get aiInferenceErrorAuthenticationMessage =>
+      'Authentication failed. Please check your API key and ensure it is valid.';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Rate Limit Exceeded';
 
   @override
-  String get aiInferenceErrorRateLimitMessage => 'You have exceeded the rate limit. Please wait a moment before trying again.';
+  String get aiInferenceErrorRateLimitMessage =>
+      'You have exceeded the rate limit. Please wait a moment before trying again.';
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Invalid Request';
 
   @override
-  String get aiInferenceErrorInvalidRequestMessage => 'The request was invalid. Please check your configuration and try again.';
+  String get aiInferenceErrorInvalidRequestMessage =>
+      'The request was invalid. Please check your configuration and try again.';
 
   @override
   String get aiInferenceErrorServerTitle => 'Server Error';
 
   @override
-  String get aiInferenceErrorServerMessage => 'The AI service encountered an error. Please try again later.';
+  String get aiInferenceErrorServerMessage =>
+      'The AI service encountered an error. Please try again later.';
 
   @override
   String get aiInferenceErrorUnknownTitle => 'Error';
 
   @override
-  String get aiInferenceErrorUnknownMessage => 'An unexpected error occurred. Please try again.';
+  String get aiInferenceErrorUnknownMessage =>
+      'An unexpected error occurred. Please try again.';
 
   @override
   String get aiInferenceErrorRetryButton => 'Try Again';
