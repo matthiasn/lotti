@@ -81,23 +81,19 @@ class _InferenceModelEditPageState
         },
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).brightness == Brightness.light
-            ? context.colorScheme.surfaceContainerLowest
-            : context.colorScheme.scrim,
+        backgroundColor: context.colorScheme.surface,
         body: Column(
           children: [
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  // Modern App Bar
+                  // Clean App Bar
                   SliverAppBar(
-                    expandedHeight: 120,
+                    expandedHeight: 100,
                     pinned: true,
-                    backgroundColor:
-                        Theme.of(context).brightness == Brightness.light
-                            ? context.colorScheme.surfaceContainerLowest
-                            : context.colorScheme.scrim,
+                    backgroundColor: context.colorScheme.surface,
                     surfaceTintColor: Colors.transparent,
+                    elevation: 0,
                     leading: IconButton(
                       icon: Icon(
                         Icons.chevron_left_rounded,
@@ -113,30 +109,10 @@ class _InferenceModelEditPageState
                             ? context.messages.modelAddPageTitle
                             : context.messages.modelEditPageTitle,
                         style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
                           color: context.colorScheme.onSurface,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      background: Container(
-                        decoration: BoxDecoration(
-                          gradient:
-                              Theme.of(context).brightness == Brightness.light
-                                  ? null // No gradient in light mode
-                                  : LinearGradient(
-                                      colors: [
-                                        context.colorScheme.primaryContainer
-                                            .withValues(alpha: 0.1),
-                                        context.colorScheme.scrim,
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                          color:
-                              Theme.of(context).brightness == Brightness.light
-                                  ? context.colorScheme.surfaceContainerLowest
-                                  : null,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ),
@@ -270,6 +246,7 @@ class _InferenceModelEditPageState
                 minLines: 2,
                 prefixIcon: Icons.description_rounded,
               ),
+              const SizedBox(height: 20),
 
               // Max Completion Tokens
               AiTextField(
