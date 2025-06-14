@@ -20,8 +20,18 @@ void main() {
     inferenceProviderType: InferenceProviderType.genericOpenAi,
   );
 
+  final ollamaConfig = AiConfig.inferenceProvider(
+    id: 'ollama-id',
+    baseUrl: 'http://localhost:11434/v1',
+    apiKey: '',
+    name: 'Ollama Local',
+    createdAt: DateTime.now(),
+    inferenceProviderType: InferenceProviderType.ollama,
+  );
+
   setUpAll(() {
     registerFallbackValue(testConfig);
+    registerFallbackValue(ollamaConfig);
   });
 
   setUp(() {
@@ -479,6 +489,179 @@ void main() {
       // Assert
       expect(controller.nameController.text, equals('My Custom Provider'));
       expect(formState?.name.value, equals('My Custom Provider'));
+    });
+  });
+
+  group('API Key Validation for Ollama', () {
+    test('should allow empty API key for Ollama provider', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
+      controller.nameChanged('My Ollama');
+      controller.baseUrlChanged('http://localhost:11434/v1');
+      // Don't set API key - leave it empty
+
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+      expect(formState?.isValid, isTrue); // Overall form should be valid
+    });
+
+    test('should clear API key when switching to Ollama', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // First set up a provider with API key
+      controller.nameChanged('OpenAI Provider');
+      controller.apiKeyChanged('sk-1234567890');
+      controller.baseUrlChanged('https://api.openai.com/v1');
+
+      // Act - switch to Ollama
+      controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
+
+      // Assert
+      expect(controller.apiKeyController.text, isEmpty);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+      expect(formState?.apiKey.value, isEmpty);
+    });
+
+    test('should require API key for non-Ollama providers', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act - Set up OpenAI without API key
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
+      controller.nameChanged('OpenAI Provider');
+      controller.baseUrlChanged('https://api.openai.com/v1');
+      // Don't set API key
+
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+          formState?.apiKey.isValid, isFalse); // Should be invalid when empty
+      expect(formState?.isValid, isFalse); // Overall form should be invalid
+    });
+
+    test('should load existing Ollama provider with empty API key', () async {
+      // Arrange
+      when(() => mockRepository.getConfigById('ollama-id')).thenAnswer(
+        (_) async => ollamaConfig,
+      );
+
+      // Act
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(configId: 'ollama-id').future,
+      );
+
+      // Assert
+      expect(formState, isNotNull);
+      expect(formState?.name.value, equals('Ollama Local'));
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+      expect(formState?.baseUrl.value, equals('http://localhost:11434/v1'));
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.ollama));
+      expect(formState?.isValid, isTrue);
+    });
+
+    test('should set baseUrl and clear API key when Ollama is selected',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('http://localhost:11434/v1'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('http://localhost:11434/v1'),
+      );
+      expect(controller.apiKeyController.text, isEmpty);
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.ollama),
+      );
+    });
+
+    test('should properly validate form when switching between providers',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Start with OpenAI
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
+      controller.nameChanged('My Provider');
+      controller.baseUrlChanged('https://api.openai.com/v1');
+
+      var formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+      expect(formState?.isValid, isFalse); // Invalid without API key
+
+      // Add API key
+      controller.apiKeyChanged('sk-test-key');
+      formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+      expect(formState?.isValid, isTrue); // Now valid with API key
+
+      // Switch to Ollama
+      controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
+      formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+      expect(formState?.isValid, isTrue); // Still valid without API key
+
+      // Switch back to OpenAI
+      controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
+      formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+      expect(formState?.isValid,
+          isFalse); // Invalid again because API key was cleared
     });
   });
 }

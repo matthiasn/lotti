@@ -74,24 +74,29 @@ class _AiSettingsSearchBarState extends State<AiSettingsSearchBar> {
     return Container(
       height: widget.isCompact ? 36 : 48,
       decoration: BoxDecoration(
-        gradient: widget.isCompact
-            ? null
-            : LinearGradient(
-                colors: [
-                  context.colorScheme.surfaceContainer,
-                  context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.8),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-        color: widget.isCompact
-            ? context.colorScheme.surfaceContainer.withValues(alpha: 0.8)
-            : null,
+        color: Theme.of(context).brightness == Brightness.light
+            ? context.colorScheme.surfaceContainerHighest
+            : widget.isCompact
+                ? context.colorScheme.surfaceContainer.withValues(alpha: 0.8)
+                : null,
+        gradient:
+            Theme.of(context).brightness == Brightness.light || widget.isCompact
+                ? null
+                : LinearGradient(
+                    colors: [
+                      context.colorScheme.surfaceContainer,
+                      context.colorScheme.surfaceContainerHigh
+                          .withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
         borderRadius: BorderRadius.circular(widget.isCompact ? 12 : 16),
         border: Border.all(
-          color: context.colorScheme.primaryContainer
-              .withValues(alpha: widget.isCompact ? 0.1 : 0.2),
+          color: Theme.of(context).brightness == Brightness.light
+              ? context.colorScheme.outline.withValues(alpha: 0.2)
+              : context.colorScheme.primaryContainer
+                  .withValues(alpha: widget.isCompact ? 0.1 : 0.2),
         ),
         boxShadow: widget.isCompact
             ? []

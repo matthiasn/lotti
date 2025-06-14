@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:lotti/features/ai/model/inference_error.dart';
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {
@@ -33,18 +36,41 @@ class AiErrorUtils {
       dynamic detailContent;
 
       if (errorBody != null) {
-        if (errorBody is Map && errorBody.containsKey('detail')) {
-          detailContent = errorBody['detail'];
-          specificFieldWasAccessed = true;
+        if (errorBody is Map) {
+          // Check for nested error.message structure (OpenAI format)
+          if (errorBody.containsKey('error') && errorBody['error'] is Map) {
+            final errorObj = errorBody['error'] as Map;
+            if (errorObj.containsKey('message')) {
+              detailContent = errorObj['message'];
+              specificFieldWasAccessed = true;
+            }
+          } else if (errorBody.containsKey('detail')) {
+            detailContent = errorBody['detail'];
+            specificFieldWasAccessed = true;
+          } else if (errorBody.containsKey('message')) {
+            detailContent = errorBody['message'];
+            specificFieldWasAccessed = true;
+          }
         } else if (errorBody is String) {
           try {
             final decodedBody = jsonDecode(errorBody) as Map<String, dynamic>;
-            if (decodedBody.containsKey('detail')) {
+            // Check for nested error.message structure
+            if (decodedBody.containsKey('error') &&
+                decodedBody['error'] is Map) {
+              final errorObj = decodedBody['error'] as Map;
+              if (errorObj.containsKey('message')) {
+                detailContent = errorObj['message'];
+                specificFieldWasAccessed = true;
+              }
+            } else if (decodedBody.containsKey('detail')) {
               detailContent = decodedBody['detail'];
+              specificFieldWasAccessed = true;
+            } else if (decodedBody.containsKey('message')) {
+              detailContent = decodedBody['message'];
               specificFieldWasAccessed = true;
             }
           } catch (_) {
-            // JSON decoding failed, or not a map, or no 'detail' key
+            // JSON decoding failed, or not a map
           }
         }
       }
@@ -95,5 +121,228 @@ class AiErrorUtils {
     }
 
     return extractedMessage;
+  }
+
+  /// Converts various error types into InferenceError with appropriate categorization
+  static InferenceError categorizeError(
+    dynamic error, {
+    StackTrace? stackTrace,
+  }) {
+    // Handle null error
+    if (error == null) {
+      return InferenceError(
+        message: 'An unknown error occurred',
+        type: InferenceErrorType.unknown,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Network connection errors
+    if (error is SocketException ||
+        error.toString().contains('SocketException') ||
+        error.toString().contains('Failed host lookup') ||
+        error.toString().contains('Connection refused') ||
+        error.toString().contains('Connection closed') ||
+        error.toString().contains('No address associated with hostname')) {
+      return InferenceError(
+        message: _getNetworkErrorMessage(error),
+        type: InferenceErrorType.networkConnection,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Timeout errors
+    if (error.toString().contains('TimeoutException') ||
+        error.toString().contains('timed out') ||
+        error.toString().contains('timeout')) {
+      return InferenceError(
+        message:
+            'The request timed out. The server might be slow or unresponsive.',
+        type: InferenceErrorType.timeout,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Check for OpenAI-style API errors by examining the error structure
+    // Note: We use string-based type checking here because the openai_dart package
+    // doesn't expose specific exception types that we can check with 'is'.
+    // This approach is brittle but necessary given the current library constraints.
+    if (error.runtimeType.toString().contains('OpenAI') ||
+        error.runtimeType.toString().contains('RequestException')) {
+      return _handleApiError(error, stackTrace);
+    }
+
+    // Check for 404 model not found errors (common with Ollama)
+    final errorString = error.toString();
+    if (errorString.contains('404') || errorString.contains('Not Found')) {
+      final detailedMessage = extractDetailedErrorMessage(error);
+      // Check if this is a model not found error
+      if (detailedMessage.contains('not found') &&
+          detailedMessage.contains('model')) {
+        return InferenceError(
+          message: detailedMessage,
+          type: InferenceErrorType.invalidRequest,
+          originalError: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    // HTTP status code errors
+    if (errorString.contains('401') || errorString.contains('Unauthorized')) {
+      return InferenceError(
+        message: 'Authentication failed. Please check your API key.',
+        type: InferenceErrorType.authentication,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('429') || errorString.contains('Rate limit')) {
+      return InferenceError(
+        message:
+            'Rate limit exceeded. Please wait before making more requests.',
+        type: InferenceErrorType.rateLimit,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('400') || errorString.contains('Bad Request')) {
+      return InferenceError(
+        message: extractDetailedErrorMessage(error,
+            defaultMessage:
+                'Invalid request. Please check your configuration.'),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('500') ||
+        errorString.contains('502') ||
+        errorString.contains('503') ||
+        errorString.contains('504') ||
+        errorString.contains('Internal Server Error') ||
+        errorString.contains('Bad Gateway') ||
+        errorString.contains('Service Unavailable')) {
+      return InferenceError(
+        message:
+            'The AI service is experiencing issues. Please try again later.',
+        type: InferenceErrorType.serverError,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Default to unknown error with extracted message
+    return InferenceError(
+      message: extractDetailedErrorMessage(error),
+      type: InferenceErrorType.unknown,
+      originalError: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  static String _getNetworkErrorMessage(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('failed host lookup') ||
+        errorString.contains('no address associated')) {
+      return 'Unable to resolve the server address. Please check your internet connection and the server URL.';
+    }
+
+    if (errorString.contains('connection refused')) {
+      return 'Connection refused. The server may be down or not accepting connections.';
+    }
+
+    if (errorString.contains('connection closed')) {
+      return 'Connection was closed unexpectedly. Please try again.';
+    }
+
+    return 'Unable to connect to the AI service. Please check your internet connection and try again.';
+  }
+
+  static InferenceError _handleApiError(
+    dynamic error,
+    StackTrace? stackTrace,
+  ) {
+    // Try to extract status code from error
+    final errorString = error.toString();
+
+    // Handle 404 errors (model not found, etc.)
+    if (errorString.contains('404') || errorString.contains('Not Found')) {
+      final detailedMessage = extractDetailedErrorMessage(error);
+      // Check if this is a model not found error
+      if (detailedMessage.contains('not found') &&
+          detailedMessage.contains('model')) {
+        return InferenceError(
+          message: detailedMessage,
+          type: InferenceErrorType.invalidRequest,
+          originalError: error,
+          stackTrace: stackTrace,
+        );
+      }
+      return InferenceError(
+        message: extractDetailedErrorMessage(error,
+            defaultMessage: 'The requested resource was not found.'),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('401') || errorString.contains('Unauthorized')) {
+      return InferenceError(
+        message: 'Invalid API key. Please check your API key configuration.',
+        type: InferenceErrorType.authentication,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('429') || errorString.contains('Rate limit')) {
+      return InferenceError(
+        message:
+            'Rate limit exceeded. Please wait before making more requests.',
+        type: InferenceErrorType.rateLimit,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('400') || errorString.contains('Bad Request')) {
+      return InferenceError(
+        message: extractDetailedErrorMessage(error),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    if (errorString.contains('500') ||
+        errorString.contains('502') ||
+        errorString.contains('503') ||
+        errorString.contains('504') ||
+        errorString.contains('Internal Server Error') ||
+        errorString.contains('Bad Gateway') ||
+        errorString.contains('Service Unavailable')) {
+      return InferenceError(
+        message:
+            'The AI service is experiencing issues. Please try again later.',
+        type: InferenceErrorType.serverError,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return InferenceError(
+      message: extractDetailedErrorMessage(error),
+      type: InferenceErrorType.unknown,
+      originalError: error,
+      stackTrace: stackTrace,
+    );
   }
 }

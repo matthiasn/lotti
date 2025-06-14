@@ -25,12 +25,16 @@ void main() {
       String? hintText,
       VoidCallback? onClear,
       ValueChanged<String>? onChanged,
+      bool isCompact = false,
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         home: Scaffold(
           body: AiSettingsSearchBar(
             controller: controller,
             hintText: hintText ?? 'Search AI configurations...',
+            isCompact: isCompact,
             onClear: onClear ??
                 () {
                   onClearCalled = true;
@@ -260,6 +264,173 @@ void main() {
 
         expect(controller.text, longText);
         expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+      });
+    });
+
+    group('compact mode', () {
+      testWidgets('displays correctly in compact mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget(isCompact: true));
+
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+
+        // Check that container has correct height
+        final container = find.byType(Container).first;
+        final containerBox = tester.renderObject<RenderBox>(container);
+        expect(containerBox.size.height, 36);
+      });
+
+      testWidgets('shows smaller text in compact mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget(isCompact: true));
+
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pump();
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.style?.fontSize, 14);
+      });
+
+      testWidgets('clear button works in compact mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget(isCompact: true));
+
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pump();
+
+        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.clear_rounded));
+        await tester.pump();
+
+        expect(onClearCalled, isTrue);
+      });
+    });
+
+    group('theme variations', () {
+      testWidgets('displays correctly in dark mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget(
+          theme: ThemeData.dark(),
+        ));
+
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+
+        // Should render without errors in dark mode
+        final container = find.byType(Container).first;
+        expect(container, findsOneWidget);
+      });
+
+      testWidgets('displays correctly in light mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget(
+          theme: ThemeData.light(),
+        ));
+
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+
+        // Should render without errors in light mode
+        final container = find.byType(Container).first;
+        expect(container, findsOneWidget);
+      });
+
+      testWidgets('compact mode works in dark theme',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget(
+          isCompact: true,
+          theme: ThemeData.dark(),
+        ));
+
+        expect(find.byType(TextField), findsOneWidget);
+
+        // Check that container has correct height
+        final container = find.byType(Container).first;
+        final containerWidget = tester.widget<Container>(container);
+        expect(containerWidget.constraints?.maxHeight, 36);
+      });
+    });
+
+    group('widget lifecycle', () {
+      testWidgets('disposes properly when removed from tree',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        // Verify widget is rendered
+        expect(find.byType(AiSettingsSearchBar), findsOneWidget);
+
+        // Remove widget from tree
+        await tester.pumpWidget(const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(),
+          ),
+        ));
+
+        // Widget should be disposed
+        expect(find.byType(AiSettingsSearchBar), findsNothing);
+      });
+
+      testWidgets('handles controller listener properly across rebuilds',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        // Change controller text
+        controller.text = 'test1';
+        await tester.pump();
+        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+
+        // Rebuild widget with same controller
+        await tester.pumpWidget(createWidget());
+
+        // Change controller text again
+        controller.text = 'test2';
+        await tester.pump();
+        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+
+        // Clear text
+        controller.text = '';
+        await tester.pump();
+        expect(find.byIcon(Icons.clear_rounded), findsNothing);
+      });
+
+      testWidgets('text input action is set to search',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.textInputAction, TextInputAction.search);
+      });
+
+      testWidgets('keyboard type is set to text', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.keyboardType, TextInputType.text);
+      });
+    });
+
+    group('accessibility', () {
+      testWidgets('semantic labels are properly set',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createWidget());
+
+        // Search icon should have semantic label
+        final searchIcon = tester.widget<Icon>(
+          find.byIcon(Icons.search_rounded),
+        );
+        expect(searchIcon.semanticLabel, 'Search icon');
+
+        // Enter text to show clear button
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pump();
+
+        // Clear icon should have semantic label
+        final clearIcon = tester.widget<Icon>(
+          find.byIcon(Icons.clear_rounded),
+        );
+        expect(clearIcon.semanticLabel, 'Clear search');
       });
     });
   });

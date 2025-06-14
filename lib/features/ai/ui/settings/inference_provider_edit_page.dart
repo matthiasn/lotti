@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
@@ -79,64 +80,65 @@ class _InferenceProviderEditPageState
         },
       },
       child: Scaffold(
-        backgroundColor: context.colorScheme.scrim,
-        body: CustomScrollView(
-          slivers: [
-            // Modern App Bar
-            SliverAppBar(
-              expandedHeight: 120,
-              pinned: true,
-              backgroundColor: context.colorScheme.scrim,
-              surfaceTintColor: Colors.transparent,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.chevron_left_rounded,
-                  color: context.colorScheme.onSurface,
-                  size: 28,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(bottom: 16),
-                title: Text(
-                  widget.configId == null
-                      ? context.messages.apiKeyAddPageTitle
-                      : context.messages.apiKeyEditPageTitle,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: context.colorScheme.onSurface,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.1),
-                        context.colorScheme.scrim,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+        backgroundColor: context.colorScheme.surface,
+        body: Column(
+          children: [
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // Clean App Bar
+                  SliverAppBar(
+                    expandedHeight: 100,
+                    pinned: true,
+                    backgroundColor: context.colorScheme.surface,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: Icon(
+                        Icons.chevron_left_rounded,
+                        color: context.colorScheme.onSurface,
+                        size: 28,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    flexibleSpace: FlexibleSpaceBar(
+                      titlePadding: const EdgeInsets.only(bottom: 16),
+                      title: Text(
+                        widget.configId == null
+                            ? context.messages.apiKeyAddPageTitle
+                            : context.messages.apiKeyEditPageTitle,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.onSurface,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Form Content
+                  SliverToBoxAdapter(
+                    child: switch (configAsync) {
+                      AsyncData(value: final config) => _buildForm(context, ref,
+                          config, formState, isFormValid, handleSave),
+                      AsyncError() => _buildErrorState(context),
+                      _ => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(48),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    },
+                  ),
+                ],
               ),
             ),
-            // Form Content
-            SliverToBoxAdapter(
-              child: switch (configAsync) {
-                AsyncData(value: final config) => _buildForm(
-                    context, ref, config, formState, isFormValid, handleSave),
-                AsyncError() => _buildErrorState(context),
-                _ => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(48),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-              },
+            // Fixed bottom bar
+            FormBottomBar(
+              onSave: isFormValid ? handleSave : null,
+              onCancel: () => Navigator.of(context).pop(),
+              isFormValid: isFormValid,
+              isDirty: widget.configId == null || (formState?.isDirty ?? false),
             ),
           ],
         ),
@@ -224,63 +226,41 @@ class _InferenceProviderEditPageState
           ),
           const SizedBox(height: 32),
 
-          // Authentication Section
-          AiFormSection(
-            title: 'Authentication',
-            icon: Icons.security_rounded,
-            description: 'Secure your API connection',
-            children: [
-              // API Key
-              AiTextField(
-                label: 'API Key',
-                hint: 'Enter your API key',
-                controller: formController.apiKeyController,
-                onChanged: formController.apiKeyChanged,
-                validator: (_) => formState.apiKey.error?.displayMessage,
-                obscureText: !_showApiKey,
-                prefixIcon: Icons.key_rounded,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _showApiKey
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.6),
+          // Authentication Section - Only show for providers that require API key
+          if (formState.inferenceProviderType !=
+              InferenceProviderType.ollama) ...[
+            AiFormSection(
+              title: 'Authentication',
+              icon: Icons.security_rounded,
+              description: 'Secure your API connection',
+              children: [
+                // API Key
+                AiTextField(
+                  label: 'API Key',
+                  hint: 'Enter your API key',
+                  controller: formController.apiKeyController,
+                  onChanged: formController.apiKeyChanged,
+                  validator: (_) => formState.apiKey.error?.displayMessage,
+                  obscureText: !_showApiKey,
+                  prefixIcon: Icons.key_rounded,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showApiKey
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: context.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.6),
+                    ),
+                    onPressed: () => setState(() {
+                      _showApiKey = !_showApiKey;
+                    }),
+                    tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
                   ),
-                  onPressed: () => setState(() {
-                    _showApiKey = !_showApiKey;
-                  }),
-                  tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: AiFormButton(
-                  label: 'Cancel',
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: AiButtonStyle.secondary,
-                  fullWidth: true,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AiFormButton(
-                  label: 'Save Provider',
-                  onPressed: isFormValid ? handleSave : null,
-                  icon: Icons.save_rounded,
-                  fullWidth: true,
-                  enabled: isFormValid,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40), // Extra padding at bottom
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
         ],
       ),
     );

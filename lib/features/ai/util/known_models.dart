@@ -111,10 +111,19 @@ const List<KnownModel> ollamaModels = [
   KnownModel(
     providerModelId: 'gemma3:12b',
     name: 'Gemma 3 12B',
-    inputModalities: [Modality.text],
+    inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Efficient local text model',
+    description: 'Efficient local text & image model',
+  ),
+  KnownModel(
+    providerModelId: 'gemma3:12b-it-qat',
+    name: 'Gemma 3 12B QAT',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Efficient local text & image model with smaller memory footprint',
   ),
   KnownModel(
     providerModelId: 'deepseek-r1:14b',

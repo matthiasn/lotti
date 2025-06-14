@@ -234,7 +234,12 @@ class SelectedModelsList extends ConsumerWidget {
 
         return modelDataAsync.when(
           data: (config) {
-            final modelName = (config as AiConfigModel?)?.name ?? modelId;
+            if (config == null || config is! AiConfigModel) {
+              // Model doesn't exist or is wrong type
+              return ModelErrorState(modelId: modelId);
+            }
+
+            final modelName = config.name;
             return Padding(
               padding: EdgeInsets.only(
                 bottom: index < modelIds.length - 1 ? 12 : 0,
@@ -262,15 +267,15 @@ class DismissibleModelCard extends StatelessWidget {
     required this.modelId,
     required this.modelName,
     required this.isDefault,
+    required this.config,
     required this.onDismissed,
-    this.config,
     super.key,
   });
 
   final String modelId;
   final String modelName;
   final bool isDefault;
-  final AiConfigModel? config;
+  final AiConfigModel config;
   final VoidCallback onDismissed;
 
   Future<bool> _confirmDismiss(BuildContext context) async {
@@ -285,10 +290,6 @@ class DismissibleModelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (config == null) {
-      return const ModelLoadingState();
-    }
-
     return Dismissible(
       key: ValueKey('selected_model_$modelId'),
       direction: DismissDirection.endToStart,
@@ -298,7 +299,7 @@ class DismissibleModelCard extends StatelessWidget {
       child: Stack(
         children: [
           AiConfigCard(
-            config: config!,
+            config: config,
             onTap: () {}, // Models in this context are not editable directly
             showCapabilities: true,
           ),
