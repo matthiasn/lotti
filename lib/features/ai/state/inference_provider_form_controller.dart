@@ -40,14 +40,18 @@ class InferenceProviderFormController
       return InferenceProviderFormState(
         id: _config!.id,
         name: ApiKeyName.pure(_config!.name),
-        apiKey: ApiKeyValue.pure(_config!.apiKey),
+        apiKey:
+            ApiKeyValue.pure(_config!.apiKey, _config!.inferenceProviderType),
         baseUrl: BaseUrl.pure(_config!.baseUrl),
         description: DescriptionValue.pure(_config!.description ?? ''),
         inferenceProviderType: _config!.inferenceProviderType,
       );
     }
 
-    return InferenceProviderFormState();
+    return InferenceProviderFormState(
+      apiKey: const ApiKeyValue.pure('', InferenceProviderType.genericOpenAi),
+      lastUpdated: DateTime.now(),
+    );
   }
 
   void _setAllFields({
@@ -64,20 +68,30 @@ class InferenceProviderFormController
     final isNonFormzFieldChanging = inferenceProviderType != null &&
         inferenceProviderType != prev.inferenceProviderType;
 
-    state = AsyncData(
-      prev.copyWith(
-        name: name != null ? ApiKeyName.dirty(name) : prev.name,
-        apiKey: apiKey != null ? ApiKeyValue.dirty(apiKey) : prev.apiKey,
-        baseUrl: baseUrl != null ? BaseUrl.dirty(baseUrl) : prev.baseUrl,
-        description: description != null
-            ? DescriptionValue.dirty(description)
-            : (isNonFormzFieldChanging && prev.description.isPure
-                ? DescriptionValue.dirty(prev.description.value)
-                : prev.description),
-        inferenceProviderType:
-            inferenceProviderType ?? prev.inferenceProviderType,
-      ),
+    // Create a completely new state object to force Riverpod to detect the change
+    final newState = InferenceProviderFormState(
+      id: prev.id,
+      name: name != null ? ApiKeyName.dirty(name) : prev.name,
+      apiKey: apiKey != null
+          ? ApiKeyValue.dirty(
+              apiKey, inferenceProviderType ?? prev.inferenceProviderType)
+          : (inferenceProviderType != null &&
+                  inferenceProviderType != prev.inferenceProviderType
+              ? ApiKeyValue.dirty(prev.apiKey.value, inferenceProviderType)
+              : prev.apiKey),
+      baseUrl: baseUrl != null ? BaseUrl.dirty(baseUrl) : prev.baseUrl,
+      description: description != null
+          ? DescriptionValue.dirty(description)
+          : (isNonFormzFieldChanging && prev.description.isPure
+              ? DescriptionValue.dirty(prev.description.value)
+              : prev.description),
+      isSubmitting: prev.isSubmitting,
+      submitFailed: prev.submitFailed,
+      inferenceProviderType:
+          inferenceProviderType ?? prev.inferenceProviderType,
     );
+
+    state = AsyncData(newState);
   }
 
   void nameChanged(String value) {
@@ -111,6 +125,7 @@ class InferenceProviderFormController
   void inferenceProviderTypeChanged(InferenceProviderType value) {
     String? newBaseUrl;
     String? newName;
+    String? newApiKey;
 
     if (value == InferenceProviderType.gemini) {
       newBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
@@ -129,6 +144,9 @@ class InferenceProviderFormController
       if (nameController.text.isEmpty) {
         newName = 'Ollama (local)';
       }
+      // Clear API key for Ollama as it's not required
+      newApiKey = '';
+      apiKeyController.text = '';
     }
     if (value == InferenceProviderType.openAi) {
       newBaseUrl = 'https://api.openai.com/v1';
@@ -161,6 +179,7 @@ class InferenceProviderFormController
       inferenceProviderType: value,
       baseUrl: newBaseUrl,
       name: newName,
+      apiKey: newApiKey,
     );
   }
 
@@ -208,6 +227,9 @@ class InferenceProviderFormController
     apiKeyController.clear();
     baseUrlController.clear();
     descriptionController.clear();
-    state = AsyncData(InferenceProviderFormState());
+    state = AsyncData(InferenceProviderFormState(
+      apiKey: const ApiKeyValue.pure('', InferenceProviderType.genericOpenAi),
+      lastUpdated: DateTime.now(),
+    ));
   }
 }

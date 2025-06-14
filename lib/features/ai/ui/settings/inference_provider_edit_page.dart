@@ -224,38 +224,41 @@ class _InferenceProviderEditPageState
           ),
           const SizedBox(height: 32),
 
-          // Authentication Section
-          AiFormSection(
-            title: 'Authentication',
-            icon: Icons.security_rounded,
-            description: 'Secure your API connection',
-            children: [
-              // API Key
-              AiTextField(
-                label: 'API Key',
-                hint: 'Enter your API key',
-                controller: formController.apiKeyController,
-                onChanged: formController.apiKeyChanged,
-                validator: (_) => formState.apiKey.error?.displayMessage,
-                obscureText: !_showApiKey,
-                prefixIcon: Icons.key_rounded,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _showApiKey
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.6),
+          // Authentication Section - Only show for providers that require API key
+          if (formState.inferenceProviderType !=
+              InferenceProviderType.ollama) ...[
+            AiFormSection(
+              title: 'Authentication',
+              icon: Icons.security_rounded,
+              description: 'Secure your API connection',
+              children: [
+                // API Key
+                AiTextField(
+                  label: 'API Key',
+                  hint: 'Enter your API key',
+                  controller: formController.apiKeyController,
+                  onChanged: formController.apiKeyChanged,
+                  validator: (_) => formState.apiKey.error?.displayMessage,
+                  obscureText: !_showApiKey,
+                  prefixIcon: Icons.key_rounded,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showApiKey
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: context.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.6),
+                    ),
+                    onPressed: () => setState(() {
+                      _showApiKey = !_showApiKey;
+                    }),
+                    tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
                   ),
-                  onPressed: () => setState(() {
-                    _showApiKey = !_showApiKey;
-                  }),
-                  tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
+              ],
+            ),
+            const SizedBox(height: 40),
+          ],
 
           // Action Buttons
           Row(
