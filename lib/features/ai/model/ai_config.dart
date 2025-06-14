@@ -52,6 +52,7 @@ class AiConfig with _$AiConfig {
     required bool isReasoningModel,
     DateTime? updatedAt,
     String? description,
+    int? maxCompletionTokens,
   }) = AiConfigModel;
 
   const factory AiConfig.prompt({

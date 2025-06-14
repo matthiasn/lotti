@@ -58,7 +58,8 @@ mixin _$AiConfig {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)
+            String? description,
+            int? maxCompletionTokens)
         model,
     required TResult Function(
             String id,
@@ -102,7 +103,8 @@ mixin _$AiConfig {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult? Function(
             String id,
@@ -146,7 +148,8 @@ mixin _$AiConfig {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult Function(
             String id,
@@ -441,7 +444,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)
+            String? description,
+            int? maxCompletionTokens)
         model,
     required TResult Function(
             String id,
@@ -489,7 +493,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult? Function(
             String id,
@@ -537,7 +542,8 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult Function(
             String id,
@@ -663,7 +669,8 @@ abstract class _$$AiConfigModelImplCopyWith<$Res>
       List<Modality> outputModalities,
       bool isReasoningModel,
       DateTime? updatedAt,
-      String? description});
+      String? description,
+      int? maxCompletionTokens});
 }
 
 /// @nodoc
@@ -689,6 +696,7 @@ class __$$AiConfigModelImplCopyWithImpl<$Res>
     Object? isReasoningModel = null,
     Object? updatedAt = freezed,
     Object? description = freezed,
+    Object? maxCompletionTokens = freezed,
   }) {
     return _then(_$AiConfigModelImpl(
       id: null == id
@@ -731,6 +739,10 @@ class __$$AiConfigModelImplCopyWithImpl<$Res>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
+      maxCompletionTokens: freezed == maxCompletionTokens
+          ? _value.maxCompletionTokens
+          : maxCompletionTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -749,6 +761,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
       required this.isReasoningModel,
       this.updatedAt,
       this.description,
+      this.maxCompletionTokens,
       final String? $type})
       : _inputModalities = inputModalities,
         _outputModalities = outputModalities,
@@ -790,13 +803,15 @@ class _$AiConfigModelImpl implements AiConfigModel {
   final DateTime? updatedAt;
   @override
   final String? description;
+  @override
+  final int? maxCompletionTokens;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, updatedAt: $updatedAt, description: $description)';
+    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)';
   }
 
   @override
@@ -821,7 +836,9 @@ class _$AiConfigModelImpl implements AiConfigModel {
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.description, description) ||
-                other.description == description));
+                other.description == description) &&
+            (identical(other.maxCompletionTokens, maxCompletionTokens) ||
+                other.maxCompletionTokens == maxCompletionTokens));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -837,7 +854,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
       const DeepCollectionEquality().hash(_outputModalities),
       isReasoningModel,
       updatedAt,
-      description);
+      description,
+      maxCompletionTokens);
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -870,7 +888,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)
+            String? description,
+            int? maxCompletionTokens)
         model,
     required TResult Function(
             String id,
@@ -901,7 +920,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
         outputModalities,
         isReasoningModel,
         updatedAt,
-        description);
+        description,
+        maxCompletionTokens);
   }
 
   @override
@@ -927,7 +947,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult? Function(
             String id,
@@ -958,7 +979,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
         outputModalities,
         isReasoningModel,
         updatedAt,
-        description);
+        description,
+        maxCompletionTokens);
   }
 
   @override
@@ -984,7 +1006,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult Function(
             String id,
@@ -1017,7 +1040,8 @@ class _$AiConfigModelImpl implements AiConfigModel {
           outputModalities,
           isReasoningModel,
           updatedAt,
-          description);
+          description,
+          maxCompletionTokens);
     }
     return orElse();
   }
@@ -1076,7 +1100,8 @@ abstract class AiConfigModel implements AiConfig {
       required final List<Modality> outputModalities,
       required final bool isReasoningModel,
       final DateTime? updatedAt,
-      final String? description}) = _$AiConfigModelImpl;
+      final String? description,
+      final int? maxCompletionTokens}) = _$AiConfigModelImpl;
 
   factory AiConfigModel.fromJson(Map<String, dynamic> json) =
       _$AiConfigModelImpl.fromJson;
@@ -1096,6 +1121,7 @@ abstract class AiConfigModel implements AiConfig {
   DateTime? get updatedAt;
   @override
   String? get description;
+  int? get maxCompletionTokens;
 
   /// Create a copy of AiConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -1411,7 +1437,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)
+            String? description,
+            int? maxCompletionTokens)
         model,
     required TResult Function(
             String id,
@@ -1474,7 +1501,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult? Function(
             String id,
@@ -1537,7 +1565,8 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             List<Modality> outputModalities,
             bool isReasoningModel,
             DateTime? updatedAt,
-            String? description)?
+            String? description,
+            int? maxCompletionTokens)?
         model,
     TResult Function(
             String id,
