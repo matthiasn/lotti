@@ -83,26 +83,6 @@ extension InferenceErrorTypeExtension on InferenceErrorType {
     }
   }
 
-  // Keep non-localized versions for backend usage
-  String get title {
-    switch (this) {
-      case InferenceErrorType.networkConnection:
-        return 'Connection Failed';
-      case InferenceErrorType.timeout:
-        return 'Request Timed Out';
-      case InferenceErrorType.authentication:
-        return 'Authentication Failed';
-      case InferenceErrorType.rateLimit:
-        return 'Rate Limit Exceeded';
-      case InferenceErrorType.invalidRequest:
-        return 'Invalid Request';
-      case InferenceErrorType.serverError:
-        return 'Server Error';
-      case InferenceErrorType.unknown:
-        return 'Error';
-    }
-  }
-
   String get defaultMessage {
     switch (this) {
       case InferenceErrorType.networkConnection:

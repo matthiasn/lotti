@@ -63,19 +63,6 @@ void main() {
   });
 
   group('InferenceErrorTypeExtension', () {
-    group('title getter', () {
-      test('returns correct non-localized titles', () {
-        expect(InferenceErrorType.networkConnection.title, 'Connection Failed');
-        expect(InferenceErrorType.timeout.title, 'Request Timed Out');
-        expect(
-            InferenceErrorType.authentication.title, 'Authentication Failed');
-        expect(InferenceErrorType.rateLimit.title, 'Rate Limit Exceeded');
-        expect(InferenceErrorType.invalidRequest.title, 'Invalid Request');
-        expect(InferenceErrorType.serverError.title, 'Server Error');
-        expect(InferenceErrorType.unknown.title, 'Error');
-      });
-    });
-
     group('defaultMessage getter', () {
       test('returns correct non-localized messages', () {
         expect(
