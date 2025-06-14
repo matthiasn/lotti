@@ -139,11 +139,13 @@ class CloudInferenceRepository {
     required String baseUrl,
     required String apiKey,
     int? maxCompletionTokens,
+    OpenAIClient? overrideClient,
   }) async {
-    final client = OpenAIClient(
-      baseUrl: baseUrl,
-      apiKey: apiKey,
-    );
+    final client = overrideClient ??
+        OpenAIClient(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
 
     // For FastWhisper, we need to handle the audio transcription differently
     if (baseUrl.contains('localhost:8083')) {
