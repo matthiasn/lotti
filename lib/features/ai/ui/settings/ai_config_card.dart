@@ -83,31 +83,41 @@ class AiConfigCard extends ConsumerWidget {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.lerp(
-              context.colorScheme.surfaceContainer,
-              context.colorScheme.surfaceContainerHigh,
-              0.3,
-            )!,
-            Color.lerp(
-              context.colorScheme.surface,
-              context.colorScheme.surfaceContainerLow,
-              0.5,
-            )!,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Theme.of(context).brightness == Brightness.light
+            ? context.colorScheme.surface
+            : null,
+        gradient: Theme.of(context).brightness == Brightness.light
+            ? null
+            : LinearGradient(
+                colors: [
+                  Color.lerp(
+                    context.colorScheme.surfaceContainer,
+                    context.colorScheme.surfaceContainerHigh,
+                    0.3,
+                  )!,
+                  Color.lerp(
+                    context.colorScheme.surface,
+                    context.colorScheme.surfaceContainerLow,
+                    0.5,
+                  )!,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+          color: Theme.of(context).brightness == Brightness.light
+              ? context.colorScheme.outline.withValues(alpha: 0.3)
+              : context.colorScheme.primaryContainer.withValues(alpha: 0.15),
         ),
         boxShadow: [
           BoxShadow(
-            color: context.colorScheme.shadow.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Theme.of(context).brightness == Brightness.light
+                ? context.colorScheme.shadow.withValues(alpha: 0.08)
+                : context.colorScheme.shadow.withValues(alpha: 0.15),
+            blurRadius:
+                Theme.of(context).brightness == Brightness.light ? 6 : 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
