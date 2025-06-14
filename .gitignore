@@ -90,3 +90,7 @@ macos/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 
 # Android build artifacts
 /android/app/.cxx/
+
+# FastWhisper build artifacts
+fastwhisper_server/build/
+fastwhisper_server/dist/

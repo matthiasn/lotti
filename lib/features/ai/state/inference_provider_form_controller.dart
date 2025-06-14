@@ -166,6 +166,15 @@ class InferenceProviderFormController
         newName = 'OpenRouter';
       }
     }
+    if (value == InferenceProviderType.fastWhisper) {
+      newBaseUrl = 'http://localhost:8083';
+      if (nameController.text.isEmpty) {
+        newName = 'FastWhisper (local)';
+      }
+      // Clear API key for FastWhisper as it's not required
+      newApiKey = '';
+      apiKeyController.text = '';
+    }
 
     // Update text controllers if needed
     if (newBaseUrl != null) {

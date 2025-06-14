@@ -28,8 +28,9 @@ class ApiKeyValue extends FormzInput<String, ProviderFormError> {
 
   @override
   ProviderFormError? validator(String value) {
-    // API key is not required for Ollama
-    if (providerType == InferenceProviderType.ollama) {
+    // API key is not required for local providers (Ollama and FastWhisper)
+    if (providerType == InferenceProviderType.ollama ||
+        providerType == InferenceProviderType.fastWhisper) {
       return null;
     }
     return value.isEmpty ? ProviderFormError.empty : null;

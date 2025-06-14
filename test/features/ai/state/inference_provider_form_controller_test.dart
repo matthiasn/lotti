@@ -664,4 +664,115 @@ void main() {
           isFalse); // Invalid again because API key was cleared
     });
   });
+
+  group('FastWhisper Provider Tests', () {
+    test('should set baseUrl and clear API key when FastWhisper is selected',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller
+          .inferenceProviderTypeChanged(InferenceProviderType.fastWhisper);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('http://localhost:8083'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('http://localhost:8083'),
+      );
+      expect(controller.apiKeyController.text, isEmpty);
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.fastWhisper),
+      );
+    });
+
+    test(
+        'should set name when FastWhisper provider type is selected and name is empty',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller
+          .inferenceProviderTypeChanged(InferenceProviderType.fastWhisper);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(controller.nameController.text, equals('FastWhisper (local)'));
+      expect(formState?.name.value, equals('FastWhisper (local)'));
+    });
+
+    test('should allow empty API key for FastWhisper provider', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller
+          .inferenceProviderTypeChanged(InferenceProviderType.fastWhisper);
+      controller.nameChanged('My FastWhisper');
+      controller.baseUrlChanged('http://localhost:8083');
+      // Don't set API key - leave it empty
+
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+      expect(formState?.isValid, isTrue); // Overall form should be valid
+    });
+  });
+
+  group('Model Prepopulation Tests', () {
+    test('should save config when adding a new inference provider', () async {
+      // Arrange
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => []);
+
+      // Act
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      final newConfig = AiConfig.inferenceProvider(
+        id: 'new-provider-id',
+        baseUrl: 'https://api.example.com',
+        apiKey: 'test-api-key',
+        name: 'Test Provider',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      await controller.addConfig(newConfig);
+
+      // Assert
+      verify(() => mockRepository.saveConfig(newConfig)).called(1);
+    });
+  });
 }

@@ -12,6 +12,7 @@ enum InferenceProviderType {
   openAi,
   openRouter,
   ollama,
+  fastWhisper,
 }
 
 enum Modality {
