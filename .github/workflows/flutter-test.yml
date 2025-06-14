@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     name: Flutter Test on macOS
-    runs-on: macos-latest
+    runs-on: macos-latest-xlarge
     steps:
       - uses: actions/checkout@v3
       - uses: kuhnroyal/flutter-fvm-config-action@v2
