@@ -171,6 +171,9 @@ class InferenceProviderFormController
       if (nameController.text.isEmpty) {
         newName = 'FastWhisper (local)';
       }
+      // Clear API key for FastWhisper as it's not required
+      newApiKey = '';
+      apiKeyController.text = '';
     }
 
     // Update text controllers if needed
