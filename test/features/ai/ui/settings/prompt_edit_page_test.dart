@@ -82,6 +82,12 @@ void main() {
         .thenAnswer((_) async => testPrompt);
     when(() => mockRepository.getConfigsByType(AiConfigType.model))
         .thenAnswer((_) async => testModels);
+
+    // Mock model config fetches for validation
+    when(() => mockRepository.getConfigById('model-1'))
+        .thenAnswer((_) async => testModels[0]);
+    when(() => mockRepository.getConfigById('model-2'))
+        .thenAnswer((_) async => testModels[1]);
   });
 
   Widget buildTestWidget({String? configId}) {

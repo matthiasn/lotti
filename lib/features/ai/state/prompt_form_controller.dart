@@ -39,13 +39,34 @@ class PromptFormController extends _$PromptFormController {
     });
 
     if (_config != null) {
+      // Validate that selected models still exist
+      final validModelIds = <String>[];
+      for (final modelId in _config!.modelIds) {
+        try {
+          final modelConfig =
+              await ref.read(aiConfigRepositoryProvider).getConfigById(modelId);
+          if (modelConfig != null && modelConfig is AiConfigModel) {
+            validModelIds.add(modelId);
+          }
+        } catch (_) {
+          // Model doesn't exist, skip it
+        }
+      }
+
+      // Update default model ID if it's no longer valid
+      var validDefaultModelId = _config!.defaultModelId;
+      if (!validModelIds.contains(validDefaultModelId)) {
+        validDefaultModelId =
+            validModelIds.isNotEmpty ? validModelIds.first : '';
+      }
+
       return PromptFormState(
         id: _config!.id,
         name: PromptName.pure(_config!.name),
         systemMessage: PromptSystemMessage.pure(_config!.systemMessage),
         userMessage: PromptUserMessage.pure(_config!.userMessage),
-        defaultModelId: _config!.defaultModelId,
-        modelIds: _config!.modelIds,
+        defaultModelId: validDefaultModelId,
+        modelIds: validModelIds,
         useReasoning: _config!.useReasoning,
         requiredInputData: _config!.requiredInputData,
         comment: PromptComment.pure(_config!.comment ?? ''),
@@ -194,10 +215,40 @@ class PromptFormController extends _$PromptFormController {
   /// Update an existing configuration
   Future<void> updateConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
+    var configToSave = config;
+
+    // If it's a prompt config, validate model IDs before saving
+    if (config is AiConfigPrompt) {
+      final validModelIds = <String>[];
+      for (final modelId in config.modelIds) {
+        try {
+          final modelConfig = await repository.getConfigById(modelId);
+          if (modelConfig != null && modelConfig is AiConfigModel) {
+            validModelIds.add(modelId);
+          }
+        } catch (_) {
+          // Model doesn't exist, skip it
+        }
+      }
+
+      // Update default model ID if it's no longer valid
+      var validDefaultModelId = config.defaultModelId;
+      if (!validModelIds.contains(validDefaultModelId)) {
+        validDefaultModelId =
+            validModelIds.isNotEmpty ? validModelIds.first : '';
+      }
+
+      configToSave = config.copyWith(
+        modelIds: validModelIds,
+        defaultModelId: validDefaultModelId,
+      );
+    }
+
     await repository.saveConfig(
-      config.copyWith(
-        id: _config?.id ?? config.id,
-        createdAt: _config?.createdAt ?? (config as AiConfigPrompt).createdAt,
+      configToSave.copyWith(
+        id: _config?.id ?? configToSave.id,
+        createdAt:
+            _config?.createdAt ?? (configToSave as AiConfigPrompt).createdAt,
         updatedAt: DateTime.now(),
       ),
     );
