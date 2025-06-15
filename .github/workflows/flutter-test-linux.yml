@@ -1,0 +1,31 @@
+name: Flutter Test
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Flutter Test on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install network-manager
+      - uses: actions/checkout@v3
+      - uses: kuhnroyal/flutter-fvm-config-action@v2 
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Run Flutter tests
+        run: flutter test --coverage
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
