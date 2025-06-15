@@ -105,9 +105,6 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Calendar Page?',
     status: false,
   ),
-};
-
-final expectedMacFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable notifications?',
@@ -172,12 +169,7 @@ void main() {
       'Config flags are initialized as expected',
       () async {
         final flags = await db?.watchConfigFlags().first;
-
-        if (Platform.isMacOS) {
-          expect(flags, expectedFlags.union(expectedMacFlags));
-        } else {
-          expect(flags, expectedFlags);
-        }
+        expect(flags, expectedFlags);
       },
     );
 
