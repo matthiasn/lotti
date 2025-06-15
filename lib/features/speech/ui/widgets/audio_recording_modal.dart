@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/state/recorder_cubit.dart';
@@ -85,7 +86,7 @@ class AudioRecordingModalContent extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -132,31 +133,23 @@ class AudioRecordingModalContent extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // VU Meter
-                  Container(
-                    color: Colors.orange,
-                    child: AnalogVuMeter(
-                      decibels: state.decibels,
-                      size: 444,
-                      colorScheme: theme.colorScheme,
-                    ),
+                  AnalogVuMeter(
+                    decibels: state.decibels,
+                    size: 400,
+                    colorScheme: theme.colorScheme,
                   ),
 
                   // Duration display
+
                   Text(
                     formatDuration(state.progress.toString()),
-                    style: TextStyle(
-                      color: theme.colorScheme.outline,
+                    style: GoogleFonts.inconsolata(
                       fontSize: fontSizeLarge,
-                      fontWeight: FontWeight.w200,
-                      fontFamily: 'monospace',
-                      fontFeatures: const [
-                        FontFeature.tabularFigures(),
-                      ],
-                      letterSpacing: 1,
+                      fontWeight: FontWeight.w300,
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
                   // Control buttons in a row
                   Row(
@@ -164,10 +157,12 @@ class AudioRecordingModalContent extends ConsumerWidget {
                     children: [
                       // Language selector - compact
                       Container(
+                        height: 48, // Same height as record/stop button
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surfaceContainerHighest
                               .withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius:
+                              BorderRadius.circular(24), // Same radius
                           border: Border.all(
                             color: theme.colorScheme.outline
                                 .withValues(alpha: 0.3),
@@ -176,13 +171,12 @@ class AudioRecordingModalContent extends ConsumerWidget {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(24),
                             onTap: () => _showLanguageMenu(
                                 context, cubit, state.language ?? ''),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
-                                vertical: 10,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
