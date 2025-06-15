@@ -42,7 +42,8 @@ void main() {
       mockClient = MockOpenAIClient();
       mockHttpClient = MockHttpClient();
       container = ProviderContainer();
-      repository = CloudInferenceRepository(MockRef(), httpClient: mockHttpClient);
+      repository =
+          CloudInferenceRepository(MockRef(), httpClient: mockHttpClient);
       testProvider = AiConfig.inferenceProvider(
         id: 'test-provider-id',
         name: 'Test Provider',
@@ -51,6 +52,11 @@ void main() {
         createdAt: DateTime.now(),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ) as AiConfigInferenceProvider;
+    });
+
+    tearDown(() async {
+      mockHttpClient.close();
+      container.dispose();
     });
 
     test(
@@ -724,7 +730,8 @@ void main() {
       );
     });
 
-    test('generateWithAudio handles FastWhisper provider type successfully', () async {
+    test('generateWithAudio handles FastWhisper provider type successfully',
+        () async {
       // Create a FastWhisper provider
       final fastWhisperProvider = AiConfig.inferenceProvider(
         id: 'fastwhisper-id',
@@ -740,16 +747,16 @@ void main() {
 
       // Mock successful HTTP response
       when(() => mockHttpClient.post(
-        Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      )).thenAnswer((_) async => http.Response(
-        jsonEncode({'text': transcribedText}),
-        200,
-      ));
+            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ));
 
       final stream = repository.generateWithAudio(
         prompt,
@@ -761,7 +768,7 @@ void main() {
       );
 
       expect(stream.isBroadcast, isTrue);
-      
+
       final response = await stream.first;
       expect(response.choices.length, 1);
       expect(response.choices[0].delta?.content, transcribedText);
@@ -770,16 +777,17 @@ void main() {
 
       // Verify the HTTP call was made with correct parameters
       verify(() => mockHttpClient.post(
-        Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      )).called(1);
+            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).called(1);
     });
 
-    test('generateWithAudio FastWhisper handles malformed JSON response', () async {
+    test('generateWithAudio FastWhisper handles malformed JSON response',
+        () async {
       // Create a FastWhisper provider
       final fastWhisperProvider = AiConfig.inferenceProvider(
         id: 'fastwhisper-id',
@@ -794,16 +802,16 @@ void main() {
 
       // Mock HTTP response with malformed JSON
       when(() => mockHttpClient.post(
-        Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      )).thenAnswer((_) async => http.Response(
-        'Invalid JSON response',
-        200,
-      ));
+            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            'Invalid JSON response',
+            200,
+          ));
 
       final stream = repository.generateWithAudio(
         prompt,
@@ -836,13 +844,13 @@ void main() {
 
       // Mock HTTP client to throw network exception
       when(() => mockHttpClient.post(
-        Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      )).thenThrow(Exception('Network connection failed'));
+            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenThrow(Exception('Network connection failed'));
 
       final stream = repository.generateWithAudio(
         prompt,
@@ -913,7 +921,8 @@ void main() {
       ).called(1);
     });
 
-    test('generateWithAudio handles FastWhisper HTTP error responses', () async {
+    test('generateWithAudio handles FastWhisper HTTP error responses',
+        () async {
       // Create a FastWhisper provider
       final fastWhisperProvider = AiConfig.inferenceProvider(
         id: 'fastwhisper-id',
@@ -929,16 +938,16 @@ void main() {
 
       // Mock HTTP error response
       when(() => mockHttpClient.post(
-        Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      )).thenAnswer((_) async => http.Response(
-        errorMessage,
-        500,
-      ));
+            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            errorMessage,
+            500,
+          ));
 
       final stream = repository.generateWithAudio(
         prompt,
@@ -962,13 +971,13 @@ void main() {
       );
 
       verify(() => mockHttpClient.post(
-        Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': model,
-          'audio': audioBase64,
-        }),
-      )).called(1);
+            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).called(1);
     });
 
     test('generate without overrideClient creates new OpenAIClient', () {
@@ -1063,7 +1072,8 @@ void main() {
       expect(responses[0].choices[0].delta?.content, 'Test');
     });
 
-    test('generateWithAudio for non-FastWhisper does not use _filterAnthropicPings',
+    test(
+        'generateWithAudio for non-FastWhisper does not use _filterAnthropicPings',
         () async {
       // Arrange
       const audioBase64 = 'audio-data';
@@ -1113,7 +1123,8 @@ void main() {
 
     test('_filterAnthropicPings handles stream close correctly', () async {
       // Arrange - Create a stream that closes normally
-      final normalStream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
+      final normalStream =
+          Stream<CreateChatCompletionStreamResponse>.fromIterable([
         CreateChatCompletionStreamResponse(
           id: 'response-id',
           choices: [

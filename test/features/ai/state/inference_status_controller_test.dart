@@ -5,12 +5,18 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 
 void main() {
   late ProviderContainer container;
+  final subscriptions = <void Function()>[];
 
   setUp(() {
     container = ProviderContainer();
   });
 
   tearDown(() {
+    // Cancel all subscriptions first
+    for (final unsubscribe in subscriptions) {
+      unsubscribe();
+    }
+    subscriptions.clear();
     container.dispose();
   });
 
@@ -120,7 +126,7 @@ void main() {
     test('state changes are properly notified', () {
       final states = <InferenceStatus>[];
 
-      container.listen(
+      final unsubscribe = container.listen(
         inferenceStatusControllerProvider(
           id: testId,
           aiResponseType: testAiResponseType,
@@ -128,6 +134,7 @@ void main() {
         (previous, next) => states.add(next),
         fireImmediately: true,
       );
+      subscriptions.add(unsubscribe.close);
 
       container.read(
         inferenceStatusControllerProvider(
@@ -244,7 +251,7 @@ void main() {
     test('responds to changes in inference status', () {
       final states = <bool>[];
 
-      container.listen(
+      final unsubscribe = container.listen(
         inferenceRunningControllerProvider(
           id: testId,
           responseTypes: responseTypes,
@@ -252,6 +259,7 @@ void main() {
         (previous, next) => states.add(next),
         fireImmediately: true,
       );
+      subscriptions.add(unsubscribe.close);
 
       // Initially all inferences are idle
       expect(states, equals([false]));
