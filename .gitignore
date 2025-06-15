@@ -94,3 +94,47 @@ macos/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 # FastWhisper build artifacts
 fastwhisper_server/build/
 fastwhisper_server/dist/
+
+# Python virtual environment
+venv/
+**/venv/
+
+# FastWhisper backup and build files
+fastwhisper_backup/
+**/fastwhisper_backup/
+**/build/
+**/dist/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Environments
+.env
+.venv
+env/
+ENV/
