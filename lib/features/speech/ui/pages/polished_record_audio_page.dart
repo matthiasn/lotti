@@ -9,12 +9,14 @@ import 'package:lotti/features/speech/ui/widgets/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class PolishedRecordAudioPage extends StatelessWidget {
   const PolishedRecordAudioPage({
-    required this.linkedId, super.key,
+    required this.linkedId,
+    super.key,
     this.categoryId,
   });
 
@@ -23,8 +25,10 @@ class PolishedRecordAudioPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: theme.colorScheme.surfaceContainerLow,
       body: SafeArea(
         child: Column(
           children: [
@@ -38,35 +42,21 @@ class PolishedRecordAudioPage extends StatelessWidget {
                 return Container(
                   height: 56,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Stack(
-                    alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.close,
-                            color: Colors.grey,
-                            size: 28,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 24,
                         ),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
-                      const Text(
-                        'AUDIO RECORDING',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      Positioned(
-                        right: 4,
-                        child: isRecording
-                            ? const RecordingIndicator()
-                            : const SizedBox(width: 32, height: 32),
-                      ),
+                      if (isRecording)
+                        const RecordingIndicator()
+                      else
+                        const SizedBox(width: 32, height: 32),
                     ],
                   ),
                 );
@@ -159,10 +149,92 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
     return str.substring(0, str.length - 7);
   }
 
+  String _getLanguageDisplay(String language) {
+    switch (language) {
+      case 'en':
+        return 'English';
+      case 'de':
+        return 'Deutsch';
+      default:
+        return 'Auto-detect';
+    }
+  }
+
+  void _showLanguageMenu(
+      BuildContext context, AudioRecorderCubit cubit, String currentLanguage) {
+    final theme = Theme.of(context);
+    final button = context.findRenderObject()! as RenderBox;
+    final overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero),
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      color: theme.colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.5),
+        ),
+      ),
+      elevation: 8,
+      items: [
+        _buildMenuItem(
+            '', 'Auto-detect', currentLanguage == '', theme.colorScheme),
+        _buildMenuItem(
+            'en', 'English', currentLanguage == 'en', theme.colorScheme),
+        _buildMenuItem(
+            'de', 'Deutsch', currentLanguage == 'de', theme.colorScheme),
+      ],
+    ).then((String? value) {
+      if (value != null) {
+        cubit.setLanguage(value);
+      }
+    });
+  }
+
+  PopupMenuItem<String> _buildMenuItem(
+      String value, String label, bool isSelected, ColorScheme colorScheme) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                fontSize: fontSizeMedium,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              Icon(
+                Icons.check,
+                color: colorScheme.primary,
+                size: 16,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (context, state) {
+        final theme = Theme.of(context);
         final cubit = context.read<AudioRecorderCubit>()
           ..setCategoryId(categoryId);
 
@@ -208,40 +280,39 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                   builder: (context, constraints) {
                     // Calculate meter size based on available space
                     final screenWidth = constraints.maxWidth;
-                    
+
                     // Simple sizing: 85% of width with min/max constraints
                     final size = (screenWidth * 0.85).clamp(300.0, 500.0);
-                    
+
                     return AnalogVuMeter(
                       decibels: state.decibels,
                       size: size,
+                      colorScheme: theme.colorScheme,
                     );
                   },
                 ),
                 const SizedBox(height: 30),
                 // Duration display with responsive font size
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final fontSize = (constraints.maxWidth * 0.12).clamp(32.0, 48.0);
-                    return Text(
-                      formatDuration(state.progress.toString()),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.w200,
-                        fontFamily: 'monospace',
-                        letterSpacing: 2,
-                      ),
-                    );
-                  },
+                Text(
+                  formatDuration(state.progress.toString()),
+                  style: TextStyle(
+                    color: theme.colorScheme.outline,
+                    fontSize: fontSizeLarge,
+                    fontWeight: FontWeight.w200,
+                    fontFeatures: const [
+                      FontFeature.tabularFigures(),
+                    ],
+                    letterSpacing: 0,
+                  ),
                 ),
                 const SizedBox(height: 40),
                 // Control buttons with responsive size
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final buttonWidth = (constraints.maxWidth * 0.5).clamp(180.0, 220.0);
+                    final buttonWidth =
+                        (constraints.maxWidth * 0.5).clamp(180.0, 220.0);
                     final buttonHeight = (buttonWidth * 0.29).clamp(52.0, 64.0);
-                    
+
                     return SizedBox(
                       height: buttonHeight,
                       child: AnimatedSwitcher(
@@ -253,124 +324,170 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                                 child: Container(
                                   width: buttonWidth,
                                   height: buttonHeight,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF3A3A3A),
-                                borderRadius: BorderRadius.circular(32),
-                                border: Border.all(
-                                  color: Colors.grey.withValues(alpha: 0.2),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.4),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.colorScheme
+                                            .surfaceContainerHighest,
+                                        theme.colorScheme.surface,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(32),
+                                    border: Border.all(
+                                      color: theme.colorScheme.outline
+                                          .withValues(alpha: 0.2),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            Colors.black.withValues(alpha: 0.5),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                      BoxShadow(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.1),
+                                        blurRadius: 1,
+                                        offset: const Offset(0, -1),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'STOP',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 3,
+                                  child: Stack(
+                                    children: [
+                                      Center(
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color: Colors.red.shade400,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.red
+                                                        .withValues(alpha: 0.6),
+                                                    blurRadius: 4,
+                                                    spreadRadius: 1,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              'STOP',
+                                              style: TextStyle(
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                                fontSize: fontSizeMedium,
+                                                fontWeight: FontWeight.w500,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : GestureDetector(
+                                key: const ValueKey('record'),
+                                onTap: () => cubit.record(linkedId: linkedId),
+                                child: Container(
+                                  width: buttonWidth,
+                                  height: buttonHeight,
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(32),
+                                    border: Border.all(
+                                      color: Colors.red.withValues(alpha: 0.8),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            Colors.red.withValues(alpha: 0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'RECORD',
+                                      style: TextStyle(
+                                        color: Colors.red.shade300,
+                                        fontSize: fontSizeMedium,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          )
-                        : GestureDetector(
-                            key: const ValueKey('record'),
-                            onTap: () => cubit.record(linkedId: linkedId),
-                            child: Container(
-                              width: buttonWidth,
-                              height: buttonHeight,
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(32),
-                                border: Border.all(
-                                  color: Colors.red.withValues(alpha: 0.8),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.red.withValues(alpha: 0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'RECORD',
-                                  style: TextStyle(
-                                    color: Colors.red.shade300,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 3,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 40),
-                // Language selector
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.language,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    DropdownButton<String>(
-                      value: state.language ?? '',
-                      dropdownColor: const Color(0xFF2A2A2A),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                // Language selector with custom styling
+                Builder(
+                  builder: (buttonContext) => Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
                       ),
-                      underline: Container(),
-                      icon: const Icon(
-                        Icons.arrow_drop_down,
-                        color: Colors.grey,
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: '',
-                          child: Text(
-                            'Auto',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'en',
-                          child: Text(
-                            'English',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'de',
-                          child: Text(
-                            'Deutsch',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
-                      onChanged: (String? value) {
-                        if (value != null) {
-                          cubit.setLanguage(value);
-                        }
-                      },
                     ),
-                  ],
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () {
+                          // Show custom dropdown
+                          _showLanguageMenu(
+                              buttonContext, cubit, state.language ?? '');
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.language,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                _getLanguageDisplay(state.language ?? ''),
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: fontSizeMedium,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
