@@ -1506,7 +1506,7 @@ void main() {
           );
           expect(
             updatedEntity.data.transcripts!.first.library,
-            'AI Transcription',
+            'Test Provider',
           );
 
           // Verify that the entry text was updated with the transcript
@@ -1671,7 +1671,7 @@ void main() {
           );
           expect(
             updatedEntity.data.transcripts!.last.library,
-            'AI Transcription',
+            'Test Provider',
           );
 
           // Verify that the entry text was updated with the new transcript
@@ -1948,6 +1948,225 @@ void main() {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
         }
+      });
+    });
+
+    group('AI response entry creation', () {
+      test('should not create AI response entry for JournalAudio entities',
+          () async {
+        // Set up test data
+        final promptConfig = _createPrompt(
+          id: 'audio-prompt',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'test-model',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        // Create the audio directory and file
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        final audioFile = File('${tempDir.path}/audio/test.mp3');
+        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
+        audioFile.writeAsBytesSync(mockAudioBytes);
+
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        // Set up mocks
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => audioEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"audio": "test.mp3"}');
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                    content: 'Transcribed text'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        try {
+          // Run inference
+          await repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Verify that createAiResponseEntry was NOT called for JournalAudio
+          verifyNever(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+
+          // Verify that the journal entity was still updated with the transcript
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        } finally {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('should create AI response entry for non-JournalAudio entities',
+          () async {
+        // Set up test data with a Task entity (non-JournalAudio)
+        final promptConfig = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Analysis',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'test-model',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        // Set up mocks
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                    content: 'Task analysis result'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        // Run inference
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify that createAiResponseEntry WAS called for non-JournalAudio entity
+        verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: 'test-id',
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).called(1);
+
+        // For taskSummary type, the journal entity is not updated directly
+        // Only specific response types like audioTranscription update the entity
       });
     });
   });
