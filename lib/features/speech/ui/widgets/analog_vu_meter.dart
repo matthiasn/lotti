@@ -253,7 +253,6 @@ class AnalogVuMeterPainter extends CustomPainter {
     canvas.restore();
   }
 
-
   void _drawScale(Canvas canvas, Size size) {
     // Needle pivot at bottom center of meter face - moved down slightly
     final pivot = Offset(size.width / 2, size.height * 0.8);
@@ -262,7 +261,7 @@ class AnalogVuMeterPainter extends CustomPainter {
     // Get theme colors
     final mainColor = isDarkMode ? Colors.grey[300]! : Colors.black;
     final redColor = isDarkMode ? Colors.redAccent : Colors.red;
-    
+
     // Scale positions and labels matching real VU meter
     final scaleMarks = [
       {'pos': 0.0, 'label': '-20', 'major': true},
@@ -399,8 +398,8 @@ class AnalogVuMeterPainter extends CustomPainter {
             Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 1.5
-              ..color = (isInRedZone ? redColor : mainColor)
-                  .withValues(alpha: 0.5),
+              ..color =
+                  (isInRedZone ? redColor : mainColor).withValues(alpha: 0.5),
           );
         }
       }
@@ -408,15 +407,12 @@ class AnalogVuMeterPainter extends CustomPainter {
   }
 
   void _drawVuText(Canvas canvas, Size size) {
-    final mainColor = isDarkMode ? Colors.grey[300]! : Colors.black;
-    
     final textPainter = TextPainter(
-      text: TextSpan(
+      text: const TextSpan(
         text: 'VU',
         style: TextStyle(
-          color: mainColor,
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontSize: 24,
+          fontWeight: FontWeight.w300,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -473,7 +469,8 @@ class AnalogVuMeterPainter extends CustomPainter {
     final shadowPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
-      ..color = (isDarkMode ? Colors.black : Colors.black).withValues(alpha: 0.3)
+      ..color =
+          (isDarkMode ? Colors.black : Colors.black).withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
 
     canvas.drawLine(
@@ -495,7 +492,7 @@ class AnalogVuMeterPainter extends CustomPainter {
   void _drawCenterPivot(Canvas canvas, Offset center) {
     final mainColor = isDarkMode ? Colors.grey[300]! : Colors.black;
     final highlightColor = isDarkMode ? Colors.grey[500]! : Colors.grey[600]!;
-    
+
     canvas.drawCircle(
       center,
       6,
@@ -586,7 +583,8 @@ class AnalogVuMeterPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = isDarkMode ? const Color(0xFF9A9A9A) : const Color(0xFF6A6A6A),
+        ..color =
+            isDarkMode ? const Color(0xFF9A9A9A) : const Color(0xFF6A6A6A),
     );
 
     // PEAK label

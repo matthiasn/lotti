@@ -9,18 +9,12 @@ import 'package:lotti/features/speech/ui/widgets/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/modals.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-class AudioRecordingModal extends ConsumerStatefulWidget {
-  const AudioRecordingModal({
-    super.key,
-    this.linkedId,
-    this.categoryId,
-  });
-
-  final String? linkedId;
-  final String? categoryId;
-
+class AudioRecordingModal {
   static Future<void> show(
     BuildContext context, {
     String? linkedId,
@@ -32,16 +26,19 @@ class AudioRecordingModal extends ConsumerStatefulWidget {
       ..setModalVisible(modalVisible: true);
 
     try {
-      await showModalBottomSheet<void>(
+      await WoltModalSheet.show<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        barrierColor: Colors.black54,
         useRootNavigator: useRootNavigator,
-        builder: (context) => AudioRecordingModal(
-          linkedId: linkedId,
-          categoryId: categoryId,
-        ),
+        pageListBuilder: (modalSheetContext) {
+          return [
+            _buildRecordingPage(
+              context,
+              linkedId: linkedId,
+              categoryId: categoryId,
+            ),
+          ];
+        },
+        modalTypeBuilder: ModalUtils.modalTypeBuilder,
       );
     } finally {
       // Always set modal not visible when closed, regardless of how it was closed
@@ -49,199 +46,187 @@ class AudioRecordingModal extends ConsumerStatefulWidget {
     }
   }
 
-  @override
-  ConsumerState<AudioRecordingModal> createState() =>
-      _AudioRecordingModalState();
+  static WoltModalSheetPage _buildRecordingPage(
+    BuildContext context, {
+    String? linkedId,
+    String? categoryId,
+  }) {
+    final theme = Theme.of(context);
+
+    return WoltModalSheetPage(
+      backgroundColor: theme.colorScheme.surfaceContainer,
+      hasSabGradient: false,
+      isTopBarLayerAlwaysVisible: false,
+      navBarHeight: 0,
+      child: AudioRecordingModalContent(
+        linkedId: linkedId,
+        categoryId: categoryId,
+      ),
+    );
+  }
 }
 
-class _AudioRecordingModalState extends ConsumerState<AudioRecordingModal> {
+class AudioRecordingModalContent extends ConsumerWidget {
+  const AudioRecordingModalContent({
+    super.key,
+    this.linkedId,
+    this.categoryId,
+  });
+
+  final String? linkedId;
+  final String? categoryId;
+
   String formatDuration(String str) {
     return str.substring(0, str.length - 7);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.5,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade100,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Title
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'AUDIO RECORDING',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-
           // Main content
-          Expanded(
-            child: BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
-              builder: (context, state) {
-                final cubit = context.read<AudioRecorderCubit>()
-                  ..setCategoryId(widget.categoryId);
+          BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
+            builder: (context, state) {
+              final cubit = context.read<AudioRecorderCubit>()
+                ..setCategoryId(categoryId);
 
-                Future<void> stop() async {
-                  final entryId = await cubit.stop();
+              Future<void> stop() async {
+                final entryId = await cubit.stop();
 
-                  final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
-                    autoTranscribeFlag,
-                  );
+                final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
+                  autoTranscribeFlag,
+                );
 
-                  if (autoTranscribe) {
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop(); // Close modal first
-                    await TranscriptionProgressModal.show(context);
+                if (autoTranscribe) {
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop(); // Close modal first
+                  await TranscriptionProgressModal.show(context);
 
-                    if (entryId != null) {
-                      await Future<void>.delayed(
-                          const Duration(milliseconds: 100));
-                      final provider = entryControllerProvider(id: entryId);
-                      ref.read(provider.notifier)
-                        ..setController()
-                        ..emitState();
-                    }
-                  } else {
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
+                  if (entryId != null) {
+                    await Future<void>.delayed(
+                        const Duration(milliseconds: 100));
+                    final provider = entryControllerProvider(id: entryId);
+                    ref.read(provider.notifier)
+                      ..setController()
+                      ..emitState();
                   }
-
-                  getIt<NavService>().beamBack();
+                } else {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 }
 
-                final isRecording =
-                    state.status == AudioRecorderStatus.recording ||
-                        state.status == AudioRecorderStatus.paused;
+                getIt<NavService>().beamBack();
+              }
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
+              final isRecording =
+                  state.status == AudioRecorderStatus.recording ||
+                      state.status == AudioRecorderStatus.paused;
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // VU Meter
+                  Container(
+                    color: Colors.orange,
+                    child: AnalogVuMeter(
+                      decibels: state.decibels,
+                      size: 444,
+                      colorScheme: theme.colorScheme,
+                    ),
+                  ),
+
+                  // Duration display
+                  Text(
+                    formatDuration(state.progress.toString()),
+                    style: TextStyle(
+                      color: theme.colorScheme.outline,
+                      fontSize: fontSizeLarge,
+                      fontWeight: FontWeight.w200,
+                      fontFamily: 'monospace',
+                      fontFeatures: const [
+                        FontFeature.tabularFigures(),
+                      ],
+                      letterSpacing: 1,
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Control buttons in a row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // VU Meter - more compact
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final size = constraints.maxWidth * 0.9;
-                          return AnalogVuMeter(
-                            decibels: state.decibels,
-                            size: size,
-                            colorScheme: theme.colorScheme,
-                          );
-                        },
-                      ),
-
-                      // Duration display
-                      Text(
-                        formatDuration(state.progress.toString()),
-                        style: TextStyle(
-                          color: theme.colorScheme.outline,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w200,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures(),
-                          ],
-                          letterSpacing: 1,
+                      // Language selector - compact
+                      Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: theme.colorScheme.outline
+                                .withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => _showLanguageMenu(
+                                context, cubit, state.language ?? ''),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.language,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _getLanguageDisplay(state.language ?? ''),
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 30),
-
-                      // Control buttons in a row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Language selector - compact
-                          Container(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.colorScheme.outline
-                                    .withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: () => _showLanguageMenu(
-                                    context, cubit, state.language ?? ''),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.language,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _getLanguageDisplay(
-                                            state.language ?? ''),
-                                        style: TextStyle(
-                                          color: theme.colorScheme.onSurface,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.keyboard_arrow_down,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                        size: 18,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 20),
-                          // Record/Stop button
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: isRecording
-                                ? _buildStopButton(context, stop, theme)
-                                : _buildRecordButton(context, cubit, theme),
-                          ),
-                        ],
+                      const SizedBox(width: 20),
+                      // Record/Stop button
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: isRecording
+                            ? _buildStopButton(context, stop, theme)
+                            : _buildRecordButton(context, cubit, theme),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -257,10 +242,10 @@ class _AudioRecordingModalState extends ConsumerState<AudioRecordingModal> {
         width: 120,
         height: 48,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         child: Center(
@@ -303,7 +288,7 @@ class _AudioRecordingModalState extends ConsumerState<AudioRecordingModal> {
       BuildContext context, AudioRecorderCubit cubit, ThemeData theme) {
     return GestureDetector(
       key: const ValueKey('record'),
-      onTap: () => cubit.record(linkedId: widget.linkedId),
+      onTap: () => cubit.record(linkedId: linkedId),
       child: Container(
         width: 120,
         height: 48,
