@@ -8,12 +8,14 @@ on:
 jobs:
   test:
     name: Flutter Test on Linux
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install network-manager
+        run: sudo apt-get install network-manager libmpv-dev
       - uses: actions/checkout@v3
       - uses: kuhnroyal/flutter-fvm-config-action@v2 
         id: fvm-config-action
