@@ -1,7 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
-import 'package:lotti/features/speech/ui/pages/record_audio_page.dart';
+import 'package:lotti/features/speech/ui/pages/switchable_record_audio_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/utils/uuid.dart';
 
@@ -37,7 +37,7 @@ class TasksLocation extends BeamLocation<BeamState> {
       if (pathContains('record_audio/'))
         BeamPage(
           key: ValueKey('record_audio-$linkedId'),
-          child: RecordAudioPage(linkedId: linkedId, categoryId: categoryId),
+          child: SwitchableRecordAudioPage(linkedId: linkedId, categoryId: categoryId),
         ),
     ];
   }
