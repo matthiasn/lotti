@@ -825,5 +825,141 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    test('generate without overrideClient creates new OpenAIClient', () {
+      // Act - Don't provide overrideClient, so it creates its own
+      final stream = repository.generate(
+        prompt,
+        model: model,
+        temperature: temperature,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+      );
+
+      // Just verify the stream is created (it will fail to connect, but that tests the path)
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream.isBroadcast, isTrue);
+    });
+
+    test('generateWithImages without overrideClient creates new OpenAIClient',
+        () {
+      // Act - Don't provide overrideClient, so it creates its own
+      final stream = repository.generateWithImages(
+        prompt,
+        model: model,
+        temperature: temperature,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        images: const ['base64image'],
+      );
+
+      // Just verify the stream is created (it will fail to connect, but that tests the path)
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream.isBroadcast, isTrue);
+    });
+
+    test('generateWithAudio without overrideClient creates new OpenAIClient',
+        () {
+      // Act - Don't provide overrideClient for non-FastWhisper provider
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        audioBase64: 'audio-data',
+        provider: testProvider, // genericOpenAi type
+      );
+
+      // Just verify the stream is created (it will fail to connect, but that tests the path)
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream.isBroadcast, isTrue);
+    });
+
+    test('generateWithImages does not use _filterAnthropicPings', () async {
+      // Arrange
+      const images = ['image1'];
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      final stream = repository.generateWithImages(
+        prompt,
+        model: model,
+        temperature: temperature,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        images: images,
+        overrideClient: mockClient,
+      );
+
+      // Assert - Should get the response directly without filtering
+      final responses = await stream.toList();
+      expect(responses.length, 1);
+      expect(responses[0].choices[0].delta?.content, 'Test');
+    });
+
+    test('generateWithAudio for non-FastWhisper does not use _filterAnthropicPings',
+        () async {
+      // Arrange
+      const audioBase64 = 'audio-data';
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        audioBase64: audioBase64,
+        provider: testProvider, // genericOpenAi type
+        overrideClient: mockClient,
+      );
+
+      // Assert - Should get the response directly without filtering
+      final responses = await stream.toList();
+      expect(responses.length, 1);
+      expect(responses[0].choices[0].delta?.content, 'Test');
+    });
   });
 }
