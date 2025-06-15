@@ -3,8 +3,9 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ValidationError
 import uvicorn
 import base64
@@ -13,9 +14,11 @@ import tempfile
 import logging
 import time
 import torch
-from typing import List, Optional, Dict, Any
+import asyncio
+from typing import List, Optional, Dict, Any, AsyncGenerator, Tuple
 from functools import lru_cache
 from transformers import pipeline
+from transformers.pipelines.base import Pipeline
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -75,9 +78,19 @@ def validate_model_name(model_name: str) -> str:
 
 # Cache for loaded models to avoid reloading them for each request
 @lru_cache(maxsize=4)
-def get_model(model_name: str):
-    """Get a Whisper model instance, loading it if necessary."""
+def get_model(model_name: str) -> Tuple[Pipeline, int]:
+    """Get a Whisper model instance, loading it if necessary.
+    
+    Args:
+        model_name: The name of the model to load
+        
+    Returns:
+        Tuple containing:
+            - Pipeline: The loaded Whisper pipeline
+            - int: The optimal batch size for the current device
+    """
     try:
+        # Validate model name first, before any other operations
         full_model_name = validate_model_name(model_name)
         device = get_optimal_device()
         batch_size = get_optimal_batch_size(device)
@@ -88,33 +101,50 @@ def get_model(model_name: str):
             pipe = pipeline(
                 "automatic-speech-recognition",
                 full_model_name,
-                device=device
+                device=device,
+                model_kwargs={"use_cache": True}
             )
         else:
             pipe = pipeline(
                 "automatic-speech-recognition",
                 full_model_name,
                 torch_dtype=torch.float16,
-                device=device
+                device=device,
+                model_kwargs={"use_cache": True}
             )
             
         logger.info(f"Model {full_model_name} loaded successfully")
         return pipe, batch_size
         
+    except ValueError as e:
+        # Handle invalid model name separately
+        logger.error(f"Invalid model name: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to load model: {str(e)}")
-        # Fallback to CPU with basic settings
-        try:
-            logger.info(f"Falling back to CPU for model {full_model_name}...")
-            pipe = pipeline(
-                "automatic-speech-recognition",
-                full_model_name,
-                device="cpu"
+        # Only attempt fallback if we have a valid model name
+        if 'full_model_name' in locals():
+            try:
+                logger.info(f"Falling back to CPU for model {full_model_name}...")
+                pipe = pipeline(
+                    "automatic-speech-recognition",
+                    full_model_name,
+                    device="cpu",
+                    model_kwargs={"use_cache": True}
+                )
+                return pipe, 1
+            except Exception as fallback_e:
+                logger.error(f"Fallback also failed: {str(fallback_e)}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to initialize pipeline: {str(fallback_e)}"
+                )
+        else:
+            # If we don't have a valid model name, raise the original error
+            logger.error(f"Failed to load model: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to initialize pipeline: {str(e)}"
             )
-            return pipe, 1
-        except Exception as fallback_e:
-            logger.error(f"Fallback also failed: {str(fallback_e)}")
-            raise RuntimeError(f"Failed to initialize pipeline: {fallback_e}") from fallback_e
 
 class TranscribeRequest(BaseModel):
     audio: Optional[str] = None
@@ -122,6 +152,9 @@ class TranscribeRequest(BaseModel):
     language: Optional[str] = "auto"
     messages: Optional[List[Dict[str, Any]]] = None
     audio_options: Optional[Dict[str, Any]] = None
+    stream: Optional[bool] = False
+    num_beams: Optional[int] = 1  # Default to greedy decoding (1 beam)
+    temperature: Optional[float] = 0.0  # Default to deterministic output
 
     def get_audio(self) -> str:
         if self.audio:
@@ -151,8 +184,39 @@ class TranscribeRequest(BaseModel):
                 return content["data"]
         return None
 
+async def stream_transcription(pipe, temp_file_path: str, batch_size: int, language: Optional[str] = None, num_beams: int = 1, temperature: float = 0.0) -> AsyncGenerator[str, None]:
+    """Stream transcription results as they become available."""
+    try:
+        # Process in chunks and yield results
+        for chunk in pipe(
+            temp_file_path,
+            chunk_length_s=30,
+            batch_size=batch_size,
+            return_timestamps=True,
+            generate_kwargs={
+                "temperature": temperature,
+                "do_sample": temperature > 0.0,  # Only sample if temperature > 0
+                "num_beams": num_beams,
+                "language": language if language != "auto" else None,
+            },
+            stream=True
+        ):
+            if isinstance(chunk, dict):
+                yield json.dumps({
+                    "text": chunk.get('text', ''),
+                    "timestamp": chunk.get('timestamp', [None, None]),
+                    "is_final": chunk.get('is_final', False)
+                }) + "\n"
+            await asyncio.sleep(0.1)  # Small delay to prevent overwhelming the client
+    except Exception as e:
+        logger.error(f"Streaming transcription failed: {str(e)}")
+        yield f"data: {json.dumps({'error': 'An internal error occurred during transcription.'})}\n\n"
+
 @app.post("/transcribe")
-async def transcribe(request: TranscribeRequest):
+async def transcribe(
+    request: TranscribeRequest,
+    stream: bool = Query(False, description="Enable streaming response. If both query parameter and request body stream are provided, query parameter takes precedence.")
+):
     temp_file_path = None
     try:
         # Get the appropriate model
@@ -186,7 +250,22 @@ async def transcribe(request: TranscribeRequest):
                 detail="Failed to process audio file"
             )
 
-        # Transcribe
+        # Handle streaming response - query parameter takes precedence over request body
+        should_stream = stream or (not stream and request.stream)
+        if should_stream:
+            return StreamingResponse(
+                stream_transcription(
+                    pipe,
+                    temp_file_path,
+                    batch_size,
+                    request.language,
+                    request.num_beams,
+                    request.temperature
+                ),
+                media_type="text/event-stream"
+            )
+
+        # Handle regular response
         try:
             start_time = time.time()
             outputs = pipe(
@@ -195,9 +274,10 @@ async def transcribe(request: TranscribeRequest):
                 batch_size=batch_size,
                 return_timestamps=True,
                 generate_kwargs={
-                    "temperature": 0.0,
-                    "do_sample": False,
-                    "num_beams": 1,
+                    "temperature": request.temperature,
+                    "do_sample": request.temperature > 0.0,  # Only sample if temperature > 0
+                    "num_beams": request.num_beams,
+                    "language": request.language if request.language != "auto" else None,
                 }
             )
 
