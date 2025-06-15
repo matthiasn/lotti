@@ -1,4 +1,4 @@
-name: Flutter Analyze
+name: Flutter Test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: Flutter Analyze on Linux
+    name: Flutter Test on Linux
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -15,7 +15,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install network-manager
+        run: sudo apt-get install network-manager libmpv-dev
       - uses: actions/checkout@v3
       - uses: kuhnroyal/flutter-fvm-config-action@v2 
         id: fvm-config-action
@@ -23,5 +23,11 @@ jobs:
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
-      - name: Run Flutter Analyze
-        run: flutter analyze
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Run Flutter tests
+        run: flutter test --coverage
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
