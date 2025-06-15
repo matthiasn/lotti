@@ -19,6 +19,7 @@ AudioRecorderState initialState = AudioRecorderState(
   decibels: 0,
   progress: Duration.zero,
   showIndicator: false,
+  modalVisible: false,
   language: '',
 );
 
@@ -113,7 +114,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       debugPrint('stop recording');
       await _audioRecorder.stop();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
-      emit(initialState.copyWith(status: AudioRecorderStatus.stopped));
+      emit(initialState.copyWith(
+        status: AudioRecorderStatus.stopped,
+      ));
       if (_audioNote != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
           _audioNote!,
@@ -151,6 +154,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void setIndicatorVisible({required bool showIndicator}) {
     emit(state.copyWith(showIndicator: showIndicator));
+  }
+
+  void setModalVisible({required bool modalVisible}) {
+    debugPrint('AudioRecorderCubit: setModalVisible($modalVisible)');
+    emit(state.copyWith(modalVisible: modalVisible));
   }
 
   @override

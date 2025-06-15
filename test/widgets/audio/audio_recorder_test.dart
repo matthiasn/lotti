@@ -36,6 +36,7 @@ void main() {
         decibels: 80,
         progress: Duration.zero,
         showIndicator: false,
+        modalVisible: false,
         language: 'en',
       );
 
@@ -80,6 +81,7 @@ void main() {
         decibels: 140,
         progress: Duration.zero,
         showIndicator: false,
+        modalVisible: false,
         language: 'en',
       );
 
@@ -124,6 +126,7 @@ void main() {
         decibels: 110,
         progress: Duration.zero,
         showIndicator: false,
+        modalVisible: false,
         language: 'en',
       );
 
@@ -168,6 +171,7 @@ void main() {
         decibels: 110,
         progress: Duration.zero,
         showIndicator: false,
+        modalVisible: false,
         language: 'en',
       );
 

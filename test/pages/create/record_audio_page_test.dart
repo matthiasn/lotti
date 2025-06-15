@@ -37,6 +37,7 @@ void main() {
         decibels: 80,
         progress: Duration.zero,
         showIndicator: false,
+        modalVisible: false,
         language: 'de',
       );
 
