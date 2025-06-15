@@ -11,9 +11,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'cloud_inference_repository.g.dart';
 
 class CloudInferenceRepository {
-  CloudInferenceRepository(this.ref);
+  CloudInferenceRepository(this.ref, {http.Client? httpClient})
+      : _httpClient = httpClient ?? http.Client();
 
   final Ref ref;
+  final http.Client _httpClient;
 
   /// Filters out Anthropic ping messages from the stream
   Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
@@ -155,7 +157,7 @@ class CloudInferenceRepository {
       // Create a stream that performs the async operation
       return Stream.fromFuture(
         () async {
-          final response = await http.post(
+          final response = await _httpClient.post(
             Uri.parse('$baseUrl/transcribe'),
             headers: {
               'Content-Type': 'application/json',
