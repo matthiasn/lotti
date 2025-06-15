@@ -1,16 +1,21 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cloud_inference_repository.g.dart';
 
 class CloudInferenceRepository {
-  CloudInferenceRepository(this.ref);
+  CloudInferenceRepository(this.ref, {http.Client? httpClient})
+      : _httpClient = httpClient ?? http.Client();
 
   final Ref ref;
+  final http.Client _httpClient;
 
   /// Filters out Anthropic ping messages from the stream
   Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
@@ -132,10 +137,11 @@ class CloudInferenceRepository {
 
   Stream<CreateChatCompletionStreamResponse> generateWithAudio(
     String prompt, {
-    required String baseUrl,
-    required String apiKey,
     required String model,
     required String audioBase64,
+    required String baseUrl,
+    required String apiKey,
+    required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
   }) {
@@ -145,6 +151,49 @@ class CloudInferenceRepository {
           apiKey: apiKey,
         );
 
+    // For FastWhisper, we need to handle the audio transcription differently
+    if (provider.inferenceProviderType == InferenceProviderType.fastWhisper) {
+      // FastWhisper uses a different API format
+      // Create a stream that performs the async operation
+      return Stream.fromFuture(
+        () async {
+          final response = await _httpClient.post(
+            Uri.parse('$baseUrl/transcribe'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          );
+
+          if (response.statusCode != 200) {
+            throw Exception('Failed to transcribe audio: ${response.body}');
+          }
+
+          final result = jsonDecode(response.body) as Map<String, dynamic>;
+          final text = result['text'] as String;
+
+          // Create a mock stream response to match the expected format
+          return CreateChatCompletionStreamResponse(
+            id: 'fastwhisper-${DateTime.now().millisecondsSinceEpoch}',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: text,
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+        }(),
+      ).asBroadcastStream();
+    }
+
+    // For other providers, use the standard OpenAI-compatible format
     return client
         .createChatCompletionStream(
           request: CreateChatCompletionRequest(
