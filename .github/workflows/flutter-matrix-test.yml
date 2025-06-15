@@ -36,6 +36,8 @@ jobs:
 
   test_degraded_network:
     name: Matrix Test on Linux with degraded network
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Update apt-get

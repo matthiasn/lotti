@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     name: Flutter Analyze on Linux
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Update apt-get

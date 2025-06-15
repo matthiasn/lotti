@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     name: Flutter Test on macOS
+    permissions:
+      contents: read
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
