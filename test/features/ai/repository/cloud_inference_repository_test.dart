@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -20,6 +21,7 @@ void main() {
     late MockOpenAIClient mockClient;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late AiConfigInferenceProvider testProvider;
 
     const baseUrl = 'https://api.openai.com/v1';
     const apiKey = 'test-api-key';
@@ -31,6 +33,14 @@ void main() {
       mockClient = MockOpenAIClient();
       container = ProviderContainer();
       repository = container.read(cloudInferenceRepositoryProvider);
+      testProvider = AiConfig.inferenceProvider(
+        id: 'test-provider-id',
+        name: 'Test Provider',
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      ) as AiConfigInferenceProvider;
     });
 
     test(
@@ -233,6 +243,7 @@ void main() {
         baseUrl: baseUrl,
         apiKey: apiKey,
         audioBase64: audioBase64,
+        provider: testProvider,
         overrideClient: mockClient,
       );
 
@@ -394,6 +405,7 @@ void main() {
         audioBase64: audioBase64,
         baseUrl: baseUrl,
         apiKey: apiKey,
+        provider: testProvider,
         maxCompletionTokens: maxCompletionTokens,
         overrideClient: mockClient,
       );
@@ -579,6 +591,7 @@ void main() {
         baseUrl: baseUrl,
         apiKey: apiKey,
         audioBase64: audioBase64,
+        provider: testProvider,
         overrideClient: mockClient,
       );
 
@@ -701,34 +714,47 @@ void main() {
       );
     });
 
-    test('generateWithAudio handles FastWhisper with localhost:8083', () async {
-      // Test the FastWhisper code path - it will fail to connect but will execute the code
-      const fastWhisperUrl = 'http://localhost:8083';
+    test('generateWithAudio handles FastWhisper provider type', () async {
+      // Create a FastWhisper provider
+      final fastWhisperProvider = AiConfig.inferenceProvider(
+        id: 'fastwhisper-id',
+        name: 'FastWhisper',
+        baseUrl: 'http://localhost:8083',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.fastWhisper,
+      ) as AiConfigInferenceProvider;
+
       const audioBase64 = 'audio-base64-data';
 
       final stream = repository.generateWithAudio(
         prompt,
         model: model,
-        baseUrl: fastWhisperUrl,
-        apiKey: apiKey,
+        baseUrl: fastWhisperProvider.baseUrl,
+        apiKey: fastWhisperProvider.apiKey,
         audioBase64: audioBase64,
+        provider: fastWhisperProvider,
       );
 
-      // Assert it's a broadcast stream
       expect(stream.isBroadcast, isTrue);
-
-      // The stream will fail with connection error, but that's expected
+      // It will fail to connect, but that's expected - we're just testing the code path
       await expectLater(
         stream.first,
-        throwsA(isA<Exception>()),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Failed to transcribe audio'),
+          ),
+        ),
       );
     });
 
-    test('generateWithAudio uses standard OpenAI format for non-FastWhisper',
-        () {
-      // Arrange
+    test(
+        'generateWithAudio uses standard OpenAI format for non-FastWhisper provider',
+        () async {
+      // Use a non-FastWhisper provider
       const audioBase64 = 'audio-base64-data';
-      const nonFastWhisperUrl = 'https://api.openai.com/v1';
 
       when(
         () => mockClient.createChatCompletionStream(
@@ -752,22 +778,52 @@ void main() {
         ]),
       );
 
-      // Act
+      // Non-FastWhisper provider should use standard OpenAI path
       repository.generateWithAudio(
         prompt,
         model: model,
-        baseUrl: nonFastWhisperUrl,
+        baseUrl: baseUrl,
         apiKey: apiKey,
         audioBase64: audioBase64,
+        provider: testProvider, // This is genericOpenAi type
         overrideClient: mockClient,
       );
 
-      // Assert - Should use standard OpenAI client, not HTTP
+      // Verify standard OpenAI client was used
       verify(
         () => mockClient.createChatCompletionStream(
           request: any(named: 'request'),
         ),
       ).called(1);
+    });
+
+    test('generateWithAudio handles FastWhisper connection error', () async {
+      // Create a FastWhisper provider
+      final fastWhisperProvider = AiConfig.inferenceProvider(
+        id: 'fastwhisper-id',
+        name: 'FastWhisper',
+        baseUrl: 'http://localhost:9999', // Non-existent port
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.fastWhisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: fastWhisperProvider.baseUrl,
+        apiKey: fastWhisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: fastWhisperProvider,
+      );
+
+      // Should fail with an Exception
+      await expectLater(
+        stream.first,
+        throwsA(isA<Exception>()),
+      );
     });
   });
 }

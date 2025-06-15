@@ -225,6 +225,7 @@ class UnifiedAiInferenceRepository {
         audioBase64: audioBase64,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
+        provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
       );
     } else if (images.isNotEmpty) {

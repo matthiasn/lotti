@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -138,6 +139,7 @@ class CloudInferenceRepository {
     required String audioBase64,
     required String baseUrl,
     required String apiKey,
+    required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
   }) {
@@ -148,7 +150,7 @@ class CloudInferenceRepository {
         );
 
     // For FastWhisper, we need to handle the audio transcription differently
-    if (baseUrl.contains('localhost:8083')) {
+    if (provider.inferenceProviderType == InferenceProviderType.fastWhisper) {
       // FastWhisper uses a different API format
       // Create a stream that performs the async operation
       return Stream.fromFuture(
