@@ -176,7 +176,7 @@ async def transcribe(request: TranscribeRequest):
         
         # Save to a temporary file
         try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.tmp') as temp_file:
                 temp_file.write(audio_bytes)
                 temp_file_path = temp_file.name
         except Exception as e:
