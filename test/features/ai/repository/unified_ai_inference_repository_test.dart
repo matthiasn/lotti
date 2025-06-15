@@ -715,6 +715,7 @@ void main() {
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -751,6 +752,7 @@ void main() {
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
             ),
           ).called(1);
 
@@ -1459,6 +1461,7 @@ void main() {
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -1518,6 +1521,7 @@ void main() {
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
             ),
           ).called(1);
 
@@ -1616,6 +1620,7 @@ void main() {
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 

@@ -249,6 +249,12 @@ abstract class AppLocalizations {
   /// **'API Key'**
   String get aiConfigApiKeyFieldLabel;
 
+  /// No description provided for @aiConfigAssociatedModelsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} associated model{count, plural, =1{} other{s}} removed'**
+  String aiConfigAssociatedModelsRemoved(int count);
+
   /// No description provided for @aiConfigBaseUrlFieldLabel.
   ///
   /// In en, this message translates to:
@@ -309,6 +315,12 @@ abstract class AppLocalizations {
   /// **'Please enter a valid URL'**
   String get aiConfigInvalidUrlError;
 
+  /// No description provided for @aiConfigListCascadeDeleteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This will also delete all models associated with this provider.'**
+  String get aiConfigListCascadeDeleteWarning;
+
   /// No description provided for @aiConfigListDeleteConfirmCancel.
   ///
   /// In en, this message translates to:
@@ -332,12 +344,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm Deletion'**
   String get aiConfigListDeleteConfirmTitle;
-
-  /// No description provided for @aiConfigListCascadeDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will also delete all models associated with this provider.'**
-  String get aiConfigListCascadeDeleteWarning;
 
   /// No description provided for @aiConfigListEmptyState.
   ///
@@ -368,18 +374,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'UNDO'**
   String get aiConfigListUndoDelete;
-
-  /// No description provided for @aiConfigProviderDeletedSuccessfully.
-  ///
-  /// In en, this message translates to:
-  /// **'Provider deleted successfully'**
-  String get aiConfigProviderDeletedSuccessfully;
-
-  /// No description provided for @aiConfigAssociatedModelsRemoved.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} associated model{count, plural, =1{} other{s}} removed'**
-  String aiConfigAssociatedModelsRemoved(int count);
 
   /// No description provided for @aiConfigManageModelsButton.
   ///
@@ -446,6 +440,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Output Modalities'**
   String get aiConfigOutputModalitiesTitle;
+
+  /// No description provided for @aiConfigProviderDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider deleted successfully'**
+  String get aiConfigProviderDeletedSuccessfully;
 
   /// No description provided for @aiConfigProviderFieldLabel.
   ///
@@ -579,6 +579,120 @@ abstract class AppLocalizations {
   /// **'User Message'**
   String get aiConfigUserMessageFieldLabel;
 
+  /// No description provided for @aiFormCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aiFormCancel;
+
+  /// No description provided for @aiFormFixErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fix errors before saving'**
+  String get aiFormFixErrors;
+
+  /// No description provided for @aiFormNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No unsaved changes'**
+  String get aiFormNoChanges;
+
+  /// No description provided for @aiInferenceErrorAuthenticationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Please check your API key and ensure it is valid.'**
+  String get aiInferenceErrorAuthenticationMessage;
+
+  /// No description provided for @aiInferenceErrorAuthenticationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication Failed'**
+  String get aiInferenceErrorAuthenticationTitle;
+
+  /// No description provided for @aiInferenceErrorConnectionFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.'**
+  String get aiInferenceErrorConnectionFailedMessage;
+
+  /// No description provided for @aiInferenceErrorConnectionFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Failed'**
+  String get aiInferenceErrorConnectionFailedTitle;
+
+  /// No description provided for @aiInferenceErrorInvalidRequestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was invalid. Please check your configuration and try again.'**
+  String get aiInferenceErrorInvalidRequestMessage;
+
+  /// No description provided for @aiInferenceErrorInvalidRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid Request'**
+  String get aiInferenceErrorInvalidRequestTitle;
+
+  /// No description provided for @aiInferenceErrorRateLimitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have exceeded the rate limit. Please wait a moment before trying again.'**
+  String get aiInferenceErrorRateLimitMessage;
+
+  /// No description provided for @aiInferenceErrorRateLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Limit Exceeded'**
+  String get aiInferenceErrorRateLimitTitle;
+
+  /// No description provided for @aiInferenceErrorRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get aiInferenceErrorRetryButton;
+
+  /// No description provided for @aiInferenceErrorServerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI service encountered an error. Please try again later.'**
+  String get aiInferenceErrorServerMessage;
+
+  /// No description provided for @aiInferenceErrorServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Error'**
+  String get aiInferenceErrorServerTitle;
+
+  /// No description provided for @aiInferenceErrorSuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions:'**
+  String get aiInferenceErrorSuggestionsTitle;
+
+  /// No description provided for @aiInferenceErrorTimeoutMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The request took too long to complete. Please try again or check if the service is responding.'**
+  String get aiInferenceErrorTimeoutMessage;
+
+  /// No description provided for @aiInferenceErrorTimeoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Timed Out'**
+  String get aiInferenceErrorTimeoutTitle;
+
+  /// No description provided for @aiInferenceErrorUnknownMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred. Please try again.'**
+  String get aiInferenceErrorUnknownMessage;
+
+  /// No description provided for @aiInferenceErrorUnknownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get aiInferenceErrorUnknownTitle;
+
   /// No description provided for @aiProviderAnthropicDescription.
   ///
   /// In en, this message translates to:
@@ -590,6 +704,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Anthropic Claude'**
   String get aiProviderAnthropicName;
+
+  /// No description provided for @aiProviderFastWhisperDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Local speech recognition with FastWhisper'**
+  String get aiProviderFastWhisperDescription;
+
+  /// No description provided for @aiProviderFastWhisperName.
+  ///
+  /// In en, this message translates to:
+  /// **'FastWhisper'**
+  String get aiProviderFastWhisperName;
 
   /// No description provided for @aiProviderGeminiDescription.
   ///
@@ -686,6 +812,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task Summary'**
   String get aiResponseTypeTaskSummary;
+
+  /// No description provided for @aiSettingsAddModelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Model'**
+  String get aiSettingsAddModelButton;
+
+  /// No description provided for @aiSettingsAddPromptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Prompt'**
+  String get aiSettingsAddPromptButton;
+
+  /// No description provided for @aiSettingsAddProviderButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Provider'**
+  String get aiSettingsAddProviderButton;
+
+  /// No description provided for @aiSettingsClearAllFiltersTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all filters'**
+  String get aiSettingsClearAllFiltersTooltip;
+
+  /// No description provided for @aiSettingsClearFiltersButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get aiSettingsClearFiltersButton;
+
+  /// No description provided for @aiSettingsFilterByCapabilityTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {capability} capability'**
+  String aiSettingsFilterByCapabilityTooltip(String capability);
+
+  /// No description provided for @aiSettingsFilterByProviderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {provider}'**
+  String aiSettingsFilterByProviderTooltip(String provider);
+
+  /// No description provided for @aiSettingsFilterByReasoningTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by reasoning capability'**
+  String get aiSettingsFilterByReasoningTooltip;
+
+  /// No description provided for @aiSettingsModalityAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get aiSettingsModalityAudio;
+
+  /// No description provided for @aiSettingsModalityText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get aiSettingsModalityText;
+
+  /// No description provided for @aiSettingsModalityVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision'**
+  String get aiSettingsModalityVision;
+
+  /// No description provided for @aiSettingsNoModelsConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI models configured'**
+  String get aiSettingsNoModelsConfigured;
+
+  /// No description provided for @aiSettingsNoPromptsConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI prompts configured'**
+  String get aiSettingsNoPromptsConfigured;
+
+  /// No description provided for @aiSettingsNoProvidersConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI providers configured'**
+  String get aiSettingsNoProvidersConfigured;
+
+  /// No description provided for @aiSettingsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Settings'**
+  String get aiSettingsPageTitle;
+
+  /// No description provided for @aiSettingsReasoningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning'**
+  String get aiSettingsReasoningLabel;
+
+  /// No description provided for @aiSettingsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search AI configurations...'**
+  String get aiSettingsSearchHint;
+
+  /// No description provided for @aiSettingsTabModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get aiSettingsTabModels;
+
+  /// No description provided for @aiSettingsTabPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompts'**
+  String get aiSettingsTabPrompts;
+
+  /// No description provided for @aiSettingsTabProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get aiSettingsTabProviders;
 
   /// No description provided for @aiTaskSummaryRunning.
   ///
@@ -807,12 +1053,6 @@ abstract class AppLocalizations {
   /// **'No suggested Action Items'**
   String get checklistNoSuggestionsTitle;
 
-  /// No description provided for @checklistsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Checklists'**
-  String get checklistsTitle;
-
   /// No description provided for @checklistSuggestionsOutdated.
   ///
   /// In en, this message translates to:
@@ -830,6 +1070,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggested Action Items'**
   String get checklistSuggestionsTitle;
+
+  /// No description provided for @checklistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklists'**
+  String get checklistsTitle;
 
   /// No description provided for @colorLabel.
   ///
@@ -1149,6 +1395,90 @@ abstract class AppLocalizations {
   /// **'Enter notes...'**
   String get editorPlaceholder;
 
+  /// No description provided for @enhancedPromptFormAdditionalDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details'**
+  String get enhancedPromptFormAdditionalDetailsTitle;
+
+  /// No description provided for @enhancedPromptFormAiResponseTypeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Format of the expected response'**
+  String get enhancedPromptFormAiResponseTypeSubtitle;
+
+  /// No description provided for @enhancedPromptFormBasicConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Configuration'**
+  String get enhancedPromptFormBasicConfigurationTitle;
+
+  /// No description provided for @enhancedPromptFormConfigurationOptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration Options'**
+  String get enhancedPromptFormConfigurationOptionsTitle;
+
+  /// No description provided for @enhancedPromptFormDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create custom prompts that can be used with your AI models to generate specific types of responses'**
+  String get enhancedPromptFormDescription;
+
+  /// No description provided for @enhancedPromptFormDescriptionHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional notes about this prompt\'s purpose and usage'**
+  String get enhancedPromptFormDescriptionHelperText;
+
+  /// No description provided for @enhancedPromptFormDisplayNameHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'A descriptive name for this prompt template'**
+  String get enhancedPromptFormDisplayNameHelperText;
+
+  /// No description provided for @enhancedPromptFormPreconfiguredPromptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from ready-made prompt templates'**
+  String get enhancedPromptFormPreconfiguredPromptDescription;
+
+  /// No description provided for @enhancedPromptFormPromptConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Configuration'**
+  String get enhancedPromptFormPromptConfigurationTitle;
+
+  /// No description provided for @enhancedPromptFormQuickStartDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with a pre-built template to save time'**
+  String get enhancedPromptFormQuickStartDescription;
+
+  /// No description provided for @enhancedPromptFormQuickStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Start'**
+  String get enhancedPromptFormQuickStartTitle;
+
+  /// No description provided for @enhancedPromptFormRequiredInputDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type of data this prompt expects'**
+  String get enhancedPromptFormRequiredInputDataSubtitle;
+
+  /// No description provided for @enhancedPromptFormSystemMessageHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions that define the AI\'s behavior and response style'**
+  String get enhancedPromptFormSystemMessageHelperText;
+
+  /// No description provided for @enhancedPromptFormUserMessageHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'The main prompt text.'**
+  String get enhancedPromptFormUserMessageHelperText;
+
   /// No description provided for @entryActions.
   ///
   /// In en, this message translates to:
@@ -1245,6 +1575,18 @@ abstract class AppLocalizations {
   /// **'Priority:'**
   String get habitPriorityLabel;
 
+  /// No description provided for @habitShowAlertAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show alert at'**
+  String get habitShowAlertAtLabel;
+
+  /// No description provided for @habitShowFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show from'**
+  String get habitShowFromLabel;
+
   /// No description provided for @habitsCompletedHeader.
   ///
   /// In en, this message translates to:
@@ -1274,18 +1616,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'later'**
   String get habitsFilterPendingLater;
-
-  /// No description provided for @habitShowAlertAtLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Show alert at'**
-  String get habitShowAlertAtLabel;
-
-  /// No description provided for @habitShowFromLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Show from'**
-  String get habitShowFromLabel;
 
   /// No description provided for @habitsOpenHeader.
   ///
@@ -1425,6 +1755,18 @@ abstract class AppLocalizations {
   /// **'Hide map'**
   String get journalHideMapHint;
 
+  /// No description provided for @journalLinkFromHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Link from'**
+  String get journalLinkFromHint;
+
+  /// No description provided for @journalLinkToHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to'**
+  String get journalLinkToHint;
+
   /// No description provided for @journalLinkedEntriesAiLabel.
   ///
   /// In en, this message translates to:
@@ -1448,18 +1790,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Linked from:'**
   String get journalLinkedFromLabel;
-
-  /// No description provided for @journalLinkFromHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Link from'**
-  String get journalLinkFromHint;
-
-  /// No description provided for @journalLinkToHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Link to'**
-  String get journalLinkToHint;
 
   /// No description provided for @journalPrivateTooltip.
   ///
@@ -1593,17 +1923,17 @@ abstract class AppLocalizations {
   /// **'Purge audio models'**
   String get maintenancePurgeAudioModels;
 
-  /// No description provided for @maintenancePurgeAudioModelsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to purge all audio models? This action cannot be undone.'**
-  String get maintenancePurgeAudioModelsMessage;
-
   /// No description provided for @maintenancePurgeAudioModelsConfirm.
   ///
   /// In en, this message translates to:
   /// **'YES, PURGE MODELS'**
   String get maintenancePurgeAudioModelsConfirm;
+
+  /// No description provided for @maintenancePurgeAudioModelsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to purge all audio models? This action cannot be undone.'**
+  String get maintenancePurgeAudioModelsMessage;
 
   /// No description provided for @maintenancePurgeDeleted.
   ///
@@ -1623,17 +1953,17 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to purge all deleted items? This action cannot be undone.'**
   String get maintenancePurgeDeletedMessage;
 
+  /// No description provided for @maintenanceReSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-sync messages'**
+  String get maintenanceReSync;
+
   /// No description provided for @maintenanceRecreateFts5.
   ///
   /// In en, this message translates to:
   /// **'Recreate full-text index'**
   String get maintenanceRecreateFts5;
-
-  /// No description provided for @maintenanceRecreateFts5Message.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to recreate the full-text index? This may take some time.'**
-  String get maintenanceRecreateFts5Message;
 
   /// No description provided for @maintenanceRecreateFts5Confirm.
   ///
@@ -1641,11 +1971,11 @@ abstract class AppLocalizations {
   /// **'YES, RECREATE INDEX'**
   String get maintenanceRecreateFts5Confirm;
 
-  /// No description provided for @maintenanceReSync.
+  /// No description provided for @maintenanceRecreateFts5Message.
   ///
   /// In en, this message translates to:
-  /// **'Re-sync messages'**
-  String get maintenanceReSync;
+  /// **'Are you sure you want to recreate the full-text index? This may take some time.'**
+  String get maintenanceRecreateFts5Message;
 
   /// No description provided for @maintenanceSyncDefinitions.
   ///
@@ -1724,6 +2054,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit Model'**
   String get modelEditPageTitle;
+
+  /// No description provided for @modelManagementSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} model{count, plural, =1{} other{s}} selected'**
+  String modelManagementSelectedCount(int count);
 
   /// No description provided for @modelsSettingsPageTitle.
   ///
@@ -1815,11 +2151,101 @@ abstract class AppLocalizations {
   /// **'enabled'**
   String get outboxMonitorSwitchLabel;
 
+  /// No description provided for @promptAddOrRemoveModelsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add or Remove Models'**
+  String get promptAddOrRemoveModelsButton;
+
   /// No description provided for @promptAddPageTitle.
   ///
   /// In en, this message translates to:
   /// **'Add Prompt'**
   String get promptAddPageTitle;
+
+  /// No description provided for @promptAiResponseTypeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Format of the expected response'**
+  String get promptAiResponseTypeDescription;
+
+  /// No description provided for @promptAiResponseTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Response Type'**
+  String get promptAiResponseTypeLabel;
+
+  /// No description provided for @promptBehaviorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure how the prompt processes and responds'**
+  String get promptBehaviorDescription;
+
+  /// No description provided for @promptBehaviorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Behavior'**
+  String get promptBehaviorTitle;
+
+  /// No description provided for @promptCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get promptCancelButton;
+
+  /// No description provided for @promptContentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the system and user prompts'**
+  String get promptContentDescription;
+
+  /// No description provided for @promptContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Content'**
+  String get promptContentTitle;
+
+  /// No description provided for @promptDefaultModelBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get promptDefaultModelBadge;
+
+  /// No description provided for @promptDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe this prompt'**
+  String get promptDescriptionHint;
+
+  /// No description provided for @promptDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get promptDescriptionLabel;
+
+  /// No description provided for @promptDetailsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information about this prompt'**
+  String get promptDetailsDescription;
+
+  /// No description provided for @promptDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt Details'**
+  String get promptDetailsTitle;
+
+  /// No description provided for @promptDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a friendly name'**
+  String get promptDisplayNameHint;
+
+  /// No description provided for @promptDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get promptDisplayNameLabel;
 
   /// No description provided for @promptEditLoadError.
   ///
@@ -1833,234 +2259,6 @@ abstract class AppLocalizations {
   /// **'Edit Prompt'**
   String get promptEditPageTitle;
 
-  /// No description provided for @promptSettingsPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Prompts'**
-  String get promptSettingsPageTitle;
-
-  /// No description provided for @promptSelectionModalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Preconfigured Prompt'**
-  String get promptSelectionModalTitle;
-
-  /// No description provided for @promptUsePreconfiguredButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Use Preconfigured Prompt'**
-  String get promptUsePreconfiguredButton;
-
-  /// No description provided for @promptDetailsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Details'**
-  String get promptDetailsTitle;
-
-  /// No description provided for @promptDetailsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic information about this prompt'**
-  String get promptDetailsDescription;
-
-  /// No description provided for @promptContentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Content'**
-  String get promptContentTitle;
-
-  /// No description provided for @promptContentDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Define the system and user prompts'**
-  String get promptContentDescription;
-
-  /// No description provided for @promptBehaviorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Behavior'**
-  String get promptBehaviorTitle;
-
-  /// No description provided for @promptBehaviorDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure how the prompt processes and responds'**
-  String get promptBehaviorDescription;
-
-  /// No description provided for @promptModelSelectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Model Selection'**
-  String get promptModelSelectionTitle;
-
-  /// No description provided for @promptModelSelectionDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose compatible models for this prompt'**
-  String get promptModelSelectionDescription;
-
-  /// No description provided for @promptDisplayNameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Display Name'**
-  String get promptDisplayNameLabel;
-
-  /// No description provided for @promptDisplayNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a friendly name'**
-  String get promptDisplayNameHint;
-
-  /// No description provided for @promptDescriptionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get promptDescriptionLabel;
-
-  /// No description provided for @promptDescriptionHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe this prompt'**
-  String get promptDescriptionHint;
-
-  /// No description provided for @promptSystemPromptLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'System Prompt'**
-  String get promptSystemPromptLabel;
-
-  /// No description provided for @promptSystemPromptHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the system prompt...'**
-  String get promptSystemPromptHint;
-
-  /// No description provided for @promptUserPromptLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'User Prompt'**
-  String get promptUserPromptLabel;
-
-  /// No description provided for @promptUserPromptHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the user prompt...'**
-  String get promptUserPromptHint;
-
-  /// No description provided for @promptRequiredInputDataLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Required Input Data'**
-  String get promptRequiredInputDataLabel;
-
-  /// No description provided for @promptRequiredInputDataDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Type of data this prompt expects'**
-  String get promptRequiredInputDataDescription;
-
-  /// No description provided for @promptSelectInputTypeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select input type'**
-  String get promptSelectInputTypeHint;
-
-  /// No description provided for @promptAiResponseTypeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Response Type'**
-  String get promptAiResponseTypeLabel;
-
-  /// No description provided for @promptAiResponseTypeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Format of the expected response'**
-  String get promptAiResponseTypeDescription;
-
-  /// No description provided for @promptSelectResponseTypeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select response type'**
-  String get promptSelectResponseTypeHint;
-
-  /// No description provided for @promptReasoningModeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reasoning Mode'**
-  String get promptReasoningModeLabel;
-
-  /// No description provided for @promptReasoningModeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable for prompts requiring deep thinking'**
-  String get promptReasoningModeDescription;
-
-  /// No description provided for @promptCancelButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get promptCancelButton;
-
-  /// No description provided for @promptSaveButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Save Prompt'**
-  String get promptSaveButton;
-
-  /// No description provided for @aiFormNoChanges.
-  ///
-  /// In en, this message translates to:
-  /// **'No unsaved changes'**
-  String get aiFormNoChanges;
-
-  /// No description provided for @aiFormFixErrors.
-  ///
-  /// In en, this message translates to:
-  /// **'Please fix errors before saving'**
-  String get aiFormFixErrors;
-
-  /// No description provided for @aiFormCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get aiFormCancel;
-
-  /// No description provided for @promptNoModelsSelectedError.
-  ///
-  /// In en, this message translates to:
-  /// **'No models selected. Select at least one model.'**
-  String get promptNoModelsSelectedError;
-
-  /// No description provided for @promptAddOrRemoveModelsButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add or Remove Models'**
-  String get promptAddOrRemoveModelsButton;
-
-  /// No description provided for @promptSelectModelsButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Models'**
-  String get promptSelectModelsButton;
-
-  /// No description provided for @promptDefaultModelBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Default'**
-  String get promptDefaultModelBadge;
-
-  /// No description provided for @promptSetDefaultButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Set Default'**
-  String get promptSetDefaultButton;
-
-  /// No description provided for @promptLoadingModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading model...'**
-  String get promptLoadingModel;
-
   /// No description provided for @promptErrorLoadingModel.
   ///
   /// In en, this message translates to:
@@ -2073,221 +2271,131 @@ abstract class AppLocalizations {
   /// **'Go Back'**
   String get promptGoBackButton;
 
+  /// No description provided for @promptLoadingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading model...'**
+  String get promptLoadingModel;
+
+  /// No description provided for @promptModelSelectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose compatible models for this prompt'**
+  String get promptModelSelectionDescription;
+
+  /// No description provided for @promptModelSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model Selection'**
+  String get promptModelSelectionTitle;
+
+  /// No description provided for @promptNoModelsSelectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'No models selected. Select at least one model.'**
+  String get promptNoModelsSelectedError;
+
+  /// No description provided for @promptReasoningModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable for prompts requiring deep thinking'**
+  String get promptReasoningModeDescription;
+
+  /// No description provided for @promptReasoningModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning Mode'**
+  String get promptReasoningModeLabel;
+
+  /// No description provided for @promptRequiredInputDataDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Type of data this prompt expects'**
+  String get promptRequiredInputDataDescription;
+
+  /// No description provided for @promptRequiredInputDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Required Input Data'**
+  String get promptRequiredInputDataLabel;
+
+  /// No description provided for @promptSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Prompt'**
+  String get promptSaveButton;
+
+  /// No description provided for @promptSelectInputTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select input type'**
+  String get promptSelectInputTypeHint;
+
+  /// No description provided for @promptSelectModelsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Models'**
+  String get promptSelectModelsButton;
+
+  /// No description provided for @promptSelectResponseTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select response type'**
+  String get promptSelectResponseTypeHint;
+
+  /// No description provided for @promptSelectionModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Preconfigured Prompt'**
+  String get promptSelectionModalTitle;
+
+  /// No description provided for @promptSetDefaultButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Default'**
+  String get promptSetDefaultButton;
+
+  /// No description provided for @promptSettingsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Prompts'**
+  String get promptSettingsPageTitle;
+
+  /// No description provided for @promptSystemPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the system prompt...'**
+  String get promptSystemPromptHint;
+
+  /// No description provided for @promptSystemPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System Prompt'**
+  String get promptSystemPromptLabel;
+
   /// No description provided for @promptTryAgainMessage.
   ///
   /// In en, this message translates to:
   /// **'Please try again or contact support'**
   String get promptTryAgainMessage;
 
-  /// No description provided for @modelManagementSelectedCount.
+  /// No description provided for @promptUsePreconfiguredButton.
   ///
   /// In en, this message translates to:
-  /// **'{count} model{count, plural, =1{} other{s}} selected'**
-  String modelManagementSelectedCount(int count);
+  /// **'Use Preconfigured Prompt'**
+  String get promptUsePreconfiguredButton;
 
-  /// No description provided for @enhancedPromptFormDescription.
+  /// No description provided for @promptUserPromptHint.
   ///
   /// In en, this message translates to:
-  /// **'Create custom prompts that can be used with your AI models to generate specific types of responses'**
-  String get enhancedPromptFormDescription;
+  /// **'Enter the user prompt...'**
+  String get promptUserPromptHint;
 
-  /// No description provided for @enhancedPromptFormQuickStartTitle.
+  /// No description provided for @promptUserPromptLabel.
   ///
   /// In en, this message translates to:
-  /// **'Quick Start'**
-  String get enhancedPromptFormQuickStartTitle;
-
-  /// No description provided for @enhancedPromptFormQuickStartDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Start with a pre-built template to save time'**
-  String get enhancedPromptFormQuickStartDescription;
-
-  /// No description provided for @enhancedPromptFormBasicConfigurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic Configuration'**
-  String get enhancedPromptFormBasicConfigurationTitle;
-
-  /// No description provided for @enhancedPromptFormPromptConfigurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Configuration'**
-  String get enhancedPromptFormPromptConfigurationTitle;
-
-  /// No description provided for @enhancedPromptFormConfigurationOptionsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configuration Options'**
-  String get enhancedPromptFormConfigurationOptionsTitle;
-
-  /// No description provided for @enhancedPromptFormAdditionalDetailsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Additional Details'**
-  String get enhancedPromptFormAdditionalDetailsTitle;
-
-  /// No description provided for @enhancedPromptFormDisplayNameHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'A descriptive name for this prompt template'**
-  String get enhancedPromptFormDisplayNameHelperText;
-
-  /// No description provided for @enhancedPromptFormUserMessageHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'The main prompt text.'**
-  String get enhancedPromptFormUserMessageHelperText;
-
-  /// No description provided for @enhancedPromptFormSystemMessageHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'Instructions that define the AI\'s behavior and response style'**
-  String get enhancedPromptFormSystemMessageHelperText;
-
-  /// No description provided for @enhancedPromptFormDescriptionHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional notes about this prompt\'s purpose and usage'**
-  String get enhancedPromptFormDescriptionHelperText;
-
-  /// No description provided for @enhancedPromptFormPreconfiguredPromptDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose from ready-made prompt templates'**
-  String get enhancedPromptFormPreconfiguredPromptDescription;
-
-  /// No description provided for @enhancedPromptFormRequiredInputDataSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Type of data this prompt expects'**
-  String get enhancedPromptFormRequiredInputDataSubtitle;
-
-  /// No description provided for @enhancedPromptFormAiResponseTypeSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Format of the expected response'**
-  String get enhancedPromptFormAiResponseTypeSubtitle;
-
-  /// No description provided for @aiSettingsPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Settings'**
-  String get aiSettingsPageTitle;
-
-  /// No description provided for @aiSettingsNoProvidersConfigured.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI providers configured'**
-  String get aiSettingsNoProvidersConfigured;
-
-  /// No description provided for @aiSettingsNoModelsConfigured.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI models configured'**
-  String get aiSettingsNoModelsConfigured;
-
-  /// No description provided for @aiSettingsNoPromptsConfigured.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI prompts configured'**
-  String get aiSettingsNoPromptsConfigured;
-
-  /// No description provided for @aiSettingsTabProviders.
-  ///
-  /// In en, this message translates to:
-  /// **'Providers'**
-  String get aiSettingsTabProviders;
-
-  /// No description provided for @aiSettingsTabModels.
-  ///
-  /// In en, this message translates to:
-  /// **'Models'**
-  String get aiSettingsTabModels;
-
-  /// No description provided for @aiSettingsTabPrompts.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompts'**
-  String get aiSettingsTabPrompts;
-
-  /// No description provided for @aiSettingsSearchHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Search AI configurations...'**
-  String get aiSettingsSearchHint;
-
-  /// No description provided for @aiSettingsFilterByProviderTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by {provider}'**
-  String aiSettingsFilterByProviderTooltip(String provider);
-
-  /// No description provided for @aiSettingsClearFiltersButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear'**
-  String get aiSettingsClearFiltersButton;
-
-  /// No description provided for @aiSettingsClearAllFiltersTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear all filters'**
-  String get aiSettingsClearAllFiltersTooltip;
-
-  /// No description provided for @aiSettingsModalityText.
-  ///
-  /// In en, this message translates to:
-  /// **'Text'**
-  String get aiSettingsModalityText;
-
-  /// No description provided for @aiSettingsModalityVision.
-  ///
-  /// In en, this message translates to:
-  /// **'Vision'**
-  String get aiSettingsModalityVision;
-
-  /// No description provided for @aiSettingsModalityAudio.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio'**
-  String get aiSettingsModalityAudio;
-
-  /// No description provided for @aiSettingsReasoningLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reasoning'**
-  String get aiSettingsReasoningLabel;
-
-  /// No description provided for @aiSettingsFilterByCapabilityTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by {capability} capability'**
-  String aiSettingsFilterByCapabilityTooltip(String capability);
-
-  /// No description provided for @aiSettingsFilterByReasoningTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by reasoning capability'**
-  String get aiSettingsFilterByReasoningTooltip;
-
-  /// No description provided for @aiSettingsAddProviderButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Provider'**
-  String get aiSettingsAddProviderButton;
-
-  /// No description provided for @aiSettingsAddModelButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Model'**
-  String get aiSettingsAddModelButton;
-
-  /// No description provided for @aiSettingsAddPromptButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Prompt'**
-  String get aiSettingsAddPromptButton;
+  /// **'User Prompt'**
+  String get promptUserPromptLabel;
 
   /// No description provided for @saveButtonLabel.
   ///
@@ -2306,6 +2414,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search...'**
   String get searchHint;
+
+  /// No description provided for @settingThemingDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Theme'**
+  String get settingThemingDark;
+
+  /// No description provided for @settingThemingLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Theme'**
+  String get settingThemingLight;
 
   /// No description provided for @settingsAboutTitle.
   ///
@@ -2721,17 +2841,17 @@ abstract class AppLocalizations {
   /// **'Please enter a valid URL'**
   String get settingsMatrixEnterValidUrl;
 
-  /// No description provided for @settingsMatrixHomeserverConfigTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Matrix Homeserver Setup'**
-  String get settingsMatrixHomeserverConfigTitle;
-
   /// No description provided for @settingsMatrixHomeServerLabel.
   ///
   /// In en, this message translates to:
   /// **'Homeserver'**
   String get settingsMatrixHomeServerLabel;
+
+  /// No description provided for @settingsMatrixHomeserverConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matrix Homeserver Setup'**
+  String get settingsMatrixHomeserverConfigTitle;
 
   /// No description provided for @settingsMatrixListUnverifiedLabel.
   ///
@@ -2956,17 +3076,17 @@ abstract class AppLocalizations {
   /// **'Enter a clear and concise unit abbreviation for the measurable type. This helps in identifying the unit of measurement easily.'**
   String get settingsMeasurableShowCaseUnitTooltip;
 
-  /// No description provided for @settingsMeasurablesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Measurable Types'**
-  String get settingsMeasurablesTitle;
-
   /// No description provided for @settingsMeasurableUnitLabel.
   ///
   /// In en, this message translates to:
   /// **'Unit abbreviation (optional):'**
   String get settingsMeasurableUnitLabel;
+
+  /// No description provided for @settingsMeasurablesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurable Types'**
+  String get settingsMeasurablesTitle;
 
   /// No description provided for @settingsSpeechAudioWithoutTranscript.
   ///
@@ -3142,18 +3262,6 @@ abstract class AppLocalizations {
   /// **'Theming'**
   String get settingsThemingTitle;
 
-  /// No description provided for @settingThemingDark.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark Theme'**
-  String get settingThemingDark;
-
-  /// No description provided for @settingThemingLight.
-  ///
-  /// In en, this message translates to:
-  /// **'Light Theme'**
-  String get settingThemingLight;
-
   /// No description provided for @showcaseCloseButton.
   ///
   /// In en, this message translates to:
@@ -3286,12 +3394,6 @@ abstract class AppLocalizations {
   /// **'Enter a name for the task'**
   String get taskNameHint;
 
-  /// No description provided for @tasksFilterTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tasks Filter'**
-  String get tasksFilterTitle;
-
   /// No description provided for @taskStatusAll.
   ///
   /// In en, this message translates to:
@@ -3346,6 +3448,12 @@ abstract class AppLocalizations {
   /// **'Rejected'**
   String get taskStatusRejected;
 
+  /// No description provided for @tasksFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks Filter'**
+  String get tasksFilterTitle;
+
   /// No description provided for @timeByCategoryChartTitle.
   ///
   /// In en, this message translates to:
@@ -3363,102 +3471,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get viewMenuTitle;
-
-  /// No description provided for @aiInferenceErrorConnectionFailedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection Failed'**
-  String get aiInferenceErrorConnectionFailedTitle;
-
-  /// No description provided for @aiInferenceErrorConnectionFailedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.'**
-  String get aiInferenceErrorConnectionFailedMessage;
-
-  /// No description provided for @aiInferenceErrorTimeoutTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Request Timed Out'**
-  String get aiInferenceErrorTimeoutTitle;
-
-  /// No description provided for @aiInferenceErrorTimeoutMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The request took too long to complete. Please try again or check if the service is responding.'**
-  String get aiInferenceErrorTimeoutMessage;
-
-  /// No description provided for @aiInferenceErrorAuthenticationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication Failed'**
-  String get aiInferenceErrorAuthenticationTitle;
-
-  /// No description provided for @aiInferenceErrorAuthenticationMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication failed. Please check your API key and ensure it is valid.'**
-  String get aiInferenceErrorAuthenticationMessage;
-
-  /// No description provided for @aiInferenceErrorRateLimitTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Rate Limit Exceeded'**
-  String get aiInferenceErrorRateLimitTitle;
-
-  /// No description provided for @aiInferenceErrorRateLimitMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You have exceeded the rate limit. Please wait a moment before trying again.'**
-  String get aiInferenceErrorRateLimitMessage;
-
-  /// No description provided for @aiInferenceErrorInvalidRequestTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid Request'**
-  String get aiInferenceErrorInvalidRequestTitle;
-
-  /// No description provided for @aiInferenceErrorInvalidRequestMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The request was invalid. Please check your configuration and try again.'**
-  String get aiInferenceErrorInvalidRequestMessage;
-
-  /// No description provided for @aiInferenceErrorServerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Server Error'**
-  String get aiInferenceErrorServerTitle;
-
-  /// No description provided for @aiInferenceErrorServerMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The AI service encountered an error. Please try again later.'**
-  String get aiInferenceErrorServerMessage;
-
-  /// No description provided for @aiInferenceErrorUnknownTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Error'**
-  String get aiInferenceErrorUnknownTitle;
-
-  /// No description provided for @aiInferenceErrorUnknownMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'An unexpected error occurred. Please try again.'**
-  String get aiInferenceErrorUnknownMessage;
-
-  /// No description provided for @aiInferenceErrorRetryButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Try Again'**
-  String get aiInferenceErrorRetryButton;
-
-  /// No description provided for @aiInferenceErrorSuggestionsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Suggestions:'**
-  String get aiInferenceErrorSuggestionsTitle;
 }
 
 class _AppLocalizationsDelegate
