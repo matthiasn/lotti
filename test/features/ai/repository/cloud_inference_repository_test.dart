@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 class MockOpenAIClient extends Mock implements OpenAIClient {}
+
+class MockHttpClient extends Mock implements http.Client {}
 
 // We need to register fallback values for complex types that will be used with 'any()' matcher
 class FakeCreateChatCompletionRequest extends Fake
@@ -960,6 +963,50 @@ void main() {
       final responses = await stream.toList();
       expect(responses.length, 1);
       expect(responses[0].choices[0].delta?.content, 'Test');
+    });
+
+    test('constructor initializes repository with ref', () {
+      expect(repository.ref, isNotNull);
+    });
+
+    test('_filterAnthropicPings handles stream close correctly', () async {
+      // Arrange - Create a stream that closes normally
+      final normalStream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-id',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                content: 'Test response',
+              ),
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer((_) => normalStream);
+
+      // Act
+      final stream = repository.generate(
+        prompt,
+        model: model,
+        temperature: temperature,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        overrideClient: mockClient,
+      );
+
+      // Assert - Should complete normally
+      final responses = await stream.toList();
+      expect(responses.length, 1);
+      expect(responses[0].choices[0].delta?.content, 'Test response');
     });
   });
 }
