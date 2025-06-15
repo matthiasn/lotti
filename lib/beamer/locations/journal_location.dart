@@ -47,7 +47,8 @@ class JournalLocation extends BeamLocation<BeamState> {
       if (pathContains('record_audio/'))
         BeamPage(
           key: ValueKey('record_audio-$linkedId'),
-          child: SwitchableRecordAudioPage(linkedId: linkedId, categoryId: categoryId),
+          child: SwitchableRecordAudioPage(
+              linkedId: linkedId, categoryId: categoryId),
         ),
     ];
   }

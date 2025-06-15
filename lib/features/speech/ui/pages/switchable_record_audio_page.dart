@@ -13,7 +13,8 @@ class SwitchableRecordAudioPage extends StatefulWidget {
   final String? categoryId;
 
   @override
-  State<SwitchableRecordAudioPage> createState() => _SwitchableRecordAudioPageState();
+  State<SwitchableRecordAudioPage> createState() =>
+      _SwitchableRecordAudioPageState();
 }
 
 class _SwitchableRecordAudioPageState extends State<SwitchableRecordAudioPage> {
@@ -33,7 +34,7 @@ class _SwitchableRecordAudioPageState extends State<SwitchableRecordAudioPage> {
             right: 20,
             child: FloatingActionButton(
               mini: true,
-              backgroundColor: Colors.grey.withOpacity(0.8),
+              backgroundColor: Colors.grey.withValues(alpha: 0.8),
               onPressed: () {
                 setState(() {
                   _usePolishedDesign = !_usePolishedDesign;
@@ -56,7 +57,7 @@ class _SwitchableRecordAudioPageState extends State<SwitchableRecordAudioPage> {
             right: 20,
             child: FloatingActionButton(
               mini: true,
-              backgroundColor: Colors.grey.withOpacity(0.8),
+              backgroundColor: Colors.grey.withValues(alpha: 0.8),
               onPressed: () {
                 setState(() {
                   _usePolishedDesign = !_usePolishedDesign;

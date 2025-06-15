@@ -9,14 +9,12 @@ import 'package:lotti/features/speech/ui/widgets/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/transcription_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class PolishedRecordAudioPage extends StatelessWidget {
   const PolishedRecordAudioPage({
-    super.key,
-    required this.linkedId,
+    required this.linkedId, super.key,
     this.categoryId,
   });
 
@@ -26,43 +24,53 @@ class PolishedRecordAudioPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: const Color(0xFF0F0F0F),
       body: SafeArea(
         child: Column(
           children: [
-            // Custom app bar
-            Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.grey,
-                        size: 28,
+            // Custom app bar with recording state
+            BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
+              builder: (context, state) {
+                final isRecording =
+                    state.status == AudioRecorderStatus.recording ||
+                        state.status == AudioRecorderStatus.paused;
+
+                return Container(
+                  height: 56,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.grey,
+                            size: 28,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+                      const Text(
+                        'AUDIO RECORDING',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      Positioned(
+                        right: 4,
+                        child: isRecording
+                            ? const RecordingIndicator()
+                            : const SizedBox(width: 32, height: 32),
+                      ),
+                    ],
                   ),
-                  const Text(
-                    'AUDIO RECORDING',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const Align(
-                    alignment: Alignment.centerRight,
-                    child: RecordingIndicator(),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
             Expanded(
               child: PolishedAudioRecorderWidget(
@@ -96,10 +104,10 @@ class _RecordingIndicatorState extends State<RecordingIndicator>
       duration: const Duration(seconds: 1),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _animation = Tween<double>(
       begin: 0.4,
-      end: 1.0,
+      end: 1,
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
@@ -118,14 +126,14 @@ class _RecordingIndicatorState extends State<RecordingIndicator>
       animation: _animation,
       builder: (context, child) {
         return Container(
-          width: 24,
-          height: 24,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.red,
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(0.6 * _animation.value),
+                color: Colors.red.withValues(alpha: 0.6 * _animation.value),
                 blurRadius: 8 + (4 * _animation.value),
                 spreadRadius: 2 * _animation.value,
               ),
@@ -182,7 +190,7 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
         }
 
         final isRecording = state.status == AudioRecorderStatus.recording ||
-                           state.status == AudioRecorderStatus.paused;
+            state.status == AudioRecorderStatus.paused;
 
         return VisibilityDetector(
           key: const Key('polished_audio_recorder'),
@@ -198,7 +206,7 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                 // VU Meter
                 AnalogVuMeter(
                   decibels: state.decibels,
-                  size: MediaQuery.of(context).size.width * 0.8,
+                  size: MediaQuery.of(context).size.width * 0.85,
                 ),
                 const SizedBox(height: 40),
                 // Duration display
@@ -213,74 +221,81 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 60),
-                // Control button - only one visible at a time
-                if (isRecording)
-                  GestureDetector(
-                    onTap: stop,
-                    child: Container(
-                      width: 220,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3A3A3A),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.2),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'STOP',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  GestureDetector(
-                    onTap: () => cubit.record(linkedId: linkedId),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.5),
-                          width: 3,
-                        ),
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.red,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withOpacity(0.4),
-                                blurRadius: 20,
-                                spreadRadius: 2,
+                // Control buttons with consistent size
+                SizedBox(
+                  height: 64,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: isRecording
+                        ? GestureDetector(
+                            key: const ValueKey('stop'),
+                            onTap: stop,
+                            child: Container(
+                              width: 220,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3A3A3A),
+                                borderRadius: BorderRadius.circular(32),
+                                border: Border.all(
+                                  color: Colors.grey.withValues(alpha: 0.2),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
-                            ],
+                              child: const Center(
+                                child: Text(
+                                  'STOP',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : GestureDetector(
+                            key: const ValueKey('record'),
+                            onTap: () => cubit.record(linkedId: linkedId),
+                            child: Container(
+                              width: 220,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(32),
+                                border: Border.all(
+                                  color: Colors.red.withValues(alpha: 0.8),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.red.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'RECORD',
+                                  style: TextStyle(
+                                    color: Colors.red.shade300,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 3,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
                   ),
+                ),
                 const SizedBox(height: 80),
                 // Language selector
                 Row(
@@ -322,7 +337,7 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                         DropdownMenuItem(
                           value: 'de',
                           child: Text(
-                            'Deutsch', 
+                            'Deutsch',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
