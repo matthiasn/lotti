@@ -153,11 +153,14 @@ void main() {
     });
 
     tearDown(() async {
-      await db?.close();
+      // Unregister services first to avoid hanging references
       getIt
         ..unregister<UpdateNotifications>()
         ..unregister<LoggingService>()
         ..unregister<Directory>();
+
+      // Then close database
+      await db?.close();
 
       // Clean up the temp directory
       if (testDirectory.existsSync()) {

@@ -21,6 +21,7 @@ class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
   late ProviderContainer container;
+  final containersToDispose = <ProviderContainer>[];
   late MockUnifiedAiInferenceRepository mockRepository;
   late MockLoggingService mockLoggingService;
 
@@ -67,6 +68,11 @@ void main() {
   });
 
   tearDown(() {
+    // Dispose all containers created during tests
+    for (final c in containersToDispose) {
+      c.dispose();
+    }
+    containersToDispose.clear();
     container.dispose();
   });
 
@@ -89,7 +95,7 @@ void main() {
       var statusChangeCount = 0;
 
       // Override the aiConfigByIdProvider to return our test prompt
-      container = ProviderContainer(
+      final testContainer = ProviderContainer(
         overrides: [
           unifiedAiInferenceRepositoryProvider
               .overrideWithValue(mockRepository),
@@ -98,6 +104,7 @@ void main() {
           ),
         ],
       );
+      containersToDispose.add(testContainer);
 
       when(
         () => mockRepository.runInference(
@@ -128,7 +135,7 @@ void main() {
       });
 
       // Create controller and read state to trigger build
-      final initialState = container.read(
+      final initialState = testContainer.read(
         unifiedAiControllerProvider(
           entityId: 'test-entity',
           promptId: 'prompt-1',
@@ -160,8 +167,8 @@ void main() {
       // Verify status changes
       expect(statusChangeCount, 2);
 
-      // Verify final state
-      final finalState = container.read(
+      // Verify final state using the same test container
+      final finalState = testContainer.read(
         unifiedAiControllerProvider(
           entityId: 'test-entity',
           promptId: 'prompt-1',

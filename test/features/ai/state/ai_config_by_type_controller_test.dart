@@ -48,6 +48,13 @@ void main() {
     return container;
   }
 
+  // Helper to clean up stream subscriptions
+  void Function()? subscription;
+
+  tearDown(() {
+    subscription?.call();
+  });
+
   group('AiConfigByTypeController Tests', () {
     late MockAiConfigRepository mockRepository;
     final testApiConfig = AiConfig.inferenceProvider(
@@ -77,13 +84,15 @@ void main() {
 
       // Act & Assert
       final listener = Listener<AsyncValue<List<AiConfig>>>();
-      container.listen(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.inferenceProvider,
-        ),
-        listener.call,
-        fireImmediately: true,
-      );
+      subscription = container
+          .listen(
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ),
+            listener.call,
+            fireImmediately: true,
+          )
+          .close;
 
       // Wait for the stream to emit a value
       await Future<void>.delayed(const Duration(milliseconds: 150));
