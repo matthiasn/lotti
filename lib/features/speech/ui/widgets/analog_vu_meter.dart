@@ -165,24 +165,9 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: widget.size,
       height: widget.size * 0.5,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFF3A3A3A),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
       child: AnimatedBuilder(
         animation: Listenable.merge(
             [_needleAnimation, _peakAnimation, _clipAnimation]),
@@ -220,31 +205,77 @@ class AnalogVuMeterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Define internal coordinate system
+    const double internalWidth = 350;
+    const double internalHeight = 175;
+
+    // Calculate scale factor to fit the actual size
+    final scaleX = size.width / internalWidth;
+    final scaleY = size.height / internalHeight;
+    final scale = math.min(scaleX, scaleY);
+
+    // Save canvas state and apply scaling
+    canvas.save();
+    canvas.scale(scale, scale);
+
+    // Now work in fixed coordinate space
+    const internalSize = Size(internalWidth, internalHeight);
+
+    // Draw frame background
+    _drawFrame(canvas, internalSize);
+
     // Draw meter face background
-    _drawMeterFace(canvas, size);
+    _drawMeterFace(canvas, internalSize);
 
     // Draw scale markings and labels
-    _drawScale(canvas, size);
+    _drawScale(canvas, internalSize);
 
     // Draw VU text
-    _drawVuText(canvas, size);
+    _drawVuText(canvas, internalSize);
 
     // Needle pivot at bottom center of meter face - moved down slightly
-    final needlePivot = Offset(size.width / 2, size.height * 0.8);
+    const needlePivot = Offset(internalWidth / 2, internalHeight * 0.8);
 
     // Draw peak indicator line
     if (peakValue > 0) {
-      _drawPeakIndicator(canvas, needlePivot, size);
+      _drawPeakIndicator(canvas, needlePivot, internalSize);
     }
 
     // Draw needle
-    _drawNeedle(canvas, needlePivot, size);
+    _drawNeedle(canvas, needlePivot, internalSize);
 
     // Draw center pivot
     _drawCenterPivot(canvas, needlePivot);
 
     // Draw clip LED on the right
-    _drawClipIndicator(canvas, size);
+    _drawClipIndicator(canvas, internalSize);
+
+    // Restore canvas state
+    canvas.restore();
+  }
+
+  void _drawFrame(Canvas canvas, Size size) {
+    // Draw subtle frame background
+    final framePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFF1A1A1A);
+
+    final frameRect = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(frameRect, const Radius.circular(4)),
+      framePaint,
+    );
+
+    // Draw subtle border
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = const Color(0xFF2A2A2A);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(frameRect, const Radius.circular(4)),
+      borderPaint,
+    );
   }
 
   void _drawMeterFace(Canvas canvas, Size size) {
@@ -355,7 +386,7 @@ class AnalogVuMeterPainter extends CustomPainter {
 
       // Draw label with proper alignment
       final isLeftSide = position < 0.5;
-      final labelRadius = radius + 12; // Consistent distance from arc
+      final labelRadius = radius + 10; // Consistent distance from arc
       final labelPoint = Offset(
         pivot.dx + cos * labelRadius,
         pivot.dy + sin * labelRadius,
@@ -373,7 +404,7 @@ class AnalogVuMeterPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
-      
+
       // Adjust x position based on side
       double labelX;
       if (isLeftSide) {
@@ -383,7 +414,7 @@ class AnalogVuMeterPainter extends CustomPainter {
         // Left-align labels on the right side
         labelX = labelPoint.dx;
       }
-      
+
       textPainter.paint(
         canvas,
         Offset(labelX, labelPoint.dy - textPainter.height / 2),

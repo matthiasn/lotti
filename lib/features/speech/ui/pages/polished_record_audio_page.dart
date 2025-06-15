@@ -203,36 +203,56 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // VU Meter
-                AnalogVuMeter(
-                  decibels: state.decibels,
-                  size: MediaQuery.of(context).size.width * 0.85,
+                // VU Meter with responsive sizing
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Calculate meter size based on available space
+                    final screenWidth = constraints.maxWidth;
+                    
+                    // Simple sizing: 85% of width with min/max constraints
+                    final size = (screenWidth * 0.85).clamp(300.0, 500.0);
+                    
+                    return AnalogVuMeter(
+                      decibels: state.decibels,
+                      size: size,
+                    );
+                  },
+                ),
+                const SizedBox(height: 30),
+                // Duration display with responsive font size
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fontSize = (constraints.maxWidth * 0.12).clamp(32.0, 48.0);
+                    return Text(
+                      formatDuration(state.progress.toString()),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w200,
+                        fontFamily: 'monospace',
+                        letterSpacing: 2,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 40),
-                // Duration display
-                Text(
-                  formatDuration(state.progress.toString()),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.w200,
-                    fontFamily: 'monospace',
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 60),
-                // Control buttons with consistent size
-                SizedBox(
-                  height: 64,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: isRecording
-                        ? GestureDetector(
-                            key: const ValueKey('stop'),
-                            onTap: stop,
-                            child: Container(
-                              width: 220,
-                              height: 64,
+                // Control buttons with responsive size
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final buttonWidth = (constraints.maxWidth * 0.5).clamp(180.0, 220.0);
+                    final buttonHeight = (buttonWidth * 0.29).clamp(52.0, 64.0);
+                    
+                    return SizedBox(
+                      height: buttonHeight,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: isRecording
+                            ? GestureDetector(
+                                key: const ValueKey('stop'),
+                                onTap: stop,
+                                child: Container(
+                                  width: buttonWidth,
+                                  height: buttonHeight,
                               decoration: BoxDecoration(
                                 color: const Color(0xFF3A3A3A),
                                 borderRadius: BorderRadius.circular(32),
@@ -264,8 +284,8 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                             key: const ValueKey('record'),
                             onTap: () => cubit.record(linkedId: linkedId),
                             child: Container(
-                              width: 220,
-                              height: 64,
+                              width: buttonWidth,
+                              height: buttonHeight,
                               decoration: BoxDecoration(
                                 color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(32),
@@ -294,9 +314,11 @@ class PolishedAudioRecorderWidget extends ConsumerWidget {
                               ),
                             ),
                           ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 40),
                 // Language selector
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
