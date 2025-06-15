@@ -1506,7 +1506,7 @@ void main() {
           );
           expect(
             updatedEntity.data.transcripts!.first.library,
-            'AI Transcription',
+            'Test Provider',
           );
 
           // Verify that the entry text was updated with the transcript
@@ -1671,7 +1671,7 @@ void main() {
           );
           expect(
             updatedEntity.data.transcripts!.last.library,
-            'AI Transcription',
+            'Test Provider',
           );
 
           // Verify that the entry text was updated with the new transcript
