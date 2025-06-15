@@ -141,6 +141,7 @@ class UnifiedAiInferenceRepository {
         promptConfig: promptConfig,
         model: model,
         prompt: prompt,
+        provider: provider,
         entity: entity,
         start: start,
       );
@@ -276,6 +277,7 @@ class UnifiedAiInferenceRepository {
     required String response,
     required AiConfigPrompt promptConfig,
     required AiConfigModel model,
+    required AiConfigInferenceProvider provider,
     required String prompt,
     required JournalEntity entity,
     required DateTime start,
@@ -320,18 +322,22 @@ class UnifiedAiInferenceRepository {
     );
 
     // Save the AI response entry
-    await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
-          data: data,
-          start: start,
-          linkedId: entity.id,
-          categoryId: entity is Task ? entity.categoryId : null,
-        );
+    if (entity is! JournalAudio) {
+      await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
+            data: data,
+            start: start,
+            linkedId: entity.id,
+            categoryId: entity is Task ? entity.categoryId : null,
+          );
+    }
 
     // Handle special post-processing
     await _handlePostProcessing(
       entity: entity,
       promptConfig: promptConfig,
       response: cleanResponse,
+      model: model,
+      provider: provider,
       start: start,
     );
   }
@@ -340,6 +346,8 @@ class UnifiedAiInferenceRepository {
   Future<void> _handlePostProcessing({
     required JournalEntity entity,
     required AiConfigPrompt promptConfig,
+    required AiConfigModel model,
+    required AiConfigInferenceProvider provider,
     required String response,
     required DateTime start,
   }) async {
@@ -374,8 +382,8 @@ $response
         if (entity is JournalAudio) {
           final transcript = AudioTranscript(
             created: DateTime.now(),
-            library: 'AI Transcription',
-            model: '-',
+            library: provider.name,
+            model: model.providerModelId,
             detectedLanguage: '-',
             transcript: response.trim(),
             processingTime: DateTime.now().difference(start),
