@@ -3,39 +3,25 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:record/record.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
-
-class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
-
-class MockAudioRecorder extends Mock implements AudioRecorder {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockLoggingService mockLoggingService;
-  late MockAudioPlayerCubit mockAudioPlayerCubit;
   late ProviderContainer container;
 
   setUp(() {
     mockLoggingService = MockLoggingService();
-    mockAudioPlayerCubit = MockAudioPlayerCubit();
 
     // Register mocks with GetIt
-    getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
-
-    // Set up default mock behaviors for audio player
-    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     container = ProviderContainer();
   });
@@ -45,154 +31,6 @@ void main() {
     getIt.reset();
   });
 
-  group('AudioRecorderController - Player Interaction', () {
-    test(
-        'should call pause on audio player when it is playing before recording',
-        () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.playing,
-          totalDuration: const Duration(minutes: 3),
-          progress: const Duration(seconds: 30),
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
-      // Act
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
-      await controller.record();
-
-      // Verify that pause was called
-      verify(() => mockAudioPlayerCubit.pause()).called(1);
-    });
-
-    test('should not call pause on audio player when it is not playing',
-        () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.paused,
-          totalDuration: const Duration(minutes: 3),
-          progress: const Duration(seconds: 30),
-          pausedAt: const Duration(seconds: 30),
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
-      // Act
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
-      await controller.record();
-
-      // Verify that pause was NOT called since player is not playing
-      verifyNever(() => mockAudioPlayerCubit.pause());
-    });
-
-    test('should not call pause when audio player is stopped', () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.stopped,
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
-      // Act
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
-      await controller.record();
-
-      // Verify that pause was NOT called since player is stopped
-      verifyNever(() => mockAudioPlayerCubit.pause());
-    });
-
-    test('should not call pause when audio player is initializing', () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.initializing,
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
-      // Act
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
-      await controller.record();
-
-      // Verify that pause was NOT called since player is initializing
-      verifyNever(() => mockAudioPlayerCubit.pause());
-    });
-
-    test('should handle pause failure gracefully', () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.playing,
-          totalDuration: const Duration(minutes: 3),
-          progress: const Duration(seconds: 30),
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
-      // Mock pause to throw an exception
-      when(() => mockAudioPlayerCubit.pause())
-          .thenThrow(Exception('Pause failed'));
-
-      // Act
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
-      await controller.record();
-
-      // Verify that pause was called and exception was logged
-      verify(() => mockAudioPlayerCubit.pause()).called(1);
-      verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'recorder_controller',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-
-    test('verifies AudioPlayerStatus enum values used in the interaction', () {
-      // This test documents the specific enum values that are checked
-      // in the AudioRecorderController.record() method
-      expect(AudioPlayerStatus.playing, isNotNull);
-      expect(AudioPlayerStatus.paused, isNotNull);
-      expect(AudioPlayerStatus.stopped, isNotNull);
-      expect(AudioPlayerStatus.initializing, isNotNull);
-      expect(AudioPlayerStatus.initialized, isNotNull);
-
-      // Verify that only 'playing' status triggers the pause
-      expect(AudioPlayerStatus.playing == AudioPlayerStatus.playing, isTrue);
-      expect(AudioPlayerStatus.paused == AudioPlayerStatus.playing, isFalse);
-      expect(AudioPlayerStatus.stopped == AudioPlayerStatus.playing, isFalse);
-      expect(
-        AudioPlayerStatus.initializing == AudioPlayerStatus.playing,
-        isFalse,
-      );
-      expect(
-        AudioPlayerStatus.initialized == AudioPlayerStatus.playing,
-        isFalse,
-      );
-    });
-  });
 
   group('AudioRecorderController - State Management Methods', () {
     group('setLanguage', () {
@@ -559,68 +397,27 @@ void main() {
     test('AudioRecorderController can be instantiated with mocked dependencies',
         () {
       // This test verifies that the AudioRecorderController can be created
-      // with our mocked dependencies and that it properly accesses
-      // the AudioPlayerCubit through GetIt
+      // with our mocked dependencies
       expect(() => container.read(audioRecorderControllerProvider),
           returnsNormally);
     });
 
-    test('AudioRecorderController accesses AudioPlayerCubit through GetIt', () {
-      // Act
-      final _ = container.read(audioRecorderControllerProvider);
-
-      // Set up the mock player state
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.playing,
-          totalDuration: const Duration(minutes: 2),
-          progress: const Duration(seconds: 45),
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
-      // Verify that the controller can access the player cubit
-      // This indirectly tests that the dependency injection is working
-      final playerCubit = getIt<AudioPlayerCubit>();
-      expect(playerCubit, equals(mockAudioPlayerCubit));
-      expect(playerCubit.state.status, equals(AudioPlayerStatus.playing));
-    });
-
     test(
-        'AudioRecorderController record method integration with platform exception',
+        'AudioRecorderController handles missing permissions',
         () async {
-      // This test verifies that when the AudioRecorder throws a platform exception
-      // (which happens in test environment), the exception is properly caught and logged
-      // AND that the audio player is paused before the exception occurs
-
-      // Set up player as playing
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.playing,
-          totalDuration: const Duration(minutes: 2),
-          progress: const Duration(seconds: 45),
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
+      // This test verifies that when the AudioRecorder has no permission
+      // (which happens in test environment), it's properly handled
 
       // Act
       final controller =
           container.read(audioRecorderControllerProvider.notifier);
       await controller.record();
 
-      // Verify that pause was called before the exception
-      verify(() => mockAudioPlayerCubit.pause()).called(1);
-
-      // Verify that the exception was logged
+      // Verify that the no permission event was logged
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
+        () => mockLoggingService.captureEvent(
+          'no audio recording permission',
           domain: 'recorder_controller',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });

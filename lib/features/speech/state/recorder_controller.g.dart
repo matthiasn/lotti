@@ -7,7 +7,7 @@ part of 'recorder_controller.dart';
 // **************************************************************************
 
 String _$audioRecorderControllerHash() =>
-    r'3b570a7480e80c0b25d81a24971c606004b632ed';
+    r'c15e15c43f3b91ff184d6376c010b95fda645072';
 
 /// See also [AudioRecorderController].
 @ProviderFor(AudioRecorderController)

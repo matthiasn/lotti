@@ -1,16 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:record/record.dart';
+import 'package:record/record.dart' show Amplitude;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'recorder_controller.g.dart';
@@ -19,8 +16,7 @@ const intervalMs = 100;
 
 @riverpod
 class AudioRecorderController extends _$AudioRecorderController {
-  final _audioRecorder = AudioRecorder();
-  late final AudioPlayerCubit _audioPlayerCubit;
+  late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
   late final LoggingService _loggingService;
   String? _linkedId;
@@ -30,12 +26,10 @@ class AudioRecorderController extends _$AudioRecorderController {
 
   @override
   AudioRecorderState build() {
-    _audioPlayerCubit = getIt<AudioPlayerCubit>();
+    _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
     _loggingService = getIt<LoggingService>();
 
-    _amplitudeSub = _audioRecorder
-        .onAmplitudeChanged(const Duration(milliseconds: intervalMs))
-        .listen((Amplitude amp) {
+    _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
       state = state.copyWith(
         progress: Duration(
           milliseconds: state.progress.inMilliseconds + intervalMs,
@@ -45,7 +39,6 @@ class AudioRecorderController extends _$AudioRecorderController {
     });
 
     ref.onDispose(() async {
-      await _audioRecorder.dispose();
       await _amplitudeSub?.cancel();
     });
 
@@ -65,40 +58,19 @@ class AudioRecorderController extends _$AudioRecorderController {
     _linkedId = linkedId;
 
     try {
-      // Pause any playing audio first
-      if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
-        await _audioPlayerCubit.pause();
-      }
-
-      if (await _audioRecorder.hasPermission()) {
-        if (await _audioRecorder.isPaused()) {
+      if (await _recorderRepository.hasPermission()) {
+        if (await _recorderRepository.isPaused()) {
           await resume();
-        } else if (await _audioRecorder.isRecording()) {
+        } else if (await _recorderRepository.isRecording()) {
           await stop();
         } else {
-          final created = DateTime.now();
-          final fileName =
-              '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.m4a';
-          final day = DateFormat('yyyy-MM-dd').format(created);
-          final relativePath = '/audio/$day/';
-          final directory = await createAssetDirectory(relativePath);
-          final filePath = '$directory$fileName';
-
-          _audioNote = AudioNote(
-            createdAt: created,
-            audioFile: fileName,
-            audioDirectory: relativePath,
-            duration: Duration.zero,
-          );
-
-          await _audioRecorder.start(
-            const RecordConfig(sampleRate: 48000),
-            path: filePath,
-          );
-          state = state.copyWith(
-            status: AudioRecorderStatus.recording,
-            linkedId: linkedId,
-          );
+          _audioNote = await _recorderRepository.startRecording();
+          if (_audioNote != null) {
+            state = state.copyWith(
+              status: AudioRecorderStatus.recording,
+              linkedId: linkedId,
+            );
+          }
         }
       } else {
         _loggingService.captureEvent(
@@ -117,8 +89,7 @@ class AudioRecorderController extends _$AudioRecorderController {
 
   Future<String?> stop() async {
     try {
-      debugPrint('stop recording');
-      await _audioRecorder.stop();
+      await _recorderRepository.stopRecording();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
@@ -150,12 +121,12 @@ class AudioRecorderController extends _$AudioRecorderController {
   }
 
   Future<void> pause() async {
-    await _audioRecorder.pause();
+    await _recorderRepository.pauseRecording();
     state = state.copyWith(status: AudioRecorderStatus.paused);
   }
 
   Future<void> resume() async {
-    await _audioRecorder.resume();
+    await _recorderRepository.resumeRecording();
   }
 
   void setLanguage(String language) {
