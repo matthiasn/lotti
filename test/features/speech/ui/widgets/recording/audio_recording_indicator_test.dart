@@ -1,129 +1,122 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/speech/state/recorder_cubit.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart' show Amplitude;
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
+// Mock classes
+class MockAudioRecorderRepository extends Mock
+    implements AudioRecorderRepository {}
+
+class MockLoggingService extends Mock implements LoggingService {}
+
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+// Test controller that provides a fixed state
+class TestAudioRecorderController extends AudioRecorderController {
+  TestAudioRecorderController(this._testState);
+
+  final AudioRecorderState _testState;
+
+  @override
+  AudioRecorderState build() => _testState;
+}
+
+// Mock EntryController for testing
+class MockEntryController extends EntryController {
+  MockEntryController({required this.mockEntry});
+
+  final JournalEntity mockEntry;
+
+  @override
+  Future<EntryState?> build({required String id}) async {
+    // Return the mock entry state
+    return EntryState.saved(
+      entryId: id,
+      entry: mockEntry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AudioRecordingIndicator Widget Tests - ', () {
-    setUp(() {});
-    tearDown(getIt.reset);
+  late MockJournalDb mockJournalDb;
+  late MockNavService mockNavService;
+  late MockAudioRecorderRepository mockRecorderRepository;
+  late MockLoggingService mockLoggingService;
+  late MockEditorStateService mockEditorStateService;
+  late MockPersistenceLogic mockPersistenceLogic;
+  late MockUpdateNotifications mockUpdateNotifications;
 
-    final mockAudioRecorderCubit = MockAudioRecorderCubit();
-    final mockNavService = MockNavService();
+  setUp(() {
+    mockJournalDb = MockJournalDb();
+    mockNavService = MockNavService();
+    mockRecorderRepository = MockAudioRecorderRepository();
+    mockLoggingService = MockLoggingService();
+    mockEditorStateService = MockEditorStateService();
+    mockPersistenceLogic = MockPersistenceLogic();
+    mockUpdateNotifications = MockUpdateNotifications();
 
     getIt
+      ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<NavService>(mockNavService)
-      ..registerSingleton<SettingsDb>(SettingsDb());
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<EditorStateService>(mockEditorStateService)
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-    when(mockNavService.isTasksTabActive).thenAnswer(
-      (_) => false,
+    when(() => mockJournalDb.getConfigFlag(any()))
+        .thenAnswer((_) async => false);
+    when(() => mockNavService.beamBack()).thenReturn(null);
+    when(() => mockRecorderRepository.amplitudeStream)
+        .thenAnswer((_) => const Stream<Amplitude>.empty());
+    when(() => mockRecorderRepository.dispose()).thenAnswer((_) async {});
+  });
+
+  tearDown(getIt.reset);
+
+  Widget makeTestableWidget(AudioRecorderState state,
+      {JournalEntity? linkedEntry}) {
+    return makeTestableWidgetWithScaffold(
+      const AudioRecordingIndicator(),
+      overrides: [
+        audioRecorderRepositoryProvider
+            .overrideWithValue(mockRecorderRepository),
+        audioRecorderControllerProvider.overrideWith(() {
+          return TestAudioRecorderController(state);
+        }),
+        if (state.linkedId != null && linkedEntry != null)
+          entryControllerProvider(id: state.linkedId!).overrideWith(() {
+            return MockEntryController(mockEntry: linkedEntry);
+          }),
+      ],
     );
+  }
 
-    testWidgets('widget is displayed when recording and modal not visible',
-        (tester) async {
-      final recordingState = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        decibels: 80,
-        progress: Duration.zero,
-        showIndicator: true,
-        modalVisible: false,
-        language: 'en',
-      );
-
-      when(() => mockAudioRecorderCubit.stream).thenAnswer(
-        (_) => Stream<AudioRecorderState>.fromIterable([recordingState]),
-      );
-
-      when(() => mockAudioRecorderCubit.state).thenAnswer(
-        (_) => recordingState,
-      );
-
-      when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
-
-      when(mockAudioRecorderCubit.stop).thenAnswer((_) async => 'entry-id');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<AudioRecorderCubit>(
-            create: (_) => mockAudioRecorderCubit,
-            lazy: false,
-            child: const Row(
-              children: [
-                Expanded(child: AudioRecordingIndicator()),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final indicatorFinder =
-          find.byKey(const Key('audio_recording_indicator'));
-      expect(indicatorFinder, findsOneWidget);
-
-      // Verify the duration text is displayed
-      expect(find.text('00:00:00'), findsOneWidget);
-
-      // Verify the mic icon is displayed
-      expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
-    });
-
-    testWidgets('widget is hidden when modal is visible', (tester) async {
-      final recordingState = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        decibels: 80,
-        progress: Duration.zero,
-        showIndicator: true,
-        modalVisible: true, // Modal is visible
-        language: 'en',
-      );
-
-      when(() => mockAudioRecorderCubit.stream).thenAnswer(
-        (_) => Stream<AudioRecorderState>.fromIterable([recordingState]),
-      );
-
-      when(() => mockAudioRecorderCubit.state).thenAnswer(
-        (_) => recordingState,
-      );
-
-      when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<AudioRecorderCubit>(
-            create: (_) => mockAudioRecorderCubit,
-            lazy: false,
-            child: const Row(
-              children: [
-                Expanded(child: AudioRecordingIndicator()),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final indicatorFinder =
-          find.byKey(const Key('audio_recording_indicator'));
-      expect(indicatorFinder, findsNothing);
-    });
-
-    testWidgets('widget is hidden when not recording', (tester) async {
-      final recordingState = AudioRecorderState(
-        status: AudioRecorderStatus.stopped, // Not recording
+  group('AudioRecordingIndicator Tests', () {
+    testWidgets('shows nothing when not recording', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.initialized,
         decibels: 0,
         progress: Duration.zero,
         showIndicator: false,
@@ -131,35 +124,209 @@ void main() {
         language: 'en',
       );
 
-      when(() => mockAudioRecorderCubit.stream).thenAnswer(
-        (_) => Stream<AudioRecorderState>.fromIterable([recordingState]),
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
+    });
+
+    testWidgets('shows nothing when modal is visible', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 0,
+        progress: const Duration(seconds: 10),
+        showIndicator: true,
+        modalVisible: true,
+        language: 'en',
       );
 
-      when(() => mockAudioRecorderCubit.state).thenAnswer(
-        (_) => recordingState,
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
+    });
+
+    testWidgets('shows indicator when recording and modal not visible',
+        (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 0,
+        progress: const Duration(seconds: 10),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
       );
 
-      when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<AudioRecorderCubit>(
-            create: (_) => mockAudioRecorderCubit,
-            lazy: false,
-            child: const Row(
-              children: [
-                Expanded(child: AudioRecordingIndicator()),
-              ],
-            ),
-          ),
+      expect(
+          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+      expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+
+      // FittedBox might be scaling the text, so let's find it within the widget tree
+      final textFinder = find.descendant(
+        of: find.byKey(const Key('audio_recording_indicator')),
+        matching: find.byType(Text),
+      );
+      expect(textFinder, findsOneWidget);
+
+      final textWidget = tester.widget<Text>(textFinder);
+      expect(textWidget.data, '00:00:10');
+    });
+
+    testWidgets('indicator has correct styling', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 0,
+        progress: const Duration(minutes: 1, seconds: 23),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
+      );
+
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
+
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byKey(const Key('audio_recording_indicator')),
+          matching: find.byType(Container).last,
         ),
       );
 
+      expect(container.color, isNotNull);
+
+      // FittedBox might be scaling the text, so let's find it within the widget tree
+      final textFinder = find.descendant(
+        of: find.byKey(const Key('audio_recording_indicator')),
+        matching: find.byType(Text),
+      );
+      expect(textFinder, findsOneWidget);
+
+      final textWidget = tester.widget<Text>(textFinder);
+      expect(textWidget.data, '00:01:23');
+    });
+
+    testWidgets('indicator has correct interaction behavior', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 0,
+        progress: const Duration(seconds: 30),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
+      );
+
+      await tester.pumpWidget(makeTestableWidget(state));
       await tester.pumpAndSettle();
 
-      final indicatorFinder =
-          find.byKey(const Key('audio_recording_indicator'));
-      expect(indicatorFinder, findsNothing);
+      // Verify the indicator exists
+      expect(
+          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+
+      // The indicator uses a GestureDetector with the key, verify it exists
+      final indicatorWidget =
+          tester.widget(find.byKey(const Key('audio_recording_indicator')));
+      expect(indicatorWidget, isA<GestureDetector>());
+
+      // Find MouseRegion in the widget tree that has the click cursor
+      final mouseRegionFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is MouseRegion && widget.cursor == SystemMouseCursors.click,
+      );
+      expect(mouseRegionFinder, findsOneWidget);
+
+      // Verify MouseRegion has correct cursor
+      final mouseRegion = tester.widget<MouseRegion>(mouseRegionFinder);
+      expect(mouseRegion.cursor, SystemMouseCursors.click);
+
+      // Verify it has the expected content
+      expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+    });
+
+    testWidgets('indicator shows correct duration format', (tester) async {
+      final testCases = [
+        (const Duration(seconds: 5), '00:00:05'),
+        (const Duration(minutes: 1, seconds: 30), '00:01:30'),
+        (const Duration(hours: 1, minutes: 15, seconds: 45), '01:15:45'),
+      ];
+
+      for (final (duration, expectedText) in testCases) {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          decibels: 0,
+          progress: duration,
+          showIndicator: true,
+          modalVisible: false,
+          language: 'en',
+        );
+
+        await tester.pumpWidget(makeTestableWidget(state));
+        await tester.pumpAndSettle();
+
+        // FittedBox might be scaling the text, so let's find it within the widget tree
+        final textFinder = find.descendant(
+          of: find.byKey(const Key('audio_recording_indicator')),
+          matching: find.byType(Text),
+        );
+        expect(textFinder, findsOneWidget);
+
+        final textWidget = tester.widget<Text>(textFinder);
+        expect(textWidget.data, expectedText, reason: 'Duration: $duration');
+
+        // Clear the widget tree before the next iteration
+        await tester.pumpWidget(Container());
+      }
+    });
+
+    testWidgets('indicator has correct dimensions', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 0,
+        progress: const Duration(seconds: 10),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
+      );
+
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
+
+      final indicatorSize = tester.getSize(
+        find.byKey(const Key('audio_recording_indicator')),
+      );
+
+      expect(indicatorSize.width, 100);
+      expect(indicatorSize.height, 25);
+    });
+
+    testWidgets('indicator has correct border radius', (tester) async {
+      final state = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 0,
+        progress: const Duration(seconds: 10),
+        showIndicator: true,
+        modalVisible: false,
+        language: 'en',
+      );
+
+      await tester.pumpWidget(makeTestableWidget(state));
+      await tester.pumpAndSettle();
+
+      final clipRRect = tester.widget<ClipRRect>(
+        find.descendant(
+          of: find.byKey(const Key('audio_recording_indicator')),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+
+      expect(clipRRect.borderRadius, isA<BorderRadius>());
+      final borderRadius = clipRRect.borderRadius as BorderRadius;
+      expect(borderRadius.topLeft, const Radius.circular(8));
+      expect(borderRadius.topRight, const Radius.circular(8));
+      expect(borderRadius.bottomLeft, Radius.zero);
+      expect(borderRadius.bottomRight, Radius.zero);
     });
   });
 }

@@ -10,7 +10,6 @@ import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -194,9 +193,6 @@ class MyBeamerApp extends StatelessWidget {
           BlocProvider<OutboxCubit>(
             lazy: false,
             create: (BuildContext context) => OutboxCubit(),
-          ),
-          BlocProvider<AudioRecorderCubit>(
-            create: (BuildContext context) => AudioRecorderCubit(),
           ),
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => getIt<AudioPlayerCubit>(),
