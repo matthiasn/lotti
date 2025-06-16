@@ -18,9 +18,10 @@ class MatrixService {
     String? dbName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
-  })  : keyVerificationController =
-            StreamController<KeyVerificationRunner>.broadcast(),
-        _client = createMatrixClient(dbName: dbName) {
+  }) : keyVerificationController =
+            StreamController<KeyVerificationRunner>.broadcast() {
+    createMatrixClient(dbName: dbName).then((value) => _client = value);
+
     clientRunner = ClientRunner<void>(
       callback: (event) async {
         while (getIt<UserActivityService>().msSinceLastActivity < 1000) {

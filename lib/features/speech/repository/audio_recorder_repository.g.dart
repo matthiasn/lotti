@@ -9,7 +9,10 @@ part of 'audio_recorder_repository.dart';
 String _$audioRecorderRepositoryHash() =>
     r'f0050ec0bfccbaaedbeddb0f560f661558313922';
 
-/// See also [audioRecorderRepository].
+/// Provider for the audio recorder repository.
+/// Kept alive to maintain recording state across navigation.
+///
+/// Copied from [audioRecorderRepository].
 @ProviderFor(audioRecorderRepository)
 final audioRecorderRepositoryProvider =
     Provider<AudioRecorderRepository>.internal(

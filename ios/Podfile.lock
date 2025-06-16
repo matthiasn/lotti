@@ -24,6 +24,8 @@ PODS:
     - OpenSSL-Universal
   - flutter_secure_storage (6.0.0):
     - Flutter
+  - flutter_vodozemac (0.0.1):
+    - Flutter
   - health (13.1.0):
     - Flutter
   - image_picker_ios (0.0.1):
@@ -130,6 +132,7 @@ DEPENDENCIES:
   - flutter_olm (from `.symlinks/plugins/flutter_olm/ios`)
   - flutter_openssl_crypto (from `.symlinks/plugins/flutter_openssl_crypto/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_vodozemac (from `.symlinks/plugins/flutter_vodozemac/ios`)
   - health (from `.symlinks/plugins/health/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
@@ -185,6 +188,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_openssl_crypto/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_vodozemac:
+    :path: ".symlinks/plugins/flutter_vodozemac/ios"
   health:
     :path: ".symlinks/plugins/health/ios"
   image_picker_ios:
@@ -242,6 +247,7 @@ SPEC CHECKSUMS:
   flutter_olm: 381bdf22eaeb0b5120539a79fb45199e2dbef163
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
   health: e42053a628b0e9a2de7c78d4a01bf9d90ce33d76
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
