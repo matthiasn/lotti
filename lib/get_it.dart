@@ -10,6 +10,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -40,8 +41,12 @@ Future<void> registerSingletons() async {
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService())
-    ..registerSingleton<OutboxService>(OutboxService())
-    ..registerSingleton<MatrixService>(MatrixService())
+    ..registerSingleton<OutboxService>(OutboxService());
+
+  final client = await createMatrixClient();
+
+  getIt
+    ..registerSingleton<MatrixService>(MatrixService(client: client))
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(HealthImport())

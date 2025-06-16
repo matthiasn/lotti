@@ -13,15 +13,13 @@ import 'package:matrix/matrix.dart';
 
 class MatrixService {
   MatrixService({
+    required this.client,
     this.matrixConfig,
     this.deviceDisplayName,
-    String? dbName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
   }) : keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
-    createMatrixClient(dbName: dbName).then((value) => _client = value);
-
     clientRunner = ClientRunner<void>(
       callback: (event) async {
         while (getIt<UserActivityService>().msSinceLastActivity < 1000) {
@@ -67,7 +65,7 @@ class MatrixService {
   }
 
   final String? deviceDisplayName;
-  late final Client _client;
+  final Client client;
   MatrixConfig? matrixConfig;
   LoginResponse? loginResponse;
   String? syncRoomId;
@@ -96,7 +94,7 @@ class MatrixService {
   Future<void> init() async {
     await loadConfig();
     await connect();
-    if (_client.onLoginStateChanged.value == LoginState.loggedIn) {
+    if (client.onLoginStateChanged.value == LoginState.loggedIn) {
       await listen();
     }
   }
@@ -106,8 +104,6 @@ class MatrixService {
     await listenToTimeline();
     listenToMatrixRoomInvites(service: this);
   }
-
-  Client get client => _client;
 
   Future<bool> login() => matrixConnect(
         service: this,
@@ -130,7 +126,7 @@ class MatrixService {
   bool isLoggedIn() {
     // TODO(unassigned): find non-deprecated solution
     // ignore: deprecated_member_use
-    return _client.loginState == LoginState.loggedIn;
+    return client.loginState == LoginState.loggedIn;
   }
 
   Future<void> listenToTimeline() async {
@@ -145,9 +141,9 @@ class MatrixService {
         invite: invite,
       );
 
-  Future<String?> getRoom() => getMatrixRoom(client: _client);
+  Future<String?> getRoom() => getMatrixRoom(client: client);
 
-  Future<void> leaveRoom() => leaveMatrixRoom(client: _client);
+  Future<void> leaveRoom() => leaveMatrixRoom(client: client);
 
   Future<void> inviteToSyncRoom({
     required String userId,
@@ -179,12 +175,12 @@ class MatrixService {
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
     if (deviceId != null) {
-      await _client.deleteDevice(deviceId, auth: AuthenticationData());
+      await client.deleteDevice(deviceId, auth: AuthenticationData());
     }
   }
 
-  String? get deviceId => _client.deviceID;
-  String? get deviceName => _client.deviceName;
+  String? get deviceId => client.deviceID;
+  String? get deviceName => client.deviceName;
 
   Stream<KeyVerification> getIncomingKeyVerificationStream() {
     return incomingKeyVerificationController.stream;
@@ -194,15 +190,15 @@ class MatrixService {
       listenForKeyVerificationRequests(service: this);
 
   Future<void> logout() async {
-    if (_client.isLogged()) {
+    if (client.isLogged()) {
       timeline?.cancelSubscriptions();
-      await _client.logout();
+      await client.logout();
     }
   }
 
   Future<void> disposeClient() async {
-    if (_client.isLogged()) {
-      await _client.dispose();
+    if (client.isLogged()) {
+      await client.dispose();
     }
   }
 
