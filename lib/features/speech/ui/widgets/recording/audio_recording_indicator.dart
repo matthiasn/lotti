@@ -6,7 +6,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/themes/theme.dart';
 
 class AudioRecordingIndicator extends ConsumerWidget {
@@ -16,8 +16,10 @@ class AudioRecordingIndicator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (BuildContext context, AudioRecorderState state) {
-        if (state.status != AudioRecorderStatus.recording ||
-            !state.showIndicator) {
+        final shouldShow = state.status == AudioRecorderStatus.recording &&
+            !state.modalVisible;
+
+        if (!shouldShow) {
           return const SizedBox.shrink();
         }
         final linkedId = state.linkedId;
@@ -27,11 +29,12 @@ class AudioRecordingIndicator extends ConsumerWidget {
             : null;
 
         void onTap() {
-          if (linkedEntry is Task) {
-            beamToNamed('/tasks/$linkedId/record_audio/$linkedId');
-          } else {
-            beamToNamed('/journal/$linkedId/record_audio/$linkedId');
-          }
+          AudioRecordingModal.show(
+            context,
+            linkedId: linkedId,
+            categoryId: linkedEntry?.categoryId,
+            useRootNavigator: false,
+          );
         }
 
         return MouseRegion(

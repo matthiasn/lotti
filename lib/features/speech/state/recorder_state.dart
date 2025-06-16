@@ -17,6 +17,7 @@ class AudioRecorderState with _$AudioRecorderState {
     required Duration progress,
     required double decibels,
     required bool showIndicator,
+    required bool modalVisible,
     required String? language,
     String? linkedId,
   }) = _AudioRecorderState;
