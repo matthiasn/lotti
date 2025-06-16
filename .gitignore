@@ -94,3 +94,6 @@ macos/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 # FastWhisper build artifacts
 fastwhisper_server/build/
 fastwhisper_server/dist/
+
+CLAUDE.local.md
+

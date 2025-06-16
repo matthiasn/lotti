@@ -12,7 +12,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -148,8 +147,6 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 class MockVectorClockService extends Mock implements VectorClockService {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
-
-class MockAudioRecorderCubit extends Mock implements AudioRecorderCubit {}
 
 class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
 
