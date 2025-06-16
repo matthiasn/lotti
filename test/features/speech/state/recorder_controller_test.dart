@@ -3,11 +3,15 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -15,13 +19,30 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockLoggingService mockLoggingService;
+  late MockAudioPlayerCubit mockAudioPlayerCubit;
   late ProviderContainer container;
 
   setUp(() {
     mockLoggingService = MockLoggingService();
+    mockAudioPlayerCubit = MockAudioPlayerCubit();
+
+    // Setup default mock behavior for AudioPlayerCubit
+    when(() => mockAudioPlayerCubit.state).thenReturn(
+      AudioPlayerState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: Duration.zero,
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
+        speed: 1,
+        showTranscriptsList: false,
+      ),
+    );
+    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
 
     // Register mocks with GetIt
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
 
     container = ProviderContainer();
   });

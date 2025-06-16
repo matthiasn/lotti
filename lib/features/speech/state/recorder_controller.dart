@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -18,6 +20,7 @@ class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
   late final LoggingService _loggingService;
+  late final AudioPlayerCubit _audioPlayerCubit;
   String? _linkedId;
   String? _categoryId;
   String? _language;
@@ -27,6 +30,7 @@ class AudioRecorderController extends _$AudioRecorderController {
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
     _loggingService = getIt<LoggingService>();
+    _audioPlayerCubit = getIt<AudioPlayerCubit>();
 
     _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
       state = state.copyWith(
@@ -57,6 +61,11 @@ class AudioRecorderController extends _$AudioRecorderController {
     _linkedId = linkedId;
 
     try {
+      // Pause any playing audio first
+      if (_audioPlayerCubit.state.status == AudioPlayerStatus.playing) {
+        await _audioPlayerCubit.pause();
+      }
+
       if (await _recorderRepository.hasPermission()) {
         if (await _recorderRepository.isPaused()) {
           await resume();

@@ -265,7 +265,8 @@ void main() {
       expect(redDot, findsOneWidget);
     });
 
-    testWidgets('modal content widget renders without setting visibility', (tester) async {
+    testWidgets('modal content widget renders without setting visibility',
+        (tester) async {
       // Modal visibility is now managed by the show() method, not the widget
       final controller = TestAudioRecorderController(
         AudioRecorderState(
