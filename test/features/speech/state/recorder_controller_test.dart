@@ -31,7 +31,6 @@ void main() {
     getIt.reset();
   });
 
-
   group('AudioRecorderController - State Management Methods', () {
     group('setLanguage', () {
       test('should update language in state', () {
@@ -402,9 +401,7 @@ void main() {
           returnsNormally);
     });
 
-    test(
-        'AudioRecorderController handles missing permissions',
-        () async {
+    test('AudioRecorderController handles missing permissions', () async {
       // This test verifies that when the AudioRecorder has no permission
       // (which happens in test environment), it's properly handled
 
