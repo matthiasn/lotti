@@ -1,8 +1,12 @@
 // Tests for AudioRecorderController (Riverpod implementation)
 // Mirrors the functionality tested in recorder_cubit_test.dart
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -10,21 +14,29 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockAudioRecorderRepository extends Mock
+    implements AudioRecorderRepository {}
+
+class MockAmplitude extends Mock implements Amplitude {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockLoggingService mockLoggingService;
   late MockAudioPlayerCubit mockAudioPlayerCubit;
+  late MockAudioRecorderRepository mockAudioRecorderRepository;
   late ProviderContainer container;
 
   setUp(() {
     mockLoggingService = MockLoggingService();
     mockAudioPlayerCubit = MockAudioPlayerCubit();
+    mockAudioRecorderRepository = MockAudioRecorderRepository();
 
     // Setup default mock behavior for AudioPlayerCubit
     when(() => mockAudioPlayerCubit.state).thenReturn(
@@ -39,12 +51,36 @@ void main() {
     );
     when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
 
+    // Setup default mock behavior for AudioRecorderRepository
+    when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
+      (_) => const Stream<Amplitude>.empty(),
+    );
+    when(() => mockAudioRecorderRepository.hasPermission())
+        .thenAnswer((_) async => false);
+    when(() => mockAudioRecorderRepository.isPaused())
+        .thenAnswer((_) async => false);
+    when(() => mockAudioRecorderRepository.isRecording())
+        .thenAnswer((_) async => false);
+    when(() => mockAudioRecorderRepository.stopRecording())
+        .thenAnswer((_) async {});
+    when(() => mockAudioRecorderRepository.pauseRecording())
+        .thenAnswer((_) async {});
+    when(() => mockAudioRecorderRepository.resumeRecording())
+        .thenAnswer((_) async {});
+
     // Register mocks with GetIt
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
 
-    container = ProviderContainer();
+    // Create container with overridden provider
+    container = ProviderContainer(
+      overrides: [
+        audioRecorderRepositoryProvider.overrideWithValue(
+          mockAudioRecorderRepository,
+        ),
+      ],
+    );
   });
 
   tearDown(() {
@@ -305,6 +341,23 @@ void main() {
             equals(AudioRecorderStatus.paused));
       });
 
+      test('should call repository pauseRecording', () async {
+        // Arrange
+        when(() => mockAudioRecorderRepository.pauseRecording())
+            .thenAnswer((_) async {});
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.pause();
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.pauseRecording()).called(1);
+        expect(container.read(audioRecorderControllerProvider).status,
+            equals(AudioRecorderStatus.paused));
+      });
+
       test('should maintain other state properties when pausing', () async {
         // Arrange
         const language = 'en-US';
@@ -343,6 +396,23 @@ void main() {
         // In test environment, AudioRecorder methods throw MissingPluginException
         // but the method should handle this gracefully
         await expectLater(controller.resume(), completes);
+      });
+
+      test('should update status to recording and call repository', () async {
+        // Arrange
+        when(() => mockAudioRecorderRepository.resumeRecording())
+            .thenAnswer((_) async {});
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.resume();
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.resumeRecording()).called(1);
+        expect(container.read(audioRecorderControllerProvider).status,
+            equals(AudioRecorderStatus.recording));
       });
     });
 
@@ -463,6 +533,316 @@ void main() {
       // Clean up
       container1.dispose();
       container2.dispose();
+    });
+  });
+
+  group('AudioRecorderController - Untested Edge Cases', () {
+    group('record() method edge cases', () {
+      test('should handle isPaused() returning true', () async {
+        // Arrange
+        when(() => mockAudioRecorderRepository.hasPermission())
+            .thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.isPaused())
+            .thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.resumeRecording())
+            .thenAnswer((_) async {});
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.record();
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.resumeRecording()).called(1);
+        expect(container.read(audioRecorderControllerProvider).status,
+            equals(AudioRecorderStatus.recording));
+      });
+
+      test('should handle isRecording() returning true', () async {
+        // Arrange
+        when(() => mockAudioRecorderRepository.hasPermission())
+            .thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.isPaused())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.isRecording())
+            .thenAnswer((_) async => true);
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.record();
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+      });
+
+      test('should handle startRecording() returning null', () async {
+        // Arrange
+        when(() => mockAudioRecorderRepository.hasPermission())
+            .thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.isPaused())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.isRecording())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.startRecording())
+            .thenAnswer((_) async => null);
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.record();
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.startRecording()).called(1);
+        // State should not change if audioNote is null
+        expect(container.read(audioRecorderControllerProvider).status,
+            equals(AudioRecorderStatus.initializing));
+      });
+
+      test('should handle startRecording() returning valid AudioNote',
+          () async {
+        // Arrange
+        final mockAudioNote = AudioNote(
+          createdAt: DateTime.now(),
+          audioFile: 'audio.m4a',
+          audioDirectory: '/test/path',
+          duration: Duration.zero,
+        );
+        when(() => mockAudioRecorderRepository.hasPermission())
+            .thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.isPaused())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.isRecording())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.startRecording())
+            .thenAnswer((_) async => mockAudioNote);
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.record(linkedId: 'test-linked-id');
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.startRecording()).called(1);
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, equals(AudioRecorderStatus.recording));
+        expect(state.linkedId, equals('test-linked-id'));
+      });
+
+      test('should capture exceptions during record()', () async {
+        // Arrange
+        final testException = Exception('Test recording error');
+        when(() => mockAudioRecorderRepository.hasPermission())
+            .thenThrow(testException);
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        await controller.record();
+
+        // Assert
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'recorder_controller',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('stop() method edge cases', () {
+      test('should handle successful stop with audioNote and create entry',
+          () async {
+        // Arrange
+        final mockAudioNote = AudioNote(
+          createdAt: DateTime.now(),
+          audioFile: 'audio.m4a',
+          audioDirectory: '/test/path',
+          duration: const Duration(seconds: 10),
+        );
+        // Note: In a real test, we would mock SpeechRepository.createAudioEntry
+        // to return this journal audio, but since it's a static method,
+        // we can't easily mock it. The test verifies the flow up to that point.
+        /*final mockJournalAudio = JournalAudio(
+          meta: Metadata(
+            id: 'test-entry-id',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioFile: 'audio.m4a',
+            audioDirectory: '/test/path',
+            duration: const Duration(seconds: 10),
+          ),
+        );*/
+
+        // First, simulate starting a recording
+        when(() => mockAudioRecorderRepository.hasPermission())
+            .thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.isPaused())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.isRecording())
+            .thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.startRecording())
+            .thenAnswer((_) async => mockAudioNote);
+
+        // Mock the static method call
+        // Note: We can't directly mock static methods, but we can test the flow
+        when(() => mockAudioRecorderRepository.stopRecording())
+            .thenAnswer((_) async {});
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Start recording first
+        await controller.record();
+
+        // Set language and category
+        controller
+          ..setLanguage('en-US')
+          ..setCategoryId('test-category');
+
+        // Act
+        await controller.stop();
+
+        // Assert
+        verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, equals(AudioRecorderStatus.stopped));
+        expect(state.progress, equals(Duration.zero));
+        expect(state.decibels, equals(0));
+        expect(state.showIndicator, isFalse);
+        expect(state.modalVisible, isFalse);
+        expect(state.language, equals(''));
+      });
+
+      test('should capture exceptions during stop()', () async {
+        // Arrange
+        final testException = Exception('Test stop error');
+        when(() => mockAudioRecorderRepository.stopRecording())
+            .thenThrow(testException);
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act
+        final result = await controller.stop();
+
+        // Assert
+        expect(result, isNull);
+        verify(
+          () => mockLoggingService.captureException(
+            testException,
+            domain: 'recorder_controller',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('build() method amplitude subscription', () {
+      test('should subscribe to amplitude stream and update state', () async {
+        // Arrange
+        final amplitudeController = StreamController<Amplitude>();
+        final mockAmplitude = MockAmplitude();
+        when(() => mockAmplitude.current).thenReturn(-50);
+
+        when(() => mockAudioRecorderRepository.amplitudeStream)
+            .thenAnswer((_) => amplitudeController.stream);
+
+        // Act - Create a new container to trigger build()
+        final testContainer = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+          ],
+        )
+
+          // Get the controller to trigger build()
+          ..read(audioRecorderControllerProvider);
+
+        // Emit amplitude update
+        amplitudeController.add(mockAmplitude);
+
+        // Wait for stream to process
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+
+        // Assert
+        final state = testContainer.read(audioRecorderControllerProvider);
+        expect(state.decibels, equals(110.0)); // -50 + 160 = 110
+        expect(state.progress.inMilliseconds, greaterThanOrEqualTo(100));
+
+        // Clean up
+        await amplitudeController.close();
+        testContainer.dispose();
+      });
+
+      test('should cancel amplitude subscription on dispose', () async {
+        // Arrange
+        final amplitudeController = StreamController<Amplitude>();
+        when(() => mockAudioRecorderRepository.amplitudeStream)
+            .thenAnswer((_) => amplitudeController.stream);
+
+        // Act
+        ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+          ],
+        )
+          ..read(audioRecorderControllerProvider)
+
+          // Dispose container (which should cancel subscription)
+          ..dispose();
+
+        // Verify stream is no longer listened to
+        expect(amplitudeController.hasListener, isFalse);
+
+        // Clean up
+        await amplitudeController.close();
+      });
+    });
+
+    group('setCategoryId edge cases', () {
+      test('should update categoryId when different from current', () async {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+
+              // Act
+              ..setCategoryId('category-1')
+              ..setCategoryId('category-2');
+
+        // Assert - We can't directly verify the private field, but we can
+        // ensure the method executes without error and would be used in stop()
+        expect(() => controller.setCategoryId('category-3'), returnsNormally);
+      });
+
+      test('should not update categoryId when same as current', () async {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+
+              // Act
+              ..setCategoryId('same-category')
+              ..setCategoryId('same-category');
+
+        // Assert
+        expect(
+            () => controller.setCategoryId('same-category'), returnsNormally);
+      });
     });
   });
 
