@@ -16,9 +16,9 @@ class AudioRecordingIndicator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (BuildContext context, AudioRecorderState state) {
-        final shouldShow = state.status == AudioRecorderStatus.recording && 
+        final shouldShow = state.status == AudioRecorderStatus.recording &&
             !state.modalVisible;
-        
+
         if (!shouldShow) {
           return const SizedBox.shrink();
         }
