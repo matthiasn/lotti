@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -107,6 +108,7 @@ void main() {
     const defaultDelay = 5;
 
     setUpAll(() async {
+      await vod.init();
       final tmpDir = await getTemporaryDirectory();
       final docDir = Directory('${tmpDir.path}/${uuid.v1()}')
         ..createSync(recursive: true);

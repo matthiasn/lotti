@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -15,8 +14,6 @@ Future<Client> createMatrixClient({
   String? deviceDisplayName,
   String? dbName,
 }) async {
-  await vod.init();
-
   final docDir = getIt<Directory>();
   final name = dbName ?? 'lotti_sync';
   final path = '${docDir.path}/matrix/$name.db';
