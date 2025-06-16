@@ -108,6 +108,7 @@ For detailed documentation of UI components, see [recording/README.md](ui/widget
 - **Riverpod**: State management
 - **record**: Audio recording functionality
 - **media_kit**: Audio playback (via AudioPlayerCubit)
+- **AudioPlayerRepository**: Audio playback management
 
 ### Services Used
 - `LoggingService`: Error and event logging

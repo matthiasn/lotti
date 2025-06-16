@@ -383,45 +383,44 @@ void main() {
 
     tearDown(getIt.reset);
 
-    Widget makeTestableWidget({
-      String? linkedId,
-      String? categoryId,
-      AudioRecorderState? state,
-    }) {
-      final testState = state ??
-          AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            decibels: 80,
-            progress: const Duration(seconds: 30),
-            showIndicator: false,
-            modalVisible: false,
-            language: 'en',
-          );
+    testWidgets('stop button calls stop() and navigates back', (tester) async {
+      TestAudioRecorderController? controller;
 
-      return ProviderScope(
-        overrides: [
-          audioRecorderRepositoryProvider
-              .overrideWithValue(mockRecorderRepository),
-          audioRecorderControllerProvider.overrideWith(() {
-            return TestAudioRecorderController(testState);
-          }),
-        ],
-        child: makeTestableWidgetWithScaffold(
-          AudioRecordingModalContent(
-            linkedId: linkedId,
-            categoryId: categoryId,
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioRecorderRepositoryProvider
+                .overrideWithValue(mockRecorderRepository),
+            audioRecorderControllerProvider.overrideWith(() {
+              controller = TestAudioRecorderController(
+                AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  decibels: 80,
+                  progress: const Duration(seconds: 30),
+                  showIndicator: false,
+                  modalVisible: false,
+                  language: 'en',
+                ),
+              );
+              return controller!;
+            }),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const AudioRecordingModalContent(),
           ),
         ),
       );
-    }
-
-    testWidgets('stop button calls stop() and navigates back', (tester) async {
-      await tester.pumpWidget(makeTestableWidget());
       await tester.pumpAndSettle();
+
+      // Verify initial state is recording
+      expect(controller!.state.status, AudioRecorderStatus.recording);
 
       // Tap stop button
       await tester.tap(find.text('STOP'));
       await tester.pump();
+
+      // Verify controller state changed to stopped
+      expect(controller!.state.status, AudioRecorderStatus.stopped);
     });
   });
 

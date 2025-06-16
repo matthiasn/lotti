@@ -163,6 +163,11 @@ class AudioRecorderController extends _$AudioRecorderController {
         domain: 'recorder_controller',
         stackTrace: stackTrace,
       );
+      // Ensure state is updated even if an error occurs during stop/save
+      state = state.copyWith(
+          status: AudioRecorderStatus.stopped,
+          progress: Duration.zero,
+          decibels: 0);
     }
     return null;
   }
