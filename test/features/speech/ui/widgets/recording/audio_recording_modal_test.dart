@@ -8,15 +8,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/recorder_cubit.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/ui/widgets/analog_vu_meter.dart';
-import 'package:lotti/features/speech/ui/widgets/audio_recording_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../mocks/mocks.dart';
-import '../../../../widget_test_utils.dart';
+import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

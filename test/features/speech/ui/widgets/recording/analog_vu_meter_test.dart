@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/speech/ui/widgets/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart';
 
-import '../../../../widget_test_utils.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -224,10 +225,10 @@ void main() {
     });
   });
 
-  group('AnalogVuMeterPainter Tests', () {
+  group('VuMeterPainter Tests', () {
     test('shouldRepaint returns true for value changes', () {
       const colorScheme = ColorScheme.light();
-      final painter1 = AnalogVuMeterPainter(
+      final painter1 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.6,
         clipValue: 0,
@@ -235,7 +236,7 @@ void main() {
         colorScheme: colorScheme,
       );
 
-      final painter2 = AnalogVuMeterPainter(
+      final painter2 = VuMeterPainter(
         value: 0.7,
         peakValue: 0.6,
         clipValue: 0,
@@ -248,7 +249,7 @@ void main() {
 
     test('shouldRepaint returns true for peak value changes', () {
       const colorScheme = ColorScheme.light();
-      final painter1 = AnalogVuMeterPainter(
+      final painter1 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.6,
         clipValue: 0,
@@ -256,7 +257,7 @@ void main() {
         colorScheme: colorScheme,
       );
 
-      final painter2 = AnalogVuMeterPainter(
+      final painter2 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.8,
         clipValue: 0,
@@ -269,7 +270,7 @@ void main() {
 
     test('shouldRepaint returns true for theme mode changes', () {
       const colorScheme = ColorScheme.light();
-      final painter1 = AnalogVuMeterPainter(
+      final painter1 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.6,
         clipValue: 0,
@@ -277,7 +278,7 @@ void main() {
         colorScheme: colorScheme,
       );
 
-      final painter2 = AnalogVuMeterPainter(
+      final painter2 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.6,
         clipValue: 0,
@@ -290,7 +291,7 @@ void main() {
 
     test('shouldRepaint returns false for identical values', () {
       const colorScheme = ColorScheme.light();
-      final painter1 = AnalogVuMeterPainter(
+      final painter1 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.6,
         clipValue: 0,
@@ -298,7 +299,7 @@ void main() {
         colorScheme: colorScheme,
       );
 
-      final painter2 = AnalogVuMeterPainter(
+      final painter2 = VuMeterPainter(
         value: 0.5,
         peakValue: 0.6,
         clipValue: 0,

@@ -1,197 +1,11 @@
-// ignore_for_file: cascade_invocations
-
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AnalogVuMeter extends StatefulWidget {
-  const AnalogVuMeter({
-    required this.decibels,
-    required this.size,
-    required this.colorScheme,
-    super.key,
-  });
-
-  final double decibels;
-  final double size;
-  final ColorScheme colorScheme;
-
-  @override
-  State<AnalogVuMeter> createState() => _AnalogVuMeterState();
-}
-
-class _AnalogVuMeterState extends State<AnalogVuMeter>
-    with TickerProviderStateMixin {
-  late AnimationController _needleController;
-  late AnimationController _peakController;
-  late AnimationController _clipController;
-  late Animation<double> _needleAnimation;
-  late Animation<double> _peakAnimation;
-  late Animation<double> _clipAnimation;
-
-  double _currentValue = 0;
-  double _peakValue = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _needleController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
-    _peakController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _clipController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-
-    _needleAnimation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(CurvedAnimation(
-      parent: _needleController,
-      curve: Curves.easeOutCubic,
-    ));
-
-    _peakAnimation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(CurvedAnimation(
-      parent: _peakController,
-      curve: Curves.easeInOutCubic,
-    ));
-
-    _clipAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(
-      parent: _clipController,
-      curve: Curves.easeOut,
-    ));
-  }
-
-  @override
-  void didUpdateWidget(AnalogVuMeter oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.decibels != widget.decibels) {
-      _updateNeedle(widget.decibels);
-    }
-  }
-
-  void _updateNeedle(double decibels) {
-    final normalizedValue = _normalizeDecibels(decibels);
-
-    _needleAnimation = Tween<double>(
-      begin: _currentValue,
-      end: normalizedValue,
-    ).animate(CurvedAnimation(
-      parent: _needleController,
-      curve: Curves.easeOutCubic,
-    ));
-
-    _needleController.forward(from: 0);
-    _currentValue = normalizedValue;
-
-    // Check for clipping (>0.9 of scale is considered hot)
-    if (normalizedValue > 0.9) {
-      _clipController.forward(from: 0);
-      // Hardware VU meters typically hold the clip LED for 150-200ms
-      Future.delayed(const Duration(milliseconds: 150), () {
-        if (mounted) {
-          _clipController.reverse();
-        }
-      });
-    }
-
-    // Update peak if current value exceeds it
-    if (normalizedValue > _peakValue) {
-      _peakValue = normalizedValue;
-
-      _peakAnimation = Tween<double>(
-        begin: _peakValue,
-        end: _peakValue,
-      ).animate(_peakController);
-
-      // Start decay after hold time - peak should fall back to current level, not zero
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          _peakAnimation = Tween<double>(
-            begin: _peakValue,
-            end: _currentValue, // Fall back to current level, not zero
-          ).animate(CurvedAnimation(
-            parent: _peakController,
-            curve: Curves.easeInQuad,
-          ));
-          _peakController.forward(from: 0).then((_) {
-            if (mounted) {
-              setState(() {
-                _peakValue = _currentValue;
-              });
-            }
-          });
-        }
-      });
-    }
-  }
-
-  double _normalizeDecibels(double decibels) {
-    // VU meters typically show -20 to +3 dB range
-    // Map input decibels (0-160) to VU scale (-20 to +3)
-    // 0 dB on VU scale should be at ~60% position
-
-    // Convert to dB scale where 130 input = 0 VU
-    final vuDb = (decibels - 130) / 4; // Rough mapping
-
-    // Map VU dB to 0-1 scale position
-    if (vuDb <= -20) return 0;
-    if (vuDb <= -10) return 0.15 * (vuDb + 20) / 10;
-    if (vuDb <= -7) return 0.15 + 0.10 * (vuDb + 10) / 3;
-    if (vuDb <= -5) return 0.25 + 0.10 * (vuDb + 7) / 2;
-    if (vuDb <= -3) return 0.35 + 0.10 * (vuDb + 5) / 2;
-    if (vuDb <= 0) return 0.45 + 0.15 * (vuDb + 3) / 3;
-    if (vuDb <= 3) return 0.60 + 0.20 * vuDb / 3;
-    return 1; // +3 dB and above
-  }
-
-  @override
-  void dispose() {
-    _needleController.dispose();
-    _peakController.dispose();
-    _clipController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.size,
-      height: widget.size * 0.5,
-      child: AnimatedBuilder(
-        animation: Listenable.merge(
-            [_needleAnimation, _peakAnimation, _clipAnimation]),
-        builder: (context, child) {
-          return CustomPaint(
-            painter: AnalogVuMeterPainter(
-              value: _needleAnimation.value,
-              peakValue: _peakAnimation.value,
-              clipValue: _clipAnimation.value,
-              colorScheme: widget.colorScheme,
-              isDarkMode: Theme.of(context).brightness == Brightness.dark,
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class AnalogVuMeterPainter extends CustomPainter {
-  AnalogVuMeterPainter({
+class VuMeterPainter extends CustomPainter {
+  VuMeterPainter({
     required this.value,
     required this.peakValue,
     required this.clipValue,
@@ -221,8 +35,9 @@ class AnalogVuMeterPainter extends CustomPainter {
     final scale = math.min(scaleX, scaleY);
 
     // Save canvas state and apply scaling
-    canvas.save();
-    canvas.scale(scale, scale);
+    canvas
+      ..save()
+      ..scale(scale, scale);
 
     // Now work in fixed coordinate space
     const internalSize = Size(internalWidth, internalHeight);
@@ -354,8 +169,7 @@ class AnalogVuMeterPainter extends CustomPainter {
           ),
         ),
         textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
+      )..layout();
 
       // Adjust x position based on side
       double labelX;
@@ -422,15 +236,16 @@ class AnalogVuMeterPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     );
-    textPainter.layout();
-    // Position VU text in the center of the meter face - adjusted for new pivot
-    textPainter.paint(
-      canvas,
-      Offset(
-        size.width / 2 - textPainter.width / 2,
-        size.height * 0.53 - textPainter.height / 2,
-      ),
-    );
+    textPainter
+      ..layout()
+      // Position VU text in the center of the meter face - adjusted for new pivot
+      ..paint(
+        canvas,
+        Offset(
+          size.width / 2 - textPainter.width / 2,
+          size.height * 0.53 - textPainter.height / 2,
+        ),
+      );
   }
 
   void _drawPeakIndicator(Canvas canvas, Offset pivot, Size size) {
@@ -499,22 +314,22 @@ class AnalogVuMeterPainter extends CustomPainter {
         ? colorScheme.primary.withValues(alpha: 0.3)
         : colorScheme.onSurfaceVariant;
 
-    canvas.drawCircle(
-      center,
-      6,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = mainColor,
-    );
-
-    // Small highlight
-    canvas.drawCircle(
-      Offset(center.dx - 1, center.dy - 1),
-      2,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = highlightColor,
-    );
+    canvas
+      ..drawCircle(
+        center,
+        6,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = mainColor,
+      )
+      // Small highlight
+      ..drawCircle(
+        Offset(center.dx - 1, center.dy - 1),
+        2,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = highlightColor,
+      );
   }
 
   void _drawClipIndicator(Canvas canvas, Size size) {
@@ -534,51 +349,52 @@ class AnalogVuMeterPainter extends CustomPainter {
     // LED glow when clipping
     if (clipValue > 0) {
       // Large outer glow
-      canvas.drawCircle(
-        ledCenter,
-        ledRadius * 3,
-        Paint()
-          ..style = PaintingStyle.fill
-          ..color = Colors.red.withValues(alpha: 0.2 * clipValue)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
-      );
+      canvas
+        ..drawCircle(
+          ledCenter,
+          ledRadius * 3,
+          Paint()
+            ..style = PaintingStyle.fill
+            ..color = Colors.red.withValues(alpha: 0.2 * clipValue)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+        )
 
-      // Medium glow
-      canvas.drawCircle(
-        ledCenter,
-        ledRadius * 2,
-        Paint()
-          ..style = PaintingStyle.fill
-          ..color = Colors.redAccent.withValues(alpha: 0.4 * clipValue)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-      );
+        // Medium glow
+        ..drawCircle(
+          ledCenter,
+          ledRadius * 2,
+          Paint()
+            ..style = PaintingStyle.fill
+            ..color = Colors.redAccent.withValues(alpha: 0.4 * clipValue)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        )
 
-      // LED itself lit up - very bright
-      canvas.drawCircle(
-        ledCenter,
-        ledRadius,
-        Paint()
-          ..style = PaintingStyle.fill
-          ..shader = ui.Gradient.radial(
-            ledCenter,
-            ledRadius,
-            [
-              Colors.white.withValues(alpha: clipValue * 0.8),
-              Colors.redAccent.withValues(alpha: clipValue),
-              Colors.red.withValues(alpha: clipValue),
-            ],
-            [0.0, 0.3, 1.0],
-          ),
-      );
+        // LED itself lit up - very bright
+        ..drawCircle(
+          ledCenter,
+          ledRadius,
+          Paint()
+            ..style = PaintingStyle.fill
+            ..shader = ui.Gradient.radial(
+              ledCenter,
+              ledRadius,
+              [
+                Colors.white.withValues(alpha: clipValue * 0.8),
+                Colors.redAccent.withValues(alpha: clipValue),
+                Colors.red.withValues(alpha: clipValue),
+              ],
+              [0.0, 0.3, 1.0],
+            ),
+        )
 
-      // Bright white center
-      canvas.drawCircle(
-        Offset(ledCenter.dx - 1, ledCenter.dy - 1),
-        ledRadius * 0.4,
-        Paint()
-          ..style = PaintingStyle.fill
-          ..color = Colors.white.withValues(alpha: 0.9 * clipValue),
-      );
+        // Bright white center
+        ..drawCircle(
+          Offset(ledCenter.dx - 1, ledCenter.dy - 1),
+          ledRadius * 0.4,
+          Paint()
+            ..style = PaintingStyle.fill
+            ..color = Colors.white.withValues(alpha: 0.9 * clipValue),
+        );
     }
 
     // LED rim - more prominent
@@ -607,8 +423,7 @@ class AnalogVuMeterPainter extends CustomPainter {
         ),
       ),
       textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
+    )..layout();
     textPainter.paint(
       canvas,
       Offset(
@@ -617,7 +432,7 @@ class AnalogVuMeterPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(AnalogVuMeterPainter oldDelegate) {
+  bool shouldRepaint(VuMeterPainter oldDelegate) {
     return oldDelegate.value != value ||
         oldDelegate.peakValue != peakValue ||
         oldDelegate.clipValue != clipValue ||
