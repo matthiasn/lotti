@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -10,10 +11,24 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-Client createMatrixClient({
+Future<Client> createMatrixClient({
   String? deviceDisplayName,
   String? dbName,
-}) {
+}) async {
+  await vod.init();
+
+  final docDir = getIt<Directory>();
+  final name = dbName ?? 'lotti_sync';
+  final path = '${docDir.path}/matrix/$name.db';
+  final database = await MatrixSdkDatabase.init(
+    name,
+    database: await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(),
+    ),
+    sqfliteFactory: databaseFactoryFfi,
+  );
+
   return Client(
     deviceDisplayName ?? 'lotti',
     verificationMethods: {
@@ -21,23 +36,7 @@ Client createMatrixClient({
       KeyVerificationMethod.reciprocate,
     },
     sendTimelineEventTimeout: const Duration(minutes: 2),
-    databaseBuilder: (_) async {
-      final docDir = getIt<Directory>();
-      final name = dbName ?? 'lotti_sync';
-      final path = '${docDir.path}/matrix/$name.db';
-      final database = await databaseFactoryFfi.openDatabase(
-        path,
-        options: OpenDatabaseOptions(),
-      );
-      final db = MatrixSdkDatabase(
-        name,
-        database: database,
-        sqfliteFactory: databaseFactoryFfi,
-        fileStorageLocation: Uri(path: path),
-      );
-      await db.open();
-      return db;
-    },
+    database: database,
   );
 }
 

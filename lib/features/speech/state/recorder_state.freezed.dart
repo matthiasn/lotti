@@ -16,12 +16,29 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$AudioRecorderState {
+  /// Current status of the recorder.
   AudioRecorderStatus get status => throw _privateConstructorUsedError;
+
+  /// Duration of the current recording.
   Duration get progress => throw _privateConstructorUsedError;
+
+  /// Current audio level in decibels (0-160 range).
+  /// Used for VU meter visualization.
   double get decibels => throw _privateConstructorUsedError;
+
+  /// Whether to show the floating recording indicator.
+  /// Only relevant when recording and modal is not visible.
   bool get showIndicator => throw _privateConstructorUsedError;
+
+  /// Whether the recording modal is currently visible.
+  /// Used to coordinate with indicator display.
   bool get modalVisible => throw _privateConstructorUsedError;
+
+  /// Selected language for transcription.
+  /// Empty string means auto-detect.
   String? get language => throw _privateConstructorUsedError;
+
+  /// Optional ID to link recording to existing journal entry.
   String? get linkedId => throw _privateConstructorUsedError;
 
   /// Create a copy of AudioRecorderState
@@ -187,18 +204,35 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
       required this.language,
       this.linkedId});
 
+  /// Current status of the recorder.
   @override
   final AudioRecorderStatus status;
+
+  /// Duration of the current recording.
   @override
   final Duration progress;
+
+  /// Current audio level in decibels (0-160 range).
+  /// Used for VU meter visualization.
   @override
   final double decibels;
+
+  /// Whether to show the floating recording indicator.
+  /// Only relevant when recording and modal is not visible.
   @override
   final bool showIndicator;
+
+  /// Whether the recording modal is currently visible.
+  /// Used to coordinate with indicator display.
   @override
   final bool modalVisible;
+
+  /// Selected language for transcription.
+  /// Empty string means auto-detect.
   @override
   final String? language;
+
+  /// Optional ID to link recording to existing journal entry.
   @override
   final String? linkedId;
 
@@ -251,18 +285,35 @@ abstract class _AudioRecorderState implements AudioRecorderState {
       required final String? language,
       final String? linkedId}) = _$AudioRecorderStateImpl;
 
+  /// Current status of the recorder.
   @override
   AudioRecorderStatus get status;
+
+  /// Duration of the current recording.
   @override
   Duration get progress;
+
+  /// Current audio level in decibels (0-160 range).
+  /// Used for VU meter visualization.
   @override
   double get decibels;
+
+  /// Whether to show the floating recording indicator.
+  /// Only relevant when recording and modal is not visible.
   @override
   bool get showIndicator;
+
+  /// Whether the recording modal is currently visible.
+  /// Used to coordinate with indicator display.
   @override
   bool get modalVisible;
+
+  /// Selected language for transcription.
+  /// Empty string means auto-detect.
   @override
   String? get language;
+
+  /// Optional ID to link recording to existing journal entry.
   @override
   String? get linkedId;
 
