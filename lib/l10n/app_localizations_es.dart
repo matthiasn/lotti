@@ -1678,9 +1678,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Modelo de reconocimiento de voz Whisper:';
 
   @override
-  String get settingsSpeechTitle => 'Configuración de voz';
-
-  @override
   String get settingsSyncOutboxTitle => 'Bandeja de salida de sincronización';
 
   @override

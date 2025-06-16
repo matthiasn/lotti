@@ -9,7 +9,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -39,7 +38,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
-    ..registerSingleton<AsrService>(AsrService())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService())
     ..registerSingleton<OutboxService>(OutboxService())

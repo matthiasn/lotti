@@ -1679,9 +1679,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Modèle de reconnaissance vocale Whisper :';
 
   @override
-  String get settingsSpeechTitle => 'Paramètres de la parole';
-
-  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override

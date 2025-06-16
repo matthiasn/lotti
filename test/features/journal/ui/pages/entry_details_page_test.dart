@@ -9,7 +9,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -59,7 +58,6 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
-        ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())

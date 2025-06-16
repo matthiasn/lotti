@@ -583,7 +583,6 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Find & transcribe",
   "settingsSpeechLastActivity": "Last transcription activity:",
   "settingsSpeechModelSelectionTitle": "Whisper speech recognition model:",
-  "settingsSpeechTitle": "Speech Settings",
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsTagsDeleteTooltip": "Delete tag",
   "settingsTagsDetailsLabel": "Tags Details",

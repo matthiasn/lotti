@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
@@ -351,26 +350,18 @@ void main() {
   group('Stop Button and Transcription Tests', () {
     late MockJournalDb mockJournalDb;
     late MockNavService mockNavService;
-    late MockAsrService mockAsrService;
     late MockAudioRecorderRepository mockRecorderRepository;
     late MockLoggingService mockLoggingService;
 
     setUp(() {
       mockJournalDb = MockJournalDb();
       mockNavService = MockNavService();
-      mockAsrService = MockAsrService();
       mockRecorderRepository = MockAudioRecorderRepository();
       mockLoggingService = MockLoggingService();
-
-      // Mock the progressController for AsrService
-      when(() => mockAsrService.progressController).thenReturn(
-        StreamController<(String, TranscriptionStatus)>(),
-      );
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<AsrService>(mockAsrService)
         ..registerSingleton<LoggingService>(mockLoggingService);
 
       when(() => mockJournalDb.getConfigFlag(any()))

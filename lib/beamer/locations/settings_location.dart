@@ -2,7 +2,6 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
-import 'package:lotti/features/speech/ui/pages/speech_settings_page.dart';
 import 'package:lotti/pages/settings/advanced/about_page.dart';
 import 'package:lotti/pages/settings/advanced/conflicts_page.dart';
 import 'package:lotti/pages/settings/advanced/logging_page.dart';
@@ -243,13 +242,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-health_import'),
           child: HealthImportPage(),
-        ),
-
-      // Speech Settings
-      if (pathContains('speech_settings'))
-        const BeamPage(
-          key: ValueKey('speech_settings'),
-          child: SpeechSettingsPage(),
         ),
 
       // Advanced Settings

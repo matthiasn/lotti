@@ -4,7 +4,6 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -50,10 +49,6 @@ class SpeechRepository {
         ),
       );
       await persistenceLogic.createDbEntity(journalEntity, linkedId: linkedId);
-
-      if (autoTranscribe) {
-        await getIt<AsrService>().enqueue(entry: journalEntity);
-      }
 
       return journalEntity;
     } catch (exception, stackTrace) {
