@@ -1,7 +1,5 @@
 import UIKit
 import Flutter
-import WhisperKit
-
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -14,7 +12,6 @@ import WhisperKit
         }
         
         let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-        let _ = WhisperKitRunner(binaryMessenger: controller.binaryMessenger)
         
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)

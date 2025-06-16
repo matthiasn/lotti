@@ -7,7 +7,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -64,7 +63,6 @@ void main() {
       getIt
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<LoggingService>(LoggingService())
-        ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(mockJournalDb)

@@ -10,7 +10,6 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -127,8 +126,6 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
-
-class MockAsrService extends Mock implements AsrService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
 

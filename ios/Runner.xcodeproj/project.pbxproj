@@ -14,7 +14,6 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		ADB650B7270B3C4300B98C66 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADB650B6270B3C4300B98C66 /* HealthKit.framework */; };
-		ADDE424D2CC70E4700832FB2 /* WhisperKitRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDE424C2CC70E4700832FB2 /* WhisperKitRunner.swift */; };
 		ADFF30672BB4FE6300B8F8C8 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = ADFF30662BB4FE6300B8F8C8 /* WhisperKit */; };
 		FD4BDDFBB85CAB6754042A0B /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E08CACAFD56E1EF268BBD8C5 /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -52,7 +51,6 @@
 		ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
 		ADB650B5270B3C4300B98C66 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		ADB650B6270B3C4300B98C66 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
-		ADDE424C2CC70E4700832FB2 /* WhisperKitRunner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WhisperKitRunner.swift; path = ../../darwin/WhisperKitRunner.swift; sourceTree = "<group>"; };
 		ADEF534728103FDF00F29D25 /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		E08CACAFD56E1EF268BBD8C5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F9EF5E47E2CAAE216BAF45A3 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
@@ -115,7 +113,6 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE424C2CC70E4700832FB2 /* WhisperKitRunner.swift */,
 				ADEF534728103FDF00F29D25 /* RunnerDebug.entitlements */,
 				ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */,
 				ADB650B5270B3C4300B98C66 /* Runner.entitlements */,
@@ -229,9 +226,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -284,9 +285,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -315,7 +320,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ADDE424D2CC70E4700832FB2 /* WhisperKitRunner.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);

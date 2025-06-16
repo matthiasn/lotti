@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/speech/state/speech_settings_state.dart';
 import 'package:lotti/get_it.dart';
 
@@ -15,8 +14,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
         ) {
     loadSelectedModel();
   }
-
-  final AsrService _asrService = getIt<AsrService>();
 
   String _selectedModel = 'small';
 
@@ -31,7 +28,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
   Future<void> selectModel(String selectedModel) async {
     _selectedModel = selectedModel;
-    _asrService.model = selectedModel;
 
     await getIt<SettingsDb>().saveSettingsItem(
       whisperModelKey,

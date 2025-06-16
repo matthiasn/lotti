@@ -283,7 +283,6 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Buscar y transcribir",
   "settingsSpeechLastActivity": "Última actividad de transcripción:",
   "settingsSpeechModelSelectionTitle": "Modelo de reconocimiento de voz Whisper:",
-  "settingsSpeechTitle": "Configuración de voz",
   "settingsSyncOutboxTitle": "Bandeja de salida de sincronización",
   "settingsTagsDeleteTooltip": "Eliminar etiqueta",
   "settingsTagsHideLabel": "Ocultar de las sugerencias:",

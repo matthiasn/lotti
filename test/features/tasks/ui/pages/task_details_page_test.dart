@@ -8,7 +8,6 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -59,7 +58,6 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
-        ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())

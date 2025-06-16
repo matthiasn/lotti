@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
@@ -57,11 +55,6 @@ class SettingsPage extends StatelessWidget {
               title: context.messages.settingsFlagsTitle,
               path: '/settings/flags',
             ),
-            if (Platform.isIOS || Platform.isMacOS)
-              SettingsNavCard(
-                title: context.messages.settingsSpeechTitle,
-                path: '/settings/speech_settings',
-              ),
             SettingsNavCard(
               title: context.messages.settingsAdvancedTitle,
               path: '/settings/advanced',

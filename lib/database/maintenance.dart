@@ -8,7 +8,6 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -152,27 +151,6 @@ class Maintenance {
             domain: 'MAINTENANCE',
             subDomain: 'recreateFts5',
           );
-        }
-      }
-    }
-  }
-
-  Future<void> transcribeAudioWithoutTranscript() async {
-    await createDbBackup(journalDbFileName);
-
-    final count = await _db.getJournalCount();
-    const pageSize = 100;
-    final pages = (count / pageSize).ceil();
-
-    for (var page = 0; page <= pages; page++) {
-      final dbEntities =
-          await _db.orderedAudioEntries(pageSize, page * pageSize).get();
-      final entries = entityStreamMapper(dbEntities);
-      for (final entry in entries) {
-        if (entry is JournalAudio) {
-          if (entry.data.transcripts?.isEmpty ?? true) {
-            await getIt<AsrService>().enqueue(entry: entry);
-          }
         }
       }
     }

@@ -283,7 +283,6 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Găsește și transcrie",
   "settingsSpeechLastActivity": "Ultima activitate de transcriere:",
   "settingsSpeechModelSelectionTitle": "Model de recunoaștere vocală Whisper:",
-  "settingsSpeechTitle": "Setări vorbire",
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsTagsDeleteTooltip": "Șterge eticheta",
   "settingsTagsHideLabel": "Ascunde din sugestii:",
