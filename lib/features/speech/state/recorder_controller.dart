@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
@@ -14,7 +13,7 @@ part 'recorder_controller.g.dart';
 
 const intervalMs = 100;
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
@@ -139,7 +138,6 @@ class AudioRecorderController extends _$AudioRecorderController {
   }
 
   void setModalVisible({required bool modalVisible}) {
-    debugPrint('AudioRecorderController: setModalVisible($modalVisible)');
     state = state.copyWith(modalVisible: modalVisible);
   }
 

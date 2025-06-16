@@ -7,7 +7,7 @@ part of 'audio_recorder_repository.dart';
 // **************************************************************************
 
 String _$audioRecorderRepositoryHash() =>
-    r'497a8b539bd71cdf90702695f08b9d6c0fa38237';
+    r'f0050ec0bfccbaaedbeddb0f560f661558313922';
 
 /// See also [audioRecorderRepository].
 @ProviderFor(audioRecorderRepository)

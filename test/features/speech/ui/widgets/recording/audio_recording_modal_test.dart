@@ -265,7 +265,8 @@ void main() {
       expect(redDot, findsOneWidget);
     });
 
-    testWidgets('modal sets visibility on init', (tester) async {
+    testWidgets('modal content widget renders without setting visibility', (tester) async {
+      // Modal visibility is now managed by the show() method, not the widget
       final controller = TestAudioRecorderController(
         AudioRecorderState(
           status: AudioRecorderStatus.initialized,
@@ -293,8 +294,10 @@ void main() {
       // Wait for post frame callback
       await tester.pump();
 
-      // Modal should be set to visible
-      expect(controller.state.modalVisible, isTrue);
+      // The widget should render properly
+      expect(find.byType(AudioRecordingModalContent), findsOneWidget);
+      // Modal visibility is not set by the widget anymore
+      expect(controller.state.modalVisible, isFalse);
     });
   });
 

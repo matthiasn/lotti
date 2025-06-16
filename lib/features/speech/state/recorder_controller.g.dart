@@ -7,12 +7,12 @@ part of 'recorder_controller.dart';
 // **************************************************************************
 
 String _$audioRecorderControllerHash() =>
-    r'c15e15c43f3b91ff184d6376c010b95fda645072';
+    r'dda59c5318e5ae7564a57be54fe824288fae6fff';
 
 /// See also [AudioRecorderController].
 @ProviderFor(AudioRecorderController)
-final audioRecorderControllerProvider = AutoDisposeNotifierProvider<
-    AudioRecorderController, AudioRecorderState>.internal(
+final audioRecorderControllerProvider =
+    NotifierProvider<AudioRecorderController, AudioRecorderState>.internal(
   AudioRecorderController.new,
   name: r'audioRecorderControllerProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -22,6 +22,6 @@ final audioRecorderControllerProvider = AutoDisposeNotifierProvider<
   allTransitiveDependencies: null,
 );
 
-typedef _$AudioRecorderController = AutoDisposeNotifier<AudioRecorderState>;
+typedef _$AudioRecorderController = Notifier<AudioRecorderState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

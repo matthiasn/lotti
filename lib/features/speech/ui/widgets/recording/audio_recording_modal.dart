@@ -15,8 +15,15 @@ class AudioRecordingModal {
     String? categoryId,
     bool useRootNavigator = true,
   }) async {
-    // We need a ProviderScope or ConsumerWidget context to access providers
-    // Since this is a static method, we'll set modal visibility inside the modal content
+    // Get the controller before showing the modal
+    final container = ProviderScope.containerOf(context);
+    final controller = container.read(audioRecorderControllerProvider.notifier)
+      // Set modal visible before showing
+      ..setModalVisible(modalVisible: true);
+    if (categoryId != null) {
+      controller.setCategoryId(categoryId);
+    }
+
     await WoltModalSheet.show<void>(
       context: context,
       useRootNavigator: useRootNavigator,
@@ -31,6 +38,10 @@ class AudioRecordingModal {
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
     );
+
+    // Modal has been dismissed (either by stop button, back gesture, or tapping outside)
+    // Always set modal visibility to false after dismissal
+    controller.setModalVisible(modalVisible: false);
   }
 
   static WoltModalSheetPage _buildRecordingPage(
@@ -76,27 +87,12 @@ class _AudioRecordingModalContentState
   @override
   void initState() {
     super.initState();
-    // Set modal visible when widget is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(audioRecorderControllerProvider.notifier)
-        ..setModalVisible(modalVisible: true)
-        ..setCategoryId(widget.categoryId);
-    });
+    // Modal visibility is now managed in the show() method
   }
 
   @override
   void dispose() {
-    // Set modal not visible when widget is disposed
-    // We should only update the state if we're not in a test environment
-    // In production, this is fine because the controller is kept alive
-    try {
-      ref
-          .read(audioRecorderControllerProvider.notifier)
-          .setModalVisible(modalVisible: false);
-    } catch (e) {
-      // In tests, the provider might be disposed before this widget
-      // That's okay, we can ignore this error
-    }
+    // Modal visibility is now managed in the show() method
     super.dispose();
   }
 
@@ -215,6 +211,8 @@ class _AudioRecordingModalContentState
   }
 
   Future<void> _stop() async {
+    final controller = ref.read(audioRecorderControllerProvider.notifier);
+    await controller.stop();
     if (mounted) {
       Navigator.of(context).pop();
     }
