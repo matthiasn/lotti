@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -95,17 +95,11 @@ class CreateAudioRecordingListTile extends StatelessWidget {
       title: Text(context.messages.addActionAddAudioRecording),
       onTap: () {
         Navigator.of(context).pop();
-        if (getIt<NavService>().isTasksTabActive()) {
-          beamToNamed(
-            '/tasks/$linkedFromId/record_audio/$linkedFromId?categoryId=$categoryId',
-            data: {'categoryId': categoryId},
-          );
-        } else {
-          beamToNamed(
-            '/journal/$linkedFromId/record_audio/$linkedFromId?categoryId=$categoryId',
-            data: {'categoryId': categoryId},
-          );
-        }
+        AudioRecordingModal.show(
+          context,
+          linkedId: linkedFromId,
+          categoryId: categoryId,
+        );
       },
     );
   }
