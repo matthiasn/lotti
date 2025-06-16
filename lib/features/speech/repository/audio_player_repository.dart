@@ -15,13 +15,19 @@ class AudioPlayerRepository {
 
   Stream<Duration> get positionStream => _audioPlayer.stream.position;
 
-  AudioPlayerStatus? _currentStatus;
-  AudioPlayerStatus? get currentStatus => _currentStatus;
+  AudioPlayerStatus? get currentStatus {
+    if (_audioPlayer.state.playing) {
+      return AudioPlayerStatus.playing;
+    } else if (_audioPlayer.state.completed) {
+      return AudioPlayerStatus.stopped;
+    } else {
+      return AudioPlayerStatus.paused;
+    }
+  }
 
   Future<void> pause() async {
     try {
       await _audioPlayer.pause();
-      _currentStatus = AudioPlayerStatus.paused;
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
@@ -35,7 +41,6 @@ class AudioPlayerRepository {
   Future<void> play() async {
     try {
       await _audioPlayer.play();
-      _currentStatus = AudioPlayerStatus.playing;
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
@@ -49,7 +54,6 @@ class AudioPlayerRepository {
   Future<void> stop() async {
     try {
       await _audioPlayer.stop();
-      _currentStatus = AudioPlayerStatus.stopped;
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
@@ -64,7 +68,6 @@ class AudioPlayerRepository {
     try {
       final localPath = await AudioUtils.getFullAudioPath(audioNote);
       await _audioPlayer.open(Media(localPath), play: false);
-      _currentStatus = AudioPlayerStatus.stopped;
     } catch (e, stackTrace) {
       _loggingService.captureException(
         e,
