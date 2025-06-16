@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -127,7 +126,6 @@ class AudioRecorderRepository {
 
   Future<void> stopRecording() async {
     try {
-      debugPrint('stop recording');
       await _audioRecorder.stop();
     } catch (e, stackTrace) {
       _loggingService.captureException(

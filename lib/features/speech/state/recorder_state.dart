@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 
 part 'recorder_state.freezed.dart';
 

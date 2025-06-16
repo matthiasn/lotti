@@ -24,24 +24,26 @@ class AudioRecordingModal {
       controller.setCategoryId(categoryId);
     }
 
-    await WoltModalSheet.show<void>(
-      context: context,
-      useRootNavigator: useRootNavigator,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          _buildRecordingPage(
-            context,
-            linkedId: linkedId,
-            categoryId: categoryId,
-          ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-    );
-
-    // Modal has been dismissed (either by stop button, back gesture, or tapping outside)
-    // Always set modal visibility to false after dismissal
-    controller.setModalVisible(modalVisible: false);
+    try {
+      await WoltModalSheet.show<void>(
+        context: context,
+        useRootNavigator: useRootNavigator,
+        pageListBuilder: (modalSheetContext) {
+          return [
+            _buildRecordingPage(
+              context,
+              linkedId: linkedId,
+              categoryId: categoryId,
+            ),
+          ];
+        },
+        modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      );
+    } finally {
+      // Modal has been dismissed (either by stop button, back gesture, or tapping outside)
+      // Always set modal visibility to false after dismissal
+      controller.setModalVisible(modalVisible: false);
+    }
   }
 
   static WoltModalSheetPage _buildRecordingPage(

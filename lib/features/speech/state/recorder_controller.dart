@@ -55,6 +55,8 @@ class AudioRecorderController extends _$AudioRecorderController {
         progress: Duration(
           milliseconds: state.progress.inMilliseconds + intervalMs,
         ),
+        // The offset of 160 converts the amplitude to a positive decibel value
+        // suitable for VU meter display (typical range: 0-200 dB)
         decibels: amp.current + 160,
       );
     });
@@ -152,6 +154,7 @@ class AudioRecorderController extends _$AudioRecorderController {
         );
         _linkedId = null;
         final entryId = journalAudio?.meta.id;
+        _audioNote = null; // Reset audio note after processing
         return entryId;
       }
     } catch (exception, stackTrace) {
@@ -174,6 +177,7 @@ class AudioRecorderController extends _$AudioRecorderController {
   /// Resumes a paused recording.
   Future<void> resume() async {
     await _recorderRepository.resumeRecording();
+    state = state.copyWith(status: AudioRecorderStatus.recording);
   }
 
   /// Sets the language for transcription.
