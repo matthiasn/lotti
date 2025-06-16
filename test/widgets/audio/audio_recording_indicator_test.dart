@@ -30,7 +30,8 @@ void main() {
       (_) => false,
     );
 
-    testWidgets('widget is displayed, tapping stops recorder', (tester) async {
+    testWidgets('widget is displayed when recording and modal not visible',
+        (tester) async {
       final recordingState = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         decibels: 80,
@@ -72,8 +73,93 @@ void main() {
           find.byKey(const Key('audio_recording_indicator'));
       expect(indicatorFinder, findsOneWidget);
 
-      await tester.tap(indicatorFinder);
-      verify(() => mockNavService.beamToNamed(any())).called(1);
+      // Verify the duration text is displayed
+      expect(find.text('00:00:00'), findsOneWidget);
+
+      // Verify the mic icon is displayed
+      expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+    });
+
+    testWidgets('widget is hidden when modal is visible', (tester) async {
+      final recordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        decibels: 80,
+        progress: Duration.zero,
+        showIndicator: true,
+        modalVisible: true, // Modal is visible
+        language: 'en',
+      );
+
+      when(() => mockAudioRecorderCubit.stream).thenAnswer(
+        (_) => Stream<AudioRecorderState>.fromIterable([recordingState]),
+      );
+
+      when(() => mockAudioRecorderCubit.state).thenAnswer(
+        (_) => recordingState,
+      );
+
+      when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioRecorderCubit>(
+            create: (_) => mockAudioRecorderCubit,
+            lazy: false,
+            child: const Row(
+              children: [
+                Expanded(child: AudioRecordingIndicator()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final indicatorFinder =
+          find.byKey(const Key('audio_recording_indicator'));
+      expect(indicatorFinder, findsNothing);
+    });
+
+    testWidgets('widget is hidden when not recording', (tester) async {
+      final recordingState = AudioRecorderState(
+        status: AudioRecorderStatus.stopped, // Not recording
+        decibels: 0,
+        progress: Duration.zero,
+        showIndicator: false,
+        modalVisible: false,
+        language: 'en',
+      );
+
+      when(() => mockAudioRecorderCubit.stream).thenAnswer(
+        (_) => Stream<AudioRecorderState>.fromIterable([recordingState]),
+      );
+
+      when(() => mockAudioRecorderCubit.state).thenAnswer(
+        (_) => recordingState,
+      );
+
+      when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioRecorderCubit>(
+            create: (_) => mockAudioRecorderCubit,
+            lazy: false,
+            child: const Row(
+              children: [
+                Expanded(child: AudioRecordingIndicator()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final indicatorFinder =
+          find.byKey(const Key('audio_recording_indicator'));
+      expect(indicatorFinder, findsNothing);
     });
   });
 }
