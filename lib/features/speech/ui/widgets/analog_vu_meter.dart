@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AnalogVuMeter extends StatefulWidget {
   const AnalogVuMeter({
@@ -179,7 +180,7 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
               value: _needleAnimation.value,
               peakValue: _peakAnimation.value,
               clipValue: _clipAnimation.value,
-              colorScheme: Theme.of(context).colorScheme,
+              colorScheme: widget.colorScheme,
               isDarkMode: Theme.of(context).brightness == Brightness.dark,
             ),
           );
@@ -258,8 +259,9 @@ class AnalogVuMeterPainter extends CustomPainter {
     final pivot = Offset(size.width / 2, size.height * 0.8);
     final radius = size.width * 0.275; // Medium size arc
 
-    // Get theme colors
-    final mainColor = colorScheme.onSurface;
+    // Get theme colors with better contrast
+    final mainColor =
+        isDarkMode ? colorScheme.primaryFixedDim : colorScheme.onSurface;
     const redColor = Colors.red;
 
     // Scale positions and labels matching real VU meter
@@ -345,7 +347,7 @@ class AnalogVuMeterPainter extends CustomPainter {
       final textPainter = TextPainter(
         text: TextSpan(
           text: mark['label']! as String,
-          style: TextStyle(
+          style: GoogleFonts.inconsolata(
             color: isRed ? redColor : mainColor,
             fontSize: 10,
             fontWeight: FontWeight.w600,
@@ -411,10 +413,11 @@ class AnalogVuMeterPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: 'VU',
-        style: TextStyle(
+        style: GoogleFonts.inconsolata(
           fontSize: 24,
           fontWeight: FontWeight.w300,
-          color: colorScheme.onSurface,
+          color:
+              isDarkMode ? colorScheme.primaryFixedDim : colorScheme.onSurface,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -457,7 +460,7 @@ class AnalogVuMeterPainter extends CustomPainter {
   }
 
   void _drawNeedle(Canvas canvas, Offset pivot, Size size) {
-    final mainColor = colorScheme.onSurface;
+    final mainColor = isDarkMode ? colorScheme.primary : colorScheme.onSurface;
     final radius = size.width * 0.275;
     final needleAngle = _startAngle + value * _sweepAngle;
     final needleLength = radius * 1.1; // Longer needle that extends past arc
@@ -491,8 +494,10 @@ class AnalogVuMeterPainter extends CustomPainter {
   }
 
   void _drawCenterPivot(Canvas canvas, Offset center) {
-    final mainColor = colorScheme.onSurface;
-    final highlightColor = colorScheme.onSurfaceVariant;
+    final mainColor = isDarkMode ? colorScheme.primary : colorScheme.onSurface;
+    final highlightColor = isDarkMode
+        ? colorScheme.primary.withValues(alpha: 0.3)
+        : colorScheme.onSurfaceVariant;
 
     canvas.drawCircle(
       center,
@@ -583,15 +588,19 @@ class AnalogVuMeterPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = colorScheme.onSurfaceVariant,
+        ..color = isDarkMode
+            ? colorScheme.primary.withValues(alpha: 0.7)
+            : colorScheme.onSurfaceVariant,
     );
 
     // PEAK label
     final textPainter = TextPainter(
       text: TextSpan(
         text: 'PEAK',
-        style: TextStyle(
-          color: colorScheme.onSurface,
+        style: GoogleFonts.inconsolata(
+          color: isDarkMode
+              ? colorScheme.primary.withValues(alpha: 0.8)
+              : colorScheme.onSurface,
           fontSize: 8,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,

@@ -59,9 +59,12 @@ class AudioRecordingModal {
       hasSabGradient: false,
       isTopBarLayerAlwaysVisible: false,
       navBarHeight: 0,
-      child: AudioRecordingModalContent(
-        linkedId: linkedId,
-        categoryId: categoryId,
+      child: Theme(
+        data: theme,
+        child: AudioRecordingModalContent(
+          linkedId: linkedId,
+          categoryId: categoryId,
+        ),
       ),
     );
   }
@@ -146,6 +149,7 @@ class AudioRecordingModalContent extends ConsumerWidget {
                     style: GoogleFonts.inconsolata(
                       fontSize: fontSizeLarge,
                       fontWeight: FontWeight.w300,
+                      color: theme.colorScheme.primaryFixedDim,
                     ),
                   ),
 
