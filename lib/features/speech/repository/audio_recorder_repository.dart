@@ -12,6 +12,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'audio_recorder_repository.g.dart';
 
+/// Provider for the audio recorder repository.
+/// Kept alive to maintain recording state across navigation.
 @Riverpod(keepAlive: true)
 AudioRecorderRepository audioRecorderRepository(Ref ref) {
   final repository = AudioRecorderRepository();
@@ -21,16 +23,31 @@ AudioRecorderRepository audioRecorderRepository(Ref ref) {
   return repository;
 }
 
+/// Repository that encapsulates all audio recording operations.
+///
+/// This repository provides a clean abstraction over the `record` package,
+/// handling:
+/// - Permission management
+/// - Recording lifecycle (start, stop, pause, resume)
+/// - Audio file creation and directory management
+/// - Real-time amplitude monitoring for VU meter
+/// - Comprehensive error handling and logging
+///
+/// All methods include error handling to ensure graceful degradation.
 class AudioRecorderRepository {
   AudioRecorderRepository() : _audioRecorder = AudioRecorder();
 
   final AudioRecorder _audioRecorder;
   final LoggingService _loggingService = getIt<LoggingService>();
 
+  /// Stream of amplitude updates for VU meter visualization.
+  /// Emits amplitude values every 100ms while recording.
   Stream<Amplitude> get amplitudeStream => _audioRecorder.onAmplitudeChanged(
         const Duration(milliseconds: 100),
       );
 
+  /// Checks if the app has microphone permission.
+  /// Returns false if permission check fails.
   Future<bool> hasPermission() async {
     try {
       return await _audioRecorder.hasPermission();
@@ -44,6 +61,8 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Checks if recording is currently paused.
+  /// Returns false if check fails or recorder is not paused.
   Future<bool> isPaused() async {
     try {
       return await _audioRecorder.isPaused();
@@ -57,6 +76,8 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Checks if recording is currently active.
+  /// Returns false if check fails or recorder is not recording.
   Future<bool> isRecording() async {
     try {
       return await _audioRecorder.isRecording();
@@ -131,6 +152,8 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Resumes a paused recording.
+  /// Only works if recording was previously paused.
   Future<void> resumeRecording() async {
     try {
       await _audioRecorder.resume();
@@ -144,6 +167,8 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Disposes of the audio recorder and releases resources.
+  /// Called when the repository is disposed.
   Future<void> dispose() async {
     try {
       await _audioRecorder.dispose();

@@ -32,8 +32,9 @@ The main recording interface presented as a modal bottom sheet.
 - Displays the VU meter for visual audio feedback
 - Shows recording duration in MM:SS format
 - Language selector for transcription
-- Record/Stop button with auto-transcribe option
-- Integrates with `AudioRecorderCubit` for state management
+- Record/Stop button with recording status indicator
+- Integrates with Riverpod state management via `AudioRecorderController`
+- Automatically pauses any playing audio when recording starts
 
 **Usage:**
 ```dart
@@ -116,9 +117,10 @@ flutter test test/widgets/audio/
 ## State Management
 
 The recording system uses:
-- `AudioRecorderCubit` for recording state
+- `AudioRecorderController` (Riverpod) for recording state management
+- `AudioRecorderRepository` for encapsulating recording operations
 - Flutter animations for smooth visual updates
-- BLoC pattern for reactive UI updates
+- Reactive UI updates through Riverpod providers
 
 ## Usage Flow
 

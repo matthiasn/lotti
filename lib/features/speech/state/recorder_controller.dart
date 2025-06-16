@@ -13,8 +13,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'recorder_controller.g.dart';
 
+/// Interval in milliseconds for amplitude updates from the recorder.
 const intervalMs = 100;
 
+/// Main controller for audio recording functionality.
+///
+/// This Riverpod controller manages the complete recording lifecycle including:
+/// - Recording state (start, stop, pause, resume)
+/// - Real-time audio level monitoring for VU meter display
+/// - Integration with audio player to pause playback during recording
+/// - UI state management (modal visibility, indicator visibility)
+/// - Language selection for transcription
+///
+/// The controller is kept alive to maintain recording state across navigation.
 @Riverpod(keepAlive: true)
 class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
@@ -26,6 +37,13 @@ class AudioRecorderController extends _$AudioRecorderController {
   String? _language;
   AudioNote? _audioNote;
 
+  /// Initializes the controller with dependencies and sets up amplitude monitoring.
+  ///
+  /// This method:
+  /// - Injects required dependencies (repository, services)
+  /// - Sets up amplitude stream subscription for VU meter updates
+  /// - Configures cleanup on disposal
+  /// - Returns initial recording state
   @override
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
@@ -55,6 +73,15 @@ class AudioRecorderController extends _$AudioRecorderController {
     );
   }
 
+  /// Starts a new recording or toggles the current recording state.
+  ///
+  /// This method handles:
+  /// - Pausing any currently playing audio
+  /// - Checking recording permissions
+  /// - Resume if paused, stop if recording, or start new recording
+  /// - Setting the linked entry ID for the recording
+  ///
+  /// [linkedId] Optional ID to link this recording to an existing journal entry.
   Future<void> record({
     String? linkedId,
   }) async {
@@ -95,6 +122,15 @@ class AudioRecorderController extends _$AudioRecorderController {
     }
   }
 
+  /// Stops the current recording and creates a journal entry.
+  ///
+  /// This method:
+  /// - Stops the audio recording
+  /// - Updates the audio note with final duration
+  /// - Creates a journal entry via SpeechRepository
+  /// - Resets the recording state
+  ///
+  /// Returns the ID of the created journal entry, or null if no recording exists.
   Future<String?> stop() async {
     try {
       await _recorderRepository.stopRecording();
@@ -128,28 +164,40 @@ class AudioRecorderController extends _$AudioRecorderController {
     return null;
   }
 
+  /// Pauses the current recording.
+  /// Updates the state to reflect paused status.
   Future<void> pause() async {
     await _recorderRepository.pauseRecording();
     state = state.copyWith(status: AudioRecorderStatus.paused);
   }
 
+  /// Resumes a paused recording.
   Future<void> resume() async {
     await _recorderRepository.resumeRecording();
   }
 
+  /// Sets the language for transcription.
+  /// [language] Language code (e.g., 'en', 'de') or empty string for auto-detect.
   void setLanguage(String language) {
     _language = language;
     state = state.copyWith(language: language);
   }
 
+  /// Controls visibility of the floating recording indicator.
+  /// [showIndicator] Whether to show the indicator when recording and modal is closed.
   void setIndicatorVisible({required bool showIndicator}) {
     state = state.copyWith(showIndicator: showIndicator);
   }
 
+  /// Controls visibility of the recording modal.
+  /// Used to coordinate indicator display when modal is open/closed.
+  /// [modalVisible] Whether the recording modal is currently visible.
   void setModalVisible({required bool modalVisible}) {
     state = state.copyWith(modalVisible: modalVisible);
   }
 
+  /// Sets the category ID for the recording.
+  /// [categoryId] Optional category to assign to the audio entry.
   void setCategoryId(String? categoryId) {
     if (categoryId != _categoryId) {
       _categoryId = categoryId;
