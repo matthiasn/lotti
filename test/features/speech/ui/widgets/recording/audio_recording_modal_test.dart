@@ -610,5 +610,35 @@ void main() {
       // The widget should format the duration correctly
       expect(find.text('0:01:23'), findsOneWidget);
     });
+
+    testWidgets('formatDuration handles various duration formats',
+        (tester) async {
+      // Test different duration values
+      final testCases = [
+        (const Duration(seconds: 5), '0:00:05'),
+        (const Duration(minutes: 10, seconds: 30), '0:10:30'),
+        (const Duration(hours: 1, minutes: 5, seconds: 45), '1:05:45'),
+      ];
+
+      for (final (duration, expected) in testCases) {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          decibels: 0,
+          progress: duration,
+          showIndicator: false,
+          modalVisible: false,
+          language: 'en',
+        );
+
+        await tester.pumpWidget(makeTestableWidget(state: state));
+        await tester.pumpAndSettle();
+
+        expect(find.text(expected), findsOneWidget,
+            reason: 'Expected to find "$expected" for duration $duration');
+
+        // Clear the widget tree before the next iteration
+        await tester.pumpWidget(Container());
+      }
+    });
   });
 }

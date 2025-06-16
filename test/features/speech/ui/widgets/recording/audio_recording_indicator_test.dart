@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -209,7 +208,7 @@ void main() {
       expect(textWidget.data, '00:01:23');
     });
 
-    testWidgets('indicator is tappable', (tester) async {
+    testWidgets('indicator has correct interaction behavior', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         decibels: 0,
@@ -217,39 +216,30 @@ void main() {
         showIndicator: true,
         modalVisible: false,
         language: 'en',
-        linkedId: 'test-linked-id',
       );
 
-      // Create a mock journal entry
-      final linkedEntry = JournalEntity.journalAudio(
-        meta: Metadata(
-          id: 'test-linked-id',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: AudioData(
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          audioFile: 'test.m4a',
-          audioDirectory: '/test/',
-          duration: const Duration(seconds: 30),
-        ),
-        entryText: const EntryText(
-          plainText: 'Test entry',
-          markdown: 'Test entry',
-        ),
-      );
-
-      await tester
-          .pumpWidget(makeTestableWidget(state, linkedEntry: linkedEntry));
+      await tester.pumpWidget(makeTestableWidget(state));
       await tester.pumpAndSettle();
 
-      // Verify the indicator exists and has a GestureDetector
+      // Verify the indicator exists
       expect(
           find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
-      expect(find.byType(GestureDetector), findsOneWidget);
+
+      // The indicator uses a GestureDetector with the key, verify it exists
+      final indicatorWidget =
+          tester.widget(find.byKey(const Key('audio_recording_indicator')));
+      expect(indicatorWidget, isA<GestureDetector>());
+
+      // Find MouseRegion in the widget tree that has the click cursor
+      final mouseRegionFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is MouseRegion && widget.cursor == SystemMouseCursors.click,
+      );
+      expect(mouseRegionFinder, findsOneWidget);
+
+      // Verify MouseRegion has correct cursor
+      final mouseRegion = tester.widget<MouseRegion>(mouseRegionFinder);
+      expect(mouseRegion.cursor, SystemMouseCursors.click);
 
       // Verify it has the expected content
       expect(find.byIcon(Icons.mic_outlined), findsOneWidget);

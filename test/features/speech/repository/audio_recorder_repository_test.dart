@@ -39,11 +39,17 @@ void main() {
     test('isPaused returns false in test environment', () async {
       final result = await repository.isPaused();
       expect(result, isFalse);
+
+      // In test environment, this might not throw an exception
+      // so we don't verify exception logging
     });
 
     test('isRecording returns false in test environment', () async {
       final result = await repository.isRecording();
       expect(result, isFalse);
+
+      // In test environment, this might not throw an exception
+      // so we don't verify exception logging
     });
 
     test('startRecording returns null and logs exception on error', () async {
@@ -60,19 +66,19 @@ void main() {
       ).called(1);
     });
 
-    test('stopRecording completes without error', () async {
+    test('stopRecording completes without throwing', () async {
       await expectLater(repository.stopRecording(), completes);
     });
 
-    test('pauseRecording completes without error', () async {
+    test('pauseRecording completes without throwing', () async {
       await expectLater(repository.pauseRecording(), completes);
     });
 
-    test('resumeRecording completes without error', () async {
+    test('resumeRecording completes without throwing', () async {
       await expectLater(repository.resumeRecording(), completes);
     });
 
-    test('dispose completes without error', () async {
+    test('dispose completes without throwing', () async {
       await expectLater(repository.dispose(), completes);
     });
 
