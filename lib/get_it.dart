@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -43,6 +44,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<TimeService>(TimeService())
     ..registerSingleton<OutboxService>(OutboxService());
 
+  await vod.init();
   final client = await createMatrixClient();
 
   getIt
