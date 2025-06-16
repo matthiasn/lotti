@@ -32,7 +32,6 @@
 		AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		AD2C9ED92B50E0EA0023FFD8 /* libolm.3.dylib in Bundle Framework */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AD5DF1332BB6ECBD00D6BA2E /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = AD5DF1322BB6ECBD00D6BA2E /* WhisperKit */; };
-		ADDE424B2CC70CBE00832FB2 /* WhisperKitRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDE424A2CC70CBD00832FB2 /* WhisperKitRunner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,7 +81,6 @@
 		AD222ED42B6F1352003661C2 /* libcrypto.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.1.1.dylib; sourceTree = "<group>"; };
 		AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libolm.3.dylib; sourceTree = "<group>"; };
 		AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
-		ADDE424A2CC70CBD00832FB2 /* WhisperKitRunner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WhisperKitRunner.swift; path = ../../darwin/WhisperKitRunner.swift; sourceTree = "<group>"; };
 		BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE88E1714354055D8612F843 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -157,7 +155,6 @@
 		33FAB671232836740065AC1E /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE424A2CC70CBD00832FB2 /* WhisperKitRunner.swift */,
 				AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */,
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
@@ -360,7 +357,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
-				ADDE424B2CC70CBE00832FB2 /* WhisperKitRunner.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);

@@ -1662,9 +1662,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Whisper speech recognition model:';
 
   @override
-  String get settingsSpeechTitle => 'Speech Settings';
-
-  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
@@ -2805,9 +2802,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get settingsSpeechModelSelectionTitle =>
       'Whisper speech recognition model:';
-
-  @override
-  String get settingsSpeechTitle => 'Speech Settings';
 
   @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';

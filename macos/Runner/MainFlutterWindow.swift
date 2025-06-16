@@ -12,7 +12,5 @@ class MainFlutterWindow: NSWindow {
         RegisterGeneratedPlugins(registry: flutterViewController)
         
         super.awakeFromNib()
-        
-        let _ = WhisperKitRunner(binaryMessenger: flutterViewController.engine.binaryMessenger)
     }
 }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/transcribe_button.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -49,10 +48,6 @@ class SpeechModalContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TranscribeButton(
-          entryId: entryId,
-          navigateToProgressModal: navigateToProgressModal,
-        ),
         LanguageDropdown(entryId: entryId),
         TranscriptsList(entryId: entryId),
       ],

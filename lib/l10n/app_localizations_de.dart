@@ -1671,9 +1671,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Whisper Spracherkennungsmodell:';
 
   @override
-  String get settingsSpeechTitle => 'Spracheinstellungen';
-
-  @override
   String get settingsSyncOutboxTitle => 'Sync-Postausgang';
 
   @override

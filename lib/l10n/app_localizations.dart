@@ -3112,12 +3112,6 @@ abstract class AppLocalizations {
   /// **'Whisper speech recognition model:'**
   String get settingsSpeechModelSelectionTitle;
 
-  /// No description provided for @settingsSpeechTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Speech Settings'**
-  String get settingsSpeechTitle;
-
   /// No description provided for @settingsSyncOutboxTitle.
   ///
   /// In en, this message translates to:

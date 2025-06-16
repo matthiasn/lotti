@@ -6,7 +6,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
-import 'package:lotti/features/speech/state/asr_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -17,8 +16,6 @@ import 'package:mocktail/mocktail.dart';
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
-
-class MockAsrService extends Mock implements AsrService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -32,7 +29,6 @@ void main() {
 
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
-  late MockAsrService mockAsrService;
   late MockLoggingService mockLoggingService;
 
   setUpAll(() {
@@ -45,7 +41,6 @@ void main() {
   setUp(() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
-    mockAsrService = MockAsrService();
     mockLoggingService = MockLoggingService();
 
     // Unregister specific services before re-registering for the test
@@ -55,9 +50,7 @@ void main() {
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
-    if (getIt.isRegistered<AsrService>()) {
-      getIt.unregister<AsrService>();
-    }
+
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
@@ -66,7 +59,6 @@ void main() {
     getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     // ignore_for_file: cascade_invocations
     getIt.registerSingleton<JournalDb>(mockJournalDb);
-    getIt.registerSingleton<AsrService>(mockAsrService);
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Default stub for logging to avoid errors in tests not focused on logging
@@ -133,10 +125,6 @@ void main() {
             any(that: isA<JournalAudio>()),
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockAsrService.enqueue(entry: any(named: 'entry')))
-            .thenAnswer((_) async {
-          return true;
-        });
 
         // Act
         final result = await SpeechRepository.createAudioEntry(
@@ -167,11 +155,6 @@ void main() {
         verify(
           () => mockPersistenceLogic.createDbEntity(
             any(that: isA<JournalAudio>()),
-          ),
-        ).called(1);
-        verify(
-          () => mockAsrService.enqueue(
-            entry: any(named: 'entry', that: isA<JournalAudio>()),
           ),
         ).called(1);
       });
@@ -211,7 +194,6 @@ void main() {
         expect(result, isA<JournalAudio>());
         expect(result?.data.autoTranscribeWasActive, isFalse);
         verify(() => mockJournalDb.getConfigFlag(autoTranscribeFlag)).called(1);
-        verifyNever(() => mockAsrService.enqueue(entry: any(named: 'entry')));
       });
 
       test('successfully creates audio entry with linkedId and categoryId',
@@ -393,7 +375,6 @@ void main() {
             stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);
-        verifyNever(() => mockAsrService.enqueue(entry: any(named: 'entry')));
       });
     });
 

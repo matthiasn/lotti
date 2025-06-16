@@ -284,7 +284,6 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Trouver et transcrire",
   "settingsSpeechLastActivity": "Dernière activité de transcription :",
   "settingsSpeechModelSelectionTitle": "Modèle de reconnaissance vocale Whisper :",
-  "settingsSpeechTitle": "Paramètres de la parole",
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsTagsDeleteTooltip": "Supprimer étiquette",
   "settingsTagsHideLabel": "Masquer des suggestions :",

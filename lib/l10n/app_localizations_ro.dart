@@ -1669,9 +1669,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Model de recunoaștere vocală Whisper:';
 
   @override
-  String get settingsSpeechTitle => 'Setări vorbire';
-
-  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
