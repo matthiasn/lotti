@@ -7,9 +7,20 @@ part of 'recorder_controller.dart';
 // **************************************************************************
 
 String _$audioRecorderControllerHash() =>
-    r'85daca00488d191bbb962b93866a22decf922bb1';
+    r'1283333d2732d7c0dccce8a554bf9d62e9aba36a';
 
-/// See also [AudioRecorderController].
+/// Main controller for audio recording functionality.
+///
+/// This Riverpod controller manages the complete recording lifecycle including:
+/// - Recording state (start, stop, pause, resume)
+/// - Real-time audio level monitoring for VU meter display
+/// - Integration with audio player to pause playback during recording
+/// - UI state management (modal visibility, indicator visibility)
+/// - Language selection for transcription
+///
+/// The controller is kept alive to maintain recording state across navigation.
+///
+/// Copied from [AudioRecorderController].
 @ProviderFor(AudioRecorderController)
 final audioRecorderControllerProvider =
     NotifierProvider<AudioRecorderController, AudioRecorderState>.internal(
