@@ -439,6 +439,52 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('should pause audio player when recording starts', () async {
+      // Arrange
+      when(() => mockAudioPlayerCubit.state).thenReturn(
+        AudioPlayerState(
+          status: AudioPlayerStatus.playing, // Audio is playing
+          totalDuration: Duration.zero,
+          progress: Duration.zero,
+          pausedAt: Duration.zero,
+          speed: 1,
+          showTranscriptsList: false,
+        ),
+      );
+
+      final controller =
+          container.read(audioRecorderControllerProvider.notifier);
+
+      // Act
+      await controller.record(linkedId: 'test-id');
+
+      // Assert
+      verify(() => mockAudioPlayerCubit.pause()).called(1);
+    });
+
+    test('should not pause audio player when it is not playing', () async {
+      // Arrange - audio player is already stopped
+      when(() => mockAudioPlayerCubit.state).thenReturn(
+        AudioPlayerState(
+          status: AudioPlayerStatus.stopped,
+          totalDuration: Duration.zero,
+          progress: Duration.zero,
+          pausedAt: Duration.zero,
+          speed: 1,
+          showTranscriptsList: false,
+        ),
+      );
+
+      final controller =
+          container.read(audioRecorderControllerProvider.notifier);
+
+      // Act
+      await controller.record(linkedId: 'test-id');
+
+      // Assert
+      verifyNever(() => mockAudioPlayerCubit.pause());
+    });
   });
 
   group('AudioRecorderController - State Listener Tests', () {
