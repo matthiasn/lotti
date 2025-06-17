@@ -67,47 +67,81 @@ Future<bool> matrixConnect({
     final matrixConfig = service.matrixConfig;
 
     if (matrixConfig == null) {
-      getIt<LoggingService>().captureEvent(
-        configNotFound,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'login',
-      );
+      debugPrint('matrixConnect: ERROR - matrixConfig is null');
+      try {
+        getIt<LoggingService>().captureEvent(
+          configNotFound,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'login',
+        );
+      } catch (e) {
+        debugPrint('LoggingService not available: $e');
+      }
 
       return false;
     }
 
-    final homeServerSummary = await service.client.checkHomeserver(
-      Uri.parse(matrixConfig.homeServer),
-    );
+    debugPrint('matrixConnect: Checking homeserver ${matrixConfig.homeServer}');
+    DiscoveryInformation? homeServerSummary;
+    try {
+      (homeServerSummary, _, _) = await service.client.checkHomeserver(
+        Uri.parse(matrixConfig.homeServer),
+      );
+      debugPrint('matrixConnect: Homeserver check result: $homeServerSummary');
+    } catch (e, stack) {
+      debugPrint('matrixConnect: ERROR checking homeserver: $e');
+      debugPrint('Stack: $stack');
+      rethrow;
+    }
 
-    getIt<LoggingService>().captureEvent(
-      'checkHomeserver $homeServerSummary',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'login',
-    );
+    try {
+      getIt<LoggingService>().captureEvent(
+        'checkHomeserver $homeServerSummary',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'login',
+      );
+    } catch (e) {
+      debugPrint('LoggingService not available: $e');
+    }
 
-    await service.client.init(
-      waitForFirstSync: false,
-      waitUntilLoadCompletedLoaded: false,
-    );
+    debugPrint('matrixConnect: Initializing client...');
+    try {
+      await service.client.init(
+        waitForFirstSync: false,
+        waitUntilLoadCompletedLoaded: false,
+      );
+      debugPrint('matrixConnect: Client initialized');
+    } catch (e, stack) {
+      debugPrint('matrixConnect: ERROR initializing client: $e');
+      debugPrint('Stack: $stack');
+      rethrow;
+    }
 
     if (!service.isLoggedIn() && shouldAttemptLogin) {
       final initialDeviceDisplayName =
           service.deviceDisplayName ?? await createMatrixDeviceName();
 
+      debugPrint(
+          'matrixConnect: Attempting login for user ${matrixConfig.user}');
       service.loginResponse = await service.client.login(
         LoginType.mLoginPassword,
         identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
         password: matrixConfig.password,
         initialDeviceDisplayName: initialDeviceDisplayName,
       );
+      debugPrint(
+          'matrixConnect: Login successful, deviceId: ${service.loginResponse?.deviceId}');
 
-      getIt<LoggingService>().captureEvent(
-        'logged in, userId ${service.loginResponse?.userId},'
-        ' deviceId  ${service.loginResponse?.deviceId}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'login',
-      );
+      try {
+        getIt<LoggingService>().captureEvent(
+          'logged in, userId ${service.loginResponse?.userId},'
+          ' deviceId  ${service.loginResponse?.deviceId}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'login',
+        );
+      } catch (e) {
+        debugPrint('LoggingService not available: $e');
+      }
     }
 
     final roomId = await service.getRoom();
@@ -118,13 +152,18 @@ Future<bool> matrixConnect({
 
     return true;
   } catch (e, stackTrace) {
-    debugPrint('$e');
-    getIt<LoggingService>().captureException(
-      e,
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'login',
-      stackTrace: stackTrace,
-    );
+    debugPrint('matrixConnect error: $e');
+    debugPrint('Stack trace: $stackTrace');
+    try {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'login',
+        stackTrace: stackTrace,
+      );
+    } catch (loggingError) {
+      debugPrint('LoggingService not available: $loggingError');
+    }
     return false;
   }
 }

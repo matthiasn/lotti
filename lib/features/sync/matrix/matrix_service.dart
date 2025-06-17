@@ -18,6 +18,7 @@ class MatrixService {
     this.deviceDisplayName,
     JournalDb? overriddenJournalDb,
     SettingsDb? overriddenSettingsDb,
+    bool disableConnectivityMonitoring = false,
   }) : keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
     clientRunner = ClientRunner<void>(
@@ -47,17 +48,19 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> result) {
-      if ({
-        ConnectivityResult.wifi,
-        ConnectivityResult.mobile,
-        ConnectivityResult.ethernet,
-      }.intersection(result.toSet()).isNotEmpty) {
-        clientRunner.enqueueRequest(null);
-      }
-    });
+    if (!disableConnectivityMonitoring) {
+      Connectivity()
+          .onConnectivityChanged
+          .listen((List<ConnectivityResult> result) {
+        if ({
+          ConnectivityResult.wifi,
+          ConnectivityResult.mobile,
+          ConnectivityResult.ethernet,
+        }.intersection(result.toSet()).isNotEmpty) {
+          clientRunner.enqueueRequest(null);
+        }
+      });
+    }
   }
 
   void publishIncomingRunnerState() {
