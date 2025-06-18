@@ -97,3 +97,49 @@ fastwhisper_server/dist/
 
 CLAUDE.local.md
 
+# Python virtual environments
+venv/
+**/venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Large binary files
+*.dylib
+*.so
+*.dll
+*.pkg
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.bin
+*.dat
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Backup directories
+**/backup/
+**/backups/
+**/fastwhisper_backup/
+
