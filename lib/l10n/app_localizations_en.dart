@@ -986,16 +986,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceDeleteEditorDb => 'Delete Editor Database';
 
   @override
+  String get maintenanceDeleteEditorDbDescription =>
+      'Delete editor drafts database';
+
+  @override
   String get maintenanceDeleteLoggingDb => 'Delete Logging Database';
 
   @override
+  String get maintenanceDeleteLoggingDbDescription => 'Delete logging database';
+
+  @override
   String get maintenanceDeleteSyncDb => 'Delete Sync Database';
+
+  @override
+  String get maintenanceDeleteSyncDbDescription => 'Delete sync database';
 
   @override
   String get maintenancePurgeAudioModels => 'Purge audio models';
 
   @override
   String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
+
+  @override
+  String get maintenancePurgeAudioModelsDescription => 'Purge all audio models';
 
   @override
   String get maintenancePurgeAudioModelsMessage =>
@@ -1008,11 +1021,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
+  String get maintenancePurgeDeletedDescription =>
+      'Purge all deleted items permanently';
+
+  @override
   String get maintenancePurgeDeletedMessage =>
       'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
   String get maintenanceReSync => 'Re-sync messages';
+
+  @override
+  String get maintenanceReSyncDescription => 'Re-sync messages from server';
 
   @override
   String get maintenanceRecreateFts5 => 'Recreate full-text index';
@@ -1021,11 +1041,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceRecreateFts5Confirm => 'YES, RECREATE INDEX';
 
   @override
+  String get maintenanceRecreateFts5Description =>
+      'Recreate full-text search index';
+
+  @override
   String get maintenanceRecreateFts5Message =>
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
   String get maintenanceSyncDefinitions =>
+      'Sync tags, measurables, dashboards, habits, categories';
+
+  @override
+  String get maintenanceSyncDefinitionsDescription =>
       'Sync tags, measurables, dashboards, habits, categories';
 
   @override
@@ -2351,25 +2379,53 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get maintenanceDeleteEditorDb => 'Delete editor drafts database';
 
   @override
+  String get maintenanceDeleteEditorDbDescription =>
+      'Delete editor drafts database';
+
+  @override
   String get maintenanceDeleteLoggingDb => 'Delete logging database';
+
+  @override
+  String get maintenanceDeleteLoggingDbDescription => 'Delete logging database';
 
   @override
   String get maintenanceDeleteSyncDb => 'Delete sync database';
 
   @override
+  String get maintenanceDeleteSyncDbDescription => 'Delete sync database';
+
+  @override
   String get maintenancePurgeAudioModels => 'Purge audio models';
+
+  @override
+  String get maintenancePurgeAudioModelsDescription => 'Purge all audio models';
 
   @override
   String get maintenancePurgeDeleted => 'Purge deleted items';
 
   @override
+  String get maintenancePurgeDeletedDescription =>
+      'Purge all deleted items permanently';
+
+  @override
   String get maintenanceReSync => 'Re-sync messages';
+
+  @override
+  String get maintenanceReSyncDescription => 'Re-sync messages from server';
 
   @override
   String get maintenanceRecreateFts5 => 'Recreate full-text index';
 
   @override
+  String get maintenanceRecreateFts5Description =>
+      'Recreate full-text search index';
+
+  @override
   String get maintenanceSyncDefinitions =>
+      'Sync tags, measurables, dashboards, habits, categories';
+
+  @override
+  String get maintenanceSyncDefinitionsDescription =>
       'Sync tags, measurables, dashboards, habits, categories';
 
   @override
