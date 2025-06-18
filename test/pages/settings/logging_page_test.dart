@@ -89,12 +89,10 @@ void main() {
 
       // finds log line elements
       expect(
-        find.text(
-          '${testLogEntry.createdAt.substring(0, 23)}: ${testLogEntry.domain} '
-          '${testLogEntry.subDomain} ${testLogEntry.message}',
-        ),
-        findsOneWidget,
-      );
+          find.text(testLogEntry.createdAt.substring(0, 23)), findsOneWidget);
+      expect(find.text('${testLogEntry.domain} ${testLogEntry.subDomain}'),
+          findsOneWidget);
+      expect(find.text(testLogEntry.message), findsOneWidget);
     });
 
     testWidgets('log details page is displayed', (tester) async {
