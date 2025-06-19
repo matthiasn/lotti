@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -24,6 +25,15 @@ part 'unified_ai_inference_repository.g.dart';
 
 /// Minimum title length for AI suggestion to be applied
 const kMinExistingTitleLengthForAiSuggestion = 5;
+
+/// Generic image analysis prompt for when no task context is available
+const String _kGenericImageAnalysisPrompt = '''
+Please analyze the provided image(s) and describe what you see. Focus on:
+- Main subjects or objects
+- Any text visible in the image
+- Key details that might be important
+
+Be concise and objective.''';
 
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
@@ -182,13 +192,9 @@ class UnifiedAiInferenceRepository {
       );
 
       // Find if any linked entity is a task
-      Task? linkedTask;
-      for (final linkedEntity in linkedFromEntities) {
-        if (linkedEntity is Task) {
-          linkedTask = linkedEntity;
-          break;
-        }
-      }
+      final linkedTask = linkedFromEntities.firstWhereOrNull(
+        (entity) => entity is Task,
+      ) as Task?;
 
       if (linkedTask != null) {
         // Get task context and replace {{task}} placeholder
@@ -198,23 +204,11 @@ class UnifiedAiInferenceRepository {
           prompt = prompt.replaceAll('{{task}}', taskJson);
         } else {
           // No task context - provide generic prompt without task details
-          prompt = '''
-Please analyze the provided image(s) and describe what you see. Focus on:
-- Main subjects or objects
-- Any text visible in the image
-- Key details that might be important
-
-Be concise and objective.''';
+          prompt = _kGenericImageAnalysisPrompt;
         }
       } else {
         // No linked task - provide generic prompt
-        prompt = '''
-Please analyze the provided image(s) and describe what you see. Focus on:
-- Main subjects or objects
-- Any text visible in the image
-- Key details that might be important
-
-Be concise and objective.''';
+        prompt = _kGenericImageAnalysisPrompt;
       }
     } else if (promptConfig.requiredInputData.contains(InputDataType.task)) {
       // For prompts that require task data (summaries, action items)
