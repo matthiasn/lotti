@@ -58,7 +58,12 @@ Imagine the user has not been involved in the task for a long time, and you want
 Summarize the task, the achieved results, and the remaining steps that have not been completed yet, if any. 
 Also note when the task is done. Note any learnings or insights that can be drawn from the task, if anything is significant. 
 Talk to the user directly, instead of referring to them as "the user" or "they". 
-Don't start with a greeting, don't repeat the task title, get straight to the point. 
+
+Start with a single H1 header (# Title) that suggests a concise, descriptive title 
+for this task. The title should be a single line, ideally under 80-100 characters. 
+If the task already has a title, suggest an improved version that better captures 
+the essence of the task based on the details and logs. Use only one H1 in the 
+entire response. After this, get straight to the point, e.g. no greetings. 
 Keep it short and succinct. Assume the task title is shown directly above in the UI, so starting with the title is not necessary and would feel redundant. 
 While staying succinct, give the output some structure and organization. 
 Use a bullet point list for the achieved results, and a numbered list for the remaining steps. 

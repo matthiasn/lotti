@@ -44,6 +44,7 @@ Task summary prompts are created using the `createTaskSummaryPrompt` function in
 ```dart
 String createTaskSummaryPrompt(String jsonString) {
   // Creates a detailed prompt instructing the AI to:
+  // - Start with a single H1 header suggesting a task title
   // - Summarize the task for someone returning after a long time
   // - List achieved results (with ✅ emojis)
   // - List remaining steps (numbered)
@@ -82,6 +83,14 @@ For task summaries, the response is treated as markdown text:
 - No JSON parsing (unlike action item suggestions)
 - The complete response is saved as an `AiResponseEntry`
 - Displayed using `GptMarkdown` widget for proper formatting
+
+### 4. Automatic Title Extraction
+
+When generating task summaries, the system automatically extracts suggested titles:
+- The AI is prompted to start with an H1 header (`# Title`)
+- If the current task title is less than 5 characters, it's replaced with the AI suggestion
+- This enables automatic title generation for tasks created from audio recordings
+- The title extraction uses a regex pattern: `^#\s+(.+)$`
 
 ## Response Types
 
