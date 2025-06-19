@@ -111,8 +111,10 @@ The system supports four AI response types:
    - Items not already in task are suggested
 
 3. **Image Analysis** (`AiResponseType.imageAnalysis`)
-   - Analyzes attached images
-   - Response is descriptive text
+   - Analyzes attached images in task context
+   - When linked to a task, extracts only task-relevant information
+   - Provides humorous dismissal for off-topic images
+   - Response is descriptive text without AI disclaimer
 
 4. **Audio Transcription** (`AiResponseType.audioTranscription`)
    - Transcribes audio recordings
@@ -198,6 +200,13 @@ A: Prompts use a template system with variables like `{{task}}`. The system repl
 
 ### Q: How does automatic title extraction work?
 A: When generating task summaries, the AI suggests a title as an H1 header. If the current task title is less than 5 characters (e.g., empty or very short), it's automatically replaced with the AI's suggestion. This is particularly useful for tasks created from audio recordings.
+
+### Q: How does context-aware image analysis work?
+A: When an image is linked to a task, the image analysis prompt automatically includes the full task context (title, status, action items, log entries). The AI then:
+- Extracts only information relevant to the task
+- Provides a brief, humorous note if the image is off-topic (e.g., "This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on...")
+- Focuses on actionable insights for task-relevant images
+This prevents verbose, irrelevant image descriptions from cluttering task summaries.
 
 ### Q: Which AI providers are supported?
 A: The system supports OpenAI, Anthropic, Google, Groq, OpenRouter, and custom OpenAI-compatible endpoints.
