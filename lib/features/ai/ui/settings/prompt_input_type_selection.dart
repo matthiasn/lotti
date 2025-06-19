@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/input_data_type_extensions.dart';
-import 'package:lotti/features/ai/state/prompt_form_controller.dart';
+import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection.dart';

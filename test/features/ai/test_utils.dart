@@ -3,8 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,9 +14,9 @@ export 'package:flutter_riverpod/flutter_riverpod.dart'
     show Override, ProviderScope;
 export 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
-export 'package:lotti/features/ai/state/ai_config_by_type_controller.dart'
-    show aiConfigByTypeControllerProvider;
 export 'package:lotti/features/ai/state/consts.dart';
+export 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
+    show aiConfigByTypeControllerProvider;
 export 'package:lotti/l10n/app_localizations.dart';
 
 /// Shared mock classes for AI feature tests
