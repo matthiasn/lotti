@@ -1905,17 +1905,35 @@ abstract class AppLocalizations {
   /// **'Delete Editor Database'**
   String get maintenanceDeleteEditorDb;
 
+  /// No description provided for @maintenanceDeleteEditorDbDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete editor drafts database'**
+  String get maintenanceDeleteEditorDbDescription;
+
   /// No description provided for @maintenanceDeleteLoggingDb.
   ///
   /// In en, this message translates to:
   /// **'Delete Logging Database'**
   String get maintenanceDeleteLoggingDb;
 
+  /// No description provided for @maintenanceDeleteLoggingDbDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete logging database'**
+  String get maintenanceDeleteLoggingDbDescription;
+
   /// No description provided for @maintenanceDeleteSyncDb.
   ///
   /// In en, this message translates to:
   /// **'Delete Sync Database'**
   String get maintenanceDeleteSyncDb;
+
+  /// No description provided for @maintenanceDeleteSyncDbDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete sync database'**
+  String get maintenanceDeleteSyncDbDescription;
 
   /// No description provided for @maintenancePurgeAudioModels.
   ///
@@ -1928,6 +1946,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'YES, PURGE MODELS'**
   String get maintenancePurgeAudioModelsConfirm;
+
+  /// No description provided for @maintenancePurgeAudioModelsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Purge all audio models'**
+  String get maintenancePurgeAudioModelsDescription;
 
   /// No description provided for @maintenancePurgeAudioModelsMessage.
   ///
@@ -1947,6 +1971,12 @@ abstract class AppLocalizations {
   /// **'Yes, purge all'**
   String get maintenancePurgeDeletedConfirm;
 
+  /// No description provided for @maintenancePurgeDeletedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Purge all deleted items permanently'**
+  String get maintenancePurgeDeletedDescription;
+
   /// No description provided for @maintenancePurgeDeletedMessage.
   ///
   /// In en, this message translates to:
@@ -1958,6 +1988,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Re-sync messages'**
   String get maintenanceReSync;
+
+  /// No description provided for @maintenanceReSyncDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-sync messages from server'**
+  String get maintenanceReSyncDescription;
 
   /// No description provided for @maintenanceRecreateFts5.
   ///
@@ -1971,6 +2007,12 @@ abstract class AppLocalizations {
   /// **'YES, RECREATE INDEX'**
   String get maintenanceRecreateFts5Confirm;
 
+  /// No description provided for @maintenanceRecreateFts5Description.
+  ///
+  /// In en, this message translates to:
+  /// **'Recreate full-text search index'**
+  String get maintenanceRecreateFts5Description;
+
   /// No description provided for @maintenanceRecreateFts5Message.
   ///
   /// In en, this message translates to:
@@ -1982,6 +2024,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync tags, measurables, dashboards, habits, categories'**
   String get maintenanceSyncDefinitions;
+
+  /// No description provided for @maintenanceSyncDefinitionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync tags, measurables, dashboards, habits, categories'**
+  String get maintenanceSyncDefinitionsDescription;
 
   /// No description provided for @measurableDeleteConfirm.
   ///

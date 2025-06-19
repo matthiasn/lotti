@@ -990,16 +990,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenanceDeleteEditorDb => 'Entwürfe-Datenbank löschen';
 
   @override
+  String get maintenanceDeleteEditorDbDescription =>
+      'Delete editor drafts database';
+
+  @override
   String get maintenanceDeleteLoggingDb => 'Logging-Datenbank löschen';
 
   @override
+  String get maintenanceDeleteLoggingDbDescription => 'Delete logging database';
+
+  @override
   String get maintenanceDeleteSyncDb => 'Synchronisierungsdatenbank löschen';
+
+  @override
+  String get maintenanceDeleteSyncDbDescription => 'Delete sync database';
 
   @override
   String get maintenancePurgeAudioModels => 'Audiomodelle löschen';
 
   @override
   String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
+
+  @override
+  String get maintenancePurgeAudioModelsDescription => 'Purge all audio models';
 
   @override
   String get maintenancePurgeAudioModelsMessage =>
@@ -1012,11 +1025,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenancePurgeDeletedConfirm => 'Yes, purge all';
 
   @override
+  String get maintenancePurgeDeletedDescription =>
+      'Purge all deleted items permanently';
+
+  @override
   String get maintenancePurgeDeletedMessage =>
       'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
   String get maintenanceReSync => 'Nachrichten erneut synchronisieren';
+
+  @override
+  String get maintenanceReSyncDescription => 'Re-sync messages from server';
 
   @override
   String get maintenanceRecreateFts5 => 'Volltextindex neu erstellen';
@@ -1025,11 +1045,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenanceRecreateFts5Confirm => 'YES, RECREATE INDEX';
 
   @override
+  String get maintenanceRecreateFts5Description =>
+      'Recreate full-text search index';
+
+  @override
   String get maintenanceRecreateFts5Message =>
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
   String get maintenanceSyncDefinitions =>
+      'Sync tags, measurables, dashboards, habits, categories';
+
+  @override
+  String get maintenanceSyncDefinitionsDescription =>
       'Sync tags, measurables, dashboards, habits, categories';
 
   @override
