@@ -1,3 +1,7 @@
+// ignore_for_file: avoid_dynamic_calls
+
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -685,13 +689,21 @@ void main() {
       });
     });
 
-    // Tests for buildPrompt method
-    group('buildPrompt', () {
-      test('returns formatted prompt for TaskSummary response type', () async {
+    // Tests for buildTaskDetailsJson method
+    group('buildTaskDetailsJson', () {
+      test('returns JSON string for valid task', () async {
         // Arrange
         const taskTitle = 'Test Task';
         const statusId = 'status-123';
-        const aiResponseType = AiResponseType.taskSummary;
+
+        // Set up specific mock for the task progress repository
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer(
+          (_) async => (
+            const Duration(minutes: 30), // estimate
+            {'entry1': const Duration(minutes: 15)}, // durations
+          ),
+        );
 
         // Mock the task
         final task = JournalEntity.task(
@@ -712,15 +724,7 @@ void main() {
             statusHistory: [],
             dateFrom: creationDate,
             dateTo: creationDate,
-          ),
-        );
-
-        // Set up specific mock for the task progress repository
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer(
-          (_) async => (
-            const Duration(minutes: 30), // estimate
-            {'entry1': const Duration(minutes: 15)}, // durations
+            estimate: const Duration(minutes: 30),
           ),
         );
 
@@ -731,96 +735,23 @@ void main() {
             .thenAnswer((_) async => []);
 
         // Act
-        final result = await repository.buildPrompt(
-          id: taskId,
-          aiResponseType: aiResponseType,
-        );
+        final result = await repository.buildTaskDetailsJson(id: taskId);
 
         // Assert
         expect(result, isNotNull);
-        expect(result, contains('**Prompt:**'));
-        expect(result, contains('**Task Details:**'));
         expect(result, contains('"title": "Test Task"'));
         expect(result, contains('"status": "STARTED"'));
-        expect(result, contains('Create a task summary as a TLDR'));
+        expect(result, contains('"estimatedDuration": "00:30"'));
+        expect(result, contains('"timeSpent": "00:15"'));
+        expect(result, contains('"actionItems": []'));
+        expect(result, contains('"logEntries": []'));
 
-        // Verify calls
-        verify(() => mockDb.journalEntityById(taskId)).called(1);
-        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
-      });
-
-      test('returns formatted prompt for ActionItemSuggestions response type',
-          () async {
-        // Arrange
-        const taskTitle = 'Test Task';
-        const statusId = 'status-123';
-        const aiResponseType = AiResponseType.actionItemSuggestions;
-
-        // Mock the task
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: taskId,
-            dateFrom: creationDate,
-            dateTo: creationDate,
-            createdAt: creationDate,
-            updatedAt: creationDate,
-          ),
-          data: TaskData(
-            title: taskTitle,
-            status: TaskStatus.open(
-              id: statusId,
-              createdAt: creationDate,
-              utcOffset: 0,
-            ),
-            statusHistory: [],
-            dateFrom: creationDate,
-            dateTo: creationDate,
-          ),
-        );
-
-        // Set up specific mock for the task progress repository
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer(
-          (_) async => (
-            const Duration(minutes: 30), // estimate
-            {'entry1': const Duration(minutes: 15)}, // durations
-          ),
-        );
-
-        // Set up mocks
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
-
-        // Act
-        final result = await repository.buildPrompt(
-          id: taskId,
-          aiResponseType: aiResponseType,
-        );
-
-        // Assert
-        expect(result, isNotNull);
-        expect(result, contains('**Prompt:**'));
-        expect(result, contains('**Task Details:**'));
-        expect(result, contains('"title": "Test Task"'));
-        expect(result, contains('"status": "OPEN"'));
-        expect(
-          result,
-          contains('Based on the provided task details and log entries'),
-        );
-        expect(result, contains('**Example Response:**'));
-
-        // Verify calls
-        verify(() => mockDb.journalEntityById(taskId)).called(1);
-        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
+        // Verify the JSON is properly formatted
+        expect(() => jsonDecode(result!), returnsNormally);
       });
 
       test('returns null for non-task entity', () async {
         // Arrange
-        const aiResponseType = AiResponseType.taskSummary;
-
-        // Mock a non-task entity (journal entry)
         when(() => mockDb.journalEntityById(taskId)).thenAnswer(
           (_) async => JournalEntity.journalEntry(
             meta: Metadata(
@@ -830,50 +761,36 @@ void main() {
               createdAt: creationDate,
               updatedAt: creationDate,
             ),
-            entryText: const EntryText(plainText: ''),
+            entryText: const EntryText(plainText: 'Not a task'),
           ),
         );
 
         // Act
-        final result = await repository.buildPrompt(
-          id: taskId,
-          aiResponseType: aiResponseType,
-        );
+        final result = await repository.buildTaskDetailsJson(id: taskId);
 
         // Assert
         expect(result, isNull);
-        verify(() => mockDb.journalEntityById(taskId)).called(1);
       });
 
       test('returns null for non-existent entity', () async {
         // Arrange
-        const aiResponseType = AiResponseType.taskSummary;
-
-        // Mock non-existent entity
         when(() => mockDb.journalEntityById(taskId))
             .thenAnswer((_) async => null);
 
         // Act
-        final result = await repository.buildPrompt(
-          id: taskId,
-          aiResponseType: aiResponseType,
-        );
+        final result = await repository.buildTaskDetailsJson(id: taskId);
 
         // Assert
         expect(result, isNull);
-        verify(() => mockDb.journalEntityById(taskId)).called(1);
       });
 
-      test(
-          'includes full task details in the prompt including action items and log entries',
-          () async {
+      test('includes action items and log entries in JSON', () async {
         // Arrange
         const taskTitle = 'Test Task';
-        const statusId = 'status-123';
         const checklistId = 'checklist-123';
         const checklistItemId = 'checklist-item-123';
         const linkedEntryId = 'linked-entry-123';
-        const aiResponseType = AiResponseType.taskSummary;
+        const statusId = 'status-123';
 
         // Set up specific mock for the task progress repository
         when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
@@ -963,31 +880,30 @@ void main() {
             .thenAnswer((_) async => checklistItem);
 
         // Act
-        final result = await repository.buildPrompt(
-          id: taskId,
-          aiResponseType: aiResponseType,
-        );
+        final result = await repository.buildTaskDetailsJson(id: taskId);
 
         // Assert
         expect(result, isNotNull);
-        expect(result, contains('"title": "Test Task"'));
-        expect(result, contains('"status": "IN PROGRESS"'));
-        expect(result, contains('"estimatedDuration": "01:00"'));
-        expect(result, contains('"timeSpent": "00:45"'));
 
-        // Check action items in JSON
-        expect(result, contains('"title": "Test Checklist Item"'));
-        expect(result, contains('"completed": true'));
+        // Parse JSON to verify structure
+        final jsonData = jsonDecode(result!) as Map<String, dynamic>;
+        expect(jsonData['title'], equals('Test Task'));
+        expect(jsonData['status'], equals('IN PROGRESS'));
+        expect(jsonData['estimatedDuration'], equals('01:00'));
+        expect(jsonData['timeSpent'], equals('00:45'));
 
-        // Check log entries in JSON
-        expect(result, contains('"text": "Test Journal Entry"'));
-        expect(result, contains('"loggedDuration": "00:30"'));
+        // Check action items
+        expect(jsonData['actionItems'], isList);
+        expect(jsonData['actionItems'].length, equals(1));
+        expect(
+            jsonData['actionItems'][0]['title'], equals('Test Checklist Item'));
+        expect(jsonData['actionItems'][0]['completed'], isTrue);
 
-        // Verify calls
-        verify(() => mockDb.journalEntityById(taskId)).called(1);
-        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
-        verify(() => mockDb.journalEntityById(checklistId)).called(1);
-        verify(() => mockDb.journalEntityById(checklistItemId)).called(1);
+        // Check log entries
+        expect(jsonData['logEntries'], isList);
+        expect(jsonData['logEntries'].length, equals(1));
+        expect(jsonData['logEntries'][0]['text'], equals('Test Journal Entry'));
+        expect(jsonData['logEntries'][0]['loggedDuration'], equals('00:30'));
       });
     });
   });

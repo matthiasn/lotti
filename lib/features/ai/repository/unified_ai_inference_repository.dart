@@ -22,6 +22,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_inference_repository.g.dart';
 
+/// Minimum title length for AI suggestion to be applied
+const kMinExistingTitleLengthForAiSuggestion = 5;
+
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
@@ -404,8 +407,30 @@ $response
           );
           await journalRepo.updateJournalEntity(updated);
         }
-      case AiResponseType.actionItemSuggestions:
       case AiResponseType.taskSummary:
+        if (entity is Task) {
+          // Extract title from response (H1 markdown format)
+          final titleRegex = RegExp(r'^#\s+(.+)$', multiLine: true);
+          final titleMatch = titleRegex.firstMatch(response);
+
+          if (titleMatch != null) {
+            final suggestedTitle = titleMatch.group(1)?.trim();
+            final currentTitle = entity.data.title;
+
+            // Update title if current title is empty or very short (less than 5 characters)
+            if (suggestedTitle != null &&
+                suggestedTitle.isNotEmpty &&
+                currentTitle.length < kMinExistingTitleLengthForAiSuggestion) {
+              final updated = entity.copyWith(
+                data: entity.data.copyWith(
+                  title: suggestedTitle,
+                ),
+              );
+              await journalRepo.updateJournalEntity(updated);
+            }
+          }
+        }
+      case AiResponseType.actionItemSuggestions:
     }
   }
 }
