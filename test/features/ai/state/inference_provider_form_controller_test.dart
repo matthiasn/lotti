@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}

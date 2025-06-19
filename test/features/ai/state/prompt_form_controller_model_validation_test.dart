@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/prompt_form_controller.dart';
+import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
