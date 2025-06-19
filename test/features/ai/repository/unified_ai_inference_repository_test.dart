@@ -1553,7 +1553,6 @@ void main() {
           id: 'prompt-1',
           name: 'Task Summary',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final model = _createModel(
@@ -1567,7 +1566,8 @@ void main() {
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         );
 
-        const responseWithTitle = '''# Implement user authentication system
+        const responseWithTitle = '''
+# Implement user authentication system
 
 Achieved results:
 ✅ Set up database schema for users
@@ -1665,7 +1665,6 @@ Remaining steps:
           id: 'prompt-1',
           name: 'Task Summary',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final model = _createModel(
@@ -1679,7 +1678,8 @@ Remaining steps:
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         );
 
-        const responseWithTitle = '''# Better task title from AI
+        const responseWithTitle = '''
+# Better task title from AI
 
 Achieved results:
 ✅ Task already has a good title''';
@@ -1763,7 +1763,6 @@ Achieved results:
           id: 'prompt-1',
           name: 'Task Summary',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
         );
 
         final model = _createModel(
@@ -1777,7 +1776,8 @@ Achieved results:
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         );
 
-        const responseWithoutTitle = '''Achieved results:
+        const responseWithoutTitle = '''
+Achieved results:
 ✅ Some work done
 
 Remaining steps:

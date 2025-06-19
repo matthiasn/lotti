@@ -31,7 +31,8 @@ void main() {
       ),
     );
     testWidgets('filters out H1 title for task summaries', (tester) async {
-      const responseWithTitle = '''# Implement user authentication system
+      const responseWithTitle = '''
+# Implement user authentication system
 
 Achieved results:
 ✅ Set up database schema for users
@@ -74,7 +75,8 @@ Remaining steps:
 
     testWidgets('does not filter H1 for non-task summary responses',
         (tester) async {
-      const responseWithH1 = '''# Analysis Results
+      const responseWithH1 = '''
+# Analysis Results
 
 The image shows a beautiful landscape with mountains.''';
 
@@ -104,7 +106,8 @@ The image shows a beautiful landscape with mountains.''';
     });
 
     testWidgets('handles task summary without H1 title', (tester) async {
-      const responseWithoutTitle = '''Achieved results:
+      const responseWithoutTitle = '''
+Achieved results:
 ✅ Some work done
 
 Remaining steps:
@@ -194,7 +197,8 @@ Remaining steps:
     });
 
     testWidgets('filters multiple H1s from task summary', (tester) async {
-      const responseWithMultipleH1s = '''# Suggested Title
+      const responseWithMultipleH1s = '''
+# Suggested Title
 
 # Another H1 Header
 
