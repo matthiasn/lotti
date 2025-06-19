@@ -17,6 +17,18 @@ FastWhisper is integrated into Lotti to provide efficient and accurate audio tra
 - Progress tracking during transcription
 - Segment-level transcription with timestamps
 
+## Installation
+
+### For Intel Macs
+```bash
+pip install -r requirements.txt
+```
+
+### For Apple Silicon Macs
+```bash
+pip install -r requirements-apple-silicon.txt
+```
+
 ## Quick Start
 
 1. Download the executable for your platform from the releases
