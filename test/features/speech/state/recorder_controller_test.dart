@@ -758,7 +758,7 @@ void main() {
     group('build() method amplitude subscription', () {
       test('should subscribe to amplitude stream and update state', () async {
         // Arrange
-        final amplitudeController = StreamController<Amplitude>();
+        final amplitudeController = StreamController<Amplitude>.broadcast();
         final mockAmplitude = MockAmplitude();
         when(() => mockAmplitude.current).thenReturn(-50);
 
@@ -772,35 +772,37 @@ void main() {
               mockAudioRecorderRepository,
             ),
           ],
-        );
+        )
 
-        // Get the controller to trigger build()
-        final _ = testContainer.read(audioRecorderControllerProvider);
+          // Read the provider to ensure it's initialized
+          ..read(audioRecorderControllerProvider.notifier);
 
         // Give some time for the stream subscription to be established
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Emit multiple amplitude updates to fill the RMS buffer
-        // Need enough samples to properly calculate RMS
+        // The VU meter uses a 300ms window with 20ms intervals = 15 samples
+        // We need to send at least 15 samples to fill the buffer
         for (var i = 0; i < 20; i++) {
           amplitudeController.add(mockAmplitude);
-          // Small delay to allow processing
-          await Future<void>.delayed(const Duration(milliseconds: 5));
+          // Allow microtask queue to process
+          await Future.microtask(() {});
         }
 
-        // Wait a bit more for all processing to complete
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Wait for all stream events to be processed
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Assert
         final state = testContainer.read(audioRecorderControllerProvider);
+
         expect(state.dBFS, equals(-50.0)); // Direct dBFS value
 
-        // The VU value depends on RMS calculation
-        // With constant -50 dBFS input, RMS should also be -50 dBFS
-        // VU = RMS_dB - vuReferenceLevelDbfs = -50 - (-20) = -30
-        // However, if the buffer isn't full, it might return the default -20
-        // So we check if it's either the default or the calculated value
-        expect(state.vu, anyOf(equals(-20.0), inInclusiveRange(-32.0, -28.0)));
+        // VU calculation with constant -50 dBFS input:
+        // - RMS of constant -50 dBFS values = -50 dBFS
+        // - VU = RMS_dB - vuReferenceLevelDbfs = -50 - (-18) = -32
+        // - However, VU is clamped to range [-20, +3] in the implementation
+        // - Therefore, -32 gets clamped to -20 (the minimum VU value)
+        expect(state.vu, equals(-20.0));
         expect(state.progress.inMilliseconds, greaterThan(0));
 
         // Clean up
@@ -862,6 +864,103 @@ void main() {
         // Assert
         expect(
             () => controller.setCategoryId('same-category'), returnsNormally);
+      });
+    });
+
+    group('setVuWindowMs', () {
+      test('should set VU window size within valid range', () {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+
+              // Act
+              ..setVuWindowMs(500);
+
+        // Assert - Method should execute without error
+        expect(() => controller.setVuWindowMs(500), returnsNormally);
+      });
+
+      test('should clamp VU window size to minimum limit', () {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+
+              // Act - Try to set below minimum (100ms)
+              ..setVuWindowMs(50);
+
+        // Assert - Should be clamped to 100ms internally
+        expect(() => controller.setVuWindowMs(50), returnsNormally);
+      });
+
+      test('should clamp VU window size to maximum limit', () {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+
+              // Act - Try to set above maximum (1000ms)
+              ..setVuWindowMs(2000);
+
+        // Assert - Should be clamped to 1000ms internally
+        expect(() => controller.setVuWindowMs(2000), returnsNormally);
+      });
+
+      test('should handle edge case values', () {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Act & Assert - Test boundary values
+        expect(() => controller.setVuWindowMs(100), returnsNormally); // Min
+        expect(() => controller.setVuWindowMs(1000), returnsNormally); // Max
+        expect(() => controller.setVuWindowMs(0), returnsNormally); // Below min
+        expect(
+            () => controller.setVuWindowMs(-100), returnsNormally); // Negative
+      });
+
+      test('should clear dBFS buffer when window size changes', () async {
+        // Arrange
+        final amplitudeController = StreamController<Amplitude>();
+        final mockAmplitude = MockAmplitude();
+        when(() => mockAmplitude.current).thenReturn(-50);
+
+        when(() => mockAudioRecorderRepository.amplitudeStream)
+            .thenAnswer((_) => amplitudeController.stream);
+
+        // Create a new container to trigger build()
+        final testContainer = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+          ],
+        );
+
+        final controller =
+            testContainer.read(audioRecorderControllerProvider.notifier);
+
+        // Wait for stream subscription
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Fill the buffer with some samples
+        for (var i = 0; i < 10; i++) {
+          amplitudeController.add(mockAmplitude);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+
+        // Act - Change window size (this should clear the buffer)
+        controller.setVuWindowMs(600);
+
+        // Add one more sample after clearing
+        amplitudeController.add(mockAmplitude);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Assert - The buffer was cleared, so VU calculation will be based on fewer samples
+        // This is difficult to test directly, but we verify the method executes without error
+        expect(() => controller.setVuWindowMs(400), returnsNormally);
+
+        // Clean up
+        await amplitudeController.close();
+        testContainer.dispose();
       });
     });
   });

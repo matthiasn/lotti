@@ -120,6 +120,8 @@ class AudioRecorderController extends _$AudioRecorderController {
     final rms = math.sqrt(sumOfSquares / _dbfsBuffer.length);
 
     // Convert RMS back to dB
+    // Formula: 20 * log10(rms) where math.log is natural log (ln)
+    // So: 20 * ln(rms) / ln(10) = 20 * log10(rms)
     final rmsDb = 20 * (math.log(rms) / math.ln10);
 
     // Apply VU reference level: 0 VU = -18 dBFS
