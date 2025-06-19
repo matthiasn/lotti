@@ -22,6 +22,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_inference_repository.g.dart';
 
+/// Minimum title length for AI suggestion to be applied
+const kMinExistingTitleLengthForAiSuggestion = 5;
+
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
@@ -417,7 +420,7 @@ $response
             // Update title if current title is empty or very short (less than 5 characters)
             if (suggestedTitle != null &&
                 suggestedTitle.isNotEmpty &&
-                currentTitle.length < 5) {
+                currentTitle.length < kMinExistingTitleLengthForAiSuggestion) {
               final updated = entity.copyWith(
                 data: entity.data.copyWith(
                   title: suggestedTitle,

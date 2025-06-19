@@ -63,8 +63,10 @@ Start with a single H1 header (# Title) that suggests a concise, descriptive tit
 for this task. The title should be a single line, ideally under 80-100 characters. 
 If the task already has a title, suggest an improved version that better captures 
 the essence of the task based on the details and logs. Use only one H1 in the 
-entire response. After this, get straight to the point, e.g. no greetings. 
-Keep it short and succinct. Assume the task title is shown directly above in the UI, so starting with the title is not necessary and would feel redundant. 
+entire response. This H1 title is for internal suggestion purposes and will be 
+processed separately; it will not appear directly in the summary text shown to 
+the user. After this, get straight to the point, e.g. no greetings. 
+Keep it short and succinct. 
 While staying succinct, give the output some structure and organization. 
 Use a bullet point list for the achieved results, and a numbered list for the remaining steps. 
 If there are any learnings or insights that can be drawn from the task, include them in the output. 

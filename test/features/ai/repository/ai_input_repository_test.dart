@@ -886,7 +886,7 @@ void main() {
         expect(result, isNotNull);
 
         // Parse JSON to verify structure
-        final jsonData = jsonDecode(result!);
+        final jsonData = jsonDecode(result!) as Map<String, dynamic>;
         expect(jsonData['title'], equals('Test Task'));
         expect(jsonData['status'], equals('IN PROGRESS'));
         expect(jsonData['estimatedDuration'], equals('01:00'));
