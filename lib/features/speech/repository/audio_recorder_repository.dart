@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -40,9 +41,9 @@ class AudioRecorderRepository {
   final LoggingService _loggingService = getIt<LoggingService>();
 
   /// Stream of amplitude updates for VU meter visualization.
-  /// Emits amplitude values every 100ms while recording.
+  /// Emits amplitude values every 20ms while recording.
   Stream<Amplitude> get amplitudeStream => _audioRecorder.onAmplitudeChanged(
-        const Duration(milliseconds: 100),
+        const Duration(milliseconds: intervalMs),
       );
 
   /// Checks if the app has microphone permission.
@@ -108,7 +109,7 @@ class AudioRecorderRepository {
       );
 
       await _audioRecorder.start(
-        const RecordConfig(sampleRate: 48000),
+        const RecordConfig(sampleRate: 48000, autoGain: true),
         path: filePath,
       );
 

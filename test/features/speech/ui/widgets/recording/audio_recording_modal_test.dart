@@ -102,7 +102,8 @@ void main() {
       final testState = state ??
           AudioRecorderState(
             status: AudioRecorderStatus.initialized,
-            decibels: 0,
+            vu: 0,
+            dBFS: -60,
             progress: Duration.zero,
             showIndicator: false,
             modalVisible: false,
@@ -141,7 +142,8 @@ void main() {
     testWidgets('displays duration in correct format', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 80,
+        vu: -10,
+        dBFS: -20,
         progress: const Duration(minutes: 1, seconds: 23),
         showIndicator: false,
         modalVisible: false,
@@ -181,7 +183,8 @@ void main() {
               controller = TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.initialized,
-                  decibels: 0,
+                  vu: 0,
+                  dBFS: -60,
                   progress: Duration.zero,
                   showIndicator: false,
                   modalVisible: false,
@@ -216,7 +219,8 @@ void main() {
     testWidgets('shows stop button when recording', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 80,
+        vu: -10,
+        dBFS: -20,
         progress: const Duration(seconds: 5),
         showIndicator: false,
         modalVisible: false,
@@ -234,7 +238,8 @@ void main() {
         (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.initialized,
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
@@ -288,7 +293,8 @@ void main() {
     testWidgets('stop button shows recording indicator', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 80,
+        vu: -10,
+        dBFS: -20,
         progress: const Duration(seconds: 5),
         showIndicator: false,
         modalVisible: false,
@@ -316,7 +322,8 @@ void main() {
       final controller = TestAudioRecorderController(
         AudioRecorderState(
           status: AudioRecorderStatus.initialized,
-          decibels: 0,
+          vu: 0,
+          dBFS: -60,
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
@@ -386,7 +393,8 @@ void main() {
               controller = TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.recording,
-                  decibels: 80,
+                  vu: -10,
+                  dBFS: -20,
                   progress: const Duration(seconds: 30),
                   showIndicator: false,
                   modalVisible: false,
@@ -446,7 +454,8 @@ void main() {
       final testState = state ??
           AudioRecorderState(
             status: AudioRecorderStatus.initialized,
-            decibels: 0,
+            vu: 0,
+            dBFS: -60,
             progress: Duration.zero,
             showIndicator: false,
             modalVisible: false,
@@ -489,7 +498,8 @@ void main() {
               controller = TestAudioRecorderController(
                 AudioRecorderState(
                   status: AudioRecorderStatus.initialized,
-                  decibels: 0,
+                  vu: 0,
+                  dBFS: -60,
                   progress: Duration.zero,
                   showIndicator: false,
                   modalVisible: false,
@@ -561,7 +571,8 @@ void main() {
       final testState = state ??
           AudioRecorderState(
             status: AudioRecorderStatus.initialized,
-            decibels: 0,
+            vu: 0,
+            dBFS: -60,
             progress: Duration.zero,
             showIndicator: false,
             modalVisible: false,
@@ -587,7 +598,8 @@ void main() {
       // Test the duration formatting through the widget
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
         progress: const Duration(minutes: 1, seconds: 23, milliseconds: 456),
         showIndicator: false,
         modalVisible: false,
@@ -613,7 +625,8 @@ void main() {
       for (final (duration, expected) in testCases) {
         final state = AudioRecorderState(
           status: AudioRecorderStatus.recording,
-          decibels: 0,
+          vu: 0,
+          dBFS: -60,
           progress: duration,
           showIndicator: false,
           modalVisible: false,

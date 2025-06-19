@@ -116,9 +116,9 @@ class _AudioRecordingModalContentState
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // VU Meter
               AnalogVuMeter(
-                decibels: state.decibels,
+                vu: state.vu,
+                dBFS: state.dBFS,
                 size: 400,
                 colorScheme: theme.colorScheme,
               ),
