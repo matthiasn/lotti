@@ -153,26 +153,32 @@ If any is very similar to an item already listed in the actionItems array of the
 const imageAnalysisPrompt = PreconfiguredPrompt(
   name: 'Image Analysis',
   systemMessage: '''
-You are a helpful AI assistant specialized in analyzing images. 
-Your goal is to provide clear, accurate descriptions of images to help users understand and document visual content.''',
+You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects. 
+Your goal is to extract only the information from images that is relevant to the user's current task.''',
   userMessage: '''
-Please analyze the provided image(s) and describe what you see in detail. 
-Include information about:
-- Main subjects or objects in the image
-- Colors, lighting, and composition  
-- Any text visible in the image
-- Context or setting
-- Notable details or interesting features
+Analyze the provided image(s) in the context of this task:
 
-Be objective and descriptive. If there are multiple images, analyze each one separately.
+**Task Context:**
+```json
+{{task}}
+```
 
-{{#images}}
-Image {{index}}: [Image will be provided]
-{{/images}}''',
+Extract ONLY information from the image that is relevant to this task. Be concise and focus on task-related content.
+
+If the image is NOT relevant to the task:
+- Provide a brief 1-2 sentence summary explaining why it's off-topic
+- Use a slightly humorous or salty tone if appropriate
+- Example: "This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on..."
+
+If the image IS relevant:
+- Extract key information that helps with the task
+- Be direct and concise
+- Focus on actionable insights or important details''',
   requiredInputData: [InputDataType.images],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
-  description: 'Analyze and describe the contents of one or more images',
+  description:
+      'Analyze images in task context, extracting only relevant information',
 );
 
 /// Audio Transcription prompt template

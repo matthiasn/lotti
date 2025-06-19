@@ -101,16 +101,25 @@ void main() {
         expect(imageAnalysisPrompt.description, isNotEmpty);
       });
 
-      test('should have user message with images placeholder', () {
-        expect(imageAnalysisPrompt.userMessage, contains('{{#images}}'));
-        expect(imageAnalysisPrompt.userMessage, contains('{{/images}}'));
-        expect(imageAnalysisPrompt.userMessage, contains('{{index}}'));
+      test('should have user message with task context placeholder', () {
+        expect(imageAnalysisPrompt.userMessage, contains('{{task}}'));
+        expect(imageAnalysisPrompt.userMessage, contains('Task Context:'));
       });
 
-      test('should include analysis instructions', () {
-        expect(imageAnalysisPrompt.userMessage, contains('Main subjects'));
-        expect(imageAnalysisPrompt.userMessage, contains('Colors, lighting'));
-        expect(imageAnalysisPrompt.userMessage, contains('Context or setting'));
+      test('should include task-aware analysis instructions', () {
+        expect(
+            imageAnalysisPrompt.userMessage,
+            contains(
+                'Extract ONLY information from the image that is relevant to this task'));
+        expect(imageAnalysisPrompt.userMessage,
+            contains('If the image is NOT relevant to the task'));
+        expect(imageAnalysisPrompt.userMessage, contains('ducks by a lake'));
+      });
+
+      test('should mention being concise and task-focused', () {
+        expect(imageAnalysisPrompt.userMessage, contains('Be concise'));
+        expect(
+            imageAnalysisPrompt.userMessage, contains('task-related content'));
       });
     });
 
