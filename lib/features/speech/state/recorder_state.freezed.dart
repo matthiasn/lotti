@@ -24,7 +24,8 @@ mixin _$AudioRecorderState {
 
   /// Current audio level in decibels (0-160 range).
   /// Used for VU meter visualization.
-  double get decibels => throw _privateConstructorUsedError;
+  double get vu => throw _privateConstructorUsedError;
+  double get dBFS => throw _privateConstructorUsedError;
 
   /// Whether to show the floating recording indicator.
   /// Only relevant when recording and modal is not visible.
@@ -57,7 +58,8 @@ abstract class $AudioRecorderStateCopyWith<$Res> {
   $Res call(
       {AudioRecorderStatus status,
       Duration progress,
-      double decibels,
+      double vu,
+      double dBFS,
       bool showIndicator,
       bool modalVisible,
       String? language,
@@ -81,7 +83,8 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
   $Res call({
     Object? status = null,
     Object? progress = null,
-    Object? decibels = null,
+    Object? vu = null,
+    Object? dBFS = null,
     Object? showIndicator = null,
     Object? modalVisible = null,
     Object? language = freezed,
@@ -96,9 +99,13 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
           ? _value.progress
           : progress // ignore: cast_nullable_to_non_nullable
               as Duration,
-      decibels: null == decibels
-          ? _value.decibels
-          : decibels // ignore: cast_nullable_to_non_nullable
+      vu: null == vu
+          ? _value.vu
+          : vu // ignore: cast_nullable_to_non_nullable
+              as double,
+      dBFS: null == dBFS
+          ? _value.dBFS
+          : dBFS // ignore: cast_nullable_to_non_nullable
               as double,
       showIndicator: null == showIndicator
           ? _value.showIndicator
@@ -131,7 +138,8 @@ abstract class _$$AudioRecorderStateImplCopyWith<$Res>
   $Res call(
       {AudioRecorderStatus status,
       Duration progress,
-      double decibels,
+      double vu,
+      double dBFS,
       bool showIndicator,
       bool modalVisible,
       String? language,
@@ -153,7 +161,8 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
   $Res call({
     Object? status = null,
     Object? progress = null,
-    Object? decibels = null,
+    Object? vu = null,
+    Object? dBFS = null,
     Object? showIndicator = null,
     Object? modalVisible = null,
     Object? language = freezed,
@@ -168,9 +177,13 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
           ? _value.progress
           : progress // ignore: cast_nullable_to_non_nullable
               as Duration,
-      decibels: null == decibels
-          ? _value.decibels
-          : decibels // ignore: cast_nullable_to_non_nullable
+      vu: null == vu
+          ? _value.vu
+          : vu // ignore: cast_nullable_to_non_nullable
+              as double,
+      dBFS: null == dBFS
+          ? _value.dBFS
+          : dBFS // ignore: cast_nullable_to_non_nullable
               as double,
       showIndicator: null == showIndicator
           ? _value.showIndicator
@@ -198,7 +211,8 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   _$AudioRecorderStateImpl(
       {required this.status,
       required this.progress,
-      required this.decibels,
+      required this.vu,
+      required this.dBFS,
       required this.showIndicator,
       required this.modalVisible,
       required this.language,
@@ -215,7 +229,9 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   /// Current audio level in decibels (0-160 range).
   /// Used for VU meter visualization.
   @override
-  final double decibels;
+  final double vu;
+  @override
+  final double dBFS;
 
   /// Whether to show the floating recording indicator.
   /// Only relevant when recording and modal is not visible.
@@ -238,7 +254,7 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
 
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, decibels: $decibels, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId)';
   }
 
   @override
@@ -249,8 +265,8 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.progress, progress) ||
                 other.progress == progress) &&
-            (identical(other.decibels, decibels) ||
-                other.decibels == decibels) &&
+            (identical(other.vu, vu) || other.vu == vu) &&
+            (identical(other.dBFS, dBFS) || other.dBFS == dBFS) &&
             (identical(other.showIndicator, showIndicator) ||
                 other.showIndicator == showIndicator) &&
             (identical(other.modalVisible, modalVisible) ||
@@ -262,7 +278,7 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status, progress, decibels,
+  int get hashCode => Object.hash(runtimeType, status, progress, vu, dBFS,
       showIndicator, modalVisible, language, linkedId);
 
   /// Create a copy of AudioRecorderState
@@ -279,7 +295,8 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   factory _AudioRecorderState(
       {required final AudioRecorderStatus status,
       required final Duration progress,
-      required final double decibels,
+      required final double vu,
+      required final double dBFS,
       required final bool showIndicator,
       required final bool modalVisible,
       required final String? language,
@@ -296,7 +313,9 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   /// Current audio level in decibels (0-160 range).
   /// Used for VU meter visualization.
   @override
-  double get decibels;
+  double get vu;
+  @override
+  double get dBFS;
 
   /// Whether to show the floating recording indicator.
   /// Only relevant when recording and modal is not visible.

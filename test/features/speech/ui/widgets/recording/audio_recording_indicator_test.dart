@@ -117,7 +117,8 @@ void main() {
     testWidgets('shows nothing when not recording', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.initialized,
-        decibels: 0,
+        dBFS: -160,
+        vu: -20,
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
@@ -133,7 +134,8 @@ void main() {
     testWidgets('shows nothing when modal is visible', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
+        dBFS: -160,
+        vu: -20,
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: true,
@@ -150,7 +152,8 @@ void main() {
         (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
+        dBFS: -160,
+        vu: -20,
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: false,
@@ -178,7 +181,8 @@ void main() {
     testWidgets('indicator has correct styling', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
+        dBFS: -160,
+        vu: -20,
         progress: const Duration(minutes: 1, seconds: 23),
         showIndicator: true,
         modalVisible: false,
@@ -211,7 +215,8 @@ void main() {
     testWidgets('indicator has correct interaction behavior', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
+        dBFS: -160,
+        vu: -20,
         progress: const Duration(seconds: 30),
         showIndicator: true,
         modalVisible: false,
@@ -255,7 +260,8 @@ void main() {
       for (final (duration, expectedText) in testCases) {
         final state = AudioRecorderState(
           status: AudioRecorderStatus.recording,
-          decibels: 0,
+          dBFS: -160,
+          vu: -20,
           progress: duration,
           showIndicator: true,
           modalVisible: false,
@@ -283,8 +289,9 @@ void main() {
     testWidgets('indicator has correct dimensions', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
         progress: const Duration(seconds: 10),
+        dBFS: -160,
+        vu: -20,
         showIndicator: true,
         modalVisible: false,
         language: 'en',
@@ -304,7 +311,8 @@ void main() {
     testWidgets('indicator has correct border radius', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
-        decibels: 0,
+        dBFS: -160,
+        vu: -20,
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: false,

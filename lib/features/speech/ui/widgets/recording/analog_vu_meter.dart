@@ -1,5 +1,7 @@
 // ignore_for_file: cascade_invocations
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_constants.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart';
@@ -8,14 +10,18 @@ import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart
 /// with a traditional needle-based meter design.
 class AnalogVuMeter extends StatefulWidget {
   const AnalogVuMeter({
-    required this.decibels,
+    required this.vu,
+    required this.dBFS,
     required this.size,
     required this.colorScheme,
     super.key,
   });
 
-  /// Current audio level in decibels (0-160 range)
-  final double decibels;
+  /// Current VU level in dB (-20 to +3 range, where 0 VU = -18 dBFS RMS)
+  final double vu;
+
+  /// Current instantaneous dBFS level (used for clipping detection)
+  final double dBFS;
 
   /// Width of the meter widget (height will be size * 0.5)
   final double size;
@@ -38,11 +44,19 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
 
   double _currentValue = 0;
   double _peakValue = 0;
+  Timer? _peakHoldTimer;
+  Timer? _clipHoldTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    // Defer initial update to avoid starting timers during initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updateMeter();
+      }
+    });
   }
 
   void _initializeAnimations() {
@@ -87,16 +101,32 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
   @override
   void didUpdateWidget(AnalogVuMeter oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.decibels != widget.decibels) {
-      _updateNeedle(widget.decibels);
+    if (oldWidget.vu != widget.vu || oldWidget.dBFS != widget.dBFS) {
+      _updateMeter();
     }
   }
 
-  void _updateNeedle(double decibels) {
-    final normalizedValue = VuMeterUtils.normalizeDecibels(decibels);
+  void _updateMeter() {
+    // Convert VU to normalized scale (0-1) for meter display
+    final normalizedValue = _normalizeVu(widget.vu);
     _animateNeedle(normalizedValue);
-    _checkClipping(normalizedValue);
+
+    // Check clipping based on dBFS (clip when > -3 dBFS)
+    _checkClipping(widget.dBFS);
     _updatePeak(normalizedValue);
+  }
+
+  /// Normalize VU values (-20 to +3) to 0-1 scale for meter display
+  double _normalizeVu(double vu) {
+    // Map VU dB to 0-1 scale position with traditional VU meter scaling
+    if (vu <= -20) return 0;
+    if (vu <= -10) return 0.15 * (vu + 20) / 10;
+    if (vu <= -7) return 0.15 + 0.10 * (vu + 10) / 3;
+    if (vu <= -5) return 0.25 + 0.10 * (vu + 7) / 2;
+    if (vu <= -3) return 0.35 + 0.10 * (vu + 5) / 2;
+    if (vu <= 0) return 0.45 + 0.15 * (vu + 3) / 3;
+    if (vu <= 3) return 0.60 + 0.40 * vu / 3;
+    return 1; // +3 dB and above
   }
 
   void _animateNeedle(double normalizedValue) {
@@ -112,10 +142,12 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
     _currentValue = normalizedValue;
   }
 
-  void _checkClipping(double normalizedValue) {
-    if (normalizedValue > VuMeterConstants.clipThreshold) {
+  void _checkClipping(double dBFS) {
+    // Trigger clipping indicator when signal exceeds -3 dBFS
+    if (dBFS > -3.0) {
       _clipController.forward(from: 0);
-      Future.delayed(VuMeterConstants.clipHoldDuration, () {
+      _clipHoldTimer?.cancel();
+      _clipHoldTimer = Timer(VuMeterConstants.clipHoldDuration, () {
         if (mounted) {
           _clipController.reverse();
         }
@@ -137,7 +169,8 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
     ).animate(_peakController);
 
     // Start decay after hold time
-    Future.delayed(VuMeterConstants.peakHoldDuration, () {
+    _peakHoldTimer?.cancel();
+    _peakHoldTimer = Timer(VuMeterConstants.peakHoldDuration, () {
       if (mounted) {
         _decayPeak();
       }
@@ -164,6 +197,8 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
 
   @override
   void dispose() {
+    _peakHoldTimer?.cancel();
+    _clipHoldTimer?.cancel();
     _needleController.dispose();
     _peakController.dispose();
     _clipController.dispose();

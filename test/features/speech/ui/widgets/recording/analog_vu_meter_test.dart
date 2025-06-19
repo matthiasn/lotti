@@ -10,7 +10,8 @@ void main() {
 
   group('AnalogVuMeter Tests', () {
     Widget makeTestableWidget({
-      required double decibels,
+      required double vu,
+      required double dBFS,
       double size = 300,
       Brightness brightness = Brightness.light,
     }) {
@@ -23,7 +24,8 @@ void main() {
           data: ThemeData(brightness: brightness, colorScheme: colorScheme),
           child: Center(
             child: AnalogVuMeter(
-              decibels: decibels,
+              vu: vu,
+              dBFS: dBFS,
               size: size,
               colorScheme: colorScheme,
             ),
@@ -34,7 +36,8 @@ void main() {
 
     testWidgets('renders correctly with given size', (tester) async {
       await tester.pumpWidget(makeTestableWidget(
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
         size: 400,
       ));
 
@@ -53,11 +56,11 @@ void main() {
     });
 
     testWidgets('needle animates when decibels change', (tester) async {
-      await tester.pumpWidget(makeTestableWidget(decibels: 0));
+      await tester.pumpWidget(makeTestableWidget(vu: 0, dBFS: -60));
       await tester.pump(const Duration(milliseconds: 50));
 
       // Change decibels
-      await tester.pumpWidget(makeTestableWidget(decibels: 130));
+      await tester.pumpWidget(makeTestableWidget(vu: 1, dBFS: -10));
 
       // Pump to trigger animation
       await tester.pump();
@@ -81,7 +84,7 @@ void main() {
 
     testWidgets('shows clip indicator for high decibels', (tester) async {
       // Test with high decibels that should trigger clipping
-      await tester.pumpWidget(makeTestableWidget(decibels: 150));
+      await tester.pumpWidget(makeTestableWidget(vu: 3, dBFS: -1));
 
       // Wait for clip animation
       await tester.pump(const Duration(milliseconds: 100));
@@ -105,7 +108,8 @@ void main() {
     testWidgets('maintains aspect ratio at different sizes', (tester) async {
       // Test small size
       await tester.pumpWidget(makeTestableWidget(
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
         size: 200,
       ));
 
@@ -115,7 +119,8 @@ void main() {
 
       // Test large size
       await tester.pumpWidget(makeTestableWidget(
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
         size: 600,
       ));
 
@@ -127,7 +132,8 @@ void main() {
     testWidgets('CustomPainter receives correct theme mode', (tester) async {
       // Test light mode
       await tester.pumpWidget(makeTestableWidget(
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
       ));
 
       final vuMeter = find.byType(AnalogVuMeter);
@@ -143,7 +149,8 @@ void main() {
 
       // Test dark mode
       await tester.pumpWidget(makeTestableWidget(
-        decibels: 0,
+        vu: 0,
+        dBFS: -60,
         brightness: Brightness.dark,
       ));
 
@@ -156,12 +163,20 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('decibels normalization works correctly', (tester) async {
-      // Test various decibel values
-      final testValues = [0.0, 80.0, 130.0, 160.0];
+    testWidgets('VU and dBFS values work correctly', (tester) async {
+      // Test various VU and dBFS value combinations
+      final testValues = [
+        (vu: -20.0, dBFS: -60.0),
+        (vu: -10.0, dBFS: -30.0),
+        (vu: 0.0, dBFS: -18.0),
+        (vu: 3.0, dBFS: -15.0),
+      ];
 
-      for (final decibels in testValues) {
-        await tester.pumpWidget(makeTestableWidget(decibels: decibels));
+      for (final values in testValues) {
+        await tester.pumpWidget(makeTestableWidget(
+          vu: values.vu,
+          dBFS: values.dBFS,
+        ));
         await tester.pumpAndSettle();
 
         expect(find.byType(AnalogVuMeter), findsOneWidget);
@@ -171,11 +186,11 @@ void main() {
     testWidgets('peak hold animation triggers for increasing values',
         (tester) async {
       // Start with low value
-      await tester.pumpWidget(makeTestableWidget(decibels: 80));
+      await tester.pumpWidget(makeTestableWidget(vu: -10, dBFS: -30));
       await tester.pumpAndSettle();
 
       // Increase to trigger peak hold
-      await tester.pumpWidget(makeTestableWidget(decibels: 140));
+      await tester.pumpWidget(makeTestableWidget(vu: 2, dBFS: -16));
       await tester.pump();
 
       // Peak should be held
@@ -197,7 +212,7 @@ void main() {
     });
 
     testWidgets('disposes animation controllers properly', (tester) async {
-      await tester.pumpWidget(makeTestableWidget(decibels: 0));
+      await tester.pumpWidget(makeTestableWidget(vu: 0, dBFS: -60));
       await tester.pumpAndSettle();
 
       // Replace widget to trigger dispose
@@ -210,10 +225,20 @@ void main() {
 
     testWidgets('handles rapid decibel changes', (tester) async {
       // Simulate rapid changes like during actual recording
-      final values = [80.0, 90.0, 100.0, 110.0, 120.0, 130.0];
+      final values = [
+        (vu: -10.0, dBFS: -30.0),
+        (vu: -8.0, dBFS: -26.0),
+        (vu: -5.0, dBFS: -23.0),
+        (vu: -3.0, dBFS: -21.0),
+        (vu: 0.0, dBFS: -18.0),
+        (vu: 1.0, dBFS: -17.0),
+      ];
 
       for (final value in values) {
-        await tester.pumpWidget(makeTestableWidget(decibels: value));
+        await tester.pumpWidget(makeTestableWidget(
+          vu: value.vu,
+          dBFS: value.dBFS,
+        ));
         await tester.pump(const Duration(milliseconds: 20));
       }
 

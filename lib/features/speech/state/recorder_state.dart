@@ -36,7 +36,8 @@ class AudioRecorderState with _$AudioRecorderState {
 
     /// Current audio level in decibels (0-160 range).
     /// Used for VU meter visualization.
-    required double decibels,
+    required double vu,
+    required double dBFS,
 
     /// Whether to show the floating recording indicator.
     /// Only relevant when recording and modal is not visible.

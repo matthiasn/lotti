@@ -18,7 +18,8 @@ The `AnalogVuMeter` is a custom-drawn widget that displays audio levels in real-
 **Usage:**
 ```dart
 AnalogVuMeter(
-  decibels: audioLevel,  // 0-160 range
+  vu: vuLevel,           // -20 to +3 VU range (RMS-based)
+  dBFS: dBFSLevel,       // Instantaneous dBFS for clipping detection
   size: 400,             // Width (height is automatically size * 0.5)
   colorScheme: theme.colorScheme,
 )
@@ -91,14 +92,62 @@ The VU meter consists of several visual elements:
 
 5. **VU Text**: Centered "VU" label in meter face
 
-### Decibel Normalization
+### VU Meter Signal Processing
 
-The input range (0-160) is mapped to VU meter scale positions using non-linear scaling to match traditional VU meter ballistics:
+#### RMS Calculation for VU Values
 
-- Input 130 = 0 VU (reference level)
-- Scale uses different slopes for different ranges
-- 0 dB appears at 60% of scale width
-- Red zone starts at 0 dB position
+The VU meter uses RMS (Root Mean Square) calculation to display average signal levels, which provides a perceptually accurate representation of loudness:
+
+1. **Why RMS?**
+   - Audio signals oscillate around zero with positive and negative values
+   - Simple averaging would cancel out to near zero
+   - RMS measures the average power/energy of the signal
+   - Matches human perception of loudness better than peak values
+
+2. **Calculation Process:**
+   ```
+   1. Convert dBFS to linear amplitude: linear = 10^(dBFS/20)
+   2. Square each sample: squared = linear²
+   3. Calculate mean of squares over 300ms window
+   4. Take square root: RMS = √(mean of squares)
+   5. Convert back to dB: RMS_dB = 20 * log10(RMS)
+   6. Apply VU reference: VU = RMS_dB - (-18)
+   ```
+
+3. **Why Square Values?**
+   - Squaring ensures all values are positive (no cancellation)
+   - Relates to power (Power ∝ Amplitude²)
+   - Emphasizes louder parts of the signal
+   - Standard approach in audio metering
+
+4. **VU vs dBFS:**
+   - **VU (Volume Units)**: RMS-based, averaged over 300ms, smooth response
+   - **dBFS (Decibels Full Scale)**: Instantaneous peak values
+   - 0 VU is calibrated to -18 dBFS RMS (standard broadcast level)
+   - Clipping detection uses instantaneous dBFS (> -3 dBFS)
+
+5. **Rolling Average Window:**
+   - Default: 300ms (30 samples at 10ms intervals)
+   - Configurable between 100-1000ms
+   - Provides smooth, stable meter movement
+   - Reduces nervousness from transient peaks
+
+### VU Meter Scale Mapping
+
+The VU values (-20 to +3 dB) are mapped to meter positions using non-linear scaling:
+
+- **-20 to -10 VU**: First 15% of scale (compressed)
+- **-10 to -7 VU**: Next 10% of scale
+- **-7 to -5 VU**: Next 10% of scale
+- **-5 to -3 VU**: Next 10% of scale
+- **-3 to 0 VU**: Next 15% of scale
+- **0 to +3 VU**: Last 40% of scale (expanded, red zone)
+
+This creates the characteristic VU meter appearance where:
+- 0 VU sits at 60% position (not center)
+- Negative values are compressed
+- Positive values are expanded for better visibility
+- Matches traditional analog VU meter calibration
 
 ## Testing
 
