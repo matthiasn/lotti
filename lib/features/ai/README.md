@@ -26,9 +26,9 @@ The AI feature consists of several key components:
 - **`ai_config_repository.dart`**: Interface for CRUD operations on configurations
 
 #### Repositories (`repository/`)
-- **`prompts.dart`**: Functions to create prompts for different AI tasks
 - **`unified_ai_inference_repository.dart`**: Main repository handling all AI inference requests
 - **`cloud_inference_repository.dart`**: Handles communication with AI providers
+- **`ai_input_repository.dart`**: Prepares task data for AI processing
 
 #### State Management (`state/`)
 - **`unified_ai_controller.dart`**: Main controller orchestrating AI operations
@@ -39,10 +39,11 @@ The AI feature consists of several key components:
 
 ### 1. Prompt Creation
 
-Task summary prompts are created using the `createTaskSummaryPrompt` function in `repository/prompts.dart`:
+Task summary prompts are defined in `util/preconfigured_prompts.dart` and configured through the prompt management system:
 
 ```dart
-String createTaskSummaryPrompt(String jsonString) {
+const taskSummaryPrompt = PreconfiguredPrompt(
+  name: 'Task Summary',
   // Creates a detailed prompt instructing the AI to:
   // - Start with a single H1 header suggesting a task title
   // - Summarize the task for someone returning after a long time
@@ -50,10 +51,10 @@ String createTaskSummaryPrompt(String jsonString) {
   // - List remaining steps (numbered)
   // - Note learnings (💡) and annoyances (🤯)
   // - Indicate if the task is complete
-}
+);
 ```
 
-The prompt template (from `util/preconfigured_prompts.dart`) includes:
+The prompt template includes:
 - System message setting context
 - Detailed user message with formatting instructions
 - Placeholder `{{task}}` replaced with actual task JSON
@@ -77,20 +78,23 @@ The prompt template (from `util/preconfigured_prompts.dart`) includes:
 
 3. **Response Streaming**: AI responses are streamed and accumulated
 
-### 3. Response Parsing
+### 3. Response Parsing and Processing
 
 For task summaries, the response is treated as markdown text:
 - No JSON parsing (unlike action item suggestions)
 - The complete response is saved as an `AiResponseEntry`
+- Post-processing includes automatic title extraction (see below)
 - Displayed using `GptMarkdown` widget for proper formatting
 
 ### 4. Automatic Title Extraction
 
 When generating task summaries, the system automatically extracts suggested titles:
 - The AI is prompted to start with an H1 header (`# Title`)
+- The title is extracted using regex pattern: `^#\s+(.+)$`
 - If the current task title is less than 5 characters, it's replaced with the AI suggestion
 - This enables automatic title generation for tasks created from audio recordings
-- The title extraction uses a regex pattern: `^#\s+(.+)$`
+- The extracted title updates the task entity in the database
+- When displaying summaries, the H1 title is filtered out to avoid redundancy
 
 ## Response Types
 
@@ -156,7 +160,7 @@ Models define:
 - **`inference_provider_edit_page.dart`**: Manage API providers
 
 ### Response Display
-- **`ai_response_summary.dart`**: Renders AI responses with markdown support
+- **`ai_response_summary.dart`**: Renders AI responses with markdown support (filters H1 titles for task summaries)
 - **`latest_ai_response_summary.dart`**: Shows the most recent AI response for a task
 - **`ai_response_summary_modal.dart`**: Full-screen view of AI responses
 
@@ -192,8 +196,8 @@ LatestAiResponseSummary(
 ### Q: How are prompts customized?
 A: Prompts use a template system with variables like `{{task}}`. The system replaces these with actual data before sending to the AI.
 
-### Q: Can I extract task titles from summaries?
-A: Currently, the system doesn't extract titles from AI summaries. Summaries are displayed as-is, and titles must be entered manually.
+### Q: How does automatic title extraction work?
+A: When generating task summaries, the AI suggests a title as an H1 header. If the current task title is less than 5 characters (e.g., empty or very short), it's automatically replaced with the AI's suggestion. This is particularly useful for tasks created from audio recordings.
 
 ### Q: Which AI providers are supported?
 A: The system supports OpenAI, Anthropic, Google, Groq, OpenRouter, and custom OpenAI-compatible endpoints.
