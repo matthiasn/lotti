@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.624+3101
+version: 0.9.625+3103
 
 msix_config:
   display_name: LottiApp
@@ -18,7 +18,7 @@ environment:
   sdk: '>=3.0.1 <4.0.0'
 
 dependencies:
-  arb_utils: ^0.8.1
+  arb_utils: ^0.8.3
   audio_video_progress_bar: ^2.0.1
   auto_size_text: ^3.0.0
   beamer: ^1.5.2
@@ -59,7 +59,13 @@ dependencies:
   flutter_map: ^8.0.0
   flutter_olm: ^2.0.0
   flutter_openssl_crypto: ^0.5.0
-  flutter_quill: ^11.0.0
+
+  #flutter_quill: ^11.0.0
+  flutter_quill:
+    git:
+      url: https://github.com/theniceboy/flutter-quill
+      ref: 5ff5967
+
   flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
   flutter_riverpod: ^2.4.9
@@ -72,14 +78,14 @@ dependencies:
   get_it: ^8.0.2
   glass_kit: ^4.0.1
   google_fonts: ^6.1.0
-  gpt_markdown: ^1.0.11
+  gpt_markdown: ^1.0.20
   graphic: ^2.3.0
   health: ^13.1.0
   hotkey_manager: ^0.2.0
   http: ^1.2.0
   infinite_scroll_pagination: ^5.0.0
   intersperse: ^2.0.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   ionicons: ^0.2.2
   json_annotation: ^4.8.1
   latlong2: ^0.9.0
@@ -140,8 +146,12 @@ dependencies:
 
 dependency_overrides:
   analyzer_plugin: ^0.13.1
-  flutter_math_fork: 0.7.3
+  flutter_quill:
+    git:
+      url: https://github.com/theniceboy/flutter-quill
+      ref: 5ff5967
   get_it: ^8.0.2
+  intl: ^0.20.2
   rxdart: ^0.28.0
 
 dev_dependencies:
