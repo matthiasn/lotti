@@ -1,10 +1,12 @@
 /// Preconfigured prompt templates for common AI tasks.
 ///
-/// This file contains the templates for the four main prompt types:
+/// This file contains the templates for the six main prompt types:
 /// - Task Summary
 /// - Action Item Suggestions
 /// - Image Analysis
+/// - Image Analysis in Task Context
 /// - Audio Transcription
+/// - Audio Transcription with Task Context
 ///
 /// These templates are used when creating new prompts through the
 /// "Add Preconfigured Prompt" functionality.
