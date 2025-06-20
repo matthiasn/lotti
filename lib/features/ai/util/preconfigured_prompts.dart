@@ -42,7 +42,9 @@ const List<PreconfiguredPrompt> preconfiguredPrompts = [
   taskSummaryPrompt,
   actionItemSuggestionsPrompt,
   imageAnalysisPrompt,
+  imageAnalysisInTaskContextPrompt,
   audioTranscriptionPrompt,
+  audioTranscriptionWithTaskContextPrompt,
 ];
 
 /// Task Summary prompt template
@@ -152,6 +154,20 @@ If any is very similar to an item already listed in the actionItems array of the
 /// Image Analysis prompt template
 const imageAnalysisPrompt = PreconfiguredPrompt(
   name: 'Image Analysis',
+  systemMessage:
+      'You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.',
+  userMessage: '''
+Analyze the provided image(s) in detail, focusing on both the content and style of the image.
+''',
+  requiredInputData: [InputDataType.images],
+  aiResponseType: AiResponseType.imageAnalysis,
+  useReasoning: false,
+  description: 'Analyze images in detail',
+);
+
+/// Image Analysis in Task Context prompt template
+const imageAnalysisInTaskContextPrompt = PreconfiguredPrompt(
+  name: 'Image Analysis in Task Context',
   systemMessage: '''
 You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects. 
 Your goal is to extract only the information from images that is relevant to the user's current task.''',
@@ -174,7 +190,7 @@ If the image IS relevant:
 - Extract key information that helps with the task
 - Be direct and concise
 - Focus on actionable insights or important details''',
-  requiredInputData: [InputDataType.images],
+  requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
   description:
@@ -191,13 +207,41 @@ Your goal is to provide accurate, well-formatted transcriptions of audio recordi
 Please transcribe the provided audio file(s). 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
 If there are multiple speakers, try to indicate speaker changes. 
-Note any significant non-speech audio events [in brackets].
-
-{{#audioFiles}}
-Audio File {{index}}: [Audio will be provided]
-{{/audioFiles}}''',
+Note any significant non-speech audio events [in brackets]. Remove filler words.
+''',
   requiredInputData: [InputDataType.audioFiles],
   aiResponseType: AiResponseType.audioTranscription,
   useReasoning: false,
   description: 'Transcribe audio recordings into text format',
+);
+
+/// Audio Transcription with Task Context prompt template
+const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
+  name: 'Audio Transcription with Task Context',
+  systemMessage: '''
+You are a helpful AI assistant that transcribes audio content. 
+Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
+  userMessage: '''
+Please transcribe the provided audio. 
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
+If there are multiple speakers, try to indicate speaker changes. 
+Note any significant non-speech audio events [in brackets]. Remove filler words.
+
+Take into account the following task context:
+
+**Task Context:**
+```json
+{{task}}
+```
+
+The task context will provide additional information about the task, such as the project, 
+goal, and any relevant details such as names of people or places. If in doubt 
+about names or concepts mentioned in the audio, then the task context should
+be consulted to ensure accuracy.
+''',
+  requiredInputData: [InputDataType.audioFiles, InputDataType.task],
+  aiResponseType: AiResponseType.audioTranscription,
+  useReasoning: false,
+  description:
+      'Transcribe audio recordings into text format, taking into account task context',
 );

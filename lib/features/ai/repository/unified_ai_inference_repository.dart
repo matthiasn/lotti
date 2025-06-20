@@ -26,15 +26,6 @@ part 'unified_ai_inference_repository.g.dart';
 /// Minimum title length for AI suggestion to be applied
 const kMinExistingTitleLengthForAiSuggestion = 5;
 
-/// Generic image analysis prompt for when no task context is available
-const String _kGenericImageAnalysisPrompt = '''
-Please analyze the provided image(s) and describe what you see. Focus on:
-- Main subjects or objects
-- Any text visible in the image
-- Key details that might be important
-
-Be concise and objective.''';
-
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
@@ -51,29 +42,56 @@ class UnifiedAiInferenceRepository {
         .read(aiConfigRepositoryProvider)
         .getConfigsByType(AiConfigType.prompt);
 
-    final activePrompts = allPrompts
-        .whereType<AiConfigPrompt>()
-        .where((prompt) => !prompt.archived)
-        .where((prompt) => _isPromptActiveForEntity(prompt, entity))
-        .toList();
+    final activePrompts = <AiConfigPrompt>[];
+
+    for (final config in allPrompts) {
+      if (config is AiConfigPrompt && !config.archived) {
+        final isActive = await _isPromptActiveForEntity(config, entity);
+        if (isActive) {
+          activePrompts.add(config);
+        }
+      }
+    }
 
     return activePrompts;
   }
 
   /// Check if a prompt is active for a given entity type
-  bool _isPromptActiveForEntity(AiConfigPrompt prompt, JournalEntity entity) {
+  Future<bool> _isPromptActiveForEntity(
+    AiConfigPrompt prompt,
+    JournalEntity entity,
+  ) async {
     // Check if prompt requires specific input data types
-    for (final inputType in prompt.requiredInputData) {
-      switch (inputType) {
-        case InputDataType.task:
-        case InputDataType.tasksList:
-          if (entity is! Task) return false;
-        case InputDataType.images:
-          if (entity is! JournalImage) return false;
-        case InputDataType.audioFiles:
-          if (entity is! JournalAudio) return false;
+    final hasTask = prompt.requiredInputData.contains(InputDataType.task);
+    final hasImages = prompt.requiredInputData.contains(InputDataType.images);
+    final hasAudio =
+        prompt.requiredInputData.contains(InputDataType.audioFiles);
+
+    // For prompts that require task context
+    if (hasTask) {
+      if (entity is Task) {
+        // Direct task entity - always valid
+        return hasImages == false && hasAudio == false;
+      } else if (entity is JournalImage && hasImages) {
+        // Image with task requirement - check if linked to task
+        final linkedEntities = await ref
+            .read(journalRepositoryProvider)
+            .getLinkedToEntities(linkedTo: entity.id);
+        return linkedEntities.any((e) => e is Task);
+      } else if (entity is JournalAudio && hasAudio) {
+        // Audio with task requirement - check if linked to task
+        final linkedEntities = await ref
+            .read(journalRepositoryProvider)
+            .getLinkedToEntities(linkedTo: entity.id);
+        return linkedEntities.any((e) => e is Task);
       }
+      return false;
     }
+
+    // For prompts without task requirement
+    if (hasImages && entity is! JournalImage) return false;
+    if (hasAudio && entity is! JournalAudio) return false;
+
     return true;
   }
 
@@ -183,35 +201,42 @@ class UnifiedAiInferenceRepository {
     final aiInputRepo = ref.read(aiInputRepositoryProvider);
     var prompt = promptConfig.userMessage;
 
-    // For image analysis, check if the image is linked to a task
-    if (promptConfig.aiResponseType == AiResponseType.imageAnalysis &&
-        entity is JournalImage) {
-      final journalRepo = ref.read(journalRepositoryProvider);
-      final linkedFromEntities = await journalRepo.getLinkedToEntities(
-        linkedTo: entity.id,
-      );
+    // Check if prompt contains {{task}} placeholder
+    if (prompt.contains('{{task}}')) {
+      // Handle different entity types that might need task context
+      if (entity is JournalImage || entity is JournalAudio) {
+        // For images and audio, check if they are linked to a task
+        final journalRepo = ref.read(journalRepositoryProvider);
+        final linkedFromEntities = await journalRepo.getLinkedToEntities(
+          linkedTo: entity.id,
+        );
 
-      // Find if any linked entity is a task
-      final linkedTask = linkedFromEntities.firstWhereOrNull(
-        (entity) => entity is Task,
-      ) as Task?;
+        // Find if any linked entity is a task
+        final linkedTask = linkedFromEntities.firstWhereOrNull(
+          (entity) => entity is Task,
+        ) as Task?;
 
-      if (linkedTask != null) {
-        // Get task context and replace {{task}} placeholder
-        final taskJson =
-            await aiInputRepo.buildTaskDetailsJson(id: linkedTask.id);
+        if (linkedTask != null) {
+          // Get task context and replace {{task}} placeholder
+          final taskJson =
+              await aiInputRepo.buildTaskDetailsJson(id: linkedTask.id);
+          if (taskJson != null) {
+            prompt = prompt.replaceAll('{{task}}', taskJson);
+          }
+        }
+        // If no linked task, leave the prompt as is (with {{task}} placeholder)
+        // The AI will handle it gracefully
+      } else if (entity is Task) {
+        // For task entities, directly replace the placeholder
+        final taskJson = await aiInputRepo.buildTaskDetailsJson(id: entity.id);
         if (taskJson != null) {
           prompt = prompt.replaceAll('{{task}}', taskJson);
-        } else {
-          // No task context - provide generic prompt without task details
-          prompt = _kGenericImageAnalysisPrompt;
         }
-      } else {
-        // No linked task - provide generic prompt
-        prompt = _kGenericImageAnalysisPrompt;
       }
-    } else if (promptConfig.requiredInputData.contains(InputDataType.task)) {
-      // For prompts that require task data (summaries, action items)
+    } else if (promptConfig.requiredInputData.contains(InputDataType.task) &&
+        entity is Task) {
+      // For prompts that require task data but don't use {{task}} placeholder
+      // (legacy support for summaries, action items)
       final jsonString = await aiInputRepo.buildTaskDetailsJson(id: entity.id);
       prompt = '${promptConfig.userMessage} \n $jsonString';
     }
@@ -368,7 +393,7 @@ class UnifiedAiInferenceRepository {
     );
 
     // Save the AI response entry
-    if (entity is! JournalAudio) {
+    if (entity is! JournalAudio && entity is! JournalImage) {
       await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
             data: data,
             start: start,

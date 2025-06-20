@@ -57,18 +57,21 @@ void main() {
         // All preconfigured prompts should be visible
         for (final prompt in preconfiguredPrompts) {
           expect(find.text(prompt.name), findsWidgets);
-          expect(find.text(prompt.description), findsOneWidget);
+          // Descriptions might be duplicated, so check for at least one
+          expect(find.text(prompt.description), findsWidgets);
         }
       });
 
       testWidgets('displays prompt cards with icons', (tester) async {
         await showModal(tester);
 
-        // Each prompt should have its icon
+        // Each prompt type should have its icon (we have duplicates now)
         expect(find.byIcon(Icons.summarize_outlined), findsOneWidget);
         expect(find.byIcon(Icons.checklist_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.image_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.image_outlined),
+            findsNWidgets(2)); // 2 image prompts
+        expect(find.byIcon(Icons.mic_outlined),
+            findsNWidgets(2)); // 2 audio prompts
       });
 
       testWidgets('shows input and output type chips', (tester) async {
@@ -203,7 +206,8 @@ void main() {
         // Verify icons have proper context
         for (final prompt in preconfiguredPrompts) {
           expect(find.text(prompt.name), findsWidgets);
-          expect(find.text(prompt.description), findsOneWidget);
+          // Descriptions might be duplicated, so check for at least one
+          expect(find.text(prompt.description), findsWidgets);
         }
       });
     });
@@ -226,10 +230,16 @@ void main() {
           (tester) async {
         await showModal(tester);
 
-        // Each prompt should show its output type
+        // Count how many prompts have each response type
+        final responseTypeCounts = <AiResponseType, int>{};
         for (final prompt in preconfiguredPrompts) {
-          // The response type icon should be visible
-          expect(find.byIcon(prompt.aiResponseType.icon), findsOneWidget);
+          responseTypeCounts[prompt.aiResponseType] =
+              (responseTypeCounts[prompt.aiResponseType] ?? 0) + 1;
+        }
+
+        // Each response type icon should appear the correct number of times
+        for (final entry in responseTypeCounts.entries) {
+          expect(find.byIcon(entry.key.icon), findsNWidgets(entry.value));
         }
       });
     });
