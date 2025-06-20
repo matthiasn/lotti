@@ -232,6 +232,8 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
           // Main content
           ..._buildTabContentSlivers(),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
       floatingActionButton: AiSettingsFloatingActionButton(
