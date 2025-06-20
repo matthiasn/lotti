@@ -5,8 +5,8 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
   group('PreconfiguredPrompts', () {
-    test('should have exactly 4 preconfigured prompts', () {
-      expect(preconfiguredPrompts.length, equals(4));
+    test('should have exactly 6 preconfigured prompts', () {
+      expect(preconfiguredPrompts.length, equals(6));
     });
 
     test('should contain all expected prompt types', () {
@@ -101,25 +101,10 @@ void main() {
         expect(imageAnalysisPrompt.description, isNotEmpty);
       });
 
-      test('should have user message with task context placeholder', () {
-        expect(imageAnalysisPrompt.userMessage, contains('{{task}}'));
-        expect(imageAnalysisPrompt.userMessage, contains('Task Context:'));
-      });
-
-      test('should include task-aware analysis instructions', () {
-        expect(
-            imageAnalysisPrompt.userMessage,
-            contains(
-                'Extract ONLY information from the image that is relevant to this task'));
+      test('should NOT have task context placeholder', () {
+        expect(imageAnalysisPrompt.userMessage, isNot(contains('{{task}}')));
         expect(imageAnalysisPrompt.userMessage,
-            contains('If the image is NOT relevant to the task'));
-        expect(imageAnalysisPrompt.userMessage, contains('ducks by a lake'));
-      });
-
-      test('should mention being concise and task-focused', () {
-        expect(imageAnalysisPrompt.userMessage, contains('Be concise'));
-        expect(
-            imageAnalysisPrompt.userMessage, contains('task-related content'));
+            contains('Analyze the provided image'));
       });
     });
 
@@ -141,12 +126,9 @@ void main() {
         expect(audioTranscriptionPrompt.description, isNotEmpty);
       });
 
-      test('should have user message with audio files placeholder', () {
-        expect(
-            audioTranscriptionPrompt.userMessage, contains('{{#audioFiles}}'));
-        expect(
-            audioTranscriptionPrompt.userMessage, contains('{{/audioFiles}}'));
-        expect(audioTranscriptionPrompt.userMessage, contains('{{index}}'));
+      test('should have user message with transcription instructions', () {
+        expect(audioTranscriptionPrompt.userMessage, contains('transcribe'));
+        expect(audioTranscriptionPrompt.userMessage, contains('audio'));
       });
 
       test('should include transcription instructions', () {
@@ -155,6 +137,75 @@ void main() {
         expect(
             audioTranscriptionPrompt.userMessage, contains('speaker changes'));
         expect(audioTranscriptionPrompt.userMessage, contains('[in brackets]'));
+      });
+    });
+
+    group('Image Analysis in Task Context Prompt', () {
+      test('should have correct configuration', () {
+        expect(imageAnalysisInTaskContextPrompt.aiResponseType,
+            equals(AiResponseType.imageAnalysis));
+        expect(imageAnalysisInTaskContextPrompt.name,
+            equals('Image Analysis in Task Context'));
+        expect(imageAnalysisInTaskContextPrompt.requiredInputData,
+            equals([InputDataType.images, InputDataType.task]));
+        expect(imageAnalysisInTaskContextPrompt.useReasoning, isFalse);
+      });
+
+      test('should have non-empty messages', () {
+        expect(imageAnalysisInTaskContextPrompt.systemMessage, isNotEmpty);
+        expect(imageAnalysisInTaskContextPrompt.userMessage, isNotEmpty);
+        expect(imageAnalysisInTaskContextPrompt.description, isNotEmpty);
+      });
+
+      test('should have user message with task context placeholder', () {
+        expect(
+            imageAnalysisInTaskContextPrompt.userMessage, contains('{{task}}'));
+        expect(imageAnalysisInTaskContextPrompt.userMessage,
+            contains('Task Context:'));
+      });
+
+      test('should include task-aware analysis instructions', () {
+        expect(
+            imageAnalysisInTaskContextPrompt.userMessage,
+            contains(
+                'Extract ONLY information from the image that is relevant to this task'));
+        expect(imageAnalysisInTaskContextPrompt.userMessage,
+            contains('If the image is NOT relevant to the task'));
+        expect(imageAnalysisInTaskContextPrompt.userMessage,
+            contains('ducks by a lake'));
+      });
+    });
+
+    group('Audio Transcription with Task Context Prompt', () {
+      test('should have correct configuration', () {
+        expect(audioTranscriptionWithTaskContextPrompt.aiResponseType,
+            equals(AiResponseType.audioTranscription));
+        expect(audioTranscriptionWithTaskContextPrompt.name,
+            equals('Audio Transcription with Task Context'));
+        expect(audioTranscriptionWithTaskContextPrompt.requiredInputData,
+            equals([InputDataType.audioFiles, InputDataType.task]));
+        expect(audioTranscriptionWithTaskContextPrompt.useReasoning, isFalse);
+      });
+
+      test('should have non-empty messages', () {
+        expect(
+            audioTranscriptionWithTaskContextPrompt.systemMessage, isNotEmpty);
+        expect(audioTranscriptionWithTaskContextPrompt.userMessage, isNotEmpty);
+        expect(audioTranscriptionWithTaskContextPrompt.description, isNotEmpty);
+      });
+
+      test('should have user message with task context placeholder', () {
+        expect(audioTranscriptionWithTaskContextPrompt.userMessage,
+            contains('{{task}}'));
+        expect(audioTranscriptionWithTaskContextPrompt.userMessage,
+            contains('Task Context:'));
+      });
+
+      test('should include task context instructions', () {
+        expect(audioTranscriptionWithTaskContextPrompt.userMessage,
+            contains('task context will provide additional information'));
+        expect(audioTranscriptionWithTaskContextPrompt.userMessage,
+            contains('names of people or places'));
       });
     });
 
@@ -197,10 +248,15 @@ void main() {
     });
 
     group('Prompt Content Validation', () {
-      test('all prompts should have unique types', () {
+      test('prompts can have duplicate types for different contexts', () {
         final types =
             preconfiguredPrompts.map((p) => p.aiResponseType).toList();
-        expect(types.length, equals(types.toSet().length));
+        // We now have multiple prompts with same type but different contexts
+        expect(types.where((t) => t == AiResponseType.imageAnalysis).length,
+            equals(2));
+        expect(
+            types.where((t) => t == AiResponseType.audioTranscription).length,
+            equals(2));
       });
 
       test('all prompts should have unique names', () {

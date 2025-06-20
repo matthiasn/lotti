@@ -118,6 +118,7 @@ The system supports four AI response types:
 
 4. **Audio Transcription** (`AiResponseType.audioTranscription`)
    - Transcribes audio recordings
+   - When linked to a task, uses task context for better accuracy with names and concepts
    - Response is transcribed text
 
 ## Configuration System
@@ -143,7 +144,15 @@ await repository.saveConfig(config);
 
 Prompts can be:
 - **Preconfigured**: Use built-in templates from `preconfiguredPrompts.dart`
+  - Task Summary
+  - Action Item Suggestions
+  - Image Analysis
+  - Image Analysis in Task Context
+  - Audio Transcription
+  - Audio Transcription with Task Context
 - **Custom**: Create custom prompts with variables and specific requirements
+
+The system includes context-aware variations of prompts that activate when entities are linked to tasks, providing more relevant and focused AI responses.
 
 ### Model Configuration
 
@@ -207,6 +216,12 @@ A: When an image is linked to a task, the image analysis prompt automatically in
 - Provides a brief, humorous note if the image is off-topic (e.g., "This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on...")
 - Focuses on actionable insights for task-relevant images
 This prevents verbose, irrelevant image descriptions from cluttering task summaries.
+
+### Q: When are task-context prompts shown in the AI menu?
+A: Task-context prompts (like "Image Analysis in Task Context" or "Audio Transcription with Task Context") only appear in the AI popup menu when:
+- An image/audio is linked to a task
+- The prompt requires both the media type AND task context
+The system automatically filters available prompts based on the current entity and its relationships, ensuring users only see relevant options.
 
 ### Q: Which AI providers are supported?
 A: The system supports OpenAI, Anthropic, Google, Groq, OpenRouter, and custom OpenAI-compatible endpoints.

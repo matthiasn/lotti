@@ -365,6 +365,143 @@ void main() {
 
         expect(result.isEmpty, true);
       });
+
+      test('returns task context prompts only when image is linked to task',
+          () async {
+        final imageEntity = JournalImage(
+          meta: _createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime.now(),
+            imageId: 'test-image',
+            imageFile: 'test.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+
+        final taskEntity = Task(
+          meta: _createMetadata().copyWith(id: 'task-id'),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final imagePrompt = _createPrompt(
+          id: 'image-prompt',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final imageTaskPrompt = _createPrompt(
+          id: 'image-task-prompt',
+          name: 'Image Analysis with Task Context',
+          requiredInputData: [InputDataType.images, InputDataType.task],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [imagePrompt, imageTaskPrompt]);
+
+        // Test with linked task
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => [taskEntity]);
+
+        final resultWithTask = await repository.getActivePromptsForContext(
+          entity: imageEntity,
+        );
+
+        expect(resultWithTask.length, 2);
+        expect(resultWithTask.map((p) => p.id).toSet(),
+            {'image-prompt', 'image-task-prompt'});
+
+        // Test without linked task
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []);
+
+        final resultWithoutTask = await repository.getActivePromptsForContext(
+          entity: imageEntity,
+        );
+
+        expect(resultWithoutTask.length, 1);
+        expect(resultWithoutTask.first.id, 'image-prompt');
+      });
+
+      test('returns task context prompts only when audio is linked to task',
+          () async {
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final taskEntity = Task(
+          meta: _createMetadata().copyWith(id: 'task-id'),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final audioPrompt = _createPrompt(
+          id: 'audio-prompt',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final audioTaskPrompt = _createPrompt(
+          id: 'audio-task-prompt',
+          name: 'Audio Transcription with Task Context',
+          requiredInputData: [InputDataType.audioFiles, InputDataType.task],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [audioPrompt, audioTaskPrompt]);
+
+        // Test with linked task
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => [taskEntity]);
+
+        final resultWithTask = await repository.getActivePromptsForContext(
+          entity: audioEntity,
+        );
+
+        expect(resultWithTask.length, 2);
+        expect(resultWithTask.map((p) => p.id).toSet(),
+            {'audio-prompt', 'audio-task-prompt'});
+
+        // Test without linked task
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []);
+
+        final resultWithoutTask = await repository.getActivePromptsForContext(
+          entity: audioEntity,
+        );
+
+        expect(resultWithoutTask.length, 1);
+        expect(resultWithoutTask.first.id, 'audio-prompt');
+      });
     });
 
     group('runInference', () {
@@ -2780,9 +2917,295 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           ).captured;
 
           final capturedPrompt = captured.first as String;
-          expect(capturedPrompt, contains('Please analyze the provided image'));
-          expect(capturedPrompt, contains('Main subjects or objects'));
-          expect(capturedPrompt, isNot(contains('Task Context')));
+          // When no task is linked, the prompt should keep the {{task}} placeholder
+          expect(capturedPrompt, contains('{{task}}'));
+          expect(capturedPrompt, contains('Task Context'));
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('audio transcription uses task context when linked to a task',
+          () async {
+        // Create a temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('audio_task_test');
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioDirectory: '/audio/',
+            audioFile: 'test.wav',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final taskEntity = Task(
+          meta: _createMetadata().copyWith(id: 'task-id'),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Interview with John Smith',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        final audioFile = File('${tempDir.path}/audio/test.wav');
+        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4]);
+        audioFile.writeAsBytesSync(mockAudioBytes);
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Audio Transcription with Task Context',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        ).copyWith(
+          userMessage: '''
+Please transcribe the provided audio. 
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
+If there are multiple speakers, try to indicate speaker changes. 
+Note any significant non-speech audio events [in brackets]. Remove filler words.
+
+Take into account the following task context:
+
+**Task Context:**
+```json
+{{task}}
+```
+
+The task context will provide additional information about the task, such as the project, 
+goal, and any relevant details such as names of people or places. If in doubt 
+about names or concepts mentioned in the audio, then the task context should
+be consulted to ensure accuracy.''',
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'whisper-1',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content:
+                      'John Smith: Thank you for having me. Let me tell you about our latest project.',
+                ),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => audioEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => [taskEntity]);
+        when(() =>
+            mockAiInputRepo.buildTaskDetailsJson(
+                id: 'task-id')).thenAnswer((_) async =>
+            '{"title": "Interview with John Smith", "status": "IN PROGRESS"}');
+
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        try {
+          await repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: progressUpdates.add,
+            onStatusChange: statusChanges.add,
+          );
+
+          expect(progressUpdates, [
+            'John Smith: Thank you for having me. Let me tell you about our latest project.',
+          ]);
+          expect(
+            statusChanges,
+            [InferenceStatus.running, InferenceStatus.idle],
+          );
+
+          // Verify the prompt was built with task context
+          final captured = verify(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              captureAny(),
+              model: 'whisper-1',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: 'https://api.example.com',
+              apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
+            ),
+          ).captured;
+
+          final capturedPrompt = captured.first as String;
+          expect(capturedPrompt, contains('Interview with John Smith'));
+          expect(capturedPrompt, contains('"status": "IN PROGRESS"'));
+          expect(capturedPrompt, isNot(contains('{{task}}')));
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('audio transcription keeps placeholder when not linked to a task',
+          () async {
+        // Create a temporary directory for the test
+        final tempDir =
+            Directory.systemTemp.createTempSync('audio_no_task_test');
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            audioDirectory: '/audio/',
+            audioFile: 'test.wav',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        final audioFile = File('${tempDir.path}/audio/test.wav');
+        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4]);
+        audioFile.writeAsBytesSync(mockAudioBytes);
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Audio Transcription with Task Context',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        ).copyWith(
+          userMessage: '''
+Please transcribe the provided audio.
+
+Take into account the following task context:
+
+**Task Context:**
+```json
+{{task}}
+```''',
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'whisper-1',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'This is the transcribed audio content.',
+                ),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => audioEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []); // No linked entities
+
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        try {
+          await repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Verify the prompt was built without task context replacement
+          final captured = verify(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              captureAny(),
+              model: 'whisper-1',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: 'https://api.example.com',
+              apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
+            ),
+          ).captured;
+
+          final capturedPrompt = captured.first as String;
+          // When no task is linked, the prompt should keep the {{task}} placeholder
+          expect(capturedPrompt, contains('{{task}}'));
+          expect(capturedPrompt, contains('Task Context'));
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
