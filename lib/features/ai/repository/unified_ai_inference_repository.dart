@@ -44,12 +44,24 @@ class UnifiedAiInferenceRepository {
 
     final activePrompts = <AiConfigPrompt>[];
 
+    // Check all prompts in parallel for better performance
+    final activeChecks = <Future<bool>>[];
+    final validPrompts = <AiConfigPrompt>[];
+
     for (final config in allPrompts) {
       if (config is AiConfigPrompt && !config.archived) {
-        final isActive = await _isPromptActiveForEntity(config, entity);
-        if (isActive) {
-          activePrompts.add(config);
-        }
+        validPrompts.add(config);
+        activeChecks.add(_isPromptActiveForEntity(config, entity));
+      }
+    }
+
+    // Wait for all checks to complete
+    final results = await Future.wait(activeChecks);
+
+    // Add active prompts to the result
+    for (var i = 0; i < results.length; i++) {
+      if (results[i]) {
+        activePrompts.add(validPrompts[i]);
       }
     }
 

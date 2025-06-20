@@ -195,8 +195,7 @@ If the image IS relevant:
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
-  description:
-      'Analyze images in task context, extracting only relevant information',
+  description: 'Analyze images specifically for task-relevant details',
 );
 
 /// Audio Transcription prompt template
