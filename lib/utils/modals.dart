@@ -26,10 +26,11 @@ class ModalUtils {
     void Function()? onTapBack,
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
     double? navBarHeight,
+    Widget? stickyActionBar,
   }) {
     final textTheme = context.textTheme;
     return WoltModalSheetPage(
-      backgroundColor: context.colorScheme.surfaceContainer,
+      backgroundColor: backgroundColor ?? context.colorScheme.surfaceContainer,
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 55,
       topBarTitle:
@@ -49,6 +50,7 @@ class ModalUtils {
               onPressed: Navigator.of(context).pop,
             )
           : null,
+      stickyActionBar: stickyActionBar,
       child: Padding(
         padding: padding,
         child: child,

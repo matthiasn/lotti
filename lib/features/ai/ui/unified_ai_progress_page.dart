@@ -1,35 +1,119 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/ai_progress_sticky_bar.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-/// Progress view for unified AI inference
-class UnifiedAiProgressView extends ConsumerStatefulWidget {
-  const UnifiedAiProgressView({
+/// Creates a WoltModalSheetPage for AI progress with scroll control
+WoltModalSheetPage unifiedAiProgressPage({
+  required BuildContext context,
+  required String entityId,
+  required String promptId,
+  required String promptName,
+  required void Function() onBack,
+}) {
+  final scrollController = ScrollController(
+    initialScrollOffset: 1111,
+    keepScrollOffset: false,
+  );
+
+  return WoltModalSheetPage(
+    scrollController: scrollController,
+    stickyActionBar: AiProgressStickyBar(
+      entityId: entityId,
+      promptId: promptId,
+      onTap: () {
+        print('scrollController.hasClients ${scrollController.hasClients}');
+        // Scroll to bottom when tapped
+        //if (scrollController.hasClients) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+        //}
+      },
+    ),
+    topBarTitle: Text(
+      promptName,
+      style: context.textTheme.titleSmall,
+    ),
+    isTopBarLayerAlwaysVisible: true,
+    leadingNavBarWidget: IconButton(
+      padding: WoltModalConfig.pagePadding,
+      icon: const Icon(Icons.arrow_back),
+      onPressed: onBack,
+    ),
+    trailingNavBarWidget: IconButton(
+      padding: WoltModalConfig.pagePadding,
+      icon: const Icon(Icons.close),
+      onPressed: Navigator.of(context).pop,
+    ),
+    child: _UnifiedAiProgressContent(
+      entityId: entityId,
+      promptId: promptId,
+      scrollController: scrollController,
+    ),
+  );
+}
+
+/// Content widget for AI progress with custom scroll control
+class _UnifiedAiProgressContent extends ConsumerStatefulWidget {
+  const _UnifiedAiProgressContent({
     required this.entityId,
     required this.promptId,
-    super.key,
+    required this.scrollController,
   });
 
   final String entityId;
   final String promptId;
+  final ScrollController scrollController;
 
   @override
-  ConsumerState<UnifiedAiProgressView> createState() =>
-      _UnifiedAiProgressViewState();
+  ConsumerState<_UnifiedAiProgressContent> createState() =>
+      _UnifiedAiProgressContentState();
 }
 
-class _UnifiedAiProgressViewState extends ConsumerState<UnifiedAiProgressView> {
-  final ScrollController _scrollController = ScrollController();
+class _UnifiedAiProgressContentState
+    extends ConsumerState<_UnifiedAiProgressContent> {
+  Timer? _scrollTimer;
+
+  void _startScrollTimer() {
+    _stopScrollTimer();
+    // Scroll to bottom every 200ms while running
+    _scrollTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      if (widget.scrollController.hasClients) {
+        widget.scrollController.animateTo(
+          widget.scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _stopScrollTimer() {
+    _scrollTimer?.cancel();
+    _scrollTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _stopScrollTimer();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // First get the prompt config
     final promptConfigAsync = ref.watch(
       aiConfigByIdProvider(widget.promptId),
     );
@@ -120,6 +204,15 @@ class _UnifiedAiProgressViewState extends ConsumerState<UnifiedAiProgressView> {
           ),
         );
 
+        // Manage scroll timer based on inference status
+        if (inferenceStatus == InferenceStatus.running) {
+          if (_scrollTimer == null || !_scrollTimer!.isActive) {
+            _startScrollTimer();
+          }
+        } else {
+          _stopScrollTimer();
+        }
+
         final isError = inferenceStatus == InferenceStatus.error;
 
         // If there's an error, try to parse it as an InferenceError
@@ -141,55 +234,21 @@ class _UnifiedAiProgressViewState extends ConsumerState<UnifiedAiProgressView> {
               ),
             );
           } catch (_) {
-            // If we can't parse it as InferenceError, fall back to text display
+            // Fall back to text display
           }
         }
 
-        // Main content - clean and simple with better padding
-        return Container(
-          padding:
-              const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
-          child: Scrollbar(
-            controller: _scrollController,
-            thumbVisibility: true,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? context.colorScheme.surface
-                    : null,
-                gradient: Theme.of(context).brightness == Brightness.light
-                    ? null
-                    : LinearGradient(
-                        colors: [
-                          context.colorScheme.surfaceContainer
-                              .withValues(alpha: 0.5),
-                          context.colorScheme.surface.withValues(alpha: 0.3),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: context.colorScheme.outline.withValues(alpha: 0.2),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.colorScheme.shadow.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: SelectionArea(
-                child: Text(
-                  state.isEmpty ? '' : state,
-                  style: monospaceTextStyleSmall.copyWith(
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
-                    height: 1.5,
-                    color: context.colorScheme.onSurface.withValues(alpha: 0.9),
-                  ),
-                ),
+        // Return simple content without decoration
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: SelectionArea(
+            child: Text(
+              state.isEmpty ? '' : state,
+              style: monospaceTextStyleSmall.copyWith(
+                fontWeight: FontWeight.w400,
+                fontSize: 13,
+                height: 1.5,
+                color: context.colorScheme.onSurface.withValues(alpha: 0.9),
               ),
             ),
           ),

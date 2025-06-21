@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/ai/ui/unified_ai_progress_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
@@ -86,14 +86,12 @@ class UnifiedAiModal {
     final promptPages = promptsAsync.asMap().entries.map((entry) {
       final prompt = entry.value;
 
-      return ModalUtils.modalSheetPage(
+      return unifiedAiProgressPage(
         context: context,
-        title: prompt.name,
-        child: UnifiedAiProgressView(
-          entityId: journalEntity.id,
-          promptId: prompt.id,
-        ),
-        onTapBack: () => pageIndexNotifier.value = 0,
+        entityId: journalEntity.id,
+        promptId: prompt.id,
+        promptName: prompt.name,
+        onBack: () => pageIndexNotifier.value = 0,
       );
     }).toList();
 
