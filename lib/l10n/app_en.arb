@@ -158,6 +158,8 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "OpenRouter's models",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderWhisperDescription": "OpenAI's cloud-based Whisper API for accurate audio transcription",
+  "aiProviderWhisperName": "OpenAI Whisper",
   "aiResponseTypeActionItemSuggestions": "Action Item Suggestions",
   "aiResponseTypeAudioTranscription": "Audio Transcription",
   "aiResponseTypeImageAnalysis": "Image Analysis",
@@ -649,5 +651,8 @@
   "tasksFilterTitle": "Tasks Filter",
   "timeByCategoryChartTitle": "Time by Category",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "commonLoading": "Loading...",
+  "commonError": "Error",
+  "commonUnknown": "Unknown"
 }

@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 void main() {
   group('AiSettingsConfigSliver', () {
@@ -114,6 +115,8 @@ void main() {
           }),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CustomScrollView(
               slivers: [

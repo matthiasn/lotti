@@ -1161,5 +1161,61 @@ void main() {
       expect(responses.length, 1);
       expect(responses[0].choices[0].delta?.content, 'Test response');
     });
+
+    test('generateWithAudio handles Whisper provider type successfully',
+        () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+      const transcribedText = 'This is the OpenAI Whisper transcription.';
+
+      // Mock successful HTTP response from the Python server
+      when(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: whisperProvider.baseUrl,
+        apiKey: whisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: whisperProvider,
+      );
+
+      expect(stream.isBroadcast, isTrue);
+
+      final response = await stream.first;
+      expect(response.choices.length, 1);
+      expect(response.choices[0].delta?.content, transcribedText);
+      expect(response.id, startsWith('whisper-'));
+      expect(response.object, 'chat.completion.chunk');
+
+      // Verify the HTTP call was made with correct parameters
+      verify(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).called(1);
+    });
   });
 }

@@ -394,6 +394,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderWhisperDescription =>
+      'OpenAI\'s cloud-based Whisper API for accurate audio transcription';
+
+  @override
+  String get aiProviderWhisperName => 'OpenAI Whisper';
+
+  @override
   String get aiResponseTypeActionItemSuggestions => 'Action Item Suggestions';
 
   @override
@@ -1891,4 +1898,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'Vista';
+
+  @override
+  String get commonLoading => 'Loading...';
+
+  @override
+  String get commonError => 'Error';
+
+  @override
+  String get commonUnknown => 'Unknown';
 }
