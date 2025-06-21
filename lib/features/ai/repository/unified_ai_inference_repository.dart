@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -13,9 +14,11 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -33,6 +36,13 @@ class UnifiedAiInferenceRepository {
   UnifiedAiInferenceRepository(this.ref);
 
   final Ref ref;
+  AutoChecklistService? _autoChecklistService;
+
+  AutoChecklistService get autoChecklistService {
+    return _autoChecklistService ??= AutoChecklistService(
+      checklistRepository: ref.read(checklistRepositoryProvider),
+    );
+  }
 
   /// Get all active prompts that match the current context
   Future<List<AiConfigPrompt>> getActivePromptsForContext({
@@ -422,6 +432,7 @@ class UnifiedAiInferenceRepository {
       model: model,
       provider: provider,
       start: start,
+      suggestedActionItems: suggestedActionItems,
     );
   }
 
@@ -433,6 +444,7 @@ class UnifiedAiInferenceRepository {
     required AiConfigInferenceProvider provider,
     required String response,
     required DateTime start,
+    List<AiActionItem>? suggestedActionItems,
   }) async {
     final journalRepo = ref.read(journalRepositoryProvider);
 
@@ -502,6 +514,62 @@ class UnifiedAiInferenceRepository {
           }
         }
       case AiResponseType.actionItemSuggestions:
+        if (entity is Task &&
+            suggestedActionItems != null &&
+            suggestedActionItems.isNotEmpty) {
+          await _handleActionItemSuggestions(entity, suggestedActionItems);
+        }
+    }
+  }
+
+  /// Handle action item suggestions post-processing
+  Future<void> _handleActionItemSuggestions(
+    Task task,
+    List<AiActionItem> suggestedActionItems,
+  ) async {
+    try {
+      // Check if auto-creation should happen
+      final shouldAutoCreate =
+          await autoChecklistService.shouldAutoCreate(taskId: task.id);
+
+      if (shouldAutoCreate) {
+        // Convert AI action items to checklist items
+        final checklistItems = suggestedActionItems.map((item) {
+          final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
+          return ChecklistItemData(
+            title: title,
+            isChecked: item.completed,
+            linkedChecklists: [],
+          );
+        }).toList();
+
+        // Auto-create checklist with all suggestions
+        final result = await autoChecklistService.autoCreateChecklist(
+          taskId: task.id,
+          suggestions: checklistItems,
+        );
+
+        if (result.success) {
+          developer.log(
+            'Auto-created checklist with ${checklistItems.length} items',
+            name: 'UnifiedAiInferenceRepository',
+          );
+        } else {
+          developer.log(
+            'Failed to auto-create checklist: ${result.error}',
+            name: 'UnifiedAiInferenceRepository',
+            error: result.error,
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error in action item suggestions post-processing',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Don't rethrow - this is post-processing, main inference should not fail
     }
   }
 }

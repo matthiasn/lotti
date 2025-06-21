@@ -30,6 +30,9 @@ The AI feature consists of several key components:
 - **`cloud_inference_repository.dart`**: Handles communication with AI providers
 - **`ai_input_repository.dart`**: Prepares task data for AI processing
 
+#### Services (`services/`)
+- **`auto_checklist_service.dart`**: Handles automatic checklist creation logic and decision making
+
 #### State Management (`state/`)
 - **`unified_ai_controller.dart`**: Main controller orchestrating AI operations
 - **`inference_status_controller.dart`**: Tracks inference progress and status
@@ -96,6 +99,50 @@ When generating task summaries, the system automatically extracts suggested titl
 - The extracted title updates the task entity in the database
 - When displaying summaries, the H1 title is filtered out to avoid redundancy
 
+## Automatic Checklist Creation
+
+### Overview
+
+The AI system now includes automatic checklist creation for action item suggestions. When AI generates action item suggestions for a task that has no existing checklists, it automatically creates a checklist containing all the suggested items.
+
+### How It Works
+
+1. **AI generates action item suggestions** for a task
+2. **Post-processing check** in `UnifiedAiInferenceRepository._handlePostProcessing()`
+3. **Decision logic**: 
+   - If task has no existing checklists → auto-create checklist with all suggestions
+   - If task has existing checklists → show manual drag-and-drop suggestions (existing behavior)
+
+### Implementation Details
+
+#### Key Components:
+- **`AutoChecklistService`**: Core service handling auto-creation logic
+- **`UnifiedAiInferenceRepository._handleActionItemSuggestions()`**: Post-processing method that triggers auto-creation
+- **`ChecklistRepository.createChecklist()`**: Creates checklist with initial items
+
+#### Decision Flow:
+```dart
+// In _handlePostProcessing()
+if (promptConfig.aiResponseType == AiResponseType.actionItemSuggestions) {
+  if (entity is Task && suggestedActionItems != null && suggestedActionItems.isNotEmpty) {
+    await _handleActionItemSuggestions(entity, suggestedActionItems);
+  }
+}
+
+// In _handleActionItemSuggestions()
+final shouldAutoCreate = await _autoChecklistService.shouldAutoCreate(taskId: task.id);
+if (shouldAutoCreate) {
+  // Convert AI suggestions to checklist items and create checklist
+}
+```
+
+### Benefits
+
+- **Eliminates manual work**: Saves up to 10 clicks (creating checklist + dragging multiple items)
+- **Seamless experience**: First-time users get immediate value from AI suggestions
+- **Backwards compatible**: Existing manual flow unchanged for tasks with checklists
+- **Graceful fallback**: If auto-creation fails, suggestions still show for manual drag-and-drop
+
 ## Response Types
 
 The system supports four AI response types:
@@ -109,6 +156,7 @@ The system supports four AI response types:
    - Extracts potential action items from logs
    - Response is parsed as JSON array
    - Items not already in task are suggested
+   - **NEW: Automatic Checklist Creation** - If no checklists exist for the task, automatically creates a checklist with all AI suggestions
 
 3. **Image Analysis** (`AiResponseType.imageAnalysis`)
    - Analyzes attached images in task context
