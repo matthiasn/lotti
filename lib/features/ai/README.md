@@ -157,10 +157,11 @@ if (shouldAutoCreate) {
 
 Instead of hiding suggestions, the system automatically re-runs the AI prompt after checklist creation:
 
-- **Automatic trigger**: After successful checklist creation, the same prompt runs again
+- **Automatic trigger**: After successful checklist creation, the exact same prompt that was used originally runs again
 - **Context awareness**: AI recognizes items are now in the checklist and typically suggests nothing
 - **Natural UX**: Users see the auto-created checklist plus minimal/empty suggestions
 - **No state tracking**: No need for complex `autoChecklistCreated` field management
+- **Consistent results**: Re-run uses the exact same prompt configuration, ensuring consistent behavior
 
 #### Technical Implementation
 
@@ -178,13 +179,13 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
    ```dart
    // In _handleActionItemSuggestions()
    if (result.success) {
-     await _rerunActionItemSuggestions(task);
+     await _rerunActionItemSuggestions(task, promptConfig);
    }
    
    // In _rerunActionItemSuggestions()
    await _runInferenceInternal(
      entityId: task.id,
-     promptConfig: actionItemPrompt,
+     promptConfig: originalPrompt, // Use exact same prompt as originally
      onProgress: (_) {}, // Silent re-run
      onStatusChange: (_) {},
      isRerun: true, // Prevent recursive auto-creation

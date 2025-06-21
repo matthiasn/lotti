@@ -92,7 +92,7 @@ void main() {
   });
 
   group('ChecklistSuggestionsController Tests', () {
-    test('returns suggestions when autoChecklistCreated is false', () async {
+    test('returns suggestions on initial run', () async {
       // Arrange
       final aiResponseEntry = AiResponseEntry(
         data: const AiResponseData(

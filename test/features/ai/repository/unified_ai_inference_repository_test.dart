@@ -3462,7 +3462,7 @@ Take into account the following task context:
   });
 
   group('_rerunActionItemSuggestions', () {
-    test('logs message when no action item prompt found', () async {
+    test('re-runs with same prompt after auto-checklist creation', () async {
       final taskEntity = Task(
         meta: _createMetadata(),
         data: TaskData(
@@ -3478,11 +3478,7 @@ Take into account the following task context:
         ),
       );
 
-      // Mock getConfigsByType to return empty list (no action item prompt)
-      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => []);
-
-      // This test calls the private method indirectly through the auto-creation flow
+      // This test verifies that the re-run uses the same prompt
       final promptConfig = _createPrompt(
         id: 'prompt-1',
         name: 'Action Item Suggestions',
@@ -3566,8 +3562,16 @@ Take into account the following task context:
         onStatusChange: (_) {},
       );
 
-      // Verify that the prompt lookup was attempted during re-run
-      verify(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt)).called(1);
+      // Verify that the cloud inference was called twice (initial run + re-run)
+      // This confirms the re-run happened with the same prompt
+      verify(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).called(2);
     });
 
     test('handles exception during re-run gracefully', () async {

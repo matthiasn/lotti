@@ -29,6 +29,9 @@ part 'unified_ai_inference_repository.g.dart';
 /// Minimum title length for AI suggestion to be applied
 const kMinExistingTitleLengthForAiSuggestion = 5;
 
+/// Regular expression to remove invalid characters from checklist item titles
+final _invalidChecklistItemTitleChars = RegExp('[-.,"*]');
+
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
@@ -575,7 +578,7 @@ class UnifiedAiInferenceRepository {
             !isRerun) {
           // Don't auto-create on re-runs
           await _handleActionItemSuggestions(
-              entity, suggestedActionItems, aiResponseEntry);
+              entity, suggestedActionItems, aiResponseEntry, promptConfig);
         } else {
           developer.log(
             'Skipping _handleActionItemSuggestions - conditions not met',
@@ -590,6 +593,7 @@ class UnifiedAiInferenceRepository {
     Task task,
     List<AiActionItem> suggestedActionItems,
     AiResponseEntry? aiResponseEntry,
+    AiConfigPrompt promptConfig,
   ) async {
     try {
       developer.log(
@@ -621,7 +625,9 @@ class UnifiedAiInferenceRepository {
         try {
           // Convert AI action items to checklist items
           final checklistItems = suggestedActionItems.map((item) {
-            final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
+            final title = item.title
+                .replaceAll(_invalidChecklistItemTitleChars, '')
+                .trim();
             return ChecklistItemData(
               title: title,
               isChecked: item.completed,
@@ -643,7 +649,7 @@ class UnifiedAiInferenceRepository {
 
             // Re-run the same AI suggestions prompt to get updated suggestions
             // that account for the newly created checklist
-            await _rerunActionItemSuggestions(task);
+            await _rerunActionItemSuggestions(task, promptConfig);
           } else {
             developer.log(
               'Failed to auto-create checklist: ${result.error}',
@@ -667,39 +673,20 @@ class UnifiedAiInferenceRepository {
     }
   }
 
-  /// Re-run the action item suggestions prompt after auto-checklist creation
+  /// Re-run the same action item suggestions prompt after auto-checklist creation
   /// This generates new suggestions that account for the existing checklist
-  Future<void> _rerunActionItemSuggestions(Task task) async {
+  Future<void> _rerunActionItemSuggestions(Task task, AiConfigPrompt originalPrompt) async {
     try {
       developer.log(
-        'Re-running action item suggestions for task ${task.id}',
+        'Re-running action item suggestions for task ${task.id} with original prompt ${originalPrompt.id}',
         name: 'UnifiedAiInferenceRepository',
       );
 
-      // Find the action item suggestions prompt
-      final configs = await ref
-          .read(aiConfigRepositoryProvider)
-          .getConfigsByType(AiConfigType.prompt);
-      final actionItemPrompt = configs
-          .whereType<AiConfigPrompt>()
-          .where((config) =>
-              config.aiResponseType == AiResponseType.actionItemSuggestions &&
-              !config.archived)
-          .firstOrNull;
-
-      if (actionItemPrompt == null) {
-        developer.log(
-          'No active action item suggestions prompt found',
-          name: 'UnifiedAiInferenceRepository',
-        );
-        return;
-      }
-
-      // Re-run the inference with the same prompt
+      // Re-run the inference with the exact same prompt that was used originally
       // This will generate new suggestions based on current task state (with checklist)
       await _runInferenceInternal(
         entityId: task.id,
-        promptConfig: actionItemPrompt,
+        promptConfig: originalPrompt,
         onProgress: (_) {}, // Silent re-run, no progress updates
         onStatusChange: (_) {}, // Silent re-run, no status updates
         isRerun: true, // Prevent auto-checklist creation on re-run
