@@ -643,8 +643,6 @@ class UnifiedAiInferenceRepository {
 
             // Re-run the same AI suggestions prompt to get updated suggestions
             // that account for the newly created checklist
-            // Add small delay to avoid race conditions with database
-            await Future<void>.delayed(const Duration(milliseconds: 500));
             await _rerunActionItemSuggestions(task);
           } else {
             developer.log(
