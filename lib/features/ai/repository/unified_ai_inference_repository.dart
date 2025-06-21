@@ -616,25 +616,25 @@ class UnifiedAiInferenceRepository {
       );
 
       if (shouldAutoCreate) {
-        // Mark this task as being processed
+        // Mark this task as being processed and ensure it's cleaned up
         _autoCreatingTasks.add(task.id);
-        // Convert AI action items to checklist items
-        final checklistItems = suggestedActionItems.map((item) {
-          final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
-          return ChecklistItemData(
-            title: title,
-            isChecked: item.completed,
-            linkedChecklists: [],
-          );
-        }).toList();
-
-        // Auto-create checklist with all suggestions
-        final result = await autoChecklistService.autoCreateChecklist(
-          taskId: task.id,
-          suggestions: checklistItems,
-        );
-
         try {
+          // Convert AI action items to checklist items
+          final checklistItems = suggestedActionItems.map((item) {
+            final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
+            return ChecklistItemData(
+              title: title,
+              isChecked: item.completed,
+              linkedChecklists: [],
+            );
+          }).toList();
+
+          // Auto-create checklist with all suggestions
+          final result = await autoChecklistService.autoCreateChecklist(
+            taskId: task.id,
+            suggestions: checklistItems,
+          );
+
           if (result.success) {
             developer.log(
               'Auto-created checklist with ${checklistItems.length} items, re-running AI suggestions prompt',
@@ -652,13 +652,11 @@ class UnifiedAiInferenceRepository {
             );
           }
         } finally {
-          // Always remove task from processing set
+          // Always remove task from processing set, even if errors occur
           _autoCreatingTasks.remove(task.id);
         }
       }
     } catch (e, stackTrace) {
-      // Remove task from processing set on error
-      _autoCreatingTasks.remove(task.id);
       developer.log(
         'Error in action item suggestions post-processing',
         name: 'UnifiedAiInferenceRepository',

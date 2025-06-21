@@ -141,11 +141,15 @@ if (_autoCreatingTasks.contains(task.id)) {
 final shouldAutoCreate = await _autoChecklistService.shouldAutoCreate(taskId: task.id);
 if (shouldAutoCreate) {
   _autoCreatingTasks.add(task.id); // Mark as processing
-  // Convert AI suggestions to checklist items and create checklist
-  if (result.success) {
-    await _rerunActionItemSuggestions(task); // Auto re-run
+  try {
+    // Convert AI suggestions to checklist items and create checklist
+    final result = await autoChecklistService.autoCreateChecklist(...);
+    if (result.success) {
+      await _rerunActionItemSuggestions(task); // Auto re-run
+    }
+  } finally {
+    _autoCreatingTasks.remove(task.id); // Always clean up
   }
-  _autoCreatingTasks.remove(task.id); // Clean up
 }
 ```
 
@@ -187,13 +191,17 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
    );
    ```
 
-3. **Concurrency Protection**:
+3. **Robust Concurrency Protection**:
    ```dart
-   // Database constraint errors prevented by semaphore
-   try {
-     // Auto-creation logic
-   } finally {
-     _autoCreatingTasks.remove(task.id); // Always clean up
+   // Simplified error handling with reliable semaphore cleanup
+   if (shouldAutoCreate) {
+     _autoCreatingTasks.add(task.id);
+     try {
+       // Auto-creation and re-run logic
+     } finally {
+       // Always clean up semaphore, even if errors occur
+       _autoCreatingTasks.remove(task.id);
+     }
    }
    ```
 
