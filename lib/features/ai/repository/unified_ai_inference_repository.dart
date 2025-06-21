@@ -636,9 +636,11 @@ class UnifiedAiInferenceRepository {
           }).toList();
 
           // Auto-create checklist with all suggestions
+          // Pass shouldAutoCreate as true since we already checked it above
           final result = await autoChecklistService.autoCreateChecklist(
             taskId: task.id,
             suggestions: checklistItems,
+            shouldAutoCreate: true,
           );
 
           if (result.success) {

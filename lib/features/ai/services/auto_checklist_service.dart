@@ -45,6 +45,7 @@ class AutoChecklistService {
     required String taskId,
     required List<ChecklistItemData> suggestions,
     String? title,
+    bool? shouldAutoCreate,
   }) async {
     try {
       if (suggestions.isEmpty) {
@@ -55,7 +56,8 @@ class AutoChecklistService {
         );
       }
 
-      final shouldCreate = await shouldAutoCreate(taskId: taskId);
+      // Use provided shouldAutoCreate value or fall back to checking
+      final shouldCreate = shouldAutoCreate ?? await this.shouldAutoCreate(taskId: taskId);
       if (!shouldCreate) {
         return (
           success: false,

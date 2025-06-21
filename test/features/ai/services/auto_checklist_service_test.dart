@@ -416,6 +416,96 @@ void main() {
         expect(result.checklistId, equals('checklist-456'));
         expect(result.error, isNull);
       });
+
+      test('succeeds with shouldAutoCreate parameter set to true (optimized path)', () async {
+        // Arrange
+        const taskId = 'test-task-id';
+        final suggestions = [
+          const ChecklistItemData(
+            title: 'Review code',
+            isChecked: false,
+            linkedChecklists: [],
+          ),
+        ];
+        final createdChecklist = JournalEntity.checklist(
+          meta: Metadata(
+            id: 'checklist-optimized',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            starred: false,
+            flag: EntryFlag.none,
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: ['item-1'],
+            linkedTasks: [taskId],
+          ),
+        );
+
+        when(() => mockChecklistRepository.createChecklist(
+              taskId: taskId,
+              items: any(named: 'items'),
+              title: 'TODOs',
+            )).thenAnswer((_) async => createdChecklist);
+
+        // Act - pass shouldAutoCreate as true to skip database lookup
+        final result = await service.autoCreateChecklist(
+          taskId: taskId,
+          suggestions: suggestions,
+          shouldAutoCreate: true,
+        );
+
+        // Assert
+        expect(result.success, isTrue);
+        expect(result.checklistId, equals('checklist-optimized'));
+        expect(result.error, isNull);
+        
+        // Verify that journalEntityById was NOT called (optimized path)
+        verifyNever(() => mockJournalDb.journalEntityById(taskId));
+        
+        // Verify checklist creation was called
+        verify(() => mockChecklistRepository.createChecklist(
+              taskId: taskId,
+              items: suggestions,
+              title: 'TODOs',
+            )).called(1);
+      });
+
+      test('fails when shouldAutoCreate parameter is false', () async {
+        // Arrange
+        const taskId = 'test-task-id';
+        final suggestions = [
+          const ChecklistItemData(
+            title: 'Review code',
+            isChecked: false,
+            linkedChecklists: [],
+          ),
+        ];
+
+        // Act - pass shouldAutoCreate as false
+        final result = await service.autoCreateChecklist(
+          taskId: taskId,
+          suggestions: suggestions,
+          shouldAutoCreate: false,
+        );
+
+        // Assert
+        expect(result.success, isFalse);
+        expect(result.checklistId, isNull);
+        expect(result.error, equals('Checklists already exist'));
+        
+        // Verify that journalEntityById was NOT called (optimized path)
+        verifyNever(() => mockJournalDb.journalEntityById(taskId));
+        
+        // Verify checklist creation was NOT called
+        verifyNever(() => mockChecklistRepository.createChecklist(
+              taskId: any(named: 'taskId'),
+              items: any(named: 'items'),
+              title: any(named: 'title'),
+            ));
+      });
     });
 
     group('getExistingChecklistCount', () {

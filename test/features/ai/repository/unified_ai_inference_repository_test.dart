@@ -1402,6 +1402,7 @@ void main() {
         when(() => mockAutoChecklistService.autoCreateChecklist(
                   taskId: 'test-id',
                   suggestions: any(named: 'suggestions'),
+                  shouldAutoCreate: any(named: 'shouldAutoCreate'),
                 ))
             .thenAnswer((_) async =>
                 (success: true, checklistId: 'checklist-123', error: null));
@@ -1441,6 +1442,7 @@ void main() {
         verify(() => mockAutoChecklistService.autoCreateChecklist(
               taskId: 'test-id',
               suggestions: any(named: 'suggestions'),
+              shouldAutoCreate: any(named: 'shouldAutoCreate'),
             )).called(1);
 
         // Verify that cloud inference is called twice (initial run + re-run)
@@ -3551,6 +3553,7 @@ Take into account the following task context:
       when(() => mockAutoChecklistService.autoCreateChecklist(
         taskId: 'test-id',
         suggestions: any(named: 'suggestions'),
+        shouldAutoCreate: any(named: 'shouldAutoCreate'),
       )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
 
       repository.autoChecklistServiceForTesting = mockAutoChecklistService;
@@ -3659,6 +3662,7 @@ Take into account the following task context:
       when(() => mockAutoChecklistService.autoCreateChecklist(
         taskId: 'test-id',
         suggestions: any(named: 'suggestions'),
+        shouldAutoCreate: any(named: 'shouldAutoCreate'),
       )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
 
       // Mock successful prompt lookup but exception during re-run
@@ -3685,6 +3689,7 @@ Take into account the following task context:
       verify(() => mockAutoChecklistService.autoCreateChecklist(
         taskId: 'test-id',
         suggestions: any(named: 'suggestions'),
+        shouldAutoCreate: any(named: 'shouldAutoCreate'),
       )).called(1);
     });
   });
