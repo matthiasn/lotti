@@ -158,6 +158,8 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "OpenRouter's models",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderWhisperDescription": "Local Whisper transcription with OpenAI-compatible API",
+  "aiProviderWhisperName": "Whisper (local)",
   "aiResponseTypeActionItemSuggestions": "Action Item Suggestions",
   "aiResponseTypeAudioTranscription": "Audio Transcription",
   "aiResponseTypeImageAnalysis": "Image Analysis",
@@ -649,5 +651,8 @@
   "tasksFilterTitle": "Tasks Filter",
   "timeByCategoryChartTitle": "Time by Category",
   "timeByCategoryChartTotalLabel": "Total",
-  "viewMenuTitle": "View"
+  "viewMenuTitle": "View",
+  "commonLoading": "Loading...",
+  "commonError": "Error",
+  "commonUnknown": "Unknown"
 }

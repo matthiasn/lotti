@@ -393,6 +393,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderWhisperDescription =>
+      'Local Whisper transcription with OpenAI-compatible API';
+
+  @override
+  String get aiProviderWhisperName => 'Whisper (local)';
+
+  @override
   String get aiResponseTypeActionItemSuggestions => 'Action Item Suggestions';
 
   @override
@@ -1612,7 +1619,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'Ați verificat cu succes $deviceName ($deviceID)';
   }
 
@@ -1882,4 +1891,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'Vizualizare';
+
+  @override
+  String get commonLoading => 'Loading...';
+
+  @override
+  String get commonError => 'Error';
+
+  @override
+  String get commonUnknown => 'Unknown';
 }

@@ -393,6 +393,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderWhisperDescription =>
+      'Local Whisper transcription with OpenAI-compatible API';
+
+  @override
+  String get aiProviderWhisperName => 'Whisper (local)';
+
+  @override
   String get aiResponseTypeActionItemSuggestions => 'Action Item Suggestions';
 
   @override
@@ -1605,7 +1612,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 
@@ -1875,6 +1884,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewMenuTitle => 'View';
+
+  @override
+  String get commonLoading => 'Loading...';
+
+  @override
+  String get commonError => 'Error';
+
+  @override
+  String get commonUnknown => 'Unknown';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -2778,7 +2796,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 

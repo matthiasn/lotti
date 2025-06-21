@@ -21,6 +21,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderOllamaName;
       case InferenceProviderType.fastWhisper:
         return context.messages.aiProviderFastWhisperName;
+      case InferenceProviderType.whisper:
+        return context.messages.aiProviderWhisperName;
     }
   }
 
@@ -42,6 +44,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderOllamaDescription;
       case InferenceProviderType.fastWhisper:
         return context.messages.aiProviderFastWhisperDescription;
+      case InferenceProviderType.whisper:
+        return context.messages.aiProviderWhisperDescription;
     }
   }
 
@@ -62,6 +66,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
       case InferenceProviderType.ollama:
         return Icons.assistant;
       case InferenceProviderType.fastWhisper:
+        return Icons.mic;
+      case InferenceProviderType.whisper:
         return Icons.mic;
     }
   }

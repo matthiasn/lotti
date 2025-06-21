@@ -102,7 +102,7 @@ abstract class AppLocalizations {
     Locale('en', 'GB'),
     Locale('es'),
     Locale('fr'),
-    Locale('ro')
+    Locale('ro'),
   ];
 
   /// No description provided for @addActionAddAudioRecording.
@@ -788,6 +788,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
+
+  /// No description provided for @aiProviderWhisperDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Whisper transcription with OpenAI-compatible API'**
+  String get aiProviderWhisperDescription;
+
+  /// No description provided for @aiProviderWhisperName.
+  ///
+  /// In en, this message translates to:
+  /// **'Whisper (local)'**
+  String get aiProviderWhisperName;
 
   /// No description provided for @aiResponseTypeActionItemSuggestions.
   ///
@@ -3020,7 +3032,9 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve successfully verified {deviceName} ({deviceID})'**
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID);
+    String deviceName,
+    String deviceID,
+  );
 
   /// No description provided for @settingsMatrixVerifyConfirm.
   ///
@@ -3513,6 +3527,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get viewMenuTitle;
+
+  /// No description provided for @commonLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get commonLoading;
+
+  /// No description provided for @commonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get commonError;
+
+  /// No description provided for @commonUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get commonUnknown;
 }
 
 class _AppLocalizationsDelegate
@@ -3560,8 +3592,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -123,73 +124,60 @@ class InferenceProviderFormController
   }
 
   void inferenceProviderTypeChanged(InferenceProviderType value) {
+    final prev = state.valueOrNull;
+
+    // If we have a previous state and the provider type hasn't changed, don't do anything
+    if (prev != null && prev.inferenceProviderType == value) {
+      return;
+    }
+
     String? newBaseUrl;
     String? newName;
     String? newApiKey;
 
-    if (value == InferenceProviderType.gemini) {
-      newBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
-      if (nameController.text.isEmpty) {
-        newName = 'Gemini';
-      }
-    }
-    if (value == InferenceProviderType.nebiusAiStudio) {
-      newBaseUrl = 'https://api.studio.nebius.com/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'Nebius AI Studio';
-      }
-    }
-    if (value == InferenceProviderType.ollama) {
-      newBaseUrl = 'http://localhost:11434/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'Ollama (local)';
-      }
-      // Clear API key for Ollama as it's not required
-      newApiKey = '';
-      apiKeyController.text = '';
-    }
-    if (value == InferenceProviderType.openAi) {
-      newBaseUrl = 'https://api.openai.com/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'OpenAI';
-      }
-    }
-    if (value == InferenceProviderType.anthropic) {
-      newBaseUrl = 'https://api.anthropic.com/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'Anthropic';
-      }
-    }
-    if (value == InferenceProviderType.openRouter) {
-      newBaseUrl = 'https://openrouter.ai/api/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'OpenRouter';
-      }
-    }
-    if (value == InferenceProviderType.fastWhisper) {
-      newBaseUrl = 'http://localhost:8083';
-      if (nameController.text.isEmpty) {
-        newName = 'FastWhisper (local)';
-      }
-      // Clear API key for FastWhisper as it's not required
-      newApiKey = '';
-      apiKeyController.text = '';
-    }
+    // Get default configuration from constants
+    final defaultBaseUrl = ProviderConfig.getDefaultBaseUrl(value);
 
-    // Update text controllers if needed
-    if (newBaseUrl != null) {
+    // For new configs (when ID is null) or when the default is different from current
+    // Always set the base URL for new configs, or when it would actually change
+    if (defaultBaseUrl.isNotEmpty &&
+        (prev?.id == null || baseUrlController.text != defaultBaseUrl)) {
+      newBaseUrl = defaultBaseUrl;
       baseUrlController.text = newBaseUrl;
     }
-    if (newName != null) {
-      nameController.text = newName;
+
+    // Only update name if it's empty and we have a default name
+    if (nameController.text.isEmpty) {
+      final defaultName = ProviderConfig.getDefaultName(value);
+      if (defaultName.isNotEmpty) {
+        newName = defaultName;
+        nameController.text = newName;
+      }
     }
 
-    _setAllFields(
-      inferenceProviderType: value,
-      baseUrl: newBaseUrl,
-      name: newName,
-      apiKey: newApiKey,
-    );
+    // Clear API key for providers that don't require it
+    if (!ProviderConfig.requiresApiKey(value)) {
+      newApiKey = '';
+      apiKeyController.text = '';
+    }
+
+    // If we don't have a previous state yet, create initial state with the new provider type
+    if (prev == null) {
+      state = AsyncData(InferenceProviderFormState(
+        apiKey: ApiKeyValue.pure(newApiKey ?? '', value),
+        baseUrl: BaseUrl.pure(newBaseUrl ?? ''),
+        name: ApiKeyName.pure(newName ?? ''),
+        inferenceProviderType: value,
+        lastUpdated: DateTime.now(),
+      ));
+    } else {
+      _setAllFields(
+        inferenceProviderType: value,
+        baseUrl: newBaseUrl,
+        name: newName,
+        apiKey: newApiKey,
+      );
+    }
   }
 
   /// Add a new configuration
