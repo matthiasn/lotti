@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
@@ -40,7 +42,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
 
     final isRunning = inferenceStatus == InferenceStatus.running;
 
-    void showThoughtsModal(String promptId) {
+    Future<void> showThoughtsModal(String promptId) async {
       // Trigger a new inference run by invalidating the controller
       ref.read(
         triggerNewInferenceProvider(
@@ -49,19 +51,26 @@ class LatestAiResponseSummary extends ConsumerWidget {
         ),
       );
 
-      ModalUtils.showSinglePageModal<void>(
-        context: context,
-        title: context.messages.aiAssistantThinking,
-        builder: (_) => UnifiedAiProgressView(
-          entityId: id,
-          promptId: promptId,
-        ),
+      final prompt = await ref.watch(
+        aiConfigByIdProvider(promptId).future,
       );
+
+      if (context.mounted && prompt is AiConfigPrompt) {
+        await ModalUtils.showSingleSliverWoltModalSheetPageModal<void>(
+          context: context,
+          title: context.messages.aiAssistantThinking,
+          builder: (context) => UnifiedAiProgressUtils.progressPage(
+            context: context,
+            prompt: prompt,
+            entityId: id,
+            onTapBack: () => Navigator.of(context).pop(),
+          ),
+        );
+      }
     }
 
     // TODO: implement showing if the latest summary is outdated
     const isOutdated = false;
-
     final dividerColor = context.colorScheme.outline.withAlpha(60);
 
     return latestSummaryAsync.when(

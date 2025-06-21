@@ -8,6 +8,8 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Progress view for unified AI inference
 class UnifiedAiProgressView extends ConsumerWidget {
@@ -215,6 +217,54 @@ class UnifiedAiProgressContent extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class UnifiedAiProgressUtils {
+  static SliverWoltModalSheetPage progressPage({
+    required BuildContext context,
+    required AiConfigPrompt prompt,
+    required String entityId,
+    VoidCallback? onTapBack,
+    ScrollController? scrollController,
+  }) {
+    return ModalUtils.sliverModalSheetPage(
+      context: context,
+      title: prompt.name,
+      onTapBack: onTapBack,
+      scrollController: scrollController,
+      stickyActionBar: Column(
+        children: [
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AiRunningAnimationWrapper(
+              entryId: entityId,
+              height: 50,
+              responseTypes: {prompt.aiResponseType},
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final currentPosition = scrollController?.position.pixels ?? 0;
+
+              scrollController?.animateTo(
+                currentPosition + 50,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            },
+            child: Text('Scroll'),
+          ),
+        ],
+      ),
+      slivers: [
+        SliverToBoxAdapter(
+            child: UnifiedAiProgressContent(
+          entityId: entityId,
+          promptId: prompt.id,
+        )),
+      ],
     );
   }
 }

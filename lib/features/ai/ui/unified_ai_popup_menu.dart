@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -105,42 +104,12 @@ class UnifiedAiModal {
     final promptSliverPages = promptsAsync.asMap().entries.map((entry) {
       final prompt = entry.value;
 
-      return ModalUtils.sliverModalSheetPage(
+      return UnifiedAiProgressUtils.progressPage(
         context: context,
-        title: prompt.name,
+        prompt: prompt,
+        entityId: journalEntity.id,
         onTapBack: () => pageIndexNotifier.value = 0,
         scrollController: scrollController,
-        stickyActionBar: Column(
-          children: [
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AiRunningAnimationWrapper(
-                entryId: journalEntity.id,
-                height: 50,
-                responseTypes: {prompt.aiResponseType},
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                final currentPosition = scrollController?.position.pixels ?? 0;
-
-                scrollController?.animateTo(
-                  currentPosition + 50,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              },
-              child: Text('Scroll'),
-            ),
-          ],
-        ),
-        slivers: [
-          SliverToBoxAdapter(
-              child: UnifiedAiProgressContent(
-            entityId: journalEntity.id,
-            promptId: prompt.id,
-          )),
-        ],
       );
     }).toList();
 

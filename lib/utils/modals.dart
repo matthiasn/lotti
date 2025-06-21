@@ -132,6 +132,27 @@ class ModalUtils {
     );
   }
 
+  static Future<T?> showSingleSliverWoltModalSheetPageModal<T>({
+    required BuildContext context,
+    required SliverWoltModalSheetPage Function(BuildContext) builder,
+    String? title,
+    Widget? stickyActionBar,
+    Widget Function(Widget)? modalDecorator,
+    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
+    double? navBarHeight,
+  }) async {
+    return WoltModalSheet.show<T>(
+      context: context,
+      pageListBuilder: (modalSheetContext) {
+        return [
+          builder(modalSheetContext),
+        ];
+      },
+      modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      modalDecorator: modalDecorator,
+    );
+  }
+
   static Future<bool> showConfirmationAndProgressModal({
     required BuildContext context,
     required String message,

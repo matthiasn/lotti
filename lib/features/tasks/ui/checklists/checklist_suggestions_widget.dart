@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
@@ -49,7 +51,7 @@ class _ChecklistSuggestionsWidgetState
       return const SizedBox.shrink();
     }
 
-    void showThoughtsModal(String? promptId) {
+    Future<void> showThoughtsModal(String? promptId) async {
       if (promptId == null) {
         return;
       }
@@ -62,14 +64,22 @@ class _ChecklistSuggestionsWidgetState
         ),
       );
 
-      ModalUtils.showSinglePageModal<void>(
-        context: context,
-        title: context.messages.aiAssistantThinking,
-        builder: (_) => UnifiedAiProgressView(
-          entityId: widget.itemId,
-          promptId: promptId,
-        ),
+      final prompt = await ref.watch(
+        aiConfigByIdProvider(promptId).future,
       );
+
+      if (context.mounted && prompt is AiConfigPrompt) {
+        await ModalUtils.showSingleSliverWoltModalSheetPageModal<void>(
+          context: context,
+          title: context.messages.aiAssistantThinking,
+          builder: (context) => UnifiedAiProgressUtils.progressPage(
+            context: context,
+            prompt: prompt,
+            entityId: widget.itemId,
+            onTapBack: () => Navigator.of(context).pop(),
+          ),
+        );
+      }
     }
 
     final aiResponse = ref
