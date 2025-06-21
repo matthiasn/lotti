@@ -119,29 +119,13 @@ class UnifiedAiProgressUtils {
       title: prompt.name,
       onTapBack: onTapBack,
       scrollController: scrollController,
-      stickyActionBar: Column(
-        children: [
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AiRunningAnimationWrapper(
-              entryId: entityId,
-              height: 50,
-              responseTypes: {prompt.aiResponseType},
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              final currentPosition = scrollController?.position.pixels ?? 0;
-
-              scrollController?.animateTo(
-                currentPosition + 50,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            },
-            child: Text('Scroll'),
-          ),
-        ],
+      stickyActionBar: Align(
+        alignment: Alignment.bottomCenter,
+        child: AiRunningAnimationWrapper(
+          entryId: entityId,
+          height: 50,
+          responseTypes: {prompt.aiResponseType},
+        ),
       ),
       slivers: [
         SliverToBoxAdapter(

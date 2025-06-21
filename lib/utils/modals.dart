@@ -29,25 +29,28 @@ class ModalUtils {
     double? navBarHeight,
   }) {
     final textTheme = context.textTheme;
+    final colorScheme = context.colorScheme;
     return WoltModalSheetPage(
       backgroundColor: context.colorScheme.surfaceContainer,
       stickyActionBar: stickyActionBar,
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 55,
-      topBarTitle:
-          title != null ? Text(title, style: textTheme.titleSmall) : null,
+      topBarTitle: title != null
+          ? Text(title,
+              style: textTheme.titleSmall?.copyWith(color: colorScheme.outline))
+          : null,
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? IconButton(
               padding: WoltModalConfig.pagePadding,
-              icon: const Icon(Icons.arrow_back),
+              icon: Icon(Icons.arrow_back, color: colorScheme.outline),
               onPressed: onTapBack,
             )
           : null,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
               padding: WoltModalConfig.pagePadding,
-              icon: const Icon(Icons.close),
+              icon: Icon(Icons.close, color: colorScheme.outline),
               onPressed: Navigator.of(context).pop,
             )
           : null,
@@ -71,6 +74,7 @@ class ModalUtils {
     double? navBarHeight,
   }) {
     final textTheme = context.textTheme;
+    final colorScheme = context.colorScheme;
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
       stickyActionBar: stickyActionBar,
@@ -79,20 +83,22 @@ class ModalUtils {
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
       navBarHeight: navBarHeight ?? 55,
-      topBarTitle:
-          title != null ? Text(title, style: textTheme.titleSmall) : null,
+      topBarTitle: title != null
+          ? Text(title,
+              style: textTheme.titleSmall?.copyWith(color: colorScheme.outline))
+          : null,
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? IconButton(
               padding: WoltModalConfig.pagePadding,
-              icon: const Icon(Icons.arrow_back),
+              icon: Icon(Icons.arrow_back, color: colorScheme.outline),
               onPressed: onTapBack,
             )
           : null,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
               padding: WoltModalConfig.pagePadding,
-              icon: const Icon(Icons.close),
+              icon: Icon(Icons.close, color: colorScheme.outline),
               onPressed: Navigator.of(context).pop,
             )
           : null,

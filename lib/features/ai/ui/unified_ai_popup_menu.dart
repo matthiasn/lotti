@@ -26,21 +26,6 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
       hasAvailablePromptsProvider(entity: journalEntity),
     );
 
-    final scrollController = ScrollController(
-      onAttach: (position) {
-        print('scrollController attach $position');
-      },
-      onDetach: (position) {
-        print('scrollController detach $position');
-      },
-      keepScrollOffset: false,
-      initialScrollOffset: 1110,
-    );
-
-    scrollController.addListener(() {
-      print('scrollController listener $scrollController');
-    });
-
     return hasPromptsAsync.when(
       data: (hasPrompts) {
         if (!hasPrompts) return const SizedBox.shrink();
@@ -54,7 +39,6 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
             context: context,
             journalEntity: journalEntity,
             linkedFromId: linkedFromId,
-            scrollController: scrollController,
             ref: ref,
           ),
         );
