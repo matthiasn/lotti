@@ -4,12 +4,10 @@ import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
-import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/ai/ui/helpers/thoughts_modal_helper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class ChecklistSuggestionsWidget extends ConsumerStatefulWidget {
@@ -49,26 +47,12 @@ class _ChecklistSuggestionsWidgetState
       return const SizedBox.shrink();
     }
 
-    void showThoughtsModal(String? promptId) {
-      if (promptId == null) {
-        return;
-      }
-
-      // Trigger a new inference run by invalidating the controller
-      ref.read(
-        triggerNewInferenceProvider(
-          entityId: widget.itemId,
-          promptId: promptId,
-        ),
-      );
-
-      ModalUtils.showSinglePageModal<void>(
+    Future<void> showThoughtsModal(String? promptId) async {
+      await ThoughtsModalHelper.showThoughtsModal(
         context: context,
-        title: context.messages.aiAssistantThinking,
-        builder: (_) => UnifiedAiProgressView(
-          entityId: widget.itemId,
-          promptId: promptId,
-        ),
+        ref: ref,
+        promptId: promptId,
+        entityId: widget.itemId,
       );
     }
 

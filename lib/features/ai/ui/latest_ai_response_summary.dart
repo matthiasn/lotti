@@ -3,12 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
-import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
-import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/ai/ui/helpers/thoughts_modal_helper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
 
 /// A wrapper widget for AiResponseSummary that automatically fetches
 /// the latest AI response using LatestSummaryController.
@@ -40,28 +38,17 @@ class LatestAiResponseSummary extends ConsumerWidget {
 
     final isRunning = inferenceStatus == InferenceStatus.running;
 
-    void showThoughtsModal(String promptId) {
-      // Trigger a new inference run by invalidating the controller
-      ref.read(
-        triggerNewInferenceProvider(
-          entityId: id,
-          promptId: promptId,
-        ),
-      );
-
-      ModalUtils.showSinglePageModal<void>(
+    Future<void> showThoughtsModal(String? promptId) async {
+      await ThoughtsModalHelper.showThoughtsModal(
         context: context,
-        title: context.messages.aiAssistantThinking,
-        builder: (_) => UnifiedAiProgressView(
-          entityId: id,
-          promptId: promptId,
-        ),
+        ref: ref,
+        promptId: promptId,
+        entityId: id,
       );
     }
 
     // TODO: implement showing if the latest summary is outdated
     const isOutdated = false;
-
     final dividerColor = context.colorScheme.outline.withAlpha(60);
 
     return latestSummaryAsync.when(

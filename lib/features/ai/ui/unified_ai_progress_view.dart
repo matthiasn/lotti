@@ -8,10 +8,12 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/modals.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Progress view for unified AI inference
-class UnifiedAiProgressView extends ConsumerWidget {
-  const UnifiedAiProgressView({
+class UnifiedAiProgressContent extends ConsumerWidget {
+  const UnifiedAiProgressContent({
     required this.entityId,
     required this.promptId,
     super.key,
@@ -56,7 +58,6 @@ class UnifiedAiProgressView extends ConsumerWidget {
         );
 
         final isError = inferenceStatus == InferenceStatus.error;
-        final isRunning = inferenceStatus == InferenceStatus.running;
 
         // If there's an error, try to parse it as an InferenceError
         if (isError) {
@@ -85,41 +86,54 @@ class UnifiedAiProgressView extends ConsumerWidget {
           fontWeight: FontWeight.w300,
         );
 
-        return ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 240),
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                reverse: true,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 10,
-                    bottom: 55,
-                    left: 20,
-                    right: 20,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 600),
-                    child: Text(
-                      state,
-                      style: textStyle,
-                    ),
-                  ),
-                ),
-              ),
-              if (isRunning)
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: AiRunningAnimationWrapper(
-                    entryId: entityId,
-                    height: 50,
-                    responseTypes: {promptConfig.aiResponseType},
-                  ),
-                ),
-            ],
+        return Padding(
+          padding: const EdgeInsets.only(
+            top: 10,
+            bottom: 55,
+            left: 20,
+            right: 20,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600),
+            child: Text(
+              state,
+              style: textStyle,
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+class UnifiedAiProgressUtils {
+  static SliverWoltModalSheetPage progressPage({
+    required BuildContext context,
+    required AiConfigPrompt prompt,
+    required String entityId,
+    VoidCallback? onTapBack,
+    ScrollController? scrollController,
+  }) {
+    return ModalUtils.sliverModalSheetPage(
+      context: context,
+      title: prompt.name,
+      onTapBack: onTapBack,
+      scrollController: scrollController,
+      stickyActionBar: Align(
+        alignment: Alignment.bottomCenter,
+        child: AiRunningAnimationWrapper(
+          entryId: entityId,
+          height: 50,
+          responseTypes: {prompt.aiResponseType},
+        ),
+      ),
+      slivers: [
+        SliverToBoxAdapter(
+            child: UnifiedAiProgressContent(
+          entityId: entityId,
+          promptId: prompt.id,
+        )),
+      ],
     );
   }
 }

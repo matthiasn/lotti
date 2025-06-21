@@ -55,8 +55,10 @@ class UnifiedAiModal {
     required JournalEntity journalEntity,
     required String? linkedFromId,
     required WidgetRef ref,
+    ScrollController? scrollController,
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
+
     final promptsAsync = await ref.read(
       availablePromptsProvider(entity: journalEntity).future,
     );
@@ -83,17 +85,15 @@ class UnifiedAiModal {
       ),
     );
 
-    final promptPages = promptsAsync.asMap().entries.map((entry) {
+    final promptSliverPages = promptsAsync.asMap().entries.map((entry) {
       final prompt = entry.value;
 
-      return ModalUtils.modalSheetPage(
+      return UnifiedAiProgressUtils.progressPage(
         context: context,
-        title: prompt.name,
-        child: UnifiedAiProgressView(
-          entityId: journalEntity.id,
-          promptId: prompt.id,
-        ),
+        prompt: prompt,
+        entityId: journalEntity.id,
         onTapBack: () => pageIndexNotifier.value = 0,
+        scrollController: scrollController,
       );
     }).toList();
 
@@ -102,7 +102,7 @@ class UnifiedAiModal {
       pageListBuilder: (modalSheetContext) {
         return [
           initialModalPage,
-          ...promptPages,
+          ...promptSliverPages,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
@@ -135,6 +135,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
         [];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         ...prompts.asMap().entries.map((entry) {
           final index = entry.key;
