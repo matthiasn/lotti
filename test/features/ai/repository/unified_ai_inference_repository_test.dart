@@ -1312,24 +1312,6 @@ void main() {
           ),
         );
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content:
-                      'Here are some action items: [{"title": "Review code", "completed": false}]',
-                ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
-
         when(() => mockAiInputRepo.getEntity('test-id'))
             .thenAnswer((_) async => taskEntity);
         when(() => mockAiConfigRepo.getConfigById('model-1'))
@@ -1347,6 +1329,8 @@ void main() {
         when(() => mockJournalRepo.getLinkedEntities(linkedTo: 'test-id'))
             .thenAnswer((_) async => [createdAiResponseEntry]);
 
+        // Mock different responses for first run vs re-run
+        var callCount = 0;
         when(
           () => mockCloudInferenceRepo.generate(
             any(),
@@ -1356,7 +1340,45 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
           ),
-        ).thenAnswer((_) => mockStream);
+        ).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) {
+            // First call: return suggestions
+            return Stream.fromIterable([
+              CreateChatCompletionStreamResponse(
+                id: 'response-1',
+                choices: [
+                  const ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content:
+                          '[{"title": "Review code", "completed": false}, {"title": "Write tests", "completed": true}]',
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+            ]);
+          } else {
+            // Second call (re-run): return empty suggestions
+            return Stream.fromIterable([
+              CreateChatCompletionStreamResponse(
+                id: 'response-2',
+                choices: [
+                  const ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: '[]', // Empty suggestions on re-run
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+            ]);
+          }
+        });
 
         when(
           () => mockAiInputRepo.createAiResponseEntry(
@@ -1378,9 +1400,15 @@ void main() {
         when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
             .thenAnswer((_) async => true);
         when(() => mockAutoChecklistService.autoCreateChecklist(
-          taskId: 'test-id',
-          suggestions: any(named: 'suggestions'),
-        )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+                  taskId: 'test-id',
+                  suggestions: any(named: 'suggestions'),
+                ))
+            .thenAnswer((_) async =>
+                (success: true, checklistId: 'checklist-123', error: null));
+
+        // Mock for re-run: getConfigsByType should return the prompt for re-run lookup
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [promptConfig]);
 
         // Mock checklist repository for auto-creation
         // Task has no existing checklists, so shouldAutoCreate will return true
@@ -1411,14 +1439,43 @@ void main() {
         // Assert
         // Verify that autoChecklistService.autoCreateChecklist is called once
         verify(() => mockAutoChecklistService.autoCreateChecklist(
-          taskId: 'test-id',
-          suggestions: any(named: 'suggestions'),
-        )).called(1);
+              taskId: 'test-id',
+              suggestions: any(named: 'suggestions'),
+            )).called(1);
 
-        // Verify that _rerunActionItemSuggestions is triggered
-        // This is verified by checking that _autoCreatingTasks set is correctly managed
-        
-        // TODO: Add more specific assertions to verify the behavior automatically
+        // Verify that cloud inference is called twice (initial run + re-run)
+        verify(() => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+            )).called(2);
+
+        // Verify that createAiResponseEntry is called twice (initial + re-run)
+        final capturedData = verify(() => mockAiInputRepo.createAiResponseEntry(
+              data: captureAny(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).captured;
+
+        expect(capturedData.length, equals(2));
+
+        // First call should have suggestions
+        final firstCallData = capturedData[0] as AiResponseData;
+        expect(firstCallData.suggestedActionItems, isNotNull);
+        expect(firstCallData.suggestedActionItems!.length, equals(2));
+        expect(firstCallData.suggestedActionItems![0].title,
+            equals('Review code'));
+        expect(firstCallData.suggestedActionItems![1].title,
+            equals('Write tests'));
+
+        // Second call (re-run) should have empty suggestions
+        final secondCallData = capturedData[1] as AiResponseData;
+        expect(secondCallData.suggestedActionItems, isNotNull);
+        expect(secondCallData.suggestedActionItems!.length, equals(0));
       });
 
       test('handles provider not found error', () async {

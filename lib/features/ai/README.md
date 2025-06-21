@@ -174,7 +174,6 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
    ```dart
    // In _handleActionItemSuggestions()
    if (result.success) {
-     await Future.delayed(const Duration(milliseconds: 500)); // Avoid race conditions
      await _rerunActionItemSuggestions(task);
    }
    
