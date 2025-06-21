@@ -5,12 +5,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-enum AutoCreationStatus {
-  idle,
-  creating,
-  success,
-  failed,
-}
 
 class AutoChecklistService {
   AutoChecklistService({

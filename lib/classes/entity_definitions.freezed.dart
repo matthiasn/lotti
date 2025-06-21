@@ -5526,7 +5526,6 @@ mixin _$AiResponseData {
       throw _privateConstructorUsedError;
   AiResponseType? get type => throw _privateConstructorUsedError;
   double? get temperature => throw _privateConstructorUsedError;
-  bool? get autoChecklistCreated => throw _privateConstructorUsedError;
 
   /// Serializes this AiResponseData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -5553,8 +5552,7 @@ abstract class $AiResponseDataCopyWith<$Res> {
       String? promptId,
       List<AiActionItem>? suggestedActionItems,
       AiResponseType? type,
-      double? temperature,
-      bool? autoChecklistCreated});
+      double? temperature});
 }
 
 /// @nodoc
@@ -5581,7 +5579,6 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
     Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
-    Object? autoChecklistCreated = freezed,
   }) {
     return _then(_value.copyWith(
       model: null == model
@@ -5620,10 +5617,6 @@ class _$AiResponseDataCopyWithImpl<$Res, $Val extends AiResponseData>
           ? _value.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
               as double?,
-      autoChecklistCreated: freezed == autoChecklistCreated
-          ? _value.autoChecklistCreated
-          : autoChecklistCreated // ignore: cast_nullable_to_non_nullable
-              as bool?,
     ) as $Val);
   }
 }
@@ -5645,8 +5638,7 @@ abstract class _$$AiResponseDataImplCopyWith<$Res>
       String? promptId,
       List<AiActionItem>? suggestedActionItems,
       AiResponseType? type,
-      double? temperature,
-      bool? autoChecklistCreated});
+      double? temperature});
 }
 
 /// @nodoc
@@ -5671,7 +5663,6 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
     Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
-    Object? autoChecklistCreated = freezed,
   }) {
     return _then(_$AiResponseDataImpl(
       model: null == model
@@ -5710,10 +5701,6 @@ class __$$AiResponseDataImplCopyWithImpl<$Res>
           ? _value.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
               as double?,
-      autoChecklistCreated: freezed == autoChecklistCreated
-          ? _value.autoChecklistCreated
-          : autoChecklistCreated // ignore: cast_nullable_to_non_nullable
-              as bool?,
     ));
   }
 }
@@ -5730,8 +5717,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
       this.promptId,
       final List<AiActionItem>? suggestedActionItems,
       this.type,
-      this.temperature,
-      this.autoChecklistCreated})
+      this.temperature})
       : _suggestedActionItems = suggestedActionItems;
 
   factory _$AiResponseDataImpl.fromJson(Map<String, dynamic> json) =>
@@ -5764,12 +5750,10 @@ class _$AiResponseDataImpl implements _AiResponseData {
   final AiResponseType? type;
   @override
   final double? temperature;
-  @override
-  final bool? autoChecklistCreated;
 
   @override
   String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, autoChecklistCreated: $autoChecklistCreated)';
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
   }
 
   @override
@@ -5791,9 +5775,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
                 .equals(other._suggestedActionItems, _suggestedActionItems) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.temperature, temperature) ||
-                other.temperature == temperature) &&
-            (identical(other.autoChecklistCreated, autoChecklistCreated) ||
-                other.autoChecklistCreated == autoChecklistCreated));
+                other.temperature == temperature));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5808,8 +5790,7 @@ class _$AiResponseDataImpl implements _AiResponseData {
       promptId,
       const DeepCollectionEquality().hash(_suggestedActionItems),
       type,
-      temperature,
-      autoChecklistCreated);
+      temperature);
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
@@ -5838,8 +5819,7 @@ abstract class _AiResponseData implements AiResponseData {
       final String? promptId,
       final List<AiActionItem>? suggestedActionItems,
       final AiResponseType? type,
-      final double? temperature,
-      final bool? autoChecklistCreated}) = _$AiResponseDataImpl;
+      final double? temperature}) = _$AiResponseDataImpl;
 
   factory _AiResponseData.fromJson(Map<String, dynamic> json) =
       _$AiResponseDataImpl.fromJson;
@@ -5862,8 +5842,6 @@ abstract class _AiResponseData implements AiResponseData {
   AiResponseType? get type;
   @override
   double? get temperature;
-  @override
-  bool? get autoChecklistCreated;
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.

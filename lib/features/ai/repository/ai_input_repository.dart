@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -56,7 +57,13 @@ class AiInputRepository {
 
       await getIt<PersistenceLogic>().updateDbEntity(updatedEntry);
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to update AiResponseEntry',
+        name: 'AiInputRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

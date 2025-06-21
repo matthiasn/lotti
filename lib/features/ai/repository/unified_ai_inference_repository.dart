@@ -47,6 +47,12 @@ class UnifiedAiInferenceRepository {
     );
   }
 
+  // For testing purposes only
+  // ignore: avoid_setters_without_getters
+  set autoChecklistServiceForTesting(AutoChecklistService service) {
+    _autoChecklistService = service;
+  }
+
   /// Get all active prompts that match the current context
   Future<List<AiConfigPrompt>> getActivePromptsForContext({
     required JournalEntity entity,

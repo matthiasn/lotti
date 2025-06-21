@@ -418,7 +418,6 @@ _$AiResponseDataImpl _$$AiResponseDataImplFromJson(Map<String, dynamic> json) =>
           .toList(),
       type: $enumDecodeNullable(_$AiResponseTypeEnumMap, json['type']),
       temperature: (json['temperature'] as num?)?.toDouble(),
-      autoChecklistCreated: json['autoChecklistCreated'] as bool?,
     );
 
 Map<String, dynamic> _$$AiResponseDataImplToJson(
@@ -433,7 +432,6 @@ Map<String, dynamic> _$$AiResponseDataImplToJson(
       'suggestedActionItems': instance.suggestedActionItems,
       'type': _$AiResponseTypeEnumMap[instance.type],
       'temperature': instance.temperature,
-      'autoChecklistCreated': instance.autoChecklistCreated,
     };
 
 const _$AiResponseTypeEnumMap = {
