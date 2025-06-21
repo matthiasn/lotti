@@ -9,7 +9,6 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/get_it.dart';
@@ -146,7 +145,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -175,7 +174,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -198,7 +197,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -232,7 +231,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -255,7 +254,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -294,15 +293,13 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
         onProgress('Processing...');
         await Future<void>.delayed(const Duration(milliseconds: 100));
-        onProgress('Almost done...');
-        await Future<void>.delayed(const Duration(milliseconds: 100));
         onProgress('Complete!');
         onStatusChange(InferenceStatus.idle);
       });
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -350,7 +347,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -392,7 +389,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: 'image-prompt',
           ),
@@ -413,7 +410,7 @@ void main() {
     testWidgets('widget can be instantiated with required parameters',
         (tester) async {
       // Test that the widget can be created without errors
-      const widget = UnifiedAiProgressView(
+      const widget = UnifiedAiProgressContent(
         entityId: 'test-entity',
         promptId: 'test-prompt',
       );
@@ -426,7 +423,7 @@ void main() {
     testWidgets('widget can be instantiated with key', (tester) async {
       // Test that the widget can be created with a key
       const testKey = Key('test-key');
-      const widget = UnifiedAiProgressView(
+      const widget = UnifiedAiProgressContent(
         key: testKey,
         entityId: 'test-entity',
         promptId: 'test-prompt',
@@ -465,7 +462,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -484,12 +481,9 @@ void main() {
         find.textContaining('This is a very long progress message'),
         findsOneWidget,
       );
-
-      // The content should be in a scrollable view
-      expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 
-    testWidgets('shows running animation when inference is running',
+    testWidgets('displays running status text when inference is running',
         (tester) async {
       // Arrange - keep inference in running state
       final completer = Completer<void>();
@@ -514,7 +508,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -529,19 +523,19 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Assert - should show the running animation
-      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
+      // Assert - should show the running text
+      expect(find.text('Processing...'), findsOneWidget);
 
       // Complete the future to avoid pending timers
       completer.complete();
     });
 
-    testWidgets('does not show running animation when inference is idle',
+    testWidgets('shows final result when inference is complete',
         (tester) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -555,8 +549,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert - should not show the running animation
-      expect(find.byType(AiRunningAnimationWrapper), findsNothing);
+      // Assert - should show the final result text
+      expect(find.text('Complete!'), findsOneWidget);
     });
 
     testWidgets('displays error widget and retry works correctly',
@@ -592,7 +586,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -647,7 +641,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -665,49 +659,11 @@ void main() {
       expect(find.byType(AiErrorDisplay), findsOneWidget);
     });
 
-    testWidgets('constraints are properly applied', (tester) async {
-      // Arrange
-      await tester.pumpWidget(
-        buildTestWidget(
-          const UnifiedAiProgressView(
-            entityId: testEntityId,
-            promptId: testPromptId,
-          ),
-          overrides: [
-            aiConfigByIdProvider(testPromptId).overrideWith(
-              (ref) => Future.value(testPromptConfig),
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Find the ConstrainedBox widgets within UnifiedAiProgressView
-      final constrainedBoxes = find.descendant(
-        of: find.byType(UnifiedAiProgressView),
-        matching: find.byType(ConstrainedBox),
-      );
-      expect(constrainedBoxes, findsNWidgets(2)); // One outer, one inner
-
-      // Check the outer constraint
-      final outerConstrainedBox = tester.widget<ConstrainedBox>(
-        constrainedBoxes.first,
-      );
-      expect(outerConstrainedBox.constraints.maxHeight, 240);
-
-      // Check the inner constraint
-      final innerConstrainedBox = tester.widget<ConstrainedBox>(
-        constrainedBoxes.last,
-      );
-      expect(innerConstrainedBox.constraints.minWidth, 600);
-    });
-
     testWidgets('padding is correctly applied', (tester) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -734,30 +690,11 @@ void main() {
       expect(edgeInsets.right, 20);
     });
 
-    testWidgets('Stack properly layers content and animation', (tester) async {
-      // Arrange - keep in running state to show animation
-      final completer = Completer<void>();
-      when(
-        () => mockRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onProgress =
-            invocation.namedArguments[#onProgress] as void Function(String);
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
-
-        onStatusChange(InferenceStatus.running);
-        onProgress('Running...');
-        await completer.future;
-      });
-
+    testWidgets('displays text content properly', (tester) async {
+      // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          const UnifiedAiProgressView(
+          const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
           ),
@@ -769,28 +706,21 @@ void main() {
         ),
       );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
 
-      // Find the Stack widget within UnifiedAiProgressView
-      final stack = find.descendant(
-        of: find.byType(UnifiedAiProgressView),
-        matching: find.byType(Stack),
+      // Find the main content text
+      expect(find.text('Complete!'), findsOneWidget);
+
+      // Find the Padding widget
+      final padding = find.byType(Padding);
+      expect(padding, findsOneWidget);
+
+      // Find the ConstrainedBox within UnifiedAiProgressContent
+      final constrainedBox = find.descendant(
+        of: find.byType(UnifiedAiProgressContent),
+        matching: find.byType(ConstrainedBox),
       );
-      expect(stack, findsOneWidget);
-
-      // Check that it contains both the scroll view and animation
-      final stackWidget = tester.widget<Stack>(stack);
-      expect(stackWidget.children.length, 2);
-
-      // First child should be SingleChildScrollView
-      expect(stackWidget.children[0], isA<SingleChildScrollView>());
-
-      // Second child should be Align with animation (conditionally rendered)
-      expect(stackWidget.children[1], isA<Align>());
-
-      // Complete the future to avoid pending timers
-      completer.complete();
+      expect(constrainedBox, findsOneWidget);
     });
   });
 }

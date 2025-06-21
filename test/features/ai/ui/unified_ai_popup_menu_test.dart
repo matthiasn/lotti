@@ -684,7 +684,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - check for the progress view which indicates we're on the prompt page
-      expect(find.byType(UnifiedAiProgressView), findsOneWidget);
+      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
     });
   });
 
