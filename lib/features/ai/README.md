@@ -215,6 +215,7 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
 - **Seamless experience**: First-time users get immediate value from AI suggestions
 - **Backwards compatible**: Existing manual flow unchanged for tasks with checklists
 - **Self-healing**: System corrects duplicate suggestions through intelligent re-run
+- **Optimized performance**: Eliminates redundant database calls by passing `shouldAutoCreate` result directly
 
 ## Response Types
 

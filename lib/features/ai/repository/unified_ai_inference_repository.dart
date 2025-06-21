@@ -29,8 +29,9 @@ part 'unified_ai_inference_repository.g.dart';
 /// Minimum title length for AI suggestion to be applied
 const kMinExistingTitleLengthForAiSuggestion = 5;
 
-/// Regular expression to remove invalid characters from checklist item titles
-final _invalidChecklistItemTitleChars = RegExp('[-.,"*]');
+/// Regular expression to remove problematic characters from checklist item titles
+/// Only removes leading/trailing dashes and asterisks which are often markdown artifacts
+final _invalidChecklistItemTitleChars = RegExp(r'^[-*\s]+|[-*\s]+$');
 
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
