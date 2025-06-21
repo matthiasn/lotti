@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -127,59 +128,21 @@ class InferenceProviderFormController
     String? newName;
     String? newApiKey;
 
-    if (value == InferenceProviderType.gemini) {
-      newBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
-      if (nameController.text.isEmpty) {
-        newName = 'Gemini';
-      }
+    // Get default configuration from constants
+    newBaseUrl = ProviderConfig.getDefaultBaseUrl(value);
+
+    if (nameController.text.isEmpty) {
+      newName = ProviderConfig.getDefaultName(value);
     }
-    if (value == InferenceProviderType.nebiusAiStudio) {
-      newBaseUrl = 'https://api.studio.nebius.com/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'Nebius AI Studio';
-      }
-    }
-    if (value == InferenceProviderType.ollama) {
-      newBaseUrl = 'http://localhost:11434/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'Ollama (local)';
-      }
-      // Clear API key for Ollama as it's not required
-      newApiKey = '';
-      apiKeyController.text = '';
-    }
-    if (value == InferenceProviderType.openAi) {
-      newBaseUrl = 'https://api.openai.com/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'OpenAI';
-      }
-    }
-    if (value == InferenceProviderType.anthropic) {
-      newBaseUrl = 'https://api.anthropic.com/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'Anthropic';
-      }
-    }
-    if (value == InferenceProviderType.openRouter) {
-      newBaseUrl = 'https://openrouter.ai/api/v1';
-      if (nameController.text.isEmpty) {
-        newName = 'OpenRouter';
-      }
-    }
-    if (value == InferenceProviderType.fastWhisper) {
-      newBaseUrl = 'http://localhost:8083';
-      if (nameController.text.isEmpty) {
-        newName = 'FastWhisper (local)';
-      }
-      // Clear API key for FastWhisper as it's not required
+
+    // Clear API key for providers that don't require it
+    if (!ProviderConfig.requiresApiKey(value)) {
       newApiKey = '';
       apiKeyController.text = '';
     }
 
     // Update text controllers if needed
-    if (newBaseUrl != null) {
-      baseUrlController.text = newBaseUrl;
-    }
+    baseUrlController.text = newBaseUrl;
     if (newName != null) {
       nameController.text = newName;
     }

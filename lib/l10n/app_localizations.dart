@@ -789,6 +789,18 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderWhisperDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI\'s cloud-based Whisper API for accurate audio transcription'**
+  String get aiProviderWhisperDescription;
+
+  /// No description provided for @aiProviderWhisperName.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI Whisper'**
+  String get aiProviderWhisperName;
+
   /// No description provided for @aiResponseTypeActionItemSuggestions.
   ///
   /// In en, this message translates to:
@@ -3513,6 +3525,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get viewMenuTitle;
+
+  /// No description provided for @commonLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get commonLoading;
+
+  /// No description provided for @commonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get commonError;
+
+  /// No description provided for @commonUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get commonUnknown;
 }
 
 class _AppLocalizationsDelegate

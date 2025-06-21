@@ -63,6 +63,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
   InferenceProviderType.fastWhisper: fastWhisperModels,
+  InferenceProviderType.whisper: whisperModels,
 };
 
 /// Gemini models - Google's multimodal AI models
@@ -266,6 +267,19 @@ const List<KnownModel> fastWhisperModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'Most accurate Whisper model',
+  ),
+];
+
+/// Whisper models - OpenAI's cloud-based speech recognition models
+const List<KnownModel> whisperModels = [
+  KnownModel(
+    providerModelId: 'whisper-1',
+    name: 'Whisper 1',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        "OpenAI's cloud-based Whisper model for accurate transcription",
   ),
 ];
 

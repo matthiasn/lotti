@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Model family classifications for robust icon selection
@@ -260,6 +261,8 @@ class AiConfigCard extends ConsumerWidget {
           return Icons.rocket_launch;
         case InferenceProviderType.fastWhisper:
           return Icons.mic;
+        case InferenceProviderType.whisper:
+          return Icons.mic;
       }
     } else if (config is AiConfigModel) {
       final model = config as AiConfigModel;
@@ -295,7 +298,7 @@ class _CompactProviderName extends ConsumerWidget {
 
     return providerAsync.when(
       data: (provider) {
-        final providerName = provider?.name ?? 'Unknown';
+        final providerName = provider?.name ?? context.messages.commonUnknown;
         return Container(
           padding: EdgeInsets.symmetric(
             horizontal: isCompact ? 5 : 6,
@@ -340,7 +343,7 @@ class _CompactProviderName extends ConsumerWidget {
           borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
-          'Loading...',
+          context.messages.commonLoading,
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             fontSize: isCompact ? 9 : 10,
@@ -357,7 +360,7 @@ class _CompactProviderName extends ConsumerWidget {
           borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
-          'Error',
+          context.messages.commonError,
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error.withValues(alpha: 0.8),
             fontSize: isCompact ? 9 : 10,
