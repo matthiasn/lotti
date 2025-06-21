@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -26,6 +27,21 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
       hasAvailablePromptsProvider(entity: journalEntity),
     );
 
+    final scrollController = ScrollController(
+      onAttach: (position) {
+        print('scrollController attach $position');
+      },
+      onDetach: (position) {
+        print('scrollController detach $position');
+      },
+      keepScrollOffset: false,
+      initialScrollOffset: 1110,
+    );
+
+    scrollController.addListener(() {
+      print('scrollController listener $scrollController');
+    });
+
     return hasPromptsAsync.when(
       data: (hasPrompts) {
         if (!hasPrompts) return const SizedBox.shrink();
@@ -39,6 +55,7 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
             context: context,
             journalEntity: journalEntity,
             linkedFromId: linkedFromId,
+            scrollController: scrollController,
             ref: ref,
           ),
         );
@@ -55,8 +72,10 @@ class UnifiedAiModal {
     required JournalEntity journalEntity,
     required String? linkedFromId,
     required WidgetRef ref,
+    ScrollController? scrollController,
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
+
     final promptsAsync = await ref.read(
       availablePromptsProvider(entity: journalEntity).future,
     );
@@ -83,17 +102,45 @@ class UnifiedAiModal {
       ),
     );
 
-    final promptPages = promptsAsync.asMap().entries.map((entry) {
+    final promptSliverPages = promptsAsync.asMap().entries.map((entry) {
       final prompt = entry.value;
 
-      return ModalUtils.modalSheetPage(
+      return ModalUtils.sliverModalSheetPage(
         context: context,
         title: prompt.name,
-        child: UnifiedAiProgressView(
-          entityId: journalEntity.id,
-          promptId: prompt.id,
-        ),
         onTapBack: () => pageIndexNotifier.value = 0,
+        scrollController: scrollController,
+        stickyActionBar: Column(
+          children: [
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AiRunningAnimationWrapper(
+                entryId: journalEntity.id,
+                height: 50,
+                responseTypes: {prompt.aiResponseType},
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final currentPosition = scrollController?.position.pixels ?? 0;
+
+                scrollController?.animateTo(
+                  currentPosition + 50,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              },
+              child: Text('Scroll'),
+            ),
+          ],
+        ),
+        slivers: [
+          SliverToBoxAdapter(
+              child: UnifiedAiProgressContent(
+            entityId: journalEntity.id,
+            promptId: prompt.id,
+          )),
+        ],
       );
     }).toList();
 
@@ -102,7 +149,7 @@ class UnifiedAiModal {
       pageListBuilder: (modalSheetContext) {
         return [
           initialModalPage,
-          ...promptPages,
+          ...promptSliverPages,
         ];
       },
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
@@ -135,6 +182,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
         [];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         ...prompts.asMap().entries.map((entry) {
           final index = entry.key;

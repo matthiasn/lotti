@@ -19,6 +19,7 @@ class ModalUtils {
   static WoltModalSheetPage modalSheetPage({
     required BuildContext context,
     required Widget child,
+    Widget? stickyActionBar,
     String? title,
     Color? backgroundColor,
     bool isTopBarLayerAlwaysVisible = true,
@@ -30,6 +31,7 @@ class ModalUtils {
     final textTheme = context.textTheme;
     return WoltModalSheetPage(
       backgroundColor: context.colorScheme.surfaceContainer,
+      stickyActionBar: stickyActionBar,
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 55,
       topBarTitle:
@@ -56,10 +58,55 @@ class ModalUtils {
     );
   }
 
+  static SliverWoltModalSheetPage sliverModalSheetPage({
+    required BuildContext context,
+    required List<Widget> slivers,
+    Widget? stickyActionBar,
+    ScrollController? scrollController,
+    String? title,
+    Color? backgroundColor,
+    bool isTopBarLayerAlwaysVisible = true,
+    bool showCloseButton = true,
+    void Function()? onTapBack,
+    double? navBarHeight,
+  }) {
+    final textTheme = context.textTheme;
+    return SliverWoltModalSheetPage(
+      scrollController: scrollController,
+      stickyActionBar: stickyActionBar,
+      backgroundColor: context.colorScheme.surfaceContainer,
+      hasSabGradient: true,
+      useSafeArea: true,
+      resizeToAvoidBottomInset: true,
+      navBarHeight: navBarHeight ?? 55,
+      topBarTitle:
+          title != null ? Text(title, style: textTheme.titleSmall) : null,
+      isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
+      leadingNavBarWidget: onTapBack != null
+          ? IconButton(
+              padding: WoltModalConfig.pagePadding,
+              icon: const Icon(Icons.arrow_back),
+              onPressed: onTapBack,
+            )
+          : null,
+      trailingNavBarWidget: showCloseButton
+          ? IconButton(
+              padding: WoltModalConfig.pagePadding,
+              icon: const Icon(Icons.close),
+              onPressed: Navigator.of(context).pop,
+            )
+          : null,
+      mainContentSliversBuilder: (BuildContext context) {
+        return slivers;
+      },
+    );
+  }
+
   static Future<T?> showSinglePageModal<T>({
     required BuildContext context,
     required Widget Function(BuildContext) builder,
     String? title,
+    Widget? stickyActionBar,
     Widget Function(Widget)? modalDecorator,
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
     double? navBarHeight,
@@ -70,6 +117,7 @@ class ModalUtils {
         return [
           ModalUtils.modalSheetPage(
             context: modalSheetContext,
+            stickyActionBar: stickyActionBar,
             title: title,
             child: builder(modalSheetContext),
             isTopBarLayerAlwaysVisible: title != null,
