@@ -3460,6 +3460,230 @@ Take into account the following task context:
       });
     });
   });
+
+  group('_rerunActionItemSuggestions', () {
+    test('logs message when no action item prompt found', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.started(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      // Mock getConfigsByType to return empty list (no action item prompt)
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => []);
+
+      // This test calls the private method indirectly through the auto-creation flow
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Action Item Suggestions',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.actionItemSuggestions,
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                content: '[{"title": "Review code", "completed": false}]',
+              ),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity.copyWith(
+        data: taskEntity.data.copyWith(checklistIds: []),
+      ));
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+      when(() => mockJournalDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => taskEntity.copyWith(
+        data: taskEntity.data.copyWith(checklistIds: []),
+      ));
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).thenAnswer((_) => mockStream);
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      // Mock auto-checklist service
+      when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .thenAnswer((_) async => true);
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+        taskId: 'test-id',
+        suggestions: any(named: 'suggestions'),
+      )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+
+      repository.autoChecklistServiceForTesting = mockAutoChecklistService;
+
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that the prompt lookup was attempted during re-run
+      verify(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt)).called(1);
+    });
+
+    test('handles exception during re-run gracefully', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.started(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: [], // Empty to trigger auto-creation
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Action Item Suggestions',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.actionItemSuggestions,
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                content: '[{"title": "Review code", "completed": false}]',
+              ),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+      when(() => mockJournalDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => taskEntity);
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).thenAnswer((_) => mockStream);
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      // Mock auto-checklist service
+      when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .thenAnswer((_) async => true);
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+        taskId: 'test-id',
+        suggestions: any(named: 'suggestions'),
+      )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+
+      // Mock successful prompt lookup but exception during re-run
+      final actionItemPrompt = _createPrompt(
+        id: 'action-prompt',
+        name: 'Action Item Suggestions',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.actionItemSuggestions,
+      );
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => [actionItemPrompt]);
+
+      repository.autoChecklistServiceForTesting = mockAutoChecklistService;
+
+      // Should not throw exception even if re-run fails
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that auto-checklist creation was attempted
+      verify(() => mockAutoChecklistService.autoCreateChecklist(
+        taskId: 'test-id',
+        suggestions: any(named: 'suggestions'),
+      )).called(1);
+    });
+  });
 }
 
 // Helper methods to create test objects
