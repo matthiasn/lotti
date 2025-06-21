@@ -178,6 +178,7 @@ class AiResponseData with _$AiResponseData {
     List<AiActionItem>? suggestedActionItems,
     AiResponseType? type,
     double? temperature,
+    bool? autoChecklistCreated,
   }) = _AiResponseData;
 
   factory AiResponseData.fromJson(Map<String, dynamic> json) =>

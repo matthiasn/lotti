@@ -25,18 +25,40 @@ class AiInputRepository {
     return _db.journalEntityById(id);
   }
 
-  Future<void> createAiResponseEntry({
+  Future<AiResponseEntry?> createAiResponseEntry({
     required AiResponseData data,
     required DateTime start,
     String? linkedId,
     String? categoryId,
   }) async {
-    await getIt<PersistenceLogic>().createAiResponseEntry(
+    return getIt<PersistenceLogic>().createAiResponseEntry(
       data: data,
       dateFrom: start,
       linkedId: linkedId,
       categoryId: categoryId,
     );
+  }
+
+  Future<bool> updateAiResponseEntry({
+    required String entryId,
+    required AiResponseData updatedData,
+  }) async {
+    try {
+      final entity = await _db.journalEntityById(entryId);
+      if (entity is! AiResponseEntry) {
+        return false;
+      }
+
+      final updatedEntry = entity.copyWith(
+        data: updatedData,
+        meta: await getIt<PersistenceLogic>().updateMetadata(entity.meta),
+      );
+
+      await getIt<PersistenceLogic>().updateDbEntity(updatedEntry);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<AiInputTaskObject?> generate(String id) async {

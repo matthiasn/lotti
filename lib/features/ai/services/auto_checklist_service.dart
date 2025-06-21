@@ -28,7 +28,7 @@ class AutoChecklistService {
   Future<bool> shouldAutoCreate({required String taskId}) async {
     try {
       final task = await _journalDb.journalEntityById(taskId);
-      
+
       if (task is! Task) {
         return false;
       }
@@ -46,29 +46,42 @@ class AutoChecklistService {
     }
   }
 
-  Future<({bool success, String? checklistId, String? error})> autoCreateChecklist({
+  Future<({bool success, String? checklistId, String? error})>
+      autoCreateChecklist({
     required String taskId,
     required List<ChecklistItemData> suggestions,
     String? title,
   }) async {
     try {
       if (suggestions.isEmpty) {
-        return (success: false, checklistId: null, error: 'No suggestions provided');
+        return (
+          success: false,
+          checklistId: null,
+          error: 'No suggestions provided'
+        );
       }
 
       final shouldCreate = await shouldAutoCreate(taskId: taskId);
       if (!shouldCreate) {
-        return (success: false, checklistId: null, error: 'Checklists already exist');
+        return (
+          success: false,
+          checklistId: null,
+          error: 'Checklists already exist'
+        );
       }
 
       final createdChecklist = await _checklistRepository.createChecklist(
         taskId: taskId,
         items: suggestions,
-        title: title ?? 'AI Suggestions',
+        title: title ?? 'TODOs',
       );
 
       if (createdChecklist == null) {
-        return (success: false, checklistId: null, error: 'Failed to create checklist');
+        return (
+          success: false,
+          checklistId: null,
+          error: 'Failed to create checklist'
+        );
       }
 
       _loggingService.captureEvent(
@@ -92,7 +105,7 @@ class AutoChecklistService {
   Future<int> getExistingChecklistCount({required String taskId}) async {
     try {
       final task = await _journalDb.journalEntityById(taskId);
-      
+
       if (task is! Task) {
         return 0;
       }

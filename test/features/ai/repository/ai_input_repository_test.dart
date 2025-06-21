@@ -147,6 +147,31 @@ void main() {
       ),
     );
     registerFallbackValue(DateTime.now());
+    registerFallbackValue(
+      Metadata(
+        id: 'fake-id',
+        createdAt: DateTime(2023),
+        updatedAt: DateTime(2023),
+        dateFrom: DateTime(2023),
+        dateTo: DateTime(2023),
+        starred: false,
+        flag: EntryFlag.none,
+      ),
+    );
+    registerFallbackValue(
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'fake-entry',
+          createdAt: DateTime(2023),
+          updatedAt: DateTime(2023),
+          dateFrom: DateTime(2023),
+          dateTo: DateTime(2023),
+          starred: false,
+          flag: EntryFlag.none,
+        ),
+        entryText: const EntryText(plainText: 'fake'),
+      ),
+    );
   });
 
   group('AiInputRepository', () {
@@ -178,6 +203,11 @@ void main() {
           id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => (null, <String, Duration>{}));
+
+      // Set default return value for journalEntityById to avoid null subtype errors
+      when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
+      when(() => mockDb.getLinkedEntities(any()))
+          .thenAnswer((_) async => <JournalEntity>[]);
     });
 
     tearDown(() {
@@ -686,6 +716,184 @@ void main() {
             dateFrom: testStart,
           ),
         ).called(1);
+      });
+    });
+
+    // Tests for updateAiResponseEntry method
+    group('updateAiResponseEntry', () {
+      test('successfully updates AI response entry with new data', () async {
+        // Arrange
+        const entryId = 'response-123';
+        const originalData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+        const updatedData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final aiResponseEntry = AiResponseEntry(
+          data: originalData,
+          meta: Metadata(
+            id: entryId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        final updatedMetadata = aiResponseEntry.meta.copyWith(
+          updatedAt: DateTime(2023, 1, 2),
+        );
+
+        when(() => mockDb.journalEntityById(entryId))
+            .thenAnswer((_) async => aiResponseEntry);
+        when(() => mockPersistenceLogic.updateMetadata(any()))
+            .thenAnswer((_) async => updatedMetadata);
+        when(() => mockPersistenceLogic.updateDbEntity(any()))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await repository.updateAiResponseEntry(
+          entryId: entryId,
+          updatedData: updatedData,
+        );
+
+        // Assert
+        expect(result, isTrue);
+        verify(() => mockDb.journalEntityById(entryId)).called(1);
+        verify(() => mockPersistenceLogic.updateMetadata(aiResponseEntry.meta))
+            .called(1);
+        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+      });
+
+      test('returns false when entity is not found', () async {
+        // Arrange
+        const entryId = 'nonexistent-123';
+        const updatedData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        when(() => mockDb.journalEntityById(entryId))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await repository.updateAiResponseEntry(
+          entryId: entryId,
+          updatedData: updatedData,
+        );
+
+        // Assert
+        expect(result, isFalse);
+        verify(() => mockDb.journalEntityById(entryId)).called(1);
+        verifyNever(() => mockPersistenceLogic.updateMetadata(any()));
+        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+      });
+
+      test('returns false when entity is not AiResponseEntry', () async {
+        // Arrange
+        const entryId = 'task-123';
+        const updatedData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final task = Task(
+          data: TaskData(
+            title: 'Test Task',
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            statusHistory: [],
+            status: TaskStatus.started(
+              id: 'status-123',
+              createdAt: DateTime(2023),
+              utcOffset: 0,
+            ),
+          ),
+          meta: Metadata(
+            id: entryId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(entryId))
+            .thenAnswer((_) async => task);
+
+        // Act
+        final result = await repository.updateAiResponseEntry(
+          entryId: entryId,
+          updatedData: updatedData,
+        );
+
+        // Assert
+        expect(result, isFalse);
+        verify(() => mockDb.journalEntityById(entryId)).called(1);
+        verifyNever(() => mockPersistenceLogic.updateMetadata(any()));
+        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+      });
+
+      test('returns false when update fails', () async {
+        // Arrange
+        const entryId = 'response-123';
+        const updatedData = AiResponseData(
+          model: 'test-model',
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+        );
+
+        final aiResponseEntry = AiResponseEntry(
+          data: updatedData,
+          meta: Metadata(
+            id: entryId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(entryId))
+            .thenAnswer((_) async => aiResponseEntry);
+        when(() => mockPersistenceLogic.updateMetadata(any()))
+            .thenThrow(Exception('Update failed'));
+
+        // Act
+        final result = await repository.updateAiResponseEntry(
+          entryId: entryId,
+          updatedData: updatedData,
+        );
+
+        // Assert
+        expect(result, isFalse);
+        verify(() => mockDb.journalEntityById(entryId)).called(1);
+        verify(() => mockPersistenceLogic.updateMetadata(any())).called(1);
+        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
       });
     });
 

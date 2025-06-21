@@ -38,6 +38,9 @@ class UnifiedAiInferenceRepository {
   final Ref ref;
   AutoChecklistService? _autoChecklistService;
 
+  // Track tasks that are currently auto-creating checklists to prevent duplicates
+  final Set<String> _autoCreatingTasks = {};
+
   AutoChecklistService get autoChecklistService {
     return _autoChecklistService ??= AutoChecklistService(
       checklistRepository: ref.read(checklistRepositoryProvider),
@@ -124,6 +127,23 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
   }) async {
+    await _runInferenceInternal(
+      entityId: entityId,
+      promptConfig: promptConfig,
+      onProgress: onProgress,
+      onStatusChange: onStatusChange,
+      isRerun: false,
+    );
+  }
+
+  /// Internal inference method with rerun flag to prevent recursive auto-creation
+  Future<void> _runInferenceInternal({
+    required String entityId,
+    required AiConfigPrompt promptConfig,
+    required void Function(String) onProgress,
+    required void Function(InferenceStatus) onStatusChange,
+    required bool isRerun,
+  }) async {
     final start = DateTime.now();
 
     try {
@@ -197,6 +217,7 @@ class UnifiedAiInferenceRepository {
         provider: provider,
         entity: entity,
         start: start,
+        isRerun: isRerun,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -374,6 +395,7 @@ class UnifiedAiInferenceRepository {
     required String prompt,
     required JournalEntity entity,
     required DateTime start,
+    required bool isRerun,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -415,16 +437,35 @@ class UnifiedAiInferenceRepository {
     );
 
     // Save the AI response entry
+    AiResponseEntry? aiResponseEntry;
     if (entity is! JournalAudio && entity is! JournalImage) {
-      await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
-            data: data,
-            start: start,
-            linkedId: entity.id,
-            categoryId: entity is Task ? entity.categoryId : null,
-          );
+      try {
+        aiResponseEntry =
+            await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
+                  data: data,
+                  start: start,
+                  linkedId: entity.id,
+                  categoryId: entity is Task ? entity.categoryId : null,
+                );
+        developer.log(
+          'createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      } catch (e) {
+        developer.log(
+          'createAiResponseEntry failed: $e',
+          name: 'UnifiedAiInferenceRepository',
+          error: e,
+        );
+      }
     }
 
     // Handle special post-processing
+    developer.log(
+      'About to call _handlePostProcessing. entity: ${entity.runtimeType}, suggestedActionItems: ${suggestedActionItems?.length ?? 0}, promptConfig.aiResponseType: ${promptConfig.aiResponseType}',
+      name: 'UnifiedAiInferenceRepository',
+    );
+
     await _handlePostProcessing(
       entity: entity,
       promptConfig: promptConfig,
@@ -433,6 +474,8 @@ class UnifiedAiInferenceRepository {
       provider: provider,
       start: start,
       suggestedActionItems: suggestedActionItems,
+      aiResponseEntry: aiResponseEntry,
+      isRerun: isRerun,
     );
   }
 
@@ -444,7 +487,9 @@ class UnifiedAiInferenceRepository {
     required AiConfigInferenceProvider provider,
     required String response,
     required DateTime start,
+    required bool isRerun,
     List<AiActionItem>? suggestedActionItems,
+    AiResponseEntry? aiResponseEntry,
   }) async {
     final journalRepo = ref.read(journalRepositoryProvider);
 
@@ -514,10 +559,22 @@ class UnifiedAiInferenceRepository {
           }
         }
       case AiResponseType.actionItemSuggestions:
+        developer.log(
+          'Processing actionItemSuggestions. entity is Task: ${entity is Task}, suggestedActionItems: ${suggestedActionItems?.length ?? 0} items, aiResponseEntry: ${aiResponseEntry?.id ?? "null"}',
+          name: 'UnifiedAiInferenceRepository',
+        );
         if (entity is Task &&
             suggestedActionItems != null &&
-            suggestedActionItems.isNotEmpty) {
-          await _handleActionItemSuggestions(entity, suggestedActionItems);
+            suggestedActionItems.isNotEmpty &&
+            !isRerun) {
+          // Don't auto-create on re-runs
+          await _handleActionItemSuggestions(
+              entity, suggestedActionItems, aiResponseEntry);
+        } else {
+          developer.log(
+            'Skipping _handleActionItemSuggestions - conditions not met',
+            name: 'UnifiedAiInferenceRepository',
+          );
         }
     }
   }
@@ -526,13 +583,35 @@ class UnifiedAiInferenceRepository {
   Future<void> _handleActionItemSuggestions(
     Task task,
     List<AiActionItem> suggestedActionItems,
+    AiResponseEntry? aiResponseEntry,
   ) async {
     try {
+      developer.log(
+        '_handleActionItemSuggestions called for task ${task.id} with ${suggestedActionItems.length} suggestions. aiResponseEntry: ${aiResponseEntry?.id ?? "null"}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      // Check if this task is already being processed to prevent concurrent auto-creation
+      if (_autoCreatingTasks.contains(task.id)) {
+        developer.log(
+          'Task ${task.id} is already being processed for auto-checklist creation, skipping',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        return;
+      }
+
       // Check if auto-creation should happen
       final shouldAutoCreate =
           await autoChecklistService.shouldAutoCreate(taskId: task.id);
 
+      developer.log(
+        'shouldAutoCreate result: $shouldAutoCreate',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
       if (shouldAutoCreate) {
+        // Mark this task as being processed
+        _autoCreatingTasks.add(task.id);
         // Convert AI action items to checklist items
         final checklistItems = suggestedActionItems.map((item) {
           final title = item.title.replaceAll(RegExp('[-.,"*]'), '').trim();
@@ -549,20 +628,33 @@ class UnifiedAiInferenceRepository {
           suggestions: checklistItems,
         );
 
-        if (result.success) {
-          developer.log(
-            'Auto-created checklist with ${checklistItems.length} items',
-            name: 'UnifiedAiInferenceRepository',
-          );
-        } else {
-          developer.log(
-            'Failed to auto-create checklist: ${result.error}',
-            name: 'UnifiedAiInferenceRepository',
-            error: result.error,
-          );
+        try {
+          if (result.success) {
+            developer.log(
+              'Auto-created checklist with ${checklistItems.length} items, re-running AI suggestions prompt',
+              name: 'UnifiedAiInferenceRepository',
+            );
+
+            // Re-run the same AI suggestions prompt to get updated suggestions
+            // that account for the newly created checklist
+            // Add small delay to avoid race conditions with database
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+            await _rerunActionItemSuggestions(task);
+          } else {
+            developer.log(
+              'Failed to auto-create checklist: ${result.error}',
+              name: 'UnifiedAiInferenceRepository',
+              error: result.error,
+            );
+          }
+        } finally {
+          // Always remove task from processing set
+          _autoCreatingTasks.remove(task.id);
         }
       }
     } catch (e, stackTrace) {
+      // Remove task from processing set on error
+      _autoCreatingTasks.remove(task.id);
       developer.log(
         'Error in action item suggestions post-processing',
         name: 'UnifiedAiInferenceRepository',
@@ -570,6 +662,57 @@ class UnifiedAiInferenceRepository {
         stackTrace: stackTrace,
       );
       // Don't rethrow - this is post-processing, main inference should not fail
+    }
+  }
+
+  /// Re-run the action item suggestions prompt after auto-checklist creation
+  /// This generates new suggestions that account for the existing checklist
+  Future<void> _rerunActionItemSuggestions(Task task) async {
+    try {
+      developer.log(
+        'Re-running action item suggestions for task ${task.id}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      // Find the action item suggestions prompt
+      final configs = await ref
+          .read(aiConfigRepositoryProvider)
+          .getConfigsByType(AiConfigType.prompt);
+      final actionItemPrompt = configs
+          .whereType<AiConfigPrompt>()
+          .where((config) =>
+              config.aiResponseType == AiResponseType.actionItemSuggestions &&
+              !config.archived)
+          .firstOrNull;
+
+      if (actionItemPrompt == null) {
+        developer.log(
+          'No active action item suggestions prompt found',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        return;
+      }
+
+      // Re-run the inference with the same prompt
+      // This will generate new suggestions based on current task state (with checklist)
+      await _runInferenceInternal(
+        entityId: task.id,
+        promptConfig: actionItemPrompt,
+        onProgress: (_) {}, // Silent re-run, no progress updates
+        onStatusChange: (_) {}, // Silent re-run, no status updates
+        isRerun: true, // Prevent auto-checklist creation on re-run
+      );
+
+      developer.log(
+        'Successfully re-ran action item suggestions prompt',
+        name: 'UnifiedAiInferenceRepository',
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to re-run action item suggestions: $e',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+      );
     }
   }
 }
