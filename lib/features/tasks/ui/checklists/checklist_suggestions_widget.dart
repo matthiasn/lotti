@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/checklist_suggestions_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/ai/ui/helpers/thoughts_modal_helper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class ChecklistSuggestionsWidget extends ConsumerStatefulWidget {
@@ -52,33 +48,12 @@ class _ChecklistSuggestionsWidgetState
     }
 
     Future<void> showThoughtsModal(String? promptId) async {
-      if (promptId == null) {
-        return;
-      }
-
-      // Trigger a new inference run by invalidating the controller
-      ref.read(
-        triggerNewInferenceProvider(
-          entityId: widget.itemId,
-          promptId: promptId,
-        ),
+      await ThoughtsModalHelper.showThoughtsModal(
+        context: context,
+        ref: ref,
+        promptId: promptId,
+        entityId: widget.itemId,
       );
-
-      final prompt = await ref.read(
-        aiConfigByIdProvider(promptId).future,
-      );
-
-      if (context.mounted && prompt is AiConfigPrompt) {
-        await ModalUtils.showSingleSliverWoltModalSheetPageModal<void>(
-          context: context,
-          builder: (context) => UnifiedAiProgressUtils.progressPage(
-            context: context,
-            prompt: prompt,
-            entityId: widget.itemId,
-            onTapBack: () => Navigator.of(context).pop(),
-          ),
-        );
-      }
     }
 
     final aiResponse = ref
