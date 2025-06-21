@@ -16,6 +16,57 @@ class ModalUtils {
     }
   }
 
+  /// Creates a top bar title widget for modal sheets.
+  /// Returns null if [title] is null.
+  @visibleForTesting
+  static Widget? buildTopBarTitle(
+    BuildContext context,
+    String? title,
+  ) {
+    if (title == null) return null;
+
+    final textTheme = context.textTheme;
+    final colorScheme = context.colorScheme;
+    return Text(
+      title,
+      style: textTheme.titleSmall?.copyWith(color: colorScheme.outline),
+    );
+  }
+
+  /// Creates a leading navigation bar widget (back button) for modal sheets.
+  /// Returns null if [onTapBack] is null.
+  @visibleForTesting
+  static Widget? buildLeadingNavBarWidget(
+    BuildContext context,
+    void Function()? onTapBack,
+  ) {
+    if (onTapBack == null) return null;
+
+    final colorScheme = context.colorScheme;
+    return IconButton(
+      padding: WoltModalConfig.pagePadding,
+      icon: Icon(Icons.arrow_back, color: colorScheme.outline),
+      onPressed: onTapBack,
+    );
+  }
+
+  /// Creates a trailing navigation bar widget (close button) for modal sheets.
+  /// Returns null if [showCloseButton] is false.
+  @visibleForTesting
+  static Widget? buildTrailingNavBarWidget(
+    BuildContext context, {
+    required bool showCloseButton,
+  }) {
+    if (!showCloseButton) return null;
+
+    final colorScheme = context.colorScheme;
+    return IconButton(
+      padding: WoltModalConfig.pagePadding,
+      icon: Icon(Icons.close, color: colorScheme.outline),
+      onPressed: Navigator.of(context).pop,
+    );
+  }
+
   static WoltModalSheetPage modalSheetPage({
     required BuildContext context,
     required Widget child,
@@ -28,32 +79,16 @@ class ModalUtils {
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
     double? navBarHeight,
   }) {
-    final textTheme = context.textTheme;
-    final colorScheme = context.colorScheme;
     return WoltModalSheetPage(
       backgroundColor: context.colorScheme.surfaceContainer,
       stickyActionBar: stickyActionBar,
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 55,
-      topBarTitle: title != null
-          ? Text(title,
-              style: textTheme.titleSmall?.copyWith(color: colorScheme.outline))
-          : null,
+      topBarTitle: buildTopBarTitle(context, title),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
-      leadingNavBarWidget: onTapBack != null
-          ? IconButton(
-              padding: WoltModalConfig.pagePadding,
-              icon: Icon(Icons.arrow_back, color: colorScheme.outline),
-              onPressed: onTapBack,
-            )
-          : null,
-      trailingNavBarWidget: showCloseButton
-          ? IconButton(
-              padding: WoltModalConfig.pagePadding,
-              icon: Icon(Icons.close, color: colorScheme.outline),
-              onPressed: Navigator.of(context).pop,
-            )
-          : null,
+      leadingNavBarWidget: buildLeadingNavBarWidget(context, onTapBack),
+      trailingNavBarWidget:
+          buildTrailingNavBarWidget(context, showCloseButton: showCloseButton),
       child: Padding(
         padding: padding,
         child: child,
@@ -73,8 +108,6 @@ class ModalUtils {
     void Function()? onTapBack,
     double? navBarHeight,
   }) {
-    final textTheme = context.textTheme;
-    final colorScheme = context.colorScheme;
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
       stickyActionBar: stickyActionBar,
@@ -83,25 +116,11 @@ class ModalUtils {
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
       navBarHeight: navBarHeight ?? 55,
-      topBarTitle: title != null
-          ? Text(title,
-              style: textTheme.titleSmall?.copyWith(color: colorScheme.outline))
-          : null,
+      topBarTitle: buildTopBarTitle(context, title),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
-      leadingNavBarWidget: onTapBack != null
-          ? IconButton(
-              padding: WoltModalConfig.pagePadding,
-              icon: Icon(Icons.arrow_back, color: colorScheme.outline),
-              onPressed: onTapBack,
-            )
-          : null,
-      trailingNavBarWidget: showCloseButton
-          ? IconButton(
-              padding: WoltModalConfig.pagePadding,
-              icon: Icon(Icons.close, color: colorScheme.outline),
-              onPressed: Navigator.of(context).pop,
-            )
-          : null,
+      leadingNavBarWidget: buildLeadingNavBarWidget(context, onTapBack),
+      trailingNavBarWidget:
+          buildTrailingNavBarWidget(context, showCloseButton: showCloseButton),
       mainContentSliversBuilder: (BuildContext context) {
         return slivers;
       },
@@ -141,19 +160,11 @@ class ModalUtils {
   static Future<T?> showSingleSliverWoltModalSheetPageModal<T>({
     required BuildContext context,
     required SliverWoltModalSheetPage Function(BuildContext) builder,
-    String? title,
-    Widget? stickyActionBar,
     Widget Function(Widget)? modalDecorator,
-    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
-    double? navBarHeight,
   }) async {
     return WoltModalSheet.show<T>(
       context: context,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          builder(modalSheetContext),
-        ];
-      },
+      pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
       modalDecorator: modalDecorator,
     );

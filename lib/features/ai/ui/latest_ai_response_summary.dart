@@ -51,14 +51,13 @@ class LatestAiResponseSummary extends ConsumerWidget {
         ),
       );
 
-      final prompt = await ref.watch(
+      final prompt = await ref.read(
         aiConfigByIdProvider(promptId).future,
       );
 
       if (context.mounted && prompt is AiConfigPrompt) {
         await ModalUtils.showSingleSliverWoltModalSheetPageModal<void>(
           context: context,
-          title: context.messages.aiAssistantThinking,
           builder: (context) => UnifiedAiProgressUtils.progressPage(
             context: context,
             prompt: prompt,
