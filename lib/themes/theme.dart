@@ -1,6 +1,7 @@
 // ignore_for_file: equal_keys_in_map
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
@@ -232,113 +233,121 @@ TextStyle searchLabelStyle() => TextStyle(
 
 ThemeData withOverrides(ThemeData themeData) {
   return themeData.copyWith(
-    splashColor: Colors.transparent,
-    highlightColor: Colors.transparent,
-    hoverColor: Colors.transparent,
-    cardTheme: themeData.cardTheme.copyWith(
-      clipBehavior: Clip.hardEdge,
-      color: themeData.colorScheme.surfaceContainer,
-    ),
-    appBarTheme: themeData.appBarTheme.copyWith(
-      backgroundColor: themeData.scaffoldBackgroundColor,
-    ),
-    sliderTheme: themeData.sliderTheme.copyWith(
-      activeTrackColor: themeData.colorScheme.secondary,
-      inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(
-        178,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      cardTheme: themeData.cardTheme.copyWith(
+        clipBehavior: Clip.hardEdge,
+        color: themeData.colorScheme.surfaceContainer,
       ),
-      thumbColor: themeData.colorScheme.secondary,
-      thumbShape: const RoundSliderThumbShape(
-        enabledThumbRadius: 8,
+      appBarTheme: themeData.appBarTheme.copyWith(
+        backgroundColor: themeData.scaffoldBackgroundColor,
       ),
-      overlayColor: themeData.colorScheme.secondary.withAlpha(
-        127,
+      sliderTheme: themeData.sliderTheme.copyWith(
+        activeTrackColor: themeData.colorScheme.secondary,
+        inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(
+          178,
+        ),
+        thumbColor: themeData.colorScheme.secondary,
+        thumbShape: const RoundSliderThumbShape(
+          enabledThumbRadius: 8,
+        ),
+        overlayColor: themeData.colorScheme.secondary.withAlpha(
+          127,
+        ),
       ),
-    ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      clipBehavior: Clip.hardEdge,
-      elevation: 100,
-    ),
-    textTheme: themeData.textTheme.copyWith(
-      titleMedium: themeData.textTheme.titleMedium?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.normal,
+      bottomSheetTheme: const BottomSheetThemeData(
+        clipBehavior: Clip.hardEdge,
+        elevation: 100,
       ),
-    ),
-    segmentedButtonTheme: SegmentedButtonThemeData(
-      style: ButtonStyle(
-        alignment: Alignment.center,
-        visualDensity: VisualDensity.compact,
-        textStyle: WidgetStateProperty.resolveWith(
-          (states) => const TextStyle(
-            fontSize: fontSizeSmall,
+      textTheme: themeData.textTheme.copyWith(
+        titleMedium: themeData.textTheme.titleMedium?.copyWith(
+          fontSize: fontSizeMedium,
+          fontWeight: FontWeight.normal,
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          alignment: Alignment.center,
+          visualDensity: VisualDensity.compact,
+          textStyle: WidgetStateProperty.resolveWith(
+            (states) => const TextStyle(
+              fontSize: fontSizeSmall,
+            ),
+          ),
+          side: WidgetStateProperty.resolveWith((states) {
+            return BorderSide(
+              color: themeData.colorScheme.tertiary,
+            );
+          }),
+          shape: WidgetStateProperty.resolveWith((states) {
+            return RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                inputBorderRadius,
+              ),
+            );
+          }),
+          padding: WidgetStateProperty.resolveWith((states) {
+            return const EdgeInsets.symmetric(
+              horizontal: 5,
+            );
+          }),
+          enableFeedback: true,
+        ),
+      ),
+      chipTheme: const ChipThemeData(
+        side: BorderSide.none,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        fillColor: themeData.primaryColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            inputBorderRadius,
+          ),
+          borderSide: BorderSide(
+            color: themeData.colorScheme.outline,
           ),
         ),
-        side: WidgetStateProperty.resolveWith((states) {
-          return BorderSide(
-            color: themeData.colorScheme.tertiary,
-          );
-        }),
-        shape: WidgetStateProperty.resolveWith((states) {
-          return RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              inputBorderRadius,
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            inputBorderRadius,
+          ),
+          borderSide: BorderSide(
+            color: themeData.colorScheme.error,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            inputBorderRadius,
+          ),
+          borderSide: BorderSide(
+            color: themeData.primaryColor,
+            width: 2,
+          ),
+        ),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          textStyle: WidgetStateProperty.resolveWith((states) {
+            return const TextStyle(
+              fontSize: fontSizeMediumLarge,
+            );
+          }),
+        ),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{},
+      ),
+      extensions: const <ThemeExtension>[
+        WoltModalSheetThemeData(
+          animationStyle: WoltModalSheetAnimationStyle(
+            paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
+              modalSheetHeightTransitionCurve: Interval(0, 0.1),
             ),
-          );
-        }),
-        padding: WidgetStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(
-            horizontal: 5,
-          );
-        }),
-        enableFeedback: true,
-      ),
-    ),
-    chipTheme: const ChipThemeData(
-      side: BorderSide.none,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      fillColor: themeData.primaryColor,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          inputBorderRadius,
+          ),
         ),
-        borderSide: BorderSide(
-          color: themeData.colorScheme.outline,
-        ),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          inputBorderRadius,
-        ),
-        borderSide: BorderSide(
-          color: themeData.colorScheme.error,
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          inputBorderRadius,
-        ),
-        borderSide: BorderSide(
-          color: themeData.primaryColor,
-          width: 2,
-        ),
-      ),
-      floatingLabelBehavior: FloatingLabelBehavior.always,
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: ButtonStyle(
-        textStyle: WidgetStateProperty.resolveWith((states) {
-          return const TextStyle(
-            fontSize: fontSizeMediumLarge,
-          );
-        }),
-      ),
-    ),
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: <TargetPlatform, PageTransitionsBuilder>{},
-    ),
-  );
+      ]);
 }
 
 extension AppThemeExtension on BuildContext {
