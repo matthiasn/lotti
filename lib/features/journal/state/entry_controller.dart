@@ -41,10 +41,6 @@ class EntryController extends _$EntryController {
     _isFocused = focusNode.hasFocus;
     if (_isFocused) {
       _shouldShowEditorToolBar = true;
-    } else {
-      if (!_dirty) {
-        _shouldShowEditorToolBar = false;
-      }
     }
     emitState();
 

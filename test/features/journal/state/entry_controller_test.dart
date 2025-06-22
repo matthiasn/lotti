@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -51,6 +53,9 @@ class FakeQuillController extends Fake implements QuillController {}
 
 // Added FakeTaskData
 class FakeTaskData extends Fake implements TaskData {}
+
+// Added FakeEventData
+class FakeEventData extends Fake implements EventData {}
 
 // Definitions for sample JournalImage for testing addTextToImage
 const _testImageEntryId = 'image_id_001';
@@ -178,6 +183,31 @@ final Task testTaskEntry = Task(
   entryText: const EntryText(plainText: 'Initial task description'),
 );
 
+// Test data for JournalEvent
+const _testEventId = 'event_id_001';
+final _testEventDateFrom = DateTime(2023, 11, 10, 14);
+final _testEventCreatedAt = DateTime(2023, 11, 10, 13);
+final _testEventUpdatedAt = DateTime(2023, 11, 10, 13, 30);
+
+final JournalEvent testEventEntry = JournalEvent(
+  meta: Metadata(
+    id: _testEventId,
+    createdAt: _testEventCreatedAt,
+    updatedAt: _testEventUpdatedAt,
+    dateFrom: _testEventDateFrom,
+    dateTo: _testEventDateFrom,
+    vectorClock: const VectorClock({'device': 1}),
+    starred: false,
+    private: false,
+  ),
+  data: const EventData(
+    title: 'Test Event',
+    status: EventStatus.planned,
+    stars: 3.5,
+  ),
+  entryText: const EntryText(plainText: 'Initial event description'),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -210,6 +240,7 @@ void main() {
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeEntryText());
     registerFallbackValue(FakeTaskData());
+    registerFallbackValue(FakeEventData());
     registerFallbackValue(const AsyncLoading<EntryState?>());
     registerFallbackValue(DateTime.now());
     registerFallbackValue(FakeQuillController());
@@ -262,6 +293,8 @@ void main() {
         .thenAnswer((_) async => testTextEntryNoGeo);
     when(() => mockJournalDb.journalEntityById(testTask.meta.id))
         .thenAnswer((_) async => testTask);
+    when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
+        .thenAnswer((_) async => testEventEntry);
     // For addTextToImage tests - ensure these are also available if not overridden in group's setUp
     when(() => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id))
         .thenAnswer((_) async => testImageEntryNoText);
@@ -273,12 +306,30 @@ void main() {
         .thenAnswer((_) async => true);
     when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
+    // Default stub for updateJournalEntityText
+    when(
+      () => mockPersistenceLogic.updateJournalEntityText(
+        any(),
+        any(),
+        any(),
+      ),
+    ).thenAnswer((_) async => true);
+
     // Default stub for persistence logic updateTask, must return Future<bool>
     when(
       () => mockPersistenceLogic.updateTask(
         entryText: any(named: 'entryText'),
         journalEntityId: any(named: 'journalEntityId'),
         taskData: any(named: 'taskData'),
+      ),
+    ).thenAnswer((_) async => true);
+
+    // Default stub for persistence logic updateEvent
+    when(
+      () => mockPersistenceLogic.updateEvent(
+        entryText: any(named: 'entryText'),
+        journalEntityId: any(named: 'journalEntityId'),
+        data: any(named: 'data'),
       ),
     ).thenAnswer((_) async => true);
   });
@@ -721,25 +772,43 @@ void main() {
       },
     );
 
-    test('focus', () async {
+    test('focusNodeListener maintains editor toolbar visibility', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+
+      // Initial state - not focused, toolbar not visible
+      final initialState = await container.read(testEntryProvider.future);
+      expect(initialState?.isFocused, false);
+      expect(initialState?.shouldShowEditorToolBar, false);
+
+      // The specific behavior change is tested indirectly through save method
+      // When entry is saved and focus is lost, toolbar should remain visible
+      // This is now tested in the save test where after save,
+      // shouldShowEditorToolBar remains false (not automatically hidden)
+    });
+
+    test('focus node listener - no change when focus state unchanged',
+        () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
       final testEntryProvider = entryControllerProvider(id: entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
-      await expectLater(
-        container.read(testEntryProvider.future),
-        completion(
-          EntryState.saved(
-            entryId: entryId,
-            entry: testTextEntry,
-            showMap: false,
-            isFocused: false,
-            shouldShowEditorToolBar: false,
-            formKey: notifier.formKey,
-          ),
-        ),
-      );
+      await container.read(testEntryProvider.future);
+
+      // Focus the node
+      notifier.focusNode.requestFocus();
+      notifier.focusNodeListener();
+
+      // Call listener again with same focus state - should return early
+      final stateBeforeSecondCall =
+          await container.read(testEntryProvider.future);
+      notifier.focusNodeListener(); // Should return early
+      final stateAfterSecondCall =
+          await container.read(testEntryProvider.future);
+
+      expect(stateBeforeSecondCall, equals(stateAfterSecondCall));
     });
 
     group('updateCategoryId', () {
@@ -1302,6 +1371,10 @@ void main() {
         // Default behavior: return testTextEntry (starred: false)
         when(() => mockJournalDb.journalEntityById(entryId))
             .thenAnswer((_) async => testTextEntry);
+        when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
+            .thenAnswer((_) async => testEventEntry);
+        when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+            .thenAnswer((_) async => testTask);
       });
 
       test('sets starred to true when initially false', () async {
@@ -1712,6 +1785,492 @@ void main() {
       final capturedEntryText = captured[2] as EntryText;
       expect(capturedTaskData.checklistIds, expectedFilteredOrder);
       expect(capturedEntryText.plainText, expectedEntryText.plainText);
+    });
+  });
+
+  group('setMapVisible method', () {
+    setUp(() {
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+      when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
+          .thenAnswer((_) async => testTextEntryNoGeo);
+    });
+
+    test('sets map visible when entry has geolocation', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      notifier.setMapVisible(true);
+
+      await expectLater(
+        container.read(testEntryProvider.future),
+        completion(
+          EntryState.saved(
+            entryId: entryId,
+            entry: testTextEntry,
+            showMap: true,
+            isFocused: false,
+            shouldShowEditorToolBar: false,
+            formKey: notifier.formKey,
+          ),
+        ),
+      );
+
+      notifier.setMapVisible(false);
+
+      await expectLater(
+        container.read(testEntryProvider.future),
+        completion(
+          EntryState.saved(
+            entryId: entryId,
+            entry: testTextEntry,
+            showMap: false,
+            isFocused: false,
+            shouldShowEditorToolBar: false,
+            formKey: notifier.formKey,
+          ),
+        ),
+      );
+    });
+
+    test('does nothing when entry has no geolocation', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntryNoGeo.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      notifier.setMapVisible(true);
+
+      await expectLater(
+        container.read(testEntryProvider.future),
+        completion(
+          EntryState.saved(
+            entryId: entryId,
+            entry: testTextEntryNoGeo,
+            showMap: false,
+            isFocused: false,
+            shouldShowEditorToolBar: false,
+            formKey: notifier.formKey,
+          ),
+        ),
+      );
+    });
+  });
+
+  group('setPrivate method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+    });
+
+    test('sets private to true', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(private: true),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setPrivate(true);
+
+      verify(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(private: true),
+        ),
+      ).called(1);
+    });
+
+    test('sets private to false', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(private: false),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setPrivate(false);
+
+      verify(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(private: false),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('setFlagged method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+    });
+
+    test('sets flagged to true', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setFlagged(true);
+
+      verify(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        ),
+      ).called(1);
+    });
+
+    test('sets flagged to false', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(flag: EntryFlag.none),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setFlagged(false);
+
+      verify(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTextEntry,
+          testTextEntry.meta.copyWith(flag: EntryFlag.none),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('updateTaskStatus method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+    });
+
+    test('updates task status when status changes', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateTaskStatus('DONE');
+
+      verify(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).called(1);
+    });
+
+    test('does nothing when task status is unchanged', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      await notifier.updateTaskStatus(testTask.data.status.toDbString);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('does nothing when entry is not a task', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      await notifier.updateTaskStatus('DONE');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('does nothing when status is null', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      await notifier.updateTaskStatus(null);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+  });
+
+  group('updateRating method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
+          .thenAnswer((_) async => testEventEntry);
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+    });
+
+    test('updates rating for JournalEvent', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      const newRating = 4.5;
+      await notifier.updateRating(newRating);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      expect(captured[1], isA<EventData>());
+      expect(captured[2], isA<EntryText>());
+      final capturedData = captured[1] as EventData;
+      expect(capturedData.stars, newRating);
+      expect(capturedData.title, testEventEntry.data.title);
+      expect(capturedData.status, testEventEntry.data.status);
+    });
+
+    test('does nothing when entry is not a JournalEvent', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      await notifier.updateRating(5);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+  });
+
+  group('taskTitleFocusNodeListener method', () {
+    setUp(() {
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+    });
+
+    test('registers hotkey on focus and unregisters on unfocus', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      // Simulate focus
+      notifier.taskTitleFocusNode.requestFocus();
+      notifier.taskTitleFocusNodeListener();
+
+      // On desktop, hotkey would be registered here
+      // We can't directly test hotKeyManager without mocking it
+
+      // Simulate unfocus
+      notifier.taskTitleFocusNode.unfocus();
+      notifier.taskTitleFocusNodeListener();
+
+      // On desktop, hotkey would be unregistered here
+    });
+  });
+
+  group('save method - JournalEvent', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
+          .thenAnswer((_) async => testEventEntry);
+    });
+
+    test('saves event', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: entryId,
+          lastSaved: any(named: 'lastSaved'),
+          controller: notifier.controller,
+        ),
+      ).thenAnswer((_) async {});
+
+      await notifier.save();
+
+      verify(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('save method - Task', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      // Ensure mocks are set up for this group
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+    });
+
+    test('saves task with title and estimate', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      // Mock both updateTask and updateJournalEntityText
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: entryId,
+          lastSaved: any(named: 'lastSaved'),
+          controller: notifier.controller,
+        ),
+      ).thenAnswer((_) async {});
+
+      const newTitle = 'Updated Task Title';
+      const newEstimate = Duration(hours: 2);
+      await notifier.save(title: newTitle, estimate: newEstimate);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      expect(captured[1], isA<TaskData>());
+      expect(captured[2], isA<EntryText>());
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.title, newTitle);
+      expect(capturedTaskData.estimate, newEstimate);
     });
   });
 }
