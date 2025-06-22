@@ -141,17 +141,19 @@ class UnifiedAiPromptsList extends ConsumerWidget {
           final index = entry.key;
           final prompt = entry.value;
 
-          return ListTile(
-            leading: Icon(_getIconForPrompt(prompt)),
-            title: Text(prompt.name),
-            subtitle: prompt.description != null
-                ? Text(
-                    prompt.description!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                : null,
+          return InkWell(
             onTap: () => onPromptSelected(prompt, index),
+            child: ListTile(
+              leading: Icon(_getIconForPrompt(prompt)),
+              title: Text(prompt.name),
+              subtitle: prompt.description != null
+                  ? Text(
+                      prompt.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+            ),
           );
         }),
         verticalModalSpacer,

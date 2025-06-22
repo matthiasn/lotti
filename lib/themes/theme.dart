@@ -233,9 +233,6 @@ TextStyle searchLabelStyle() => TextStyle(
 
 ThemeData withOverrides(ThemeData themeData) {
   return themeData.copyWith(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      hoverColor: Colors.transparent,
       cardTheme: themeData.cardTheme.copyWith(
         clipBehavior: Clip.hardEdge,
         color: themeData.colorScheme.surfaceContainer,

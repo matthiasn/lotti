@@ -259,7 +259,15 @@ void main() {
       final listTile = tester.widget<ListTile>(find.byType(ListTile));
       expect(listTile.leading, isA<Icon>());
       expect(listTile.title, isA<Text>());
-      expect(listTile.onTap, isNotNull);
+      // CreateEventListTile uses InkWell wrapper, so onTap is on the InkWell, not ListTile
+      // Find the InkWell that is an ancestor of the ListTile
+      final inkWellFinder = find.ancestor(
+        of: find.byType(ListTile),
+        matching: find.byType(InkWell),
+      );
+      expect(inkWellFinder, findsOneWidget);
+      final inkWell = tester.widget<InkWell>(inkWellFinder);
+      expect(inkWell.onTap, isNotNull);
     });
   });
 
