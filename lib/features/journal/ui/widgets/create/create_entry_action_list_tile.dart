@@ -148,9 +148,7 @@ class CreateEventListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.event_outlined),
-      title: Text(context.messages.addActionAddEvent),
+    return InkWell(
       onTap: () async {
         Navigator.of(context).pop();
 
@@ -163,6 +161,10 @@ class CreateEventListTile extends StatelessWidget {
           beamToNamed('/journal/${event.meta.id}');
         }
       },
+      child: ListTile(
+        leading: const Icon(Icons.event_outlined),
+        title: Text(context.messages.addActionAddEvent),
+      ),
     );
   }
 }
