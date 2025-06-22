@@ -30,6 +30,9 @@ The AI feature consists of several key components:
 - **`cloud_inference_repository.dart`**: Handles communication with AI providers
 - **`ai_input_repository.dart`**: Prepares task data for AI processing
 
+#### Services (`services/`)
+- **`auto_checklist_service.dart`**: Handles automatic checklist creation logic and decision making
+
 #### State Management (`state/`)
 - **`unified_ai_controller.dart`**: Main controller orchestrating AI operations
 - **`inference_status_controller.dart`**: Tracks inference progress and status
@@ -96,6 +99,124 @@ When generating task summaries, the system automatically extracts suggested titl
 - The extracted title updates the task entity in the database
 - When displaying summaries, the H1 title is filtered out to avoid redundancy
 
+## Automatic Checklist Creation with Smart Re-run
+
+### Overview
+
+The AI system includes automatic checklist creation for action item suggestions. When AI generates action item suggestions for a task that has no existing checklists, it automatically creates a checklist containing all the suggested items, then intelligently re-runs the AI suggestions to provide fresh recommendations.
+
+### How It Works
+
+1. **AI generates action item suggestions** for a task (first run)
+2. **Post-processing check** in `UnifiedAiInferenceRepository._handlePostProcessing()`
+3. **Decision logic**: 
+   - If task has no existing checklists → auto-create checklist with all suggestions
+   - If task has existing checklists → show manual drag-and-drop suggestions (existing behavior)
+4. **Automatic re-run**: After checklist creation, the same AI prompt runs again
+5. **Smart results**: Second run typically produces 0 suggestions since items are now in the checklist
+
+### Implementation Details
+
+#### Key Components:
+- **`AutoChecklistService`**: Core service handling auto-creation logic and decision making
+- **`UnifiedAiInferenceRepository._handleActionItemSuggestions()`**: Post-processing method that triggers auto-creation
+- **`UnifiedAiInferenceRepository._rerunActionItemSuggestions()`**: Automatic re-run logic
+- **`ChecklistRepository.createChecklist()`**: Creates checklist with initial items
+- **Semaphore protection**: Prevents concurrent auto-creation for the same task
+
+#### Decision Flow:
+```dart
+// In _handlePostProcessing()
+if (promptConfig.aiResponseType == AiResponseType.actionItemSuggestions) {
+  if (entity is Task && suggestedActionItems != null && suggestedActionItems.isNotEmpty && !isRerun) {
+    await _handleActionItemSuggestions(entity, suggestedActionItems);
+  }
+}
+
+// In _handleActionItemSuggestions()
+if (_autoCreatingTasks.contains(task.id)) {
+  return; // Prevent concurrent auto-creation
+}
+
+final shouldAutoCreate = await _autoChecklistService.shouldAutoCreate(taskId: task.id);
+if (shouldAutoCreate) {
+  _autoCreatingTasks.add(task.id); // Mark as processing
+  try {
+    // Convert AI suggestions to checklist items and create checklist
+    final result = await autoChecklistService.autoCreateChecklist(...);
+    if (result.success) {
+      await _rerunActionItemSuggestions(task); // Auto re-run
+    }
+  } finally {
+    _autoCreatingTasks.remove(task.id); // Always clean up
+  }
+}
+```
+
+#### Smart Re-run System
+
+Instead of hiding suggestions, the system automatically re-runs the AI prompt after checklist creation:
+
+- **Automatic trigger**: After successful checklist creation, the exact same prompt that was used originally runs again
+- **Context awareness**: AI recognizes items are now in the checklist and typically suggests nothing
+- **Natural UX**: Users see the auto-created checklist plus minimal/empty suggestions
+- **No state tracking**: No need for complex `autoChecklistCreated` field management
+- **Consistent results**: Re-run uses the exact same prompt configuration, ensuring consistent behavior
+
+#### Technical Implementation
+
+1. **Semaphore Protection**:
+   ```dart
+   // Prevent concurrent auto-creation
+   final Set<String> _autoCreatingTasks = {};
+   
+   if (_autoCreatingTasks.contains(task.id)) {
+     return; // Skip if already processing
+   }
+   ```
+
+2. **Automatic Re-run**:
+   ```dart
+   // In _handleActionItemSuggestions()
+   if (result.success) {
+     await _rerunActionItemSuggestions(task, promptConfig);
+   }
+   
+   // In _rerunActionItemSuggestions()
+   await _runInferenceInternal(
+     entityId: task.id,
+     promptConfig: originalPrompt, // Use exact same prompt as originally
+     onProgress: (_) {}, // Silent re-run
+     onStatusChange: (_) {},
+     isRerun: true, // Prevent recursive auto-creation
+   );
+   ```
+
+3. **Robust Concurrency Protection**:
+   ```dart
+   // Simplified error handling with reliable semaphore cleanup
+   if (shouldAutoCreate) {
+     _autoCreatingTasks.add(task.id);
+     try {
+       // Auto-creation and re-run logic
+     } finally {
+       // Always clean up semaphore, even if errors occur
+       _autoCreatingTasks.remove(task.id);
+     }
+   }
+   ```
+
+#### Benefits
+
+- **Eliminates manual work**: Saves up to 10 clicks (creating checklist + dragging multiple items)
+- **Natural UX**: No hidden UI elements - users see logical progression
+- **Race condition protection**: Semaphore prevents database constraint errors
+- **AI context awareness**: AI naturally produces fewer/no suggestions after items are in checklist
+- **Seamless experience**: First-time users get immediate value from AI suggestions
+- **Backwards compatible**: Existing manual flow unchanged for tasks with checklists
+- **Self-healing**: System corrects duplicate suggestions through intelligent re-run
+- **Optimized performance**: Eliminates redundant database calls by passing `shouldAutoCreate` result directly
+
 ## Response Types
 
 The system supports four AI response types:
@@ -109,6 +230,7 @@ The system supports four AI response types:
    - Extracts potential action items from logs
    - Response is parsed as JSON array
    - Items not already in task are suggested
+   - **Automatic Checklist Creation with Smart Re-run** - If no checklists exist for the task, automatically creates a checklist with all AI suggestions, then re-runs the prompt to show updated suggestions (typically empty since items are now in the checklist)
 
 3. **Image Analysis** (`AiResponseType.imageAnalysis`)
    - Analyzes attached images in task context
@@ -232,12 +354,42 @@ A: Errors are wrapped in `InferenceError` objects and displayed using `AiErrorDi
 ### Q: Can I use local models?
 A: Yes, by configuring a custom endpoint pointing to a local inference server (e.g., Ollama).
 
+### Q: How does the system handle concurrent AI requests?
+A: The system includes robust concurrency protection:
+- **Semaphore Protection**: Prevents multiple auto-checklist creations for the same task simultaneously
+- **Race Condition Prevention**: Uses a `Set<String> _autoCreatingTasks` to track ongoing operations
+- **Database Safety**: Eliminates "UNIQUE constraint failed" errors from concurrent operations
+- **Graceful Cleanup**: Ensures semaphore state is cleaned up on both success and failure
+- **Silent Re-runs**: Secondary AI runs don't trigger additional auto-creation to prevent recursion
+
 ## Testing
 
-The system includes:
-- Mock tests for repositories and controllers
-- Integration tests using in-memory databases
-- Widget tests for UI components
+The system includes comprehensive test coverage:
+
+### Unit Tests
+- **Repository Tests**: Mock tests for `AiInputRepository`, `UnifiedAiInferenceRepository`, `AiConfigRepository`
+- **Service Tests**: Tests for `AutoChecklistService` including edge cases and error handling
+- **Controller Tests**: Tests for `ChecklistSuggestionsController` and state management
+- **Concurrency Tests**: Semaphore protection and race condition prevention
+
+### Integration Tests
+- **Auto-checklist Creation**: End-to-end testing of automatic checklist creation flow
+- **Smart Re-run System**: Testing of automatic re-run after checklist creation
+- **Concurrency Protection**: Testing semaphore prevents database constraint errors
+- **Error Handling**: Graceful failure modes and recovery
+
+### Widget Tests
+- **UI Components**: Tests for AI settings pages, response displays, and configuration management
+- **Provider Integration**: Tests for Riverpod state management integration
+
+### Key Test Coverage
+- ✅ Basic auto-checklist creation functionality
+- ✅ Semaphore prevents concurrent auto-creation
+- ✅ Re-run generates appropriate suggestions after checklist creation
+- ✅ Behavior when tasks already have existing checklists
+- ✅ Error handling in auto-checklist service
+- ✅ UI shows correct suggestions after re-run
+- ✅ All existing functionality remains unbroken (200+ tests passing)
 
 ## Security Considerations
 

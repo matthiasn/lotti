@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -13,10 +14,13 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -28,6 +32,12 @@ class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockAutoChecklistService extends Mock implements AutoChecklistService {}
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -65,6 +75,9 @@ void main() {
   late MockAiInputRepository mockAiInputRepo;
   late MockCloudInferenceRepository mockCloudInferenceRepo;
   late MockJournalRepository mockJournalRepo;
+  late MockChecklistRepository mockChecklistRepo;
+  late MockAutoChecklistService mockAutoChecklistService;
+  late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
   late MockDirectory mockDirectory;
 
@@ -88,6 +101,9 @@ void main() {
     mockAiInputRepo = MockAiInputRepository();
     mockCloudInferenceRepo = MockCloudInferenceRepository();
     mockJournalRepo = MockJournalRepository();
+    mockChecklistRepo = MockChecklistRepository();
+    mockAutoChecklistService = MockAutoChecklistService();
+    mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
     mockDirectory = MockDirectory();
 
@@ -98,9 +114,13 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(mockDirectory);
+      ..registerSingleton<Directory>(mockDirectory)
+      ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Mock directory path
     when(() => mockDirectory.path).thenReturn('/mock/documents');
@@ -114,6 +134,8 @@ void main() {
         .thenReturn(mockCloudInferenceRepo);
     when(() => mockRef.read(journalRepositoryProvider))
         .thenReturn(mockJournalRepo);
+    when(() => mockRef.read(checklistRepositoryProvider))
+        .thenReturn(mockChecklistRepo);
 
     repository = UnifiedAiInferenceRepository(mockRef);
   });
@@ -124,6 +146,9 @@ void main() {
     }
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
     }
   });
 
@@ -607,7 +632,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         await repository.runInference(
           entityId: 'test-id',
@@ -740,7 +765,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -865,7 +890,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -983,7 +1008,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         await repository.runInference(
           entityId: 'test-id',
@@ -1094,7 +1119,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         await repository.runInference(
           entityId: 'test-id',
@@ -1205,7 +1230,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         await repository.runInference(
           entityId: 'test-id',
@@ -1229,6 +1254,230 @@ void main() {
 
         final data = captured.first as AiResponseData;
         expect(data.suggestedActionItems, isEmpty);
+      });
+
+      test(
+          'auto-creates checklist first time, then shows manual suggestions second time',
+          () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.started(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            checklistIds: [], // Empty checklist IDs to trigger auto-creation
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Action Item Suggestions',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.actionItemSuggestions,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final createdAiResponseEntry = AiResponseEntry(
+          data: const AiResponseData(
+            model: 'gpt-4',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: '',
+            response: 'response',
+          ),
+          meta: Metadata(
+            id: 'created-ai-response-id',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            starred: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        // Mock the JournalDb for AutoChecklistService.shouldAutoCreate
+        when(() => mockJournalDb.journalEntityById('test-id'))
+            .thenAnswer((_) async => taskEntity);
+
+        // Mock for fallback path when aiResponseEntry is null
+        when(() => mockJournalRepo.getLinkedEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => [createdAiResponseEntry]);
+
+        // Mock different responses for first run vs re-run
+        var callCount = 0;
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) {
+            // First call: return suggestions
+            return Stream.fromIterable([
+              CreateChatCompletionStreamResponse(
+                id: 'response-1',
+                choices: [
+                  const ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content:
+                          '[{"title": "Review code", "completed": false}, {"title": "Write tests", "completed": true}]',
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+            ]);
+          } else {
+            // Second call (re-run): return empty suggestions
+            return Stream.fromIterable([
+              CreateChatCompletionStreamResponse(
+                id: 'response-2',
+                choices: [
+                  const ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: '[]', // Empty suggestions on re-run
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+            ]);
+          }
+        });
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => createdAiResponseEntry);
+
+        when(
+          () => mockAiInputRepo.updateAiResponseEntry(
+            entryId: any(named: 'entryId'),
+            updatedData: any(named: 'updatedData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        // Mock auto-checklist service
+        when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+            .thenAnswer((_) async => true);
+        when(() => mockAutoChecklistService.autoCreateChecklist(
+                  taskId: 'test-id',
+                  suggestions: any(named: 'suggestions'),
+                  shouldAutoCreate: any(named: 'shouldAutoCreate'),
+                ))
+            .thenAnswer((_) async =>
+                (success: true, checklistId: 'checklist-123', error: null));
+
+        // Mock for re-run: getConfigsByType should return the prompt for re-run lookup
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [promptConfig]);
+
+        // Mock checklist repository for auto-creation
+        // Task has no existing checklists, so shouldAutoCreate will return true
+        when(() => mockChecklistRepo.createChecklist(
+              taskId: 'test-id',
+              items: any(named: 'items'),
+              title: any(named: 'title'),
+            )).thenAnswer((_) async => JournalEntity.checklist(
+              meta: _createMetadata(),
+              data: const ChecklistData(
+                title: 'AI Suggestions',
+                linkedChecklistItems: [],
+                linkedTasks: ['test-id'],
+              ),
+            ));
+
+        // Inject the mock AutoChecklistService for this test
+        repository.autoChecklistServiceForTesting = mockAutoChecklistService;
+
+        // Act
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Assert
+        // Verify that autoChecklistService.autoCreateChecklist is called once
+        verify(() => mockAutoChecklistService.autoCreateChecklist(
+              taskId: 'test-id',
+              suggestions: any(named: 'suggestions'),
+              shouldAutoCreate: any(named: 'shouldAutoCreate'),
+            )).called(1);
+
+        // Verify that cloud inference is called twice (initial run + re-run)
+        verify(() => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+            )).called(2);
+
+        // Verify that createAiResponseEntry is called twice (initial + re-run)
+        final capturedData = verify(() => mockAiInputRepo.createAiResponseEntry(
+              data: captureAny(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).captured;
+
+        expect(capturedData.length, equals(2));
+
+        // First call should have suggestions
+        final firstCallData = capturedData[0] as AiResponseData;
+        expect(firstCallData.suggestedActionItems, isNotNull);
+        expect(firstCallData.suggestedActionItems!.length, equals(2));
+        expect(firstCallData.suggestedActionItems![0].title,
+            equals('Review code'));
+        expect(firstCallData.suggestedActionItems![1].title,
+            equals('Write tests'));
+
+        // Second call (re-run) should have empty suggestions
+        final secondCallData = capturedData[1] as AiResponseData;
+        expect(secondCallData.suggestedActionItems, isNotNull);
+        expect(secondCallData.suggestedActionItems!.length, equals(0));
       });
 
       test('handles provider not found error', () async {
@@ -1440,7 +1689,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         await repository.runInference(
           entityId: 'test-id',
@@ -1611,7 +1860,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -1760,7 +2009,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -1866,7 +2115,7 @@ Achieved results:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -1965,7 +2214,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -2080,7 +2329,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -2226,7 +2475,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -2362,7 +2611,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -2480,7 +2729,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -2589,7 +2838,7 @@ Remaining steps:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         // Run inference
         await repository.runInference(
@@ -2741,7 +2990,7 @@ If the image IS relevant:
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -2891,7 +3140,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -3211,6 +3460,237 @@ Take into account the following task context:
           tempDir.deleteSync(recursive: true);
         }
       });
+    });
+  });
+
+  group('_rerunActionItemSuggestions', () {
+    test('re-runs with same prompt after auto-checklist creation', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.started(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      // This test verifies that the re-run uses the same prompt
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Action Item Suggestions',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.actionItemSuggestions,
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                content: '[{"title": "Review code", "completed": false}]',
+              ),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity.copyWith(
+        data: taskEntity.data.copyWith(checklistIds: []),
+      ));
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+      when(() => mockJournalDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => taskEntity.copyWith(
+        data: taskEntity.data.copyWith(checklistIds: []),
+      ));
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).thenAnswer((_) => mockStream);
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      // Mock auto-checklist service
+      when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .thenAnswer((_) async => true);
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+        taskId: 'test-id',
+        suggestions: any(named: 'suggestions'),
+        shouldAutoCreate: any(named: 'shouldAutoCreate'),
+      )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+
+      repository.autoChecklistServiceForTesting = mockAutoChecklistService;
+
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that the cloud inference was called twice (initial run + re-run)
+      // This confirms the re-run happened with the same prompt
+      verify(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).called(2);
+    });
+
+    test('handles exception during re-run gracefully', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.started(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: [], // Empty to trigger auto-creation
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Action Item Suggestions',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.actionItemSuggestions,
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                content: '[{"title": "Review code", "completed": false}]',
+              ),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+      when(() => mockJournalDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => taskEntity);
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).thenAnswer((_) => mockStream);
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      // Mock auto-checklist service
+      when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .thenAnswer((_) async => true);
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+        taskId: 'test-id',
+        suggestions: any(named: 'suggestions'),
+        shouldAutoCreate: any(named: 'shouldAutoCreate'),
+      )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+
+      // Mock successful prompt lookup but exception during re-run
+      final actionItemPrompt = _createPrompt(
+        id: 'action-prompt',
+        name: 'Action Item Suggestions',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.actionItemSuggestions,
+      );
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => [actionItemPrompt]);
+
+      repository.autoChecklistServiceForTesting = mockAutoChecklistService;
+
+      // Should not throw exception even if re-run fails
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that auto-checklist creation was attempted
+      verify(() => mockAutoChecklistService.autoCreateChecklist(
+        taskId: 'test-id',
+        suggestions: any(named: 'suggestions'),
+        shouldAutoCreate: any(named: 'shouldAutoCreate'),
+      )).called(1);
     });
   });
 }
