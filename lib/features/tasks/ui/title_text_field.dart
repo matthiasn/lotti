@@ -62,7 +62,6 @@ class _TitleTextFieldState extends State<TitleTextField> {
         _showClearButton = widget.resetToInitialValue;
         _dirty = false;
       });
-      widget.focusNode?.requestFocus();
     }
 
     void onCancel() {

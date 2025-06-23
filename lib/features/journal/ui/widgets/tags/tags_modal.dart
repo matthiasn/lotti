@@ -119,7 +119,6 @@ class _TagsModalState extends ConsumerState<TagsModal> {
                       controller: _controller,
                       onSubmitted: onSubmitted,
                       onChanged: onChanged,
-                      autofocus: true,
                       style: TextStyle(
                         color: context.textTheme.titleLarge?.color,
                       ),

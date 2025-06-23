@@ -91,7 +91,6 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
               padding: const EdgeInsets.all(48),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
-                focusNode.requestFocus();
               },
               icon: Stack(
                 children: [

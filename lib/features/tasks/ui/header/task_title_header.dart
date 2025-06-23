@@ -53,7 +53,6 @@ class _TaskTitleHeaderState extends ConsumerState<TaskTitleHeader> {
                 _isEditing = false;
               });
             },
-            autofocus: true,
             focusNode: _titleFocusNode,
             hintText: context.messages.taskNameHint,
             onTapOutside: (_) => setState(() {
@@ -82,11 +81,6 @@ class _TaskTitleHeaderState extends ConsumerState<TaskTitleHeader> {
                   setState(() {
                     _isEditing = !_isEditing;
                   });
-
-                  Future.delayed(
-                    const Duration(milliseconds: 100),
-                    _titleFocusNode.requestFocus,
-                  );
                 },
               ),
             ],
