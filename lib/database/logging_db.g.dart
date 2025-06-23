@@ -530,6 +530,42 @@ abstract class _$LoggingDb extends GeneratedDatabase {
     }).asyncMap(logEntries.mapFromRow);
   }
 
+  Selectable<LogEntry> searchLogEntries(String searchQuery) {
+    return customSelect(
+        'SELECT * FROM log_entries WHERE(LOWER(message) LIKE ?1 OR LOWER(domain) LIKE ?1 OR(sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE ?1))ORDER BY created_at DESC',
+        variables: [
+          Variable<String>(searchQuery)
+        ],
+        readsFrom: {
+          logEntries,
+        }).asyncMap(logEntries.mapFromRow);
+  }
+
+  Selectable<LogEntry> searchLogEntriesPaginated(
+      String searchQuery, int limit, int offset) {
+    return customSelect(
+        'SELECT * FROM log_entries WHERE(LOWER(message) LIKE ?1 OR LOWER(domain) LIKE ?1 OR(sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE ?1))ORDER BY created_at DESC LIMIT ?2 OFFSET ?3',
+        variables: [
+          Variable<String>(searchQuery),
+          Variable<int>(limit),
+          Variable<int>(offset)
+        ],
+        readsFrom: {
+          logEntries,
+        }).asyncMap(logEntries.mapFromRow);
+  }
+
+  Selectable<int> searchLogEntriesCount(String searchQuery) {
+    return customSelect(
+        'SELECT COUNT(*) AS _c0 FROM log_entries WHERE(LOWER(message) LIKE ?1 OR LOWER(domain) LIKE ?1 OR(sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE ?1))',
+        variables: [
+          Variable<String>(searchQuery)
+        ],
+        readsFrom: {
+          logEntries,
+        }).map((QueryRow row) => row.read<int>('_c0'));
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

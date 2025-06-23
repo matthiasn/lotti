@@ -1605,7 +1605,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 
@@ -2787,7 +2789,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 
