@@ -748,6 +748,86 @@ void main() {
     });
   });
 
+  group('Whisper Provider Tests', () {
+    test('should set baseUrl and clear API key when Whisper is selected',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(
+        controller.baseUrlController.text,
+        equals('http://localhost:8084'),
+      );
+      expect(
+        formState?.baseUrl.value,
+        equals('http://localhost:8084'),
+      );
+      expect(controller.apiKeyController.text, isEmpty);
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.whisper),
+      );
+    });
+
+    test(
+        'should set name when Whisper provider type is selected and name is empty',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(controller.nameController.text, equals('Whisper (local)'));
+      expect(formState?.name.value, equals('Whisper (local)'));
+    });
+
+    test('should allow empty API key for Whisper provider', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceProviderFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
+      controller.nameChanged('My Whisper');
+      controller.baseUrlChanged('http://localhost:8084');
+      // Don't set API key - leave it empty
+
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.apiKey.value, isEmpty);
+      expect(
+          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+      expect(formState?.isValid, isTrue); // Overall form should be valid
+    });
+  });
+
   group('Model Prepopulation Tests', () {
     test('should save config when adding a new inference provider', () async {
       // Arrange

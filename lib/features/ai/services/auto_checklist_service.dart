@@ -5,7 +5,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-
 class AutoChecklistService {
   AutoChecklistService({
     JournalDb? journalDb,
@@ -57,7 +56,8 @@ class AutoChecklistService {
       }
 
       // Use provided shouldAutoCreate value or fall back to checking
-      final shouldCreate = shouldAutoCreate ?? await this.shouldAutoCreate(taskId: taskId);
+      final shouldCreate =
+          shouldAutoCreate ?? await this.shouldAutoCreate(taskId: taskId);
       if (!shouldCreate) {
         return (
           success: false,

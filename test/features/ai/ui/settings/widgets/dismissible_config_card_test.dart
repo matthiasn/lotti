@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/dismiss_background.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/dismissible_config_card.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 void main() {
   group('DismissibleConfigCard', () {
@@ -52,6 +53,8 @@ void main() {
           }),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ListView(
               children: [
