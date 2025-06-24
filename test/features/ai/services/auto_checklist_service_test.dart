@@ -309,7 +309,8 @@ void main() {
             )).called(1);
       });
 
-      test('calls shouldAutoCreate to check if auto-creation is allowed', () async {
+      test('calls shouldAutoCreate to check if auto-creation is allowed',
+          () async {
         // Arrange
         const taskId = 'test-task-id';
         final task = testTask.copyWith(
@@ -335,7 +336,7 @@ void main() {
         // Assert
         expect(result.success, isFalse);
         expect(result.error, equals('Checklists already exist'));
-        
+
         // Verify that shouldAutoCreate was called (line 58 in the source)
         // This happens implicitly through the internal call but verifies the flow
         verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
@@ -396,28 +397,30 @@ void main() {
         expect(result.success, isTrue);
         expect(result.checklistId, equals('checklist-456'));
         expect(result.error, isNull);
-        
+
         // Verify checklist creation with custom title
         verify(() => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: suggestions,
               title: customTitle,
             )).called(1);
-        
+
         // Verify success logging (lines 81-85 in source)
         verify(() => mockLoggingService.captureEvent(
               'auto_checklist_created: taskId=$taskId, checklistId=checklist-456, itemCount=2',
               domain: 'auto_checklist_service',
               subDomain: 'autoCreateChecklist',
             )).called(1);
-        
+
         // Verify success return (line 87 in source)
         expect(result.success, isTrue);
         expect(result.checklistId, equals('checklist-456'));
         expect(result.error, isNull);
       });
 
-      test('succeeds with shouldAutoCreate parameter set to true (optimized path)', () async {
+      test(
+          'succeeds with shouldAutoCreate parameter set to true (optimized path)',
+          () async {
         // Arrange
         const taskId = 'test-task-id';
         final suggestions = [
@@ -461,10 +464,10 @@ void main() {
         expect(result.success, isTrue);
         expect(result.checklistId, equals('checklist-optimized'));
         expect(result.error, isNull);
-        
+
         // Verify that journalEntityById was NOT called (optimized path)
         verifyNever(() => mockJournalDb.journalEntityById(taskId));
-        
+
         // Verify checklist creation was called
         verify(() => mockChecklistRepository.createChecklist(
               taskId: taskId,
@@ -495,10 +498,10 @@ void main() {
         expect(result.success, isFalse);
         expect(result.checklistId, isNull);
         expect(result.error, equals('Checklists already exist'));
-        
+
         // Verify that journalEntityById was NOT called (optimized path)
         verifyNever(() => mockJournalDb.journalEntityById(taskId));
-        
+
         // Verify checklist creation was NOT called
         verifyNever(() => mockChecklistRepository.createChecklist(
               taskId: any(named: 'taskId'),

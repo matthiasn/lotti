@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/manual/widget/showcase_text_style.dart';
 import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
@@ -5,9 +6,9 @@ import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
-import 'package:lotti/widgets/settings/settings_icon.dart';
+import 'package:lotti/widgets/settings/modern_settings_cards.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -52,9 +53,9 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
       ),
       title: context.messages.settingsAdvancedTitle,
       showBackButton: true,
-      child: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ShowcaseWithWidget(
               startNav: true,
@@ -65,42 +66,57 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               ),
               child: const MatrixSettingsCard(),
             ),
+            const SizedBox(height: 8),
             ShowcaseWithWidget(
               showcaseKey: _syncoutBoxKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseSyncOutboxTooltip,
               ),
-              child: SettingsNavCard(
-                trailing: OutboxBadgeIcon(
-                  icon: SettingsIcon(MdiIcons.mailboxOutline),
-                ),
+              child: ModernSettingsCardWithIcon(
                 title: context.messages.settingsSyncOutboxTitle,
-                path: '/settings/advanced/outbox_monitor',
+                subtitle: 'Monitor sync outbox and pending messages',
+                icon: Icons.mail,
+                onTap: () =>
+                    context.beamToNamed('/settings/advanced/outbox_monitor'),
+                trailing: OutboxBadgeIcon(
+                  icon: Icon(
+                    MdiIcons.mailboxOutline,
+                    color: context.colorScheme.primary.withValues(alpha: 0.9),
+                  ),
+                ),
               ),
             ),
+            const SizedBox(height: 8),
             ShowcaseWithWidget(
               showcaseKey: _synConflictsKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseConflictsTooltip,
               ),
-              child: SettingsNavCard(
+              child: ModernSettingsCardWithIcon(
                 title: context.messages.settingsConflictsTitle,
-                path: '/settings/advanced/conflicts',
+                subtitle: 'Resolve sync conflicts and merge issues',
+                icon: Icons.warning_rounded,
+                onTap: () =>
+                    context.beamToNamed('/settings/advanced/conflicts'),
               ),
             ),
+            const SizedBox(height: 8),
             ShowcaseWithWidget(
               showcaseKey: _logsKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseLogsTooltip,
               ),
-              child: SettingsNavCard(
+              child: ModernSettingsCardWithIcon(
                 title: context.messages.settingsLogsTitle,
-                path: '/settings/advanced/logging',
+                subtitle: 'View application logs and debug information',
+                icon: Icons.article_rounded,
+                onTap: () => context.beamToNamed('/settings/advanced/logging'),
               ),
             ),
+            const SizedBox(height: 8),
             if (isMobile)
               ShowcaseWithWidget(
                 showcaseKey: _healthImportKey,
@@ -108,22 +124,29 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                   descriptionText: context
                       .messages.settingsAdvancedShowCaseHealthImportTooltip,
                 ),
-                child: SettingsNavCard(
+                child: ModernSettingsCardWithIcon(
                   title: context.messages.settingsHealthImportTitle,
-                  path: '/settings/health_import',
+                  subtitle: 'Import health data from external sources',
+                  icon: Icons.health_and_safety_rounded,
+                  onTap: () => context.beamToNamed('/settings/health_import'),
                 ),
               ),
+            if (isMobile) const SizedBox(height: 8),
             ShowcaseWithWidget(
               showcaseKey: _maintenanceKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
               ),
-              child: SettingsNavCard(
+              child: ModernSettingsCardWithIcon(
                 title: context.messages.settingsMaintenanceTitle,
-                path: '/settings/advanced/maintenance',
+                subtitle: 'Database maintenance and cleanup tools',
+                icon: Icons.build_rounded,
+                onTap: () =>
+                    context.beamToNamed('/settings/advanced/maintenance'),
               ),
             ),
+            const SizedBox(height: 8),
             ShowcaseWithWidget(
               isTooltipTop: true,
               endNav: true,
@@ -132,11 +155,14 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
               ),
-              child: SettingsNavCard(
+              child: ModernSettingsCardWithIcon(
                 title: context.messages.settingsAboutTitle,
-                path: '/settings/advanced/about',
+                subtitle: 'App information and version details',
+                icon: Icons.info_rounded,
+                onTap: () => context.beamToNamed('/settings/advanced/about'),
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

@@ -14,6 +14,30 @@ class AppTheme {
   static const chartDateHorizontalPadding = EdgeInsets.only(
     right: 4,
   );
+
+  // Settings card layout constants
+  static const double cardBorderRadius = 16;
+  static const double cardPadding = 14;
+  static const double cardPaddingCompact = 12;
+  static const double cardElevationLight = 6;
+  static const double cardElevationDark = 10;
+  static const double cardSpacing = 8; // Spacing between cards
+
+  // Icon container constants
+  static const double iconContainerSize = 40;
+  static const double iconContainerSizeCompact = 36;
+  static const double iconContainerBorderRadius = 12;
+  static const double iconSize = 20;
+  static const double iconSizeCompact = 18;
+
+  // Spacing constants
+  static const double spacingSmall = 8;
+  static const double spacingMedium = 10;
+  static const double spacingLarge = 12;
+
+  // Chevron icon size
+  static const double chevronSize = 20;
+  static const double chevronSizeCompact = 18;
 }
 
 const double inputBorderRadius = 10;
@@ -359,4 +383,55 @@ extension TextThemeExtension on TextStyle {
           FontFeature.tabularFigures(),
         ],
       );
+}
+
+/// Gradient themes for consistent card styling across the app
+class GradientThemes {
+  /// Creates a subtle top-left to bottom-right gradient for cards
+  static LinearGradient? cardGradient(BuildContext context) {
+    if (Theme.of(context).brightness == Brightness.light) {
+      return null;
+    }
+
+    return LinearGradient(
+      colors: [
+        Color.lerp(
+          context.colorScheme.surfaceContainer,
+          context.colorScheme.surfaceContainerHigh,
+          0.3,
+        )!,
+        Color.lerp(
+          context.colorScheme.surface,
+          context.colorScheme.surfaceContainerLow,
+          0.5,
+        )!,
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
+  /// Creates a subtle gradient for icon containers
+  static LinearGradient iconContainerGradient(BuildContext context) {
+    return LinearGradient(
+      colors: [
+        context.colorScheme.primaryContainer.withValues(alpha: 0.3),
+        context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
+  /// Creates a subtle gradient for provider name containers
+  static LinearGradient providerNameGradient(BuildContext context) {
+    return LinearGradient(
+      colors: [
+        context.colorScheme.primaryContainer.withValues(alpha: 0.25),
+        context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
 }
