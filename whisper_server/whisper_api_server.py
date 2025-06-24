@@ -71,7 +71,7 @@ app.add_middleware(
 
 # Supported local models mapping to OpenAI model names (optimized for speed)
 SUPPORTED_MODELS = {
-    'whisper-1': 'openai/whisper-tiny',  # Use tiny for speed
+    'whisper-1': 'openai/whisper-large-v3',  # Use large for similar accuracy as hosted version
     'whisper-tiny': 'openai/whisper-tiny',
     'whisper-small': 'openai/whisper-small',
     'whisper-medium': 'openai/whisper-medium',
