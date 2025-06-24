@@ -678,7 +678,8 @@ class UnifiedAiInferenceRepository {
 
   /// Re-run the same action item suggestions prompt after auto-checklist creation
   /// This generates new suggestions that account for the existing checklist
-  Future<void> _rerunActionItemSuggestions(Task task, AiConfigPrompt originalPrompt) async {
+  Future<void> _rerunActionItemSuggestions(
+      Task task, AiConfigPrompt originalPrompt) async {
     try {
       developer.log(
         'Re-running action item suggestions for task ${task.id} with original prompt ${originalPrompt.id}',
