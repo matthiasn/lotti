@@ -9,7 +9,5 @@ class DashboardsPageState with _$DashboardsPageState {
     required List<DashboardDefinition> allDashboards,
     required List<DashboardDefinition> filteredSortedDashboards,
     required Set<String> selectedCategoryIds,
-    required bool showSearch,
-    required String searchString,
   }) = _DashboardsPageState;
 }

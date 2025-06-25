@@ -5,7 +5,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 import '../../../test_helper.dart';
 
@@ -101,14 +100,6 @@ void main() {
               utcOffset: utcOffset,
             ),
         Colors.lightGreenAccent
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.started(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        Colors.blue
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.inProgress(
@@ -242,43 +233,26 @@ void main() {
     expect(textWidget.style?.color, isNotNull);
   });
 
-  testWidgets('uses gray color when taskColor returns null', (tester) async {
-    // Create a mock task with a status that might return null from taskColor
-    // We'll use a type that doesn't match any of the patterns in taskColor
-    final status = TaskStatus.started(
+  testWidgets('uses correct color for in progress status', (tester) async {
+    // Test that the in progress status uses the correct blue color
+    final status = TaskStatus.inProgress(
       id: 'test-status-id',
       createdAt: now,
       utcOffset: now.timeZoneOffset.inMinutes,
     );
+    final mockTask = createMockTask(status);
 
-    // Override the build method to force a null color scenario
     await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: Chip(
-                label: Text(
-                  status.localizedLabel(context),
-                  style: TextStyle(
-                    fontSize: fontSizeSmall,
-                    color: Colors.grey.isLight ? Colors.black : Colors.white,
-                  ),
-                ),
-                backgroundColor: Colors.grey, // Simulate null from taskColor
-                visualDensity: VisualDensity.compact,
-              ),
-            );
-          },
-        ),
+      WidgetTestBench(
+        child: TaskStatusWidget(mockTask),
       ),
     );
 
     // Find the Chip widget
     final chipWidget = tester.widget<Chip>(find.byType(Chip));
 
-    // Verify the fallback gray color is used
-    expect(chipWidget.backgroundColor, Colors.grey);
+    // Verify the blue color is used for in progress status
+    expect(chipWidget.backgroundColor, Colors.blue);
   });
 
   testWidgets('renders with compact visual density', (tester) async {

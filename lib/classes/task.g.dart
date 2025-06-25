@@ -28,28 +28,6 @@ Map<String, dynamic> _$$TaskOpenImplToJson(_$TaskOpenImpl instance) =>
       'runtimeType': instance.$type,
     };
 
-_$TaskStartedImpl _$$TaskStartedImplFromJson(Map<String, dynamic> json) =>
-    _$TaskStartedImpl(
-      id: json['id'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: (json['utcOffset'] as num).toInt(),
-      timezone: json['timezone'] as String?,
-      geolocation: json['geolocation'] == null
-          ? null
-          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
-      $type: json['runtimeType'] as String?,
-    );
-
-Map<String, dynamic> _$$TaskStartedImplToJson(_$TaskStartedImpl instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'utcOffset': instance.utcOffset,
-      'timezone': instance.timezone,
-      'geolocation': instance.geolocation,
-      'runtimeType': instance.$type,
-    };
-
 _$TaskInProgressImpl _$$TaskInProgressImplFromJson(Map<String, dynamic> json) =>
     _$TaskInProgressImpl(
       id: json['id'] as String,

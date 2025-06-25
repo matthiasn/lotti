@@ -21,8 +21,6 @@ mixin _$DashboardsPageState {
   List<DashboardDefinition> get filteredSortedDashboards =>
       throw _privateConstructorUsedError;
   Set<String> get selectedCategoryIds => throw _privateConstructorUsedError;
-  bool get showSearch => throw _privateConstructorUsedError;
-  String get searchString => throw _privateConstructorUsedError;
 
   /// Create a copy of DashboardsPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -40,9 +38,7 @@ abstract class $DashboardsPageStateCopyWith<$Res> {
   $Res call(
       {List<DashboardDefinition> allDashboards,
       List<DashboardDefinition> filteredSortedDashboards,
-      Set<String> selectedCategoryIds,
-      bool showSearch,
-      String searchString});
+      Set<String> selectedCategoryIds});
 }
 
 /// @nodoc
@@ -63,8 +59,6 @@ class _$DashboardsPageStateCopyWithImpl<$Res, $Val extends DashboardsPageState>
     Object? allDashboards = null,
     Object? filteredSortedDashboards = null,
     Object? selectedCategoryIds = null,
-    Object? showSearch = null,
-    Object? searchString = null,
   }) {
     return _then(_value.copyWith(
       allDashboards: null == allDashboards
@@ -79,14 +73,6 @@ class _$DashboardsPageStateCopyWithImpl<$Res, $Val extends DashboardsPageState>
           ? _value.selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
-      showSearch: null == showSearch
-          ? _value.showSearch
-          : showSearch // ignore: cast_nullable_to_non_nullable
-              as bool,
-      searchString: null == searchString
-          ? _value.searchString
-          : searchString // ignore: cast_nullable_to_non_nullable
-              as String,
     ) as $Val);
   }
 }
@@ -102,9 +88,7 @@ abstract class _$$DashboardsPageStateImplCopyWith<$Res>
   $Res call(
       {List<DashboardDefinition> allDashboards,
       List<DashboardDefinition> filteredSortedDashboards,
-      Set<String> selectedCategoryIds,
-      bool showSearch,
-      String searchString});
+      Set<String> selectedCategoryIds});
 }
 
 /// @nodoc
@@ -123,8 +107,6 @@ class __$$DashboardsPageStateImplCopyWithImpl<$Res>
     Object? allDashboards = null,
     Object? filteredSortedDashboards = null,
     Object? selectedCategoryIds = null,
-    Object? showSearch = null,
-    Object? searchString = null,
   }) {
     return _then(_$DashboardsPageStateImpl(
       allDashboards: null == allDashboards
@@ -139,14 +121,6 @@ class __$$DashboardsPageStateImplCopyWithImpl<$Res>
           ? _value._selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
-      showSearch: null == showSearch
-          ? _value.showSearch
-          : showSearch // ignore: cast_nullable_to_non_nullable
-              as bool,
-      searchString: null == searchString
-          ? _value.searchString
-          : searchString // ignore: cast_nullable_to_non_nullable
-              as String,
     ));
   }
 }
@@ -157,9 +131,7 @@ class _$DashboardsPageStateImpl implements _DashboardsPageState {
   _$DashboardsPageStateImpl(
       {required final List<DashboardDefinition> allDashboards,
       required final List<DashboardDefinition> filteredSortedDashboards,
-      required final Set<String> selectedCategoryIds,
-      required this.showSearch,
-      required this.searchString})
+      required final Set<String> selectedCategoryIds})
       : _allDashboards = allDashboards,
         _filteredSortedDashboards = filteredSortedDashboards,
         _selectedCategoryIds = selectedCategoryIds;
@@ -191,13 +163,8 @@ class _$DashboardsPageStateImpl implements _DashboardsPageState {
   }
 
   @override
-  final bool showSearch;
-  @override
-  final String searchString;
-
-  @override
   String toString() {
-    return 'DashboardsPageState(allDashboards: $allDashboards, filteredSortedDashboards: $filteredSortedDashboards, selectedCategoryIds: $selectedCategoryIds, showSearch: $showSearch, searchString: $searchString)';
+    return 'DashboardsPageState(allDashboards: $allDashboards, filteredSortedDashboards: $filteredSortedDashboards, selectedCategoryIds: $selectedCategoryIds)';
   }
 
   @override
@@ -210,11 +177,7 @@ class _$DashboardsPageStateImpl implements _DashboardsPageState {
             const DeepCollectionEquality().equals(
                 other._filteredSortedDashboards, _filteredSortedDashboards) &&
             const DeepCollectionEquality()
-                .equals(other._selectedCategoryIds, _selectedCategoryIds) &&
-            (identical(other.showSearch, showSearch) ||
-                other.showSearch == showSearch) &&
-            (identical(other.searchString, searchString) ||
-                other.searchString == searchString));
+                .equals(other._selectedCategoryIds, _selectedCategoryIds));
   }
 
   @override
@@ -222,9 +185,7 @@ class _$DashboardsPageStateImpl implements _DashboardsPageState {
       runtimeType,
       const DeepCollectionEquality().hash(_allDashboards),
       const DeepCollectionEquality().hash(_filteredSortedDashboards),
-      const DeepCollectionEquality().hash(_selectedCategoryIds),
-      showSearch,
-      searchString);
+      const DeepCollectionEquality().hash(_selectedCategoryIds));
 
   /// Create a copy of DashboardsPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -238,11 +199,10 @@ class _$DashboardsPageStateImpl implements _DashboardsPageState {
 
 abstract class _DashboardsPageState implements DashboardsPageState {
   factory _DashboardsPageState(
-      {required final List<DashboardDefinition> allDashboards,
-      required final List<DashboardDefinition> filteredSortedDashboards,
-      required final Set<String> selectedCategoryIds,
-      required final bool showSearch,
-      required final String searchString}) = _$DashboardsPageStateImpl;
+          {required final List<DashboardDefinition> allDashboards,
+          required final List<DashboardDefinition> filteredSortedDashboards,
+          required final Set<String> selectedCategoryIds}) =
+      _$DashboardsPageStateImpl;
 
   @override
   List<DashboardDefinition> get allDashboards;
@@ -250,10 +210,6 @@ abstract class _DashboardsPageState implements DashboardsPageState {
   List<DashboardDefinition> get filteredSortedDashboards;
   @override
   Set<String> get selectedCategoryIds;
-  @override
-  bool get showSearch;
-  @override
-  String get searchString;
 
   /// Create a copy of DashboardsPageState
   /// with the given fields replaced by the non-null parameter values.

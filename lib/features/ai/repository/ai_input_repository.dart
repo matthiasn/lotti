@@ -137,7 +137,6 @@ class AiInputRepository {
       status: task.data.status.map(
         open: (_) => 'OPEN',
         groomed: (_) => 'GROOMED',
-        started: (_) => 'STARTED',
         inProgress: (_) => 'IN PROGRESS',
         blocked: (_) => 'BLOCKED',
         onHold: (_) => 'ON HOLD',

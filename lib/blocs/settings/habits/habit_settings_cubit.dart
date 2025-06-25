@@ -208,18 +208,6 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     );
   }
 
-  void replaceAutoCompleteRuleAt(
-    List<int> replaceAtPath,
-    AutoCompleteRule? replaceWith,
-  ) {
-    _autoCompleteRule = replaceAt(
-      _autoCompleteRule,
-      replaceAtPath: replaceAtPath,
-      replaceWith: replaceWith,
-    );
-    emitState();
-  }
-
   void removeAutoCompleteRuleAt(List<int> replaceAtPath) {
     _autoCompleteRule = replaceAt(
       _autoCompleteRule,

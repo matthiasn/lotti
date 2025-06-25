@@ -17,7 +17,6 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/sliver_show_case_title_bar.dart';
@@ -60,7 +59,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   final GlobalKey<State<StatefulWidget>> _dashboardDeleteDashboardKey =
       GlobalKey();
 
-  final TagsService tagsService = getIt<TagsService>();
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
@@ -143,30 +141,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         });
       }
     }
-  }
-
-  void onConfirmAddStoryTimeType(List<DashboardStoryTimeItem?> selection) {
-    for (final selected in selection) {
-      if (selected != null) {
-        setState(() {
-          dashboardItems.add(selected);
-          dirty = true;
-        });
-      }
-    }
-  }
-
-  void addWildcardStoryItem(String storySubstring) {
-    setState(() {
-      dashboardItems.add(
-        WildcardStoryTimeItem(
-          storySubstring: storySubstring,
-          color: '#82E6CE',
-        ),
-      );
-
-      dirty = true;
-    });
   }
 
   void updateItem(DashboardItem item, int index) {

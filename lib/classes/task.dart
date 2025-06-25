@@ -17,14 +17,6 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskOpen;
 
-  const factory TaskStatus.started({
-    required String id,
-    required DateTime createdAt,
-    required int utcOffset,
-    String? timezone,
-    Geolocation? geolocation,
-  }) = _TaskStarted;
-
   const factory TaskStatus.inProgress({
     required String id,
     required DateTime createdAt,
@@ -165,7 +157,6 @@ extension TaskStatusExtension on TaskStatus {
   String get toDbString => map(
         open: (_) => 'OPEN',
         groomed: (_) => 'GROOMED',
-        started: (_) => 'STARTED',
         inProgress: (_) => 'IN PROGRESS',
         blocked: (_) => 'BLOCKED',
         onHold: (_) => 'ON HOLD',
@@ -177,7 +168,6 @@ extension TaskStatusExtension on TaskStatus {
     return map(
       open: (_) => Colors.orange,
       groomed: (_) => Colors.lightGreenAccent,
-      started: (_) => Colors.blue,
       inProgress: (_) => Colors.blue,
       blocked: (_) => Colors.red,
       onHold: (_) => Colors.red,

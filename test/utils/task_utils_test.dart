@@ -22,7 +22,7 @@ void main() {
         Colors.lightGreenAccent,
       );
       expect(
-        TaskStatus.started(
+        TaskStatus.inProgress(
           id: 'id',
           createdAt: DateTime.now(),
           utcOffset: 120,

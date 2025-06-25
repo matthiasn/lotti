@@ -260,7 +260,7 @@ void main() {
           dateTo: DateTime.now(),
         ),
         data: TaskData(
-          status: TaskStatus.started(
+          status: TaskStatus.inProgress(
             id: 'status-1',
             createdAt: DateTime.now(),
             utcOffset: 0,
@@ -317,7 +317,7 @@ void main() {
           dateTo: DateTime.now(),
         ),
         data: TaskData(
-          status: TaskStatus.started(
+          status: TaskStatus.inProgress(
             id: 'status-1',
             createdAt: DateTime.now(),
             utcOffset: 0,
