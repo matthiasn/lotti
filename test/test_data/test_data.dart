@@ -350,42 +350,6 @@ final testWeightEntry = QuantitativeEntry(
   ),
 );
 
-final testWeightEntry2 = QuantitativeEntry(
-  meta: Metadata(
-    id: '3db0fc34-07d0-4a6e-b9cd-b1a64f56c977',
-    createdAt: DateTime(2022, 6, 7, 15),
-    dateFrom: DateTime(2022, 6, 7, 15),
-    dateTo: DateTime(2022, 6, 7, 15),
-    updatedAt: DateTime(2022, 6, 7, 15),
-    starred: false,
-  ),
-  data: QuantitativeData.discreteQuantityData(
-    dateFrom: DateTime(2022, 6, 7, 15),
-    dateTo: DateTime(2022, 6, 7, 15),
-    value: 99.2,
-    dataType: 'HealthDataType.WEIGHT',
-    unit: 'HealthDataUnit.KILOGRAMS',
-  ),
-);
-
-final testHeightEntry = QuantitativeEntry(
-  meta: Metadata(
-    id: '21621a9f-a2b9-5ad1-a530-2d73f9e4bb92',
-    createdAt: DateTime(2022, 1, 1, 15),
-    dateFrom: DateTime(2022, 1, 1, 15),
-    dateTo: DateTime(2022, 1, 1, 15),
-    updatedAt: DateTime(2022, 1, 1, 15),
-    starred: false,
-  ),
-  data: QuantitativeData.discreteQuantityData(
-    dateFrom: DateTime(2022, 1, 1, 15),
-    dateTo: DateTime(2022, 1, 1, 15),
-    value: 1.86,
-    dataType: 'HealthDataType.HEIGHT',
-    unit: 'HealthDataUnit.METERS',
-  ),
-);
-
 final testBpSystolicEntry = QuantitativeEntry(
   meta: Metadata(
     id: '4dd10110-9c38-5f65-a260-1f371cecf038',
@@ -459,24 +423,6 @@ final testMeasuredCoverageEntry = MeasurementEntry(
   entryText: const EntryText(plainText: 'test measurement comment'),
 );
 
-final testMeasuredPullUpsEntry = MeasurementEntry(
-  meta: Metadata(
-    id: '2f952c8f-5a27-4125-a745-623ec3917c4f',
-    createdAt: DateTime(2022, 7, 7, 20),
-    dateFrom: DateTime(2022, 7, 7, 20),
-    dateTo: DateTime(2022, 7, 7, 20),
-    updatedAt: DateTime(2022, 7, 7, 20),
-    starred: false,
-    private: false,
-  ),
-  data: MeasurementData(
-    value: 10,
-    dataTypeId: measurablePullUps.id,
-    dateTo: DateTime(2022, 7, 7, 20),
-    dateFrom: DateTime(2022, 7, 7, 20),
-  ),
-);
-
 final testWorkoutRunning = WorkoutEntry(
   meta: Metadata(
     id: '20CDE5C9-5B56-4C93-A217-FB08908EF5BA',
@@ -495,66 +441,6 @@ final testWorkoutRunning = WorkoutEntry(
     energy: 632.0180571495033,
     id: '20CDE5C9-5B56-4C93-A217-FB08908EF5BA',
     source: '',
-  ),
-);
-
-final testDurationEntry1 = JournalEntry(
-  meta: Metadata(
-    id: 'id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime(2022, 7, 3, 13),
-    dateTo: DateTime(2022, 7, 3, 14),
-  ),
-);
-
-final testDurationEntry2 = JournalEntry(
-  meta: Metadata(
-    id: 'id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime(2022, 7, 4, 13),
-    dateTo: DateTime(2022, 7, 4, 14),
-  ),
-);
-
-final testDurationEntry3 = JournalEntry(
-  meta: Metadata(
-    id: 'id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime(2022, 7, 4, 15),
-    dateTo: DateTime(2022, 7, 4, 18, 11, 33),
-  ),
-);
-
-final testDurationEntry4 = JournalEntry(
-  meta: Metadata(
-    id: 'id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime(2022, 7, 1, 23),
-    dateTo: DateTime(2022, 7, 2, 2),
-  ),
-);
-
-final testDurationEntry5 = JournalEntry(
-  meta: Metadata(
-    id: 'id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime(2022, 7, 2, 22),
-    dateTo: DateTime(2022, 7, 5, 1),
-  ),
-);
-
-final testDurationEntry6 = JournalEntry(
-  meta: Metadata(
-    id: 'id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime(2022, 6, 1, 22),
-    dateTo: DateTime(2022, 6, 12, 1),
   ),
 );
 
