@@ -3518,8 +3518,8 @@ Take into account the following task context:
 
       when(() => mockAiInputRepo.getEntity('test-id'))
           .thenAnswer((_) async => taskEntity.copyWith(
-        data: taskEntity.data.copyWith(checklistIds: []),
-      ));
+                data: taskEntity.data.copyWith(checklistIds: []),
+              ));
       when(() => mockAiConfigRepo.getConfigById('model-1'))
           .thenAnswer((_) async => model);
       when(() => mockAiConfigRepo.getConfigById('provider-1'))
@@ -3528,8 +3528,8 @@ Take into account the following task context:
           .thenAnswer((_) async => '{"task": "Test Task"}');
       when(() => mockJournalDb.journalEntityById('test-id'))
           .thenAnswer((_) async => taskEntity.copyWith(
-        data: taskEntity.data.copyWith(checklistIds: []),
-      ));
+                data: taskEntity.data.copyWith(checklistIds: []),
+              ));
 
       when(() => mockCloudInferenceRepo.generate(
             any(),
@@ -3551,10 +3551,12 @@ Take into account the following task context:
       when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
           .thenAnswer((_) async => true);
       when(() => mockAutoChecklistService.autoCreateChecklist(
-        taskId: 'test-id',
-        suggestions: any(named: 'suggestions'),
-        shouldAutoCreate: any(named: 'shouldAutoCreate'),
-      )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+                taskId: 'test-id',
+                suggestions: any(named: 'suggestions'),
+                shouldAutoCreate: any(named: 'shouldAutoCreate'),
+              ))
+          .thenAnswer((_) async =>
+              (success: true, checklistId: 'checklist-123', error: null));
 
       repository.autoChecklistServiceForTesting = mockAutoChecklistService;
 
@@ -3660,10 +3662,12 @@ Take into account the following task context:
       when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
           .thenAnswer((_) async => true);
       when(() => mockAutoChecklistService.autoCreateChecklist(
-        taskId: 'test-id',
-        suggestions: any(named: 'suggestions'),
-        shouldAutoCreate: any(named: 'shouldAutoCreate'),
-      )).thenAnswer((_) async => (success: true, checklistId: 'checklist-123', error: null));
+                taskId: 'test-id',
+                suggestions: any(named: 'suggestions'),
+                shouldAutoCreate: any(named: 'shouldAutoCreate'),
+              ))
+          .thenAnswer((_) async =>
+              (success: true, checklistId: 'checklist-123', error: null));
 
       // Mock successful prompt lookup but exception during re-run
       final actionItemPrompt = _createPrompt(
@@ -3687,10 +3691,10 @@ Take into account the following task context:
 
       // Verify that auto-checklist creation was attempted
       verify(() => mockAutoChecklistService.autoCreateChecklist(
-        taskId: 'test-id',
-        suggestions: any(named: 'suggestions'),
-        shouldAutoCreate: any(named: 'shouldAutoCreate'),
-      )).called(1);
+            taskId: 'test-id',
+            suggestions: any(named: 'suggestions'),
+            shouldAutoCreate: any(named: 'shouldAutoCreate'),
+          )).called(1);
     });
   });
 }

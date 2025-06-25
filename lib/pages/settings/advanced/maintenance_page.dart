@@ -9,8 +9,8 @@ import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/widgets/settings/modern_settings_cards.dart';
 
 class MaintenancePage extends StatelessWidget {
   const MaintenancePage({super.key});
@@ -30,191 +30,113 @@ class MaintenancePage extends StatelessWidget {
         return SliverBoxAdapterPage(
           title: context.messages.settingsMaintenanceTitle,
           showBackButton: true,
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          child: Column(
-            children: [
-              MaintenanceCard(
-                title: context.messages.maintenanceDeleteEditorDb,
-                description:
-                    context.messages.maintenanceDeleteEditorDbDescription,
-                icon: Icons.edit_document,
-                isDestructive: true,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Editor'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteEditorDb();
-                  }
-                },
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenanceDeleteLoggingDb,
-                description:
-                    context.messages.maintenanceDeleteLoggingDbDescription,
-                icon: Icons.article,
-                isDestructive: true,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Logging'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteLoggingDb();
-                  }
-                },
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenanceDeleteSyncDb,
-                description:
-                    context.messages.maintenanceDeleteSyncDbDescription,
-                icon: Icons.sync,
-                isDestructive: true,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Sync'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteSyncDb();
-                  }
-                },
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenanceSyncDefinitions,
-                description:
-                    context.messages.maintenanceSyncDefinitionsDescription,
-                icon: Icons.sync_alt,
-                onTap: () => SyncModal.show(context),
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenancePurgeDeleted,
-                description:
-                    context.messages.maintenancePurgeDeletedDescription,
-                icon: Icons.delete_forever,
-                isDestructive: true,
-                onTap: () => PurgeModal.show(context),
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenancePurgeAudioModels,
-                description:
-                    context.messages.maintenancePurgeAudioModelsDescription,
-                icon: Icons.audio_file,
-                isDestructive: true,
-                onTap: () => AudioPurgeModal.show(context),
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenanceRecreateFts5,
-                description:
-                    context.messages.maintenanceRecreateFts5Description,
-                icon: Icons.search,
-                onTap: () => Fts5RecreateModal.show(context),
-              ),
-              MaintenanceCard(
-                title: context.messages.maintenanceReSync,
-                description: context.messages.maintenanceReSyncDescription,
-                icon: Icons.refresh,
-                onTap: () => ReSyncModal.show(context),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ModernMaintenanceCard(
+                  title: context.messages.maintenanceDeleteEditorDb,
+                  subtitle:
+                      context.messages.maintenanceDeleteEditorDbDescription,
+                  icon: Icons.edit_note_rounded,
+                  isDestructive: true,
+                  onTap: () async {
+                    final confirmed = await showConfirmationModal(
+                      context: context,
+                      message: context.messages
+                          .maintenanceDeleteDatabaseQuestion('Editor'),
+                      confirmLabel:
+                          context.messages.maintenanceDeleteDatabaseConfirm,
+                    );
+                    if (confirmed && context.mounted) {
+                      await maintenance.deleteEditorDb();
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenanceDeleteLoggingDb,
+                  subtitle:
+                      context.messages.maintenanceDeleteLoggingDbDescription,
+                  icon: Icons.article_rounded,
+                  isDestructive: true,
+                  onTap: () async {
+                    final confirmed = await showConfirmationModal(
+                      context: context,
+                      message: context.messages
+                          .maintenanceDeleteDatabaseQuestion('Logging'),
+                      confirmLabel:
+                          context.messages.maintenanceDeleteDatabaseConfirm,
+                    );
+                    if (confirmed && context.mounted) {
+                      await maintenance.deleteLoggingDb();
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenanceDeleteSyncDb,
+                  subtitle: context.messages.maintenanceDeleteSyncDbDescription,
+                  icon: Icons.sync_rounded,
+                  isDestructive: true,
+                  onTap: () async {
+                    final confirmed = await showConfirmationModal(
+                      context: context,
+                      message: context.messages
+                          .maintenanceDeleteDatabaseQuestion('Sync'),
+                      confirmLabel:
+                          context.messages.maintenanceDeleteDatabaseConfirm,
+                    );
+                    if (confirmed && context.mounted) {
+                      await maintenance.deleteSyncDb();
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenanceSyncDefinitions,
+                  subtitle:
+                      context.messages.maintenanceSyncDefinitionsDescription,
+                  icon: Icons.sync_alt_rounded,
+                  onTap: () => SyncModal.show(context),
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenancePurgeDeleted,
+                  subtitle: context.messages.maintenancePurgeDeletedDescription,
+                  icon: Icons.delete_forever_rounded,
+                  isDestructive: true,
+                  onTap: () => PurgeModal.show(context),
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenancePurgeAudioModels,
+                  subtitle:
+                      context.messages.maintenancePurgeAudioModelsDescription,
+                  icon: Icons.audio_file_rounded,
+                  isDestructive: true,
+                  onTap: () => AudioPurgeModal.show(context),
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenanceRecreateFts5,
+                  subtitle: context.messages.maintenanceRecreateFts5Description,
+                  icon: Icons.search_rounded,
+                  onTap: () => Fts5RecreateModal.show(context),
+                ),
+                const SizedBox(height: 8),
+                ModernMaintenanceCard(
+                  title: context.messages.maintenanceReSync,
+                  subtitle: context.messages.maintenanceReSyncDescription,
+                  icon: Icons.refresh_rounded,
+                  onTap: () => ReSyncModal.show(context),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },
-    );
-  }
-}
-
-class MaintenanceCard extends StatelessWidget {
-  const MaintenanceCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.onTap,
-    this.isDestructive = false,
-    super.key,
-  });
-
-  final String title;
-  final String description;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isDestructive;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isDestructive
-                      ? context.colorScheme.errorContainer
-                      : context.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: isDestructive
-                      ? context.colorScheme.error
-                      : context.colorScheme.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: (Theme.of(context).textTheme.titleMedium ??
-                              const TextStyle())
-                          .copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDestructive
-                            ? context.colorScheme.error
-                            : context.colorScheme.onSurface,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: (Theme.of(context).textTheme.bodyMedium ??
-                              const TextStyle())
-                          .copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: context.colorScheme.onSurfaceVariant,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

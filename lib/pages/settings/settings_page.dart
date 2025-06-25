@@ -1,7 +1,8 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
+import 'package:lotti/widgets/settings/modern_settings_cards.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({
@@ -13,52 +14,72 @@ class SettingsPage extends StatelessWidget {
     return SliverBoxAdapterPage(
       title: context.messages.navTabTitleSettings,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SettingsNavCard(
+            ModernSettingsCardWithIcon(
               title: 'AI Settings',
-              semanticsLabel: 'AI Configuration',
-              path: '/settings/ai',
+              subtitle: 'Configure AI providers, models, and prompts',
+              icon: Icons.psychology_rounded,
+              onTap: () => context.beamToNamed('/settings/ai'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsHabitsTitle,
-              semanticsLabel: 'Habit Management',
-              path: '/settings/habits',
+              subtitle: 'Manage your habits and routines',
+              icon: Icons.repeat_rounded,
+              onTap: () => context.beamToNamed('/settings/habits'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsCategoriesTitle,
-              semanticsLabel: 'Category Management',
-              path: '/settings/categories',
+              subtitle: 'Organize entries with categories',
+              icon: Icons.category_rounded,
+              onTap: () => context.beamToNamed('/settings/categories'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsTagsTitle,
-              semanticsLabel: 'Tag Management',
-              path: '/settings/tags',
+              subtitle: 'Tag and label your entries',
+              icon: Icons.label_rounded,
+              onTap: () => context.beamToNamed('/settings/tags'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsDashboardsTitle,
-              semanticsLabel: 'Dashboard Management',
-              path: '/settings/dashboards',
+              subtitle: 'Customize your dashboard views',
+              icon: Icons.dashboard_rounded,
+              onTap: () => context.beamToNamed('/settings/dashboards'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsMeasurablesTitle,
-              semanticsLabel: 'Measurable Data Types',
-              path: '/settings/measurables',
+              subtitle: 'Configure measurable data types',
+              icon: Icons.trending_up_rounded,
+              onTap: () => context.beamToNamed('/settings/measurables'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsThemingTitle,
-              path: '/settings/theming',
+              subtitle: 'Customize app appearance and themes',
+              icon: Icons.palette_rounded,
+              onTap: () => context.beamToNamed('/settings/theming'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsFlagsTitle,
-              path: '/settings/flags',
+              subtitle: 'Configure feature flags and options',
+              icon: Icons.tune_rounded,
+              onTap: () => context.beamToNamed('/settings/flags'),
             ),
-            SettingsNavCard(
+            const SizedBox(height: 8),
+            ModernSettingsCardWithIcon(
               title: context.messages.settingsAdvancedTitle,
-              path: '/settings/advanced',
+              subtitle: 'Advanced settings and maintenance',
+              icon: Icons.settings_rounded,
+              onTap: () => context.beamToNamed('/settings/advanced'),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

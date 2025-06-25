@@ -12,7 +12,8 @@ void main() {
   group('ChecklistSuggestionsWidget UI Tests', () {
     const testItemId = 'test-id';
 
-    testWidgets('widget builds correctly without provider setup', (tester) async {
+    testWidgets('widget builds correctly without provider setup',
+        (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: WidgetTestBench(
@@ -51,7 +52,7 @@ void main() {
         );
 
         expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
-        
+
         // Reset for next iteration
         await tester.binding.delayed(Duration.zero);
       }
@@ -104,7 +105,8 @@ void main() {
     });
 
     group('ChecklistItemWidget integration', () {
-      testWidgets('ChecklistItemWidget renders correctly in suggestions context',
+      testWidgets(
+          'ChecklistItemWidget renders correctly in suggestions context',
           (tester) async {
         // Create test item data
         const testItem = ChecklistItemData(
@@ -140,8 +142,9 @@ void main() {
     });
 
     group('widget structure verification', () {
-      testWidgets('widget contains expected method signatures based on source', (tester) async {
-        // This test verifies that the widget builds without errors, 
+      testWidgets('widget contains expected method signatures based on source',
+          (tester) async {
+        // This test verifies that the widget builds without errors,
         // confirming that the internal structure matches what we expect
         // from reading the source code
         await tester.pumpWidget(
@@ -175,7 +178,7 @@ void main() {
           );
 
           expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
-          
+
           // Rebuild with different parameters
           await tester.pumpWidget(Container());
         }
@@ -183,7 +186,8 @@ void main() {
     });
 
     group('functionality verification', () {
-      testWidgets('widget supports drag and drop functionality structure', (tester) async {
+      testWidgets('widget supports drag and drop functionality structure',
+          (tester) async {
         await tester.pumpWidget(
           const ProviderScope(
             child: WidgetTestBench(
@@ -192,12 +196,13 @@ void main() {
           ),
         );
 
-        // Widget builds without issues, confirming it has the structure 
+        // Widget builds without issues, confirming it has the structure
         // to support drag and drop as seen in the source code
         expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
       });
 
-      testWidgets('widget supports dismissible functionality structure', (tester) async {
+      testWidgets('widget supports dismissible functionality structure',
+          (tester) async {
         await tester.pumpWidget(
           const ProviderScope(
             child: WidgetTestBench(
@@ -206,12 +211,13 @@ void main() {
           ),
         );
 
-        // Widget builds without issues, confirming it has the structure 
+        // Widget builds without issues, confirming it has the structure
         // to support dismissible items as seen in the source code
         expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
       });
 
-      testWidgets('widget supports state management for removed items', (tester) async {
+      testWidgets('widget supports state management for removed items',
+          (tester) async {
         await tester.pumpWidget(
           const ProviderScope(
             child: WidgetTestBench(
@@ -241,7 +247,8 @@ void main() {
     });
 
     group('accessibility and UI patterns', () {
-      testWidgets('widget follows proper widget composition patterns', (tester) async {
+      testWidgets('widget follows proper widget composition patterns',
+          (tester) async {
         await tester.pumpWidget(
           const ProviderScope(
             child: WidgetTestBench(
