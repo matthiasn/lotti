@@ -6,7 +6,6 @@ import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -40,7 +39,6 @@ class _TagEditPageState extends State<TagEditPage> {
   final GlobalKey<State<StatefulWidget>> _tagHideKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _tagTypeTagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _tagDeleteKey = GlobalKey();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
 

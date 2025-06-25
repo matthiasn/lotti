@@ -18,8 +18,6 @@ TaskStatus _$TaskStatusFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'open':
       return _TaskOpen.fromJson(json);
-    case 'started':
-      return _TaskStarted.fromJson(json);
     case 'inProgress':
       return _TaskInProgress.fromJson(json);
     case 'groomed':
@@ -53,9 +51,6 @@ mixin _$TaskStatus {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -79,9 +74,6 @@ mixin _$TaskStatus {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -109,9 +101,6 @@ mixin _$TaskStatus {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -134,7 +123,6 @@ mixin _$TaskStatus {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -146,7 +134,6 @@ mixin _$TaskStatus {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -158,7 +145,6 @@ mixin _$TaskStatus {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -389,9 +375,6 @@ class _$TaskOpenImpl implements _TaskOpen {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -418,9 +401,6 @@ class _$TaskOpenImpl implements _TaskOpen {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -451,9 +431,6 @@ class _$TaskOpenImpl implements _TaskOpen {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -482,7 +459,6 @@ class _$TaskOpenImpl implements _TaskOpen {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -497,7 +473,6 @@ class _$TaskOpenImpl implements _TaskOpen {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -512,7 +487,6 @@ class _$TaskOpenImpl implements _TaskOpen {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -562,316 +536,6 @@ abstract class _TaskOpen implements TaskStatus {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class _$$TaskStartedImplCopyWith<$Res>
-    implements $TaskStatusCopyWith<$Res> {
-  factory _$$TaskStartedImplCopyWith(
-          _$TaskStartedImpl value, $Res Function(_$TaskStartedImpl) then) =
-      __$$TaskStartedImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String id,
-      DateTime createdAt,
-      int utcOffset,
-      String? timezone,
-      Geolocation? geolocation});
-
-  @override
-  $GeolocationCopyWith<$Res>? get geolocation;
-}
-
-/// @nodoc
-class __$$TaskStartedImplCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$TaskStartedImpl>
-    implements _$$TaskStartedImplCopyWith<$Res> {
-  __$$TaskStartedImplCopyWithImpl(
-      _$TaskStartedImpl _value, $Res Function(_$TaskStartedImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? createdAt = null,
-    Object? utcOffset = null,
-    Object? timezone = freezed,
-    Object? geolocation = freezed,
-  }) {
-    return _then(_$TaskStartedImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      utcOffset: null == utcOffset
-          ? _value.utcOffset
-          : utcOffset // ignore: cast_nullable_to_non_nullable
-              as int,
-      timezone: freezed == timezone
-          ? _value.timezone
-          : timezone // ignore: cast_nullable_to_non_nullable
-              as String?,
-      geolocation: freezed == geolocation
-          ? _value.geolocation
-          : geolocation // ignore: cast_nullable_to_non_nullable
-              as Geolocation?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$TaskStartedImpl implements _TaskStarted {
-  const _$TaskStartedImpl(
-      {required this.id,
-      required this.createdAt,
-      required this.utcOffset,
-      this.timezone,
-      this.geolocation,
-      final String? $type})
-      : $type = $type ?? 'started';
-
-  factory _$TaskStartedImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TaskStartedImplFromJson(json);
-
-  @override
-  final String id;
-  @override
-  final DateTime createdAt;
-  @override
-  final int utcOffset;
-  @override
-  final String? timezone;
-  @override
-  final Geolocation? geolocation;
-
-  @JsonKey(name: 'runtimeType')
-  final String $type;
-
-  @override
-  String toString() {
-    return 'TaskStatus.started(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$TaskStartedImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt) &&
-            (identical(other.utcOffset, utcOffset) ||
-                other.utcOffset == utcOffset) &&
-            (identical(other.timezone, timezone) ||
-                other.timezone == timezone) &&
-            (identical(other.geolocation, geolocation) ||
-                other.geolocation == geolocation));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, createdAt, utcOffset, timezone, geolocation);
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$TaskStartedImplCopyWith<_$TaskStartedImpl> get copyWith =>
-      __$$TaskStartedImplCopyWithImpl<_$TaskStartedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        open,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        inProgress,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        groomed,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        blocked,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)
-        onHold,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        done,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
-        rejected,
-  }) {
-    return started(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-  }) {
-    return started?.call(id, createdAt, utcOffset, timezone, geolocation);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        open,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        inProgress,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        groomed,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        blocked,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String reason, String? timezone, Geolocation? geolocation)?
-        onHold,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        done,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        rejected,
-    required TResult orElse(),
-  }) {
-    if (started != null) {
-      return started(id, createdAt, utcOffset, timezone, geolocation);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
-    required TResult Function(_TaskInProgress value) inProgress,
-    required TResult Function(_TaskGroomed value) groomed,
-    required TResult Function(_TaskBlocked value) blocked,
-    required TResult Function(_TaskOnHold value) onHold,
-    required TResult Function(_TaskDone value) done,
-    required TResult Function(_TaskRejected value) rejected,
-  }) {
-    return started(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
-    TResult? Function(_TaskInProgress value)? inProgress,
-    TResult? Function(_TaskGroomed value)? groomed,
-    TResult? Function(_TaskBlocked value)? blocked,
-    TResult? Function(_TaskOnHold value)? onHold,
-    TResult? Function(_TaskDone value)? done,
-    TResult? Function(_TaskRejected value)? rejected,
-  }) {
-    return started?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
-    TResult Function(_TaskInProgress value)? inProgress,
-    TResult Function(_TaskGroomed value)? groomed,
-    TResult Function(_TaskBlocked value)? blocked,
-    TResult Function(_TaskOnHold value)? onHold,
-    TResult Function(_TaskDone value)? done,
-    TResult Function(_TaskRejected value)? rejected,
-    required TResult orElse(),
-  }) {
-    if (started != null) {
-      return started(this);
-    }
-    return orElse();
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TaskStartedImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _TaskStarted implements TaskStatus {
-  const factory _TaskStarted(
-      {required final String id,
-      required final DateTime createdAt,
-      required final int utcOffset,
-      final String? timezone,
-      final Geolocation? geolocation}) = _$TaskStartedImpl;
-
-  factory _TaskStarted.fromJson(Map<String, dynamic> json) =
-      _$TaskStartedImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  DateTime get createdAt;
-  @override
-  int get utcOffset;
-  @override
-  String? get timezone;
-  @override
-  Geolocation? get geolocation;
-
-  /// Create a copy of TaskStatus
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TaskStartedImplCopyWith<_$TaskStartedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -1010,9 +674,6 @@ class _$TaskInProgressImpl implements _TaskInProgress {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -1039,9 +700,6 @@ class _$TaskInProgressImpl implements _TaskInProgress {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -1072,9 +730,6 @@ class _$TaskInProgressImpl implements _TaskInProgress {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -1103,7 +758,6 @@ class _$TaskInProgressImpl implements _TaskInProgress {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -1118,7 +772,6 @@ class _$TaskInProgressImpl implements _TaskInProgress {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -1133,7 +786,6 @@ class _$TaskInProgressImpl implements _TaskInProgress {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -1320,9 +972,6 @@ class _$TaskGroomedImpl implements _TaskGroomed {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -1349,9 +998,6 @@ class _$TaskGroomedImpl implements _TaskGroomed {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -1382,9 +1028,6 @@ class _$TaskGroomedImpl implements _TaskGroomed {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -1413,7 +1056,6 @@ class _$TaskGroomedImpl implements _TaskGroomed {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -1428,7 +1070,6 @@ class _$TaskGroomedImpl implements _TaskGroomed {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -1443,7 +1084,6 @@ class _$TaskGroomedImpl implements _TaskGroomed {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -1640,9 +1280,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -1669,9 +1306,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -1703,9 +1337,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -1734,7 +1365,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -1749,7 +1379,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -1764,7 +1393,6 @@ class _$TaskBlockedImpl implements _TaskBlocked {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -1963,9 +1591,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -1992,9 +1617,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -2026,9 +1648,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -2057,7 +1676,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -2072,7 +1690,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -2087,7 +1704,6 @@ class _$TaskOnHoldImpl implements _TaskOnHold {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -2276,9 +1892,6 @@ class _$TaskDoneImpl implements _TaskDone {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -2305,9 +1918,6 @@ class _$TaskDoneImpl implements _TaskDone {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -2338,9 +1948,6 @@ class _$TaskDoneImpl implements _TaskDone {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -2369,7 +1976,6 @@ class _$TaskDoneImpl implements _TaskDone {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -2384,7 +1990,6 @@ class _$TaskDoneImpl implements _TaskDone {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -2399,7 +2004,6 @@ class _$TaskDoneImpl implements _TaskDone {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,
@@ -2586,9 +2190,6 @@ class _$TaskRejectedImpl implements _TaskRejected {
         open,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
-        started,
-    required TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)
         inProgress,
     required TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)
@@ -2615,9 +2216,6 @@ class _$TaskRejectedImpl implements _TaskRejected {
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         open,
-    TResult? Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
-        started,
     TResult? Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
         inProgress,
@@ -2648,9 +2246,6 @@ class _$TaskRejectedImpl implements _TaskRejected {
         open,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
-        started,
-    TResult Function(String id, DateTime createdAt, int utcOffset,
-            String? timezone, Geolocation? geolocation)?
         inProgress,
     TResult Function(String id, DateTime createdAt, int utcOffset,
             String? timezone, Geolocation? geolocation)?
@@ -2679,7 +2274,6 @@ class _$TaskRejectedImpl implements _TaskRejected {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_TaskOpen value) open,
-    required TResult Function(_TaskStarted value) started,
     required TResult Function(_TaskInProgress value) inProgress,
     required TResult Function(_TaskGroomed value) groomed,
     required TResult Function(_TaskBlocked value) blocked,
@@ -2694,7 +2288,6 @@ class _$TaskRejectedImpl implements _TaskRejected {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_TaskOpen value)? open,
-    TResult? Function(_TaskStarted value)? started,
     TResult? Function(_TaskInProgress value)? inProgress,
     TResult? Function(_TaskGroomed value)? groomed,
     TResult? Function(_TaskBlocked value)? blocked,
@@ -2709,7 +2302,6 @@ class _$TaskRejectedImpl implements _TaskRejected {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_TaskOpen value)? open,
-    TResult Function(_TaskStarted value)? started,
     TResult Function(_TaskInProgress value)? inProgress,
     TResult Function(_TaskGroomed value)? groomed,
     TResult Function(_TaskBlocked value)? blocked,

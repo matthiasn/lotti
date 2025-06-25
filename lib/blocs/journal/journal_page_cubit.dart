@@ -218,11 +218,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     );
   }
 
-  void setShowTasks({required bool show}) {
-    showTasks = show;
-    refreshQuery();
-  }
-
   void setFilters(Set<DisplayFilter> filters) {
     _filters = filters;
     refreshQuery();

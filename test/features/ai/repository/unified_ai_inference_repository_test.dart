@@ -158,7 +158,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -269,7 +269,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -302,7 +302,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -334,7 +334,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -406,7 +406,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata().copyWith(id: 'task-id'),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -475,7 +475,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata().copyWith(id: 'task-id'),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -534,7 +534,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -931,7 +931,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1041,7 +1041,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1153,7 +1153,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1262,7 +1262,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1484,7 +1484,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1535,7 +1535,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1604,7 +1604,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1706,7 +1706,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -1925,7 +1925,7 @@ void main() {
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -2037,7 +2037,7 @@ Remaining steps:
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -2135,7 +2135,7 @@ Achieved results:
         final taskEntity = Task(
           meta: _createMetadata(),
           data: TaskData(
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-1',
               createdAt: DateTime.now(),
               utcOffset: 0,
@@ -3468,7 +3468,7 @@ Take into account the following task context:
       final taskEntity = Task(
         meta: _createMetadata(),
         data: TaskData(
-          status: TaskStatus.started(
+          status: TaskStatus.inProgress(
             id: 'status-1',
             createdAt: DateTime.now(),
             utcOffset: 0,
@@ -3583,7 +3583,7 @@ Take into account the following task context:
       final taskEntity = Task(
         meta: _createMetadata(),
         data: TaskData(
-          status: TaskStatus.started(
+          status: TaskStatus.inProgress(
             id: 'status-1',
             createdAt: DateTime.now(),
             utcOffset: 0,

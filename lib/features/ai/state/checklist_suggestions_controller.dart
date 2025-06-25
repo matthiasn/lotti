@@ -48,12 +48,4 @@ class ChecklistSuggestionsController extends _$ChecklistSuggestionsController {
     );
     ref.read(provider.notifier).removeActionItem(title: title);
   }
-
-  void clearActionItem({required String title}) {
-    final provider = latestSummaryControllerProvider(
-      id: id,
-      aiResponseType: AiResponseType.actionItemSuggestions,
-    );
-    ref.read(provider.notifier).removeActionItem(title: title);
-  }
 }

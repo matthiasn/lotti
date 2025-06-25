@@ -268,7 +268,7 @@ void main() {
         ),
         data: TaskData(
           title: taskTitle,
-          status: TaskStatus.started(
+          status: TaskStatus.inProgress(
             id: statusId,
             createdAt: creationDate,
             utcOffset: 0,
@@ -344,7 +344,7 @@ void main() {
       // Assert
       expect(result, isNotNull);
       expect(result!.title, equals(taskTitle));
-      expect(result.status, equals('STARTED'));
+      expect(result.status, equals('IN PROGRESS'));
       expect(result.creationDate, isNotNull);
       expect(result.estimatedDuration, equals('01:00'));
       expect(result.timeSpent, equals('00:45'));
@@ -821,7 +821,7 @@ void main() {
             dateFrom: DateTime(2023),
             dateTo: DateTime(2023),
             statusHistory: [],
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: 'status-123',
               createdAt: DateTime(2023),
               utcOffset: 0,
@@ -924,7 +924,7 @@ void main() {
           ),
           data: TaskData(
             title: taskTitle,
-            status: TaskStatus.started(
+            status: TaskStatus.inProgress(
               id: statusId,
               createdAt: creationDate,
               utcOffset: 0,
@@ -948,7 +948,7 @@ void main() {
         // Assert
         expect(result, isNotNull);
         expect(result, contains('"title": "Test Task"'));
-        expect(result, contains('"status": "STARTED"'));
+        expect(result, contains('"status": "IN PROGRESS"'));
         expect(result, contains('"estimatedDuration": "00:30"'));
         expect(result, contains('"timeSpent": "00:15"'));
         expect(result, contains('"actionItems": []'));

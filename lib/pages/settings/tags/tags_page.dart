@@ -3,7 +3,6 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/utils.dart';
@@ -11,13 +10,12 @@ import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class TagCard extends StatelessWidget {
-  TagCard({
+  const TagCard({
     required this.tagEntity,
     required this.index,
     super.key,
   });
 
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final TagEntity tagEntity;
   final int index;
 

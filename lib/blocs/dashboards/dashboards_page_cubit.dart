@@ -11,8 +11,6 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
   DashboardsPageCubit()
       : super(
           DashboardsPageState(
-            showSearch: false,
-            searchString: '',
             selectedCategoryIds: <String>{},
             allDashboards: [],
             filteredSortedDashboards: [],
@@ -35,18 +33,6 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
 
   List<DashboardDefinition> _dashboardDefinitions = [];
   final _selectedCategoryIds = <String>{};
-  var _showSearch = false;
-  var _searchString = '';
-
-  void setSearchString(String searchString) {
-    _searchString = searchString.toLowerCase();
-    emitState();
-  }
-
-  void toggleShowSearch() {
-    _showSearch = !_showSearch;
-    emitState();
-  }
 
   void toggleSelectedCategoryIds(String categoryId) {
     if (_selectedCategoryIds.contains(categoryId)) {
@@ -65,8 +51,6 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
         : _dashboardDefinitions;
     emit(
       DashboardsPageState(
-        showSearch: _showSearch,
-        searchString: _searchString,
         selectedCategoryIds: <String>{..._selectedCategoryIds},
         allDashboards: _dashboardDefinitions,
         filteredSortedDashboards:
