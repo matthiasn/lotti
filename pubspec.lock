@@ -1261,10 +1261,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: "75fe5068fa113864b824ffb2a2ecbfa09524b494fac3022139120d4e6b9f0cd1"
+      sha256: "7817c79254bf81985f518562d85e4bfabe9462067822eb4f7fc6267c3158e28e"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.20"
+    version: "1.1.0"
   graphic:
     dependency: "direct main"
     description:
@@ -1285,10 +1285,10 @@ packages:
     dependency: "direct main"
     description:
       name: health
-      sha256: "8f809e4f3483353976e4e3e50f5755af8bc6ae8f2e8b82f6d88c818617311bde"
+      sha256: d9c0d226350e74f59356bea19889168819912bfd0de27bf91c748af190b8201a
       url: "https://pub.dev"
     source: hosted
-    version: "13.1.0"
+    version: "13.1.1"
   hotkey_manager:
     dependency: "direct main"
     description:
