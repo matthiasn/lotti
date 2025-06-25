@@ -26,7 +26,7 @@ PODS:
     - Flutter
   - flutter_vodozemac (0.0.1):
     - Flutter
-  - health (13.1.0):
+  - health (13.1.1):
     - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
@@ -248,7 +248,7 @@ SPEC CHECKSUMS:
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
-  health: e42053a628b0e9a2de7c78d4a01bf9d90ce33d76
+  health: 0488159eaa0cb4551cb066fe469c6a647416ca1a
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
