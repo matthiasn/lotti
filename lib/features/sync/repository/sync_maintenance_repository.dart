@@ -14,37 +14,6 @@ abstract class SyncableEntity {
   String get id;
 }
 
-/// Wrapper class for syncable entities
-class SyncableEntityWrapper<T> implements SyncableEntity {
-  SyncableEntityWrapper(this.entity, this.isDeletedGetter);
-
-  final T entity;
-  final bool Function(T) isDeletedGetter;
-
-  @override
-  bool get isDeleted => isDeletedGetter(entity);
-
-  @override
-  String get id {
-    if (entity is EntityDefinition) {
-      return (entity as EntityDefinition).id;
-    } else if (entity is TagEntity) {
-      return (entity as TagEntity).id;
-    }
-    throw UnimplementedError('Entity type not supported');
-  }
-}
-
-/// Extension to make EntityDefinition syncable
-extension EntityDefinitionSyncable on EntityDefinition {
-  bool get isDeleted => deletedAt != null;
-}
-
-/// Extension to make TagEntity syncable
-extension TagEntitySyncable on TagEntity {
-  bool get isDeleted => deletedAt != null;
-}
-
 class SyncMaintenanceRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final OutboxService _outboxService = getIt<OutboxService>();

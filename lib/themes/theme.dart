@@ -9,12 +9,6 @@ const fontSizeMediumLarge = 20.0;
 const fontSizeLarge = 25.0;
 
 class AppTheme {
-  static const double bottomNavIconSize = 24;
-
-  static const chartDateHorizontalPadding = EdgeInsets.only(
-    right: 4,
-  );
-
   // Settings card layout constants
   static const double cardBorderRadius = 16;
   static const double cardPadding = 14;
@@ -221,11 +215,6 @@ const chartTooltipStyleBold = TextStyle(
   fontWeight: FontWeight.bold,
 );
 
-const transcriptHeaderStyle = TextStyle(
-  fontSize: fontSizeSmall,
-  fontWeight: FontWeight.w300,
-);
-
 const monospaceTextStyle = TextStyle(
   fontSize: fontSizeMedium,
   fontWeight: FontWeight.w500,
@@ -236,10 +225,6 @@ const monospaceTextStyle = TextStyle(
 
 final TextStyle monospaceTextStyleSmall = monospaceTextStyle.copyWith(
   fontSize: fontSizeSmall,
-);
-
-final TextStyle monospaceTextStyleLarge = monospaceTextStyle.copyWith(
-  fontSize: fontSizeLarge,
 );
 
 const appBarTextStyle = TextStyle(
@@ -487,18 +472,6 @@ class GradientThemes {
       colors: [
         context.colorScheme.primaryContainer.withValues(alpha: 0.3),
         context.colorScheme.primaryContainer.withValues(alpha: 0.2),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-  }
-
-  /// Creates a subtle gradient for provider name containers
-  static LinearGradient providerNameGradient(BuildContext context) {
-    return LinearGradient(
-      colors: [
-        context.colorScheme.primaryContainer.withValues(alpha: 0.25),
-        context.colorScheme.primaryContainer.withValues(alpha: 0.15),
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

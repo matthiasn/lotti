@@ -18,11 +18,6 @@ class SurveyWidget extends StatelessWidget {
   String _encode(Object object) =>
       const JsonEncoder.withIndent(' ').convert(object);
 
-  void printWrapped(String text) {
-    final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    pattern.allMatches(text).forEach((match) => debugPrint(match.group(0)));
-  }
-
   void cancelCallBack(RPTaskResult result) {
     // Do anything with the result at the moment of the cancellation
     debugPrint('The result so far:\n${_encode(result)}');

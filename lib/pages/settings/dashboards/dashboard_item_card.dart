@@ -14,7 +14,6 @@ class DashboardItemCard extends StatelessWidget {
   DashboardItemCard({
     required this.index,
     required this.item,
-    required this.measurableTypes,
     required this.updateItemFn,
     super.key,
   });
@@ -22,7 +21,7 @@ class DashboardItemCard extends StatelessWidget {
   final TagsService tagsService = getIt<TagsService>();
   final DashboardItem item;
   final int index;
-  final List<MeasurableDataType> measurableTypes;
+
   final void Function(DashboardItem item, int index) updateItemFn;
 
   @override
@@ -169,11 +168,9 @@ class ItemCard extends StatelessWidget {
     required this.leadingIcon,
     this.onTap,
     super.key,
-    this.leading,
   });
 
   final void Function()? onTap;
-  final Widget? leading;
   final String title;
   final IconData leadingIcon;
 

@@ -492,7 +492,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       item: item,
                                       index: index,
                                       updateItemFn: updateItem,
-                                      measurableTypes: measurableDataTypes,
                                     ),
                                   );
                                 },
