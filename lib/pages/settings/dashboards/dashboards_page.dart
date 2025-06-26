@@ -22,7 +22,6 @@ class DashboardSettingsPage extends StatelessWidget {
       getName: (habit) => '${habit.name} ${habit.description}',
       definitionCard: (int index, DashboardDefinition item) {
         return DashboardDefinitionCard(
-          index: index,
           dashboard: item,
         );
       },

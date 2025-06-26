@@ -45,27 +45,6 @@ void main() {
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
-    testWidgets('editor toolbar is visible with autofocus', skip: true,
-        (WidgetTester tester) async {
-      const key = ValueKey('editor');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EditorWidget(
-            entryId: testTextEntry.meta.id,
-            key: key,
-          ),
-        ),
-      );
-
-      final editorFinder = find.byKey(key);
-      await tester.tap(editorFinder);
-      await tester.pumpAndSettle();
-
-      final boldIconFinder = find.byIcon(Icons.format_bold);
-      expect(boldIconFinder, findsOneWidget);
-    });
-
     testWidgets('editor toolbar is invisible without autofocus',
         (WidgetTester tester) async {
       await tester.pumpWidget(

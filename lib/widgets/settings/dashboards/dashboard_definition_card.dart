@@ -8,12 +8,10 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class DashboardDefinitionCard extends StatelessWidget {
   const DashboardDefinitionCard({
     required this.dashboard,
-    required this.index,
     super.key,
   });
 
   final DashboardDefinition dashboard;
-  final int index;
 
   @override
   Widget build(BuildContext context) {

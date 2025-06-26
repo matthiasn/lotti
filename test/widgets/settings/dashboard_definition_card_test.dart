@@ -38,10 +38,7 @@ void main() {
     testWidgets('displays test dashboard card', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          DashboardDefinitionCard(
-            index: 0,
-            dashboard: testItem,
-          ),
+          DashboardDefinitionCard(dashboard: testItem),
         ),
       );
 
@@ -56,7 +53,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardDefinitionCard(
-            index: 0,
             dashboard: testItem.copyWith(private: true),
           ),
         ),
@@ -73,7 +69,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardDefinitionCard(
-            index: 0,
             dashboard: testItem.copyWith(
               private: true,
               reviewAt: DateTime(0, 0, 0, 7),

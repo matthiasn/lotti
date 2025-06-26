@@ -170,25 +170,6 @@ void main() {
       expect(saveButtonFinder, findsNothing);
     });
 
-    testWidgets('save button tappable when unsaved/dirty', skip: true,
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: testTextEntry.meta.id),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final saveButtonFinder = find.text('Save');
-      expect(saveButtonFinder, findsOneWidget);
-
-      await tester.tap(saveButtonFinder);
-      await tester.pumpAndSettle();
-
-      // TODO: check that provider method is called instead
-      // verify(entryCubit.save).called(1);
-    });
-
     testWidgets('map icon invisible when no geolocation exists for entry',
         (WidgetTester tester) async {
       await tester.pumpWidget(

@@ -7,11 +7,6 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-const matrixUserKey = 'user';
-const matrixPasswordKey = 'password';
-const matrixHomeServerKey = 'home_server';
-const matrixRoomIdKey = 'room_id';
-
 SliverWoltModalSheetPage homeServerLoggedInPage({
   required BuildContext context,
   required TextTheme textTheme,

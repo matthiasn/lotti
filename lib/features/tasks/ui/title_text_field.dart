@@ -50,6 +50,18 @@ class _TitleTextFieldState extends State<TitleTextField> {
   }
 
   @override
+  void didUpdateWidget(TitleTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue) {
+      _controller.text = widget.initialValue ?? '';
+      setState(() {
+        _dirty = false;
+        _showClearButton = widget.initialValue != null;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final initialValue = widget.initialValue;
 
