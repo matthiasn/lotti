@@ -32,8 +32,8 @@ class ModernSettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: AppTheme.animationDuration),
+      curve: AppTheme.animationCurve,
       decoration: BoxDecoration(
         color: backgroundColor ??
             (Theme.of(context).brightness == Brightness.light
@@ -46,19 +46,22 @@ class ModernSettingsCard extends StatelessWidget {
         border: Border.all(
           color: borderColor ??
               (Theme.of(context).brightness == Brightness.light
-                  ? context.colorScheme.outline.withValues(alpha: 0.3)
+                  ? context.colorScheme.outline
+                      .withValues(alpha: AppTheme.alphaOutline)
                   : context.colorScheme.primaryContainer
-                      .withValues(alpha: 0.15)),
+                      .withValues(alpha: AppTheme.alphaPrimaryContainer)),
         ),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.light
-                ? context.colorScheme.shadow.withValues(alpha: 0.08)
-                : context.colorScheme.shadow.withValues(alpha: 0.15),
+                ? context.colorScheme.shadow
+                    .withValues(alpha: AppTheme.alphaShadowLight)
+                : context.colorScheme.shadow
+                    .withValues(alpha: AppTheme.alphaShadowDark),
             blurRadius: Theme.of(context).brightness == Brightness.light
                 ? AppTheme.cardElevationLight
                 : AppTheme.cardElevationDark,
-            offset: const Offset(0, 2),
+            offset: AppTheme.shadowOffset,
           ),
         ],
       ),
@@ -68,8 +71,10 @@ class ModernSettingsCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          splashColor: context.colorScheme.primary.withValues(alpha: 0.1),
-          highlightColor: context.colorScheme.primary.withValues(alpha: 0.05),
+          splashColor: context.colorScheme.primary
+              .withValues(alpha: AppTheme.alphaPrimary),
+          highlightColor: context.colorScheme.primary
+              .withValues(alpha: AppTheme.alphaPrimaryHighlight),
           child: Container(
             padding: EdgeInsets.all(
                 isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding),
@@ -98,8 +103,10 @@ class ModernSettingsCard extends StatelessWidget {
                         title,
                         style: context.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.1,
-                          fontSize: isCompact ? 15 : 16,
+                          letterSpacing: AppTheme.letterSpacingTitle,
+                          fontSize: isCompact
+                              ? AppTheme.titleFontSizeCompact
+                              : AppTheme.titleFontSize,
                           color: context.colorScheme.onSurface,
                         ),
                         maxLines: 1,
@@ -108,15 +115,21 @@ class ModernSettingsCard extends StatelessWidget {
 
                       // Subtitle
                       if (subtitle != null && subtitle!.isNotEmpty) ...[
-                        SizedBox(height: isCompact ? 2 : 4),
+                        SizedBox(
+                            height: isCompact
+                                ? AppTheme.spacingBetweenTitleAndSubtitleCompact
+                                : AppTheme.spacingBetweenTitleAndSubtitle),
                         Text(
                           subtitle!,
                           style: context.textTheme.bodySmall?.copyWith(
                             color: context.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.8),
-                            fontSize: isCompact ? 11 : 12,
-                            height: 1.4,
-                            letterSpacing: 0,
+                                .withValues(
+                                    alpha: AppTheme.alphaSurfaceVariant),
+                            fontSize: isCompact
+                                ? AppTheme.subtitleFontSizeCompact
+                                : AppTheme.subtitleFontSize,
+                            height: AppTheme.lineHeightSubtitle,
+                            letterSpacing: AppTheme.letterSpacingSubtitle,
                           ),
                           maxLines: isCompact ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
@@ -147,7 +160,7 @@ class ModernSettingsCard extends StatelessWidget {
                         ? AppTheme.chevronSizeCompact
                         : AppTheme.chevronSize,
                     color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.6),
+                        .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
                   ),
                 ],
               ],
@@ -209,14 +222,16 @@ class ModernSettingsCardWithIcon extends StatelessWidget {
           borderRadius:
               BorderRadius.circular(AppTheme.iconContainerBorderRadius),
           border: Border.all(
-            color: context.colorScheme.primary.withValues(alpha: 0.15),
+            color: context.colorScheme.primary
+                .withValues(alpha: AppTheme.alphaPrimaryBorder),
           ),
         ),
         child: Icon(
           icon,
           size: isCompact ? AppTheme.iconSizeCompact : AppTheme.iconSize,
-          color:
-              iconColor ?? context.colorScheme.primary.withValues(alpha: 0.9),
+          color: iconColor ??
+              context.colorScheme.primary
+                  .withValues(alpha: AppTheme.alphaPrimaryIcon),
         ),
       ),
     );
@@ -248,11 +263,12 @@ class ModernMaintenanceCard extends StatelessWidget {
     final destructiveContainerColor = context.colorScheme.errorContainer;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: AppTheme.animationDuration),
+      curve: AppTheme.animationCurve,
       decoration: BoxDecoration(
         color: isDestructive && Theme.of(context).brightness == Brightness.light
-            ? destructiveContainerColor.withValues(alpha: 0.1)
+            ? destructiveContainerColor.withValues(
+                alpha: AppTheme.alphaDestructiveContainer)
             : (Theme.of(context).brightness == Brightness.light
                 ? context.colorScheme.surface
                 : null),
@@ -260,8 +276,10 @@ class ModernMaintenanceCard extends StatelessWidget {
             isDestructive && Theme.of(context).brightness == Brightness.dark
                 ? LinearGradient(
                     colors: [
-                      destructiveContainerColor.withValues(alpha: 0.2),
-                      destructiveContainerColor.withValues(alpha: 0.1),
+                      destructiveContainerColor.withValues(
+                          alpha: AppTheme.alphaDestructiveGradientStart),
+                      destructiveContainerColor.withValues(
+                          alpha: AppTheme.alphaDestructiveGradientEnd),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -270,11 +288,12 @@ class ModernMaintenanceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(
           color: isDestructive
-              ? destructiveColor.withValues(alpha: 0.3)
+              ? destructiveColor.withValues(alpha: AppTheme.alphaDestructive)
               : (Theme.of(context).brightness == Brightness.light
-                  ? context.colorScheme.outline.withValues(alpha: 0.3)
+                  ? context.colorScheme.outline
+                      .withValues(alpha: AppTheme.alphaOutline)
                   : context.colorScheme.primaryContainer
-                      .withValues(alpha: 0.15)),
+                      .withValues(alpha: AppTheme.alphaPrimaryContainer)),
         ),
         boxShadow: [
           BoxShadow(
@@ -282,12 +301,12 @@ class ModernMaintenanceCard extends StatelessWidget {
                 (isDestructive ? destructiveColor : context.colorScheme.shadow)
                     .withValues(
                         alpha: Theme.of(context).brightness == Brightness.light
-                            ? 0.08
-                            : 0.15),
+                            ? AppTheme.alphaShadowLight
+                            : AppTheme.alphaShadowDark),
             blurRadius: Theme.of(context).brightness == Brightness.light
                 ? AppTheme.cardElevationLight
                 : AppTheme.cardElevationDark,
-            offset: const Offset(0, 2),
+            offset: AppTheme.shadowOffset,
           ),
         ],
       ),
@@ -299,10 +318,10 @@ class ModernMaintenanceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
           splashColor:
               (isDestructive ? destructiveColor : context.colorScheme.primary)
-                  .withValues(alpha: 0.1),
+                  .withValues(alpha: AppTheme.alphaPrimary),
           highlightColor:
               (isDestructive ? destructiveColor : context.colorScheme.primary)
-                  .withValues(alpha: 0.05),
+                  .withValues(alpha: AppTheme.alphaPrimaryHighlight),
           child: Container(
             padding: EdgeInsets.all(
                 isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding),
@@ -324,8 +343,12 @@ class ModernMaintenanceCard extends StatelessWidget {
                       gradient: isDestructive
                           ? LinearGradient(
                               colors: [
-                                destructiveColor.withValues(alpha: 0.2),
-                                destructiveColor.withValues(alpha: 0.1),
+                                destructiveColor.withValues(
+                                    alpha:
+                                        AppTheme.alphaDestructiveGradientStart),
+                                destructiveColor.withValues(
+                                    alpha:
+                                        AppTheme.alphaDestructiveGradientEnd),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -337,7 +360,7 @@ class ModernMaintenanceCard extends StatelessWidget {
                         color: (isDestructive
                                 ? destructiveColor
                                 : context.colorScheme.primary)
-                            .withValues(alpha: 0.15),
+                            .withValues(alpha: AppTheme.alphaPrimaryBorder),
                       ),
                     ),
                     child: Icon(
@@ -346,8 +369,10 @@ class ModernMaintenanceCard extends StatelessWidget {
                           ? AppTheme.iconSizeCompact
                           : AppTheme.iconSize,
                       color: isDestructive
-                          ? destructiveColor.withValues(alpha: 0.9)
-                          : context.colorScheme.primary.withValues(alpha: 0.9),
+                          ? destructiveColor.withValues(
+                              alpha: AppTheme.alphaDestructiveIcon)
+                          : context.colorScheme.primary
+                              .withValues(alpha: AppTheme.alphaPrimaryIcon),
                     ),
                   ),
                   SizedBox(
@@ -367,8 +392,10 @@ class ModernMaintenanceCard extends StatelessWidget {
                         title,
                         style: context.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.1,
-                          fontSize: isCompact ? 15 : 16,
+                          letterSpacing: AppTheme.letterSpacingTitle,
+                          fontSize: isCompact
+                              ? AppTheme.titleFontSizeCompact
+                              : AppTheme.titleFontSize,
                           color: isDestructive
                               ? destructiveColor
                               : context.colorScheme.onSurface,
@@ -379,17 +406,24 @@ class ModernMaintenanceCard extends StatelessWidget {
 
                       // Subtitle
                       if (subtitle != null && subtitle!.isNotEmpty) ...[
-                        SizedBox(height: isCompact ? 2 : 4),
+                        SizedBox(
+                            height: isCompact
+                                ? AppTheme.spacingBetweenTitleAndSubtitleCompact
+                                : AppTheme.spacingBetweenTitleAndSubtitle),
                         Text(
                           subtitle!,
                           style: context.textTheme.bodySmall?.copyWith(
                             color: isDestructive
-                                ? destructiveColor.withValues(alpha: 0.8)
+                                ? destructiveColor.withValues(
+                                    alpha: AppTheme.alphaDestructiveText)
                                 : context.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.8),
-                            fontSize: isCompact ? 11 : 12,
-                            height: 1.4,
-                            letterSpacing: 0,
+                                    .withValues(
+                                        alpha: AppTheme.alphaSurfaceVariant),
+                            fontSize: isCompact
+                                ? AppTheme.subtitleFontSizeCompact
+                                : AppTheme.subtitleFontSize,
+                            height: AppTheme.lineHeightSubtitle,
+                            letterSpacing: AppTheme.letterSpacingSubtitle,
                           ),
                           maxLines: isCompact ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
@@ -408,7 +442,7 @@ class ModernMaintenanceCard extends StatelessWidget {
                   color: (isDestructive
                           ? destructiveColor
                           : context.colorScheme.onSurfaceVariant)
-                      .withValues(alpha: 0.6),
+                      .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
                 ),
               ],
             ),
