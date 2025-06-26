@@ -244,7 +244,7 @@ const List<KnownModel> openRouterModels = [
 /// Whisper models - OpenAI's cloud-based speech recognition models
 const List<KnownModel> whisperModels = [
   KnownModel(
-    providerModelId: 'small',
+    providerModelId: 'whisper-small',
     name: 'Whisper Local Small',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
@@ -252,7 +252,7 @@ const List<KnownModel> whisperModels = [
     description: 'Relatively accurate for simple audio',
   ),
   KnownModel(
-    providerModelId: 'medium',
+    providerModelId: 'whisper-medium',
     name: 'Whisper Local Medium',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
@@ -260,7 +260,7 @@ const List<KnownModel> whisperModels = [
     description: 'Balanced Whisper model, good for general use',
   ),
   KnownModel(
-    providerModelId: 'large',
+    providerModelId: 'whisper-large',
     name: 'Whisper Local Large',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
