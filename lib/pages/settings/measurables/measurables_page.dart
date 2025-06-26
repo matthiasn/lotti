@@ -21,7 +21,7 @@ class MeasurablesPage extends StatelessWidget {
       title: context.messages.settingsMeasurablesTitle,
       getName: (dataType) => dataType.displayName,
       definitionCard: (int index, MeasurableDataType dataType) {
-        return MeasurableTypeCard(index: index, item: dataType);
+        return MeasurableTypeCard(item: dataType);
       },
     );
   }

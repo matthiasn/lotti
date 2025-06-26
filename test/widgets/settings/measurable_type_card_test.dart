@@ -27,12 +27,7 @@ void main() {
 
     testWidgets('displays measurable data type with unit', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            index: 0,
-            item: testItem,
-          ),
-        ),
+        makeTestableWidget(MeasurableTypeCard(item: testItem)),
       );
 
       await tester.pumpAndSettle();
@@ -47,7 +42,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(unitName: ''),
           ),
         ),
@@ -66,7 +60,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(private: true),
           ),
         ),
@@ -85,7 +78,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(favorite: true),
           ),
         ),
@@ -104,7 +96,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(
               favorite: true,
               private: true,
@@ -127,7 +118,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(
               favorite: true,
               private: true,
@@ -151,7 +141,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(
               favorite: true,
               private: true,
@@ -175,7 +164,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(
               favorite: true,
               private: true,
@@ -199,7 +187,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            index: 0,
             item: testItem.copyWith(
               favorite: true,
               private: true,

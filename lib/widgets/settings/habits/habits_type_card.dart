@@ -10,14 +10,10 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class HabitsTypeCard extends StatelessWidget {
   const HabitsTypeCard({
     required this.item,
-    required this.index,
-    required this.color,
     super.key,
   });
 
   final HabitDefinition item;
-  final int index;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {

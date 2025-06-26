@@ -37,12 +37,10 @@ class SpeechModalListTile extends ConsumerWidget {
 class SpeechModalContent extends StatelessWidget {
   const SpeechModalContent({
     required this.entryId,
-    required this.navigateToProgressModal,
     super.key,
   });
 
   final String entryId;
-  final void Function() navigateToProgressModal;
 
   @override
   Widget build(BuildContext context) {

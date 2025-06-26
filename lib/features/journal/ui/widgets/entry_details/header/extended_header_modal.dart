@@ -39,10 +39,7 @@ class ExtendedHeaderModal {
     final speechRecognitionModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.speechModalTitle,
-      child: SpeechModalContent(
-        entryId: entryId,
-        navigateToProgressModal: () => pageIndexNotifier.value = 3,
-      ),
+      child: SpeechModalContent(entryId: entryId),
       onTapBack: () => pageIndexNotifier.value = 0,
     );
 

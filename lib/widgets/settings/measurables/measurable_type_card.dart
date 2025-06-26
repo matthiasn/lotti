@@ -9,12 +9,10 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class MeasurableTypeCard extends StatelessWidget {
   const MeasurableTypeCard({
     required this.item,
-    required this.index,
     super.key,
   });
 
   final MeasurableDataType item;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
