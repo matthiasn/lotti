@@ -263,7 +263,6 @@ void main() {
           InferenceProviderType.ollama: Icons.computer,
           InferenceProviderType.genericOpenAi: Icons.cloud,
           InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
-          InferenceProviderType.fastWhisper: Icons.mic,
         };
 
         for (final entry in providerTypes.entries) {

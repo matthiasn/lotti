@@ -170,50 +170,6 @@ class CloudInferenceRepository {
           apiKey: apiKey,
         );
 
-    // For FastWhisper, we need to handle the audio transcription differently
-    if (provider.inferenceProviderType == InferenceProviderType.fastWhisper) {
-      // FastWhisper uses a different API format
-      // Create a stream that performs the async operation
-      return Stream.fromFuture(
-        () async {
-          final response = await _httpClient.post(
-            Uri.parse('$baseUrl/transcribe'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          );
-
-          if (response.statusCode != 200) {
-            developer.log('Failed to transcribe audio: ${response.body}',
-                name: 'CloudInferenceRepository');
-            throw Exception('Failed to transcribe audio: ${response.body}');
-          }
-
-          final result = jsonDecode(response.body) as Map<String, dynamic>;
-          final text = result['text'] as String;
-
-          // Create a mock stream response to match the expected format
-          return CreateChatCompletionStreamResponse(
-            id: 'fastwhisper-${DateTime.now().millisecondsSinceEpoch}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          );
-        }(),
-      ).asBroadcastStream();
-    }
-
     // For Whisper, we need to handle the audio transcription using our Python server
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
       // Whisper uses our Python server that calls OpenAI's API

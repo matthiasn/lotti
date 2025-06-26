@@ -144,8 +144,6 @@
   "aiInferenceErrorUnknownTitle": "Error",
   "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
   "aiProviderAnthropicName": "Anthropic Claude",
-  "aiProviderFastWhisperDescription": "Local speech recognition with FastWhisper",
-  "aiProviderFastWhisperName": "FastWhisper",
   "aiProviderGeminiDescription": "Google's Gemini AI models",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API compatible with OpenAI format",

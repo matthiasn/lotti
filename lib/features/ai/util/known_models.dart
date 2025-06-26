@@ -62,7 +62,6 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.openAi: openaiModels,
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
-  InferenceProviderType.fastWhisper: fastWhisperModels,
   InferenceProviderType.whisper: whisperModels,
 };
 
@@ -242,11 +241,11 @@ const List<KnownModel> openRouterModels = [
   ),
 ];
 
-/// FastWhisper models - Local speech recognition models
-const List<KnownModel> fastWhisperModels = [
+/// Whisper models - OpenAI's cloud-based speech recognition models
+const List<KnownModel> whisperModels = [
   KnownModel(
     providerModelId: 'small',
-    name: 'Whisper Small',
+    name: 'Whisper Local Small',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
@@ -254,7 +253,7 @@ const List<KnownModel> fastWhisperModels = [
   ),
   KnownModel(
     providerModelId: 'medium',
-    name: 'Whisper Medium',
+    name: 'Whisper Local Medium',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
@@ -262,24 +261,11 @@ const List<KnownModel> fastWhisperModels = [
   ),
   KnownModel(
     providerModelId: 'large',
-    name: 'Whisper Large',
+    name: 'Whisper Local Large',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Most accurate Whisper model',
-  ),
-];
-
-/// Whisper models - OpenAI's cloud-based speech recognition models
-const List<KnownModel> whisperModels = [
-  KnownModel(
-    providerModelId: 'whisper-1',
-    name: 'Whisper 1',
-    inputModalities: [Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        "OpenAI's cloud-based Whisper model for accurate transcription",
+    description: 'Most accurate local Whisper model',
   ),
 ];
 

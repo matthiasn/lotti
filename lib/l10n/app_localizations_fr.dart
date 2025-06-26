@@ -349,13 +349,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderAnthropicName => 'Anthropic Claude';
 
   @override
-  String get aiProviderFastWhisperDescription =>
-      'Local speech recognition with FastWhisper';
-
-  @override
-  String get aiProviderFastWhisperName => 'FastWhisper';
-
-  @override
   String get aiProviderGeminiDescription => 'Google\'s Gemini AI models';
 
   @override
