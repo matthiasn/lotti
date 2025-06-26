@@ -241,7 +241,7 @@ const List<KnownModel> openRouterModels = [
   ),
 ];
 
-/// Whisper models - OpenAI's cloud-based speech recognition models
+/// Whisper models (running locally)
 const List<KnownModel> whisperModels = [
   KnownModel(
     providerModelId: 'whisper-small',
