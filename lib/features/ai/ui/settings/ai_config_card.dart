@@ -81,8 +81,8 @@ class AiConfigCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: AppTheme.animationDuration),
+      curve: AppTheme.animationCurve,
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.light
             ? context.colorScheme.surface
@@ -105,42 +105,54 @@ class AiConfigCard extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.light
-              ? context.colorScheme.outline.withValues(alpha: 0.3)
-              : context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+              ? context.colorScheme.outline
+                  .withValues(alpha: AppTheme.alphaOutline)
+              : context.colorScheme.primaryContainer
+                  .withValues(alpha: AppTheme.alphaPrimaryContainer),
         ),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.light
-                ? context.colorScheme.shadow.withValues(alpha: 0.08)
-                : context.colorScheme.shadow.withValues(alpha: 0.15),
-            blurRadius:
-                Theme.of(context).brightness == Brightness.light ? 6 : 10,
-            offset: const Offset(0, 2),
+                ? context.colorScheme.shadow
+                    .withValues(alpha: AppTheme.alphaShadowLight)
+                : context.colorScheme.shadow
+                    .withValues(alpha: AppTheme.alphaShadowDark),
+            blurRadius: Theme.of(context).brightness == Brightness.light
+                ? AppTheme.cardElevationLight
+                : AppTheme.cardElevationDark,
+            offset: AppTheme.shadowOffset,
           ),
         ],
       ),
       child: Material(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: context.colorScheme.primary.withValues(alpha: 0.1),
-          highlightColor: context.colorScheme.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+          splashColor: context.colorScheme.primary
+              .withValues(alpha: AppTheme.alphaPrimary),
+          highlightColor: context.colorScheme.primary
+              .withValues(alpha: AppTheme.alphaPrimaryHighlight),
           child: Container(
-            padding: EdgeInsets.all(isCompact ? 12 : 14),
+            padding: EdgeInsets.all(
+                isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
             ),
             child: Row(
               children: [
                 // Icon with premium container
                 Container(
-                  width: isCompact ? 36 : 40,
-                  height: isCompact ? 36 : 40,
+                  width: isCompact
+                      ? AppTheme.iconContainerSizeCompact
+                      : AppTheme.iconContainerSize,
+                  height: isCompact
+                      ? AppTheme.iconContainerSizeCompact
+                      : AppTheme.iconContainerSize,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -152,20 +164,27 @@ class AiConfigCard extends ConsumerWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.iconContainerBorderRadius),
                     border: Border.all(
-                      color:
-                          context.colorScheme.primary.withValues(alpha: 0.15),
+                      color: context.colorScheme.primary
+                          .withValues(alpha: AppTheme.alphaPrimaryBorder),
                     ),
                   ),
                   child: Icon(
                     _getConfigIcon(),
-                    size: isCompact ? 18 : 20,
-                    color: context.colorScheme.primary.withValues(alpha: 0.9),
+                    size: isCompact
+                        ? AppTheme.iconSizeCompact
+                        : AppTheme.iconSize,
+                    color: context.colorScheme.primary
+                        .withValues(alpha: AppTheme.alphaPrimaryIcon),
                   ),
                 ),
 
-                SizedBox(width: isCompact ? 10 : 12),
+                SizedBox(
+                    width: isCompact
+                        ? AppTheme.spacingMedium
+                        : AppTheme.spacingLarge),
 
                 // Config info with enhanced typography
                 Expanded(
@@ -178,8 +197,10 @@ class AiConfigCard extends ConsumerWidget {
                         config.name,
                         style: context.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.1,
-                          fontSize: isCompact ? 15 : 16,
+                          letterSpacing: AppTheme.letterSpacingTitle,
+                          fontSize: isCompact
+                              ? AppTheme.titleFontSizeCompact
+                              : AppTheme.titleFontSize,
                           color: context.colorScheme.onSurface,
                         ),
                         maxLines: 1,
@@ -188,7 +209,9 @@ class AiConfigCard extends ConsumerWidget {
 
                       // Provider info for models
                       if (config is AiConfigModel) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(
+                            height:
+                                AppTheme.spacingBetweenTitleAndSubtitleCompact),
                         _CompactProviderName(
                           providerId:
                               (config as AiConfigModel).inferenceProviderId,
@@ -199,15 +222,21 @@ class AiConfigCard extends ConsumerWidget {
                       // Description
                       if (config.description != null &&
                           config.description!.isNotEmpty) ...[
-                        SizedBox(height: isCompact ? 2 : 4),
+                        SizedBox(
+                            height: isCompact
+                                ? AppTheme.spacingBetweenTitleAndSubtitleCompact
+                                : AppTheme.spacingBetweenTitleAndSubtitle),
                         Text(
                           config.description!,
                           style: context.textTheme.bodySmall?.copyWith(
                             color: context.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.8),
-                            fontSize: isCompact ? 11 : 12,
-                            height: 1.4,
-                            letterSpacing: 0,
+                                .withValues(
+                                    alpha: AppTheme.alphaSurfaceVariant),
+                            fontSize: isCompact
+                                ? AppTheme.subtitleFontSizeCompact
+                                : AppTheme.subtitleFontSize,
+                            height: AppTheme.lineHeightSubtitle,
+                            letterSpacing: AppTheme.letterSpacingSubtitle,
                           ),
                           maxLines: isCompact ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
@@ -216,7 +245,7 @@ class AiConfigCard extends ConsumerWidget {
 
                       // Capabilities for models
                       if (showCapabilities && config is AiConfigModel) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppTheme.spacingBetweenElements),
                         _CapabilityIndicators(
                           model: config as AiConfigModel,
                           isCompact: isCompact,
@@ -229,9 +258,11 @@ class AiConfigCard extends ConsumerWidget {
                 // Chevron
                 Icon(
                   Icons.chevron_right,
-                  size: isCompact ? 18 : 20,
+                  size: isCompact
+                      ? AppTheme.chevronSizeCompact
+                      : AppTheme.chevronSize,
                   color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.6),
+                      .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
                 ),
               ],
             ),
@@ -301,31 +332,40 @@ class _CompactProviderName extends ConsumerWidget {
         final providerName = provider?.name ?? context.messages.commonUnknown;
         return Container(
           padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 5 : 6,
-            vertical: 2,
+            horizontal: isCompact
+                ? AppTheme.statusIndicatorPaddingHorizontalCompact
+                : AppTheme.statusIndicatorPaddingHorizontal,
+            vertical: AppTheme.statusIndicatorPaddingVertical,
           ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                context.colorScheme.primaryContainer.withValues(alpha: 0.25),
-                context.colorScheme.primaryContainer.withValues(alpha: 0.15),
+                context.colorScheme.primaryContainer
+                    .withValues(alpha: AppTheme.alphaPrimaryContainerLight),
+                context.colorScheme.primaryContainer
+                    .withValues(alpha: AppTheme.alphaPrimaryContainerDark),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius:
+                BorderRadius.circular(AppTheme.statusIndicatorBorderRadius),
             border: Border.all(
-              color: context.colorScheme.primary.withValues(alpha: 0.1),
-              width: 0.5,
+              color: context.colorScheme.primary
+                  .withValues(alpha: AppTheme.alphaStatusIndicatorBorder),
+              width: AppTheme.statusIndicatorBorderWidth,
             ),
           ),
           child: Text(
             providerName,
             style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.primary.withValues(alpha: 0.9),
+              color: context.colorScheme.primary
+                  .withValues(alpha: AppTheme.alphaPrimaryIcon),
               fontWeight: FontWeight.w600,
-              fontSize: isCompact ? 10 : 11,
-              letterSpacing: 0.1,
+              fontSize: isCompact
+                  ? AppTheme.statusIndicatorFontSizeCompact
+                  : AppTheme.statusIndicatorFontSize,
+              letterSpacing: AppTheme.letterSpacingTitle,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -334,36 +374,49 @@ class _CompactProviderName extends ConsumerWidget {
       },
       loading: () => Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 5 : 6,
-          vertical: 2,
+          horizontal: isCompact
+              ? AppTheme.statusIndicatorPaddingHorizontalCompact
+              : AppTheme.statusIndicatorPaddingHorizontal,
+          vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
           color: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(5),
+              .withValues(alpha: AppTheme.alphaSurfaceContainerHighest),
+          borderRadius:
+              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
         ),
         child: Text(
           context.messages.commonLoading,
           style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-            fontSize: isCompact ? 9 : 10,
+            color: context.colorScheme.onSurfaceVariant
+                .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
+            fontSize: isCompact
+                ? AppTheme.statusIndicatorFontSizeTiny
+                : AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
       ),
       error: (_, __) => Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 5 : 6,
-          vertical: 2,
+          horizontal: isCompact
+              ? AppTheme.statusIndicatorPaddingHorizontalCompact
+              : AppTheme.statusIndicatorPaddingHorizontal,
+          vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
-          color: context.colorScheme.errorContainer.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(5),
+          color: context.colorScheme.errorContainer
+              .withValues(alpha: AppTheme.alphaErrorContainer),
+          borderRadius:
+              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
         ),
         child: Text(
           context.messages.commonError,
           style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.error.withValues(alpha: 0.8),
-            fontSize: isCompact ? 9 : 10,
+            color: context.colorScheme.error
+                .withValues(alpha: AppTheme.alphaErrorText),
+            fontSize: isCompact
+                ? AppTheme.statusIndicatorFontSizeTiny
+                : AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
       ),
@@ -383,7 +436,8 @@ class _CapabilityIndicators extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: isCompact ? 4 : 6,
+      spacing:
+          isCompact ? AppTheme.spacingSmall : AppTheme.spacingBetweenElements,
       children: [
         // Text support (always present)
         _buildCapabilityIcon(
@@ -427,21 +481,30 @@ class _CapabilityIndicators extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Container(
-        width: isCompact ? 20 : 24,
-        height: isCompact ? 20 : 24,
+        width: isCompact
+            ? AppTheme.statusIndicatorSizeCompact
+            : AppTheme.statusIndicatorSize,
+        height: isCompact
+            ? AppTheme.statusIndicatorSizeCompact
+            : AppTheme.statusIndicatorSize,
         decoration: BoxDecoration(
           color: isSupported
-              ? context.colorScheme.primaryContainer.withValues(alpha: 0.7)
+              ? context.colorScheme.primaryContainer
+                  .withValues(alpha: AppTheme.alphaPrimaryContainerActive)
               : context.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(4),
+                  .withValues(alpha: AppTheme.alphaSurfaceContainerHighest),
+          borderRadius:
+              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusTiny),
         ),
         child: Icon(
           icon,
-          size: isCompact ? 12 : 14,
+          size: isCompact
+              ? AppTheme.statusIndicatorIconSizeCompact
+              : AppTheme.statusIndicatorIconSize,
           color: isSupported
               ? context.colorScheme.primary
-              : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              : context.colorScheme.onSurfaceVariant
+                  .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
         ),
       ),
     );

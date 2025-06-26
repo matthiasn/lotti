@@ -38,6 +38,76 @@ class AppTheme {
   // Chevron icon size
   static const double chevronSize = 20;
   static const double chevronSizeCompact = 18;
+
+  // Typography constants
+  static const double titleFontSize = 16;
+  static const double titleFontSizeCompact = 15;
+  static const double subtitleFontSize = 12;
+  static const double subtitleFontSizeCompact = 11;
+  static const double letterSpacingTitle = 0.1;
+  static const double letterSpacingSubtitle = 0;
+  static const double lineHeightSubtitle = 1.4;
+
+  // Alpha values for colors
+  static const double alphaOutline = 0.3;
+  static const double alphaPrimaryContainer = 0.15;
+  static const double alphaShadowLight = 0.08;
+  static const double alphaShadowDark = 0.15;
+  static const double alphaPrimary = 0.1;
+  static const double alphaPrimaryHighlight = 0.05;
+  static const double alphaPrimaryBorder = 0.15;
+  static const double alphaPrimaryIcon = 0.9;
+  static const double alphaSurfaceVariant = 0.8;
+  static const double alphaSurfaceVariantChevron = 0.6;
+  static const double alphaDestructive = 0.3;
+  static const double alphaDestructiveContainer = 0.1;
+  static const double alphaDestructiveGradientStart = 0.2;
+  static const double alphaDestructiveGradientEnd = 0.1;
+  static const double alphaDestructiveIcon = 0.9;
+  static const double alphaDestructiveText = 0.8;
+
+  // Animation constants
+  static const int animationDuration = 200;
+  static const Curve animationCurve = Curves.easeOutCubic;
+
+  // Spacing between elements
+  static const double spacingBetweenTitleAndSubtitle = 4;
+  static const double spacingBetweenTitleAndSubtitleCompact = 2;
+  static const double spacingBetweenElements = 6;
+
+  // Offset for shadows
+  static const Offset shadowOffset = Offset(0, 2);
+
+  // Border width
+  static const double borderWidth = 1;
+
+  // Status indicator constants
+  static const double statusIndicatorPaddingHorizontal = 6;
+  static const double statusIndicatorPaddingHorizontalCompact = 5;
+  static const double statusIndicatorPaddingVertical = 2;
+  static const double statusIndicatorBorderRadius = 6;
+  static const double statusIndicatorBorderRadiusSmall = 5;
+  static const double statusIndicatorBorderRadiusTiny = 4;
+  static const double statusIndicatorBorderWidth = 0.5;
+  static const double statusIndicatorSize = 24;
+  static const double statusIndicatorSizeCompact = 20;
+  static const double statusIndicatorIconSize = 14;
+  static const double statusIndicatorIconSizeCompact = 12;
+
+  // Status indicator alpha values
+  static const double alphaPrimaryContainerLight = 0.25;
+  static const double alphaPrimaryContainerDark = 0.15;
+  static const double alphaStatusIndicatorBorder = 0.1;
+  static const double alphaSurfaceContainerHighest = 0.3;
+  static const double alphaSurfaceVariantDim = 0.5;
+  static const double alphaErrorContainer = 0.5;
+  static const double alphaErrorText = 0.8;
+  static const double alphaPrimaryContainerActive = 0.7;
+
+  // Font sizes for status indicators
+  static const double statusIndicatorFontSize = 11;
+  static const double statusIndicatorFontSizeCompact = 10;
+  static const double statusIndicatorFontSizeTiny = 9;
 }
 
 const double inputBorderRadius = 10;
