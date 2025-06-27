@@ -13,7 +13,6 @@ class ProviderConfig {
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
     InferenceProviderType.anthropic: 'https://api.anthropic.com/v1',
     InferenceProviderType.openRouter: 'https://openrouter.ai/api/v1',
-    InferenceProviderType.fastWhisper: 'http://localhost:8083',
     InferenceProviderType.whisper: 'http://localhost:8084',
   };
 
@@ -25,14 +24,12 @@ class ProviderConfig {
     InferenceProviderType.openAi: 'OpenAI',
     InferenceProviderType.anthropic: 'Anthropic',
     InferenceProviderType.openRouter: 'OpenRouter',
-    InferenceProviderType.fastWhisper: 'FastWhisper (local)',
     InferenceProviderType.whisper: 'Whisper (local)',
   };
 
   /// Provider types that don't require an API key
   static const Set<InferenceProviderType> noApiKeyRequired = {
     InferenceProviderType.ollama,
-    InferenceProviderType.fastWhisper,
     InferenceProviderType.whisper,
   };
 

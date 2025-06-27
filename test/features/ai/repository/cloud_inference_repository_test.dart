@@ -730,150 +730,6 @@ void main() {
       );
     });
 
-    test('generateWithAudio handles FastWhisper provider type successfully',
-        () async {
-      // Create a FastWhisper provider
-      final fastWhisperProvider = AiConfig.inferenceProvider(
-        id: 'fastwhisper-id',
-        name: 'FastWhisper',
-        baseUrl: 'http://localhost:8083',
-        apiKey: '',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.fastWhisper,
-      ) as AiConfigInferenceProvider;
-
-      const audioBase64 = 'audio-base64-data';
-      const transcribedText = 'Hello, this is the transcribed text.';
-
-      // Mock successful HTTP response
-      when(() => mockHttpClient.post(
-            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )).thenAnswer((_) async => http.Response(
-            jsonEncode({'text': transcribedText}),
-            200,
-          ));
-
-      final stream = repository.generateWithAudio(
-        prompt,
-        model: model,
-        baseUrl: fastWhisperProvider.baseUrl,
-        apiKey: fastWhisperProvider.apiKey,
-        audioBase64: audioBase64,
-        provider: fastWhisperProvider,
-      );
-
-      expect(stream.isBroadcast, isTrue);
-
-      final response = await stream.first;
-      expect(response.choices.length, 1);
-      expect(response.choices[0].delta?.content, transcribedText);
-      expect(response.id, startsWith('fastwhisper-'));
-      expect(response.object, 'chat.completion.chunk');
-
-      // Verify the HTTP call was made with correct parameters
-      verify(() => mockHttpClient.post(
-            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )).called(1);
-    });
-
-    test('generateWithAudio FastWhisper handles malformed JSON response',
-        () async {
-      // Create a FastWhisper provider
-      final fastWhisperProvider = AiConfig.inferenceProvider(
-        id: 'fastwhisper-id',
-        name: 'FastWhisper',
-        baseUrl: 'http://localhost:8083',
-        apiKey: '',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.fastWhisper,
-      ) as AiConfigInferenceProvider;
-
-      const audioBase64 = 'audio-base64-data';
-
-      // Mock HTTP response with malformed JSON
-      when(() => mockHttpClient.post(
-            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )).thenAnswer((_) async => http.Response(
-            'Invalid JSON response',
-            200,
-          ));
-
-      final stream = repository.generateWithAudio(
-        prompt,
-        model: model,
-        baseUrl: fastWhisperProvider.baseUrl,
-        apiKey: fastWhisperProvider.apiKey,
-        audioBase64: audioBase64,
-        provider: fastWhisperProvider,
-      );
-
-      // Should fail when trying to parse the JSON
-      await expectLater(
-        stream.first,
-        throwsA(isA<FormatException>()),
-      );
-    });
-
-    test('generateWithAudio FastWhisper handles network exceptions', () async {
-      // Create a FastWhisper provider
-      final fastWhisperProvider = AiConfig.inferenceProvider(
-        id: 'fastwhisper-id',
-        name: 'FastWhisper',
-        baseUrl: 'http://localhost:8083',
-        apiKey: '',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.fastWhisper,
-      ) as AiConfigInferenceProvider;
-
-      const audioBase64 = 'audio-base64-data';
-
-      // Mock HTTP client to throw network exception
-      when(() => mockHttpClient.post(
-            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )).thenThrow(Exception('Network connection failed'));
-
-      final stream = repository.generateWithAudio(
-        prompt,
-        model: model,
-        baseUrl: fastWhisperProvider.baseUrl,
-        apiKey: fastWhisperProvider.apiKey,
-        audioBase64: audioBase64,
-        provider: fastWhisperProvider,
-      );
-
-      // Should propagate the network exception
-      await expectLater(
-        stream.first,
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Network connection failed'),
-          ),
-        ),
-      );
-    });
-
     test(
         'generateWithAudio uses standard OpenAI format for non-FastWhisper provider',
         () async {
@@ -919,65 +775,6 @@ void main() {
           request: any(named: 'request'),
         ),
       ).called(1);
-    });
-
-    test('generateWithAudio handles FastWhisper HTTP error responses',
-        () async {
-      // Create a FastWhisper provider
-      final fastWhisperProvider = AiConfig.inferenceProvider(
-        id: 'fastwhisper-id',
-        name: 'FastWhisper',
-        baseUrl: 'http://localhost:8083',
-        apiKey: '',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.fastWhisper,
-      ) as AiConfigInferenceProvider;
-
-      const audioBase64 = 'audio-base64-data';
-      const errorMessage = 'Audio transcription failed';
-
-      // Mock HTTP error response
-      when(() => mockHttpClient.post(
-            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )).thenAnswer((_) async => http.Response(
-            errorMessage,
-            500,
-          ));
-
-      final stream = repository.generateWithAudio(
-        prompt,
-        model: model,
-        baseUrl: fastWhisperProvider.baseUrl,
-        apiKey: fastWhisperProvider.apiKey,
-        audioBase64: audioBase64,
-        provider: fastWhisperProvider,
-      );
-
-      // Should fail with an Exception containing the error message
-      await expectLater(
-        stream.first,
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Failed to transcribe audio: $errorMessage'),
-          ),
-        ),
-      );
-
-      verify(() => mockHttpClient.post(
-            Uri.parse('${fastWhisperProvider.baseUrl}/transcribe'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )).called(1);
     });
 
     test('generate without overrideClient creates new OpenAIClient', () {
@@ -1216,6 +1013,283 @@ void main() {
               'audio': audioBase64,
             }),
           )).called(1);
+    });
+
+    test('generateWithAudio handles Whisper provider HTTP error', () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+
+      // Mock HTTP error response from the Python server
+      when(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'error': 'Audio transcription failed'}),
+            500,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: whisperProvider.baseUrl,
+        apiKey: whisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: whisperProvider,
+      );
+
+      // Should throw an exception for HTTP error
+      expect(
+        stream.first,
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('Failed to transcribe audio'),
+        )),
+      );
+    });
+
+    test('generateWithAudio handles Whisper provider invalid JSON response',
+        () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+
+      // Mock invalid JSON response from the Python server
+      when(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            'Invalid JSON response',
+            200,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: whisperProvider.baseUrl,
+        apiKey: whisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: whisperProvider,
+      );
+
+      // Should throw an exception for invalid JSON
+      expect(
+        stream.first,
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('generateWithAudio handles Whisper provider missing text field',
+        () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+
+      // Mock response without 'text' field
+      when(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'error': 'No text field'}),
+            200,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: whisperProvider.baseUrl,
+        apiKey: whisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: whisperProvider,
+      );
+
+      // Should throw an exception for missing text field
+      expect(
+        stream.first,
+        throwsA(isA<TypeError>()),
+      );
+    });
+
+    test('generateWithAudio uses maxCompletionTokens parameter for Whisper',
+        () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+      const transcribedText = 'This is the transcription.';
+      const maxCompletionTokens = 1000;
+
+      // Mock successful HTTP response
+      when(() => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ));
+
+      await repository
+          .generateWithAudio(
+            prompt,
+            model: model,
+            baseUrl: whisperProvider.baseUrl,
+            apiKey: whisperProvider.apiKey,
+            audioBase64: audioBase64,
+            provider: whisperProvider,
+            maxCompletionTokens: maxCompletionTokens,
+          )
+          .first;
+
+      // Verify maxCompletionTokens parameter is accepted (Whisper doesn't use it but should accept it)
+      verify(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).called(1);
+    });
+
+    test('generateWithAudio with empty audio data for Whisper', () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = '';
+      const transcribedText = '';
+
+      // Mock response for empty audio
+      when(() => mockHttpClient.post(
+            Uri.parse('${whisperProvider.baseUrl}/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: whisperProvider.baseUrl,
+        apiKey: whisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: whisperProvider,
+      );
+
+      final response = await stream.first;
+      expect(response.choices[0].delta?.content, transcribedText);
+    });
+
+    test('constructor with custom httpClient parameter', () {
+      final customHttpClient = MockHttpClient();
+      final customRepository = CloudInferenceRepository(
+        MockRef(),
+        httpClient: customHttpClient,
+      );
+
+      expect(customRepository, isA<CloudInferenceRepository>());
+      expect(customRepository.ref, isA<Ref>());
+    });
+
+    test('generateWithAudio creates proper response structure for Whisper',
+        () async {
+      // Create a Whisper provider
+      final whisperProvider = AiConfig.inferenceProvider(
+        id: 'whisper-id',
+        name: 'OpenAI Whisper',
+        baseUrl: 'http://localhost:8084',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.whisper,
+      ) as AiConfigInferenceProvider;
+
+      const audioBase64 = 'audio-base64-data';
+      const transcribedText = 'Test transcription';
+
+      when(() => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ));
+
+      final stream = repository.generateWithAudio(
+        prompt,
+        model: model,
+        baseUrl: whisperProvider.baseUrl,
+        apiKey: whisperProvider.apiKey,
+        audioBase64: audioBase64,
+        provider: whisperProvider,
+      );
+
+      final response = await stream.first;
+
+      // Verify response structure
+      expect(response.id, startsWith('whisper-'));
+      expect(response.object, equals('chat.completion.chunk'));
+      expect(response.created, isA<int>());
+      expect(response.choices, hasLength(1));
+      expect(response.choices[0].index, equals(0));
+      expect(response.choices[0].delta?.content, equals(transcribedText));
+      expect(response.choices[0].delta?.role, isNull);
     });
   });
 }

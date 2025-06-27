@@ -62,7 +62,6 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.openAi: openaiModels,
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
-  InferenceProviderType.fastWhisper: fastWhisperModels,
   InferenceProviderType.whisper: whisperModels,
 };
 
@@ -242,44 +241,31 @@ const List<KnownModel> openRouterModels = [
   ),
 ];
 
-/// FastWhisper models - Local speech recognition models
-const List<KnownModel> fastWhisperModels = [
+/// Whisper models (running locally)
+const List<KnownModel> whisperModels = [
   KnownModel(
-    providerModelId: 'small',
-    name: 'Whisper Small',
+    providerModelId: 'whisper-small',
+    name: 'Whisper Local Small',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'Relatively accurate for simple audio',
   ),
   KnownModel(
-    providerModelId: 'medium',
-    name: 'Whisper Medium',
+    providerModelId: 'whisper-medium',
+    name: 'Whisper Local Medium',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'Balanced Whisper model, good for general use',
   ),
   KnownModel(
-    providerModelId: 'large',
-    name: 'Whisper Large',
+    providerModelId: 'whisper-large',
+    name: 'Whisper Local Large',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Most accurate Whisper model',
-  ),
-];
-
-/// Whisper models - OpenAI's cloud-based speech recognition models
-const List<KnownModel> whisperModels = [
-  KnownModel(
-    providerModelId: 'whisper-1',
-    name: 'Whisper 1',
-    inputModalities: [Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        "OpenAI's cloud-based Whisper model for accurate transcription",
+    description: 'Most accurate local Whisper model',
   ),
 ];
 

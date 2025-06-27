@@ -67,6 +67,15 @@ void main() {
                 'OpenRouter model ${model.name} should not have maxCompletionTokens defined',
           );
         }
+
+        for (final model in whisperModels) {
+          expect(
+            model.maxCompletionTokens,
+            isNull,
+            reason:
+                'Whisper model ${model.name} should not have maxCompletionTokens defined',
+          );
+        }
       });
 
       test(
@@ -168,6 +177,7 @@ void main() {
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
+            InferenceProviderType.whisper,
           ]),
         );
       });

@@ -346,13 +346,13 @@ A: Task-context prompts (like "Image Analysis in Task Context" or "Audio Transcr
 The system automatically filters available prompts based on the current entity and its relationships, ensuring users only see relevant options.
 
 ### Q: Which AI providers are supported?
-A: The system supports OpenAI, Anthropic, Google, Groq, OpenRouter, and custom OpenAI-compatible endpoints.
+A: The system supports OpenAI, Anthropic, Google, Groq, OpenRouter, local Whisper models, and custom OpenAI-compatible endpoints.
 
 ### Q: How are errors handled?
 A: Errors are wrapped in `InferenceError` objects and displayed using `AiErrorDisplay` widget with user-friendly messages.
 
 ### Q: Can I use local models?
-A: Yes, by configuring a custom endpoint pointing to a local inference server (e.g., Ollama).
+A: Yes, by configuring a custom endpoint pointing to a local inference server (e.g., Ollama for text models, or local Whisper server for audio transcription).
 
 ### Q: How does the system handle concurrent AI requests?
 A: The system includes robust concurrency protection:

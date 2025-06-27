@@ -46,7 +46,6 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.openAi: 'openAi',
   InferenceProviderType.openRouter: 'openRouter',
   InferenceProviderType.ollama: 'ollama',
-  InferenceProviderType.fastWhisper: 'fastWhisper',
   InferenceProviderType.whisper: 'whisper',
 };
 

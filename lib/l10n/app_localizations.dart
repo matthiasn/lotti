@@ -705,18 +705,6 @@ abstract class AppLocalizations {
   /// **'Anthropic Claude'**
   String get aiProviderAnthropicName;
 
-  /// No description provided for @aiProviderFastWhisperDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Local speech recognition with FastWhisper'**
-  String get aiProviderFastWhisperDescription;
-
-  /// No description provided for @aiProviderFastWhisperName.
-  ///
-  /// In en, this message translates to:
-  /// **'FastWhisper'**
-  String get aiProviderFastWhisperName;
-
   /// No description provided for @aiProviderGeminiDescription.
   ///
   /// In en, this message translates to:
