@@ -38,3 +38,37 @@ SELECT * FROM log_entries
 logEntryById:
 SELECT * FROM log_entries
   WHERE id = :id;
+
+-- Search through entire log database without limit
+-- This allows finding ALL matching logs, not just recent ones
+-- Performance is managed through debouncing and efficient SQL
+searchLogEntries:
+SELECT * FROM log_entries
+  WHERE (
+    LOWER(message) LIKE :searchQuery OR
+    LOWER(domain) LIKE :searchQuery OR
+    (sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE :searchQuery)
+  )
+  ORDER BY created_at DESC;
+
+-- Paginated search query for better performance with large datasets
+-- Limits memory usage by loading only a subset of results
+searchLogEntriesPaginated:
+SELECT * FROM log_entries
+  WHERE (
+    LOWER(message) LIKE :searchQuery OR
+    LOWER(domain) LIKE :searchQuery OR
+    (sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE :searchQuery)
+  )
+  ORDER BY created_at DESC
+  LIMIT :limit OFFSET :offset;
+
+-- Count query for pagination information
+-- Returns total number of matching results without loading all data
+searchLogEntriesCount:
+SELECT COUNT(*) FROM log_entries
+  WHERE (
+    LOWER(message) LIKE :searchQuery OR
+    LOWER(domain) LIKE :searchQuery OR
+    (sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE :searchQuery)
+  );
