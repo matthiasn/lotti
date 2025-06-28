@@ -11,7 +11,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/task_list_card_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -244,7 +244,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        WidgetTestBench(
+        RiverpodWidgetTestBench(
           child: CardWrapperWidget(
             item: testImage,
             taskAsListView: false,
@@ -256,14 +256,14 @@ void main() {
       // Assert
       expect(find.byType(JournalImageCard), findsOneWidget);
       expect(find.byType(JournalCard), findsNothing);
-      expect(find.byType(TaskListCard), findsNothing);
+      expect(find.byType(ModernTaskCard), findsNothing);
     });
 
-    testWidgets('renders TaskListCard for Task when taskAsListView is true',
+    testWidgets('renders ModernTaskCard for Task when taskAsListView is true',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        WidgetTestBench(
+        RiverpodWidgetTestBench(
           child: CardWrapperWidget(
             item: testTask,
             taskAsListView: true,
@@ -273,7 +273,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.byType(TaskListCard), findsOneWidget);
+      expect(find.byType(ModernTaskCard), findsOneWidget);
       expect(find.byType(JournalCard), findsNothing);
       expect(find.byType(JournalImageCard), findsNothing);
     });
@@ -282,7 +282,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        WidgetTestBench(
+        RiverpodWidgetTestBench(
           child: CardWrapperWidget(
             item: testTask,
             taskAsListView: false,
@@ -293,7 +293,7 @@ void main() {
 
       // Assert
       expect(find.byType(JournalCard), findsOneWidget);
-      expect(find.byType(TaskListCard), findsNothing);
+      expect(find.byType(ModernTaskCard), findsNothing);
       expect(find.byType(JournalImageCard), findsNothing);
     });
 
@@ -301,7 +301,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        WidgetTestBench(
+        RiverpodWidgetTestBench(
           child: CardWrapperWidget(
             item: testJournalEntry,
             taskAsListView: false, // value doesn't matter for non-Task types
@@ -312,7 +312,7 @@ void main() {
 
       // Assert
       expect(find.byType(JournalCard), findsOneWidget);
-      expect(find.byType(TaskListCard), findsNothing);
+      expect(find.byType(ModernTaskCard), findsNothing);
       expect(find.byType(JournalImageCard), findsNothing);
     });
 
@@ -320,7 +320,7 @@ void main() {
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        WidgetTestBench(
+        RiverpodWidgetTestBench(
           child: CardWrapperWidget(
             item: testEvent,
             taskAsListView: false, // value doesn't matter for non-Task types
@@ -331,7 +331,7 @@ void main() {
 
       // Assert
       expect(find.byType(JournalCard), findsOneWidget);
-      expect(find.byType(TaskListCard), findsNothing);
+      expect(find.byType(ModernTaskCard), findsNothing);
       expect(find.byType(JournalImageCard), findsNothing);
     });
   });
