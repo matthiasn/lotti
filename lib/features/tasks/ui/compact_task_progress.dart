@@ -63,7 +63,7 @@ class CompactTaskProgress extends ConsumerWidget {
         SizedBox(
           width: 42,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progressValue.toDouble(),
               backgroundColor: context.colorScheme.outline.withValues(
@@ -72,7 +72,7 @@ class CompactTaskProgress extends ConsumerWidget {
               color: isOvertime
                   ? context.colorScheme.error.withValues(alpha: 0.7)
                   : successColor.withValues(alpha: 0.7),
-              minHeight: 12,
+              minHeight: 8,
             ),
           ),
         ),

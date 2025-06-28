@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/cards/index.dart';
 
 /// A modern, card-based settings item with gradient styling
 ///
@@ -31,141 +32,32 @@ class ModernSettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: AppTheme.animationDuration),
-      curve: AppTheme.animationCurve,
-      decoration: BoxDecoration(
-        color: backgroundColor ??
-            (Theme.of(context).brightness == Brightness.light
-                ? context.colorScheme.surface
-                : null),
-        gradient: backgroundColor == null
-            ? GradientThemes.cardGradient(context)
-            : null,
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border: Border.all(
-          color: borderColor ??
-              (Theme.of(context).brightness == Brightness.light
-                  ? context.colorScheme.outline
-                      .withValues(alpha: AppTheme.alphaOutline)
-                  : context.colorScheme.primaryContainer
-                      .withValues(alpha: AppTheme.alphaPrimaryContainer)),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).brightness == Brightness.light
-                ? context.colorScheme.shadow
-                    .withValues(alpha: AppTheme.alphaShadowLight)
-                : context.colorScheme.shadow
-                    .withValues(alpha: AppTheme.alphaShadowDark),
-            blurRadius: Theme.of(context).brightness == Brightness.light
-                ? AppTheme.cardElevationLight
-                : AppTheme.cardElevationDark,
-            offset: AppTheme.shadowOffset,
-          ),
-        ],
-      ),
-      child: Material(
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          splashColor: context.colorScheme.primary
-              .withValues(alpha: AppTheme.alphaPrimary),
-          highlightColor: context.colorScheme.primary
-              .withValues(alpha: AppTheme.alphaPrimaryHighlight),
-          child: Container(
-            padding: EdgeInsets.all(
-                isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-            ),
-            child: Row(
-              children: [
-                // Leading widget (icon or custom widget)
-                if (leading != null) ...[
-                  leading!,
-                  SizedBox(
-                      width: isCompact
-                          ? AppTheme.spacingMedium
-                          : AppTheme.spacingLarge),
-                ],
-
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Title
-                      Text(
-                        title,
-                        style: context.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: AppTheme.letterSpacingTitle,
-                          fontSize: isCompact
-                              ? AppTheme.titleFontSizeCompact
-                              : AppTheme.titleFontSize,
-                          color: context.colorScheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                      // Subtitle
-                      if (subtitle != null && subtitle!.isNotEmpty) ...[
-                        SizedBox(
-                            height: isCompact
-                                ? AppTheme.spacingBetweenTitleAndSubtitleCompact
-                                : AppTheme.spacingBetweenTitleAndSubtitle),
-                        Text(
-                          subtitle!,
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant
-                                .withValues(
-                                    alpha: AppTheme.alphaSurfaceVariant),
-                            fontSize: isCompact
-                                ? AppTheme.subtitleFontSizeCompact
-                                : AppTheme.subtitleFontSize,
-                            height: AppTheme.lineHeightSubtitle,
-                            letterSpacing: AppTheme.letterSpacingSubtitle,
-                          ),
-                          maxLines: isCompact ? 1 : 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Trailing widget
-                if (trailing != null) ...[
-                  SizedBox(
-                      width: isCompact
-                          ? AppTheme.spacingSmall
-                          : AppTheme.spacingMedium),
-                  trailing!,
-                ],
-
-                // Chevron
-                if (showChevron) ...[
-                  SizedBox(
-                      width: isCompact
-                          ? AppTheme.spacingSmall
-                          : AppTheme.spacingMedium),
-                  Icon(
-                    Icons.chevron_right,
-                    size: isCompact
-                        ? AppTheme.chevronSizeCompact
-                        : AppTheme.chevronSize,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
-                  ),
-                ],
-              ],
-            ),
-          ),
+    return ModernBaseCard(
+      onTap: onTap,
+      backgroundColor: backgroundColor,
+      borderColor: borderColor,
+      isCompact: isCompact,
+      child: ModernCardContent(
+        title: title,
+        subtitle: subtitle,
+        leading: leading,
+        isCompact: isCompact,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (trailing != null) trailing!,
+            if (showChevron) ...[
+              if (trailing != null) SizedBox(width: isCompact ? 4 : 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: isCompact
+                    ? AppTheme.chevronSizeCompact
+                    : AppTheme.chevronSize,
+                color: context.colorScheme.onSurfaceVariant
+                    .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -210,29 +102,10 @@ class ModernSettingsCardWithIcon extends StatelessWidget {
       trailing: trailing,
       backgroundColor: backgroundColor,
       borderColor: borderColor,
-      leading: Container(
-        width: isCompact
-            ? AppTheme.iconContainerSizeCompact
-            : AppTheme.iconContainerSize,
-        height: isCompact
-            ? AppTheme.iconContainerSizeCompact
-            : AppTheme.iconContainerSize,
-        decoration: BoxDecoration(
-          gradient: GradientThemes.iconContainerGradient(context),
-          borderRadius:
-              BorderRadius.circular(AppTheme.iconContainerBorderRadius),
-          border: Border.all(
-            color: context.colorScheme.primary
-                .withValues(alpha: AppTheme.alphaPrimaryBorder),
-          ),
-        ),
-        child: Icon(
-          icon,
-          size: isCompact ? AppTheme.iconSizeCompact : AppTheme.iconSize,
-          color: iconColor ??
-              context.colorScheme.primary
-                  .withValues(alpha: AppTheme.alphaPrimaryIcon),
-        ),
+      leading: ModernIconContainer(
+        icon: icon,
+        isCompact: isCompact,
+        iconColor: iconColor,
       ),
     );
   }
