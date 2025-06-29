@@ -1389,13 +1389,6 @@ void main() {
           ),
         ).thenAnswer((_) async => createdAiResponseEntry);
 
-        when(
-          () => mockAiInputRepo.updateAiResponseEntry(
-            entryId: any(named: 'entryId'),
-            updatedData: any(named: 'updatedData'),
-          ),
-        ).thenAnswer((_) async => true);
-
         // Mock auto-checklist service
         when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
             .thenAnswer((_) async => true);

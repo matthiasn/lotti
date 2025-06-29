@@ -118,28 +118,5 @@ void main() {
         );
       });
     });
-
-    group('getDefaultMessage with BuildContext', () {
-      testWidgets('returns correct localized messages',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            Builder(
-              builder: (context) {
-                // Test all error types
-                for (final errorType in InferenceErrorType.values) {
-                  final message = errorType.getDefaultMessage(context);
-                  expect(message, isNotEmpty);
-
-                  // Just verify it returns a non-empty string
-                  // The actual content depends on localization
-                }
-                return const SizedBox();
-              },
-            ),
-          ),
-        );
-      });
-    });
   });
 }

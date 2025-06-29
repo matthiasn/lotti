@@ -281,59 +281,6 @@ void main() {
       });
     });
 
-    group('isFilterStateValidForTab', () {
-      test('providers tab only allows search query', () {
-        const validState = AiSettingsFilterState(
-          searchQuery: 'test',
-        );
-        expect(
-            service.isFilterStateValidForTab(
-                validState, AiSettingsTab.providers),
-            isTrue);
-
-        const invalidState = AiSettingsFilterState(
-          searchQuery: 'test',
-          selectedProviders: {'provider1'},
-        );
-        expect(
-            service.isFilterStateValidForTab(
-                invalidState, AiSettingsTab.providers),
-            isFalse);
-      });
-
-      test('prompts tab only allows search query', () {
-        const validState = AiSettingsFilterState(
-          searchQuery: 'test',
-          activeTab: AiSettingsTab.prompts,
-        );
-        expect(
-            service.isFilterStateValidForTab(validState, AiSettingsTab.prompts),
-            isTrue);
-
-        const invalidState = AiSettingsFilterState(
-          searchQuery: 'test',
-          reasoningFilter: true,
-          activeTab: AiSettingsTab.prompts,
-        );
-        expect(
-            service.isFilterStateValidForTab(
-                invalidState, AiSettingsTab.prompts),
-            isFalse);
-      });
-
-      test('models tab allows all filter types', () {
-        const state = AiSettingsFilterState(
-          searchQuery: 'test',
-          selectedProviders: {'provider1'},
-          selectedCapabilities: {Modality.image},
-          reasoningFilter: true,
-          activeTab: AiSettingsTab.models,
-        );
-        expect(service.isFilterStateValidForTab(state, AiSettingsTab.models),
-            isTrue);
-      });
-    });
-
     group('getSuggestedFilters', () {
       test('returns suggested filter presets', () {
         final suggestions = service.getSuggestedFilters();

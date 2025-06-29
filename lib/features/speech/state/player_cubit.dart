@@ -113,10 +113,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void toggleTranscriptsList() {
-    emit(state.copyWith(showTranscriptsList: !state.showTranscriptsList));
-  }
-
   Future<void> pause() async {
     try {
       await _audioPlayer.pause();

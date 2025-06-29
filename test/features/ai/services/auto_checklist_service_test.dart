@@ -510,35 +510,5 @@ void main() {
             ));
       });
     });
-
-    group('getExistingChecklistCount', () {
-      test('returns 0 for task with no checklists', () async {
-        // Arrange
-        final task = testTask;
-        when(() => mockJournalDb.journalEntityById(task.meta.id))
-            .thenAnswer((_) async => task);
-
-        // Act
-        final result =
-            await service.getExistingChecklistCount(taskId: task.meta.id);
-
-        // Assert
-        expect(result, equals(0));
-      });
-
-      test('returns 0 when entity is not a task', () async {
-        // Arrange
-        final entry = testTextEntry;
-        when(() => mockJournalDb.journalEntityById(entry.meta.id))
-            .thenAnswer((_) async => entry);
-
-        // Act
-        final result =
-            await service.getExistingChecklistCount(taskId: entry.meta.id);
-
-        // Assert
-        expect(result, equals(0));
-      });
-    });
   });
 }

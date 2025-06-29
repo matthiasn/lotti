@@ -153,34 +153,6 @@ class AiSettingsFilterService {
     );
   }
 
-  /// Validates if a filter state is applicable to a specific tab
-  ///
-  /// This method helps ensure that only relevant filters are applied
-  /// to each tab (e.g., capability filters only apply to models).
-  ///
-  /// **Parameters:**
-  /// - [filterState]: The filter state to validate
-  /// - [tab]: The tab context to validate against
-  ///
-  /// **Returns:** True if the filter state is valid for the given tab
-  bool isFilterStateValidForTab(
-    AiSettingsFilterState filterState,
-    AiSettingsTab tab,
-  ) {
-    switch (tab) {
-      case AiSettingsTab.providers:
-      case AiSettingsTab.prompts:
-        // Only text search is valid for providers and prompts
-        return filterState.selectedProviders.isEmpty &&
-            filterState.selectedCapabilities.isEmpty &&
-            !filterState.reasoningFilter;
-
-      case AiSettingsTab.models:
-        // All filters are valid for models
-        return true;
-    }
-  }
-
   /// Provides suggested filter combinations for better UX
   ///
   /// This method can be used to suggest common filter patterns

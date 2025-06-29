@@ -63,8 +63,6 @@ class InferenceModelFormState with FormzMixin {
     this.inputModalities = const [Modality.text],
     this.outputModalities = const [Modality.text],
     this.isReasoningModel = false,
-    this.isSubmitting = false,
-    this.submitFailed = false,
   });
 
   final String? id; // null for new models
@@ -76,8 +74,6 @@ class InferenceModelFormState with FormzMixin {
   final List<Modality> inputModalities;
   final List<Modality> outputModalities;
   final bool isReasoningModel;
-  final bool isSubmitting;
-  final bool submitFailed;
 
   InferenceModelFormState copyWith({
     String? id,
@@ -89,8 +85,6 @@ class InferenceModelFormState with FormzMixin {
     List<Modality>? inputModalities,
     List<Modality>? outputModalities,
     bool? isReasoningModel,
-    bool? isSubmitting,
-    bool? submitFailed,
   }) {
     return InferenceModelFormState(
       id: id ?? this.id,
@@ -102,8 +96,6 @@ class InferenceModelFormState with FormzMixin {
       inputModalities: inputModalities ?? this.inputModalities,
       outputModalities: outputModalities ?? this.outputModalities,
       isReasoningModel: isReasoningModel ?? this.isReasoningModel,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      submitFailed: submitFailed ?? this.submitFailed,
     );
   }
 
