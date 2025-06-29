@@ -171,13 +171,18 @@ class NavService {
     delegateByIndex(index).beamToNamed(path, data: data);
   }
 
+  Future<void> persistNamedRoute(String route) async {
+    await _settingsDb.saveSettingsItem(lastRouteKey, route);
+    currentPath = route;
+  }
+
+  Future<String?> getSavedRoute() async {
+    return _settingsDb.itemByKey(lastRouteKey);
+  }
+
   void beamBack({Object? data}) {
     delegateByIndex(index).beamBack(data: data);
   }
-}
-
-Future<String?> getSavedRoute() async {
-  return getIt<NavService>()._settingsDb.itemByKey(lastRouteKey);
 }
 
 Future<String?> getIdFromSavedRoute() async {
@@ -185,13 +190,8 @@ Future<String?> getIdFromSavedRoute() async {
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
     caseSensitive: false,
   );
-  final route = await getSavedRoute();
+  final route = await getIt<NavService>().getSavedRoute();
   return regExp.firstMatch('$route')?.group(0);
-}
-
-Future<void> persistNamedRoute(String route) async {
-  await getIt<NavService>()._settingsDb.saveSettingsItem(lastRouteKey, route);
-  getIt<NavService>().currentPath = route;
 }
 
 void beamToNamed(String path, {Object? data}) {
