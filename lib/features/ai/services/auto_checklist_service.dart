@@ -97,24 +97,4 @@ class AutoChecklistService {
       return (success: false, checklistId: null, error: exception.toString());
     }
   }
-
-  Future<int> getExistingChecklistCount({required String taskId}) async {
-    try {
-      final task = await _journalDb.journalEntityById(taskId);
-
-      if (task is! Task) {
-        return 0;
-      }
-
-      return task.data.checklistIds?.length ?? 0;
-    } catch (exception, stackTrace) {
-      _loggingService.captureException(
-        exception,
-        domain: 'auto_checklist_service',
-        subDomain: 'getExistingChecklistCount',
-        stackTrace: stackTrace,
-      );
-      return 0;
-    }
-  }
 }

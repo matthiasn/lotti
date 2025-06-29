@@ -96,8 +96,6 @@ class PromptFormState with FormzMixin {
     this.description = const PromptDescription.pure(),
     this.category = const PromptCategory.pure(),
     this.defaultVariables = const {},
-    this.isSubmitting = false,
-    this.submitFailed = false,
     this.aiResponseType = const PromptAiResponseType.pure(),
   });
 
@@ -113,8 +111,6 @@ class PromptFormState with FormzMixin {
   final PromptDescription description;
   final PromptCategory category;
   final Map<String, String> defaultVariables;
-  final bool isSubmitting;
-  final bool submitFailed;
   final PromptAiResponseType aiResponseType;
 
   PromptFormState copyWith({
@@ -147,8 +143,6 @@ class PromptFormState with FormzMixin {
       description: description ?? this.description,
       category: category ?? this.category,
       defaultVariables: defaultVariables ?? this.defaultVariables,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      submitFailed: submitFailed ?? this.submitFailed,
       aiResponseType: aiResponseType ?? this.aiResponseType,
     );
   }

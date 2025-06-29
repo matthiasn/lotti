@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -38,34 +37,6 @@ class AiInputRepository {
       linkedId: linkedId,
       categoryId: categoryId,
     );
-  }
-
-  Future<bool> updateAiResponseEntry({
-    required String entryId,
-    required AiResponseData updatedData,
-  }) async {
-    try {
-      final entity = await _db.journalEntityById(entryId);
-      if (entity is! AiResponseEntry) {
-        return false;
-      }
-
-      final updatedEntry = entity.copyWith(
-        data: updatedData,
-        meta: await getIt<PersistenceLogic>().updateMetadata(entity.meta),
-      );
-
-      await getIt<PersistenceLogic>().updateDbEntity(updatedEntry);
-      return true;
-    } catch (e, stackTrace) {
-      developer.log(
-        'Failed to update AiResponseEntry',
-        name: 'AiInputRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
   }
 
   Future<AiInputTaskObject?> generate(String id) async {

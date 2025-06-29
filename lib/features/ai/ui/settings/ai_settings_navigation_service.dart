@@ -203,26 +203,6 @@ class AiSettingsNavigationService {
     );
   }
 
-  /// Returns the appropriate page title for create mode based on config type
-  ///
-  /// This helper method provides consistent titles for create operations.
-  ///
-  /// **Parameters:**
-  /// - [configType]: The type of configuration being created
-  ///
-  /// **Returns:** Localized title string for the create page
-  String getCreatePageTitle(Type configType) {
-    if (configType == AiConfigInferenceProvider) {
-      return 'Add AI Inference Provider';
-    } else if (configType == AiConfigModel) {
-      return 'Add AI Model';
-    } else if (configType == AiConfigPrompt) {
-      return 'Add AI Prompt';
-    } else {
-      return 'Add AI Configuration';
-    }
-  }
-
   /// Returns the appropriate page title for edit mode based on config type
   ///
   /// This helper method provides consistent titles for edit operations.

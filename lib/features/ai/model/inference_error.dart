@@ -64,25 +64,6 @@ extension InferenceErrorTypeExtension on InferenceErrorType {
     }
   }
 
-  String getDefaultMessage(BuildContext context) {
-    switch (this) {
-      case InferenceErrorType.networkConnection:
-        return context.messages.aiInferenceErrorConnectionFailedMessage;
-      case InferenceErrorType.timeout:
-        return context.messages.aiInferenceErrorTimeoutMessage;
-      case InferenceErrorType.authentication:
-        return context.messages.aiInferenceErrorAuthenticationMessage;
-      case InferenceErrorType.rateLimit:
-        return context.messages.aiInferenceErrorRateLimitMessage;
-      case InferenceErrorType.invalidRequest:
-        return context.messages.aiInferenceErrorInvalidRequestMessage;
-      case InferenceErrorType.serverError:
-        return context.messages.aiInferenceErrorServerMessage;
-      case InferenceErrorType.unknown:
-        return context.messages.aiInferenceErrorUnknownMessage;
-    }
-  }
-
   String get defaultMessage {
     switch (this) {
       case InferenceErrorType.networkConnection:

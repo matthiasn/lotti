@@ -112,8 +112,6 @@ void main() {
         expect(state.inputModalities, equals([Modality.text]));
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isFalse);
-        expect(state.isSubmitting, isFalse);
-        expect(state.submitFailed, isFalse);
         expect(state.isValid,
             isFalse); // Invalid because required fields are empty
       });
@@ -129,8 +127,6 @@ void main() {
           inputModalities: [Modality.text, Modality.image],
           outputModalities: [Modality.text],
           isReasoningModel: true,
-          isSubmitting: true,
-          submitFailed: true,
         );
 
         expect(state.id, equals('test-id'));
@@ -142,8 +138,6 @@ void main() {
         expect(state.inputModalities, equals([Modality.text, Modality.image]));
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isTrue);
-        expect(state.isSubmitting, isTrue);
-        expect(state.submitFailed, isTrue);
       });
 
       test('copyWith maintains existing values when not specified', () {
@@ -178,8 +172,6 @@ void main() {
           inputModalities: [Modality.text, Modality.audio],
           outputModalities: [Modality.text, Modality.image],
           isReasoningModel: true,
-          isSubmitting: true,
-          submitFailed: true,
         );
 
         expect(updated.id, equals('new-id'));
@@ -193,8 +185,6 @@ void main() {
         expect(
             updated.outputModalities, equals([Modality.text, Modality.image]));
         expect(updated.isReasoningModel, isTrue);
-        expect(updated.isSubmitting, isTrue);
-        expect(updated.submitFailed, isTrue);
       });
 
       test('FormzMixin validation works correctly', () {

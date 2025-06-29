@@ -10,8 +10,6 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 class SpeechRepository {
-  SpeechRepository();
-
   static Future<JournalAudio?> createAudioEntry(
     AudioNote audioNote, {
     required String? language,

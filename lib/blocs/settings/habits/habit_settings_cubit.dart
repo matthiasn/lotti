@@ -99,26 +99,6 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     emitState();
   }
 
-  void clearShowFrom() {
-    _dirty = true;
-
-    final currentSchedule = _habitDefinition.habitSchedule;
-
-    final newSchedule = currentSchedule.maybeMap(
-      daily: (daily) => HabitSchedule.daily(
-        requiredCompletions: daily.requiredCompletions,
-        alertAtTime: daily.alertAtTime,
-      ),
-      orElse: () => const HabitSchedule.daily(
-        requiredCompletions: 1,
-      ),
-    );
-    _habitDefinition = _habitDefinition.copyWith(
-      habitSchedule: newSchedule,
-    );
-    emitState();
-  }
-
   void setAlertAtTime(DateTime? alertAtTime) {
     _dirty = true;
 

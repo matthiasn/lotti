@@ -45,15 +45,6 @@ void main() {
     }
 
     group('Service Instantiation and Constants', () {
-      test('should create service instance consistently', () {
-        const service1 = AiSettingsNavigationService();
-        const service2 = AiSettingsNavigationService();
-
-        expect(service1.runtimeType, service2.runtimeType);
-        expect(service1.getCreatePageTitle(AiConfigInferenceProvider),
-            service2.getCreatePageTitle(AiConfigInferenceProvider));
-      });
-
       test('should be immutable and const constructible', () {
         const service1 = AiSettingsNavigationService();
         const service2 = AiSettingsNavigationService();
@@ -72,41 +63,6 @@ void main() {
         // Same inputs should produce same outputs
         expect(service1.getEditPageTitle(AiConfigPrompt),
             service2.getEditPageTitle(AiConfigPrompt));
-        expect(service1.getCreatePageTitle(AiConfigModel),
-            service2.getCreatePageTitle(AiConfigModel));
-      });
-    });
-
-    group('Title Helper Methods - Extended Coverage', () {
-      test('should return correct create titles for all config types', () {
-        expect(service.getCreatePageTitle(AiConfigInferenceProvider),
-            'Add AI Inference Provider');
-        expect(service.getCreatePageTitle(AiConfigModel), 'Add AI Model');
-        expect(service.getCreatePageTitle(AiConfigPrompt), 'Add AI Prompt');
-      });
-
-      test('should return fallback title for unknown types', () {
-        expect(service.getCreatePageTitle(String), 'Add AI Configuration');
-        expect(service.getCreatePageTitle(int), 'Add AI Configuration');
-        expect(service.getCreatePageTitle(Object), 'Add AI Configuration');
-      });
-
-      test('should return correct edit titles for all config types', () {
-        expect(service.getEditPageTitle(AiConfigInferenceProvider),
-            'Edit AI Inference Provider');
-        expect(service.getEditPageTitle(AiConfigModel), 'Edit AI Model');
-        expect(service.getEditPageTitle(AiConfigPrompt), 'Edit AI Prompt');
-      });
-
-      test('should return fallback title for unknown edit types', () {
-        expect(service.getEditPageTitle(String), 'Edit AI Configuration');
-        expect(service.getEditPageTitle(List), 'Edit AI Configuration');
-        expect(service.getEditPageTitle(Map), 'Edit AI Configuration');
-      });
-
-      test('should handle null type gracefully', () {
-        expect(() => service.getCreatePageTitle(Null), returnsNormally);
-        expect(() => service.getEditPageTitle(Null), returnsNormally);
       });
     });
 
@@ -337,8 +293,6 @@ void main() {
       test('should handle rapid sequential calls', () {
         // Test that multiple rapid calls don't cause issues
         for (var i = 0; i < 100; i++) {
-          expect(service.getCreatePageTitle(AiConfigInferenceProvider),
-              'Add AI Inference Provider');
           expect(service.canEditConfig(testProvider), isTrue);
         }
       });
@@ -373,9 +327,6 @@ void main() {
           home: Scaffold(body: Container()),
         ));
         await tester.pumpAndSettle();
-
-        expect(
-            () => service.getCreatePageTitle(AiConfigModel), returnsNormally);
       });
 
       testWidgets('should handle widget disposal gracefully',
@@ -388,21 +339,10 @@ void main() {
 
         // Service methods should still work (they don't depend on widget state)
         expect(service.canEditConfig(testProvider), isTrue);
-        expect(service.getCreatePageTitle(AiConfigPrompt), 'Add AI Prompt');
       });
     });
 
     group('Performance and Memory Characteristics', () {
-      test('should be lightweight and stateless', () {
-        // Service should not hold any mutable state
-        const service1 = AiSettingsNavigationService();
-        const service2 = AiSettingsNavigationService();
-
-        // Multiple instances should behave identically
-        expect(service1.getCreatePageTitle(AiConfigInferenceProvider),
-            service2.getCreatePageTitle(AiConfigInferenceProvider));
-      });
-
       test('should handle large numbers of config objects efficiently', () {
         final configs = <AiConfig>[];
 
@@ -429,10 +369,7 @@ void main() {
 
         // Generate many titles
         for (var i = 0; i < 10000; i++) {
-          service
-            ..getCreatePageTitle(AiConfigInferenceProvider)
-            ..getEditPageTitle(AiConfigModel)
-            ..getCreatePageTitle(AiConfigPrompt);
+          service.getEditPageTitle(AiConfigModel);
         }
 
         stopwatch.stop();

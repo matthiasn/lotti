@@ -48,11 +48,8 @@ class AudioRecorderController extends _$AudioRecorderController {
   /// Circular buffer for storing dBFS samples for RMS calculation
   final Queue<double> _dbfsBuffer = Queue<double>();
 
-  /// Configurable window size for VU meter averaging
-  int _vuWindowMs = defaultVuWindowMs;
-
   /// Number of samples to keep in the buffer
-  int get _bufferSize => _vuWindowMs ~/ intervalMs;
+  int get _bufferSize => defaultVuWindowMs ~/ intervalMs;
 
   /// Initializes the controller with dependencies and sets up amplitude monitoring.
   ///
@@ -130,13 +127,6 @@ class AudioRecorderController extends _$AudioRecorderController {
 
     // Clamp to reasonable VU meter range (-20 to +3 VU)
     return vuDb.clamp(-20.0, 3.0);
-  }
-
-  /// Sets the VU meter averaging window size in milliseconds
-  void setVuWindowMs(int windowMs) {
-    _vuWindowMs = windowMs.clamp(100, 1000); // Reasonable limits
-    // Clear buffer when window size changes
-    _dbfsBuffer.clear();
   }
 
   /// Starts a new recording or toggles the current recording state.
