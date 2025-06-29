@@ -35,7 +35,7 @@ class _TextViewerWidgetNonScrollableState extends State<TextViewerWidgetNonScrol
     final text = widget.entryText?.plainText ?? '';
     
     // Use both text length and rendered height to determine overflow
-    bool shouldShow = false;
+    var shouldShow = false;
     
     // First check: if text is longer than ~150 characters, likely to overflow
     if (text.length > 150) {

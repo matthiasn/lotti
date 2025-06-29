@@ -240,7 +240,7 @@ void main() {
   });
 
   group('CardWrapperWidget', () {
-    testWidgets('renders JournalImageCard for JournalImage entity',
+    testWidgets('renders ModernJournalImageCard for JournalImage entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -278,7 +278,7 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders JournalCard for Task when taskAsListView is false',
+    testWidgets('renders ModernJournalCard for Task when taskAsListView is false',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -297,7 +297,7 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders JournalCard for JournalEntry entity',
+    testWidgets('renders ModernJournalCard for JournalEntry entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -316,7 +316,7 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders JournalCard for JournalEvent entity',
+    testWidgets('renders ModernJournalCard for JournalEvent entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(

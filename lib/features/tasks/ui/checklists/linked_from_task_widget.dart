@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -40,7 +40,7 @@ class LinkedFromTaskWidget extends ConsumerWidget {
               return const SizedBox.shrink();
             }
 
-            return JournalCard(item: task);
+            return ModernJournalCard(item: task);
           },
         ),
       ],
