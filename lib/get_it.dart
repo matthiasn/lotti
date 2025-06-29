@@ -22,6 +22,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/health_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -57,7 +58,7 @@ Future<void> registerSingletons() async {
       HealthImport(
         persistenceLogic: getIt<PersistenceLogic>(),
         db: getIt<JournalDb>(),
-        health: Health(),
+        health: HealthService(Health()),
         deviceInfo: DeviceInfoPlugin(),
       ),
     )

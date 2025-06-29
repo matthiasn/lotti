@@ -1,9 +1,11 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/health_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -11,26 +13,32 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockHealth extends Mock implements Health {}
+class MockHealthService extends Mock implements HealthService {}
 
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
+
+class FakeQuantitativeData extends Fake implements CumulativeQuantityData {}
 
 void main() {
   late HealthImport healthImport;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
-  late MockHealth mockHealth;
+  late MockHealthService mockHealthService;
   late MockDeviceInfoPlugin mockDeviceInfoPlugin;
+
+  setUpAll(() {
+    registerFallbackValue(FakeQuantitativeData());
+  });
 
   setUp(() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
-    mockHealth = MockHealth();
+    mockHealthService = MockHealthService();
     mockDeviceInfoPlugin = MockDeviceInfoPlugin();
     healthImport = HealthImport(
       persistenceLogic: mockPersistenceLogic,
       db: mockJournalDb,
-      health: mockHealth,
+      health: mockHealthService,
       deviceInfo: mockDeviceInfoPlugin,
     );
   });
@@ -112,6 +120,25 @@ void main() {
       final result = healthImport.sumNumericHealthValues(dataPoints);
 
       expect(result, 10);
+    });
+  });
+
+  group('addActivityEntries', () {
+    test('should add activity entries to the database', () async {
+      final date = DateTime(2024);
+      final data = {date: 100.0};
+      const type = 'cumulative_step_count';
+      const unit = 'count';
+
+      when(() => mockPersistenceLogic.createQuantitativeEntry(any()))
+          .thenAnswer((_) async {
+        return null;
+      });
+
+      await healthImport.addActivityEntries(data, type, unit);
+
+      verify(() => mockPersistenceLogic.createQuantitativeEntry(any()))
+          .called(1);
     });
   });
 }
