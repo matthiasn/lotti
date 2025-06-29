@@ -13,11 +13,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('NavService Tests', () {
+    late SettingsDb settingsDb;
+    late JournalDb mockJournalDb;
+
     setUpAll(() {
       final secureStorageMock = MockSecureStorage();
-      final settingsDb = SettingsDb(inMemoryDatabase: true);
-
-      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      settingsDb = SettingsDb(inMemoryDatabase: true);
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
 
       when(() => secureStorageMock.readValue(lastRouteKey))
           .thenAnswer((_) async => '/settings');
@@ -39,10 +41,9 @@ void main() {
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<NavService>(NavService());
+        ..registerSingleton<NavService>(
+            NavService(journalDb: mockJournalDb, settingsDb: settingsDb));
     });
-
-    setUp(() {});
 
     test('tap all tabs', () async {
       final navService = getIt<NavService>();
@@ -112,6 +113,20 @@ void main() {
       beamToNamed('/habits');
       expect(navService.index, navService.habitsIndex);
       expect(navService.currentPath, '/habits');
+    });
+
+    test('restoreRoute', () async {
+      final navService = getIt<NavService>();
+      await settingsDb.saveSettingsItem(lastRouteKey, '/settings');
+      await navService.restoreRoute();
+      expect(navService.currentPath, '/settings');
+    });
+
+    test('getIdFromSavedRoute', () async {
+      await settingsDb.saveSettingsItem(
+          lastRouteKey, '/journal/123e4567-e89b-12d3-a456-426614174000');
+      final id = await getIdFromSavedRoute();
+      expect(id, '123e4567-e89b-12d3-a456-426614174000');
     });
   });
 }

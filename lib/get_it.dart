@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:get_it/get_it.dart';
+import 'package:health/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -20,6 +22,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/health_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -51,7 +54,14 @@ Future<void> registerSingletons() async {
     ..registerSingleton<MatrixService>(MatrixService(client: client))
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
-    ..registerSingleton<HealthImport>(HealthImport())
+    ..registerSingleton<HealthImport>(
+      HealthImport(
+        persistenceLogic: getIt<PersistenceLogic>(),
+        db: getIt<JournalDb>(),
+        health: HealthService(Health()),
+        deviceInfo: DeviceInfoPlugin(),
+      ),
+    )
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())

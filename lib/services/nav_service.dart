@@ -11,16 +11,25 @@ import 'package:lotti/utils/consts.dart';
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
 class NavService {
-  NavService() {
+  NavService({
+    JournalDb? journalDb,
+    SettingsDb? settingsDb,
+  }) {
+    _journalDb = journalDb ?? getIt<JournalDb>();
+    _settingsDb = settingsDb ?? getIt<SettingsDb>();
+
     // TODO: fix and bring back
     // restoreRoute();
 
-    getIt<JournalDb>().watchActiveConfigFlagNames().forEach((configFlags) {
+    _journalDb.watchActiveConfigFlagNames().forEach((configFlags) {
       _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
       _isDashboardsPageEnabled = configFlags.contains(enableDashboardsPageFlag);
       _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
     });
   }
+
+  late final JournalDb _journalDb;
+  late final SettingsDb _settingsDb;
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
@@ -162,13 +171,18 @@ class NavService {
     delegateByIndex(index).beamToNamed(path, data: data);
   }
 
+  Future<void> persistNamedRoute(String route) async {
+    await _settingsDb.saveSettingsItem(lastRouteKey, route);
+    currentPath = route;
+  }
+
+  Future<String?> getSavedRoute() async {
+    return _settingsDb.itemByKey(lastRouteKey);
+  }
+
   void beamBack({Object? data}) {
     delegateByIndex(index).beamBack(data: data);
   }
-}
-
-Future<String?> getSavedRoute() async {
-  return getIt<SettingsDb>().itemByKey(lastRouteKey);
 }
 
 Future<String?> getIdFromSavedRoute() async {
@@ -176,13 +190,8 @@ Future<String?> getIdFromSavedRoute() async {
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
     caseSensitive: false,
   );
-  final route = await getSavedRoute();
+  final route = await getIt<NavService>().getSavedRoute();
   return regExp.firstMatch('$route')?.group(0);
-}
-
-Future<void> persistNamedRoute(String route) async {
-  await getIt<SettingsDb>().saveSettingsItem(lastRouteKey, route);
-  getIt<NavService>().currentPath = route;
 }
 
 void beamToNamed(String path, {Object? data}) {

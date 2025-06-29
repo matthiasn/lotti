@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:lotti/utils/platform.dart';
 
-Future<String> getLocalTimezone() async {
+Future<String> getLocalTimezone({String? linuxTimezoneFilePath}) async {
   final now = DateTime.now();
 
   if (isTestEnv) {
@@ -10,7 +10,8 @@ Future<String> getLocalTimezone() async {
   }
 
   if (Platform.isLinux) {
-    final timezone = await File('/etc/timezone').readAsString();
+    final filePath = linuxTimezoneFilePath ?? '/etc/timezone';
+    final timezone = await File(filePath).readAsString();
     return timezone.trim();
   }
 
