@@ -17,94 +17,124 @@ class TextViewerWidgetNonScrollable extends StatefulWidget {
   final double maxHeight;
 
   @override
-  State<TextViewerWidgetNonScrollable> createState() => _TextViewerWidgetNonScrollableState();
+  State<TextViewerWidgetNonScrollable> createState() =>
+      _TextViewerWidgetNonScrollableState();
 }
 
-class _TextViewerWidgetNonScrollableState extends State<TextViewerWidgetNonScrollable> {
+class _TextViewerWidgetNonScrollableState
+    extends State<TextViewerWidgetNonScrollable> {
   bool _showGradient = false;
   final GlobalKey _quillKey = GlobalKey();
+  QuillController? _controller;
 
   @override
   void initState() {
     super.initState();
-    // Schedule overflow check after the widget is built
+    _createController();
+    // Schedule initial overflow check after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
   }
 
-  void _checkOverflow() {
-    final text = widget.entryText?.plainText ?? '';
-    
-    // Use both text length and rendered height to determine overflow
-    var shouldShow = false;
-    
-    // First check: if text is longer than ~150 characters, likely to overflow
-    if (text.length > 150) {
-      shouldShow = true;
-    } else {
-      // Secondary check: measure actual rendered height
-      final renderBox = _quillKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        final actualHeight = renderBox.size.height;
-        shouldShow = actualHeight >= widget.maxHeight - 2; // Small tolerance
-      }
+  @override
+  void didUpdateWidget(TextViewerWidgetNonScrollable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.entryText != widget.entryText) {
+      _createController();
     }
-    
-    if (shouldShow != _showGradient && mounted) {
-      setState(() {
-        _showGradient = shouldShow;
-      });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _createController() {
+    _controller?.dispose();
+    final serializedQuill = widget.entryText?.quill;
+    final markdown =
+        widget.entryText?.markdown ?? widget.entryText?.plainText ?? '';
+    final quill = serializedQuill ?? markdownToDelta(markdown);
+    _controller = makeController(serializedQuill: quill)..readOnly = true;
+  }
+
+  void _checkOverflow() {
+    // Measure actual rendered height to determine overflow
+    final renderBox =
+        _quillKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final actualHeight = renderBox.size.height;
+      final shouldShow =
+          actualHeight >= widget.maxHeight - 2; // Small tolerance
+
+      if (shouldShow != _showGradient && mounted) {
+        setState(() {
+          _showGradient = shouldShow;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final serializedQuill = widget.entryText?.quill;
-    final markdown = widget.entryText?.markdown ?? widget.entryText?.plainText ?? '';
-    final quill = serializedQuill ?? markdownToDelta(markdown);
-    final controller = makeController(serializedQuill: quill)..readOnly = true;
+    if (_controller == null) return const SizedBox.shrink();
 
-    return LimitedBox(
-      maxHeight: widget.maxHeight,
-      child: Stack(
-        children: [
-          // The QuillEditor with disabled scrolling
-          AbsorbPointer(
-            child: QuillEditor(
-              key: _quillKey,
-              controller: controller,
-              scrollController: ScrollController(),
-              focusNode: FocusNode(),
-              config: QuillEditorConfig(
-                customStyles: customEditorStyles(themeData: Theme.of(context)),
-              ),
-            ),
-          ),
-          // Gradient overlay at the bottom for fade effect - only when overflowing
-          if (_showGradient)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 32, // Height of the gradient fade
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0),
-                        Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
-                        Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Re-trigger overflow check when layout constraints change
+        WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
+
+        return LimitedBox(
+          maxHeight: widget.maxHeight,
+          child: Stack(
+            children: [
+              // The QuillEditor with disabled scrolling
+              AbsorbPointer(
+                child: QuillEditor(
+                  key: _quillKey,
+                  controller: _controller!,
+                  scrollController: ScrollController(),
+                  focusNode: FocusNode(),
+                  config: QuillEditorConfig(
+                    customStyles:
+                        customEditorStyles(themeData: Theme.of(context)),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
+              // Gradient overlay at the bottom for fade effect - only when overflowing
+              if (_showGradient)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 32, // Height of the gradient fade
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Theme.of(context)
+                                .scaffoldBackgroundColor
+                                .withValues(alpha: 0),
+                            Theme.of(context)
+                                .scaffoldBackgroundColor
+                                .withValues(alpha: 0.7),
+                            Theme.of(context)
+                                .scaffoldBackgroundColor
+                                .withValues(alpha: 0.95),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -21,6 +21,10 @@ class ModernJournalImageCard extends StatelessWidget {
     super.key,
   });
 
+  // Layout constants
+  static const double minImageSectionWidth = 300;
+  static const double cardHorizontalPadding = 40;
+
   final JournalImage item;
   final bool isCompact;
 
@@ -45,8 +49,14 @@ class ModernJournalImageCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    final imageHeight = isCompact ? 120 : 160;
-    final maxWidth = max(MediaQuery.of(context).size.width / 2, 300) - 40;
+    // Image dimensions
+    const compactImageHeight = 120;
+    const regularImageHeight = 160;
+
+    final imageHeight = isCompact ? compactImageHeight : regularImageHeight;
+    final maxWidth =
+        max(MediaQuery.of(context).size.width / 2, minImageSectionWidth) -
+            cardHorizontalPadding;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +68,7 @@ class ModernJournalImageCard extends StatelessWidget {
             bottomLeft: Radius.circular(AppTheme.cardBorderRadius),
           ),
           child: LimitedBox(
-            maxWidth: maxWidth.toDouble(),
+            maxWidth: maxWidth,
             maxHeight: imageHeight.toDouble(),
             child: CardImageWidget(
               journalImage: item,

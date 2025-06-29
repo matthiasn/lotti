@@ -198,17 +198,20 @@ class ModernJournalCard extends StatelessWidget {
       );
     }
 
+    final textColor =
+        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: item.map(
         quantitative: (qe) => HealthSummary(qe, showChart: false),
-        journalAudio: (audio) => _buildTextContent(audio.entryText),
-        journalEntry: (entry) => _buildTextContent(entry.entryText),
-        journalImage: (image) => _buildTextContent(image.entryText),
+        journalAudio: (audio) => _buildTextContent(audio.entryText, textColor),
+        journalEntry: (entry) => _buildTextContent(entry.entryText, textColor),
+        journalImage: (image) => _buildTextContent(image.entryText, textColor),
         survey: (survey) => SurveySummary(survey, showChart: false),
         measurement: MeasurementSummary.new,
-        task: (task) => _buildTextContent(task.entryText),
-        event: (event) => _buildTextContent(event.entryText),
+        task: (task) => _buildTextContent(task.entryText, textColor),
+        event: (event) => _buildTextContent(event.entryText, textColor),
         aiResponse: (ai) => GptMarkdown(ai.data.response),
         workout: (workout) => WorkoutSummary(workout, showChart: false),
         habitCompletion: HabitSummary.new,
@@ -246,7 +249,7 @@ class ModernJournalCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTextContent(EntryText? entryText) {
+  Widget _buildTextContent(EntryText? entryText, Color color) {
     if (isCompact && entryText != null && entryText.plainText.isNotEmpty) {
       return Text(
         entryText.plainText,
@@ -254,7 +257,7 @@ class ModernJournalCard extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: AppTheme.subtitleFontSize,
-          color: Colors.grey[600],
+          color: color,
         ),
       );
     }
@@ -391,8 +394,7 @@ class ModernJournalCard extends StatelessWidget {
 
   Color _getChecklistItemColor(BuildContext context, ChecklistItem item) {
     final categoryId = item.meta.categoryId;
-    final category =
-        getIt<EntitiesCacheService>().getCategoryById(categoryId);
+    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
     return category != null
         ? colorFromCssHex(category.color)
         : context.colorScheme.onSurfaceVariant;

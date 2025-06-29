@@ -90,12 +90,13 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockTagsService = MockTagsService();
     mockTimeService = MockTimeService();
-    
+
     getIt.allowReassignment = true;
-    
+
     // Create temp directory for tests
-    final tempDir = Directory.systemTemp.createTempSync('journal_image_card_test');
-    
+    final tempDir =
+        Directory.systemTemp.createTempSync('journal_image_card_test');
+
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TagsService>(mockTagsService)
@@ -106,11 +107,12 @@ void main() {
   tearDown(() async {
     await getIt.reset();
   });
-  
+
   tearDownAll(() {
     // Clean up temp directories
     try {
-      Directory.systemTemp.listSync()
+      Directory.systemTemp
+          .listSync()
           .where((entity) => entity.path.contains('journal_image_card_test'))
           .forEach((entity) => entity.deleteSync(recursive: true));
     } catch (_) {}
@@ -202,7 +204,7 @@ void main() {
       );
 
       expect(find.byType(ModernJournalImageCard), findsOneWidget);
-      
+
       // Image should be smaller in compact mode
       final cardImageWidget = tester.widget<CardImageWidget>(
         find.byType(CardImageWidget),
@@ -279,7 +281,7 @@ void main() {
         makeTestableWidget(
           ModernJournalImageCard(
             item: imageEntry,
-            ),
+          ),
         ),
       );
 
@@ -293,8 +295,10 @@ void main() {
     testWidgets('shows compact text preview in compact mode', (tester) async {
       final imageEntry = testImageEntry.copyWith(
         entryText: const EntryText(
-          plainText: 'This is a test entry with some text content that should be truncated',
-          markdown: 'This is a test entry with some text content that should be truncated',
+          plainText:
+              'This is a test entry with some text content that should be truncated',
+          markdown:
+              'This is a test entry with some text content that should be truncated',
         ),
       );
 

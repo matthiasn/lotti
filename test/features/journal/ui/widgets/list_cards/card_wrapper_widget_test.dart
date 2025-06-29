@@ -278,7 +278,8 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders ModernJournalCard for Task when taskAsListView is false',
+    testWidgets(
+        'renders ModernJournalCard for Task when taskAsListView is false',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
