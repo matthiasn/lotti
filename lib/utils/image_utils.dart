@@ -17,8 +17,11 @@ Future<XFile?> compressAndSave(File file, String targetPath) async {
   return result;
 }
 
-String? getRelativeAssetPath(String? absolutePath) {
-  if (Platform.isAndroid) {
+String? getRelativeAssetPath(
+  String? absolutePath, {
+  bool isAndroid = false,
+}) {
+  if (isAndroid) {
     return absolutePath?.split('app_flutter').last;
   }
   return absolutePath?.split('Documents').last;
@@ -28,7 +31,10 @@ String getRelativeImagePath(JournalImage img) {
   return '${img.data.imageDirectory}${img.data.imageFile}';
 }
 
-String getFullImagePath(JournalImage img) {
-  final docDir = getDocumentsDirectory();
-  return '${docDir.path}${getRelativeImagePath(img)}';
+String getFullImagePath(
+  JournalImage img, {
+  String? documentsDirectory,
+}) {
+  final docDir = documentsDirectory ?? getDocumentsDirectory().path;
+  return '$docDir${getRelativeImagePath(img)}';
 }
