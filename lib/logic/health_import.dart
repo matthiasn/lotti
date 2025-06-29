@@ -16,12 +16,18 @@ import 'package:lotti/utils/platform.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class HealthImport {
-  HealthImport() : super() {
+  HealthImport({
+    required this.persistenceLogic,
+    required JournalDb db,
+    required this.health,
+    required this.deviceInfo,
+  }) : _db = db {
     getPlatform();
   }
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  final JournalDb _db = getIt<JournalDb>();
-  final health = Health();
+  final PersistenceLogic persistenceLogic;
+  final JournalDb _db;
+  final Health health;
+  final DeviceInfoPlugin deviceInfo;
 
   Duration defaultFetchDuration = const Duration(days: 90);
 
@@ -39,7 +45,6 @@ class HealthImport {
         : Platform.isAndroid
             ? 'ANDROID'
             : '';
-    final deviceInfo = DeviceInfoPlugin();
     if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       deviceType = iosInfo.utsname.machine;
