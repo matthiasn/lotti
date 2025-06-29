@@ -29,7 +29,12 @@ import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AppScreen extends StatefulWidget {
-  const AppScreen({super.key});
+  const AppScreen({
+    super.key,
+    this.journalDb,
+  });
+
+  final JournalDb? journalDb;
 
   @override
   State<AppScreen> createState() => _AppScreenState();
@@ -46,13 +51,17 @@ class _AppScreenState extends State<AppScreen> {
   void initState() {
     super.initState();
 
-    getIt<JournalDb>().watchActiveConfigFlagNames().forEach((configFlags) {
-      setState(() {
-        _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
-        _isDashboardsPageEnabled =
-            configFlags.contains(enableDashboardsPageFlag);
-        _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
-      });
+    (widget.journalDb ?? getIt<JournalDb>())
+        .watchActiveConfigFlagNames()
+        .forEach((configFlags) {
+      if (mounted) {
+        setState(() {
+          _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
+          _isDashboardsPageEnabled =
+              configFlags.contains(enableDashboardsPageFlag);
+          _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
+        });
+      }
     });
   }
 
@@ -172,17 +181,36 @@ class _AppScreenState extends State<AppScreen> {
 }
 
 class MyBeamerApp extends StatelessWidget {
-  MyBeamerApp({super.key});
+  const MyBeamerApp({
+    super.key,
+    this.navService,
+    this.themingCubit,
+    this.outboxCubit,
+    this.audioPlayerCubit,
+    this.userActivityService,
+    this.journalDb,
+  });
 
-  final routerDelegate = BeamerDelegate(
-    initialPath: getIt<NavService>().currentPath,
-    locationBuilder: RoutesLocationBuilder(
-      routes: {'*': (context, state, data) => const AppScreen()},
-    ).call,
-  );
+  final NavService? navService;
+  final ThemingCubit? themingCubit;
+  final OutboxCubit? outboxCubit;
+  final AudioPlayerCubit? audioPlayerCubit;
+  final UserActivityService? userActivityService;
+  final JournalDb? journalDb;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveNavService = navService ?? getIt<NavService>();
+
+    final routerDelegate = BeamerDelegate(
+      initialPath: effectiveNavService.currentPath,
+      locationBuilder: RoutesLocationBuilder(
+        routes: {
+          '*': (context, state, data) => AppScreen(journalDb: journalDb)
+        },
+      ).call,
+    );
+
     return GestureDetector(
       onTap: () {
         FocusManager.instance.primaryFocus?.unfocus();
@@ -191,13 +219,14 @@ class MyBeamerApp extends StatelessWidget {
         providers: [
           BlocProvider<OutboxCubit>(
             lazy: false,
-            create: (BuildContext context) => OutboxCubit(),
+            create: (BuildContext context) => outboxCubit ?? OutboxCubit(),
           ),
           BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => getIt<AudioPlayerCubit>(),
+            create: (BuildContext context) =>
+                audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
           ),
           BlocProvider<ThemingCubit>(
-            create: (BuildContext context) => ThemingCubit(),
+            create: (BuildContext context) => themingCubit ?? ThemingCubit(),
           ),
         ],
         child: BlocBuilder<ThemingCubit, ThemingState>(
@@ -213,7 +242,9 @@ class MyBeamerApp extends StatelessWidget {
               );
             }
 
-            final updateActivity = getIt<UserActivityService>().updateActivity;
+            final updateActivity =
+                (userActivityService ?? getIt<UserActivityService>())
+                    .updateActivity;
 
             return Listener(
               behavior: HitTestBehavior.translucent,
