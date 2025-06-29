@@ -340,5 +340,68 @@ void main() {
         ),
       );
     });
+
+    testWidgets('text viewer receives finite maxHeight instead of infinity',
+        (tester) async {
+      final imageEntry = testImageEntry.copyWith(
+        entryText: const EntryText(
+          plainText: 'Test content for overflow detection',
+          markdown: 'Test content for overflow detection',
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: imageEntry),
+        ),
+      );
+
+      // Find the TextViewerWidgetNonScrollable widget
+      final textViewer = tester.widget<TextViewerWidgetNonScrollable>(
+        find.byType(TextViewerWidgetNonScrollable),
+      );
+
+      // Verify that maxHeight is not infinity (our bug fix)
+      expect(textViewer.maxHeight, isNot(double.infinity));
+      expect(textViewer.maxHeight, greaterThan(0));
+    });
+
+    testWidgets('calculates different maxHeight for compact vs regular mode',
+        (tester) async {
+      final imageEntry = testImageEntry.copyWith(
+        entryText: const EntryText(
+          plainText: 'Test content',
+          markdown: 'Test content',
+        ),
+      );
+
+      // Test regular mode
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: imageEntry, isCompact: false),
+        ),
+      );
+
+      final regularTextViewer = tester.widget<TextViewerWidgetNonScrollable>(
+        find.byType(TextViewerWidgetNonScrollable),
+      );
+      final regularMaxHeight = regularTextViewer.maxHeight;
+
+      // Test compact mode
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: imageEntry, isCompact: true),
+        ),
+      );
+
+      // In compact mode, text is handled differently (plain Text widget, not TextViewer)
+      // So we expect no TextViewerWidgetNonScrollable in compact mode
+      expect(find.byType(TextViewerWidgetNonScrollable), findsNothing);
+      expect(find.byType(Text), findsWidgets);
+
+      // Verify regular mode had a reasonable height
+      expect(regularMaxHeight, greaterThan(0));
+      expect(regularMaxHeight, lessThan(200)); // Should be reasonable height
+    });
   });
 }

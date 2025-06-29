@@ -183,9 +183,18 @@ class ModernJournalImageCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Calculate available height based on image height and padding
+    const compactImageHeight = 120;
+    const regularImageHeight = 160;
+    final imageHeight = isCompact ? compactImageHeight : regularImageHeight;
+    final padding =
+        isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding;
+    final availableHeight =
+        imageHeight - (padding * 2) - 80; // Account for header and tags
+
     return TextViewerWidgetNonScrollable(
       entryText: item.entryText,
-      maxHeight: double.infinity, // Use available space in Expanded
+      maxHeight: availableHeight.toDouble(),
     );
   }
 
