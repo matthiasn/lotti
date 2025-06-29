@@ -194,7 +194,7 @@ class ModernJournalImageCard extends StatelessWidget {
 
     return TextViewerWidgetNonScrollable(
       entryText: item.entryText,
-      maxHeight: availableHeight.toDouble(),
+      maxHeight: availableHeight,
     );
   }
 

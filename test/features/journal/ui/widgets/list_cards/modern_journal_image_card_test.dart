@@ -378,7 +378,7 @@ void main() {
       // Test regular mode
       await tester.pumpWidget(
         makeTestableWidget(
-          ModernJournalImageCard(item: imageEntry, isCompact: false),
+          ModernJournalImageCard(item: imageEntry),
         ),
       );
 
