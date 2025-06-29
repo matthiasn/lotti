@@ -3690,6 +3690,357 @@ Take into account the following task context:
           )).called(1);
     });
   });
+
+  group('Concurrent modification protection', () {
+    late Task initialTask;
+    late Task updatedTask;
+    late AiConfigPrompt taskSummaryPrompt;
+    late AiConfigPrompt actionItemsPrompt;
+    late AiConfigModel model;
+    late AiConfigInferenceProvider provider;
+
+    setUp(() {
+      initialTask = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now().add(const Duration(hours: 1)),
+          statusHistory: [],
+          title: 'Old', // Short title to trigger AI update
+        ),
+      );
+
+      updatedTask = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now().add(const Duration(hours: 1)),
+          statusHistory: [],
+          title: 'Updated by user during AI processing',
+          checklistIds: ['checklist-1'], // User added checklist
+        ),
+      );
+
+      taskSummaryPrompt = _createPrompt(
+        id: 'summary-prompt',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      actionItemsPrompt = _createPrompt(
+        id: 'action-items-prompt',
+        name: 'Action Items',
+        aiResponseType: AiResponseType.actionItemSuggestions,
+        requiredInputData: [InputDataType.task],
+      );
+
+      model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'test-model',
+      );
+
+      provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+    });
+
+    test('task summary uses current task state, not captured state', () async {
+      // Setup: AI captures initial task state
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => initialTask);
+
+      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
+          .thenAnswer((_) async => taskSummaryPrompt);
+
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"title": "Old", "status": "IN PROGRESS"}');
+
+      // Setup: During AI processing, user updates task
+      var getEntityCallCount = 0;
+      when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
+        getEntityCallCount++;
+        if (getEntityCallCount == 1) {
+          return initialTask; // First call - initial capture
+        } else {
+          return updatedTask; // Second call - current state in post-processing
+        }
+      });
+
+      when(() => mockJournalRepo.updateJournalEntity(any()))
+          .thenAnswer((_) async => true);
+
+      final mockStream = Stream.fromIterable([
+        _createStreamChunk('# Better Task Title\n\nThis is a good summary.'),
+      ]);
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Execute: Run AI inference
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: taskSummaryPrompt,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify: Should get current entity state twice (initial + post-processing)
+      verify(() => mockAiInputRepo.getEntity('test-id')).called(2);
+
+      // Verify: Should not update title because current task has long title
+      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+    });
+
+    test('action item suggestions uses current task state for auto-creation',
+        () async {
+      // Setup: Initial task has no checklists
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => initialTask);
+
+      when(() => mockAiConfigRepo.getConfigById('action-items-prompt'))
+          .thenAnswer((_) async => actionItemsPrompt);
+
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"title": "Old", "actionItems": []}');
+
+      // Setup: Current task state has checklist added by user
+      var getEntityCallCount = 0;
+      when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
+        getEntityCallCount++;
+        if (getEntityCallCount == 1) {
+          return initialTask; // First call - initial capture
+        } else {
+          return updatedTask; // Second call - current state in post-processing
+        }
+      });
+
+      // Setup: Auto-checklist service should work with current task
+      when(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .thenAnswer((_) async => false); // Task already has checklists
+
+      final mockStream = Stream.fromIterable([
+        _createStreamChunk('[{"title": "Do something", "completed": false}]'),
+      ]);
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Set the mock auto checklist service
+      repository.autoChecklistServiceForTesting = mockAutoChecklistService;
+
+      // Execute: Run AI inference
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: actionItemsPrompt,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify: Should check auto-creation with current task ID
+      verify(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .called(1);
+
+      // Verify: Should not auto-create since current task has checklists
+      verifyNever(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            shouldAutoCreate: any(named: 'shouldAutoCreate'),
+          ));
+    });
+
+    test('handles entity not found during post-processing gracefully',
+        () async {
+      // Setup: Initial task exists
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => initialTask);
+
+      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
+          .thenAnswer((_) async => taskSummaryPrompt);
+
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"title": "Old"}');
+
+      // Setup: Entity gets deleted during AI processing
+      var getEntityCallCount = 0;
+      when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
+        getEntityCallCount++;
+        if (getEntityCallCount == 1) {
+          return initialTask; // First call - initial capture
+        } else {
+          return null; // Second call - entity deleted
+        }
+      });
+
+      final mockStream = Stream.fromIterable([
+        _createStreamChunk('# Better Task Title\n\nThis is a good summary.'),
+      ]);
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Execute: Should not throw when entity is deleted
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: taskSummaryPrompt,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify: Should attempt to get current entity but not crash
+      verify(() => mockAiInputRepo.getEntity('test-id')).called(2);
+
+      // Verify: Should not attempt to update non-existent entity
+      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+    });
+
+    test('handles getEntity error during post-processing gracefully', () async {
+      // Setup: Initial task exists
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => initialTask);
+
+      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
+          .thenAnswer((_) async => taskSummaryPrompt);
+
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"title": "Old"}');
+
+      // Setup: Error occurs when getting current entity state
+      var getEntityCallCount = 0;
+      when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
+        getEntityCallCount++;
+        if (getEntityCallCount == 1) {
+          return initialTask; // First call - initial capture
+        } else {
+          throw Exception('Database error'); // Second call - error
+        }
+      });
+
+      final mockStream = Stream.fromIterable([
+        _createStreamChunk('# Better Task Title\n\nThis is a good summary.'),
+      ]);
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Execute: Should not throw when getEntity fails
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: taskSummaryPrompt,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify: Should attempt to get current entity but handle error gracefully
+      verify(() => mockAiInputRepo.getEntity('test-id')).called(2);
+
+      // Verify: Should not attempt to update when error occurs
+      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+    });
+  });
 }
 
 // Helper methods to create test objects
@@ -3754,5 +4105,20 @@ AiConfigInferenceProvider _createProvider({
     name: 'Test Provider',
     createdAt: DateTime.now(),
     inferenceProviderType: inferenceProviderType,
+  );
+}
+
+CreateChatCompletionStreamResponse _createStreamChunk(String content) {
+  return CreateChatCompletionStreamResponse(
+    id: 'test-completion-id',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(content: content),
+      ),
+    ],
+    created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    model: 'test-model',
+    object: 'chat.completion.chunk',
   );
 }
