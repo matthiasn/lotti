@@ -9,8 +9,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_image_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -240,7 +240,7 @@ void main() {
   });
 
   group('CardWrapperWidget', () {
-    testWidgets('renders JournalImageCard for JournalImage entity',
+    testWidgets('renders ModernJournalImageCard for JournalImage entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -254,8 +254,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.byType(JournalImageCard), findsOneWidget);
-      expect(find.byType(JournalCard), findsNothing);
+      expect(find.byType(ModernJournalImageCard), findsOneWidget);
+      expect(find.byType(ModernJournalCard), findsNothing);
       expect(find.byType(ModernTaskCard), findsNothing);
     });
 
@@ -274,11 +274,12 @@ void main() {
 
       // Assert
       expect(find.byType(ModernTaskCard), findsOneWidget);
-      expect(find.byType(JournalCard), findsNothing);
-      expect(find.byType(JournalImageCard), findsNothing);
+      expect(find.byType(ModernJournalCard), findsNothing);
+      expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders JournalCard for Task when taskAsListView is false',
+    testWidgets(
+        'renders ModernJournalCard for Task when taskAsListView is false',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -292,12 +293,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.byType(JournalCard), findsOneWidget);
+      expect(find.byType(ModernJournalCard), findsOneWidget);
       expect(find.byType(ModernTaskCard), findsNothing);
-      expect(find.byType(JournalImageCard), findsNothing);
+      expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders JournalCard for JournalEntry entity',
+    testWidgets('renders ModernJournalCard for JournalEntry entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -311,12 +312,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.byType(JournalCard), findsOneWidget);
+      expect(find.byType(ModernJournalCard), findsOneWidget);
       expect(find.byType(ModernTaskCard), findsNothing);
-      expect(find.byType(JournalImageCard), findsNothing);
+      expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders JournalCard for JournalEvent entity',
+    testWidgets('renders ModernJournalCard for JournalEvent entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -330,9 +331,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.byType(JournalCard), findsOneWidget);
+      expect(find.byType(ModernJournalCard), findsOneWidget);
       expect(find.byType(ModernTaskCard), findsNothing);
-      expect(find.byType(JournalImageCard), findsNothing);
+      expect(find.byType(ModernJournalImageCard), findsNothing);
     });
   });
 }

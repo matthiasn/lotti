@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_image_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 
 class CardWrapperWidget extends StatelessWidget {
@@ -17,15 +17,15 @@ class CardWrapperWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return item.maybeMap(
-      journalImage: (JournalImage image) => JournalImageCard(item: image),
+      journalImage: (JournalImage image) => ModernJournalImageCard(item: image),
       task: (Task task) {
         if (taskAsListView) {
           return ModernTaskCard(task: task);
         } else {
-          return JournalCard(item: task);
+          return ModernJournalCard(item: task);
         }
       },
-      orElse: () => JournalCard(item: item),
+      orElse: () => ModernJournalCard(item: item),
     );
   }
 }
