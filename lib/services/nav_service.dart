@@ -11,16 +11,25 @@ import 'package:lotti/utils/consts.dart';
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
 class NavService {
-  NavService() {
+  NavService({
+    JournalDb? journalDb,
+    SettingsDb? settingsDb,
+  }) {
+    _journalDb = journalDb ?? getIt<JournalDb>();
+    _settingsDb = settingsDb ?? getIt<SettingsDb>();
+
     // TODO: fix and bring back
     // restoreRoute();
 
-    getIt<JournalDb>().watchActiveConfigFlagNames().forEach((configFlags) {
+    _journalDb.watchActiveConfigFlagNames().forEach((configFlags) {
       _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
       _isDashboardsPageEnabled = configFlags.contains(enableDashboardsPageFlag);
       _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
     });
   }
+
+  late final JournalDb _journalDb;
+  late final SettingsDb _settingsDb;
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
@@ -168,7 +177,7 @@ class NavService {
 }
 
 Future<String?> getSavedRoute() async {
-  return getIt<SettingsDb>().itemByKey(lastRouteKey);
+  return getIt<NavService>()._settingsDb.itemByKey(lastRouteKey);
 }
 
 Future<String?> getIdFromSavedRoute() async {
@@ -181,7 +190,7 @@ Future<String?> getIdFromSavedRoute() async {
 }
 
 Future<void> persistNamedRoute(String route) async {
-  await getIt<SettingsDb>().saveSettingsItem(lastRouteKey, route);
+  await getIt<NavService>()._settingsDb.saveSettingsItem(lastRouteKey, route);
   getIt<NavService>().currentPath = route;
 }
 
