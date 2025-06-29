@@ -227,26 +227,11 @@ class ModernJournalCard extends StatelessWidget {
                 : AppTheme.titleFontSize,
           ),
         ),
-        checklistItem: (item) => Row(
-          children: [
-            Icon(
-              item.data.isChecked
-                  ? MdiIcons.checkboxMarked
-                  : MdiIcons.checkboxBlankOutline,
-              size: 20,
-              color: _getChecklistItemColor(context, item),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                item.data.title,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  decoration:
-                      item.data.isChecked ? TextDecoration.lineThrough : null,
-                ),
-              ),
-            ),
-          ],
+        checklistItem: (item) => Text(
+          item.data.title,
+          style: context.textTheme.bodyMedium?.copyWith(
+            decoration: item.data.isChecked ? TextDecoration.lineThrough : null,
+          ),
         ),
       ),
     );
@@ -349,13 +334,15 @@ class ModernJournalCard extends StatelessWidget {
         );
       },
       checklistItem: (item) => Icon(
-        item.data.isChecked ? MdiIcons.check : MdiIcons.checkboxBlankOutline,
-        color: _getChecklistItemColor(context, item),
+        item.data.isChecked
+            ? MdiIcons.checkboxMarked
+            : MdiIcons.checkboxBlankOutline,
+        color: _getChecklistColor(context, item),
         size: isCompact ? AppTheme.iconSizeCompact : AppTheme.iconSize,
       ),
       checklist: (_) => Icon(
         MdiIcons.checkAll,
-        color: context.colorScheme.onSurfaceVariant,
+        color: _getChecklistColor(context, item),
         size: isCompact ? AppTheme.iconSizeCompact : AppTheme.iconSize,
       ),
       quantitative: (_) => Icon(
@@ -395,8 +382,8 @@ class ModernJournalCard extends StatelessWidget {
         : dfShorter.format(item.meta.dateFrom);
   }
 
-  Color _getChecklistItemColor(BuildContext context, ChecklistItem item) {
-    final categoryId = item.meta.categoryId;
+  Color _getChecklistColor(BuildContext context, JournalEntity item) {
+    final categoryId = item.categoryId;
     final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
     return category != null
         ? colorFromCssHex(category.color)
