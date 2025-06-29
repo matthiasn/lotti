@@ -35,6 +35,8 @@ class ModernJournalCard extends StatelessWidget {
     this.isCompact = false,
     super.key,
   });
+  // Widget height constants
+  static const double linkedDurationHeight = 40;
 
   final JournalEntity item;
   final double maxHeight;
@@ -190,7 +192,8 @@ class ModernJournalCard extends StatelessWidget {
             Flexible(
               child: TextViewerWidgetNonScrollable(
                 entryText: task.entryText,
-                maxHeight: maxHeight - 40, // Account for LinkedDuration height
+                maxHeight: maxHeight -
+                    linkedDurationHeight, // Account for LinkedDuration height
               ),
             ),
           ],

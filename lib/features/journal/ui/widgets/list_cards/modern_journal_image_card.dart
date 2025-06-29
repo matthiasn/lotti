@@ -25,6 +25,13 @@ class ModernJournalImageCard extends StatelessWidget {
   static const double minImageSectionWidth = 300;
   static const double cardHorizontalPadding = 40;
 
+  // Header and content spacing constants
+  static const double headerHeight = 24; // Approximate height of date/icons row
+  static const double spacingAfterHeader = 8;
+  static const double tagsHeight = 32; // Approximate height of tags widget
+  static const double spacingAfterTags = 8;
+  static const double compactSpacingAfterHeader = 4;
+
   final JournalImage item;
   final bool isCompact;
 
@@ -189,8 +196,14 @@ class ModernJournalImageCard extends StatelessWidget {
     final imageHeight = isCompact ? compactImageHeight : regularImageHeight;
     final padding =
         isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding;
-    final availableHeight =
-        imageHeight - (padding * 2) - 80; // Account for header and tags
+    // Calculate reserved height for header and spacing
+    final reservedHeight = isCompact
+        ? headerHeight + compactSpacingAfterHeader
+        : headerHeight + spacingAfterHeader + tagsHeight + spacingAfterTags;
+
+    final availableHeight = imageHeight -
+        (padding * 2) -
+        reservedHeight; // Account for header and tags
 
     return TextViewerWidgetNonScrollable(
       entryText: item.entryText,
