@@ -137,7 +137,10 @@ void main() {
     when(() => mockRef.read(checklistRepositoryProvider))
         .thenReturn(mockChecklistRepo);
 
-    repository = UnifiedAiInferenceRepository(mockRef);
+    repository = UnifiedAiInferenceRepository(mockRef)
+
+      // Set up the mock auto-checklist service for testing
+      ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });
 
   tearDown(() {
@@ -1762,6 +1765,111 @@ void main() {
 
         await Future<void>.delayed(Duration.zero);
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+      });
+
+      test('handles task title update error during post-processing', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'TODO', // Short title that should be replaced
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        const responseWithTitle = '''
+# Implement user authentication system
+
+Some task summary content...''';
+
+        final mockStream = Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                    content: responseWithTitle),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "TODO"}');
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Mock the journal repository to throw an exception when updating the task
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenThrow(Exception('Database update failed'));
+
+        final statusChanges = <InferenceStatus>[];
+
+        // Should not throw even though title update fails
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: statusChanges.add,
+        );
+
+        // Verify that the inference still completes successfully
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+
+        // Verify that updateJournalEntity was called (and failed)
+        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
 
       test('audio transcription updates both transcripts and entry text',
@@ -4039,6 +4147,366 @@ Take into account the following task context:
 
       // Verify: Should not attempt to update when error occurs
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+    });
+
+    test('handles action item suggestions when current entity is not a task',
+        () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      // Create a different entity type to simulate corruption/race condition
+      final nonTaskEntity = JournalImage(
+        meta: _createMetadata(),
+        data: ImageData(
+          capturedAt: DateTime.now(),
+          imageId: 'test-image',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images/',
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'action-items-prompt',
+        name: 'Action Items',
+        aiResponseType: AiResponseType.actionItemSuggestions,
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      const actionItemsResponse = '''
+[
+  {"completed": false, "title": "Review requirements"},
+  {"completed": false, "title": "Create test plan"}
+]''';
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                  content: actionItemsResponse),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      // Setup: First call returns task, second call returns non-task entity
+      var getEntityCallCount = 0;
+      when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
+        getEntityCallCount++;
+        if (getEntityCallCount == 1) {
+          return taskEntity; // First call - initial capture
+        } else {
+          return nonTaskEntity; // Second call - corrupted/changed entity type
+        }
+      });
+
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Should not throw even when entity type changes
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that entity was checked twice (initial and current state)
+      verify(() => mockAiInputRepo.getEntity('test-id')).called(2);
+
+      // Verify that auto-checklist service was never called since entity type changed
+      verifyNever(() => mockAutoChecklistService.shouldAutoCreate(
+          taskId: any(named: 'taskId')));
+      verifyNever(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            shouldAutoCreate: any(named: 'shouldAutoCreate'),
+          ));
+    });
+
+    test('handles auto-checklist creation failure gracefully', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'action-items-prompt',
+        name: 'Action Items',
+        aiResponseType: AiResponseType.actionItemSuggestions,
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      const actionItemsResponse = '''
+[
+  {"completed": false, "title": "Review requirements"},
+  {"completed": false, "title": "Create test plan"}
+]''';
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                  content: actionItemsResponse),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Mock auto-checklist service to return failure
+      when(() => mockAutoChecklistService.shouldAutoCreate(
+          taskId: any(named: 'taskId'))).thenAnswer((_) async => true);
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            shouldAutoCreate: any(named: 'shouldAutoCreate'),
+          )).thenAnswer((_) async => (
+            success: false,
+            checklistId: null,
+            error: 'Failed to create checklist',
+          ));
+
+      // Should not throw even when auto-checklist creation fails
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that auto-checklist creation was attempted
+      verify(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .called(1);
+      verify(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: 'test-id',
+            suggestions: any(named: 'suggestions'),
+            shouldAutoCreate: true,
+          )).called(1);
+
+      // Verify that re-run was NOT attempted since creation failed
+      verify(() => mockAiInputRepo.getEntity('test-id')).called(
+          2); // Initial call + current state check in action item processing
+    });
+
+    test('handles exception in action item suggestions processing', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'action-items-prompt',
+        name: 'Action Items',
+        aiResponseType: AiResponseType.actionItemSuggestions,
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      const actionItemsResponse = '''
+[
+  {"completed": false, "title": "Review requirements"},
+  {"completed": false, "title": "Create test plan"}
+]''';
+
+      final mockStream = Stream.fromIterable([
+        CreateChatCompletionStreamResponse(
+          id: 'response-1',
+          choices: [
+            const ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                  content: actionItemsResponse),
+              finishReason: ChatCompletionFinishReason.stop,
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      ]);
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task": "Test Task"}');
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        ),
+      ).thenAnswer((_) => mockStream);
+
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Mock auto-checklist service to throw an exception
+      when(() => mockAutoChecklistService.shouldAutoCreate(
+              taskId: any(named: 'taskId')))
+          .thenThrow(Exception('Auto-checklist service error'));
+
+      // Should not throw even when auto-checklist service throws exception
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that shouldAutoCreate was called and threw exception
+      verify(() => mockAutoChecklistService.shouldAutoCreate(taskId: 'test-id'))
+          .called(1);
+
+      // Verify that autoCreateChecklist was never called due to exception
+      verifyNever(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            shouldAutoCreate: any(named: 'shouldAutoCreate'),
+          ));
     });
   });
 }
