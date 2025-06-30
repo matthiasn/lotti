@@ -562,14 +562,15 @@ class UnifiedAiInferenceRepository {
       case AiResponseType.taskSummary:
         if (entity is Task) {
           // Get current task state to avoid overwriting concurrent changes
-          final currentTask = await _getCurrentEntityState(entity.id) as Task?;
-          if (currentTask == null) {
+          final currentEntity = await _getCurrentEntityState(entity.id);
+          if (currentEntity is! Task) {
             developer.log(
               'Cannot update task summary - current task not found: ${entity.id}',
               name: 'UnifiedAiInferenceRepository',
             );
             break;
           }
+          final currentTask = currentEntity;
 
           // Extract title from response (H1 markdown format)
           final titleRegex = RegExp(r'^#\s+(.+)$', multiLine: true);
@@ -625,17 +626,18 @@ class UnifiedAiInferenceRepository {
             suggestedActionItems.isNotEmpty &&
             !isRerun) {
           // Get current task state to avoid using stale data
-          final currentTask = await _getCurrentEntityState(entity.id) as Task?;
-          if (currentTask != null) {
-            // Don't auto-create on re-runs
-            await _handleActionItemSuggestions(currentTask,
-                suggestedActionItems, aiResponseEntry, promptConfig);
-          } else {
+          final currentEntity = await _getCurrentEntityState(entity.id);
+          if (currentEntity is! Task) {
             developer.log(
               'Cannot process action item suggestions - current task not found: ${entity.id}',
               name: 'UnifiedAiInferenceRepository',
             );
+            return;
           }
+          final currentTask = currentEntity;
+          // Don't auto-create on re-runs
+          await _handleActionItemSuggestions(
+              currentTask, suggestedActionItems, aiResponseEntry, promptConfig);
         } else {
           developer.log(
             'Skipping _handleActionItemSuggestions - conditions not met',

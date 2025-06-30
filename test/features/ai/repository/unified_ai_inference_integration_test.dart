@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -901,17 +902,159 @@ void main() {
       // If we reach this point, the rapid changes were handled gracefully
       expect(true, true); // Test passes if no exceptions were thrown
     });
+
+    test('handles type safety when _getCurrentEntityState returns wrong type',
+        () async {
+      // Setup: Initial task
+      const taskId = 'test-task-type-safety';
+      final task = _createTaskWithTitle(taskId, 'Test');
+
+      final promptConfig = _createPrompt(
+        id: 'summary-prompt',
+        requiredInputData: [InputDataType.task],
+      );
+      final model = _createModel(id: 'model-1');
+      final provider = _createProvider(id: 'provider-1');
+
+      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
+          .thenAnswer((_) async => promptConfig);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
+          .thenAnswer((_) async => jsonEncode({'title': 'Test'}));
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      // Create a journal entry (not a task) to simulate wrong type
+      final journalEntry = JournalEntity.journalEntry(
+        meta: _createMetadata(id: taskId),
+        entryText: const EntryText(plainText: 'This is a journal entry'),
+      );
+
+      // Mock getEntity to first return task, then journal entry
+      var callCount = 0;
+      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+        callCount++;
+        return callCount == 1 ? task : journalEntry;
+      });
+
+      final updateCalls = <JournalEntity>[];
+      when(() => mockJournalRepo.updateJournalEntity(any()))
+          .thenAnswer((invocation) async {
+        updateCalls.add(invocation.positionalArguments[0] as JournalEntity);
+        return true;
+      });
+
+      final mockStream =
+          _createDelayedStream(['# AI Title\n\nSummary content.']);
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).thenAnswer((_) => mockStream);
+
+      // Execute: Should handle type mismatch gracefully
+      await repository.runInference(
+        entityId: taskId,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify: No task updates should occur due to type mismatch
+      expect(updateCalls.whereType<Task>(), isEmpty);
+    });
+
+    test('handles null return from _getCurrentEntityState', () async {
+      // Setup: Initial task
+      const taskId = 'test-task-null-safety';
+      final task = _createTaskWithTitle(taskId, 'Test');
+
+      final promptConfig = _createPrompt(
+        id: 'summary-prompt',
+        requiredInputData: [InputDataType.task],
+      );
+      final model = _createModel(id: 'model-1');
+      final provider = _createProvider(id: 'provider-1');
+
+      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
+          .thenAnswer((_) async => promptConfig);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
+          .thenAnswer((_) async => jsonEncode({'title': 'Test'}));
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      // Mock getEntity to first return task, then null
+      var callCount = 0;
+      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+        callCount++;
+        return callCount == 1 ? task : null;
+      });
+
+      final updateCalls = <JournalEntity>[];
+      when(() => mockJournalRepo.updateJournalEntity(any()))
+          .thenAnswer((invocation) async {
+        updateCalls.add(invocation.positionalArguments[0] as JournalEntity);
+        return true;
+      });
+
+      final mockStream =
+          _createDelayedStream(['# AI Title\n\nSummary content.']);
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+          )).thenAnswer((_) => mockStream);
+
+      // Execute: Should handle null gracefully
+      await repository.runInference(
+        entityId: taskId,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify: No task updates should occur due to null entity
+      expect(updateCalls.whereType<Task>(), isEmpty);
+    });
   });
 }
 
 // Helper methods
 Metadata _createMetadata({String? id}) {
+  final fixedTime = DateTime(2023, 1, 1, 12);
   return Metadata(
     id: id ?? 'test-id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    createdAt: fixedTime,
+    updatedAt: fixedTime,
+    dateFrom: fixedTime,
+    dateTo: fixedTime,
     starred: false,
     flag: EntryFlag.import,
     utcOffset: 0,
