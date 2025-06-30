@@ -2,10 +2,20 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod/riverpod.dart';
@@ -19,6 +29,26 @@ class MockClipboardReader extends Mock implements ClipboardReader {}
 
 class MockDataReaderFile extends Mock implements DataReaderFile {}
 
+class MockJournalDb extends Mock implements JournalDb {}
+
+class MockFts5Db extends Mock implements Fts5Db {}
+
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockVectorClockService extends Mock implements VectorClockService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
+class MockOutboxService extends Mock implements OutboxService {}
+
+class MockTagsService extends Mock implements TagsService {}
+
+class MockNotificationService extends Mock implements NotificationService {}
+
+class MockTimeService extends Mock implements TimeService {}
+
+class MockLoggingService extends Mock implements LoggingService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -29,9 +59,99 @@ void main() {
 
   setUpAll(() async {
     setFakeDocumentsPath();
+
+    // Clear any existing registrations to avoid conflicts with other tests
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<LoggingDb>()) {
+      getIt.unregister<LoggingDb>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<Fts5Db>()) {
+      getIt.unregister<Fts5Db>();
+    }
+    if (getIt.isRegistered<PersistenceLogic>()) {
+      getIt.unregister<PersistenceLogic>();
+    }
+    if (getIt.isRegistered<VectorClockService>()) {
+      getIt.unregister<VectorClockService>();
+    }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
+    if (getIt.isRegistered<OutboxService>()) {
+      getIt.unregister<OutboxService>();
+    }
+    if (getIt.isRegistered<TagsService>()) {
+      getIt.unregister<TagsService>();
+    }
+    if (getIt.isRegistered<NotificationService>()) {
+      getIt.unregister<NotificationService>();
+    }
+    if (getIt.isRegistered<TimeService>()) {
+      getIt.unregister<TimeService>();
+    }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+
+    // Register all required mock services
     getIt
       ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true));
+      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+      ..registerSingleton<JournalDb>(MockJournalDb())
+      ..registerSingleton<Fts5Db>(MockFts5Db())
+      ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+      ..registerSingleton<VectorClockService>(MockVectorClockService())
+      ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
+      ..registerSingleton<OutboxService>(MockOutboxService())
+      ..registerSingleton<TagsService>(MockTagsService())
+      ..registerSingleton<NotificationService>(MockNotificationService())
+      ..registerSingleton<TimeService>(MockTimeService())
+      ..registerSingleton<LoggingService>(MockLoggingService());
+  });
+
+  tearDownAll(() {
+    // Clean up GetIt registrations
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<LoggingDb>()) {
+      getIt.unregister<LoggingDb>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<Fts5Db>()) {
+      getIt.unregister<Fts5Db>();
+    }
+    if (getIt.isRegistered<PersistenceLogic>()) {
+      getIt.unregister<PersistenceLogic>();
+    }
+    if (getIt.isRegistered<VectorClockService>()) {
+      getIt.unregister<VectorClockService>();
+    }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
+    if (getIt.isRegistered<OutboxService>()) {
+      getIt.unregister<OutboxService>();
+    }
+    if (getIt.isRegistered<TagsService>()) {
+      getIt.unregister<TagsService>();
+    }
+    if (getIt.isRegistered<NotificationService>()) {
+      getIt.unregister<NotificationService>();
+    }
+    if (getIt.isRegistered<TimeService>()) {
+      getIt.unregister<TimeService>();
+    }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
   });
 
   setUp(() {

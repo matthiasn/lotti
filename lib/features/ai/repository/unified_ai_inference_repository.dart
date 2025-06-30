@@ -489,6 +489,20 @@ class UnifiedAiInferenceRepository {
     );
   }
 
+  /// Get current entity state to avoid stale data overwrites
+  Future<JournalEntity?> _getCurrentEntityState(String entityId) async {
+    try {
+      return await ref.read(aiInputRepositoryProvider).getEntity(entityId);
+    } catch (e) {
+      developer.log(
+        'Failed to get current entity state for $entityId',
+        name: 'UnifiedAiInferenceRepository',
+        error: e,
+      );
+      return null;
+    }
+  }
+
   /// Handle any special post-processing based on response type
   Future<void> _handlePostProcessing({
     required JournalEntity entity,
@@ -547,24 +561,58 @@ class UnifiedAiInferenceRepository {
         }
       case AiResponseType.taskSummary:
         if (entity is Task) {
+          // Get current task state to avoid overwriting concurrent changes
+          final currentEntity = await _getCurrentEntityState(entity.id);
+          if (currentEntity is! Task) {
+            developer.log(
+              'Cannot update task summary - current task not found: ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            break;
+          }
+          final currentTask = currentEntity;
+
           // Extract title from response (H1 markdown format)
           final titleRegex = RegExp(r'^#\s+(.+)$', multiLine: true);
           final titleMatch = titleRegex.firstMatch(response);
 
           if (titleMatch != null) {
             final suggestedTitle = titleMatch.group(1)?.trim();
-            final currentTitle = entity.data.title;
+            final currentTitle = currentTask.data.title;
 
             // Update title if current title is empty or very short (less than 5 characters)
             if (suggestedTitle != null &&
                 suggestedTitle.isNotEmpty &&
                 currentTitle.length < kMinExistingTitleLengthForAiSuggestion) {
-              final updated = entity.copyWith(
-                data: entity.data.copyWith(
+              developer.log(
+                'Updating task title from AI suggestion: "$currentTitle" -> "$suggestedTitle" for task ${entity.id}',
+                name: 'UnifiedAiInferenceRepository',
+              );
+
+              final updated = currentTask.copyWith(
+                data: currentTask.data.copyWith(
                   title: suggestedTitle,
                 ),
               );
-              await journalRepo.updateJournalEntity(updated);
+
+              try {
+                await journalRepo.updateJournalEntity(updated);
+                developer.log(
+                  'Successfully updated task title for task ${entity.id}',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              } catch (e) {
+                developer.log(
+                  'Failed to update task title for task ${entity.id}',
+                  name: 'UnifiedAiInferenceRepository',
+                  error: e,
+                );
+              }
+            } else {
+              developer.log(
+                'Skipping task title update for task ${entity.id}: suggestedTitle="$suggestedTitle", currentTitle.length=${currentTitle.length}',
+                name: 'UnifiedAiInferenceRepository',
+              );
             }
           }
         }
@@ -577,9 +625,19 @@ class UnifiedAiInferenceRepository {
             suggestedActionItems != null &&
             suggestedActionItems.isNotEmpty &&
             !isRerun) {
+          // Get current task state to avoid using stale data
+          final currentEntity = await _getCurrentEntityState(entity.id);
+          if (currentEntity is! Task) {
+            developer.log(
+              'Cannot process action item suggestions - current task not found: ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            return;
+          }
+          final currentTask = currentEntity;
           // Don't auto-create on re-runs
           await _handleActionItemSuggestions(
-              entity, suggestedActionItems, aiResponseEntry, promptConfig);
+              currentTask, suggestedActionItems, aiResponseEntry, promptConfig);
         } else {
           developer.log(
             'Skipping _handleActionItemSuggestions - conditions not met',

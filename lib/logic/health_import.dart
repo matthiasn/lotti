@@ -101,8 +101,7 @@ class HealthImport {
         endTime: dateTo,
       );
 
-      flightsByDay[dateFrom] =
-          sumNumericHealthValues(flightsClimbedDataPoints);
+      flightsByDay[dateFrom] = sumNumericHealthValues(flightsClimbedDataPoints);
       distanceByDay[dateFrom] = sumNumericHealthValues(distanceDataPoints);
     }
   }
