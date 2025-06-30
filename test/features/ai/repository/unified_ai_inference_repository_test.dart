@@ -128,7 +128,8 @@ void main() {
 
     // Mock database transaction method
     when(() => mockJournalDb.transaction(any())).thenAnswer((invocation) async {
-      final callback = invocation.positionalArguments[0] as Future Function();
+      final callback =
+          invocation.positionalArguments[0] as Future<dynamic> Function();
       return callback();
     });
 
