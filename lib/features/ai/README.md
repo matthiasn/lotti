@@ -121,34 +121,47 @@ The AI system includes automatic checklist creation for action item suggestions.
 - **`AutoChecklistService`**: Core service handling auto-creation logic and decision making
 - **`UnifiedAiInferenceRepository._handleActionItemSuggestions()`**: Post-processing method that triggers auto-creation
 - **`UnifiedAiInferenceRepository._rerunActionItemSuggestions()`**: Automatic re-run logic
+- **`UnifiedAiInferenceRepository._getCurrentEntityState()`**: Reads fresh entity state before updates
 - **`ChecklistRepository.createChecklist()`**: Creates checklist with initial items
-- **Semaphore protection**: Prevents concurrent auto-creation for the same task
+- **Simple semaphore protection**: Prevents concurrent auto-creation for the same task
 
 #### Decision Flow:
 ```dart
-// In _handlePostProcessing()
-if (promptConfig.aiResponseType == AiResponseType.actionItemSuggestions) {
-  if (entity is Task && suggestedActionItems != null && suggestedActionItems.isNotEmpty && !isRerun) {
-    await _handleActionItemSuggestions(entity, suggestedActionItems);
+// In _handlePostProcessing() - Read-Current-Write Pattern
+case AiResponseType.taskSummary:
+  if (entity is Task) {
+    // Get current task state to avoid overwriting concurrent changes
+    final currentTask = await _getCurrentEntityState(entity.id) as Task?;
+    if (currentTask == null) return;
+    
+    // Process with current state, not stale captured state
+    await _updateTaskWithSummary(currentTask, response);
   }
-}
+
+case AiResponseType.actionItemSuggestions:
+  if (entity is Task && suggestedActionItems != null && !isRerun) {
+    // Get current task state for auto-creation decision
+    final currentTask = await _getCurrentEntityState(entity.id) as Task?;
+    if (currentTask != null) {
+      await _handleActionItemSuggestions(currentTask, suggestedActionItems);
+    }
+  }
 
 // In _handleActionItemSuggestions()
 if (_autoCreatingTasks.contains(task.id)) {
-  return; // Prevent concurrent auto-creation
+  return; // Prevent duplicate auto-creation
 }
 
-final shouldAutoCreate = await _autoChecklistService.shouldAutoCreate(taskId: task.id);
+final shouldAutoCreate = await autoChecklistService.shouldAutoCreate(taskId: task.id);
 if (shouldAutoCreate) {
-  _autoCreatingTasks.add(task.id); // Mark as processing
+  _autoCreatingTasks.add(task.id);
   try {
-    // Convert AI suggestions to checklist items and create checklist
     final result = await autoChecklistService.autoCreateChecklist(...);
     if (result.success) {
       await _rerunActionItemSuggestions(task); // Auto re-run
     }
   } finally {
-    _autoCreatingTasks.remove(task.id); // Always clean up
+    _autoCreatingTasks.remove(task.id);
   }
 }
 ```
@@ -165,7 +178,20 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
 
 #### Technical Implementation
 
-1. **Semaphore Protection**:
+1. **Read-Current-Write Pattern**:
+   ```dart
+   // Always read fresh state before updates
+   Future<JournalEntity?> _getCurrentEntityState(String entityId) async {
+     try {
+       return await ref.read(aiInputRepositoryProvider).getEntity(entityId);
+     } catch (e) {
+       developer.log('Failed to get current entity state for $entityId', error: e);
+       return null;
+     }
+   }
+   ```
+
+2. **Simple Semaphore Protection**:
    ```dart
    // Prevent concurrent auto-creation
    final Set<String> _autoCreatingTasks = {};
@@ -175,7 +201,7 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
    }
    ```
 
-2. **Automatic Re-run**:
+3. **Automatic Re-run**:
    ```dart
    // In _handleActionItemSuggestions()
    if (result.success) {
@@ -192,9 +218,9 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
    );
    ```
 
-3. **Robust Concurrency Protection**:
+4. **Reliable Cleanup**:
    ```dart
-   // Simplified error handling with reliable semaphore cleanup
+   // Simple error handling with semaphore cleanup
    if (shouldAutoCreate) {
      _autoCreatingTasks.add(task.id);
      try {
@@ -210,12 +236,13 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
 
 - **Eliminates manual work**: Saves up to 10 clicks (creating checklist + dragging multiple items)
 - **Natural UX**: No hidden UI elements - users see logical progression
-- **Race condition protection**: Semaphore prevents database constraint errors
+- **Simple concurrency protection**: Prevents duplicate auto-creation with minimal complexity
 - **AI context awareness**: AI naturally produces fewer/no suggestions after items are in checklist
 - **Seamless experience**: First-time users get immediate value from AI suggestions
 - **Backwards compatible**: Existing manual flow unchanged for tasks with checklists
 - **Self-healing**: System corrects duplicate suggestions through intelligent re-run
-- **Optimized performance**: Eliminates redundant database calls by passing `shouldAutoCreate` result directly
+- **User change preservation**: Read-Current-Write pattern respects user modifications during AI processing
+- **Single-threaded safety**: Leverages Flutter's event loop for natural concurrency handling
 
 ## Response Types
 
@@ -354,13 +381,13 @@ A: Errors are wrapped in `InferenceError` objects and displayed using `AiErrorDi
 ### Q: Can I use local models?
 A: Yes, by configuring a custom endpoint pointing to a local inference server (e.g., Ollama for text models, or local Whisper server for audio transcription).
 
-### Q: How does the system handle concurrent AI requests?
-A: The system includes robust concurrency protection:
-- **Semaphore Protection**: Prevents multiple auto-checklist creations for the same task simultaneously
-- **Race Condition Prevention**: Uses a `Set<String> _autoCreatingTasks` to track ongoing operations
-- **Database Safety**: Eliminates "UNIQUE constraint failed" errors from concurrent operations
-- **Graceful Cleanup**: Ensures semaphore state is cleaned up on both success and failure
-- **Silent Re-runs**: Secondary AI runs don't trigger additional auto-creation to prevent recursion
+### Q: How does the system handle concurrent modifications during AI processing?
+A: The system uses a simple "Read-Current-Write" pattern to prevent stale data overwrites:
+- **Fresh State Reading**: AI operations read current entity state immediately before making updates, not using stale captured state
+- **Single-threaded Safety**: Since Flutter runs on a single-threaded event loop, true concurrent modifications aren't possible
+- **User Change Preservation**: If a user modifies a task while AI is processing, AI respects the user's changes by reading fresh state before writing
+- **Auto-checklist Protection**: Uses a simple `Set<String> _autoCreatingTasks` to prevent duplicate checklist creation for the same task
+- **No Complex Transactions**: No database transactions or retry logic needed since conflicts are resolved by reading current state
 
 ## Testing
 
@@ -375,7 +402,8 @@ The system includes comprehensive test coverage:
 ### Integration Tests
 - **Auto-checklist Creation**: End-to-end testing of automatic checklist creation flow
 - **Smart Re-run System**: Testing of automatic re-run after checklist creation
-- **Concurrency Protection**: Testing semaphore prevents database constraint errors
+- **Read-Current-Write Pattern**: Testing that AI respects user changes during processing
+- **Concurrency Protection**: Testing simple semaphore prevents duplicate auto-creation
 - **Error Handling**: Graceful failure modes and recovery
 
 ### Widget Tests
@@ -384,12 +412,14 @@ The system includes comprehensive test coverage:
 
 ### Key Test Coverage
 - ✅ Basic auto-checklist creation functionality
-- ✅ Semaphore prevents concurrent auto-creation
+- ✅ Read-Current-Write pattern prevents stale data overwrites
+- ✅ Simple semaphore prevents duplicate auto-creation
 - ✅ Re-run generates appropriate suggestions after checklist creation
+- ✅ AI respects user modifications during processing
 - ✅ Behavior when tasks already have existing checklists
 - ✅ Error handling in auto-checklist service
 - ✅ UI shows correct suggestions after re-run
-- ✅ All existing functionality remains unbroken (200+ tests passing)
+- ✅ All existing functionality remains unbroken
 
 ## Security Considerations
 
