@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/features/ai/model/inference_error.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {
@@ -172,6 +173,16 @@ class AiErrorUtils {
     if (error.runtimeType.toString().contains('OpenAI') ||
         error.runtimeType.toString().contains('RequestException')) {
       return _handleApiError(error, stackTrace);
+    }
+
+    // Check for ModelNotInstalledException first (most specific)
+    if (error is ModelNotInstalledException) {
+      return InferenceError(
+        message: error.toString(),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
     }
 
     // Check for 404 model not found errors (common with Ollama)
