@@ -4511,7 +4511,7 @@ Take into account the following task context:
   });
 
   group('Concurrent Safety Tests', () {
-    test('_getCurrentEntityState retrieves entity successfully', () async {
+    test('runInference calls getEntity to retrieve entity', () async {
       // Setup
       final task = Task(
         meta: _createMetadata(),
@@ -4528,23 +4528,79 @@ Take into account the following task context:
         ),
       );
 
+      final prompt = _createPrompt(
+        id: 'test-prompt',
+        name: 'Test Prompt',
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
       when(() => mockAiInputRepo.getEntity('test-id'))
           .thenAnswer((_) async => task);
 
       when(() => mockAiConfigRepo.getConfigById('test-prompt'))
-          .thenAnswer((_) async => _createPrompt(
-                id: 'test-prompt',
-                name: 'Test Prompt',
-              ));
+          .thenAnswer((_) async => prompt);
+
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          )).thenAnswer((_) => Stream.value(
+            CreateChatCompletionStreamResponse(
+              id: 'test-id',
+              created: DateTime.now().millisecondsSinceEpoch,
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'Test response',
+                  ),
+                ),
+              ],
+            ),
+          ));
+
+      when(() => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
 
       final repository = UnifiedAiInferenceRepository(mockRef);
 
-      // Test the private method indirectly through runInference
-      // The method is tested through its usage in post-processing
-      expect(repository, isNotNull);
+      // Act - Run inference which should call getEntity
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: prompt,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
 
-      // Verify that getEntity is called correctly when needed
-      verifyNever(() => mockAiInputRepo.getEntity('test-id'));
+      // Assert - Verify that getEntity was called
+      // It may be called twice: once in runInference and potentially once in _getCurrentEntityState
+      // depending on the aiResponseType
+      verify(() => mockAiInputRepo.getEntity('test-id'))
+          .called(greaterThanOrEqualTo(1));
     });
 
     test('image analysis handles entity not found during post-processing',
