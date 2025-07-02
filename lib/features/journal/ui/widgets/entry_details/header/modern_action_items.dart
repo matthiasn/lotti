@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -198,9 +196,6 @@ class ModernShareItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
-
     return ModernModalActionItem(
       icon: Icons.share_rounded,
       title: 'Share',
@@ -246,14 +241,12 @@ class ModernUnlinkItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linkService = getIt<LinkService>();
-
     return ModernModalActionItem(
       icon: Icons.link_off_rounded,
       title: 'Unlink',
       onTap: () {
         // TODO: Implement unlink functionality
-        // linkService.unlinkFrom(linkedFromId, entryId);
+        // getIt<LinkService>().unlinkFrom(linkedFromId, entryId);
         Navigator.of(context).pop();
       },
     );
@@ -273,7 +266,6 @@ class ModernToggleHiddenItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linkService = getIt<LinkService>();
     final hidden = link.hidden ?? false;
 
     return ModernModalActionItem(
@@ -281,6 +273,7 @@ class ModernToggleHiddenItem extends ConsumerWidget {
       title: hidden ? 'Show link' : 'Hide link',
       onTap: () {
         // TODO: Implement toggle hidden functionality
+        // getIt<LinkService>().toggleHidden(link);
         Navigator.of(context).pop();
       },
     );
@@ -299,7 +292,6 @@ class ModernCopyImageItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;
@@ -312,6 +304,7 @@ class ModernCopyImageItem extends ConsumerWidget {
       title: 'Copy image',
       onTap: () async {
         // TODO: Implement copy image functionality
+        // ref.read(provider.notifier).copyImage();
         if (context.mounted) {
           Navigator.of(context).pop();
         }
