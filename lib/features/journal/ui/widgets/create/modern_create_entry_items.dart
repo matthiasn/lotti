@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
@@ -78,10 +81,13 @@ class ModernCreateAudioItem extends ConsumerWidget {
     return ModernModalEntryTypeItem(
       icon: Icons.mic_none_rounded,
       title: 'Audio',
-      onTap: () async {
-        // Audio recording is handled by the recorder controller
-        // TODO: Implement audio recording
+      onTap: () {
         Navigator.of(context).pop();
+        AudioRecordingModal.show(
+          context,
+          linkedId: linkedFromId,
+          categoryId: categoryId,
+        );
       },
     );
   }
@@ -98,16 +104,15 @@ class ModernCreateTimerItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final linked =
+        ref.watch(entryControllerProvider(id: linkedFromId)).value?.entry;
+
     return ModernModalEntryTypeItem(
       icon: Icons.timer_outlined,
       title: 'Timer',
-      onTap: () async {
-        // Timer needs the linked entity to be fetched first
-        // This is handled in the original implementation
-        await createTextEntry(linkedId: linkedFromId);
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
+      onTap: () {
+        createTimerEntry(linked: linked);
+        Navigator.of(context).pop();
       },
     );
   }
@@ -214,13 +219,22 @@ class ModernPasteImageItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final provider = imagePasteControllerProvider(
+      linkedFromId: linkedFromId,
+      categoryId: categoryId,
+    );
+    final canPasteImage = ref.watch(provider).valueOrNull ?? false;
+
+    if (!canPasteImage) {
+      return const SizedBox.shrink();
+    }
+
     return ModernModalEntryTypeItem(
       icon: Icons.content_paste_rounded,
       title: 'Paste Image',
-      onTap: () async {
-        // This would need to be implemented in the create entry logic
-        // For now, just close the modal
+      onTap: () {
         Navigator.of(context).pop();
+        ref.read(provider.notifier).paste();
       },
     );
   }

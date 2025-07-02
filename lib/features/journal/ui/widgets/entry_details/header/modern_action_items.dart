@@ -3,10 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/index.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Modern styled toggle starred action item
 class ModernToggleStarredItem extends ConsumerWidget {
@@ -145,13 +152,38 @@ class ModernDeleteItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
+
+    Future<void> onPressed() async {
+      const deleteKey = 'deleteKey';
+      final result = await showModalActionSheet<String>(
+        context: context,
+        title: context.messages.journalDeleteQuestion,
+        actions: [
+          ModalSheetAction(
+            icon: Icons.warning_rounded,
+            label: context.messages.journalDeleteConfirm,
+            key: deleteKey,
+            isDestructiveAction: true,
+            isDefaultAction: true,
+          ),
+        ],
+      );
+
+      if (result == deleteKey) {
+        await ref.read(provider.notifier).delete(beamBack: beamBack);
+      }
+    }
 
     return ModernModalActionItem(
       icon: Icons.delete_outline_rounded,
       title: 'Delete entry',
       isDestructive: true,
-      onTap: () => notifier.delete(beamBack: beamBack),
+      onTap: () async {
+        await onPressed();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 }
@@ -196,12 +228,33 @@ class ModernShareItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entryState = ref.watch(provider).value;
+    final entry = entryState?.entry;
+
+    if (entryState == null ||
+        entry is! JournalImage && entry is! JournalAudio) {
+      return const SizedBox.shrink();
+    }
+
     return ModernModalActionItem(
       icon: Icons.share_rounded,
       title: 'Share',
-      onTap: () {
-        // TODO: Implement share functionality
+      onTap: () async {
         Navigator.of(context).pop();
+        
+        if (isLinux || isWindows) {
+          return;
+        }
+
+        if (entry is JournalImage) {
+          final filePath = getFullImagePath(entry);
+          await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+        }
+        if (entry is JournalAudio) {
+          final filePath = await AudioUtils.getFullAudioPath(entry);
+          await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+        }
       },
     );
   }
@@ -244,10 +297,31 @@ class ModernUnlinkItem extends ConsumerWidget {
     return ModernModalActionItem(
       icon: Icons.link_off_rounded,
       title: 'Unlink',
-      onTap: () {
-        // TODO: Implement unlink functionality
-        // getIt<LinkService>().unlinkFrom(linkedFromId, entryId);
-        Navigator.of(context).pop();
+      onTap: () async {
+        const unlinkKey = 'unlinkKey';
+        final result = await showModalActionSheet<String>(
+          context: context,
+          title: context.messages.journalUnlinkQuestion,
+          actions: [
+            ModalSheetAction(
+              icon: Icons.warning,
+              label: context.messages.journalUnlinkConfirm,
+              key: unlinkKey,
+              isDestructiveAction: true,
+              isDefaultAction: true,
+            ),
+          ],
+        );
+
+        if (result == unlinkKey) {
+          final notifier = ref.read(
+            linkedEntriesControllerProvider(id: linkedFromId).notifier,
+          );
+          await notifier.removeLink(toId: entryId);
+        }
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
       },
     );
   }
@@ -267,13 +341,15 @@ class ModernToggleHiddenItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hidden = link.hidden ?? false;
+    final provider = linkedEntriesControllerProvider(id: link.fromId);
+    final notifier = ref.read(provider.notifier);
 
     return ModernModalActionItem(
       icon: hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
       title: hidden ? 'Show link' : 'Hide link',
       onTap: () {
-        // TODO: Implement toggle hidden functionality
-        // getIt<LinkService>().toggleHidden(link);
+        final updatedLink = link.copyWith(hidden: !hidden);
+        notifier.updateLink(updatedLink);
         Navigator.of(context).pop();
       },
     );
@@ -293,6 +369,7 @@ class ModernCopyImageItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: entryId);
     final entryState = ref.watch(provider).value;
+    final notifier = ref.read(provider.notifier);
 
     final item = entryState?.entry;
     if (item == null || item is! JournalImage) {
@@ -303,8 +380,7 @@ class ModernCopyImageItem extends ConsumerWidget {
       icon: MdiIcons.contentCopy,
       title: 'Copy image',
       onTap: () async {
-        // TODO: Implement copy image functionality
-        // ref.read(provider.notifier).copyImage();
+        await notifier.copyImage();
         if (context.mounted) {
           Navigator.of(context).pop();
         }
