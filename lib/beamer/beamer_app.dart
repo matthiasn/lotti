@@ -180,7 +180,7 @@ class _AppScreenState extends State<AppScreen> {
   }
 }
 
-class MyBeamerApp extends StatelessWidget {
+class MyBeamerApp extends StatefulWidget {
   const MyBeamerApp({
     super.key,
     this.navService,
@@ -199,18 +199,36 @@ class MyBeamerApp extends StatelessWidget {
   final JournalDb? journalDb;
 
   @override
-  Widget build(BuildContext context) {
-    final effectiveNavService = navService ?? getIt<NavService>();
+  State<MyBeamerApp> createState() => _MyBeamerAppState();
+}
 
-    final routerDelegate = BeamerDelegate(
+class _MyBeamerAppState extends State<MyBeamerApp> {
+  late final BeamerDelegate routerDelegate;
+  late final NavService effectiveNavService;
+
+  @override
+  void initState() {
+    super.initState();
+    effectiveNavService = widget.navService ?? getIt<NavService>();
+
+    routerDelegate = BeamerDelegate(
       initialPath: effectiveNavService.currentPath,
       locationBuilder: RoutesLocationBuilder(
         routes: {
-          '*': (context, state, data) => AppScreen(journalDb: journalDb)
+          '*': (context, state, data) => AppScreen(journalDb: widget.journalDb)
         },
       ).call,
     );
+  }
 
+  @override
+  void dispose() {
+    routerDelegate.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         FocusManager.instance.primaryFocus?.unfocus();
@@ -219,14 +237,16 @@ class MyBeamerApp extends StatelessWidget {
         providers: [
           BlocProvider<OutboxCubit>(
             lazy: false,
-            create: (BuildContext context) => outboxCubit ?? OutboxCubit(),
+            create: (BuildContext context) =>
+                widget.outboxCubit ?? OutboxCubit(),
           ),
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) =>
-                audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
+                widget.audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
           ),
           BlocProvider<ThemingCubit>(
-            create: (BuildContext context) => themingCubit ?? ThemingCubit(),
+            create: (BuildContext context) =>
+                widget.themingCubit ?? ThemingCubit(),
           ),
         ],
         child: BlocBuilder<ThemingCubit, ThemingState>(
@@ -243,7 +263,7 @@ class MyBeamerApp extends StatelessWidget {
             }
 
             final updateActivity =
-                (userActivityService ?? getIt<UserActivityService>())
+                (widget.userActivityService ?? getIt<UserActivityService>())
                     .updateActivity;
 
             return Listener(

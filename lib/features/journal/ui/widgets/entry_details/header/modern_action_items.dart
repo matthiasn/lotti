@@ -242,7 +242,7 @@ class ModernShareItem extends ConsumerWidget {
       title: 'Share',
       onTap: () async {
         Navigator.of(context).pop();
-        
+
         if (isLinux || isWindows) {
           return;
         }
