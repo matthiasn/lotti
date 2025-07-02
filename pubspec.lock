@@ -1012,11 +1012,10 @@ packages:
   flutter_quill:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "5ff5967"
-      resolved-ref: "5ff596725a4058aeb599c6068ea95c149c22be35"
-      url: "https://github.com/theniceboy/flutter-quill"
-    source: git
+      name: flutter_quill
+      sha256: "7e60963632bbc8615627f0bae8e178515f69ecb378ad49fa68c43c2aabf33e21"
+      url: "https://pub.dev"
+    source: hosted
     version: "11.4.1"
   flutter_quill_delta_from_html:
     dependency: transitive
@@ -2362,10 +2361,10 @@ packages:
     dependency: transitive
     description:
       name: record_web
-      sha256: "024c81eb7f51468b1833a3eca8b461c7ca25c04899dba37abe580bb57afd32e4"
+      sha256: a12856d0b3dd03d336b4b10d7520a8b3e21649a06a8f95815318feaa8f07adbb
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.8"
+    version: "1.1.9"
   record_windows:
     dependency: transitive
     description:
@@ -3144,10 +3143,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: "9ee764e5cd2fc1e10911ae8ad588e1a19db3b6aa9a6eb53c127c42d3a3c3f22f"
+      sha256: "0d47db6cbf72db61d86369219efd35c7f9d93515e1319da941ece81b1f21c49c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.1"
+    version: "2.7.2"
   video_player_platform_interface:
     dependency: transitive
     description:
