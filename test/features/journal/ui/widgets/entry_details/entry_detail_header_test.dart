@@ -13,7 +13,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -146,11 +145,11 @@ void main() {
       await tester.tap(moreHorizIconFinder);
       await tester.pumpAndSettle();
 
-      final shieldIconFinder = find.byIcon(Icons.shield_outlined);
+      final lockIconFinder = find.byIcon(Icons.lock_open_rounded);
 
-      expect(shieldIconFinder, findsOneWidget);
+      expect(lockIconFinder, findsOneWidget);
 
-      await tester.tap(shieldIconFinder);
+      await tester.tap(lockIconFinder);
       await tester.pumpAndSettle();
 
       // TODO: check that provider method is called instead
@@ -170,8 +169,13 @@ void main() {
       expect(saveButtonFinder, findsNothing);
     });
 
-    testWidgets('map icon invisible when no geolocation exists for entry',
+    testWidgets('map icon visible (outlined) when no geolocation exists',
         (WidgetTester tester) async {
+      // Create an entry without geolocation
+      final entryWithoutGeo = testTextEntry.copyWith(geolocation: null);
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => entryWithoutGeo);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
@@ -183,8 +187,8 @@ void main() {
       await tester.tap(moreHorizIconFinder);
       await tester.pumpAndSettle();
 
-      final mapIconFinder = find.byIcon(MdiIcons.mapOutline);
-      expect(mapIconFinder, findsNothing);
+      final mapIconFinder = find.byIcon(Icons.map_outlined);
+      expect(mapIconFinder, findsOneWidget);
     });
 
     testWidgets('map icon tappable when geolocation exists for entry',
@@ -200,10 +204,11 @@ void main() {
       await tester.tap(moreHorizIconFinder);
       await tester.pumpAndSettle();
 
-      final mapIconFinder = find.byIcon(Icons.map_outlined);
-      expect(mapIconFinder, findsOneWidget);
+      // First try to find the map action by text
+      final mapTextFinder = find.text('Show map');
+      expect(mapTextFinder, findsOneWidget);
 
-      await tester.tap(mapIconFinder);
+      await tester.tap(mapTextFinder);
       await tester.pumpAndSettle();
 
       // TODO: check that provider method is called instead
