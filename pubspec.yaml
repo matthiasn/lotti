@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.636+3130
+version: 0.9.637+3131
 
 msix_config:
   display_name: LottiApp
@@ -61,6 +61,7 @@ dependencies:
   flutter_openssl_crypto: ^0.5.0
 
   #flutter_quill: ^11.4.1
+  # TODO: use library version when crashes are fixed
   flutter_quill:
     git:
       url: https://github.com/theniceboy/flutter-quill
