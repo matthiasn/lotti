@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -49,6 +51,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockRef extends Mock implements Ref {}
 
+class MockDirectory extends Mock implements Directory {}
+
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 class FakeAiConfigModel extends Fake implements AiConfigModel {}
@@ -73,6 +77,9 @@ void main() {
   late MockJournalRepository mockJournalRepo;
   late MockChecklistRepository mockChecklistRepo;
   late MockAutoChecklistService mockAutoChecklistService;
+  late MockLoggingService mockLoggingService;
+  late MockJournalDb mockJournalDb;
+  late MockDirectory mockDirectory;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -93,6 +100,27 @@ void main() {
     mockJournalRepo = MockJournalRepository();
     mockChecklistRepo = MockChecklistRepository();
     mockAutoChecklistService = MockAutoChecklistService();
+    mockLoggingService = MockLoggingService();
+    mockJournalDb = MockJournalDb();
+    mockDirectory = MockDirectory();
+
+    // Set up GetIt
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    getIt
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<Directory>(mockDirectory)
+      ..registerSingleton<LoggingService>(mockLoggingService);
+
+    // Mock directory path
+    when(() => mockDirectory.path).thenReturn('/mock/documents');
 
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
@@ -107,6 +135,18 @@ void main() {
 
     repository = UnifiedAiInferenceRepository(mockRef)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
+  });
+
+  tearDown(() {
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
   });
 
   group('Real Concurrent Scenarios Integration Tests', () {
@@ -1044,6 +1084,491 @@ void main() {
       expect(updateCalls.whereType<Task>(), isEmpty);
     });
   });
+
+  group('Read-Current-Write Pattern Verification', () {
+    test(
+        'Concurrent audio transcription: AI preserves user changes during processing',
+        () async {
+      // Create temporary directory and files
+      final tempDir = Directory.systemTemp.createTempSync('audio_test');
+
+      try {
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        File('${tempDir.path}/audio/test-audio.wav')
+            .writeAsBytesSync([1, 2, 3, 4, 5, 6]);
+
+        const audioId = 'test-audio-123';
+        final originalAudio = _createJournalAudio(audioId);
+
+        // User adds entry text while AI is processing
+        final userUpdatedAudio = _createJournalAudio(
+          audioId,
+          entryText: const EntryText(
+            plainText: 'User added this text during AI processing',
+            markdown: 'User added this text during AI processing',
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'audio-prompt',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        when(() => mockAiConfigRepo.getConfigById('audio-prompt'))
+            .thenAnswer((_) async => promptConfig);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: audioId))
+            .thenAnswer((_) async => jsonEncode({
+                  'audioFile': 'test-audio.wav',
+                  'duration': '00:05:00',
+                }));
+
+        when(() => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => null);
+
+        when(() => mockJournalRepo.getLinkedToEntities(
+                linkedTo: any(named: 'linkedTo')))
+            .thenAnswer((_) async => <JournalEntity>[]);
+
+        // Simulate user modifying audio during AI processing
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          return getEntityCallCount == 1 ? originalAudio : userUpdatedAudio;
+        });
+
+        final updatedAudios = <JournalAudio>[];
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((invocation) async {
+          final audio = invocation.positionalArguments[0] as JournalAudio;
+          updatedAudios.add(audio);
+          return true;
+        });
+
+        final mockStream =
+            _createDelayedStream(['Hello, this is the transcription.']);
+
+        when(() => mockCloudInferenceRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+            )).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: audioId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: AI used current state, preserving user's entry text changes
+        expect(updatedAudios.length, 1);
+        final updatedAudio = updatedAudios.first;
+
+        // Should have added transcript
+        expect(updatedAudio.data.transcripts?.length, 1);
+        expect(updatedAudio.data.transcripts?.first.transcript,
+            'Hello, this is the transcription.');
+
+        // Should use transcription as entry text (AI overwrites for transcription)
+        expect(updatedAudio.entryText?.plainText,
+            'Hello, this is the transcription.');
+      } finally {
+        // Cleanup - this will always run even if test fails
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('Audio transcription handles entity not found gracefully', () async {
+      // Create temporary directory and files
+      final tempDir = Directory.systemTemp.createTempSync('audio_test');
+
+      try {
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        File('${tempDir.path}/audio/test-audio.wav')
+            .writeAsBytesSync([1, 2, 3, 4, 5, 6]);
+
+        const audioId = 'test-audio-missing';
+        final originalAudio = _createJournalAudio(audioId);
+
+        final promptConfig = _createPrompt(
+          id: 'audio-prompt',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        when(() => mockAiConfigRepo.getConfigById('audio-prompt'))
+            .thenAnswer((_) async => promptConfig);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: audioId))
+            .thenAnswer((_) async => jsonEncode({
+                  'audioFile': 'test-audio.wav',
+                  'duration': '00:05:00',
+                }));
+
+        when(() => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => null);
+
+        when(() => mockJournalRepo.getLinkedToEntities(
+                linkedTo: any(named: 'linkedTo')))
+            .thenAnswer((_) async => <JournalEntity>[]);
+
+        // First call returns audio, second call (during post-processing) returns null
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          return getEntityCallCount == 1 ? originalAudio : null;
+        });
+
+        final updateCalls = <dynamic>[];
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((invocation) async {
+          updateCalls.add(invocation.positionalArguments[0]);
+          return true;
+        });
+
+        final mockStream = _createDelayedStream(['Transcription text']);
+
+        when(() => mockCloudInferenceRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+            )).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: audioId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: No audio updates should occur due to missing entity
+        expect(updateCalls.whereType<JournalAudio>(), isEmpty);
+      } finally {
+        // Cleanup - this will always run even if test fails
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+  });
+
+  group('Image Analysis Concurrent Scenarios', () {
+    test(
+        'Concurrent image analysis: AI preserves user text changes during processing',
+        () async {
+      // Create temporary directory and files
+      final tempDir = Directory.systemTemp.createTempSync('image_test');
+
+      try {
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/images').createSync(recursive: true);
+        File('${tempDir.path}/images/test-image.jpg')
+            .writeAsBytesSync([1, 2, 3, 4]);
+
+        const imageId = 'test-image-123';
+        final originalImage = _createJournalImage(imageId);
+
+        // User adds text while AI is processing
+        final userUpdatedImage = _createJournalImage(
+          imageId,
+          entryText: const EntryText(
+            plainText: 'User added this description',
+            markdown: 'User added this description',
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'image-prompt',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
+            .thenAnswer((_) async => promptConfig);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
+            .thenAnswer((_) async => jsonEncode({
+                  'imageFile': 'test-image.jpg',
+                  'capturedAt': DateTime.now().toIso8601String(),
+                }));
+
+        when(() => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => null);
+
+        when(() => mockJournalRepo.getLinkedToEntities(
+                linkedTo: any(named: 'linkedTo')))
+            .thenAnswer((_) async => <JournalEntity>[]);
+
+        // Simulate user modifying image during AI processing
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          return getEntityCallCount == 1 ? originalImage : userUpdatedImage;
+        });
+
+        final updatedImages = <JournalImage>[];
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((invocation) async {
+          final image = invocation.positionalArguments[0] as JournalImage;
+          updatedImages.add(image);
+          return true;
+        });
+
+        final mockStream =
+            _createDelayedStream(['This image shows a beautiful sunset.']);
+
+        when(() => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+            )).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: imageId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: AI should append to user's text, not overwrite it
+        expect(updatedImages.length, 1);
+        final updatedImage = updatedImages.first;
+
+        // Should append AI analysis to user's existing text
+        expect(updatedImage.entryText?.plainText,
+            'User added this description\n\nThis image shows a beautiful sunset.');
+        expect(updatedImage.entryText?.markdown,
+            'User added this description\n\nThis image shows a beautiful sunset.');
+      } finally {
+        // Cleanup - this will always run even if test fails
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('Image analysis with empty initial text uses AI response directly',
+        () async {
+      // Create temporary directory and files
+      final tempDir = Directory.systemTemp.createTempSync('image_test');
+
+      try {
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/images').createSync(recursive: true);
+        File('${tempDir.path}/images/test-image.jpg')
+            .writeAsBytesSync([1, 2, 3, 4]);
+
+        const imageId = 'test-image-empty';
+        // User doesn't add text, image stays empty during processing
+        final currentImage = _createJournalImage(imageId);
+
+        final promptConfig = _createPrompt(
+          id: 'image-prompt',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
+            .thenAnswer((_) async => promptConfig);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
+            .thenAnswer((_) async => jsonEncode({
+                  'imageFile': 'test-image.jpg',
+                  'capturedAt': DateTime.now().toIso8601String(),
+                }));
+
+        when(() => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => null);
+
+        when(() => mockJournalRepo.getLinkedToEntities(
+                linkedTo: any(named: 'linkedTo')))
+            .thenAnswer((_) async => <JournalEntity>[]);
+
+        when(() => mockAiInputRepo.getEntity(imageId))
+            .thenAnswer((_) async => currentImage);
+
+        final updatedImages = <JournalImage>[];
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((invocation) async {
+          final image = invocation.positionalArguments[0] as JournalImage;
+          updatedImages.add(image);
+          return true;
+        });
+
+        final mockStream =
+            _createDelayedStream(['AI generated image description.']);
+
+        when(() => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+            )).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: imageId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: Should use AI response directly when no existing text
+        expect(updatedImages.length, 1);
+        final updatedImage = updatedImages.first;
+        expect(updatedImage.entryText?.plainText,
+            'AI generated image description.');
+      } finally {
+        // Cleanup - this will always run even if test fails
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('Image analysis handles entity not found gracefully', () async {
+      // Create temporary directory and files
+      final tempDir = Directory.systemTemp.createTempSync('image_test');
+
+      try {
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        // Create the directory structure and file
+        Directory('${tempDir.path}/images').createSync(recursive: true);
+        File('${tempDir.path}/images/test-image.jpg')
+            .writeAsBytesSync([1, 2, 3, 4]);
+
+        const imageId = 'test-image-missing';
+        final originalImage = _createJournalImage(imageId);
+
+        final promptConfig = _createPrompt(
+          id: 'image-prompt',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
+            .thenAnswer((_) async => promptConfig);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
+            .thenAnswer((_) async => jsonEncode({
+                  'imageFile': 'test-image.jpg',
+                  'capturedAt': DateTime.now().toIso8601String(),
+                }));
+
+        when(() => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => null);
+
+        when(() => mockJournalRepo.getLinkedToEntities(
+                linkedTo: any(named: 'linkedTo')))
+            .thenAnswer((_) async => <JournalEntity>[]);
+
+        // First call returns image, second call (during post-processing) returns null
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          return getEntityCallCount == 1 ? originalImage : null;
+        });
+
+        final updateCalls = <dynamic>[];
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((invocation) async {
+          updateCalls.add(invocation.positionalArguments[0]);
+          return true;
+        });
+
+        final mockStream = _createDelayedStream(['Image analysis result']);
+
+        when(() => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+            )).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: imageId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: No image updates should occur due to missing entity
+        expect(updateCalls.whereType<JournalImage>(), isEmpty);
+      } finally {
+        // Cleanup - this will always run even if test fails
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+  });
 }
 
 // Helper methods
@@ -1144,5 +1669,34 @@ Task _createTaskWithTitle(String id, String title,
       title: title,
       checklistIds: checklistIds ?? [],
     ),
+  );
+}
+
+JournalAudio _createJournalAudio(String id,
+    {EntryText? entryText, List<AudioTranscript>? transcripts}) {
+  return JournalAudio(
+    meta: _createMetadata(id: id),
+    data: AudioData(
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now().add(const Duration(minutes: 5)),
+      audioFile: 'test-audio.wav',
+      audioDirectory: '/audio/',
+      duration: const Duration(minutes: 5),
+      transcripts: transcripts ?? [],
+    ),
+    entryText: entryText,
+  );
+}
+
+JournalImage _createJournalImage(String id, {EntryText? entryText}) {
+  return JournalImage(
+    meta: _createMetadata(id: id),
+    data: ImageData(
+      capturedAt: DateTime.now(),
+      imageId: 'test-image-id',
+      imageFile: 'test-image.jpg',
+      imageDirectory: '/images/',
+    ),
+    entryText: entryText,
   );
 }

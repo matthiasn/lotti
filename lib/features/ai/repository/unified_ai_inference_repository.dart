@@ -9,6 +9,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -489,20 +490,6 @@ class UnifiedAiInferenceRepository {
     );
   }
 
-  /// Get current entity state to avoid stale data overwrites
-  Future<JournalEntity?> _getCurrentEntityState(String entityId) async {
-    try {
-      return await ref.read(aiInputRepositoryProvider).getEntity(entityId);
-    } catch (e) {
-      developer.log(
-        'Failed to get current entity state for $entityId',
-        name: 'UnifiedAiInferenceRepository',
-        error: e,
-      );
-      return null;
-    }
-  }
-
   /// Handle any special post-processing based on response type
   Future<void> _handlePostProcessing({
     required JournalEntity entity,
@@ -520,21 +507,55 @@ class UnifiedAiInferenceRepository {
     switch (promptConfig.aiResponseType) {
       case AiResponseType.imageAnalysis:
         if (entity is JournalImage) {
-          final originalText = entity.entryText?.markdown ?? '';
+          // Get current image state to avoid overwriting concurrent changes
+          final currentImage =
+              await EntityStateHelper.getCurrentEntityState<JournalImage>(
+            entityId: entity.id,
+            aiInputRepo: ref.read(aiInputRepositoryProvider),
+            entityTypeName: 'image analysis',
+          );
+          if (currentImage == null) {
+            break;
+          }
+
+          final originalText = currentImage.entryText?.markdown ?? '';
           final amendedText =
               originalText.isEmpty ? response : '$originalText\n\n$response';
 
-          // Add text to image by appending to existing content
-          final updated = entity.copyWith(
-            entryText: EntryText(
-              plainText: amendedText,
-              markdown: amendedText,
-            ),
-          );
-          await journalRepo.updateJournalEntity(updated);
+          try {
+            // Add text to image by appending to existing content using current state
+            final updated = currentImage.copyWith(
+              entryText: EntryText(
+                plainText: amendedText,
+                markdown: amendedText,
+              ),
+            );
+            await journalRepo.updateJournalEntity(updated);
+            developer.log(
+              'Successfully updated image analysis for image ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (e) {
+            developer.log(
+              'Failed to update image analysis for image ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+              error: e,
+            );
+          }
         }
       case AiResponseType.audioTranscription:
         if (entity is JournalAudio) {
+          // Get current audio state to avoid overwriting concurrent changes
+          final currentAudio =
+              await EntityStateHelper.getCurrentEntityState<JournalAudio>(
+            entityId: entity.id,
+            aiInputRepo: ref.read(aiInputRepositoryProvider),
+            entityTypeName: 'audio transcription',
+          );
+          if (currentAudio == null) {
+            break;
+          }
+
           final transcript = AudioTranscript(
             created: DateTime.now(),
             library: provider.name,
@@ -546,31 +567,44 @@ class UnifiedAiInferenceRepository {
 
           final completeResponse = response.trim();
 
-          // Add transcript to audio data and update entry text
-          final existingTranscripts = entity.data.transcripts ?? [];
-          final updated = entity.copyWith(
-            data: entity.data.copyWith(
-              transcripts: [...existingTranscripts, transcript],
-            ),
-            entryText: EntryText(
-              plainText: completeResponse,
-              markdown: completeResponse,
-            ),
-          );
-          await journalRepo.updateJournalEntity(updated);
+          // Add transcript to audio data and update entry text using current state
+          final existingTranscripts = currentAudio.data.transcripts ?? [];
+
+          try {
+            final updated = currentAudio.copyWith(
+              data: currentAudio.data.copyWith(
+                transcripts: [...existingTranscripts, transcript],
+              ),
+              entryText: EntryText(
+                plainText: completeResponse,
+                markdown: completeResponse,
+              ),
+            );
+            await journalRepo.updateJournalEntity(updated);
+            developer.log(
+              'Successfully updated audio transcription for audio ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (e) {
+            developer.log(
+              'Failed to update audio transcription for audio ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+              error: e,
+            );
+          }
         }
       case AiResponseType.taskSummary:
         if (entity is Task) {
           // Get current task state to avoid overwriting concurrent changes
-          final currentEntity = await _getCurrentEntityState(entity.id);
-          if (currentEntity is! Task) {
-            developer.log(
-              'Cannot update task summary - current task not found: ${entity.id}',
-              name: 'UnifiedAiInferenceRepository',
-            );
+          final currentTask =
+              await EntityStateHelper.getCurrentEntityState<Task>(
+            entityId: entity.id,
+            aiInputRepo: ref.read(aiInputRepositoryProvider),
+            entityTypeName: 'task summary',
+          );
+          if (currentTask == null) {
             break;
           }
-          final currentTask = currentEntity;
 
           // Extract title from response (H1 markdown format)
           final titleRegex = RegExp(r'^#\s+(.+)$', multiLine: true);
@@ -626,15 +660,15 @@ class UnifiedAiInferenceRepository {
             suggestedActionItems.isNotEmpty &&
             !isRerun) {
           // Get current task state to avoid using stale data
-          final currentEntity = await _getCurrentEntityState(entity.id);
-          if (currentEntity is! Task) {
-            developer.log(
-              'Cannot process action item suggestions - current task not found: ${entity.id}',
-              name: 'UnifiedAiInferenceRepository',
-            );
+          final currentTask =
+              await EntityStateHelper.getCurrentEntityState<Task>(
+            entityId: entity.id,
+            aiInputRepo: ref.read(aiInputRepositoryProvider),
+            entityTypeName: 'action item suggestions',
+          );
+          if (currentTask == null) {
             return;
           }
-          final currentTask = currentEntity;
           // Don't auto-create on re-runs
           await _handleActionItemSuggestions(
               currentTask, suggestedActionItems, aiResponseEntry, promptConfig);
