@@ -59,7 +59,13 @@ dependencies:
   flutter_map: ^8.0.0
   flutter_olm: ^2.0.0
   flutter_openssl_crypto: ^0.5.0
-  flutter_quill: ^11.4.1
+
+  #flutter_quill: ^11.4.1
+  flutter_quill:
+    git:
+      url: https://github.com/theniceboy/flutter-quill
+      ref: 5ff5967
+
   flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
   flutter_riverpod: ^2.4.9
@@ -140,6 +146,10 @@ dependencies:
 
 dependency_overrides:
   analyzer_plugin: ^0.13.1
+  flutter_quill:
+    git:
+      url: https://github.com/theniceboy/flutter-quill
+      ref: 5ff5967
   get_it: ^8.0.2
   intl: ^0.20.2
   rxdart: ^0.28.0
