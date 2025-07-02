@@ -520,21 +520,55 @@ class UnifiedAiInferenceRepository {
     switch (promptConfig.aiResponseType) {
       case AiResponseType.imageAnalysis:
         if (entity is JournalImage) {
-          final originalText = entity.entryText?.markdown ?? '';
+          // Get current image state to avoid overwriting concurrent changes
+          final currentEntity = await _getCurrentEntityState(entity.id);
+          if (currentEntity is! JournalImage) {
+            developer.log(
+              'Cannot update image analysis - current image not found: ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            break;
+          }
+          final currentImage = currentEntity;
+
+          final originalText = currentImage.entryText?.markdown ?? '';
           final amendedText =
               originalText.isEmpty ? response : '$originalText\n\n$response';
 
-          // Add text to image by appending to existing content
-          final updated = entity.copyWith(
-            entryText: EntryText(
-              plainText: amendedText,
-              markdown: amendedText,
-            ),
-          );
-          await journalRepo.updateJournalEntity(updated);
+          try {
+            // Add text to image by appending to existing content using current state
+            final updated = currentImage.copyWith(
+              entryText: EntryText(
+                plainText: amendedText,
+                markdown: amendedText,
+              ),
+            );
+            await journalRepo.updateJournalEntity(updated);
+            developer.log(
+              'Successfully updated image analysis for image ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (e) {
+            developer.log(
+              'Failed to update image analysis for image ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+              error: e,
+            );
+          }
         }
       case AiResponseType.audioTranscription:
         if (entity is JournalAudio) {
+          // Get current audio state to avoid overwriting concurrent changes
+          final currentEntity = await _getCurrentEntityState(entity.id);
+          if (currentEntity is! JournalAudio) {
+            developer.log(
+              'Cannot update audio transcription - current audio not found: ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            break;
+          }
+          final currentAudio = currentEntity;
+
           final transcript = AudioTranscript(
             created: DateTime.now(),
             library: provider.name,
@@ -546,18 +580,31 @@ class UnifiedAiInferenceRepository {
 
           final completeResponse = response.trim();
 
-          // Add transcript to audio data and update entry text
-          final existingTranscripts = entity.data.transcripts ?? [];
-          final updated = entity.copyWith(
-            data: entity.data.copyWith(
-              transcripts: [...existingTranscripts, transcript],
-            ),
-            entryText: EntryText(
-              plainText: completeResponse,
-              markdown: completeResponse,
-            ),
-          );
-          await journalRepo.updateJournalEntity(updated);
+          // Add transcript to audio data and update entry text using current state
+          final existingTranscripts = currentAudio.data.transcripts ?? [];
+
+          try {
+            final updated = currentAudio.copyWith(
+              data: currentAudio.data.copyWith(
+                transcripts: [...existingTranscripts, transcript],
+              ),
+              entryText: EntryText(
+                plainText: completeResponse,
+                markdown: completeResponse,
+              ),
+            );
+            await journalRepo.updateJournalEntity(updated);
+            developer.log(
+              'Successfully updated audio transcription for audio ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (e) {
+            developer.log(
+              'Failed to update audio transcription for audio ${entity.id}',
+              name: 'UnifiedAiInferenceRepository',
+              error: e,
+            );
+          }
         }
       case AiResponseType.taskSummary:
         if (entity is Task) {
