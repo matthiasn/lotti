@@ -26,8 +26,8 @@ class ModernModalUtils {
     return WoltModalSheetPage(
       backgroundColor: isDark
           ? Color.lerp(
-              colorScheme.surface,
-              colorScheme.surfaceContainerHighest,
+              colorScheme.surfaceContainerLowest,
+              colorScheme.surfaceContainerLow,
               0.3,
             )!
           : colorScheme.surface,
