@@ -7,6 +7,23 @@ const taskSummaryConst = 'TaskSummary';
 const imageAnalysisConst = 'ImageAnalysis';
 const audioTranscriptionConst = 'AudioTranscription';
 
+// Ollama API constants
+const ollamaDefaultTimeoutSeconds = 30;
+const ollamaImageAnalysisTimeoutSeconds =
+    300; // 5 minutes for image analysis (first load can be slow)
+const ollamaMaxTemperature = 2.0;
+const ollamaMinTemperature = 0.0;
+const ollamaContentType = 'application/json';
+const ollamaGenerateEndpoint = '/api/generate';
+
+// HTTP status codes
+const httpStatusOk = 200;
+const httpStatusBadRequest = 400;
+const httpStatusNotFound = 404;
+const httpStatusInternalServerError = 500;
+const httpStatusServiceUnavailable = 503;
+const httpStatusRequestTimeout = 408;
+
 enum AiResponseType {
   @JsonValue(actionItemSuggestionsConst)
   actionItemSuggestions,

@@ -758,6 +758,7 @@ void main() {
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -795,6 +796,7 @@ void main() {
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
             ),
           ).called(1);
 
@@ -2566,6 +2568,7 @@ Remaining steps:
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2616,6 +2619,7 @@ Remaining steps:
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
             ),
           ).called(1);
         } finally {
@@ -2702,6 +2706,7 @@ Remaining steps:
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3081,6 +3086,7 @@ If the image IS relevant:
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3121,6 +3127,7 @@ If the image IS relevant:
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
             ),
           ).captured;
 
@@ -3231,6 +3238,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3263,6 +3271,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              provider: any(named: 'provider'),
             ),
           ).captured;
 
@@ -4689,6 +4698,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             images: any(named: 'images'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4949,6 +4959,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             images: any(named: 'images'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 

@@ -362,6 +362,7 @@ class UnifiedAiInferenceRepository {
         images: images,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
+        provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
       );
     } else {

@@ -22,7 +22,7 @@ void main() {
 
   final ollamaConfig = AiConfig.inferenceProvider(
     id: 'ollama-id',
-    baseUrl: 'http://localhost:11434/v1',
+    baseUrl: 'http://localhost:11434',
     apiKey: '',
     name: 'Ollama Local',
     createdAt: DateTime.now(),
@@ -584,7 +584,7 @@ void main() {
       expect(formState?.apiKey.value, isEmpty);
       expect(
           formState?.apiKey.isValid, isTrue); // Should be valid even when empty
-      expect(formState?.baseUrl.value, equals('http://localhost:11434/v1'));
+      expect(formState?.baseUrl.value, equals('http://localhost:11434'));
       expect(formState?.inferenceProviderType,
           equals(InferenceProviderType.ollama));
       expect(formState?.isValid, isTrue);
@@ -608,11 +608,11 @@ void main() {
       // Assert
       expect(
         controller.baseUrlController.text,
-        equals('http://localhost:11434/v1'),
+        equals('http://localhost:11434'),
       );
       expect(
         formState?.baseUrl.value,
-        equals('http://localhost:11434/v1'),
+        equals('http://localhost:11434'),
       );
       expect(controller.apiKeyController.text, isEmpty);
       expect(formState?.apiKey.value, isEmpty);

@@ -1368,6 +1368,7 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
+              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1462,6 +1463,7 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
+              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1552,6 +1554,7 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
+              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(

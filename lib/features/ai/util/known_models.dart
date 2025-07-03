@@ -108,14 +108,32 @@ const List<KnownModel> nebiusModels = [
 ];
 
 /// Ollama models - Local models for privacy-focused processing
+///
+/// These models run locally using Ollama and provide privacy-focused AI capabilities.
+/// They don't require internet connectivity or API keys, making them suitable for
+/// sensitive data processing.
+///
+/// Note: Users must install these models locally using `ollama pull <model_name>`
+/// before they can be used in the application.
 const List<KnownModel> ollamaModels = [
+  KnownModel(
+    providerModelId: 'gemma3:4b',
+    name: 'Gemma 3 4B',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Efficient local text & image model, great for image analysis. '
+        'Requires approximately 4GB RAM and provides good performance for most tasks.',
+  ),
   KnownModel(
     providerModelId: 'gemma3:12b',
     name: 'Gemma 3 12B',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Efficient local text & image model',
+    description: 'Larger local text & image model with improved capabilities. '
+        'Requires approximately 12GB RAM for optimal performance.',
   ),
   KnownModel(
     providerModelId: 'gemma3:12b-it-qat',
@@ -124,7 +142,8 @@ const List<KnownModel> ollamaModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'Efficient local text & image model with smaller memory footprint',
+        'Quantized version of Gemma 3 12B with smaller memory footprint. '
+        'Requires approximately 8GB RAM while maintaining good performance.',
   ),
   KnownModel(
     providerModelId: 'deepseek-r1:14b',
@@ -132,7 +151,8 @@ const List<KnownModel> ollamaModels = [
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: true,
-    description: 'Local reasoning model for complex analysis',
+    description: 'Local reasoning model for complex analysis tasks. '
+        'Requires approximately 14GB RAM and provides advanced reasoning capabilities.',
   ),
 ];
 
