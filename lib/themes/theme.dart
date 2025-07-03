@@ -457,7 +457,7 @@ class GradientThemes {
         )!,
         Color.lerp(
           context.colorScheme.surface,
-          context.colorScheme.surfaceContainerLow,
+          context.colorScheme.surfaceContainer,
           0.5,
         )!,
       ],

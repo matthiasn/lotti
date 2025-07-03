@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,7 +8,7 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/index.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Unified AI popup menu that shows available prompts for the current entity
@@ -67,9 +69,10 @@ class UnifiedAiModal {
       return;
     }
 
-    final initialModalPage = ModalUtils.modalSheetPage(
+    final initialModalPage = ModernModalUtils.modernModalSheetPage(
       context: context,
       title: context.messages.aiAssistantTitle,
+      showDivider: true,
       child: UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
@@ -105,7 +108,26 @@ class UnifiedAiModal {
           ...promptSliverPages,
         ];
       },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
+      modalTypeBuilder: (context) {
+        final size = MediaQuery.of(context).size.width;
+        return size < 600
+            ? WoltModalType.bottomSheet()
+            : WoltModalType.dialog();
+      },
+      modalDecorator: (child) {
+        return Stack(
+          children: [
+            // Enhanced backdrop blur
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                color: context.colorScheme.scrim.withValues(alpha: 0.5),
+              ),
+            ),
+            child,
+          ],
+        );
+      },
       barrierDismissible: true,
       pageIndexNotifier: pageIndexNotifier,
     );
@@ -141,22 +163,14 @@ class UnifiedAiPromptsList extends ConsumerWidget {
           final index = entry.key;
           final prompt = entry.value;
 
-          return InkWell(
+          return ModernModalPromptItem(
+            title: prompt.name,
+            description: prompt.description ?? '',
+            icon: _getIconForPrompt(prompt),
             onTap: () => onPromptSelected(prompt, index),
-            child: ListTile(
-              leading: Icon(_getIconForPrompt(prompt)),
-              title: Text(prompt.name),
-              subtitle: prompt.description != null
-                  ? Text(
-                      prompt.description!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : null,
-            ),
           );
         }),
-        verticalModalSpacer,
+        const SizedBox(height: 24),
       ],
     );
   }

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_list_tile.dart';
-import 'package:lotti/features/journal/ui/widgets/create/paste_image_list_tile.dart';
+import 'package:lotti/features/journal/ui/widgets/create/modern_create_entry_items.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/modal/index.dart';
 
 class CreateEntryModal {
   static Future<void> show({
@@ -12,21 +10,23 @@ class CreateEntryModal {
     required String? linkedFromId,
     required String? categoryId,
   }) async {
-    await ModalUtils.showSinglePageModal<void>(
+    await ModernModalUtils.showModernModal<void>(
       context: context,
       title: context.messages.createEntryTitle,
+      showDivider: true,
       builder: (_) => Column(
         children: [
-          CreateEventListTile(linkedFromId, categoryId: categoryId),
-          CreateTaskListTile(linkedFromId, categoryId: categoryId),
-          CreateAudioRecordingListTile(linkedFromId, categoryId: categoryId),
-          if (linkedFromId != null) CreateTimerListTile(linkedFromId),
-          CreateTextEntryListTile(linkedFromId, categoryId: categoryId),
-          ImportImageAssetsListTile(linkedFromId, categoryId: categoryId),
+          const SizedBox(height: 8),
+          ModernCreateEventItem(linkedFromId, categoryId: categoryId),
+          ModernCreateTaskItem(linkedFromId, categoryId: categoryId),
+          ModernCreateAudioItem(linkedFromId, categoryId: categoryId),
+          if (linkedFromId != null) ModernCreateTimerItem(linkedFromId),
+          ModernCreateTextItem(linkedFromId, categoryId: categoryId),
+          ModernImportImageItem(linkedFromId, categoryId: categoryId),
           if (isMacOS)
-            CreateScreenshotListTile(linkedFromId, categoryId: categoryId),
-          PasteImageListTile(linkedFromId, categoryId: categoryId),
-          verticalModalSpacer,
+            ModernCreateScreenshotItem(linkedFromId, categoryId: categoryId),
+          ModernPasteImageItem(linkedFromId, categoryId: categoryId),
+          const SizedBox(height: 24),
         ],
       ),
     );

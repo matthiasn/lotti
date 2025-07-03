@@ -51,6 +51,7 @@ Future<void> main() async {
         details.exception,
         domain: 'MAIN',
         subDomain: details.library,
+        stackTrace: details.stack,
       );
     };
 

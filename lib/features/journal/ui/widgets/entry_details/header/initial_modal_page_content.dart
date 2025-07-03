@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/delete_icon_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_items.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/toggle_flagged_list_tile.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/toggle_private_list_tile.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/toggle_starred_list_tile.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/share_button_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tag_add.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/index.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class InitialModalPageContent extends StatelessWidget {
@@ -38,51 +31,52 @@ class InitialModalPageContent extends StatelessWidget {
 
     return Column(
       children: [
-        ToggleStarredListTile(entryId: entryId),
-        TogglePrivateListTile(entryId: entryId),
-        ToggleFlaggedListTile(entryId: entryId),
-        ToggleMapListTile(entryId: entryId),
-        DeleteIconListTile(
+        const SizedBox(height: 8),
+        ModernToggleStarredItem(entryId: entryId),
+        ModernTogglePrivateItem(entryId: entryId),
+        ModernToggleFlaggedItem(entryId: entryId),
+        ModernToggleMapItem(entryId: entryId),
+        ModernDeleteItem(
           entryId: entryId,
           beamBack: !inLinkedEntries,
         ),
-        SpeechModalListTile(
+        ModernSpeechItem(
           entryId: entryId,
           pageIndexNotifier: pageIndexNotifier,
         ),
-        ShareButtonListTile(entryId: entryId),
-        TagAddListTile(
+        ModernShareItem(entryId: entryId),
+        ModernTagAddItem(
           entryId: entryId,
           pageIndexNotifier: pageIndexNotifier,
         ),
-        ListTile(
-          leading: const Icon(Icons.add_link),
-          title: Text(context.messages.journalLinkFromHint),
+        ModernModalActionItem(
+          icon: Icons.add_link,
+          title: context.messages.journalLinkFromHint,
           onTap: () {
             linkService.linkFrom(entryId);
             Navigator.of(context).pop();
           },
         ),
-        ListTile(
-          leading: Icon(MdiIcons.target),
-          title: Text(context.messages.journalLinkToHint),
+        ModernModalActionItem(
+          icon: MdiIcons.target,
+          title: context.messages.journalLinkToHint,
           onTap: () {
             linkService.linkTo(entryId);
             Navigator.of(context).pop();
           },
         ),
         if (linkedFromId != null)
-          UnlinkListTile(
+          ModernUnlinkItem(
             entryId: entryId,
             linkedFromId: linkedFromId,
           ),
         if (link != null)
-          ToggleHiddenListTile(
+          ModernToggleHiddenItem(
             entryId: entryId,
             link: link,
           ),
-        CopyImageListTile(entryId: entryId),
-        verticalModalSpacer,
+        ModernCopyImageItem(entryId: entryId),
+        const SizedBox(height: 24),
       ],
     );
   }
