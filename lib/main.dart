@@ -47,10 +47,11 @@ Future<void> main() async {
     await registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
-      getIt<LoggingService>().captureException(
-        details.exception,
+      getIt<LoggingService>().error(
+        'Flutter error occurred',
         domain: 'MAIN',
         subDomain: details.library,
+        error: details.exception,
         stackTrace: details.stack,
       );
     };
@@ -61,10 +62,11 @@ Future<void> main() async {
       ),
     );
   }, (Object error, StackTrace stackTrace) {
-    getIt<LoggingService>().captureException(
-      error,
+    getIt<LoggingService>().error(
+      'Unhandled error in runZonedGuarded',
       domain: 'MAIN',
       subDomain: 'runZonedGuarded',
+      error: error,
       stackTrace: stackTrace,
     );
   });

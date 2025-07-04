@@ -5,6 +5,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+import '../test_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -19,8 +20,12 @@ void main() {
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true));
+      
+      // Set up fast logging for tests
+      setupTestEnvironment();
     });
     tearDownAll(() async {
+      await teardownTestEnvironment();
       await getIt.reset();
     });
   });

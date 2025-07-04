@@ -70,7 +70,7 @@ void main() {
         any<dynamic>(),
         domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenReturn(null); // Or some other appropriate response
   });
