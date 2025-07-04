@@ -24,7 +24,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/health_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -70,7 +69,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<AudioPlayerCubit>(AudioPlayerCubit());
 
   unawaited(getIt<MatrixService>().init());
-  getIt<LoggingService>().listenToConfigFlag();
 
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 }

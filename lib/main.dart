@@ -10,7 +10,8 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -22,7 +23,7 @@ Future<void> main() async {
   await runZonedGuarded(() async {
     getIt
       ..registerSingleton<LoggingDb>(LoggingDb())
-      ..registerSingleton<LoggingService>(LoggingService());
+      ..registerSingleton<LottiLogger>(LottiLogger());
 
     WidgetsFlutterBinding.ensureInitialized();
     MediaKit.ensureInitialized();
@@ -47,7 +48,7 @@ Future<void> main() async {
     await registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         details.exception,
         domain: 'MAIN',
         subDomain: details.library,
@@ -61,7 +62,7 @@ Future<void> main() async {
       ),
     );
   }, (Object error, StackTrace stackTrace) {
-    getIt<LoggingService>().captureException(
+    getIt<LottiLogger>().exception(
       error,
       domain: 'MAIN',
       subDomain: 'runZonedGuarded',

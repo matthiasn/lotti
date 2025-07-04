@@ -9,13 +9,13 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
@@ -23,7 +23,7 @@ void main() {
   late ProviderContainer container;
   final containersToDispose = <ProviderContainer>[];
   late MockUnifiedAiInferenceRepository mockRepository;
-  late MockLoggingService mockLoggingService;
+  late MockLottiLogger mockLottiLogger;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -34,13 +34,13 @@ void main() {
 
   setUp(() {
     mockRepository = MockUnifiedAiInferenceRepository();
-    mockLoggingService = MockLoggingService();
+    mockLottiLogger = MockLottiLogger();
 
     // Set up GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<LottiLogger>(mockLottiLogger);
 
     container = ProviderContainer(
       overrides: [
@@ -50,7 +50,7 @@ void main() {
 
     // Mock logging methods
     when(
-      () => mockLoggingService.captureEvent(
+      () => mockLottiLogger.event(
         any<dynamic>(),
         domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
@@ -58,11 +58,11 @@ void main() {
     ).thenReturn(null);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockLottiLogger.exception(
         any<dynamic>(),
         domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenReturn(null);
   });
@@ -230,11 +230,11 @@ void main() {
 
       // Verify error handling
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any<dynamic>(),
           domain: 'UnifiedAiController',
           subDomain: 'runInference',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
 

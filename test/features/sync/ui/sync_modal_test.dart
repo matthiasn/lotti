@@ -6,19 +6,19 @@ import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock for SyncMaintenanceRepository
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
 
-// Mock for LoggingService
-class MockLoggingService extends Mock implements LoggingService {}
+// Mock for LottiLogger
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 void main() {
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
-  late MockLoggingService mockLoggingService;
+  late MockLottiLogger mockLottiLogger;
   late AppLocalizations messages;
 
   setUpAll(() {
@@ -28,14 +28,14 @@ void main() {
 
   setUp(() {
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
-    mockLoggingService = MockLoggingService();
+    mockLottiLogger = MockLottiLogger();
     messages = AppLocalizationsEn(); // Using English for tests
 
-    // Register mock LoggingService with GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    // Register mock LottiLogger with GetIt
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<LottiLogger>(mockLottiLogger);
 
     // Stub all repository methods to return successful futures
     when(
@@ -66,19 +66,19 @@ void main() {
 
     // Stub logging service methods (optional, but good practice)
     when(
-      () => mockLoggingService.captureException(
+      () => mockLottiLogger.exception(
         any<dynamic>(),
         domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null); // Or some other appropriate response
+    ).thenAnswer((_) async => true);
   });
 
   tearDown(() {
-    // Unregister LoggingService after each test to ensure a clean state
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    // Unregister LottiLogger after each test to ensure a clean state
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
     }
   });
 

@@ -5,7 +5,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -34,7 +34,7 @@ class TagsRepository {
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'addTags',
@@ -68,7 +68,7 @@ class TagsRepository {
         );
       }
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'addTagsWithLinked',
@@ -99,7 +99,7 @@ class TagsRepository {
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'removeTag',

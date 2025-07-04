@@ -250,7 +250,7 @@ void main() {
             any(),
             domain: 'JournalRepository',
             subDomain: 'updateCategoryId',
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -470,7 +470,7 @@ void main() {
             any(),
             domain: 'JournalRepository',
             subDomain: 'updateJournalEntityDate',
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -554,7 +554,7 @@ void main() {
             any(),
             domain: 'JournalRepository',
             subDomain: 'updateJournalEntity',
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });

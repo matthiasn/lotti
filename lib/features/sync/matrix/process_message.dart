@@ -12,7 +12,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 
@@ -37,7 +37,7 @@ Future<void> processMatrixMessage({
       json.decode(decoded) as Map<String, dynamic>,
     );
 
-    getIt<LoggingService>().captureEvent(
+    getIt<LottiLogger>().event(
       'processing ${event.originServerTs} ${event.eventId}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'processMessage',
@@ -95,7 +95,7 @@ Future<void> processMatrixMessage({
       },
     );
   } catch (e, stackTrace) {
-    getIt<LoggingService>().captureException(
+    getIt<LottiLogger>().exception(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'processMessage',

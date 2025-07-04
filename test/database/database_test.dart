@@ -11,14 +11,14 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 
 // Add missing mock classes
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 class MockFile extends Mock implements File {}
 
@@ -95,7 +95,7 @@ final expectedFlags = <ConfigFlag>{
 void main() {
   JournalDb? db;
   final mockUpdateNotifications = MockUpdateNotifications();
-  final mockLoggingService = MockLoggingService();
+  final mockLottiLogger = MockLottiLogger();
   late Directory testDirectory;
 
   group('Database Tests - ', () {
@@ -106,7 +106,7 @@ void main() {
       // Register services
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<LottiLogger>(mockLottiLogger)
         ..registerSingleton<Directory>(testDirectory);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -114,7 +114,7 @@ void main() {
       );
 
       when(
-        () => mockLoggingService.captureEvent(
+        () => mockLottiLogger.event(
           any<Object>(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
@@ -133,7 +133,7 @@ void main() {
       // Unregister services first to avoid hanging references
       getIt
         ..unregister<UpdateNotifications>()
-        ..unregister<LoggingService>()
+        ..unregister<LottiLogger>()
         ..unregister<Directory>();
 
       // Then close database

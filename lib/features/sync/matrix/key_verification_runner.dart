@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -93,7 +93,7 @@ Future<void> listenForKeyVerificationRequests({
     });
   } catch (e, stackTrace) {
     debugPrint('$e');
-    getIt<LoggingService>().captureException(
+    getIt<LottiLogger>().exception(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'listen',

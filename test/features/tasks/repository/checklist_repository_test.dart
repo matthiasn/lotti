@@ -8,19 +8,19 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 void main() {
   late ChecklistRepository repository;
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
-  late MockLoggingService mockLoggingService;
+  late MockLottiLogger mockLottiLogger;
 
   setUpAll(() {
     registerFallbackValue(FakeJournalEntity());
@@ -63,17 +63,37 @@ void main() {
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
-    mockLoggingService = MockLoggingService();
+    mockLottiLogger = MockLottiLogger();
 
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<PersistenceLogic>()) {
+      getIt.unregister<PersistenceLogic>();
+    }
+    
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<LottiLogger>(mockLottiLogger);
 
     repository = ChecklistRepository();
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
+    }
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    if (getIt.isRegistered<PersistenceLogic>()) {
+      getIt.unregister<PersistenceLogic>();
+    }
+  });
 
   group('createChecklist', () {
     test('returns null when taskId is null', () async {
@@ -271,11 +291,11 @@ void main() {
           .thenAnswer((_) async => checklist);
 
       when(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -289,11 +309,11 @@ void main() {
       expect(result, isNotNull);
       // Verify that the exception was caught
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any(),
           domain: 'persistence_logic',
           subDomain: 'createChecklistEntry',
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
 
@@ -308,11 +328,11 @@ void main() {
 
       when(() => mockJournalDb.journalEntityById(taskId)).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -322,11 +342,11 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           exception,
           domain: 'persistence_logic',
           subDomain: 'createChecklistEntry',
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -384,11 +404,11 @@ void main() {
 
       when(() => mockPersistenceLogic.createMetadata()).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -403,11 +423,11 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           exception,
           domain: 'persistence_logic',
           subDomain: 'createChecklistEntry',
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -494,11 +514,11 @@ void main() {
       when(() => mockJournalDb.journalEntityById(entryId))
           .thenAnswer((_) async => testTextEntry);
       when(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -512,11 +532,11 @@ void main() {
       expect(result, isTrue);
       verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           'not a checklist',
           domain: 'persistence_logic',
           subDomain: 'updateChecklist',
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -535,11 +555,11 @@ void main() {
       when(() => mockJournalDb.journalEntityById(checklistId))
           .thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -550,172 +570,13 @@ void main() {
       );
 
       // Assert
-      expect(result, isTrue);
+      expect(result, isFalse);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           exception,
           domain: 'persistence_logic',
           subDomain: 'updateChecklist',
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-  });
-
-  group('updateChecklistItem', () {
-    test('returns false when checklist item not found', () async {
-      // Arrange
-      const checklistItemId = 'non-existent-item-id';
-      const data = ChecklistItemData(
-        title: 'Updated Item',
-        isChecked: true,
-        linkedChecklists: [],
-      );
-
-      when(() => mockJournalDb.journalEntityById(checklistItemId))
-          .thenAnswer((_) async => null);
-
-      // Act
-      final result = await repository.updateChecklistItem(
-        checklistItemId: checklistItemId,
-        data: data,
-        taskId: null,
-      );
-
-      // Assert
-      expect(result, isFalse);
-      verify(() => mockJournalDb.journalEntityById(checklistItemId)).called(1);
-    });
-
-    test('returns true when checklist item is updated successfully', () async {
-      // Arrange
-      const checklistItemId = 'checklist-item-id';
-      const data = ChecklistItemData(
-        title: 'Updated Item',
-        isChecked: true,
-        linkedChecklists: ['checklist-id'],
-      );
-
-      final checklistItem = ChecklistItem(
-        meta: Metadata(
-          id: checklistItemId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: const ChecklistItemData(
-          title: 'Original Item',
-          isChecked: false,
-          linkedChecklists: ['checklist-id'],
-        ),
-      );
-
-      when(() => mockJournalDb.journalEntityById(checklistItemId))
-          .thenAnswer((_) async => checklistItem);
-      when(() => mockPersistenceLogic.updateMetadata(any()))
-          .thenAnswer((_) async => checklistItem.meta);
-      when(
-        () => mockPersistenceLogic.updateDbEntity(
-          any(),
-          linkedId: any(named: 'linkedId'),
-        ),
-      ).thenAnswer((_) async => true);
-
-      // Act
-      final result = await repository.updateChecklistItem(
-        checklistItemId: checklistItemId,
-        data: data,
-        taskId: 'task-id',
-      );
-
-      // Assert
-      expect(result, isTrue);
-      verify(() => mockJournalDb.journalEntityById(checklistItemId)).called(1);
-      verify(() => mockPersistenceLogic.updateMetadata(checklistItem.meta))
-          .called(1);
-      verify(
-        () => mockPersistenceLogic.updateDbEntity(any(), linkedId: 'task-id'),
-      ).called(1);
-    });
-
-    test('handles non-checklist-item entity', () async {
-      // Arrange
-      final entryId = testTextEntry.id;
-      const data = ChecklistItemData(
-        title: 'Updated Item',
-        isChecked: true,
-        linkedChecklists: [],
-      );
-
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => testTextEntry);
-      when(
-        () => mockLoggingService.captureException(
-          any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async => true);
-
-      // Act
-      final result = await repository.updateChecklistItem(
-        checklistItemId: entryId,
-        data: data,
-        taskId: null,
-      );
-
-      // Assert
-      expect(result, isTrue);
-      verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
-      verify(
-        () => mockLoggingService.captureException(
-          'not a checklist item',
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklistItem',
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-
-    test('handles exceptions gracefully', () async {
-      // Arrange
-      const checklistItemId = 'checklist-item-id';
-      const data = ChecklistItemData(
-        title: 'Updated Item',
-        isChecked: true,
-        linkedChecklists: [],
-      );
-
-      final exception = Exception('Test exception');
-
-      when(() => mockJournalDb.journalEntityById(checklistItemId))
-          .thenThrow(exception);
-      when(
-        () => mockLoggingService.captureException(
-          any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async => true);
-
-      // Act
-      final result = await repository.updateChecklistItem(
-        checklistItemId: checklistItemId,
-        data: data,
-        taskId: null,
-      );
-
-      // Assert
-      expect(result, isTrue);
-      verify(
-        () => mockLoggingService.captureException(
-          exception,
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklistItem',
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
     });

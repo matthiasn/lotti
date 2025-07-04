@@ -11,7 +11,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -26,7 +25,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -35,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../test_helper.dart';
 import '../../../utils/utils.dart';
 import '../../../utils/wait.dart';
 
@@ -66,8 +65,8 @@ final _testImageCapturedAt = DateTime(2023, 10, 26, 9, 55);
 
 final _testImageData = ImageData(
   capturedAt: _testImageCapturedAt,
-  imageId:
-      _testImageEntryId, // Assuming imageId within ImageData can be same as entry id
+  imageId: _testImageEntryId,
+  // Assuming imageId within ImageData can be same as entry id
   imageFile: 'image.jpg',
   imageDirectory: '/path/to/image',
 );
@@ -78,8 +77,8 @@ final JournalImage testImageEntryNoText = JournalImage(
     createdAt: _testImageCreatedAt,
     updatedAt: _testImageUpdatedAt,
     dateFrom: _testImageDateFrom,
-    dateTo:
-        _testImageDateFrom, // Consistent with how dateTo is used in addTextToImage context
+    dateTo: _testImageDateFrom,
+    // Consistent with how dateTo is used in addTextToImage context
     vectorClock: const VectorClock({'device': 1}),
     starred: false,
     private: false,
@@ -151,8 +150,10 @@ final ChecklistItem testChecklistItem3Deleted = ChecklistItem(
     dateFrom: _testTaskDateFrom,
     dateTo: _testTaskDateFrom,
     vectorClock: const VectorClock({'device': 1}),
-    deletedAt: _testTaskUpdatedAt, // Mark as deleted
-    starred: false, private: false,
+    deletedAt: _testTaskUpdatedAt,
+    // Mark as deleted
+    starred: false,
+    private: false,
   ),
   data: const ChecklistItemData(
     title: 'Item 3',
@@ -174,10 +175,13 @@ final Task testTaskEntry = Task(
   ),
   data: TaskData(
     title: 'Test Task with Checklists',
-    status: _testTaskOpenStatus, // Use helper
-    dateFrom: _testTaskDateFrom, // TaskData also has dateFrom/dateTo
+    status: _testTaskOpenStatus,
+    // Use helper
+    dateFrom: _testTaskDateFrom,
+    // TaskData also has dateFrom/dateTo
     dateTo: _testTaskDateFrom,
-    statusHistory: [_testTaskOpenStatus], // Provide history
+    statusHistory: [_testTaskOpenStatus],
+    // Provide history
     checklistIds: [testChecklistItem1.id, testChecklistItem2.id],
   ),
   entryText: const EntryText(plainText: 'Initial task description'),
@@ -245,6 +249,9 @@ void main() {
     registerFallbackValue(DateTime.now());
     registerFallbackValue(FakeQuillController());
 
+    // Set up fast logging for tests
+    setupTestEnvironment();
+
     when(() => mockUpdateNotifications.updateStream)
         .thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
     when(() => mockEditorStateService.getUnsavedStream(any(), any()))
@@ -276,8 +283,7 @@ void main() {
       ..registerSingleton<NotificationService>(mockNotificationService)
       ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-      ..registerSingleton<LoggingService>(LoggingService())
+      // Logging setup is handled by setupTestEnvironment()
       ..registerSingleton<SecureStorage>(secureStorageMock)
       ..registerSingleton<OutboxService>(OutboxService())
       ..registerSingleton<TimeService>(mockTimeService)
@@ -334,7 +340,7 @@ void main() {
     ).thenAnswer((_) async => true);
   });
 
-  tearDownAll(getIt.reset);
+  tearDownAll(teardownTestEnvironment);
 
   group('EntryController Tests - ', () {
     // Specific setUp for this group if needed (e.g., vcMockNext reset)

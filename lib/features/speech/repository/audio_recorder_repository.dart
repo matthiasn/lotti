@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -38,7 +38,7 @@ class AudioRecorderRepository {
   AudioRecorderRepository() : _audioRecorder = AudioRecorder();
 
   final AudioRecorder _audioRecorder;
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final LottiLogger _logger = getIt<LottiLogger>();
 
   /// Stream of amplitude updates for VU meter visualization.
   /// Emits amplitude values every 20ms while recording.
@@ -52,7 +52,7 @@ class AudioRecorderRepository {
     try {
       return await _audioRecorder.hasPermission();
     } catch (e) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'hasPermission',
@@ -67,7 +67,7 @@ class AudioRecorderRepository {
     try {
       return await _audioRecorder.isPaused();
     } catch (e) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'isPaused',
@@ -82,7 +82,7 @@ class AudioRecorderRepository {
     try {
       return await _audioRecorder.isRecording();
     } catch (e) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'isRecording',
@@ -115,7 +115,7 @@ class AudioRecorderRepository {
 
       return audioNote;
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'startRecording',
@@ -129,7 +129,7 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.stop();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'stopRecording',
@@ -142,7 +142,7 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.pause();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'pauseRecording',
@@ -157,7 +157,7 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.resume();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'resumeRecording',
@@ -172,7 +172,7 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.dispose();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         e,
         domain: 'audio_recorder_repository',
         subDomain: 'dispose',

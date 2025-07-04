@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -94,14 +95,14 @@ void main() {
     if (getIt.isRegistered<TimeService>()) {
       getIt.unregister<TimeService>();
     }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
     }
 
     // Register all required mock services
     getIt
       ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+      ..registerSingleton<LottiLogger>(LottiLogger())
       ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<Fts5Db>(MockFts5Db())
       ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
@@ -110,8 +111,7 @@ void main() {
       ..registerSingleton<OutboxService>(MockOutboxService())
       ..registerSingleton<TagsService>(MockTagsService())
       ..registerSingleton<NotificationService>(MockNotificationService())
-      ..registerSingleton<TimeService>(MockTimeService())
-      ..registerSingleton<LoggingService>(MockLoggingService());
+      ..registerSingleton<TimeService>(MockTimeService());
   });
 
   tearDownAll(() {
@@ -119,8 +119,8 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<LoggingDb>()) {
-      getIt.unregister<LoggingDb>();
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
     }
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
@@ -148,9 +148,6 @@ void main() {
     }
     if (getIt.isRegistered<TimeService>()) {
       getIt.unregister<TimeService>();
-    }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
     }
   });
 

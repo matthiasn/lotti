@@ -4,7 +4,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Service that handles stylish delete operations for AI configurations
@@ -562,7 +562,7 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        getIt<LoggingService>().captureEvent(
+        getIt<LottiLogger>().event(
           'Undo provider deletion failed: ${provider.name} (${provider.id}), '
           '${result.deletedModels.length} models, error: $error',
           domain: 'AI_CONFIG',
@@ -584,7 +584,7 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        getIt<LoggingService>().captureEvent(
+        getIt<LottiLogger>().event(
           'Undo config deletion failed: ${config.name} (${config.id}), '
           'type: ${config.runtimeType}, error: $error',
           domain: 'AI_CONFIG',

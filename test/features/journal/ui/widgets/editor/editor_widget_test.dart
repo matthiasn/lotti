@@ -5,12 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -32,7 +32,7 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<LottiLogger>(LottiLogger())
         ..registerSingleton<VectorClockService>(MockVectorClockService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))

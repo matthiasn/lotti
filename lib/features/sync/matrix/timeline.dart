@@ -5,14 +5,14 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/list_extension.dart';
 import 'package:matrix/matrix.dart';
 
 Future<void> listenToTimelineEvents({
   required MatrixService service,
 }) async {
-  final loggingDb = getIt<LoggingService>();
+  final logger = getIt<LottiLogger>();
 
   try {
     final previousTimeline = service.timeline;
@@ -35,7 +35,7 @@ Future<void> listenToTimelineEvents({
     final timeline = service.timeline;
 
     if (timeline == null) {
-      loggingDb.captureEvent(
+      logger.event(
         'Timeline is null',
         domain: 'MATRIX_SERVICE',
         subDomain: 'listenToTimelineEvents',
@@ -44,7 +44,7 @@ Future<void> listenToTimelineEvents({
     }
   } catch (e, stackTrace) {
     debugPrint('$e');
-    loggingDb.captureException(
+    logger.exception(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'listenToTimelineEvents',
@@ -57,10 +57,10 @@ Future<void> listenToTimelineEvents({
 Future<void> processNewTimelineEvents({
   required MatrixService service,
   JournalDb? overriddenJournalDb,
-  LoggingService? overriddenLoggingService,
+  LottiLogger? overriddenLoggingService,
   SettingsDb? overriddenSettingsDb,
 }) async {
-  final loggingService = overriddenLoggingService ?? getIt<LoggingService>();
+  final logger = overriddenLoggingService ?? getIt<LottiLogger>();
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
@@ -75,7 +75,7 @@ Future<void> processNewTimelineEvents({
     );
 
     if (timeline == null) {
-      loggingService.captureEvent(
+      logger.event(
         'Timeline is null',
         domain: 'MATRIX_SERVICE',
         subDomain: 'processNewTimelineEvents',
@@ -118,7 +118,7 @@ Future<void> processNewTimelineEvents({
           }
         }
       } catch (e, stackTrace) {
-        loggingService.captureException(
+        logger.exception(
           e,
           domain: 'MATRIX_SERVICE',
           subDomain: 'setReadMarker ${service.client.deviceName}',
@@ -127,7 +127,7 @@ Future<void> processNewTimelineEvents({
       }
     }
   } catch (e, stackTrace) {
-    loggingService.captureException(
+    logger.exception(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'listenToTimelineEvents ${service.client.deviceName}',

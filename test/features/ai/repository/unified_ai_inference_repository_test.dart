@@ -20,9 +20,10 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+import '../../../test_helper.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
@@ -37,7 +38,7 @@ class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+// Logging is handled by the setupTestEnvironment helper
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -77,7 +78,7 @@ void main() {
   late MockJournalRepository mockJournalRepo;
   late MockChecklistRepository mockChecklistRepo;
   late MockAutoChecklistService mockAutoChecklistService;
-  late MockLoggingService mockLoggingService;
+      // Logging is handled by the setupTestEnvironment helper
   late MockJournalDb mockJournalDb;
   late MockDirectory mockDirectory;
 
@@ -93,6 +94,9 @@ void main() {
     registerFallbackValue(FakeAiResponseData());
     registerFallbackValue(FakeJournalEntity());
     registerFallbackValue(FakeJournalAudio());
+
+    // Set up fast logging for tests
+    setupTestEnvironment();
   });
 
   setUp(() {
@@ -103,7 +107,7 @@ void main() {
     mockJournalRepo = MockJournalRepository();
     mockChecklistRepo = MockChecklistRepository();
     mockAutoChecklistService = MockAutoChecklistService();
-    mockLoggingService = MockLoggingService();
+    // Logging setup is handled by setupTestEnvironment()
     mockJournalDb = MockJournalDb();
     mockDirectory = MockDirectory();
 
@@ -114,13 +118,10 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
+    // Logging is already registered by setupTestEnvironment()
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(mockDirectory)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<Directory>(mockDirectory);
 
     // Mock directory path
     when(() => mockDirectory.path).thenReturn('/mock/documents');
@@ -150,10 +151,10 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
+    // Logging cleanup is handled by teardownTestEnvironment()
   });
+
+  tearDownAll(teardownTestEnvironment);
 
   group('UnifiedAiInferenceRepository', () {
     group('getActivePromptsForContext', () {
@@ -1778,7 +1779,8 @@ void main() {
               createdAt: DateTime.now(),
               utcOffset: 0,
             ),
-            title: 'TODO', // Short title that should be replaced
+            title: 'TODO',
+            // Short title that should be replaced
             statusHistory: [],
             dateFrom: DateTime.now(),
             dateTo: DateTime.now(),
@@ -2033,7 +2035,8 @@ Some task summary content...''';
               createdAt: DateTime.now(),
               utcOffset: 0,
             ),
-            title: 'TODO', // Short title that should be replaced
+            title: 'TODO',
+            // Short title that should be replaced
             statusHistory: [],
             dateFrom: DateTime.now(),
             dateTo: DateTime.now(),

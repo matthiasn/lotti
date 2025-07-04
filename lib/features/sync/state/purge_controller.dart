@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/services/lotti_logger.dart';
 
 final purgeControllerProvider =
     StateNotifierProvider<PurgeController, PurgeState>((ref) {
@@ -46,17 +45,11 @@ class PurgeController extends StateNotifier<PurgeState> {
         state = state.copyWith(progress: progress);
       }
     } catch (e, stackTrace) {
-      await getIt<LoggingDb>().log(
-        LogEntry(
-          id: uuid.v1(),
-          createdAt: DateTime.now().toIso8601String(),
+      getIt<LottiLogger>().exception(
+        e,
           domain: 'PurgeController',
           subDomain: 'purgeDeleted',
-          message: e.toString(),
-          stacktrace: stackTrace.toString(),
-          level: InsightLevel.error.name.toUpperCase(),
-          type: InsightType.exception.name.toUpperCase(),
-        ),
+        stackTrace: stackTrace,
       );
       state = state.copyWith(
         isPurging: false,

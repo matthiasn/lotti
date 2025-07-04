@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -12,7 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -61,8 +60,7 @@ void main() {
       );
 
       getIt
-        ..registerSingleton<LoggingDb>(MockLoggingDb())
-        ..registerSingleton<LoggingService>(LoggingService())
+        ..registerSingleton<LottiLogger>(LottiLogger())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(mockJournalDb)

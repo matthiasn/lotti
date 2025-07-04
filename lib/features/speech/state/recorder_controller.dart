@@ -9,7 +9,7 @@ import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:record/record.dart' show Amplitude;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -38,7 +38,7 @@ const double vuReferenceLevelDbfs = -18;
 class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
-  late final LoggingService _loggingService;
+  late final LottiLogger _logger;
   late final AudioPlayerCubit _audioPlayerCubit;
   String? _linkedId;
   String? _categoryId;
@@ -61,7 +61,7 @@ class AudioRecorderController extends _$AudioRecorderController {
   @override
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
-    _loggingService = getIt<LoggingService>();
+    _logger = getIt<LottiLogger>();
     _audioPlayerCubit = getIt<AudioPlayerCubit>();
 
     _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
@@ -164,13 +164,13 @@ class AudioRecorderController extends _$AudioRecorderController {
           }
         }
       } else {
-        _loggingService.captureEvent(
+        _logger.event(
           'no audio recording permission',
           domain: 'recorder_controller',
         );
       }
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'recorder_controller',
         stackTrace: stackTrace,
@@ -214,7 +214,7 @@ class AudioRecorderController extends _$AudioRecorderController {
         return entryId;
       }
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'recorder_controller',
         stackTrace: stackTrace,

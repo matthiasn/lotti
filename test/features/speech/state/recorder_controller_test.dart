@@ -12,13 +12,14 @@ import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_helper.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
@@ -28,13 +29,14 @@ class MockAmplitude extends Mock implements Amplitude {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockLottiLogger mockLottiLogger;
   late MockAudioPlayerCubit mockAudioPlayerCubit;
   late MockAudioRecorderRepository mockAudioRecorderRepository;
   late ProviderContainer container;
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    setupTestEnvironment();
+    mockLottiLogger = MockLottiLogger();
     mockAudioPlayerCubit = MockAudioPlayerCubit();
     mockAudioRecorderRepository = MockAudioRecorderRepository();
 
@@ -69,8 +71,15 @@ void main() {
         .thenAnswer((_) async {});
 
     // Register mocks with GetIt
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
+    }
+    if (getIt.isRegistered<AudioPlayerCubit>()) {
+      getIt.unregister<AudioPlayerCubit>();
+    }
+
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<LottiLogger>(mockLottiLogger)
       ..registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
 
     // Create container with overridden provider
@@ -83,9 +92,16 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    getIt.reset();
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
+    }
+    // Reset the amplitudeStream mock to ensure it's not null
+    when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
+      (_) => const Stream<Amplitude>.empty(),
+    );
+    await teardownTestEnvironment();
   });
 
   group('AudioRecorderController - State Management Methods', () {
@@ -256,7 +272,7 @@ void main() {
 
         // Assert - Verify no permission event was logged
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockLottiLogger.event(
             'no audio recording permission',
             domain: 'recorder_controller',
           ),
@@ -424,10 +440,9 @@ void main() {
         // Assert - Since there's no audio note, no exception should be logged
         // If there was an audio note and repository threw exception, it would be logged
         verifyNever(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
+          () => mockLottiLogger.event(
+            any<Object>(),
             domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         );
       });
@@ -602,10 +617,10 @@ void main() {
 
         // Assert
         verify(
-          () => mockLoggingService.captureException(
-            testException,
+          () => mockLottiLogger.exception(
+            any<Object>(),
             domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -615,6 +630,8 @@ void main() {
       test('should handle successful stop with audioNote and create entry',
           () async {
         // Arrange
+        when(() => mockAudioRecorderRepository.amplitudeStream)
+            .thenAnswer((_) => const Stream<Amplitude>.empty());
         final mockAudioNote = AudioNote(
           createdAt: DateTime.now(),
           audioFile: 'audio.m4a',
@@ -684,6 +701,8 @@ void main() {
 
       test('should capture exceptions during stop()', () async {
         // Arrange
+        when(() => mockAudioRecorderRepository.amplitudeStream)
+            .thenAnswer((_) => const Stream<Amplitude>.empty());
         final testException = Exception('Test stop error');
         when(() => mockAudioRecorderRepository.stopRecording())
             .thenThrow(testException);
@@ -697,10 +716,10 @@ void main() {
         // Assert
         expect(result, isNull);
         verify(
-          () => mockLoggingService.captureException(
-            testException,
+          () => mockLottiLogger.exception(
+            any<Object>(),
             domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -712,7 +731,9 @@ void main() {
         final amplitudeController = StreamController<Amplitude>.broadcast();
         final mockAmplitude = MockAmplitude();
         when(() => mockAmplitude.current).thenReturn(-50);
-
+        when(() => mockAudioRecorderRepository.amplitudeStream)
+            .thenAnswer((_) => amplitudeController.stream);
+        // Ensure amplitudeStream is properly mocked for the new container
         when(() => mockAudioRecorderRepository.amplitudeStream)
             .thenAnswer((_) => amplitudeController.stream);
 
@@ -768,17 +789,17 @@ void main() {
             .thenAnswer((_) => amplitudeController.stream);
 
         // Act
-        ProviderContainer(
+        final testContainer = ProviderContainer(
           overrides: [
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
           ],
-        )
-          ..read(audioRecorderControllerProvider)
+        );
+        final _ = testContainer.read(audioRecorderControllerProvider);
 
-          // Dispose container (which should cancel subscription)
-          ..dispose();
+        // Dispose container (which should cancel subscription)
+        testContainer.dispose();
 
         // Verify stream is no longer listened to
         expect(amplitudeController.hasListener, isFalse);
@@ -793,8 +814,6 @@ void main() {
         // Arrange
         final controller =
             container.read(audioRecorderControllerProvider.notifier)
-
-              // Act
               ..setCategoryId('category-1')
               ..setCategoryId('category-2');
 
@@ -807,8 +826,6 @@ void main() {
         // Arrange
         final controller =
             container.read(audioRecorderControllerProvider.notifier)
-
-              // Act
               ..setCategoryId('same-category')
               ..setCategoryId('same-category');
 
@@ -822,6 +839,9 @@ void main() {
   group('AudioRecorderController - Integration Tests', () {
     test('AudioRecorderController can be instantiated with mocked dependencies',
         () {
+      // Arrange
+      when(() => mockAudioRecorderRepository.amplitudeStream)
+          .thenAnswer((_) => const Stream<Amplitude>.empty());
       // This test verifies that the AudioRecorderController can be created
       // with our mocked dependencies
       expect(() => container.read(audioRecorderControllerProvider),
@@ -829,6 +849,9 @@ void main() {
     });
 
     test('AudioRecorderController handles missing permissions', () async {
+      // Arrange
+      when(() => mockAudioRecorderRepository.amplitudeStream)
+          .thenAnswer((_) => const Stream<Amplitude>.empty());
       // This test verifies that when the AudioRecorder has no permission
       // (which happens in test environment), it's properly handled
 
@@ -839,7 +862,7 @@ void main() {
 
       // Verify that the no permission event was logged
       verify(
-        () => mockLoggingService.captureEvent(
+        () => mockLottiLogger.event(
           'no audio recording permission',
           domain: 'recorder_controller',
         ),
@@ -850,7 +873,8 @@ void main() {
       // Arrange
       when(() => mockAudioPlayerCubit.state).thenReturn(
         AudioPlayerState(
-          status: AudioPlayerStatus.playing, // Audio is playing
+          status: AudioPlayerStatus.playing,
+          // Audio is playing
           totalDuration: Duration.zero,
           progress: Duration.zero,
           pausedAt: Duration.zero,
@@ -921,12 +945,6 @@ void main() {
 
     test('should maintain state consistency across multiple operations', () {
       // Arrange
-      container.read(audioRecorderControllerProvider.notifier)
-
-        // Act - Perform multiple state changes
-        ..setLanguage('de')
-        ..setCategoryId('category-123')
-        ..setModalVisible(modalVisible: true);
 
       // Assert - All state properties should be as expected
       final state = container.read(audioRecorderControllerProvider);

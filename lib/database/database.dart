@@ -14,7 +14,7 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -204,7 +204,7 @@ class JournalDb extends _$JournalDb {
           await resolveConflict(existingConflict);
         }
       } else {
-        getIt<LoggingService>().captureEvent(
+        getIt<LottiLogger>().event(
           EnumToString.convertToString(status),
           domain: 'JOURNAL_DB',
           subDomain: 'Conflict status',
@@ -459,7 +459,7 @@ class JournalDb extends _$JournalDb {
         );
       } catch (e) {
         // Log error but continue with other files
-        getIt<LoggingService>().captureException(
+        getIt<LottiLogger>().exception(
           e,
           domain: 'Database',
           subDomain: 'purgeDeletedFiles',

@@ -6,7 +6,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -31,12 +31,11 @@ class UnifiedAiController extends _$UnifiedAiController {
   }
 
   Future<void> runInference() async {
-    final loggingService = getIt<LoggingService>()
-      ..captureEvent(
-        'Starting unified AI inference for $entityId',
-        subDomain: 'runInference',
-        domain: 'UnifiedAiController',
-      );
+    getIt<LottiLogger>().event(
+      'Starting unified AI inference for $entityId',
+      domain: 'UnifiedAiController',
+      subDomain: 'runInference',
+    );
 
     try {
       // Fetch the prompt config
@@ -88,7 +87,7 @@ class UnifiedAiController extends _$UnifiedAiController {
         // Ignore errors when setting status
       }
 
-      loggingService.captureException(
+      getIt<LottiLogger>().exception(
         inferenceError.originalError ?? e,
         domain: 'UnifiedAiController',
         subDomain: 'runInference',

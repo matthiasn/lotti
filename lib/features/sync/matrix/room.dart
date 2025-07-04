@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:matrix/matrix.dart';
 
 Future<String?> joinMatrixRoom({
@@ -17,7 +17,7 @@ Future<String?> joinMatrixRoom({
     ) {
       debugPrint('MatrixService join error $error');
 
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         error,
         domain: 'MATRIX_SERVICE',
         subDomain: 'joinRoom',
@@ -32,7 +32,7 @@ Future<String?> joinMatrixRoom({
       ..syncRoom = syncRoom
       ..syncRoomId = roomId;
 
-    getIt<LoggingService>().captureEvent(
+    getIt<LottiLogger>().event(
       'joined $roomId $joinRes',
       domain: 'MATRIX_SERVICE',
       subDomain: 'joinRoom',
@@ -41,7 +41,7 @@ Future<String?> joinMatrixRoom({
     return joinRes;
   } catch (e, stackTrace) {
     debugPrint('$e');
-    getIt<LoggingService>().captureException(
+    getIt<LottiLogger>().exception(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'joinRoom',

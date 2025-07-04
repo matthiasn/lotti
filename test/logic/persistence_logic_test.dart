@@ -12,7 +12,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -25,7 +24,6 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -37,6 +35,7 @@ import 'package:path_provider/path_provider.dart';
 import '../helpers/path_provider.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+import '../test_helper.dart';
 
 // Create a FakeGeolocation class for registerFallbackValue
 class FakeGeolocation extends Fake implements Geolocation {}
@@ -67,6 +66,9 @@ void main() {
       await getIt.reset();
 
       setFakeDocumentsPath();
+
+      // Set up fast logging for tests
+      setupTestEnvironment();
 
       getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
@@ -138,8 +140,7 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-        ..registerSingleton<LoggingService>(LoggingService())
+        // Logging setup is handled by setupTestEnvironment()
         ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<SecureStorage>(secureStorageMock)
@@ -152,9 +153,7 @@ void main() {
           mockDeviceLocation as DeviceLocation?;
     });
 
-    tearDownAll(() async {
-      await getIt.reset();
-    });
+    tearDownAll(teardownTestEnvironment);
 
     tearDown(() {
       clearInteractions(mockNotificationService);
