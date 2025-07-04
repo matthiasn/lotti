@@ -63,7 +63,7 @@ void main() {
     when(
       () => mockLoggingService.captureException(
         any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
         domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
@@ -256,7 +256,7 @@ void main() {
       verify(
         () => mockLoggingService.captureException(
           exception,
-          stackTrace: any<dynamic>(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
           domain: 'SYNC_CONTROLLER',
         ),
       ).called(2);

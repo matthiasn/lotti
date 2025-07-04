@@ -476,7 +476,7 @@ void main() {
           () => mockLoggingService.captureException(
             any<dynamic>(),
             domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         );
       });
@@ -654,7 +654,7 @@ void main() {
           () => mockLoggingService.captureException(
             testException,
             domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -749,7 +749,7 @@ void main() {
           () => mockLoggingService.captureException(
             testException,
             domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
