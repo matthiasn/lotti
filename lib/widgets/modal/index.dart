@@ -1,3 +1,8 @@
+export 'clean_filter_chip.dart';
+export 'clean_filter_section.dart';
+export 'compact_filter_chip.dart';
+export 'modern_filter_chip.dart';
+export 'modern_filter_section.dart';
 export 'modern_modal_action_item.dart';
 export 'modern_modal_entry_type_item.dart';
 export 'modern_modal_prompt_item.dart';

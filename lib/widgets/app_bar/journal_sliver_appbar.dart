@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
+import 'package:lotti/features/tasks/ui/filtering/clean_task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/search/entry_type_filter.dart';
+import 'package:lotti/widgets/app_bar/clean_journal_filter.dart';
+import 'package:lotti/widgets/search/clean_entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -138,15 +139,16 @@ class JournalFilterIcon extends StatelessWidget {
                 child: child,
               );
             },
-            builder: (_) => const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                JournalFilter(),
-                SizedBox(height: 10),
-                EntryTypeFilter(),
-                SizedBox(height: 10),
-                TaskCategoryFilter(),
-              ],
+            builder: (_) => const SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CleanJournalFilter(),
+                  CleanEntryTypeFilter(),
+                  CleanTaskCategoryFilter(),
+                  SizedBox(height: 20),
+                ],
+              ),
             ),
           );
         },
