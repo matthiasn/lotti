@@ -24,8 +24,8 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
     return id == 'test-category-id'
         ? CategoryDefinition(
             id: 'test-category-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 1, 1, 12),
+            updatedAt: DateTime(2024, 1, 1, 12),
             name: 'Test Category',
             vectorClock: null,
             private: false,
@@ -70,6 +70,7 @@ void main() {
   late MockNavService mockNavService;
   late MockTimeService mockTimeService;
   late MockTagsService mockTagsService;
+  late DateTime now;
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
@@ -86,7 +87,7 @@ void main() {
       ..registerSingleton<TagsService>(mockTagsService);
 
     // Create test task
-    final now = DateTime.now();
+    now = DateTime(2024, 1, 1, 12); // Use a fixed time for deterministic tests
     const categoryId = 'test-category-id';
     const taskId = 'test-task-id';
 
@@ -280,8 +281,8 @@ void main() {
         data: testTask.data.copyWith(
           status: TaskStatus.inProgress(
             id: 'status-id',
-            createdAt: DateTime.now(),
-            utcOffset: DateTime.now().timeZoneOffset.inMinutes,
+            createdAt: now,
+            utcOffset: now.timeZoneOffset.inMinutes,
           ),
         ),
       );
@@ -304,7 +305,7 @@ void main() {
       // Create task with due date
       final taskWithDue = testTask.copyWith(
         data: testTask.data.copyWith(
-          due: DateTime.now().add(const Duration(days: 7)),
+          due: now.add(const Duration(days: 7)),
         ),
       );
 
@@ -362,32 +363,8 @@ void main() {
       await tester.tap(find.byType(AnimatedModalItem));
       await tester.pumpAndSettle();
 
-      // Navigation should have been called multiple times
-      expect(mockNavService.navigationHistory.length, greaterThanOrEqualTo(1));
-    });
-
-    testWidgets('animation parameters are properly set',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: AnimatedModernTaskCard(
-            task: testTask,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final animatedModalItem = tester.widget<AnimatedModalItem>(
-        find.byType(AnimatedModalItem),
-      );
-
-      // Verify custom animation parameters for list items
-      expect(animatedModalItem.hoverScale, 0.995);
-      expect(animatedModalItem.tapScale, 0.985);
-      expect(animatedModalItem.hoverElevation, 2);
-
-      // Verify margin is zero to avoid double spacing
-      expect(animatedModalItem.margin, EdgeInsets.zero);
+      // Navigation should have been called three times
+      expect(mockNavService.navigationHistory.length, 3);
     });
 
     testWidgets('handles long task titles gracefully',

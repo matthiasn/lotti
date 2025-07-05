@@ -7,9 +7,8 @@ import 'package:lotti/widgets/modal/animated_modal_item.dart';
 /// An animated version of ModernTaskCard that adds hover and tap animations
 ///
 /// This wrapper applies AnimatedModalItem animations to ModernTaskCard.
-/// Since ModernTaskCard already has its own margins and AnimatedModalItem
-/// adds its own container margins, we need to create a custom version of
-/// ModernTaskCard without margins for use within AnimatedModalItem.
+/// Since ModernTaskCard has its own margins, this widget sets the margin on
+/// AnimatedModalItem to `EdgeInsets.zero` to avoid duplicated spacing.
 class AnimatedModernTaskCard extends StatelessWidget {
   const AnimatedModernTaskCard({
     required this.task,
@@ -22,8 +21,8 @@ class AnimatedModernTaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Since ModernTaskCard already includes margins and AnimatedModalItem
-    // adds its own, we create a custom ModernTaskCard without margins
+    // Since ModernTaskCard includes its own margins, set AnimatedModalItem's
+    // margin to zero to avoid double spacing
     return AnimatedModalItem(
       onTap: () => beamToNamed('/tasks/${task.meta.id}'),
       hoverScale: 0.995, // Slightly less scale for list items
