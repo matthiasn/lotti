@@ -42,100 +42,94 @@ class ShowcaseWithWidget extends StatelessWidget {
       key: showcaseKey,
       width: MediaQuery.of(context).size.width * 0.90,
       height: null,
-      container: SizedBox(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 10,
-              ),
-              margin: const EdgeInsets.only(
-                left: 7,
-              ),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(
-                  inputBorderRadius,
-                ),
-              ),
-              child: description,
+      container: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(
+              left: 7,
             ),
-            if (startNav)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      ShowCaseWidget.of(context).dismiss();
-                    },
-                    child: Text(
-                      context.messages.showcaseCloseButton,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      ShowCaseWidget.of(context).next();
-                    },
-                    child: Text(
-                      context.messages.showcaseNextButton,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              )
-            else if (endNav)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      ShowCaseWidget.of(context).previous();
-                    },
-                    child: Text(
-                      context.messages.showcasePreviousButton,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      ShowCaseWidget.of(context).dismiss();
-                    },
-                    child: Text(
-                      context.messages.showcaseCloseButton,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              )
-            else
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      ShowCaseWidget.of(context).previous();
-                    },
-                    child: Text(
-                      context.messages.showcasePreviousButton,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      ShowCaseWidget.of(context).next();
-                    },
-                    child: Text(
-                      context.messages.showcaseNextButton,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
+            decoration: BoxDecoration(
+              color: context.colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(
+                inputBorderRadius,
               ),
-          ],
-        ),
+            ),
+            child: description,
+          ),
+          if (startNav)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).dismiss();
+                  },
+                  child: Text(
+                    context.messages.showcaseCloseButton,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).next();
+                  },
+                  child: Text(
+                    context.messages.showcaseNextButton,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            )
+          else if (endNav)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).previous();
+                  },
+                  child: Text(
+                    context.messages.showcasePreviousButton,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).dismiss();
+                  },
+                  child: Text(
+                    context.messages.showcaseCloseButton,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).previous();
+                  },
+                  child: Text(
+                    context.messages.showcasePreviousButton,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    ShowCaseWidget.of(context).next();
+                  },
+                  child: Text(
+                    context.messages.showcaseNextButton,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(5),

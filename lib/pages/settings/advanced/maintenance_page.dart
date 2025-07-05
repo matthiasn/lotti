@@ -10,7 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
-import 'package:lotti/widgets/settings/modern_settings_cards.dart';
+import 'package:lotti/widgets/settings/animated_settings_cards.dart';
 
 class MaintenancePage extends StatelessWidget {
   const MaintenancePage({super.key});
@@ -34,7 +34,7 @@ class MaintenancePage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenanceDeleteEditorDb,
                   subtitle:
                       context.messages.maintenanceDeleteEditorDbDescription,
@@ -54,7 +54,7 @@ class MaintenancePage extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenanceDeleteLoggingDb,
                   subtitle:
                       context.messages.maintenanceDeleteLoggingDbDescription,
@@ -74,7 +74,7 @@ class MaintenancePage extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenanceDeleteSyncDb,
                   subtitle: context.messages.maintenanceDeleteSyncDbDescription,
                   icon: Icons.sync_rounded,
@@ -93,7 +93,7 @@ class MaintenancePage extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenanceSyncDefinitions,
                   subtitle:
                       context.messages.maintenanceSyncDefinitionsDescription,
@@ -101,7 +101,7 @@ class MaintenancePage extends StatelessWidget {
                   onTap: () => SyncModal.show(context),
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenancePurgeDeleted,
                   subtitle: context.messages.maintenancePurgeDeletedDescription,
                   icon: Icons.delete_forever_rounded,
@@ -109,7 +109,7 @@ class MaintenancePage extends StatelessWidget {
                   onTap: () => PurgeModal.show(context),
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenancePurgeAudioModels,
                   subtitle:
                       context.messages.maintenancePurgeAudioModelsDescription,
@@ -118,14 +118,14 @@ class MaintenancePage extends StatelessWidget {
                   onTap: () => AudioPurgeModal.show(context),
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenanceRecreateFts5,
                   subtitle: context.messages.maintenanceRecreateFts5Description,
                   icon: Icons.search_rounded,
                   onTap: () => Fts5RecreateModal.show(context),
                 ),
                 const SizedBox(height: 8),
-                ModernMaintenanceCard(
+                AnimatedModernMaintenanceCard(
                   title: context.messages.maintenanceReSync,
                   subtitle: context.messages.maintenanceReSyncDescription,
                   icon: Icons.refresh_rounded,
