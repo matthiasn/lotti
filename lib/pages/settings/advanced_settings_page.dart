@@ -8,7 +8,7 @@ import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/settings/modern_settings_cards.dart';
+import 'package:lotti/widgets/settings/animated_settings_cards.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -66,14 +66,14 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
               ),
               child: const MatrixSettingsCard(),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.cardSpacing),
             ShowcaseWithWidget(
               showcaseKey: _syncoutBoxKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseSyncOutboxTooltip,
               ),
-              child: ModernSettingsCardWithIcon(
+              child: AnimatedModernSettingsCardWithIcon(
                 title: context.messages.settingsSyncOutboxTitle,
                 subtitle: 'Monitor sync outbox and pending messages',
                 icon: Icons.mail,
@@ -87,14 +87,14 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.cardSpacing),
             ShowcaseWithWidget(
               showcaseKey: _synConflictsKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseConflictsTooltip,
               ),
-              child: ModernSettingsCardWithIcon(
+              child: AnimatedModernSettingsCardWithIcon(
                 title: context.messages.settingsConflictsTitle,
                 subtitle: 'Resolve sync conflicts and merge issues',
                 icon: Icons.warning_rounded,
@@ -102,21 +102,21 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                     context.beamToNamed('/settings/advanced/conflicts'),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.cardSpacing),
             ShowcaseWithWidget(
               showcaseKey: _logsKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseLogsTooltip,
               ),
-              child: ModernSettingsCardWithIcon(
+              child: AnimatedModernSettingsCardWithIcon(
                 title: context.messages.settingsLogsTitle,
                 subtitle: 'View application logs and debug information',
                 icon: Icons.article_rounded,
                 onTap: () => context.beamToNamed('/settings/advanced/logging'),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.cardSpacing),
             if (isMobile)
               ShowcaseWithWidget(
                 showcaseKey: _healthImportKey,
@@ -124,21 +124,21 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                   descriptionText: context
                       .messages.settingsAdvancedShowCaseHealthImportTooltip,
                 ),
-                child: ModernSettingsCardWithIcon(
+                child: AnimatedModernSettingsCardWithIcon(
                   title: context.messages.settingsHealthImportTitle,
                   subtitle: 'Import health data from external sources',
                   icon: Icons.health_and_safety_rounded,
                   onTap: () => context.beamToNamed('/settings/health_import'),
                 ),
               ),
-            if (isMobile) const SizedBox(height: 8),
+            if (isMobile) const SizedBox(height: AppTheme.cardSpacing),
             ShowcaseWithWidget(
               showcaseKey: _maintenanceKey,
               description: ShowcaseTextStyle(
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
               ),
-              child: ModernSettingsCardWithIcon(
+              child: AnimatedModernSettingsCardWithIcon(
                 title: context.messages.settingsMaintenanceTitle,
                 subtitle: 'Database maintenance and cleanup tools',
                 icon: Icons.build_rounded,
@@ -146,7 +146,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                     context.beamToNamed('/settings/advanced/maintenance'),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.cardSpacing),
             ShowcaseWithWidget(
               isTooltipTop: true,
               endNav: true,
@@ -155,7 +155,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                 descriptionText:
                     context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
               ),
-              child: ModernSettingsCardWithIcon(
+              child: AnimatedModernSettingsCardWithIcon(
                 title: context.messages.settingsAboutTitle,
                 subtitle: 'App information and version details',
                 icon: Icons.info_rounded,

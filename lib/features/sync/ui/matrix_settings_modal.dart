@@ -9,7 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
+import 'package:lotti/widgets/settings/animated_settings_cards.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class MatrixSettingsCard extends StatelessWidget {
@@ -19,8 +19,10 @@ class MatrixSettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pageIndexNotifier = ValueNotifier(0);
 
-    return SettingsCard(
+    return AnimatedModernSettingsCardWithIcon(
       title: context.messages.settingsMatrixTitle,
+      subtitle: 'Configure end-to-end encrypted sync',
+      icon: Icons.sync,
       onTap: () {
         if (getIt<MatrixService>().isLoggedIn()) {
           pageIndexNotifier.value = 1;
