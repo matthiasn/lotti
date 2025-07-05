@@ -8,10 +8,10 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/animated_modern_task_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_image_card.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -256,10 +256,11 @@ void main() {
       // Assert
       expect(find.byType(ModernJournalImageCard), findsOneWidget);
       expect(find.byType(ModernJournalCard), findsNothing);
-      expect(find.byType(ModernTaskCard), findsNothing);
+      expect(find.byType(AnimatedModernTaskCard), findsNothing);
     });
 
-    testWidgets('renders ModernTaskCard for Task when taskAsListView is true',
+    testWidgets(
+        'renders AnimatedModernTaskCard for Task when taskAsListView is true',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
@@ -273,7 +274,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.byType(ModernTaskCard), findsOneWidget);
+      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
       expect(find.byType(ModernJournalCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
@@ -294,7 +295,7 @@ void main() {
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
-      expect(find.byType(ModernTaskCard), findsNothing);
+      expect(find.byType(AnimatedModernTaskCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
@@ -313,7 +314,7 @@ void main() {
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
-      expect(find.byType(ModernTaskCard), findsNothing);
+      expect(find.byType(AnimatedModernTaskCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
@@ -332,7 +333,7 @@ void main() {
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
-      expect(find.byType(ModernTaskCard), findsNothing);
+      expect(find.byType(AnimatedModernTaskCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
   });
