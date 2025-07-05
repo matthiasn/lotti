@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 
 /// A wrapper widget that provides hover and tap animations for modal items
 class AnimatedModalItem extends StatefulWidget {
@@ -11,6 +12,7 @@ class AnimatedModalItem extends StatefulWidget {
     this.tapScale = 0.98,
     this.tapOpacity = 0.8,
     this.hoverElevation = 4,
+    this.controller,
     super.key,
   });
 
@@ -21,6 +23,7 @@ class AnimatedModalItem extends StatefulWidget {
   final double tapScale;
   final double tapOpacity;
   final double hoverElevation;
+  final AnimatedModalItemController? controller;
 
   @override
   State<AnimatedModalItem> createState() => _AnimatedModalItemState();
@@ -28,99 +31,97 @@ class AnimatedModalItem extends StatefulWidget {
 
 class _AnimatedModalItemState extends State<AnimatedModalItem>
     with TickerProviderStateMixin {
-  late AnimationController _hoverAnimationController;
+  AnimatedModalItemController? _internalController;
+  AnimatedModalItemController get _controller =>
+      widget.controller ?? _internalController!;
+
   late Animation<double> _hoverScaleAnimation;
   late Animation<double> _hoverElevationAnimation;
-  late AnimationController _tapAnimationController;
   late Animation<double> _tapScaleAnimation;
   late Animation<double> _tapOpacityAnimation;
 
   @override
   void initState() {
     super.initState();
+    if (widget.controller == null) {
+      _internalController = AnimatedModalItemController(vsync: this);
+    }
     _initializeAnimations();
   }
 
   void _initializeAnimations() {
     // Hover animations
-    _hoverAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
     _hoverScaleAnimation = Tween<double>(
       begin: 1,
       end: widget.hoverScale,
     ).animate(CurvedAnimation(
-      parent: _hoverAnimationController,
+      parent: _controller.hoverAnimationController,
       curve: Curves.easeOutCubic,
     ));
     _hoverElevationAnimation = Tween<double>(
       begin: 0,
       end: widget.hoverElevation,
     ).animate(CurvedAnimation(
-      parent: _hoverAnimationController,
+      parent: _controller.hoverAnimationController,
       curve: Curves.easeOutCubic,
     ));
 
     // Tap animations
-    _tapAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
     _tapScaleAnimation = Tween<double>(
       begin: 1,
       end: widget.tapScale,
     ).animate(CurvedAnimation(
-      parent: _tapAnimationController,
+      parent: _controller.tapAnimationController,
       curve: Curves.easeOutCubic,
     ));
     _tapOpacityAnimation = Tween<double>(
       begin: 1,
       end: widget.tapOpacity,
     ).animate(CurvedAnimation(
-      parent: _tapAnimationController,
+      parent: _controller.tapAnimationController,
       curve: Curves.easeOutCubic,
     ));
   }
 
   @override
   void dispose() {
-    _hoverAnimationController.dispose();
-    _tapAnimationController.dispose();
+    _internalController?.dispose();
     super.dispose();
   }
 
   void _handleHoverChanged(bool isHovered) {
     if (isHovered && !widget.isDisabled) {
-      _hoverAnimationController.forward();
+      _controller.startHover();
     } else {
-      _hoverAnimationController.reverse();
+      _controller.endHover();
     }
   }
 
   void _handleTapDown(TapDownDetails details) {
     if (!widget.isDisabled) {
-      _tapAnimationController.forward();
+      _controller.startTap();
     }
   }
 
   void _handleTapUp(TapUpDetails details) {
     if (!widget.isDisabled) {
-      _tapAnimationController.reverse();
+      _controller.endTap();
     }
   }
 
   void _handleTapCancel() {
     if (!widget.isDisabled) {
-      _tapAnimationController.reverse();
+      _controller.endTap();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge(
-          [_tapAnimationController, _hoverAnimationController]),
+      animation: Listenable.merge([
+        _controller.tapAnimationController,
+        _controller.hoverAnimationController
+      ]),
       builder: (context, child) {
         final combinedScale =
             _hoverScaleAnimation.value * _tapScaleAnimation.value;

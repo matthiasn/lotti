@@ -183,8 +183,13 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
                     opacity:
                         widget.isDisabled ? 0.5 : _tapOpacityAnimation.value,
                     duration: const Duration(milliseconds: 150),
-                    child: widget.iconBuilder(context, _iconScaleAnimation,
-                        isPressed: _isPressed),
+                    child: Stack(
+                      children: [
+                        widget.child,
+                        widget.iconBuilder(context, _iconScaleAnimation,
+                            isPressed: _isPressed),
+                      ],
+                    ),
                   ),
                 ),
               ),
