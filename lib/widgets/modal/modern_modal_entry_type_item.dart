@@ -42,14 +42,29 @@ class _ModernModalEntryTypeItemState extends State<ModernModalEntryTypeItem>
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
-  }
-
-  void _initializeAnimations() {
+    // Create controllers only once in initState
     _hoverAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+    _tapAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _initializeAnimations();
+  }
+
+  @override
+  void didUpdateWidget(ModernModalEntryTypeItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When widget properties change, re-initialize the animations.
+    if (widget.isDisabled != oldWidget.isDisabled) {
+      _initializeAnimations();
+    }
+  }
+
+  void _initializeAnimations() {
+    // Only create Tween animations, not controllers
     _hoverScaleAnimation = Tween<double>(
       begin: 1,
       end: 0.99,
@@ -65,10 +80,6 @@ class _ModernModalEntryTypeItemState extends State<ModernModalEntryTypeItem>
       curve: Curves.easeOutCubic,
     ));
 
-    _tapAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
     _tapScaleAnimation = Tween<double>(
       begin: 1,
       end: 0.97,

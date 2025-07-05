@@ -49,6 +49,30 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
     _initializeAnimations();
   }
 
+  @override
+  void didUpdateWidget(AnimatedModalItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Handle controller changes
+    if (widget.controller == null && oldWidget.controller != null) {
+      // Switched from external to internal controller
+      _internalController = AnimatedModalItemController(vsync: this);
+    } else if (widget.controller != null && oldWidget.controller == null) {
+      // Switched from internal to external controller
+      _internalController?.dispose();
+      _internalController = null;
+    }
+
+    // Re-initialize animations if their parameters or the controller changes
+    if (widget.hoverScale != oldWidget.hoverScale ||
+        widget.tapScale != oldWidget.tapScale ||
+        widget.tapOpacity != oldWidget.tapOpacity ||
+        widget.hoverElevation != oldWidget.hoverElevation ||
+        widget.controller != oldWidget.controller) {
+      _initializeAnimations();
+    }
+  }
+
   void _initializeAnimations() {
     // Hover animations
     _hoverScaleAnimation = Tween<double>(

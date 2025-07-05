@@ -46,15 +46,34 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
-  }
-
-  void _initializeAnimations() {
-    // Hover animations
+    // Create controllers only once in initState
     _hoverAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+    _tapAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _initializeAnimations();
+  }
+
+  @override
+  void didUpdateWidget(AnimatedModalItemWithIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update animations if relevant properties changed
+    if (widget.hoverScale != oldWidget.hoverScale ||
+        widget.tapScale != oldWidget.tapScale ||
+        widget.tapOpacity != oldWidget.tapOpacity ||
+        widget.hoverElevation != oldWidget.hoverElevation ||
+        widget.iconScaleOnTap != oldWidget.iconScaleOnTap) {
+      _initializeAnimations();
+    }
+  }
+
+  void _initializeAnimations() {
+    // Only create Tween animations, not controllers
+    // Hover animations
     _hoverScaleAnimation = Tween<double>(
       begin: 1,
       end: widget.hoverScale,
@@ -71,10 +90,6 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
     ));
 
     // Tap animations
-    _tapAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
     _tapScaleAnimation = Tween<double>(
       begin: 1,
       end: widget.tapScale,
