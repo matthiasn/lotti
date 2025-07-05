@@ -83,7 +83,8 @@ class UnifiedAiProgressContent extends ConsumerWidget {
 
             // Check if this is a ModelNotInstalledException (most reliable)
             if (inferenceError.originalError is ModelNotInstalledException) {
-              final modelNotInstalledError = inferenceError.originalError as ModelNotInstalledException;
+              final modelNotInstalledError =
+                  inferenceError.originalError as ModelNotInstalledException;
               final modelName = modelNotInstalledError.modelName;
 
               developer.log(

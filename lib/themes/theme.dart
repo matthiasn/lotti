@@ -25,6 +25,7 @@ class AppTheme {
   static const double iconSizeCompact = 18;
 
   // Spacing constants
+  static const double spacingXSmall = 4;
   static const double spacingSmall = 8;
   static const double spacingMedium = 10;
   static const double spacingLarge = 12;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/modal/animated_modal_item.dart';
 
 /// A modern modal action item with gradient styling and polished animations
 ///
@@ -32,59 +33,7 @@ class ModernModalActionItem extends StatefulWidget {
   State<ModernModalActionItem> createState() => _ModernModalActionItemState();
 }
 
-class _ModernModalActionItemState extends State<ModernModalActionItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1,
-      end: 0.98,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-    _opacityAnimation = Tween<double>(
-      begin: 1,
-      end: 0.8,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _handleTapDown(TapDownDetails details) {
-    if (!widget.isDisabled) {
-      _animationController.forward();
-    }
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    if (!widget.isDisabled) {
-      _animationController.reverse();
-    }
-  }
-
-  void _handleTapCancel() {
-    if (!widget.isDisabled) {
-      _animationController.reverse();
-    }
-  }
-
+class _ModernModalActionItemState extends State<ModernModalActionItem> {
   @override
   Widget build(BuildContext context) {
     final effectiveIconColor = widget.isDestructive
@@ -99,108 +48,87 @@ class _ModernModalActionItemState extends State<ModernModalActionItem>
         ? context.colorScheme.error.withValues(alpha: 0.8)
         : context.colorScheme.onSurfaceVariant;
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: AnimatedOpacity(
-            opacity: widget.isDisabled ? 0.5 : _opacityAnimation.value,
-            duration: const Duration(milliseconds: 150),
-            child: GestureDetector(
-              onTapDown: _handleTapDown,
-              onTapUp: _handleTapUp,
-              onTapCancel: _handleTapCancel,
-              onTap: widget.isDisabled ? null : widget.onTap,
-              child: Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.cardPadding,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
-                child: ModernBaseCard(
-                  onTap: widget.isDisabled ? null : widget.onTap,
-                  padding: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.cardPadding),
-                    child: Row(
-                      children: [
-                        // Icon with gradient container
-                        ModernIconContainer(
-                          icon: widget.icon,
-                          iconColor: effectiveIconColor,
-                          gradient: widget.isDestructive
-                              ? LinearGradient(
-                                  colors: [
-                                    context.colorScheme.errorContainer
-                                        .withValues(alpha: 0.3),
-                                    context.colorScheme.errorContainer
-                                        .withValues(alpha: 0.2),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          borderColor: widget.isDestructive
-                              ? context.colorScheme.error
-                                  .withValues(alpha: AppTheme.alphaDestructive)
-                              : null,
-                        ),
-                        const SizedBox(width: AppTheme.spacingLarge),
-
-                        // Content
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Title
-                              Text(
-                                widget.title,
-                                style: context.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: AppTheme.titleFontSize,
-                                  color: effectiveTextColor,
-                                  letterSpacing: AppTheme.letterSpacingTitle,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-
-                              // Subtitle
-                              if (widget.subtitle != null &&
-                                  widget.subtitle!.isNotEmpty) ...[
-                                const SizedBox(
-                                    height: AppTheme
-                                        .spacingBetweenTitleAndSubtitle),
-                                Text(
-                                  widget.subtitle!,
-                                  style: context.textTheme.bodySmall?.copyWith(
-                                    color: effectiveSubtitleColor,
-                                    fontSize: AppTheme.subtitleFontSize,
-                                    height: AppTheme.lineHeightSubtitle,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                        // Trailing widget
-                        if (widget.trailing != null) ...[
-                          const SizedBox(width: AppTheme.spacingMedium),
-                          widget.trailing!,
+    return AnimatedModalItem(
+      onTap: widget.onTap,
+      isDisabled: widget.isDisabled,
+      child: ModernBaseCard(
+        onTap: widget.isDisabled ? null : widget.onTap,
+        padding: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.cardPadding),
+          child: Row(
+            children: [
+              // Icon with gradient container
+              ModernIconContainer(
+                icon: widget.icon,
+                iconColor: effectiveIconColor,
+                gradient: widget.isDestructive
+                    ? LinearGradient(
+                        colors: [
+                          context.colorScheme.errorContainer
+                              .withValues(alpha: 0.3),
+                          context.colorScheme.errorContainer
+                              .withValues(alpha: 0.2),
                         ],
-                      ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                borderColor: widget.isDestructive
+                    ? context.colorScheme.error
+                        .withValues(alpha: AppTheme.alphaDestructive)
+                    : null,
+              ),
+              const SizedBox(width: AppTheme.spacingLarge),
+
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
+                      widget.title,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTheme.titleFontSize,
+                        color: effectiveTextColor,
+                        letterSpacing: AppTheme.letterSpacingTitle,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+
+                    // Subtitle
+                    if (widget.subtitle != null &&
+                        widget.subtitle!.isNotEmpty) ...[
+                      const SizedBox(
+                          height: AppTheme.spacingBetweenTitleAndSubtitle),
+                      Text(
+                        widget.subtitle!,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: effectiveSubtitleColor,
+                          fontSize: AppTheme.subtitleFontSize,
+                          height: AppTheme.lineHeightSubtitle,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ),
+
+              // Trailing widget
+              if (widget.trailing != null) ...[
+                const SizedBox(width: AppTheme.spacingMedium),
+                widget.trailing!,
+              ],
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
