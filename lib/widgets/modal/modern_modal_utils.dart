@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -166,21 +164,8 @@ class ModernModalUtils {
           return WoltModalType.dialog();
         }
       },
-      modalDecorator: (child) {
-        return Stack(
-          children: [
-            // Enhanced backdrop blur
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                color: context.colorScheme.scrim.withValues(alpha: 0.5),
-              ),
-            ),
-            child,
-          ],
-        );
-      },
       barrierDismissible: true,
+      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
     );
   }
 
@@ -202,22 +187,9 @@ class ModernModalUtils {
           return WoltModalType.dialog();
         }
       },
-      modalDecorator: (child) {
-        return Stack(
-          children: [
-            // Enhanced backdrop blur
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                color: context.colorScheme.scrim.withValues(alpha: 0.5),
-              ),
-            ),
-            child,
-          ],
-        );
-      },
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
+      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
     );
   }
 }

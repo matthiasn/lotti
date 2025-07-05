@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -114,22 +112,9 @@ class UnifiedAiModal {
             ? WoltModalType.bottomSheet()
             : WoltModalType.dialog();
       },
-      modalDecorator: (child) {
-        return Stack(
-          children: [
-            // Enhanced backdrop blur
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                color: context.colorScheme.scrim.withValues(alpha: 0.5),
-              ),
-            ),
-            child,
-          ],
-        );
-      },
       barrierDismissible: true,
       pageIndexNotifier: pageIndexNotifier,
+      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
     );
   }
 }

@@ -142,94 +142,86 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem>
                     opacity: widget.isDisabled ? 0.5 : 1.0,
                     duration: const Duration(milliseconds: 200),
                     child: Padding(
-                      padding: const EdgeInsets.all(AppTheme.cardPadding),
-                      child: Column(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.cardPadding,
+                        vertical: AppTheme.cardPadding / 2,
+                      ),
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Icon with gradient container
-                              ModernIconContainer(
-                                icon: widget.icon,
-                                iconColor: effectiveIconColor,
-                                gradient: widget.isSelected
-                                    ? LinearGradient(
-                                        colors: [
-                                          context.colorScheme.primary
-                                              .withValues(alpha: 0.3),
-                                          context.colorScheme.primary
-                                              .withValues(alpha: 0.2),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: AppTheme.spacingLarge),
+                          // Icon with gradient container
+                          ModernIconContainer(
+                            icon: widget.icon,
+                            iconColor: effectiveIconColor,
+                            gradient: widget.isSelected
+                                ? LinearGradient(
+                                    colors: [
+                                      context.colorScheme.primary
+                                          .withValues(alpha: 0.3),
+                                      context.colorScheme.primary
+                                          .withValues(alpha: 0.2),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: AppTheme.spacingLarge),
 
-                              // Title and badge
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          // Title and description column
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Title row with badge
+                                Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            widget.title,
-                                            style: context.textTheme.titleSmall
-                                                ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: AppTheme.titleFontSize,
-                                              color:
-                                                  context.colorScheme.onSurface,
-                                              letterSpacing:
-                                                  AppTheme.letterSpacingTitle,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                    Expanded(
+                                      child: Text(
+                                        widget.title,
+                                        style: context.textTheme.titleSmall
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: AppTheme.titleFontSize,
+                                          color: context.colorScheme.onSurface,
+                                          letterSpacing:
+                                              AppTheme.letterSpacingTitle,
                                         ),
-                                        if (widget.badge != null) ...[
-                                          const SizedBox(
-                                              width: AppTheme.spacingSmall),
-                                          widget.badge!,
-                                        ],
-                                      ],
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
+                                    if (widget.badge != null) ...[
+                                      const SizedBox(
+                                          width: AppTheme.spacingSmall),
+                                      widget.badge!,
+                                    ],
                                   ],
                                 ),
-                              ),
-
-                              // Trailing widget
-                              if (widget.trailing != null) ...[
-                                const SizedBox(width: AppTheme.spacingMedium),
-                                widget.trailing!,
+                                const SizedBox(height: AppTheme.spacingXSmall),
+                                // Description
+                                Text(
+                                  widget.description,
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: context.colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.85),
+                                    fontSize: AppTheme.subtitleFontSize,
+                                    height: AppTheme.lineHeightSubtitle,
+                                    letterSpacing:
+                                        AppTheme.letterSpacingSubtitle,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ],
-                            ],
+                            ),
                           ),
 
-                          // Description
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: AppTheme.iconContainerSize +
-                                  AppTheme.spacingLarge,
-                              top: AppTheme.spacingSmall,
-                            ),
-                            child: Text(
-                              widget.description,
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.85),
-                                fontSize: AppTheme.subtitleFontSize,
-                                height: AppTheme.lineHeightSubtitle,
-                                letterSpacing: AppTheme.letterSpacingSubtitle,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                          // Trailing widget
+                          if (widget.trailing != null) ...[
+                            const SizedBox(width: AppTheme.spacingMedium),
+                            widget.trailing!,
+                          ],
                         ],
                       ),
                     ),
