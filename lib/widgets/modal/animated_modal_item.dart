@@ -13,6 +13,7 @@ class AnimatedModalItem extends StatefulWidget {
     this.tapOpacity = 0.8,
     this.hoverElevation = 4,
     this.controller,
+    this.margin,
     super.key,
   });
 
@@ -24,6 +25,7 @@ class AnimatedModalItem extends StatefulWidget {
   final double tapOpacity;
   final double hoverElevation;
   final AnimatedModalItemController? controller;
+  final EdgeInsetsGeometry? margin;
 
   @override
   State<AnimatedModalItem> createState() => _AnimatedModalItemState();
@@ -165,10 +167,11 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
                 opacity: widget.isDisabled ? 0.5 : _tapOpacityAnimation.value,
                 duration: const Duration(milliseconds: 150),
                 child: Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.cardPadding,
-                    vertical: AppTheme.cardSpacing / 2,
-                  ),
+                  margin: widget.margin ??
+                      const EdgeInsets.symmetric(
+                        horizontal: AppTheme.cardPadding,
+                        vertical: AppTheme.cardSpacing / 2,
+                      ),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
