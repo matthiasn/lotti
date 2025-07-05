@@ -289,7 +289,6 @@ void main() {
               icon: Icons.event,
               title: 'Create Event',
               onTap: () => tapCount++,
-              isDisabled: false,
             ),
           ),
         ),

@@ -1261,10 +1261,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: "0ef0d258b8a97ed11a985a5ed348e9ec9428199f73011704704ddd0620a894eb"
+      sha256: "68d5337c8a00fc03a37dbddf84a6fd90401c30e99b6baf497ef9522a81fc34ee"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   graphic:
     dependency: "direct main"
     description:
@@ -2002,10 +2002,10 @@ packages:
     dependency: "direct main"
     description:
       name: permission_handler
-      sha256: "2d070d8684b68efb580a5997eb62f675e8a885ef0be6e754fb9ef489c177470f"
+      sha256: bc917da36261b00137bbc8896bf1482169cd76f866282368948f032c8c1caae1
       url: "https://pub.dev"
     source: hosted
-    version: "12.0.0+1"
+    version: "12.0.1"
   permission_handler_android:
     dependency: transitive
     description:
