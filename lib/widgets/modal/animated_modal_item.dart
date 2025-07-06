@@ -143,6 +143,23 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
     }
   }
 
+  List<BoxShadow>? _buildBoxShadow(BuildContext context, bool isDark) {
+    if (widget.disableShadow) return null;
+
+    return [
+      BoxShadow(
+        color: context.colorScheme.shadow.withValues(
+          alpha: isDark ? AppTheme.alphaShadowDark : AppTheme.alphaShadowLight,
+        ),
+        blurRadius: (isDark
+                ? AppTheme.cardElevationDark
+                : AppTheme.cardElevationLight) +
+            _hoverElevationAnimation.value,
+        offset: AppTheme.shadowOffset,
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -179,22 +196,7 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
                     decoration: BoxDecoration(
                       borderRadius:
                           BorderRadius.circular(AppTheme.cardBorderRadius),
-                      boxShadow: widget.disableShadow
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: context.colorScheme.shadow.withValues(
-                                  alpha: isDark
-                                      ? AppTheme.alphaShadowDark
-                                      : AppTheme.alphaShadowLight,
-                                ),
-                                blurRadius: (isDark
-                                        ? AppTheme.cardElevationDark
-                                        : AppTheme.cardElevationLight) +
-                                    _hoverElevationAnimation.value,
-                                offset: AppTheme.shadowOffset,
-                              ),
-                            ],
+                      boxShadow: _buildBoxShadow(context, isDark),
                     ),
                     child: widget.child,
                   ),

@@ -43,8 +43,8 @@ class ModernModalEntryTypeItem extends StatelessWidget {
                 Transform.scale(
                   scale: iconAnimation.value,
                   child: Container(
-                    width: AppTheme.iconContainerSize * 1.1,
-                    height: AppTheme.iconContainerSize * 1.1,
+                    width: AppTheme.modalIconSpacerWidth,
+                    height: AppTheme.modalIconSpacerWidth,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isPressed
@@ -103,13 +103,13 @@ class ModernModalEntryTypeItem extends StatelessWidget {
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            minHeight: AppTheme.iconContainerSize * 1.1,
+            minHeight: AppTheme.modalIconSpacerWidth,
           ),
           child: Row(
             children: [
               // Spacer for icon
-              const SizedBox(width: AppTheme.iconContainerSize * 1.1),
-              const SizedBox(width: AppTheme.spacingLarge),
+              const SizedBox(width: AppTheme.modalIconSpacerWidth),
+              const SizedBox(width: AppTheme.modalChevronSpacerWidth),
 
               // Title
               Expanded(
