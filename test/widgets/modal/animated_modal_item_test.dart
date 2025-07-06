@@ -102,6 +102,7 @@ void main() {
       );
 
       // Hover animation starts from 0
+      expect(controller.hoverAnimationController.value, 0.0);
 
       // Simulate mouse hover
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -118,7 +119,8 @@ void main() {
       // Let animation progress
       await tester.pump(const Duration(milliseconds: 100));
       // Hover animation is progressing
-      // Hover animation value is within valid range
+      expect(controller.hoverAnimationController.value, greaterThan(0.0));
+      expect(controller.hoverAnimationController.value, lessThanOrEqualTo(1.0));
 
       // Move mouse away
       await gesture.moveTo(const Offset(500, 500));
@@ -129,7 +131,8 @@ void main() {
 
       // Wait for animation to complete
       await tester.pumpAndSettle();
-      // Hover animation starts from 0
+      // Hover animation returns to 0
+      expect(controller.hoverAnimationController.value, 0.0);
     });
 
     testWidgets('tap animation works correctly', (tester) async {
@@ -150,6 +153,7 @@ void main() {
       );
 
       // Tap animation starts from 0
+      expect(controller.tapAnimationController.value, 0.0);
 
       // Start tap
       final gesture = await tester.startGesture(
@@ -163,7 +167,8 @@ void main() {
       // Let animation progress
       await tester.pump(const Duration(milliseconds: 75));
       // Tap animation is progressing
-      // Tap animation value is within valid range
+      expect(controller.tapAnimationController.value, greaterThan(0.0));
+      expect(controller.tapAnimationController.value, lessThanOrEqualTo(1.0));
 
       // End tap
       await gesture.up();
@@ -174,7 +179,8 @@ void main() {
 
       // Wait for animation to complete
       await tester.pumpAndSettle();
-      // Tap animation starts from 0
+      // Tap animation returns to 0
+      expect(controller.tapAnimationController.value, 0.0);
     });
 
     testWidgets('tap cancel works correctly', (tester) async {
@@ -203,6 +209,7 @@ void main() {
       // Let animation progress
       await tester.pump(const Duration(milliseconds: 75));
       // Tap animation is progressing
+      expect(controller.tapAnimationController.value, greaterThan(0.0));
 
       // Cancel tap by moving away
       await gesture.moveBy(const Offset(200, 200));
@@ -214,7 +221,8 @@ void main() {
 
       // Wait for animation to complete
       await tester.pumpAndSettle();
-      // Tap animation starts from 0
+      // Tap animation returns to 0
+      expect(controller.tapAnimationController.value, 0.0);
     });
 
     testWidgets('applies correct container styling', (tester) async {
@@ -268,6 +276,7 @@ void main() {
 
       // Verify shadow animation setup
       // Hover animation starts from 0
+      expect(controller.hoverAnimationController.value, 0.0);
 
       // Trigger hover
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -284,6 +293,7 @@ void main() {
       // Let animation progress and check shadow changes
       await tester.pump(const Duration(milliseconds: 100));
       // Hover animation is progressing
+      expect(controller.hoverAnimationController.value, greaterThan(0.0));
 
       // AnimatedContainer will handle the shadow animation
       // We just verify that the hover animation is working
@@ -346,6 +356,7 @@ void main() {
       // Let hover animation progress
       await tester.pump(const Duration(milliseconds: 100));
       // Hover animation is progressing
+      expect(controller.hoverAnimationController.value, greaterThan(0.0));
 
       // Add tap while hovering
       await gesture.down(tester.getCenter(find.text('Multi Action')));
@@ -353,8 +364,9 @@ void main() {
 
       // Let tap animation progress
       await tester.pump(const Duration(milliseconds: 75));
-      // Hover animation is progressing
-      // Tap animation is progressing
+      // Both animations are progressing
+      expect(controller.hoverAnimationController.value, greaterThan(0.0));
+      expect(controller.tapAnimationController.value, greaterThan(0.0));
 
       // Release tap
       await gesture.up();
@@ -362,8 +374,9 @@ void main() {
 
       // Tap should reverse while hover continues
       await tester.pump(const Duration(milliseconds: 75));
-      // Hover animation is progressing
-      // Tap animation is reversing
+      // Hover animation continues while tap reverses
+      expect(controller.hoverAnimationController.value, greaterThan(0.0));
+      expect(controller.tapAnimationController.value, lessThan(1.0));
 
       // Clean up - move mouse away and let animations complete
       await gesture.moveTo(const Offset(500, 500));
