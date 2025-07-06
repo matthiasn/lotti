@@ -58,12 +58,13 @@ class ModernCreateTaskItem extends ConsumerWidget {
           linkedId: linkedFromId,
           categoryId: categoryId,
         );
+        if (!context.mounted) {
+          return;
+        }
         if (task != null) {
           beamToNamed('/tasks/${task.meta.id}');
         }
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
+        Navigator.of(context).pop();
       },
     );
   }

@@ -63,7 +63,7 @@ class ModernJournalCard extends StatelessWidget {
       onTap: onTap,
       isCompact: isCompact,
       margin: EdgeInsets.symmetric(
-        horizontal: removeHorizontalMargin ? 0 : 12,
+        horizontal: removeHorizontalMargin ? 0 : AppTheme.spacingLarge,
         vertical: AppTheme.cardSpacing / 2,
       ),
       child: _buildContent(context),
