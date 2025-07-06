@@ -40,16 +40,23 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
             final item = items.elementAt(index);
             return item.maybeMap(
               journalImage: (JournalImage image) {
-                return ModernJournalImageCard(
-                  item: image,
-                  key: Key('${item.meta.id}-${item.meta.id}'),
+                return Padding(
+                  padding: const EdgeInsets.only(left: 5, right: 5, bottom: 4),
+                  child: ModernJournalImageCard(
+                    item: image,
+                    key: Key('${item.meta.id}-${item.meta.id}'),
+                  ),
                 );
               },
               orElse: () {
-                return ModernJournalCard(
-                  item: item,
-                  key: Key('${item.meta.id}-${item.meta.id}'),
-                  showLinkedDuration: true,
+                return Padding(
+                  padding: const EdgeInsets.only(left: 5, right: 5, bottom: 4),
+                  child: ModernJournalCard(
+                    item: item,
+                    key: Key('${item.meta.id}-${item.meta.id}'),
+                    showLinkedDuration: true,
+                    removeHorizontalMargin: true,
+                  ),
                 );
               },
             );
