@@ -18,8 +18,6 @@ class AiConfigDb extends _$AiConfigDb {
           ),
         );
 
-  AiConfigDb.connect(super.connection) : super.connect();
-
   bool inMemoryDatabase = false;
 
   @override

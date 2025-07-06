@@ -31,8 +31,6 @@ class EntryDetailHeader extends ConsumerStatefulWidget {
 }
 
 class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
-  bool showAllIcons = false;
-
   @override
   Widget build(BuildContext context) {
     final provider = entryControllerProvider(id: widget.entryId);

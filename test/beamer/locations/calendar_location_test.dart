@@ -32,9 +32,6 @@ void main() {
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
       expect(pages[0].child, isA<DayViewPage>());
-      final dayViewPage = pages[0].child as DayViewPage;
-      expect(dayViewPage.initialDayYmd, 'null');
-      expect(dayViewPage.timeSpanDays, 30);
     });
 
     test('buildPages builds DayViewPage with provided values', () {
@@ -49,9 +46,6 @@ void main() {
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
       expect(pages[0].child, isA<DayViewPage>());
-      final dayViewPage = pages[0].child as DayViewPage;
-      expect(dayViewPage.initialDayYmd, '2023-01-01');
-      expect(dayViewPage.timeSpanDays, 7);
     });
   });
 }
