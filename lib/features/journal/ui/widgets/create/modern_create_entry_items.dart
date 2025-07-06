@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
 /// Modern version of create event item
@@ -53,13 +54,17 @@ class ModernCreateTaskItem extends ConsumerWidget {
       icon: Icons.task_alt_rounded,
       title: 'Task',
       onTap: () async {
-        await createTask(
+        final task = await createTask(
           linkedId: linkedFromId,
           categoryId: categoryId,
         );
-        if (context.mounted) {
-          Navigator.of(context).pop();
+        if (!context.mounted) {
+          return;
         }
+        if (task != null) {
+          beamToNamed('/tasks/${task.meta.id}');
+        }
+        Navigator.of(context).pop();
       },
     );
   }

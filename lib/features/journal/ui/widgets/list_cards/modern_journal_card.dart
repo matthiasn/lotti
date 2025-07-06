@@ -33,6 +33,7 @@ class ModernJournalCard extends StatelessWidget {
     this.maxHeight = 120,
     this.showLinkedDuration = false,
     this.isCompact = false,
+    this.removeHorizontalMargin = false,
     super.key,
   });
   // Widget height constants
@@ -42,6 +43,7 @@ class ModernJournalCard extends StatelessWidget {
   final double maxHeight;
   final bool showLinkedDuration;
   final bool isCompact;
+  final bool removeHorizontalMargin;
 
   @override
   Widget build(BuildContext context) {
@@ -60,8 +62,8 @@ class ModernJournalCard extends StatelessWidget {
     return ModernBaseCard(
       onTap: onTap,
       isCompact: isCompact,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 12,
+      margin: EdgeInsets.symmetric(
+        horizontal: removeHorizontalMargin ? 0 : AppTheme.spacingLarge,
         vertical: AppTheme.cardSpacing / 2,
       ),
       child: _buildContent(context),

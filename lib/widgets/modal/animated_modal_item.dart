@@ -14,6 +14,7 @@ class AnimatedModalItem extends StatefulWidget {
     this.hoverElevation = 4,
     this.controller,
     this.margin,
+    this.disableShadow = false,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class AnimatedModalItem extends StatefulWidget {
   final double hoverElevation;
   final AnimatedModalItemController? controller;
   final EdgeInsetsGeometry? margin;
+  final bool disableShadow;
 
   @override
   State<AnimatedModalItem> createState() => _AnimatedModalItemState();
@@ -177,20 +179,22 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
                     decoration: BoxDecoration(
                       borderRadius:
                           BorderRadius.circular(AppTheme.cardBorderRadius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.colorScheme.shadow.withValues(
-                            alpha: isDark
-                                ? AppTheme.alphaShadowDark
-                                : AppTheme.alphaShadowLight,
-                          ),
-                          blurRadius: (isDark
-                                  ? AppTheme.cardElevationDark
-                                  : AppTheme.cardElevationLight) +
-                              _hoverElevationAnimation.value,
-                          offset: AppTheme.shadowOffset,
-                        ),
-                      ],
+                      boxShadow: widget.disableShadow
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: context.colorScheme.shadow.withValues(
+                                  alpha: isDark
+                                      ? AppTheme.alphaShadowDark
+                                      : AppTheme.alphaShadowLight,
+                                ),
+                                blurRadius: (isDark
+                                        ? AppTheme.cardElevationDark
+                                        : AppTheme.cardElevationLight) +
+                                    _hoverElevationAnimation.value,
+                                offset: AppTheme.shadowOffset,
+                              ),
+                            ],
                     ),
                     child: widget.child,
                   ),

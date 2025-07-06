@@ -18,6 +18,7 @@ import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
 class EntryDetailsWidget extends ConsumerWidget {
@@ -60,17 +61,29 @@ class EntryDetailsWidget extends ConsumerWidget {
     final isAudio = item is JournalAudio;
 
     if (isTask && !showTaskDetails) {
-      return ModernJournalCard(
-        item: item,
-        showLinkedDuration: true,
+      return Padding(
+        padding: const EdgeInsets.only(
+          left: AppTheme.spacingXSmall,
+          right: AppTheme.spacingXSmall,
+          bottom: AppTheme.spacingXSmall,
+        ),
+        child: ModernJournalCard(
+          item: item,
+          showLinkedDuration: true,
+          removeHorizontalMargin: true,
+        ),
       );
     }
 
     return Card(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
-      margin: const EdgeInsets.only(left: 5, right: 5, bottom: 10),
+      margin: const EdgeInsets.only(
+        left: AppTheme.spacingXSmall,
+        right: AppTheme.spacingXSmall,
+        bottom: AppTheme.spacingMedium,
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

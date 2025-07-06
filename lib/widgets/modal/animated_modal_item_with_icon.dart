@@ -13,6 +13,7 @@ class AnimatedModalItemWithIcon extends StatefulWidget {
     this.tapOpacity = 1.0,
     this.hoverElevation = 4,
     this.iconScaleOnTap = 0.9,
+    this.disableShadow = false,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class AnimatedModalItemWithIcon extends StatefulWidget {
   final double tapOpacity;
   final double hoverElevation;
   final double iconScaleOnTap;
+  final bool disableShadow;
 
   @override
   State<AnimatedModalItemWithIcon> createState() =>
@@ -179,20 +181,22 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
                   decoration: BoxDecoration(
                     borderRadius:
                         BorderRadius.circular(AppTheme.cardBorderRadius),
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.colorScheme.shadow.withValues(
-                          alpha: isDark
-                              ? AppTheme.alphaShadowDark
-                              : AppTheme.alphaShadowLight,
-                        ),
-                        blurRadius: (isDark
-                                ? AppTheme.cardElevationDark
-                                : AppTheme.cardElevationLight) +
-                            _hoverElevationAnimation.value,
-                        offset: AppTheme.shadowOffset,
-                      ),
-                    ],
+                    boxShadow: widget.disableShadow
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: context.colorScheme.shadow.withValues(
+                                alpha: isDark
+                                    ? AppTheme.alphaShadowDark
+                                    : AppTheme.alphaShadowLight,
+                              ),
+                              blurRadius: (isDark
+                                      ? AppTheme.cardElevationDark
+                                      : AppTheme.cardElevationLight) +
+                                  _hoverElevationAnimation.value,
+                              offset: AppTheme.shadowOffset,
+                            ),
+                          ],
                   ),
                   child: AnimatedOpacity(
                     opacity:
