@@ -62,7 +62,6 @@ class TestLinkedFromWidget extends StatelessWidget {
   }
 }
 
-
 void main() {
   group('LinkedFromWidget Structure Tests', () {
     testWidgets('renders correctly with image entries', (tester) async {
