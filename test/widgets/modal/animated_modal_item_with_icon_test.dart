@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_with_icon.dart';
 
 void main() {
@@ -292,18 +293,20 @@ void main() {
       );
 
       // Verify the widget tree structure
+      // Now we have multiple AnimatedBuilders since we compose AnimatedModalItem
       expect(
         find.descendant(
           of: find.byType(AnimatedModalItemWithIcon),
           matching: find.byType(AnimatedBuilder),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
 
+      // Verify we have AnimatedModalItem composed
       expect(
         find.descendant(
           of: find.byType(AnimatedModalItemWithIcon),
-          matching: find.byType(GestureDetector),
+          matching: find.byType(AnimatedModalItem),
         ),
         findsOneWidget,
       );
