@@ -210,8 +210,8 @@ void main() {
         // Should show add icon
         expect(find.byIcon(Icons.add_circle_outline_rounded), findsOneWidget);
 
-        // Does NOT use AnimatedModalItem
-        expect(find.byType(AnimatedModalItem), findsNothing);
+        // Now uses AnimatedModalItem through AnimatedModalItemWithIcon
+        expect(find.byType(AnimatedModalItem), findsOneWidget);
 
         // Test tap
         await tester.tap(find.text('Create Event'));
