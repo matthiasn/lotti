@@ -37,6 +37,8 @@ class _FlagsPageState extends State<FlagsPage> {
       GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableCalendarPageFlagKey =
       GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _enablePremiumTaskUiFlagKey =
+      GlobalKey();
 
   static const List<String> displayedItems = [
     privateFlag,
@@ -53,6 +55,7 @@ class _FlagsPageState extends State<FlagsPage> {
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableCalendarPageFlag,
+    enablePremiumTaskUiFlag,
   ];
 
   @override
@@ -88,6 +91,7 @@ class _FlagsPageState extends State<FlagsPage> {
                 _enableHabitsPageFlagKey,
                 _enableDashboardsPageFlagKey,
                 _enableCalendarPageFlagKey,
+                _enablePremiumTaskUiFlagKey,
               ]);
             },
             icon: const Icon(
@@ -144,7 +148,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return _enableDashboardsPageFlagKey;
       case enableCalendarPageFlag:
         return _enableCalendarPageFlagKey;
-
+      case enablePremiumTaskUiFlag:
+        return _enablePremiumTaskUiFlagKey;
       default:
         return null;
     }
