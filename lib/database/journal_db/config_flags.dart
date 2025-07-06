@@ -111,4 +111,11 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enablePremiumTaskUiFlag,
+      description: 'Enable Premium Task UI?',
+      status: false,
+    ),
+  );
 }

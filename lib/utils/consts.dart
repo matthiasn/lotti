@@ -14,3 +14,4 @@ const enableAutoTaskTldrFlag = 'enable_auto_task_tldr';
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableCalendarPageFlag = 'enable_calendar_page';
+const enablePremiumTaskUiFlag = 'enable_premium_task_ui';
