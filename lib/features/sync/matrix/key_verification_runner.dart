@@ -14,7 +14,6 @@ class KeyVerificationRunner {
     required this.name,
   }) {
     lastStep = keyVerification.lastStep ?? '';
-    startedVerification = keyVerification.startedVerification;
     publishState();
 
     _timer = Timer.periodic(
@@ -45,7 +44,6 @@ class KeyVerificationRunner {
 
   String name;
   String lastStep = '';
-  bool? startedVerification;
   List<KeyVerificationEmoji>? emojis;
   KeyVerification keyVerification;
   StreamController<KeyVerificationRunner> controller;

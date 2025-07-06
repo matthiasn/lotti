@@ -352,43 +352,6 @@ void main() {
         verifyNever(() => mockRepository.saveConfig(any()));
       });
     });
-
-    group('getModelIdsForProviderType', () {
-      test('should return correct model IDs for Gemini', () {
-        // Arrange
-        const providerId = 'gemini-provider-id';
-
-        // Act
-        final result = service.getModelIdsForProviderType(
-          providerId,
-          InferenceProviderType.gemini,
-        );
-
-        // Assert
-        expect(result.length, equals(geminiModels.length));
-        // Check that IDs contain the transformed provider ID (hyphens replaced with underscores)
-        final transformedProviderId = providerId.replaceAll('-', '_');
-        expect(
-            result.every((id) => id.contains(transformedProviderId)), isTrue);
-        expect(result.every((id) => !id.contains('/')), isTrue);
-        expect(result.every((id) => !id.contains(':')), isTrue);
-        expect(result.every((id) => !id.contains('-')), isTrue);
-      });
-
-      test('should return empty list for unknown provider type', () {
-        // Arrange
-        const providerId = 'generic-provider-id';
-
-        // Act
-        final result = service.getModelIdsForProviderType(
-          providerId,
-          InferenceProviderType.genericOpenAi,
-        );
-
-        // Assert
-        expect(result, isEmpty);
-      });
-    });
   });
 
   group('generateModelId', () {

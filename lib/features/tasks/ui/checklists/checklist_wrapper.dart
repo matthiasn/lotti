@@ -40,7 +40,6 @@ class ChecklistWrapper extends ConsumerWidget {
         )
         .value;
     final totalCount = res?.totalCount ?? 0;
-    final completedCount = res?.completedCount ?? 0;
 
     if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();
@@ -76,7 +75,6 @@ class ChecklistWrapper extends ConsumerWidget {
         completionRate: completionRate,
         onDelete: ref.read(provider.notifier).delete,
         totalCount: totalCount,
-        completedCount: completedCount,
       ),
     );
   }

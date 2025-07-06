@@ -15,8 +15,6 @@ class SettingsDb extends _$SettingsDb {
           ),
         );
 
-  SettingsDb.connect(super.connection) : super.connect();
-
   bool inMemoryDatabase = false;
 
   @override

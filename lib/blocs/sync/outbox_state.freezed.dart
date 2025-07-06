@@ -19,56 +19,44 @@ mixin _$OutboxState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function() loading,
     required TResult Function() online,
     required TResult Function() disabled,
-    required TResult Function() failed,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function()? loading,
     TResult? Function()? online,
     TResult? Function()? disabled,
-    TResult? Function()? failed,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function()? loading,
     TResult Function()? online,
     TResult Function()? disabled,
-    TResult Function()? failed,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Initial value) initial,
-    required TResult Function(_Loading value) loading,
     required TResult Function(_Online value) online,
     required TResult Function(OutboxDisabled value) disabled,
-    required TResult Function(_Failed value) failed,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Initial value)? initial,
-    TResult? Function(_Loading value)? loading,
     TResult? Function(_Online value)? online,
     TResult? Function(OutboxDisabled value)? disabled,
-    TResult? Function(_Failed value)? failed,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Initial value)? initial,
-    TResult Function(_Loading value)? loading,
     TResult Function(_Online value)? online,
     TResult Function(OutboxDisabled value)? disabled,
-    TResult Function(_Failed value)? failed,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -137,10 +125,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function() loading,
     required TResult Function() online,
     required TResult Function() disabled,
-    required TResult Function() failed,
   }) {
     return initial();
   }
@@ -149,10 +135,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function()? loading,
     TResult? Function()? online,
     TResult? Function()? disabled,
-    TResult? Function()? failed,
   }) {
     return initial?.call();
   }
@@ -161,10 +145,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function()? loading,
     TResult Function()? online,
     TResult Function()? disabled,
-    TResult Function()? failed,
     required TResult orElse(),
   }) {
     if (initial != null) {
@@ -177,10 +159,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Initial value) initial,
-    required TResult Function(_Loading value) loading,
     required TResult Function(_Online value) online,
     required TResult Function(OutboxDisabled value) disabled,
-    required TResult Function(_Failed value) failed,
   }) {
     return initial(this);
   }
@@ -189,10 +169,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Initial value)? initial,
-    TResult? Function(_Loading value)? loading,
     TResult? Function(_Online value)? online,
     TResult? Function(OutboxDisabled value)? disabled,
-    TResult? Function(_Failed value)? failed,
   }) {
     return initial?.call(this);
   }
@@ -201,10 +179,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Initial value)? initial,
-    TResult Function(_Loading value)? loading,
     TResult Function(_Online value)? online,
     TResult Function(OutboxDisabled value)? disabled,
-    TResult Function(_Failed value)? failed,
     required TResult orElse(),
   }) {
     if (initial != null) {
@@ -216,129 +192,6 @@ class _$InitialImpl implements _Initial {
 
 abstract class _Initial implements OutboxState {
   factory _Initial() = _$InitialImpl;
-}
-
-/// @nodoc
-abstract class _$$LoadingImplCopyWith<$Res> {
-  factory _$$LoadingImplCopyWith(
-          _$LoadingImpl value, $Res Function(_$LoadingImpl) then) =
-      __$$LoadingImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$LoadingImplCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$LoadingImpl>
-    implements _$$LoadingImplCopyWith<$Res> {
-  __$$LoadingImplCopyWithImpl(
-      _$LoadingImpl _value, $Res Function(_$LoadingImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of OutboxState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$LoadingImpl implements _Loading {
-  _$LoadingImpl();
-
-  @override
-  String toString() {
-    return 'OutboxState.loading()';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$LoadingImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function() loading,
-    required TResult Function() online,
-    required TResult Function() disabled,
-    required TResult Function() failed,
-  }) {
-    return loading();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function()? loading,
-    TResult? Function()? online,
-    TResult? Function()? disabled,
-    TResult? Function()? failed,
-  }) {
-    return loading?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function()? loading,
-    TResult Function()? online,
-    TResult Function()? disabled,
-    TResult Function()? failed,
-    required TResult orElse(),
-  }) {
-    if (loading != null) {
-      return loading();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Initial value) initial,
-    required TResult Function(_Loading value) loading,
-    required TResult Function(_Online value) online,
-    required TResult Function(OutboxDisabled value) disabled,
-    required TResult Function(_Failed value) failed,
-  }) {
-    return loading(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Initial value)? initial,
-    TResult? Function(_Loading value)? loading,
-    TResult? Function(_Online value)? online,
-    TResult? Function(OutboxDisabled value)? disabled,
-    TResult? Function(_Failed value)? failed,
-  }) {
-    return loading?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Initial value)? initial,
-    TResult Function(_Loading value)? loading,
-    TResult Function(_Online value)? online,
-    TResult Function(OutboxDisabled value)? disabled,
-    TResult Function(_Failed value)? failed,
-    required TResult orElse(),
-  }) {
-    if (loading != null) {
-      return loading(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class _Loading implements OutboxState {
-  factory _Loading() = _$LoadingImpl;
 }
 
 /// @nodoc
@@ -383,10 +236,8 @@ class _$OnlineImpl implements _Online {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function() loading,
     required TResult Function() online,
     required TResult Function() disabled,
-    required TResult Function() failed,
   }) {
     return online();
   }
@@ -395,10 +246,8 @@ class _$OnlineImpl implements _Online {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function()? loading,
     TResult? Function()? online,
     TResult? Function()? disabled,
-    TResult? Function()? failed,
   }) {
     return online?.call();
   }
@@ -407,10 +256,8 @@ class _$OnlineImpl implements _Online {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function()? loading,
     TResult Function()? online,
     TResult Function()? disabled,
-    TResult Function()? failed,
     required TResult orElse(),
   }) {
     if (online != null) {
@@ -423,10 +270,8 @@ class _$OnlineImpl implements _Online {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Initial value) initial,
-    required TResult Function(_Loading value) loading,
     required TResult Function(_Online value) online,
     required TResult Function(OutboxDisabled value) disabled,
-    required TResult Function(_Failed value) failed,
   }) {
     return online(this);
   }
@@ -435,10 +280,8 @@ class _$OnlineImpl implements _Online {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Initial value)? initial,
-    TResult? Function(_Loading value)? loading,
     TResult? Function(_Online value)? online,
     TResult? Function(OutboxDisabled value)? disabled,
-    TResult? Function(_Failed value)? failed,
   }) {
     return online?.call(this);
   }
@@ -447,10 +290,8 @@ class _$OnlineImpl implements _Online {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Initial value)? initial,
-    TResult Function(_Loading value)? loading,
     TResult Function(_Online value)? online,
     TResult Function(OutboxDisabled value)? disabled,
-    TResult Function(_Failed value)? failed,
     required TResult orElse(),
   }) {
     if (online != null) {
@@ -506,10 +347,8 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function() loading,
     required TResult Function() online,
     required TResult Function() disabled,
-    required TResult Function() failed,
   }) {
     return disabled();
   }
@@ -518,10 +357,8 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function()? loading,
     TResult? Function()? online,
     TResult? Function()? disabled,
-    TResult? Function()? failed,
   }) {
     return disabled?.call();
   }
@@ -530,10 +367,8 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function()? loading,
     TResult Function()? online,
     TResult Function()? disabled,
-    TResult Function()? failed,
     required TResult orElse(),
   }) {
     if (disabled != null) {
@@ -546,10 +381,8 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Initial value) initial,
-    required TResult Function(_Loading value) loading,
     required TResult Function(_Online value) online,
     required TResult Function(OutboxDisabled value) disabled,
-    required TResult Function(_Failed value) failed,
   }) {
     return disabled(this);
   }
@@ -558,10 +391,8 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Initial value)? initial,
-    TResult? Function(_Loading value)? loading,
     TResult? Function(_Online value)? online,
     TResult? Function(OutboxDisabled value)? disabled,
-    TResult? Function(_Failed value)? failed,
   }) {
     return disabled?.call(this);
   }
@@ -570,10 +401,8 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Initial value)? initial,
-    TResult Function(_Loading value)? loading,
     TResult Function(_Online value)? online,
     TResult Function(OutboxDisabled value)? disabled,
-    TResult Function(_Failed value)? failed,
     required TResult orElse(),
   }) {
     if (disabled != null) {
@@ -585,127 +414,4 @@ class _$OutboxDisabledImpl implements OutboxDisabled {
 
 abstract class OutboxDisabled implements OutboxState {
   factory OutboxDisabled() = _$OutboxDisabledImpl;
-}
-
-/// @nodoc
-abstract class _$$FailedImplCopyWith<$Res> {
-  factory _$$FailedImplCopyWith(
-          _$FailedImpl value, $Res Function(_$FailedImpl) then) =
-      __$$FailedImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$FailedImplCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$FailedImpl>
-    implements _$$FailedImplCopyWith<$Res> {
-  __$$FailedImplCopyWithImpl(
-      _$FailedImpl _value, $Res Function(_$FailedImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of OutboxState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$FailedImpl implements _Failed {
-  _$FailedImpl();
-
-  @override
-  String toString() {
-    return 'OutboxState.failed()';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$FailedImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function() loading,
-    required TResult Function() online,
-    required TResult Function() disabled,
-    required TResult Function() failed,
-  }) {
-    return failed();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function()? loading,
-    TResult? Function()? online,
-    TResult? Function()? disabled,
-    TResult? Function()? failed,
-  }) {
-    return failed?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function()? loading,
-    TResult Function()? online,
-    TResult Function()? disabled,
-    TResult Function()? failed,
-    required TResult orElse(),
-  }) {
-    if (failed != null) {
-      return failed();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Initial value) initial,
-    required TResult Function(_Loading value) loading,
-    required TResult Function(_Online value) online,
-    required TResult Function(OutboxDisabled value) disabled,
-    required TResult Function(_Failed value) failed,
-  }) {
-    return failed(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Initial value)? initial,
-    TResult? Function(_Loading value)? loading,
-    TResult? Function(_Online value)? online,
-    TResult? Function(OutboxDisabled value)? disabled,
-    TResult? Function(_Failed value)? failed,
-  }) {
-    return failed?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Initial value)? initial,
-    TResult Function(_Loading value)? loading,
-    TResult Function(_Online value)? online,
-    TResult Function(OutboxDisabled value)? disabled,
-    TResult Function(_Failed value)? failed,
-    required TResult orElse(),
-  }) {
-    if (failed != null) {
-      return failed(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class _Failed implements OutboxState {
-  factory _Failed() = _$FailedImpl;
 }

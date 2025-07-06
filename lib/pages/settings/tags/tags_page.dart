@@ -12,12 +12,10 @@ import 'package:lotti/widgets/settings/settings_card.dart';
 class TagCard extends StatelessWidget {
   const TagCard({
     required this.tagEntity,
-    required this.index,
     super.key,
   });
 
   final TagEntity tagEntity;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +43,7 @@ class TagsPage extends StatelessWidget {
       searchCallback: (match) {
         getIt<TagsService>().match = match;
       },
-      definitionCard: (int index, TagEntity item) =>
-          TagCard(tagEntity: item, index: index),
+      definitionCard: (int index, TagEntity item) => TagCard(tagEntity: item),
     );
   }
 }

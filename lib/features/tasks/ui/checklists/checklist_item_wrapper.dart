@@ -97,7 +97,6 @@ class ChecklistItemWrapper extends ConsumerWidget {
                 isChecked: item.data.isChecked,
                 onChanged: (checked) =>
                     ref.read(provider.notifier).updateChecked(checked: checked),
-                onDelete: ref.read(provider.notifier).delete,
                 onTitleChange: ref.read(provider.notifier).updateTitle,
               ),
             ),

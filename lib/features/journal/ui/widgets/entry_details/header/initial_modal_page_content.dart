@@ -45,10 +45,7 @@ class InitialModalPageContent extends StatelessWidget {
           pageIndexNotifier: pageIndexNotifier,
         ),
         ModernShareItem(entryId: entryId),
-        ModernTagAddItem(
-          entryId: entryId,
-          pageIndexNotifier: pageIndexNotifier,
-        ),
+        ModernTagAddItem(pageIndexNotifier: pageIndexNotifier),
         ModernModalActionItem(
           icon: Icons.add_link,
           title: context.messages.journalLinkFromHint,

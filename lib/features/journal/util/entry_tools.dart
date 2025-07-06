@@ -25,14 +25,6 @@ String formatDuration(Duration? duration) {
   return durationString;
 }
 
-String formatSeconds(Duration? duration) {
-  if (duration == null) {
-    return '';
-  }
-
-  return '${duration.inSeconds}s';
-}
-
 // ignore: avoid_positional_boolean_parameters
 bool fromNullableBool(bool? value) {
   if (value != null) {

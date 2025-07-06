@@ -12,16 +12,10 @@ class CalendarLocation extends BeamLocation<BeamState> {
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    final ymd = state.queryParameters['ymd'];
-    final timeSpanDays = state.queryParameters['timeSpanDays'];
-
     return [
-      BeamPage(
-        key: const ValueKey('calendar_page'),
-        child: DayViewPage(
-          initialDayYmd: '$ymd',
-          timeSpanDays: int.tryParse(timeSpanDays ?? '30') ?? 30,
-        ),
+      const BeamPage(
+        key: ValueKey('calendar_page'),
+        child: DayViewPage(),
       ),
     ];
   }

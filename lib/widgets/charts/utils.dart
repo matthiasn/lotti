@@ -254,12 +254,6 @@ String formatHhMm(Duration dur) {
   return '${padLeft(dur.inHours)}:${padLeft(dur.inMinutes.remainder(60))}';
 }
 
-String formatHhMmSs(Duration dur) {
-  return '${padLeft(dur.inHours)}:'
-      '${padLeft(dur.inMinutes.remainder(60))}:'
-      '${padLeft(dur.inSeconds.remainder(60))}';
-}
-
 Duration durationFromMinutes(num? minutes) {
   final value = minutes ?? 0;
   final seconds = value * 60;
@@ -270,20 +264,7 @@ String minutesToHhMm(num? minutes) {
   return formatHhMm(durationFromMinutes(minutes));
 }
 
-String minutesToHhMmSs(num? minutes) {
-  return formatHhMmSs(durationFromMinutes(minutes));
-}
-
 String hoursToHhMm(num? hours) {
   final value = hours ?? 0;
   return minutesToHhMm(value * 60);
-}
-
-String formatDailyAggregate(
-  DashboardWorkoutItem chartConfig,
-  Observation selected,
-) {
-  return chartConfig.displayName.contains('time')
-      ? minutesToHhMmSs(selected.value)
-      : NumberFormat('#,###').format(selected.value);
 }

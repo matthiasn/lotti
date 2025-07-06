@@ -31,11 +31,6 @@ void main() {
           await db?.oldestOutboxItems(100),
           <OutboxItem>[],
         );
-
-        expect(
-          await db?.allOutboxItems,
-          <OutboxItem>[],
-        );
       },
     );
 
@@ -86,30 +81,6 @@ void main() {
         expect(
           await db?.oldestOutboxItems(100),
           <OutboxItem>[
-            OutboxItem(
-              id: 2,
-              createdAt: DateTime(2022, 7, 7, 14),
-              updatedAt: DateTime(2022, 7, 7, 14),
-              status: OutboxStatus.pending.index,
-              retries: 0,
-              message: 'jsonString',
-              subject: 'subject',
-            ),
-          ],
-        );
-
-        expect(
-          await db?.allOutboxItems,
-          <OutboxItem>[
-            OutboxItem(
-              id: 1,
-              createdAt: DateTime(2022, 7, 7, 13),
-              updatedAt: DateTime(2022, 7, 7, 13),
-              status: OutboxStatus.sent.index,
-              retries: 2,
-              message: 'jsonString',
-              subject: 'subject',
-            ),
             OutboxItem(
               id: 2,
               createdAt: DateTime(2022, 7, 7, 14),

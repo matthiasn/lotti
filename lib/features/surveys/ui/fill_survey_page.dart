@@ -1,7 +1,6 @@
 // modified from https://github.com/cph-cachet/research.package/blob/master/example/lib/linear_survey_page.dart
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -68,7 +67,6 @@ class FillSurveyPage extends StatelessWidget {
                 context: context,
                 themeData: Theme.of(context),
               ),
-              primaryColor: CupertinoColors.systemOrange,
             ),
             const SizedBox(height: 20),
             RoundedButton(
@@ -78,7 +76,6 @@ class FillSurveyPage extends StatelessWidget {
                 context: context,
                 themeData: Theme.of(context),
               ),
-              primaryColor: CupertinoColors.systemOrange,
             ),
           ],
         ),

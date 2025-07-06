@@ -87,19 +87,4 @@ class ModelPrepopulationService {
 
     return prepopulateModelsForProvider(providerConfig);
   }
-
-  /// Gets a list of model IDs that would be created for a provider type.
-  ///
-  /// This is useful for testing or preview purposes.
-  List<String> getModelIdsForProviderType(
-    String providerId,
-    InferenceProviderType providerType,
-  ) {
-    final knownModels = knownModelsByProvider[providerType];
-    if (knownModels == null) return [];
-
-    return knownModels
-        .map((model) => generateModelId(providerId, model.providerModelId))
-        .toList();
-  }
 }

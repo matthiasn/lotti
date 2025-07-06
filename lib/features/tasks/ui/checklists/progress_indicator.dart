@@ -4,14 +4,10 @@ import 'package:lotti/themes/colors.dart';
 class ChecklistProgressIndicator extends StatelessWidget {
   const ChecklistProgressIndicator({
     required this.completionRate,
-    required this.completedCount,
-    required this.totalCount,
     super.key,
   });
 
   final double completionRate;
-  final int completedCount;
-  final int totalCount;
 
   @override
   Widget build(BuildContext context) {

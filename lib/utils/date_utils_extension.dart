@@ -12,12 +12,4 @@ extension DateUtilsExtension on DateTime {
   String get md => DateFormat(DateFormat.ABBR_MONTH_DAY).format(this);
 
   String get ymwd => DateFormat(DateFormat.YEAR_MONTH_WEEKDAY_DAY).format(this);
-
-  static DateTime? fromYmd(String ymd) {
-    try {
-      return DateTime.parse(ymd);
-    } catch (e) {
-      return null;
-    }
-  }
 }

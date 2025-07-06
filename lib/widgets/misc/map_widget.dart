@@ -16,7 +16,6 @@ class MapWidget extends StatefulWidget {
 
 class _MapWidgetState extends State<MapWidget> {
   late final MapController mapController;
-  bool ignoring = true;
 
   @override
   void initState() {

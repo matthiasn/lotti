@@ -89,12 +89,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
             shrinkWrap: true,
             children: List.generate(
               items.length,
-              (int index) {
-                return ConflictCard(
-                  conflict: items.elementAt(index),
-                  index: index,
-                );
-              },
+              (int index) => ConflictCard(conflict: items.elementAt(index)),
             ),
           ),
         );
@@ -110,12 +105,10 @@ String statusString(Conflict conflict) {
 class ConflictCard extends StatelessWidget {
   const ConflictCard({
     required this.conflict,
-    required this.index,
     super.key,
   });
 
   final Conflict conflict;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
