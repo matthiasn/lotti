@@ -23,18 +23,6 @@ class AnimatedModalItemController extends ChangeNotifier {
   late final AnimationController _hoverAnimationController;
   late final AnimationController _tapAnimationController;
 
-  /// Whether hover animation is active
-  bool get isHovering => _hoverAnimationController.value > 0;
-
-  /// Whether tap animation is active
-  bool get isTapping => _tapAnimationController.value > 0;
-
-  /// Current hover animation value (0.0 to 1.0)
-  double get hoverValue => _hoverAnimationController.value;
-
-  /// Current tap animation value (0.0 to 1.0)
-  double get tapValue => _tapAnimationController.value;
-
   /// Animation controller for hover effects (exposed for AnimatedBuilder)
   AnimationController get hoverAnimationController => _hoverAnimationController;
 

@@ -7,7 +7,6 @@ final Color oldPrimaryColor = colorFromCssHex('#82E6CE');
 final Color oldPrimaryColorLight = colorFromCssHex('#CFF3EA');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color nickel = colorFromCssHex('#B4B2B2');
-final Color cardColor = oldPrimaryColor.desaturate(60).darken(60);
 
 final Color successColor = colorFromCssHex('#34C191');
 final Color failColor = colorFromCssHex('#FF7373');

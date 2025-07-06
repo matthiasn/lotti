@@ -16,10 +16,4 @@ class VuMeterConstants {
 
   /// Duration to hold the clip indicator lit
   static const clipHoldDuration = Duration(milliseconds: 150);
-
-  /// Reference level for 0 VU in input decibels
-  static const referenceLevel = 130.0;
-
-  /// Scale factor for converting input decibels to VU dB
-  static const decibelScaleFactor = 4.0;
 }

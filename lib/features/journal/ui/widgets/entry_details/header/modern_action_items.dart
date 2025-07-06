@@ -263,12 +263,10 @@ class ModernShareItem extends ConsumerWidget {
 /// Modern styled tag add action item
 class ModernTagAddItem extends StatelessWidget {
   const ModernTagAddItem({
-    required this.entryId,
     required this.pageIndexNotifier,
     super.key,
   });
 
-  final String entryId;
   final ValueNotifier<int> pageIndexNotifier;
 
   @override

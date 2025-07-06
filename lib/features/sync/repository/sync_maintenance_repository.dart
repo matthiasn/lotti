@@ -7,13 +7,6 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
-/// Interface for entities that can be synced
-abstract class SyncableEntity {
-  bool get isDeleted;
-
-  String get id;
-}
-
 class SyncMaintenanceRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final OutboxService _outboxService = getIt<OutboxService>();

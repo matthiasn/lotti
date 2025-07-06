@@ -227,18 +227,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               });
             }
 
-            // TODO: bring back or remove
-            // final storySelectItems =
-            //     tagsService.getAllStoryTags().map((StoryTag storyTag) {
-            //   return MultiSelectItem<DashboardStoryTimeItem>(
-            //     DashboardStoryTimeItem(
-            //       storyTagId: storyTag.id,
-            //       color: '#82E6CE',
-            //     ),
-            //     storyTag.tag,
-            //   );
-            // }).toList();
-
             Future<DashboardDefinition> saveDashboard() async {
               formKey.currentState!.save();
               if (formKey.currentState!.validate()) {

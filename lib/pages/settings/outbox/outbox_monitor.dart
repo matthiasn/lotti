@@ -76,7 +76,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                   (int index) {
                     return OutboxItemCard(
                       item: items.elementAt(index),
-                      index: index,
                     );
                   },
                 ),
@@ -92,13 +91,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 class OutboxItemCard extends StatelessWidget {
   OutboxItemCard({
     required this.item,
-    required this.index,
     super.key,
   });
 
   final SyncDatabase _db = getIt<SyncDatabase>();
   final OutboxItem item;
-  final int index;
 
   @override
   Widget build(BuildContext context) {

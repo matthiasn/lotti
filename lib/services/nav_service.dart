@@ -111,17 +111,6 @@ class NavService {
   int get journalIndex => beamerDelegates.indexOf(journalDelegate);
   int get settingsIndex => beamerDelegates.indexOf(settingsDelegate);
 
-  List<String> get availableTabs {
-    return [
-      'tasks',
-      'calendar',
-      'habits',
-      'dashboards',
-      'journal',
-      'settings',
-    ];
-  }
-
   void setTabRoot(int newIndex) {
     if (index == tasksIndex) {
       beamToNamed('/tasks');
@@ -141,10 +130,6 @@ class NavService {
     if (index == settingsIndex) {
       beamToNamed('/settings');
     }
-  }
-
-  bool isTasksTabActive() {
-    return index == tasksIndex;
   }
 
   void setIndex(int newIndex) {

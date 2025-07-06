@@ -16,16 +16,4 @@ class AudioUtils {
   static String getAudioPath(JournalAudio j, Directory docDir) {
     return '${docDir.path}${getRelativeAudioPath(j)}';
   }
-
-  static Future<void> moveToTrash(JournalAudio journalDbAudio) async {
-    final docDir = getDocumentsDirectory();
-    final trashDirectory =
-        await Directory('${docDir.path}/audio/trash/').create(recursive: true);
-    final fullAudioPath = await AudioUtils.getFullAudioPath(journalDbAudio);
-
-    await File(fullAudioPath)
-        .rename('${trashDirectory.path}/${journalDbAudio.data.audioFile}');
-    await File('$fullAudioPath.json')
-        .rename('${trashDirectory.path}/${journalDbAudio.data.audioFile}.json');
-  }
 }

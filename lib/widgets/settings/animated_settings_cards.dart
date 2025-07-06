@@ -1,69 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_with_icon.dart';
-
-/// A modern settings card wrapped with animations
-class AnimatedModernSettingsCard extends StatelessWidget {
-  const AnimatedModernSettingsCard({
-    required this.title,
-    required this.onTap,
-    this.subtitle,
-    this.leading,
-    this.trailing,
-    this.isCompact = false,
-    this.showChevron = true,
-    this.backgroundColor,
-    this.borderColor,
-    super.key,
-  });
-
-  final String title;
-  final String? subtitle;
-  final Widget? leading;
-  final Widget? trailing;
-  final VoidCallback onTap;
-  final bool isCompact;
-  final bool showChevron;
-  final Color? backgroundColor;
-  final Color? borderColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedModalItem(
-      onTap: onTap,
-      child: ModernBaseCard(
-        backgroundColor: backgroundColor,
-        borderColor: borderColor,
-        isCompact: isCompact,
-        child: ModernCardContent(
-          title: title,
-          subtitle: subtitle,
-          leading: leading,
-          isCompact: isCompact,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (trailing != null) trailing!,
-              if (showChevron) ...[
-                if (trailing != null) SizedBox(width: isCompact ? 4 : 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: isCompact
-                      ? AppTheme.chevronSizeCompact
-                      : AppTheme.chevronSize,
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// A modern settings card with icon wrapped with animations
 class AnimatedModernSettingsCardWithIcon extends StatelessWidget {

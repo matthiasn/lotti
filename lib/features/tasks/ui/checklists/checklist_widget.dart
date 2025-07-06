@@ -18,7 +18,6 @@ class ChecklistWidget extends StatefulWidget {
     required this.taskId,
     required this.updateItemOrder,
     required this.totalCount,
-    required this.completedCount,
     this.onDelete,
     super.key,
   });
@@ -35,7 +34,6 @@ class ChecklistWidget extends StatefulWidget {
   final double completionRate;
   final VoidCallback? onDelete;
   final int totalCount;
-  final int completedCount;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -96,8 +94,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
             children: [
               ChecklistProgressIndicator(
                 completionRate: widget.completionRate,
-                totalCount: widget.totalCount,
-                completedCount: widget.completedCount,
               ),
               const SizedBox(width: 10),
               Expanded(

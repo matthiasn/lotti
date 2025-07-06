@@ -154,54 +154,6 @@ void main() {
       });
     });
 
-    group('setIndicatorVisible', () {
-      test('should update showIndicator to true', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier);
-        expect(container.read(audioRecorderControllerProvider).showIndicator,
-            isFalse);
-
-        // Act
-        controller.setIndicatorVisible(showIndicator: true);
-
-        // Assert
-        expect(container.read(audioRecorderControllerProvider).showIndicator,
-            isTrue);
-      });
-
-      test('should update showIndicator to false', () {
-        // Arrange
-        final controller = container
-            .read(audioRecorderControllerProvider.notifier)
-          ..setIndicatorVisible(showIndicator: true);
-        expect(container.read(audioRecorderControllerProvider).showIndicator,
-            isTrue);
-
-        // Act
-        controller.setIndicatorVisible(showIndicator: false);
-
-        // Assert
-        expect(container.read(audioRecorderControllerProvider).showIndicator,
-            isFalse);
-      });
-
-      test('should emit new state with updated showIndicator', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier);
-        expect(container.read(audioRecorderControllerProvider).showIndicator,
-            isFalse);
-
-        // Act
-        controller.setIndicatorVisible(showIndicator: true);
-
-        // Assert
-        expect(container.read(audioRecorderControllerProvider).showIndicator,
-            isTrue);
-      });
-    });
-
     group('setModalVisible', () {
       test('should update modalVisible to true', () {
         // Arrange
@@ -361,10 +313,9 @@ void main() {
       test('should maintain other state properties when pausing', () async {
         // Arrange
         const language = 'en-US';
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              ..setLanguage(language)
-              ..setIndicatorVisible(showIndicator: true);
+        final controller = container
+            .read(audioRecorderControllerProvider.notifier)
+          ..setLanguage(language);
 
         final initialProgress =
             container.read(audioRecorderControllerProvider).progress;
@@ -379,7 +330,7 @@ void main() {
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.paused));
         expect(state.language, equals(language));
-        expect(state.showIndicator, isTrue);
+        expect(state.showIndicator, isFalse); // showIndicator remains false
         expect(state.progress, equals(initialProgress));
         expect(state.vu, equals(initialVu));
         expect(state.dBFS, equals(initialDbfs));
@@ -959,15 +910,13 @@ void main() {
       // Act
       controller
         ..setLanguage('en')
-        ..setIndicatorVisible(showIndicator: true)
         ..setModalVisible(modalVisible: true);
 
       // Assert
-      expect(states.length, equals(4)); // Initial + 3 changes
+      expect(states.length, equals(3)); // Initial + 2 changes
       expect(states[0].language, equals(''));
       expect(states[1].language, equals('en'));
-      expect(states[2].showIndicator, isTrue);
-      expect(states[3].modalVisible, isTrue);
+      expect(states[2].modalVisible, isTrue);
     });
 
     test('should maintain state consistency across multiple operations', () {
@@ -976,14 +925,14 @@ void main() {
 
         // Act - Perform multiple state changes
         ..setLanguage('de')
-        ..setIndicatorVisible(showIndicator: true)
         ..setCategoryId('category-123')
         ..setModalVisible(modalVisible: true);
 
       // Assert - All state properties should be as expected
       final state = container.read(audioRecorderControllerProvider);
       expect(state.language, equals('de'));
-      expect(state.showIndicator, isTrue);
+      expect(state.showIndicator,
+          isFalse); // showIndicator stays false unless recording
       expect(state.modalVisible, isTrue);
       expect(state.status, equals(AudioRecorderStatus.initializing));
       expect(state.progress, equals(Duration.zero));

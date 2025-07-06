@@ -1,19 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class RoundedButton extends StatelessWidget {
   const RoundedButton(
     this.label, {
     required this.onPressed,
-    this.primaryColor = CupertinoColors.activeBlue,
-    this.textColor = CupertinoColors.white,
     this.padding = const EdgeInsets.all(4),
     super.key,
   });
 
   final String label;
-  final Color primaryColor;
-  final Color textColor;
   final void Function()? onPressed;
   final EdgeInsets padding;
 

@@ -251,12 +251,6 @@ class AudioRecorderController extends _$AudioRecorderController {
     state = state.copyWith(language: language);
   }
 
-  /// Controls visibility of the floating recording indicator.
-  /// [showIndicator] Whether to show the indicator when recording and modal is closed.
-  void setIndicatorVisible({required bool showIndicator}) {
-    state = state.copyWith(showIndicator: showIndicator);
-  }
-
   /// Controls visibility of the recording modal.
   /// Used to coordinate indicator display when modal is open/closed.
   /// [modalVisible] Whether the recording modal is currently visible.

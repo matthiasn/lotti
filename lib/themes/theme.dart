@@ -73,9 +73,6 @@ class AppTheme {
   // Offset for shadows
   static const Offset shadowOffset = Offset(0, 2);
 
-  // Border width
-  static const double borderWidth = 1;
-
   // Status indicator constants
   static const double statusIndicatorPaddingHorizontal = 6;
   static const double statusIndicatorPaddingHorizontalCompact = 5;

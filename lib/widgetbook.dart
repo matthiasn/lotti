@@ -135,7 +135,6 @@ class WidgetbookApp extends StatelessWidget {
                       ],
                       completionRate: 0.5,
                       totalCount: 4,
-                      completedCount: 2,
                       onCreateChecklistItem: (title) async {
                         return null;
                       },

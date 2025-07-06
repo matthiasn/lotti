@@ -11,7 +11,6 @@ class ChecklistItemWidget extends StatefulWidget {
     required this.title,
     required this.isChecked,
     required this.onChanged,
-    this.onDelete,
     this.onTitleChange,
     this.showEditIcon = true,
     this.readOnly = false,
@@ -25,7 +24,6 @@ class ChecklistItemWidget extends StatefulWidget {
   final bool showEditIcon;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
   final StringCallback? onTitleChange;
 
   @override

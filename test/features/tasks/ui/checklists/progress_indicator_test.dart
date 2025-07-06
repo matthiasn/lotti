@@ -12,8 +12,6 @@ void main() {
         const WidgetTestBench(
           child: ChecklistProgressIndicator(
             completionRate: 0.5,
-            completedCount: 2,
-            totalCount: 4,
           ),
         ),
       );
@@ -38,8 +36,6 @@ void main() {
         const WidgetTestBench(
           child: ChecklistProgressIndicator(
             completionRate: completionRate,
-            completedCount: 3,
-            totalCount: 4,
           ),
         ),
       );
@@ -63,8 +59,6 @@ void main() {
         const WidgetTestBench(
           child: ChecklistProgressIndicator(
             completionRate: 0,
-            completedCount: 0,
-            totalCount: 5,
           ),
         ),
       );
@@ -79,8 +73,6 @@ void main() {
         const WidgetTestBench(
           child: ChecklistProgressIndicator(
             completionRate: 1,
-            completedCount: 5,
-            totalCount: 5,
           ),
         ),
       );
@@ -97,8 +89,6 @@ void main() {
         const WidgetTestBench(
           child: ChecklistProgressIndicator(
             completionRate: 0,
-            completedCount: 0,
-            totalCount: 0,
           ),
         ),
       );

@@ -23,14 +23,5 @@ void main() {
     test('ymd returns date in YYYY-MM-DD format', () {
       expect(testDate.ymd, '2024-07-27');
     });
-
-    test('fromYmd parses a valid YYYY-MM-DD string', () {
-      final expected = DateTime(2024, 7, 27);
-      expect(DateUtilsExtension.fromYmd('2024-07-27'), expected);
-    });
-
-    test('fromYmd returns null for an invalid string', () {
-      expect(DateUtilsExtension.fromYmd('invalid-date'), isNull);
-    });
   });
 }

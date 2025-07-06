@@ -16,16 +16,11 @@ import 'package:tinycolor2/tinycolor2.dart';
 class HabitCompletionRateChart extends StatelessWidget
     implements PreferredSizeWidget {
   const HabitCompletionRateChart({
-    this.showSuccessful = true,
-    this.showSkipped = true,
     super.key,
   });
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  final bool showSuccessful;
-  final bool showSkipped;
 
   @override
   Widget build(BuildContext context) {
