@@ -34,6 +34,7 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedModalItemWithIcon(
       onTap: onTap,
+      disableShadow: true, // ModernBaseCard already has its own shadow
       iconBuilder: (context, iconAnimation, {required isPressed}) {
         return Positioned(
           left: isCompact ? 12 : 16,
@@ -114,6 +115,7 @@ class AnimatedModernMaintenanceCard extends StatelessWidget {
 
     return AnimatedModalItemWithIcon(
       onTap: onTap,
+      disableShadow: true, // ModernBaseCard already has its own shadow
       iconBuilder: icon != null
           ? (context, iconAnimation, {required isPressed}) {
               return Positioned(

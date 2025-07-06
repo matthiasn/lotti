@@ -60,9 +60,13 @@ class EntryDetailsWidget extends ConsumerWidget {
     final isAudio = item is JournalAudio;
 
     if (isTask && !showTaskDetails) {
-      return ModernJournalCard(
-        item: item,
-        showLinkedDuration: true,
+      return Padding(
+        padding: const EdgeInsets.only(left: 5, right: 5, bottom: 4),
+        child: ModernJournalCard(
+          item: item,
+          showLinkedDuration: true,
+          removeHorizontalMargin: true,
+        ),
       );
     }
 
