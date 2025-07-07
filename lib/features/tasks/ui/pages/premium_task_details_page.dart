@@ -160,28 +160,9 @@ class _PremiumTaskDetailsPageState
   }
 
   void _scrollToSection(int sectionIndex) {
-    // When clicking a sticky header, scroll to the section itself
-    // This will make the sticky header disappear since we'll be at the section
-    double targetOffset = 0;
-
-    switch (sectionIndex) {
-      case _SectionIndices.taskHeader:
-        targetOffset = 0; // Scroll to very top where task header is visible
-      case _SectionIndices.aiSummary:
-        targetOffset = 200; // Scroll to AI summary section (past task header)
-      case _SectionIndices.checklists:
-        targetOffset = 500; // Scroll to checklists section (past AI summary)
-      case _SectionIndices.linkedEntriesHeader:
-        targetOffset = 800; // Scroll to linked entries (past checklists)
-    }
-
-    debugPrint('Scrolling to section $sectionIndex at offset $targetOffset');
-
-    _scrollController.animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+    ref
+        .read(taskScrollControllerProvider(widget.taskId).notifier)
+        .scrollToSection(sectionIndex);
   }
 
   void _scrollToTimeRecordingEntry() {

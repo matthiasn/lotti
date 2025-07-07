@@ -20,7 +20,19 @@ class TaskScrollController {
       listController.animateToItem(
         index: entryIndex,
         scrollController: scrollController,
-        alignment: 0.1, // Position entry near the top but with some padding
+        alignment: 0.2,
+        duration: (estimatedDistance) => const Duration(milliseconds: 500),
+        curve: (estimatedDistance) => Curves.easeInOut,
+      );
+    }
+  }
+
+  void scrollToSection(int sectionIndex) {
+    if (scrollController.hasClients) {
+      listController.animateToItem(
+        index: sectionIndex,
+        scrollController: scrollController,
+        alignment: 0.2,
         duration: (estimatedDistance) => const Duration(milliseconds: 500),
         curve: (estimatedDistance) => Curves.easeInOut,
       );
@@ -66,6 +78,10 @@ class TaskScrollControllerNotifier
 
   void scrollToEntry(String entryId) {
     state?.scrollToEntry(entryId);
+  }
+
+  void scrollToSection(int sectionIndex) {
+    state?.scrollToSection(sectionIndex);
   }
 
   @override

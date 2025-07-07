@@ -125,6 +125,44 @@ void main() {
             curve: any(named: 'curve'),
           )).called(1);
     });
+
+    test('scrollToSection animates to section index', () {
+      final mockListController = MockListController();
+      final mockScrollController = MockScrollController()..hasClients = true;
+
+      TaskScrollController(
+        taskId: 'test',
+        scrollController: mockScrollController,
+        listController: mockListController,
+      ).scrollToSection(2);
+
+      verify(() => mockListController.animateToItem(
+            index: 2,
+            scrollController: mockScrollController,
+            alignment: -0.15,
+            duration: any(named: 'duration'),
+            curve: any(named: 'curve'),
+          )).called(1);
+    });
+
+    test('scrollToSection does nothing when scrollController has no clients', () {
+      final mockListController = MockListController();
+      final mockScrollController = MockScrollController()..hasClients = false;
+
+      TaskScrollController(
+        taskId: 'test',
+        scrollController: mockScrollController,
+        listController: mockListController,
+      ).scrollToSection(2);
+
+      verifyNever(() => mockListController.animateToItem(
+            index: any(named: 'index'),
+            scrollController: any(named: 'scrollController'),
+            alignment: any(named: 'alignment'),
+            duration: any(named: 'duration'),
+            curve: any(named: 'curve'),
+          ));
+    });
   });
 
   group('TaskScrollControllerNotifier', () {
@@ -178,6 +216,16 @@ void main() {
       // This would normally trigger animation, but without a real widget tree
       // we can only verify it doesn't throw
       expect(() => notifier.scrollToEntry('entry1'), returnsNormally);
+    });
+
+    test('scrollToSection delegates to state controller', () {
+      final notifier = container.read(
+        taskScrollControllerProvider('test-task-id').notifier,
+      );
+
+      // This would normally trigger animation, but without a real widget tree
+      // we can only verify it doesn't throw
+      expect(() => notifier.scrollToSection(2), returnsNormally);
     });
 
     test('different task IDs have separate controllers', () {
