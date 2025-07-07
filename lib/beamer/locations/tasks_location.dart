@@ -30,7 +30,10 @@ class TasksLocation extends BeamLocation<BeamState> {
       if (isUuid(taskId))
         BeamPage(
           key: ValueKey('tasks-$taskId'),
-          child: _TaskDetailsWrapper(taskId: taskId!),
+          child: _TaskDetailsWrapper(
+            taskId: taskId!,
+            scrollToEntryId: state.queryParameters['scrollToEntryId'],
+          ),
         ),
     ];
   }
@@ -39,9 +42,11 @@ class TasksLocation extends BeamLocation<BeamState> {
 class _TaskDetailsWrapper extends StatelessWidget {
   const _TaskDetailsWrapper({
     required this.taskId,
+    this.scrollToEntryId,
   });
 
   final String taskId;
+  final String? scrollToEntryId;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +56,10 @@ class _TaskDetailsWrapper extends StatelessWidget {
         final usePremiumTaskUi = snapshot.data ?? false;
 
         return usePremiumTaskUi
-            ? PremiumTaskDetailsPage(taskId: taskId)
+            ? PremiumTaskDetailsPage(
+                taskId: taskId,
+                scrollToEntryId: scrollToEntryId,
+              )
             : TaskDetailsPage(taskId: taskId);
       },
     );

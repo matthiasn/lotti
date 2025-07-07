@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/tasks/ui/pages/premium_task_details_page.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -43,11 +44,19 @@ class TimeRecordingIndicator extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             final linkedFrom = timeService.linkedFrom;
-            linkedFrom != null
-                ? linkedFrom is Task
-                    ? beamToNamed('/tasks/${linkedFrom.meta.id}')
-                    : beamToNamed('/journal/${linkedFrom.meta.id}')
-                : beamToNamed('/journal/${current.meta.id}');
+
+            if (linkedFrom != null && linkedFrom is Task) {
+              final taskPath = '/tasks/${linkedFrom.meta.id}';
+              // Always navigate with scroll parameter and timestamp to force update
+              final timestamp = DateTime.now().millisecondsSinceEpoch;
+              beamToNamed(
+                '$taskPath?scrollToEntryId=${current.meta.id}&t=$timestamp',
+              );
+            } else if (linkedFrom != null) {
+              beamToNamed('/journal/${linkedFrom.meta.id}');
+            } else {
+              beamToNamed('/journal/${current.meta.id}');
+            }
           },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,

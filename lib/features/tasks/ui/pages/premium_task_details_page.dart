@@ -24,7 +24,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
-import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
@@ -33,10 +32,12 @@ class PremiumTaskDetailsPage extends ConsumerStatefulWidget {
     required this.taskId,
     super.key,
     this.readOnly = false,
+    this.scrollToEntryId,
   });
 
   final String taskId;
   final bool readOnly;
+  final String? scrollToEntryId;
 
   @override
   ConsumerState<PremiumTaskDetailsPage> createState() =>
@@ -93,6 +94,29 @@ class _PremiumTaskDetailsPageState
     _timeService = getIt<TimeService>();
 
     super.initState();
+
+    // Schedule scroll to entry if provided
+    if (widget.scrollToEntryId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _scrollToEntryById(widget.scrollToEntryId!);
+        });
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(PremiumTaskDetailsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Handle scrolling when widget updates with new scrollToEntryId
+    if (widget.scrollToEntryId != null &&
+        widget.scrollToEntryId != oldWidget.scrollToEntryId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _scrollToEntryById(widget.scrollToEntryId!);
+        });
+      });
+    }
   }
 
   void _updateCollapseStates() {
@@ -101,8 +125,8 @@ class _PremiumTaskDetailsPageState
     // Use scroll offset for detection
     final offset = _scrollController.offset;
 
-    // Check if controller still has listeners
-    final hasListeners = _scrollController.hasListeners;
+    // Check if controller still has clients
+    final hasClients = _scrollController.hasClients;
     final position =
         _scrollController.hasClients ? _scrollController.position : null;
     final maxScroll = position?.maxScrollExtent ?? 0;
@@ -119,7 +143,7 @@ class _PremiumTaskDetailsPageState
 
     // Enhanced debug logging
     debugPrint(
-        'Scroll: offset=$offset, max=$maxScroll, min=$minScroll, hasListeners=$hasListeners, mounted=$mounted');
+        'Scroll: offset=$offset, max=$maxScroll, min=$minScroll, hasClients=$hasClients, mounted=$mounted');
     debugPrint(
         'States: Task: $_isTaskHeaderCollapsed->$newTaskCollapsed, AI: $_isAiSummaryCollapsed->$newAiCollapsed, Checklist: $_isChecklistsCollapsed->$newChecklistCollapsed');
 
@@ -160,16 +184,20 @@ class _PremiumTaskDetailsPageState
     final currentRecording = _timeService.getCurrent();
     if (currentRecording != null) {
       final entryId = currentRecording.meta.id;
-      final entryIndex = _linkedEntryIndices[entryId];
-      if (entryIndex != null) {
-        _listController.animateToItem(
-          index: entryIndex,
-          scrollController: _scrollController,
-          alignment: 0.3, // Show entry centered in viewport
-          duration: (estimatedDistance) => const Duration(milliseconds: 500),
-          curve: (estimatedDistance) => Curves.easeInOut,
-        );
-      }
+      _scrollToEntryById(entryId);
+    }
+  }
+
+  void _scrollToEntryById(String entryId) {
+    final entryIndex = _linkedEntryIndices[entryId];
+    if (entryIndex != null) {
+      _listController.animateToItem(
+        index: entryIndex,
+        scrollController: _scrollController,
+        alignment: 0.3, // Show entry centered in viewport
+        duration: (estimatedDistance) => const Duration(milliseconds: 500),
+        curve: (estimatedDistance) => Curves.easeInOut,
+      );
     }
   }
 
@@ -197,9 +225,12 @@ class _PremiumTaskDetailsPageState
     }
 
     // Force rebuild on scroll state changes
-    final _ = _isTaskHeaderCollapsed;
-    final __ = _isAiSummaryCollapsed;
-    final ___ = _isChecklistsCollapsed;
+    // ignore: unused_local_variable
+    final taskCollapsed = _isTaskHeaderCollapsed;
+    // ignore: unused_local_variable
+    final aiCollapsed = _isAiSummaryCollapsed;
+    // ignore: unused_local_variable
+    final checklistCollapsed = _isChecklistsCollapsed;
 
     // Get linked entries to build indices
     final linkedEntriesProvider =
@@ -389,29 +420,9 @@ class _PremiumTaskDetailsPageState
             ),
           ),
 
-          // Debug indicator - always visible
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Container(
-                color: Colors.red.withValues(alpha: 0.8),
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  'Offset: ${_scrollController.hasClients ? _scrollController.offset.toStringAsFixed(1) : "N/A"} | Task: $_isTaskHeaderCollapsed | AI: $_isAiSummaryCollapsed | Check: $_isChecklistsCollapsed | HEADERS SHOULD BE ${_isTaskHeaderCollapsed || _isAiSummaryCollapsed || _isChecklistsCollapsed ? "VISIBLE" : "HIDDEN"}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
-
           // Sticky headers overlay - wrapped in builder to ensure proper rebuilds
           Positioned(
-            top: 40, // Account for debug indicator
+            top: 0,
             left: 0,
             right: 0,
             child: AnimatedBuilder(
@@ -429,7 +440,6 @@ class _PremiumTaskDetailsPageState
                 }
 
                 return SafeArea(
-                  top: false, // Don't add additional SafeArea padding
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -528,24 +538,18 @@ class _PremiumTaskDetailsPageState
             ),
           ),
 
-          // AI Running Animation and Time Recording Indicator at the bottom
+          // AI Running Animation at the bottom
           Align(
             alignment: Alignment.bottomCenter,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const TimeRecordingIndicator(),
-                AiRunningAnimationWrapperCard(
-                  entryId: widget.taskId,
-                  height: 50,
-                  responseTypes: const {
-                    AiResponseType.taskSummary,
-                    AiResponseType.actionItemSuggestions,
-                    AiResponseType.imageAnalysis,
-                    AiResponseType.audioTranscription,
-                  },
-                ),
-              ],
+            child: AiRunningAnimationWrapperCard(
+              entryId: widget.taskId,
+              height: 50,
+              responseTypes: const {
+                AiResponseType.taskSummary,
+                AiResponseType.actionItemSuggestions,
+                AiResponseType.imageAnalysis,
+                AiResponseType.audioTranscription,
+              },
             ),
           ),
         ],
