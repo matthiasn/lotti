@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/tasks/ui/pages/premium_task_details_page.dart';
+import 'package:lotti/features/tasks/state/task_scroll_controller.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 
-class TimeRecordingIndicator extends StatelessWidget {
+class TimeRecordingIndicator extends ConsumerWidget {
   const TimeRecordingIndicator({
     super.key,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final timeService = getIt<TimeService>();
 
     return StreamBuilder(
@@ -46,12 +47,22 @@ class TimeRecordingIndicator extends StatelessWidget {
             final linkedFrom = timeService.linkedFrom;
 
             if (linkedFrom != null && linkedFrom is Task) {
-              final taskPath = '/tasks/${linkedFrom.meta.id}';
-              // Always navigate with scroll parameter and timestamp to force update
-              final timestamp = DateTime.now().millisecondsSinceEpoch;
-              beamToNamed(
-                '$taskPath?scrollToEntryId=${current.meta.id}&t=$timestamp',
-              );
+              final taskId = linkedFrom.meta.id;
+              final navService = getIt<NavService>();
+              final currentPath = navService.currentPath;
+
+              // Check if we're already on the task page
+              if (currentPath.contains('/tasks/$taskId')) {
+                // We're on the same page, just scroll
+                ref
+                    .read(taskScrollControllerProvider(taskId).notifier)
+                    .scrollToEntry(current.meta.id);
+              } else {
+                // Navigate to the task page with scroll parameter
+                beamToNamed(
+                  '/tasks/$taskId?scrollToEntryId=${current.meta.id}',
+                );
+              }
             } else if (linkedFrom != null) {
               beamToNamed('/journal/${linkedFrom.meta.id}');
             } else {

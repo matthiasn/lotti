@@ -15,6 +15,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/features/tasks/state/task_scroll_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -55,10 +56,10 @@ class _SectionIndices {
 
 class _PremiumTaskDetailsPageState
     extends ConsumerState<PremiumTaskDetailsPage> {
-  final _scrollController = ScrollController();
-  final _listController = ListController(); // New controller for SuperListView
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
+  late ScrollController _scrollController;
+  late ListController _listController;
 
   // Track visibility states
   bool _isTaskHeaderCollapsed = false;
@@ -77,6 +78,14 @@ class _PremiumTaskDetailsPageState
 
   @override
   void initState() {
+    super.initState();
+
+    // Get controllers from provider
+    final scrollControllerState =
+        ref.read(taskScrollControllerProvider(widget.taskId));
+    _scrollController = scrollControllerState!.scrollController;
+    _listController = scrollControllerState.listController;
+
     final provider = taskAppBarControllerProvider(id: widget.taskId);
     _updateOffsetListener = () {
       ref.read(provider.notifier).updateOffset(_scrollController.offset);
@@ -87,13 +96,8 @@ class _PremiumTaskDetailsPageState
       ..addListener(_listener)
       ..addListener(_updateOffsetListener);
 
-    // Don't add listener to ListController as it might conflict with ScrollController
-    // _listController.addListener(_updateCollapseStates);
-
     // Initialize time service
     _timeService = getIt<TimeService>();
-
-    super.initState();
 
     // Schedule scroll to entry if provided
     if (widget.scrollToEntryId != null) {
@@ -189,27 +193,17 @@ class _PremiumTaskDetailsPageState
   }
 
   void _scrollToEntryById(String entryId) {
-    final entryIndex = _linkedEntryIndices[entryId];
-    if (entryIndex != null) {
-      _listController.animateToItem(
-        index: entryIndex,
-        scrollController: _scrollController,
-        alignment: 0.3, // Show entry centered in viewport
-        duration: (estimatedDistance) => const Duration(milliseconds: 500),
-        curve: (estimatedDistance) => Curves.easeInOut,
-      );
-    }
+    ref
+        .read(taskScrollControllerProvider(widget.taskId).notifier)
+        .scrollToEntry(entryId);
   }
 
   @override
   void dispose() {
     _scrollController
       ..removeListener(_listener)
-      ..removeListener(_updateOffsetListener)
-      ..dispose();
-    _listController
-      ..removeListener(_updateCollapseStates)
-      ..dispose();
+      ..removeListener(_updateOffsetListener);
+    // Don't dispose the controllers - they're managed by the provider
     super.dispose();
   }
 
@@ -245,6 +239,17 @@ class _PremiumTaskDetailsPageState
       final link = entryLinks[i];
       final entryIndex = _SectionIndices.linkedEntriesHeader + 1 + i;
       _linkedEntryIndices[link.toId] = entryIndex;
+    }
+
+    // Update indices in the scroll controller
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(taskScrollControllerProvider(widget.taskId).notifier)
+          .updateIndices(_linkedEntryIndices);
+    });
+
+    for (var i = 0; i < entryLinks.length; i++) {
+      final link = entryLinks[i];
 
       linkedEntries.add(
         EntryDetailsWidget(
