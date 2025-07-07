@@ -71,11 +71,6 @@ class _PremiumTaskDetailsPageState
   // Track linked entry indices for navigation
   final Map<String, int> _linkedEntryIndices = {};
 
-  // Track section positions for better header visibility control
-  final double _taskHeaderEnd = 200;
-  final double _aiSummaryEnd = 500;
-  final double _checklistsEnd = 800;
-
   // Time service for tracking current recording
   late final TimeService _timeService;
 
@@ -91,8 +86,8 @@ class _PremiumTaskDetailsPageState
       ..addListener(_listener)
       ..addListener(_updateOffsetListener);
 
-    // Also listen to ListController for visibility changes
-    _listController.addListener(_updateCollapseStates);
+    // Don't add listener to ListController as it might conflict with ScrollController
+    // _listController.addListener(_updateCollapseStates);
 
     // Initialize time service
     _timeService = getIt<TimeService>();
@@ -106,45 +101,53 @@ class _PremiumTaskDetailsPageState
     // Use scroll offset for detection
     final offset = _scrollController.offset;
 
-    // Headers should show when scrolled past their content, and hide when scrolled back
-    // Add some buffer to prevent flickering
-    final newTaskCollapsed = offset >
-        (_taskHeaderEnd + 20); // Show after task header is scrolled out
-    final newAiCollapsed = offset >
-        (_aiSummaryEnd + 20); // Show after AI summary header is scrolled out
-    final newChecklistCollapsed = offset >
-        (_checklistsEnd + 20); // Show after checklists header is scrolled out
+    // Check if controller still has listeners
+    final hasListeners = _scrollController.hasListeners;
+    final position =
+        _scrollController.hasClients ? _scrollController.position : null;
+    final maxScroll = position?.maxScrollExtent ?? 0;
+    final minScroll = position?.minScrollExtent ?? 0;
 
-    // Only update if values actually changed
-    if (_isTaskHeaderCollapsed != newTaskCollapsed ||
-        _isAiSummaryCollapsed != newAiCollapsed ||
-        _isChecklistsCollapsed != newChecklistCollapsed) {
-      setState(() {
-        _isTaskHeaderCollapsed = newTaskCollapsed;
-        _isAiSummaryCollapsed = newAiCollapsed;
-        _isChecklistsCollapsed = newChecklistCollapsed;
-      });
-    }
+    // Headers should show when scrolled past their content, and hide when scrolled back
+    // Using lower thresholds for better UX
+    final newTaskCollapsed =
+        offset > 80; // Show after task header starts scrolling out
+    final newAiCollapsed =
+        offset > 300; // Show after AI summary starts scrolling out
+    final newChecklistCollapsed =
+        offset > 600; // Show after checklists start scrolling out
+
+    // Enhanced debug logging
+    debugPrint(
+        'Scroll: offset=$offset, max=$maxScroll, min=$minScroll, hasListeners=$hasListeners, mounted=$mounted');
+    debugPrint(
+        'States: Task: $_isTaskHeaderCollapsed->$newTaskCollapsed, AI: $_isAiSummaryCollapsed->$newAiCollapsed, Checklist: $_isChecklistsCollapsed->$newChecklistCollapsed');
+
+    // Force update regardless of change detection to debug the issue
+    setState(() {
+      _isTaskHeaderCollapsed = newTaskCollapsed;
+      _isAiSummaryCollapsed = newAiCollapsed;
+      _isChecklistsCollapsed = newChecklistCollapsed;
+    });
   }
 
   void _scrollToSection(int sectionIndex) {
-    // Calculate target offset to ensure headers hide after scrolling
-    // We want to scroll to positions where the clicked header will disappear
+    // When clicking a sticky header, scroll to the section itself
+    // This will make the sticky header disappear since we'll be at the section
     double targetOffset = 0;
 
     switch (sectionIndex) {
       case _SectionIndices.taskHeader:
-        targetOffset = 0; // Scroll to top
+        targetOffset = 0; // Scroll to very top where task header is visible
       case _SectionIndices.aiSummary:
-        targetOffset = _taskHeaderEnd -
-            50; // Scroll to position where task header will hide
+        targetOffset = 200; // Scroll to AI summary section (past task header)
       case _SectionIndices.checklists:
-        targetOffset =
-            _aiSummaryEnd - 50; // Scroll to position where AI header will hide
+        targetOffset = 500; // Scroll to checklists section (past AI summary)
       case _SectionIndices.linkedEntriesHeader:
-        targetOffset = _checklistsEnd -
-            50; // Scroll to position where checklists header will hide
+        targetOffset = 800; // Scroll to linked entries (past checklists)
     }
+
+    debugPrint('Scrolling to section $sectionIndex at offset $targetOffset');
 
     _scrollController.animateTo(
       targetOffset,
@@ -192,6 +195,11 @@ class _PremiumTaskDetailsPageState
     if (task == null) {
       return EmptyScaffoldWithTitle(widget.taskId);
     }
+
+    // Force rebuild on scroll state changes
+    final _ = _isTaskHeaderCollapsed;
+    final __ = _isAiSummaryCollapsed;
+    final ___ = _isChecklistsCollapsed;
 
     // Get linked entries to build indices
     final linkedEntriesProvider =
@@ -381,102 +389,142 @@ class _PremiumTaskDetailsPageState
             ),
           ),
 
-          // Sticky headers overlay - using Positioned
+          // Debug indicator - always visible
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Task Header - Sticky when collapsed
-                  if (_isTaskHeaderCollapsed)
-                    GestureDetector(
-                      onTap: () => _scrollToSection(_SectionIndices.taskHeader),
-                      child: Container(
-                        height: _taskHeaderHeight,
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.surface,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: context.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: _TaskHeaderBuilder(
-                          task: task,
-                          isSticky: true,
-                          onTimeRecordingTap: _scrollToTimeRecordingEntry,
-                        ),
-                      ),
-                    ),
-
-                  // AI Summary Header - Sticky when collapsed
-                  if (_isAiSummaryCollapsed)
-                    GestureDetector(
-                      onTap: () => _scrollToSection(_SectionIndices.aiSummary),
-                      child: Container(
-                        height: _sectionHeaderHeight,
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.surface,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: context.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              offset: const Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: _SectionHeaderBuilder(
-                          icon: MdiIcons.robotOutline,
-                          title: 'AI Task Summary',
-                          isSticky: true,
-                        ),
-                      ),
-                    ),
-
-                  // Checklists Header - Sticky when collapsed
-                  if (_isChecklistsCollapsed)
-                    GestureDetector(
-                      onTap: () => _scrollToSection(_SectionIndices.checklists),
-                      child: Container(
-                        height: _sectionHeaderHeight,
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.surface,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: context.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              offset: const Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: _ChecklistsHeaderBuilder(
-                          task: task,
-                          isSticky: true,
-                        ),
-                      ),
-                    ),
-                ],
+              child: Container(
+                color: Colors.red.withValues(alpha: 0.8),
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  'Offset: ${_scrollController.hasClients ? _scrollController.offset.toStringAsFixed(1) : "N/A"} | Task: $_isTaskHeaderCollapsed | AI: $_isAiSummaryCollapsed | Check: $_isChecklistsCollapsed | HEADERS SHOULD BE ${_isTaskHeaderCollapsed || _isAiSummaryCollapsed || _isChecklistsCollapsed ? "VISIBLE" : "HIDDEN"}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
+                ),
               ),
+            ),
+          ),
+
+          // Sticky headers overlay - wrapped in builder to ensure proper rebuilds
+          Positioned(
+            top: 40, // Account for debug indicator
+            left: 0,
+            right: 0,
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_scrollController]),
+              builder: (context, child) {
+                // Recalculate states in builder to ensure fresh values
+                final offset =
+                    _scrollController.hasClients ? _scrollController.offset : 0;
+                final showTask = offset > 80;
+                final showAi = offset > 300;
+                final showChecklist = offset > 600;
+
+                if (!showTask && !showAi && !showChecklist) {
+                  return const SizedBox.shrink();
+                }
+
+                return SafeArea(
+                  top: false, // Don't add additional SafeArea padding
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Task Header - Sticky when collapsed
+                      if (showTask)
+                        GestureDetector(
+                          onTap: () =>
+                              _scrollToSection(_SectionIndices.taskHeader),
+                          child: Container(
+                            height: _taskHeaderHeight,
+                            decoration: BoxDecoration(
+                              color: context.colorScheme.surface,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: context.colorScheme.outlineVariant,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  offset: const Offset(0, 2),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: _TaskHeaderBuilder(
+                              task: task,
+                              isSticky: true,
+                              onTimeRecordingTap: _scrollToTimeRecordingEntry,
+                            ),
+                          ),
+                        ),
+
+                      // AI Summary Header - Sticky when collapsed
+                      if (showAi)
+                        GestureDetector(
+                          onTap: () =>
+                              _scrollToSection(_SectionIndices.aiSummary),
+                          child: Container(
+                            height: _sectionHeaderHeight,
+                            decoration: BoxDecoration(
+                              color: context.colorScheme.surface,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: context.colorScheme.outlineVariant,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: _SectionHeaderBuilder(
+                              icon: MdiIcons.robotOutline,
+                              title: 'AI Task Summary',
+                              isSticky: true,
+                            ),
+                          ),
+                        ),
+
+                      // Checklists Header - Sticky when collapsed
+                      if (showChecklist)
+                        GestureDetector(
+                          onTap: () =>
+                              _scrollToSection(_SectionIndices.checklists),
+                          child: Container(
+                            height: _sectionHeaderHeight,
+                            decoration: BoxDecoration(
+                              color: context.colorScheme.surface,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: context.colorScheme.outlineVariant,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: _ChecklistsHeaderBuilder(
+                              task: task,
+                              isSticky: true,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
 
