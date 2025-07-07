@@ -2,7 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
-import 'package:lotti/features/tasks/ui/pages/premium_task_details_page_v15.dart';
+import 'package:lotti/features/tasks/ui/pages/premium_task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
@@ -51,7 +51,7 @@ class _TaskDetailsWrapper extends StatelessWidget {
         final usePremiumTaskUi = snapshot.data ?? false;
 
         return usePremiumTaskUi
-            ? PremiumTaskDetailsPageV15(taskId: taskId)
+            ? PremiumTaskDetailsPage(taskId: taskId)
             : TaskDetailsPage(taskId: taskId);
       },
     );

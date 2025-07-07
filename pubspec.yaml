@@ -71,6 +71,7 @@ dependencies:
   flutter_rating: ^2.0.2
   flutter_riverpod: ^2.4.9
   flutter_secure_storage: ^9.0.0
+  flutter_sticky_header: ^0.8.0
   flutter_vodozemac: ^0.2.2
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
@@ -127,9 +128,6 @@ dependencies:
   share_plus: ^11.0.0
   showcaseview: ^4.0.1
   siri_wave: ^2.3.0
-  sliver_sticky_collapsable_panel: ^3.0.0
-  sliver_tools: ^0.2.12
-  flutter_sticky_header: ^0.8.0
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
