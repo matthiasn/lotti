@@ -1122,6 +1122,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.0"
+  flutter_sticky_header:
+    dependency: "direct main"
+    description:
+      name: flutter_sticky_header
+      sha256: fb4fda6164ef3e5fc7ab73aba34aad253c17b7c6ecf738fa26f1a905b7d2d1e2
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
   flutter_svg:
     dependency: transitive
     description:
@@ -2644,8 +2652,16 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  sliver_sticky_collapsable_panel:
+    dependency: "direct main"
+    description:
+      name: sliver_sticky_collapsable_panel
+      sha256: "9f7165e37f9a8ef0f42ffa6f904904e85dfe2bc06472dda941452dd8f4650ac9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   sliver_tools:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sliver_tools
       sha256: eae28220badfb9d0559207badcbbc9ad5331aac829a88cb0964d330d2a4636a6
@@ -2860,6 +2876,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.1"
+  super_sliver_list:
+    dependency: "direct main"
+    description:
+      name: super_sliver_list
+      sha256: b1e1e64d08ce40e459b9bb5d9f8e361617c26b8c9f3bb967760b0f436b6e3f56
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.1"
   sync_http:
     dependency: transitive
     description:
@@ -3084,6 +3108,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  value_layout_builder:
+    dependency: transitive
+    description:
+      name: value_layout_builder
+      sha256: ab4b7d98bac8cefeb9713154d43ee0477490183f5aa23bb4ffa5103d9bbf6275
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   vector_graphics:
     dependency: transitive
     description:

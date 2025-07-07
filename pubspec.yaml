@@ -127,12 +127,16 @@ dependencies:
   share_plus: ^11.0.0
   showcaseview: ^4.0.1
   siri_wave: ^2.3.0
+  sliver_sticky_collapsable_panel: ^3.0.0
+  sliver_tools: ^0.2.12
+  flutter_sticky_header: ^0.8.0
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
   super_clipboard: ^0.9.1
   super_drag_and_drop: ^0.9.1
+  super_sliver_list: ^0.4.1
   timezone: ^0.10.0
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
