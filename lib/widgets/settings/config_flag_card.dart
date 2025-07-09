@@ -86,10 +86,6 @@ class ConfigFlagCard extends StatelessWidget {
     switch (item.name) {
       case privateFlag:
         return context.messages.configFlagPrivateDescription;
-      case attemptEmbedding:
-        return context.messages.configFlagAttemptEmbeddingDescription;
-      case autoTranscribeFlag:
-        return context.messages.configFlagAutoTranscribeDescription;
       case enableMatrixFlag:
         return context.messages.configFlagEnableMatrixDescription;
       case enableTooltipFlag:
@@ -100,12 +96,8 @@ class ConfigFlagCard extends StatelessWidget {
         return context.messages.configFlagResendAttachmentsDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
-      case useCloudInferenceFlag:
-        return context.messages.configFlagUseCloudInferenceDescription;
       case enableNotificationsFlag:
         return context.messages.configFlagEnableNotificationsDescription;
-      case enableAutoTaskTldrFlag:
-        return context.messages.configFlagEnableAutoTaskTldrDescription;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:

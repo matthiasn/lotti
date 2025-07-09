@@ -9,7 +9,6 @@ import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mocks
@@ -101,70 +100,8 @@ void main() {
         flag: EntryFlag.import,
       );
 
-      test(
-          'successfully creates audio entry and enqueues for ASR when autoTranscribe is true',
-          () async {
+      test('successfully creates audio entry', () async {
         // Arrange
-        when(() => mockJournalDb.getConfigFlag(autoTranscribeFlag))
-            .thenAnswer((_) async => true);
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: expectedAudioData.dateFrom,
-            dateTo: expectedAudioData.dateTo,
-            uuidV5Input: json.encode(
-              expectedAudioData.copyWith(
-                autoTranscribeWasActive: true,
-                language: testLanguage,
-              ),
-            ),
-            flag: EntryFlag.import,
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(that: isA<JournalAudio>()),
-          ),
-        ).thenAnswer((_) async => true);
-
-        // Act
-        final result = await SpeechRepository.createAudioEntry(
-          testAudioNote,
-          language: testLanguage,
-        );
-
-        // Assert
-        expect(result, isA<JournalAudio>());
-        expect(result?.data.audioFile, testAudioNote.audioFile);
-        expect(result?.data.autoTranscribeWasActive, isTrue);
-        expect(result?.meta.id, testMetadata.id);
-
-        verify(() => mockJournalDb.getConfigFlag(autoTranscribeFlag)).called(1);
-        verify(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: expectedAudioData.dateFrom,
-            dateTo: expectedAudioData.dateTo,
-            uuidV5Input: json.encode(
-              expectedAudioData.copyWith(
-                autoTranscribeWasActive: true,
-                language: testLanguage,
-              ),
-            ),
-            flag: EntryFlag.import,
-          ),
-        ).called(1);
-        verify(
-          () => mockPersistenceLogic.createDbEntity(
-            any(that: isA<JournalAudio>()),
-          ),
-        ).called(1);
-      });
-
-      test(
-          'successfully creates audio entry but does NOT enqueue for ASR when autoTranscribe is false',
-          () async {
-        // Arrange
-        when(() => mockJournalDb.getConfigFlag(autoTranscribeFlag))
-            .thenAnswer((_) async => false);
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: expectedAudioData.dateFrom,
@@ -193,14 +130,11 @@ void main() {
         // Assert
         expect(result, isA<JournalAudio>());
         expect(result?.data.autoTranscribeWasActive, isFalse);
-        verify(() => mockJournalDb.getConfigFlag(autoTranscribeFlag)).called(1);
       });
 
       test('successfully creates audio entry with linkedId and categoryId',
           () async {
         // Arrange
-        when(() => mockJournalDb.getConfigFlag(autoTranscribeFlag))
-            .thenAnswer((_) async => false); // ASR not relevant here
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: expectedAudioData.dateFrom,
@@ -260,46 +194,10 @@ void main() {
         ).called(1);
       });
 
-      test('returns null and logs exception when getConfigFlag throws',
-          () async {
-        // Arrange
-        final exception = Exception('DB error');
-        when(() => mockJournalDb.getConfigFlag(autoTranscribeFlag))
-            .thenThrow(exception);
-
-        // Act
-        final result = await SpeechRepository.createAudioEntry(
-          testAudioNote,
-          language: testLanguage,
-        );
-
-        // Assert
-        expect(result, isNull);
-        verify(
-          () => mockLoggingService.captureException(
-            exception,
-            domain: 'persistence_logic',
-            subDomain: 'createAudioEntry',
-            stackTrace: any(named: 'stackTrace'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-            flag: any(named: 'flag'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        );
-      });
-
       test('returns null and logs exception when createMetadata throws',
           () async {
         // Arrange
         final exception = Exception('Metadata creation error');
-        when(() => mockJournalDb.getConfigFlag(autoTranscribeFlag))
-            .thenAnswer((_) async => false);
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -338,8 +236,6 @@ void main() {
           () async {
         // Arrange
         final exception = Exception('DB entity creation error');
-        when(() => mockJournalDb.getConfigFlag(autoTranscribeFlag))
-            .thenAnswer((_) async => false);
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: expectedAudioData.dateFrom,
