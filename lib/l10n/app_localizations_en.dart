@@ -600,6 +600,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Receive notifications for reminders, updates, and important events.';
 
   @override
+  String get configFlagEnableTooltip => 'Enable tooltips';
+
+  @override
   String get configFlagEnableTooltipDescription =>
       'Show helpful tooltips throughout the app to guide you through features.';
 
@@ -611,12 +614,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to make your entries private by default. Private entries are only visible to you.';
 
   @override
+  String get configFlagRecordLocation => 'Record location';
+
+  @override
   String get configFlagRecordLocationDescription =>
       'Automatically record your location with new entries. This helps with location-based organization and search.';
 
   @override
+  String get configFlagResendAttachments => 'Resend attachments';
+
+  @override
   String get configFlagResendAttachmentsDescription =>
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
+
+  @override
+  String get configFlagEnableLogging => 'Enable logging';
+
+  @override
+  String get configFlagEnableMatrix => 'Enable Matrix sync';
+
+  @override
+  String get configFlagEnableHabitsPage => 'Enable Habits page';
+
+  @override
+  String get configFlagEnableDashboardsPage => 'Enable Dashboards page';
+
+  @override
+  String get configFlagEnableCalendarPage => 'Enable Calendar page';
 
   @override
   String get configFlagUseCloudInferenceDescription =>
@@ -2090,6 +2114,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Receive notifications for reminders, updates, and important events.';
 
   @override
+  String get configFlagEnableTooltip => 'Enable tooltips';
+
+  @override
   String get configFlagEnableTooltipDescription =>
       'Show helpful tooltips throughout the app to guide you through features.';
 
@@ -2101,12 +2128,33 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Enable this to make your entries private by default. Private entries are only visible to you.';
 
   @override
+  String get configFlagRecordLocation => 'Record location';
+
+  @override
   String get configFlagRecordLocationDescription =>
       'Automatically record your location with new entries. This helps with location-based organisation and search.';
 
   @override
+  String get configFlagResendAttachments => 'Resend attachments';
+
+  @override
   String get configFlagResendAttachmentsDescription =>
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
+
+  @override
+  String get configFlagEnableLogging => 'Enable logging';
+
+  @override
+  String get configFlagEnableMatrix => 'Enable Matrix sync';
+
+  @override
+  String get configFlagEnableHabitsPage => 'Enable Habits page';
+
+  @override
+  String get configFlagEnableDashboardsPage => 'Enable Dashboards page';
+
+  @override
+  String get configFlagEnableCalendarPage => 'Enable Calendar page';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

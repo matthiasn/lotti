@@ -8,8 +8,9 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
   const AnimatedModernSettingsCardWithIcon({
     required this.title,
     required this.icon,
-    required this.onTap,
+    this.onTap,
     this.subtitle,
+    this.margin,
     this.trailing,
     this.isCompact = false,
     this.showChevron = true,
@@ -22,8 +23,9 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
   final String title;
   final String? subtitle;
   final IconData icon;
+  final EdgeInsets? margin;
   final Widget? trailing;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool isCompact;
   final bool showChevron;
   final Color? iconColor;
@@ -33,7 +35,7 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedModalItemWithIcon(
-      onTap: onTap,
+      onTap: onTap ?? () {},
       disableShadow: true, // ModernBaseCard already has its own shadow
       iconBuilder: (context, iconAnimation, {required isPressed}) {
         return Positioned(

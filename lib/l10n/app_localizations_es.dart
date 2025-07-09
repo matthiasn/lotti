@@ -604,6 +604,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recibir notificaciones de recordatorios, actualizaciones y eventos importantes.';
 
   @override
+  String get configFlagEnableTooltip =>
+      'Habilitar información sobre herramientas';
+
+  @override
   String get configFlagEnableTooltipDescription =>
       'Mostrar información sobre herramientas útil en toda la aplicación para guiarlo a través de las funciones.';
 
@@ -615,12 +619,33 @@ class AppLocalizationsEs extends AppLocalizations {
       'Habilite esto para que sus entradas sean privadas de forma predeterminada. Las entradas privadas solo son visibles para usted.';
 
   @override
+  String get configFlagRecordLocation => 'Registrar ubicación';
+
+  @override
   String get configFlagRecordLocationDescription =>
       'Registrar automáticamente su ubicación con las nuevas entradas. Esto ayuda con la organización y la búsqueda basadas en la ubicación.';
 
   @override
+  String get configFlagResendAttachments => 'Reenviar archivos adjuntos';
+
+  @override
   String get configFlagResendAttachmentsDescription =>
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
+
+  @override
+  String get configFlagEnableLogging => 'Habilitar registro';
+
+  @override
+  String get configFlagEnableMatrix => 'Habilitar sincronización Matrix';
+
+  @override
+  String get configFlagEnableHabitsPage => 'Habilitar página Hábitos';
+
+  @override
+  String get configFlagEnableDashboardsPage => 'Habilitar página Paneles';
+
+  @override
+  String get configFlagEnableCalendarPage => 'Habilitar página Calendario';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

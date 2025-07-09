@@ -602,6 +602,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
   @override
+  String get configFlagEnableTooltip => 'Activează sfaturile';
+
+  @override
   String get configFlagEnableTooltipDescription =>
       'Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.';
 
@@ -613,12 +616,34 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a face intrările dvs. private în mod implicit. Intrările private sunt vizibile numai pentru dvs.';
 
   @override
+  String get configFlagRecordLocation => 'Înregistrează locația';
+
+  @override
   String get configFlagRecordLocationDescription =>
       'Înregistrează automat locația dvs. cu intrări noi. Acest lucru ajută la organizarea și căutarea pe baza locației.';
 
   @override
+  String get configFlagResendAttachments => 'Retrimite atașamentele';
+
+  @override
   String get configFlagResendAttachmentsDescription =>
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
+
+  @override
+  String get configFlagEnableLogging => 'Activează înregistrarea';
+
+  @override
+  String get configFlagEnableMatrix => 'Activează sincronizarea Matrix';
+
+  @override
+  String get configFlagEnableHabitsPage => 'Activează pagina Obiceiuri';
+
+  @override
+  String get configFlagEnableDashboardsPage =>
+      'Activează pagina Tablouri de bord';
+
+  @override
+  String get configFlagEnableCalendarPage => 'Activează pagina Calendar';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

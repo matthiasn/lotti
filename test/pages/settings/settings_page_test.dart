@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -44,14 +42,13 @@ void main() {
 
       expect(find.text('Settings'), findsOneWidget);
 
+      expect(find.text('AI Settings'), findsOneWidget);
+      expect(find.text('Habits'), findsOneWidget);
+      expect(find.text('Categories'), findsOneWidget);
       expect(find.text('Tags'), findsOneWidget);
       expect(find.text('Dashboards'), findsOneWidget);
       expect(find.text('Measurable Types'), findsOneWidget);
-
-      if (Platform.isIOS) {
-        expect(find.text('Health Import'), findsOneWidget);
-      }
-
+      expect(find.text('Theming'), findsOneWidget);
       expect(find.text('Config Flags'), findsOneWidget);
       expect(find.text('Advanced Settings'), findsOneWidget);
     });
