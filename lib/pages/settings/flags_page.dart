@@ -17,19 +17,13 @@ class FlagsPage extends StatefulWidget {
 
 class _FlagsPageState extends State<FlagsPage> {
   final GlobalKey<State<StatefulWidget>> _privateFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _embeddingFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _autoTranscribeFlagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableMatrixFlagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableTooltipFlagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _recordLocationFlagKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _resendAttachmentsFlagKey =
       GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableLoggingFlagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _useCloudInferenceFlagKey =
-      GlobalKey();
   final GlobalKey<State<StatefulWidget>> _enableNotificationFlagKey =
-      GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _enableAutoTaskTldrFlagKey =
       GlobalKey();
 
   final GlobalKey<State<StatefulWidget>> _enableHabitsPageFlagKey = GlobalKey();
@@ -40,16 +34,12 @@ class _FlagsPageState extends State<FlagsPage> {
 
   static const List<String> displayedItems = [
     privateFlag,
-    attemptEmbedding,
     enableNotificationsFlag,
-    autoTranscribeFlag,
     recordLocationFlag,
     enableTooltipFlag,
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
-    useCloudInferenceFlag,
-    enableAutoTaskTldrFlag,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableCalendarPageFlag,
@@ -75,16 +65,12 @@ class _FlagsPageState extends State<FlagsPage> {
             onPressed: () {
               ShowCaseWidget.of(context).startShowCase([
                 _privateFlagKey,
-                _embeddingFlagKey,
                 _enableNotificationFlagKey,
-                _autoTranscribeFlagKey,
                 _recordLocationFlagKey,
                 _enableTooltipFlagKey,
                 _enableLoggingFlagKey,
                 _enableMatrixFlagKey,
                 _resendAttachmentsFlagKey,
-                _useCloudInferenceFlagKey,
-                _enableAutoTaskTldrFlagKey,
                 _enableHabitsPageFlagKey,
                 _enableDashboardsPageFlagKey,
                 _enableCalendarPageFlagKey,
@@ -118,10 +104,6 @@ class _FlagsPageState extends State<FlagsPage> {
     switch (flagName) {
       case privateFlag:
         return _privateFlagKey;
-      case attemptEmbedding:
-        return _embeddingFlagKey;
-      case autoTranscribeFlag:
-        return _autoTranscribeFlagKey;
       case enableMatrixFlag:
         return _enableMatrixFlagKey;
       case enableTooltipFlag:
@@ -132,12 +114,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return _resendAttachmentsFlagKey;
       case enableLoggingFlag:
         return _enableLoggingFlagKey;
-      case useCloudInferenceFlag:
-        return _useCloudInferenceFlagKey;
       case enableNotificationsFlag:
         return _enableNotificationFlagKey;
-      case enableAutoTaskTldrFlag:
-        return _enableAutoTaskTldrFlagKey;
       case enableHabitsPageFlag:
         return _enableHabitsPageFlagKey;
       case enableDashboardsPageFlag:

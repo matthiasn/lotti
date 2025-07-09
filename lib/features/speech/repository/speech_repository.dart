@@ -7,7 +7,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 class SpeechRepository {
   static Future<JournalAudio?> createAudioEntry(
@@ -19,17 +18,12 @@ class SpeechRepository {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
-      final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
-        autoTranscribeFlag,
-      );
-
       final audioData = AudioData(
         audioDirectory: audioNote.audioDirectory,
         duration: audioNote.duration,
         audioFile: audioNote.audioFile,
         dateTo: audioNote.createdAt.add(audioNote.duration),
         dateFrom: audioNote.createdAt,
-        autoTranscribeWasActive: autoTranscribe,
         language: language,
       );
 

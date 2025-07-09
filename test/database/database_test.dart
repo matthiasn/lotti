@@ -41,16 +41,6 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
-    name: attemptEmbedding,
-    description: 'Create LLM embedding',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: autoTranscribeFlag,
-    description: 'Automatically transcribe audio',
-    status: false,
-  ),
-  const ConfigFlag(
     name: recordLocationFlag,
     description: 'Record geolocation?',
     status: false,
@@ -78,16 +68,6 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableLoggingFlag,
     description: 'Enable logging?',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: useCloudInferenceFlag,
-    description: 'Use Cloud Inference',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: enableAutoTaskTldrFlag,
-    description: 'Enable auto task TLDR',
     status: false,
   ),
   const ConfigFlag(

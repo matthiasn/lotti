@@ -13,24 +13,10 @@ Future<void> initConfigFlags(
     ),
   );
   await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: attemptEmbedding,
-      description: 'Create LLM embedding',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
     ConfigFlag(
       name: enableSyncFlag,
       description: 'Enable sync? (requires restart)',
       status: inMemoryDatabase,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: autoTranscribeFlag,
-      description: 'Automatically transcribe audio',
-      status: false,
     ),
   );
   await db.insertFlagIfNotExists(
@@ -66,20 +52,6 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: enableLoggingFlag,
       description: 'Enable logging?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: useCloudInferenceFlag,
-      description: 'Use Cloud Inference',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableAutoTaskTldrFlag,
-      description: 'Enable auto task TLDR',
       status: false,
     ),
   );
