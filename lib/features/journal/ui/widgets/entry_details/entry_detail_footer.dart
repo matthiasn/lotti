@@ -31,35 +31,37 @@ class EntryDetailFooter extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final showMap = entryState?.showMap ?? false;
+
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(width: 100),
-              if (entry is JournalEntry)
-                DurationWidget(
-                  item: entry,
-                  linkedFrom: linkedFrom,
-                ),
-              if (inLinkedEntries)
-                SaveButton(entryId: entryId)
-              else
-                const SizedBox(width: 60),
-            ],
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const SizedBox(width: 100),
+            if (entry is JournalEntry)
+              DurationWidget(
+                item: entry,
+                linkedFrom: linkedFrom,
+              ),
+            if (inLinkedEntries)
+              SaveButton(entryId: entryId)
+            else
+              const SizedBox(width: 60),
+          ],
         ),
         Visibility(
-          visible: entryState?.showMap ?? false,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(8),
-              bottomRight: Radius.circular(8),
-            ),
-            child: MapWidget(
-              geolocation: entry.geolocation,
+          visible: showMap,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+              child: MapWidget(
+                geolocation: entry.geolocation,
+              ),
             ),
           ),
         ),

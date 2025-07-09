@@ -49,7 +49,6 @@ class LatestAiResponseSummary extends ConsumerWidget {
 
     // TODO: implement showing if the latest summary is outdated
     const isOutdated = false;
-    final dividerColor = context.colorScheme.outline.withAlpha(60);
 
     return latestSummaryAsync.when(
       loading: () => const Center(
@@ -130,8 +129,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
                 linkedFromId: id,
                 fadeOut: false,
               ),
-            const SizedBox(height: 20),
-            Divider(color: dividerColor),
+            const SizedBox(height: 10),
           ],
         );
       },

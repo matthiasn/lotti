@@ -90,7 +90,6 @@ void main() {
       selectedEntryTypes: const [],
       fullTextMatches: {},
       showTasks: true,
-      taskAsListView: true,
       pagingController: mockPagingController,
       taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
       selectedTaskStatuses: {'OPEN'},

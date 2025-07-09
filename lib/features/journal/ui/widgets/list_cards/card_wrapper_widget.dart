@@ -7,25 +7,23 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_imag
 class CardWrapperWidget extends StatelessWidget {
   const CardWrapperWidget({
     required this.item,
-    required this.taskAsListView,
     super.key,
   });
 
   final JournalEntity item;
-  final bool taskAsListView;
 
   @override
   Widget build(BuildContext context) {
-    return item.maybeMap(
-      journalImage: (JournalImage image) => ModernJournalImageCard(item: image),
-      task: (Task task) {
-        if (taskAsListView) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: item.maybeMap(
+        journalImage: (JournalImage image) =>
+            ModernJournalImageCard(item: image),
+        task: (Task task) {
           return AnimatedModernTaskCard(task: task);
-        } else {
-          return ModernJournalCard(item: task);
-        }
-      },
-      orElse: () => ModernJournalCard(item: item),
+        },
+        orElse: () => ModernJournalCard(item: item),
+      ),
     );
   }
 }

@@ -92,8 +92,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(
-                      left: 20,
-                      right: 20,
+                      left: 15,
+                      right: 15,
                       top: 10,
                     ),
                     child: TaskForm(taskId: widget.taskId),
@@ -104,8 +104,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                     padding: const EdgeInsets.only(
                       top: 8,
                       bottom: 200,
-                      left: 5,
-                      right: 5,
+                      left: 10,
+                      right: 10,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -114,9 +114,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                         LinkedFromEntriesWidget(task),
                       ],
                     ).animate().fadeIn(
-                          duration: const Duration(
-                            milliseconds: 100,
-                          ),
+                          duration: const Duration(milliseconds: 100),
                         ),
                   ),
                 ),

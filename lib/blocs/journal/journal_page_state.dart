@@ -19,7 +19,6 @@ class JournalPageState with _$JournalPageState {
     required Set<DisplayFilter> filters,
     required bool showPrivateEntries,
     required bool showTasks,
-    required bool taskAsListView,
     required List<String> selectedEntryTypes,
     required Set<String> fullTextMatches,
     required PagingController<int, JournalEntity>? pagingController,
