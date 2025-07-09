@@ -389,10 +389,10 @@ packages:
     dependency: transitive
     description:
       name: coverage
-      sha256: aa07dbe5f2294c827b7edb9a87bba44a9c15a3cc81bc8da2ca19b37322d30080
+      sha256: "5da775aa218eaf2151c721b16c01c7676fbfdd99cebba2bf64e8b807a28ff94d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.14.1"
+    version: "1.15.0"
   cross_file:
     dependency: transitive
     description:
@@ -1506,10 +1506,10 @@ packages:
     dependency: transitive
     description:
       name: intl_utils
-      sha256: "3b2655259dbebd26e3b1466d0839f389dc59a275337e1b760ac645bc7814d2d3"
+      sha256: da67ac187b521445d745f7c68e7254c2090f6c3c9081c93cd515480af9e59569
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.10"
+    version: "2.8.11"
   io:
     dependency: transitive
     description:
@@ -2186,10 +2186,10 @@ packages:
     dependency: transitive
     description:
       name: pubspec_manager
-      sha256: "4000db36057ddc9c95f1c56fd209ce54b1e7c621280f52e159a83342b1e33d62"
+      sha256: "416609635f6c53ab759223ae66e71282e61a863c13ec47d60381e4b8046c2a71"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   pubspec_parse:
     dependency: transitive
     description:
@@ -2672,10 +2672,10 @@ packages:
     dependency: transitive
     description:
       name: source_helper
-      sha256: "86d247119aedce8e63f4751bd9626fc9613255935558447569ad42f9f5b48b3c"
+      sha256: "4f81479fe5194a622cdd1713fe1ecb683a6e6c85cd8cec8e2e35ee5ab3fdf2a1"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.5"
+    version: "1.3.6"
   source_map_stack_trace:
     dependency: transitive
     description:
@@ -3144,10 +3144,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: "0d47db6cbf72db61d86369219efd35c7f9d93515e1319da941ece81b1f21c49c"
+      sha256: "9fedd55023249f3a02738c195c906b4e530956191febf0838e37d0dac912f953"
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.2"
+    version: "2.8.0"
   video_player_platform_interface:
     dependency: transitive
     description:
@@ -3160,10 +3160,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_web
-      sha256: e8bba2e5d1e159d5048c9a491bb2a7b29c535c612bb7d10c1e21107f5bd365ba
+      sha256: "9f3c00be2ef9b76a95d94ac5119fb843dca6f2c69e6c9968f6f2b6c9e7afbdeb"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.5"
+    version: "2.4.0"
   visibility_detector:
     dependency: "direct main"
     description:
