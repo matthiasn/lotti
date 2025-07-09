@@ -9,102 +9,195 @@ const fontSizeMediumLarge = 20.0;
 const fontSizeLarge = 25.0;
 
 class AppTheme {
-  // Settings card layout constants
-  static const double cardBorderRadius = 16;
-  static const double cardPadding = 14;
-  static const double cardPaddingCompact = 12;
-  static const double cardElevationLight = 6;
-  static const double cardElevationDark = 10;
-  static const double cardSpacing = 8; // Spacing between cards
+  // Modern card layout constants
+  static const double cardBorderRadius = 20; // Increased for more modern look
+  static const double cardPadding = 16; // Increased padding
+  static const double cardPaddingCompact = 14;
+  static const double cardElevationLight = 8; // Enhanced shadows
+  static const double cardElevationDark = 12;
+  static const double cardSpacing = 12; // Increased spacing between cards
 
   // Icon container constants
-  static const double iconContainerSize = 40;
-  static const double iconContainerSizeCompact = 36;
-  static const double iconContainerBorderRadius = 12;
-  static const double iconSize = 20;
-  static const double iconSizeCompact = 18;
+  static const double iconContainerSize = 44; // Slightly larger
+  static const double iconContainerSizeCompact = 40;
+  static const double iconContainerBorderRadius = 14; // More rounded
+  static const double iconSize = 22; // Slightly larger icons
+  static const double iconSizeCompact = 20;
 
   // Spacing constants
   static const double spacingXSmall = 4;
   static const double spacingSmall = 8;
-  static const double spacingMedium = 10;
-  static const double spacingLarge = 12;
+  static const double spacingMedium = 12; // Increased
+  static const double spacingLarge = 16; // Increased
 
   // Chevron icon size
-  static const double chevronSize = 20;
-  static const double chevronSizeCompact = 18;
+  static const double chevronSize = 22; // Slightly larger
+  static const double chevronSizeCompact = 20;
 
-  // Typography constants
-  static const double titleFontSize = 16;
-  static const double titleFontSizeCompact = 15;
-  static const double subtitleFontSize = 12;
-  static const double subtitleFontSizeCompact = 11;
-  static const double letterSpacingTitle = 0.1;
-  static const double letterSpacingSubtitle = 0;
-  static const double lineHeightSubtitle = 1.4;
+  // Typography constants - Modern typography scale
+  static const double titleFontSize = 18; // Increased
+  static const double titleFontSizeCompact = 17;
+  static const double subtitleFontSize = 13; // Increased
+  static const double subtitleFontSizeCompact = 12;
+  static const double letterSpacingTitle = 0.15; // Increased letter spacing
+  static const double letterSpacingSubtitle = 0.05;
+  static const double lineHeightSubtitle = 1.5; // Better line height
 
-  // Alpha values for colors
-  static const double alphaOutline = 0.3;
-  static const double alphaPrimaryContainer = 0.15;
-  static const double alphaShadowLight = 0.08;
-  static const double alphaShadowDark = 0.15;
-  static const double alphaPrimary = 0.1;
-  static const double alphaPrimaryHighlight = 0.05;
-  static const double alphaPrimaryBorder = 0.15;
-  static const double alphaPrimaryIcon = 0.9;
-  static const double alphaSurfaceVariant = 0.8;
-  static const double alphaSurfaceVariantChevron = 0.6;
-  static const double alphaDestructive = 0.3;
+  // Enhanced alpha values for colors
+  static const double alphaOutline = 0.25; // Reduced for subtlety
+  static const double alphaPrimaryContainer = 0.12; // More subtle
+  static const double alphaShadowLight = 0.12; // Enhanced shadows
+  static const double alphaShadowDark = 0.25;
+  static const double alphaPrimary = 0.08; // More subtle
+  static const double alphaPrimaryHighlight = 0.04;
+  static const double alphaPrimaryBorder = 0.12;
+  static const double alphaPrimaryIcon = 0.95; // More vibrant
+  static const double alphaSurfaceVariant = 0.85; // Better contrast
+  static const double alphaSurfaceVariantChevron = 0.7;
+  static const double alphaDestructive = 0.25;
 
-  // Animation constants
-  static const int animationDuration = 200;
-  static const Curve animationCurve = Curves.easeOutCubic;
+  // Animation constants - Smoother animations
+  static const int animationDuration = 300; // Slightly longer
+  static const Curve animationCurve = Curves.easeOutQuart; // More sophisticated curve
 
   // Spacing between elements
-  static const double spacingBetweenTitleAndSubtitle = 4;
-  static const double spacingBetweenTitleAndSubtitleCompact = 2;
-  static const double spacingBetweenElements = 6;
+  static const double spacingBetweenTitleAndSubtitle = 6; // Increased
+  static const double spacingBetweenTitleAndSubtitleCompact = 4;
+  static const double spacingBetweenElements = 8; // Increased
 
-  // Offset for shadows
-  static const Offset shadowOffset = Offset(0, 2);
+  // Enhanced shadow offset
+  static const Offset shadowOffset = Offset(0, 3); // More pronounced
 
   // Status indicator constants
-  static const double statusIndicatorPaddingHorizontal = 6;
-  static const double statusIndicatorPaddingHorizontalCompact = 5;
-  static const double statusIndicatorPaddingVertical = 2;
-  static const double statusIndicatorBorderRadius = 6;
-  static const double statusIndicatorBorderRadiusSmall = 5;
-  static const double statusIndicatorBorderRadiusTiny = 4;
-  static const double statusIndicatorBorderWidth = 0.5;
-  static const double statusIndicatorSize = 24;
-  static const double statusIndicatorSizeCompact = 20;
-  static const double statusIndicatorIconSize = 14;
-  static const double statusIndicatorIconSizeCompact = 12;
+  static const double statusIndicatorPaddingHorizontal = 8; // Increased
+  static const double statusIndicatorPaddingHorizontalCompact = 6;
+  static const double statusIndicatorPaddingVertical = 3; // Increased
+  static const double statusIndicatorBorderRadius = 8; // More rounded
+  static const double statusIndicatorBorderRadiusSmall = 6;
+  static const double statusIndicatorBorderRadiusTiny = 5;
+  static const double statusIndicatorBorderWidth = 0.8; // Slightly thicker
+  static const double statusIndicatorSize = 26; // Slightly larger
+  static const double statusIndicatorSizeCompact = 22;
+  static const double statusIndicatorIconSize = 16; // Larger icons
+  static const double statusIndicatorIconSizeCompact = 14;
 
   // Status indicator alpha values
-  static const double alphaPrimaryContainerLight = 0.25;
-  static const double alphaPrimaryContainerDark = 0.15;
-  static const double alphaStatusIndicatorBorder = 0.1;
-  static const double alphaSurfaceContainerHighest = 0.3;
-  static const double alphaSurfaceVariantDim = 0.5;
-  static const double alphaErrorContainer = 0.5;
-  static const double alphaErrorText = 0.8;
-  static const double alphaPrimaryContainerActive = 0.7;
+  static const double alphaPrimaryContainerLight = 0.3; // Enhanced
+  static const double alphaPrimaryContainerDark = 0.2;
+  static const double alphaStatusIndicatorBorder = 0.15;
+  static const double alphaSurfaceContainerHighest = 0.35;
+  static const double alphaSurfaceVariantDim = 0.6;
+  static const double alphaErrorContainer = 0.6;
+  static const double alphaErrorText = 0.9;
+  static const double alphaPrimaryContainerActive = 0.8;
 
   // Font sizes for status indicators
-  static const double statusIndicatorFontSize = 11;
-  static const double statusIndicatorFontSizeCompact = 10;
-  static const double statusIndicatorFontSizeTiny = 9;
+  static const double statusIndicatorFontSize = 12; // Increased
+  static const double statusIndicatorFontSizeCompact = 11;
+  static const double statusIndicatorFontSizeTiny = 10;
 
   // Modal item spacer widths
-  static const double modalIconSpacerWidth = iconContainerSize * 1.1;
+  static const double modalIconSpacerWidth = iconContainerSize * 1.15;
   static const double modalChevronSpacerWidth = spacingLarge;
 }
 
-const double inputBorderRadius = 10;
+// Gradient and shadow constants
+class GradientConstants {
+  // Alpha values for gradient overlays
+  static const double lightCardGradientAlpha = 0.4;
+  static const double darkCardGradientAlpha = 0.3;
+  static const double darkCardGradientEndAlpha = 0.5;
+  static const double backgroundGradientLightAlpha = 0.08;
+  static const double backgroundGradientDarkAlpha = 0.15;
+
+  // Color blending factors for gradients
+  static const double darkCardBlendFactor = 0.3;
+  static const double darkCardEndBlendFactor = 0.5;
+
+  // Shadow alpha values for enhanced cards
+  static const double enhancedShadowLightAlpha = 0.15;
+  static const double enhancedShadowDarkAlpha = 0.3;
+  static const double enhancedShadowSecondaryLightAlpha = 0.1;
+  static const double enhancedShadowSecondaryDarkAlpha = 0.2;
+
+  // Shadow blur and spread values
+  static const double enhancedShadowBlurLight = 15;
+  static const double enhancedShadowBlurDark = 20;
+  static const double enhancedShadowSecondaryBlurLight = 30;
+  static const double enhancedShadowSecondaryBlurDark = 40;
+  static const double enhancedShadowSpread = 2;
+  static const double enhancedShadowSecondarySpread = 4;
+  static const double enhancedShadowOffsetY = 8;
+  static const double enhancedShadowSecondaryOffsetY = 16;
+}
+
+// Input and form styling constants
+class InputConstants {
+  // Border radius values
+  static const double inputBorderRadius = 12;
+  static const double chipBorderRadius = 12;
+  static const double bottomSheetBorderRadius = 24;
+
+  // Border width values
+  static const double focusedBorderWidth = 2.5;
+  static const double segmentedButtonBorderWidth = 1.5;
+
+  // Alpha values for borders and fills
+  static const int inputBorderAlpha = 80;
+  static const int inputFillAlpha = 20;
+  static const int inputOutlineAlpha = 60;
+
+  // Padding values
+  static const double segmentedButtonHorizontalPadding = 8;
+  static const double segmentedButtonVerticalPadding = 4;
+  static const double textButtonHorizontalPadding = 16;
+  static const double textButtonVerticalPadding = 8;
+  static const double elevatedButtonHorizontalPadding = 20;
+  static const double elevatedButtonVerticalPadding = 12;
+}
+
+// Interactive elements constants
+class InteractiveConstants {
+  // Slider alpha values
+  static const int sliderInactiveAlpha = 150;
+  static const int sliderOverlayAlpha = 100;
+
+  // Slider dimensions
+  static const double sliderThumbRadius = 10;
+
+  // Button elevation values
+  static const double elevatedButtonDefaultElevation = 4;
+  static const double elevatedButtonPressedElevation = 2;
+}
+
+// Spacing and layout constants
+class SpacingConstants {
+  // Modal spacing
+  static const double verticalModalSpacerHeight = 32;
+  static const double inputSpacerHeight = 28;
+  static const double inputSpacerSmallHeight = 18;
+  static const double enhancedSmallFontSize = 26;
+
+  // Icon container multipliers
+  static const double modalIconSpacerMultiplier = 1.15;
+}
+
+// Typography constants
+class TypographyConstants {
+  // Font weight adjustments
+  static const FontWeight enhancedFontWeight = FontWeight.w500;
+  static const FontWeight bodyFontWeight = FontWeight.w400;
+  static const FontWeight lightFontWeight = FontWeight.w200;
+
+  // Font size adjustments
+  static const double enhancedFontSize = 22;
+  static const double enhancedSmallFontSize = 26;
+}
+
+const double inputBorderRadius = InputConstants.inputBorderRadius;
 
 const verticalModalSpacer = SizedBox(
-  height: 30,
+  height: SpacingConstants.verticalModalSpacerHeight,
 );
 
 InputDecoration inputDecoration({
@@ -118,7 +211,7 @@ InputDecoration inputDecoration({
       inputBorderRadius,
     ),
     borderSide: BorderSide(
-      color: themeData.colorScheme.outline.withAlpha(100),
+      color: themeData.colorScheme.outline.withAlpha(InputConstants.inputBorderAlpha),
     ),
   );
 
@@ -139,21 +232,21 @@ InputDecoration inputDecoration({
       borderRadius: BorderRadius.circular(
         inputBorderRadius,
       ),
-      borderSide: BorderSide(
-        color: themeData.colorScheme.outline,
-        width: 2,
-      ),
+              borderSide: BorderSide(
+          color: themeData.colorScheme.outline,
+          width: InputConstants.focusedBorderWidth,
+        ),
     ),
     floatingLabelBehavior: FloatingLabelBehavior.always,
     suffixIcon: suffixIcon,
     label: Text(
       labelText ?? '',
       semanticsLabel: semanticsLabel,
-      style: TextStyle(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w300,
-        color: themeData.colorScheme.outline,
-      ),
+              style: TextStyle(
+          fontSize: fontSizeMedium,
+          fontWeight: TypographyConstants.bodyFontWeight,
+          color: themeData.colorScheme.outline,
+        ),
     ),
   );
 }
@@ -184,10 +277,10 @@ const switchDecoration = InputDecoration(
 );
 
 const inputSpacer = SizedBox(
-  height: 25,
+  height: SpacingConstants.inputSpacerHeight,
 );
 const inputSpacerSmall = SizedBox(
-  height: 15,
+  height: SpacingConstants.inputSpacerSmallHeight,
 );
 
 TextStyle choiceChipTextStyle({
@@ -196,7 +289,7 @@ TextStyle choiceChipTextStyle({
 }) =>
     TextStyle(
       fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w300,
+      fontWeight: TypographyConstants.bodyFontWeight,
       color: isSelected
           ? themeData.colorScheme.onSecondary
           : themeData.colorScheme.secondary,
@@ -204,7 +297,7 @@ TextStyle choiceChipTextStyle({
 
 const chartTooltipStyle = TextStyle(
   fontSize: fontSizeSmall,
-  fontWeight: FontWeight.w300,
+  fontWeight: TypographyConstants.bodyFontWeight,
 );
 
 const chartTooltipStyleBold = TextStyle(
@@ -231,22 +324,22 @@ const appBarTextStyle = TextStyle(
 
 const appBarTextStyleNew = TextStyle(
   fontSize: fontSizeMedium,
-  fontWeight: FontWeight.w300,
+  fontWeight: TypographyConstants.bodyFontWeight,
 );
 
 const appBarTextStyleNewLarge = TextStyle(
   fontSize: fontSizeLarge,
-  fontWeight: FontWeight.w100,
+  fontWeight: TypographyConstants.lightFontWeight,
 );
 
 const settingsCardTextStyle = TextStyle(
   fontSize: fontSizeLarge,
-  fontWeight: FontWeight.w300,
+  fontWeight: TypographyConstants.bodyFontWeight,
 );
 
 const titleStyle = TextStyle(
   fontSize: fontSizeLarge,
-  fontWeight: FontWeight.w300,
+  fontWeight: TypographyConstants.bodyFontWeight,
 );
 
 const taskTitleStyle = TextStyle(
@@ -254,13 +347,13 @@ const taskTitleStyle = TextStyle(
 );
 
 const multiSelectStyle = TextStyle(
-  fontWeight: FontWeight.w100,
+  fontWeight: FontWeight.w200, // Slightly bolder
   fontSize: fontSizeLarge,
 );
 
 const chartTitleStyle = TextStyle(
   fontSize: fontSizeMedium,
-  fontWeight: FontWeight.w300,
+  fontWeight: FontWeight.w400, // Slightly bolder
 );
 
 final TextStyle chartTitleStyleMonospace = chartTitleStyle.copyWith(
@@ -271,7 +364,7 @@ final TextStyle chartTitleStyleMonospace = chartTitleStyle.copyWith(
 
 const habitTitleStyle = TextStyle(
   fontSize: fontSizeMediumLarge,
-  fontWeight: FontWeight.w300,
+  fontWeight: FontWeight.w400, // Slightly bolder
 );
 
 TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
@@ -291,20 +384,20 @@ const segmentItemStyle = TextStyle(
 );
 
 const badgeStyle = TextStyle(
-  fontWeight: FontWeight.w300,
+  fontWeight: FontWeight.w400, // Slightly bolder
   fontSize: fontSizeSmall,
 );
 
-const settingsIconSize = 24.0;
+const settingsIconSize = 26.0; // Slightly larger
 
 const habitCompletionHeaderStyle = TextStyle(
-  fontSize: 20,
+  fontSize: 22, // Increased
 );
 
 TextStyle searchLabelStyle() => TextStyle(
       color: secondaryTextColor,
       fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w100,
+      fontWeight: FontWeight.w200, // Slightly bolder
     );
 
 ThemeData withOverrides(ThemeData themeData) {
@@ -312,31 +405,46 @@ ThemeData withOverrides(ThemeData themeData) {
       cardTheme: themeData.cardTheme.copyWith(
         clipBehavior: Clip.hardEdge,
         color: themeData.colorScheme.surfaceContainer,
+        elevation: 0, // Let our custom cards handle elevation
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        ),
       ),
       appBarTheme: themeData.appBarTheme.copyWith(
         backgroundColor: themeData.scaffoldBackgroundColor,
+        elevation: 0, // Modern flat design
+        shadowColor: Colors.transparent,
       ),
       sliderTheme: themeData.sliderTheme.copyWith(
         activeTrackColor: themeData.colorScheme.secondary,
         inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(
-          178,
+          150, // Slightly more visible
         ),
         thumbColor: themeData.colorScheme.secondary,
-        thumbShape: const RoundSliderThumbShape(
-          enabledThumbRadius: 8,
-        ),
+        thumbShape: const RoundSliderThumbShape(),
         overlayColor: themeData.colorScheme.secondary.withAlpha(
-          127,
+          100, // More subtle overlay
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         clipBehavior: Clip.hardEdge,
-        elevation: 100,
+        elevation: 0, // Modern flat design
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
       ),
       textTheme: themeData.textTheme.copyWith(
         titleMedium: themeData.textTheme.titleMedium?.copyWith(
           fontSize: fontSizeMedium,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w500, // Slightly bolder
+        ),
+        bodyLarge: themeData.textTheme.bodyLarge?.copyWith(
+          fontSize: fontSizeMedium,
+          fontWeight: FontWeight.w400,
+        ),
+        bodyMedium: themeData.textTheme.bodyMedium?.copyWith(
+          fontSize: fontSizeMedium,
+          fontWeight: FontWeight.w400,
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -346,11 +454,13 @@ ThemeData withOverrides(ThemeData themeData) {
           textStyle: WidgetStateProperty.resolveWith(
             (states) => const TextStyle(
               fontSize: fontSizeSmall,
+              fontWeight: FontWeight.w500, // Slightly bolder
             ),
           ),
           side: WidgetStateProperty.resolveWith((states) {
             return BorderSide(
               color: themeData.colorScheme.tertiary,
+              width: 1.5, // Slightly thicker
             );
           }),
           shape: WidgetStateProperty.resolveWith((states) {
@@ -362,23 +472,27 @@ ThemeData withOverrides(ThemeData themeData) {
           }),
           padding: WidgetStateProperty.resolveWith((states) {
             return const EdgeInsets.symmetric(
-              horizontal: 5,
+              horizontal: 8, // Increased padding
+              vertical: 4,
             );
           }),
-          enableFeedback: true,
+
         ),
       ),
-      chipTheme: const ChipThemeData(
+      chipTheme: ChipThemeData(
         side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), // More rounded
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        fillColor: themeData.primaryColor,
+        fillColor: themeData.primaryColor.withAlpha(20), // Subtle fill
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(
             inputBorderRadius,
           ),
           borderSide: BorderSide(
-            color: themeData.colorScheme.outline,
+            color: themeData.colorScheme.outline.withAlpha(60), // More subtle
           ),
         ),
         errorBorder: OutlineInputBorder(
@@ -395,7 +509,7 @@ ThemeData withOverrides(ThemeData themeData) {
           ),
           borderSide: BorderSide(
             color: themeData.primaryColor,
-            width: 2,
+            width: 2.5, // Slightly thicker
           ),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -405,6 +519,31 @@ ThemeData withOverrides(ThemeData themeData) {
           textStyle: WidgetStateProperty.resolveWith((states) {
             return const TextStyle(
               fontSize: fontSizeMediumLarge,
+              fontWeight: FontWeight.w500, // Slightly bolder
+            );
+          }),
+          padding: WidgetStateProperty.resolveWith((states) {
+            return const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            );
+          }),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          elevation: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.pressed) ? 2 : 4;
+          }),
+          shape: WidgetStateProperty.resolveWith((states) {
+            return RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // More rounded
+            );
+          }),
+          padding: WidgetStateProperty.resolveWith((states) {
+            return const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
             );
           }),
         ),
@@ -441,37 +580,66 @@ extension TextThemeExtension on TextStyle {
 class GradientThemes {
   /// Creates a subtle top-left to bottom-right gradient for cards
   static LinearGradient? cardGradient(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.light) {
-      return null;
-    }
-
-    return LinearGradient(
-      colors: [
-        Color.lerp(
-          context.colorScheme.surfaceContainer,
-          context.colorScheme.surfaceContainerHigh,
-          0.3,
-        )!,
-        Color.lerp(
-          context.colorScheme.surface,
-          context.colorScheme.surfaceContainer,
-          0.5,
-        )!,
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
+    return ModernGradientThemes.cardGradient(context);
   }
 
   /// Creates a subtle gradient for icon containers
   static LinearGradient iconContainerGradient(BuildContext context) {
-    return LinearGradient(
-      colors: [
-        context.colorScheme.primaryContainer.withValues(alpha: 0.3),
-        context.colorScheme.primaryContainer.withValues(alpha: 0.2),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
+    return ModernGradientThemes.accentGradient(context);
+  }
+  
+  /// Creates a modern primary gradient
+  static LinearGradient primaryGradient(BuildContext context) {
+    return ModernGradientThemes.primaryGradient(context);
+  }
+  
+  /// Creates a modern accent gradient
+  static LinearGradient accentGradient(BuildContext context) {
+    return ModernGradientThemes.accentGradient(context);
+  }
+  
+  /// Creates a modern success gradient
+  static LinearGradient successGradient() {
+    return ModernGradientThemes.successGradient();
+  }
+  
+  /// Creates a modern warning gradient
+  static LinearGradient warningGradient() {
+    return ModernGradientThemes.warningGradient();
+  }
+  
+  /// Creates a modern error gradient
+  static LinearGradient errorGradient() {
+    return ModernGradientThemes.errorGradient();
+  }
+  
+  /// Creates a background gradient
+  static LinearGradient backgroundGradient(BuildContext context) {
+    return ModernGradientThemes.backgroundGradient(context);
+  }
+  
+  /// Creates an elegant gradient for premium features
+  static LinearGradient elegantGradient(BuildContext context) {
+    return ModernGradientThemes.elegantGradient(context);
+  }
+  
+  /// Creates a sunset gradient for warm features
+  static LinearGradient sunsetGradient() {
+    return ModernGradientThemes.sunsetGradient();
+  }
+  
+  /// Creates an ocean gradient for calm features
+  static LinearGradient oceanGradient() {
+    return ModernGradientThemes.oceanGradient();
+  }
+  
+  /// Creates a forest gradient for natural features
+  static LinearGradient forestGradient() {
+    return ModernGradientThemes.forestGradient();
+  }
+  
+  /// Creates a sophisticated dark gradient
+  static LinearGradient darkOceanGradient() {
+    return ModernGradientThemes.darkOceanGradient();
   }
 }

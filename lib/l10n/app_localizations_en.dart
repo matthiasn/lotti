@@ -1321,6 +1321,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAboutTitle => 'About Lotti';
 
   @override
+  String get settingsAboutAppTagline => 'Your Personal Journal';
+
+  @override
+  String get settingsAboutAppInformation => 'App Information';
+
+  @override
+  String get settingsAboutYourData => 'Your Data';
+
+  @override
+  String get settingsAboutCredits => 'Credits';
+
+  @override
+  String get settingsAboutBuiltWithFlutter =>
+      'Built with Flutter and love for personal journaling.';
+
+  @override
+  String get settingsAboutThankYou => 'Thank you for using Lotti!';
+
+  @override
+  String get settingsAboutVersion => 'Version';
+
+  @override
+  String get settingsAboutPlatform => 'Platform';
+
+  @override
+  String get settingsAboutBuildType => 'Build Type';
+
+  @override
+  String get settingsAboutJournalEntries => 'Journal Entries';
+
+  @override
   String get settingsAdvancedShowCaseAboutLottiTooltip =>
       'Learn more about the Lotti application, including version and credits.';
 
@@ -1629,7 +1660,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 
@@ -2553,6 +2586,37 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get settingsAboutTitle => 'About Lotti';
 
   @override
+  String get settingsAboutAppTagline => 'Your Personal Journal';
+
+  @override
+  String get settingsAboutAppInformation => 'App Information';
+
+  @override
+  String get settingsAboutYourData => 'Your Data';
+
+  @override
+  String get settingsAboutCredits => 'Credits';
+
+  @override
+  String get settingsAboutBuiltWithFlutter =>
+      'Built with Flutter and love for personal journaling.';
+
+  @override
+  String get settingsAboutThankYou => 'Thank you for using Lotti!';
+
+  @override
+  String get settingsAboutVersion => 'Version';
+
+  @override
+  String get settingsAboutPlatform => 'Platform';
+
+  @override
+  String get settingsAboutBuildType => 'Build Type';
+
+  @override
+  String get settingsAboutJournalEntries => 'Journal Entries';
+
+  @override
   String get settingsAdvancedShowCaseAboutLottiTooltip =>
       'Learn more about the Lotti application, including version and credits.';
 
@@ -2835,7 +2899,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 

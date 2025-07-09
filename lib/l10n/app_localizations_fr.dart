@@ -1334,6 +1334,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsAboutTitle => 'À propos de Lotti';
 
   @override
+  String get settingsAboutAppTagline => 'Votre journal personnel';
+
+  @override
+  String get settingsAboutAppInformation => 'Informations sur l\'application';
+
+  @override
+  String get settingsAboutYourData => 'Vos données';
+
+  @override
+  String get settingsAboutCredits => 'Crédits';
+
+  @override
+  String get settingsAboutBuiltWithFlutter =>
+      'Développé avec Flutter et amour pour le journaling personnel.';
+
+  @override
+  String get settingsAboutThankYou => 'Merci d\'utiliser Lotti !';
+
+  @override
+  String get settingsAboutVersion => 'Version';
+
+  @override
+  String get settingsAboutPlatform => 'Plateforme';
+
+  @override
+  String get settingsAboutBuildType => 'Type de build';
+
+  @override
+  String get settingsAboutJournalEntries => 'Entrées de journal';
+
+  @override
   String get settingsAdvancedShowCaseAboutLottiTooltip =>
       'En savoir plus sur l\'application Lotti, y compris la version et les crédits.';
 
@@ -1645,7 +1676,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'Vous avez vérifié avec succès $deviceName ($deviceID)';
   }
 

@@ -66,7 +66,7 @@ import 'app_localizations_ro.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -89,11 +89,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -102,7 +102,7 @@ abstract class AppLocalizations {
     Locale('en', 'GB'),
     Locale('es'),
     Locale('fr'),
-    Locale('ro')
+    Locale('ro'),
   ];
 
   /// No description provided for @addActionAddAudioRecording.
@@ -2529,6 +2529,66 @@ abstract class AppLocalizations {
   /// **'About Lotti'**
   String get settingsAboutTitle;
 
+  /// No description provided for @settingsAboutAppTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Personal Journal'**
+  String get settingsAboutAppTagline;
+
+  /// No description provided for @settingsAboutAppInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'App Information'**
+  String get settingsAboutAppInformation;
+
+  /// No description provided for @settingsAboutYourData.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Data'**
+  String get settingsAboutYourData;
+
+  /// No description provided for @settingsAboutCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits'**
+  String get settingsAboutCredits;
+
+  /// No description provided for @settingsAboutBuiltWithFlutter.
+  ///
+  /// In en, this message translates to:
+  /// **'Built with Flutter and love for personal journaling.'**
+  String get settingsAboutBuiltWithFlutter;
+
+  /// No description provided for @settingsAboutThankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for using Lotti!'**
+  String get settingsAboutThankYou;
+
+  /// No description provided for @settingsAboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsAboutVersion;
+
+  /// No description provided for @settingsAboutPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get settingsAboutPlatform;
+
+  /// No description provided for @settingsAboutBuildType.
+  ///
+  /// In en, this message translates to:
+  /// **'Build Type'**
+  String get settingsAboutBuildType;
+
+  /// No description provided for @settingsAboutJournalEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal Entries'**
+  String get settingsAboutJournalEntries;
+
   /// No description provided for @settingsAdvancedShowCaseAboutLottiTooltip.
   ///
   /// In en, this message translates to:
@@ -3068,7 +3128,9 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve successfully verified {deviceName} ({deviceID})'**
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID);
+    String deviceName,
+    String deviceID,
+  );
 
   /// No description provided for @settingsMatrixVerifyConfirm.
   ///
@@ -3626,8 +3688,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }
