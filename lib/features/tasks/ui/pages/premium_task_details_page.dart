@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -16,11 +17,12 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/state/task_scroll_controller.dart';
+import 'package:lotti/features/tasks/state/task_sticky_headers_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_sticky_headers.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -61,15 +63,6 @@ class _PremiumTaskDetailsPageState
   late ScrollController _scrollController;
   late ListController _listController;
 
-  // Track visibility states
-  bool _isTaskHeaderCollapsed = false;
-  bool _isAiSummaryCollapsed = false;
-  bool _isChecklistsCollapsed = false;
-
-  // Track sticky header heights
-  static const double _taskHeaderHeight = 60;
-  static const double _sectionHeaderHeight = 48;
-
   // Track linked entry indices for navigation
   final Map<String, int> _linkedEntryIndices = {};
 
@@ -88,8 +81,12 @@ class _PremiumTaskDetailsPageState
 
     final provider = taskAppBarControllerProvider(id: widget.taskId);
     _updateOffsetListener = () {
-      ref.read(provider.notifier).updateOffset(_scrollController.offset);
-      _updateCollapseStates();
+      final offset = _scrollController.offset;
+      ref.read(provider.notifier).updateOffset(offset);
+      // Update sticky headers controller with new offset
+      ref
+          .read(taskStickyHeadersControllerProvider(widget.taskId).notifier)
+          .updateScrollOffset(offset);
     };
 
     _scrollController
@@ -123,40 +120,18 @@ class _PremiumTaskDetailsPageState
     }
   }
 
-  void _updateCollapseStates() {
-    if (!mounted) return;
+  void _updateLinkedEntryIndices(List<EntryLink> entryLinks) {
+    _linkedEntryIndices.clear();
+    for (var i = 0; i < entryLinks.length; i++) {
+      final link = entryLinks[i];
+      final entryIndex = _SectionIndices.linkedEntriesHeader + 1 + i;
+      _linkedEntryIndices[link.toId] = entryIndex;
+    }
 
-    // Use scroll offset for detection
-    final offset = _scrollController.offset;
-
-    // Check if controller still has clients
-    final hasClients = _scrollController.hasClients;
-    final position =
-        _scrollController.hasClients ? _scrollController.position : null;
-    final maxScroll = position?.maxScrollExtent ?? 0;
-    final minScroll = position?.minScrollExtent ?? 0;
-
-    // Headers should show when scrolled past their content, and hide when scrolled back
-    // Using lower thresholds for better UX
-    final newTaskCollapsed =
-        offset > 80; // Show after task header starts scrolling out
-    final newAiCollapsed =
-        offset > 300; // Show after AI summary starts scrolling out
-    final newChecklistCollapsed =
-        offset > 600; // Show after checklists start scrolling out
-
-    // Enhanced debug logging
-    debugPrint(
-        'Scroll: offset=$offset, max=$maxScroll, min=$minScroll, hasClients=$hasClients, mounted=$mounted');
-    debugPrint(
-        'States: Task: $_isTaskHeaderCollapsed->$newTaskCollapsed, AI: $_isAiSummaryCollapsed->$newAiCollapsed, Checklist: $_isChecklistsCollapsed->$newChecklistCollapsed');
-
-    // Force update regardless of change detection to debug the issue
-    setState(() {
-      _isTaskHeaderCollapsed = newTaskCollapsed;
-      _isAiSummaryCollapsed = newAiCollapsed;
-      _isChecklistsCollapsed = newChecklistCollapsed;
-    });
+    // Update indices in the scroll controller
+    ref
+        .read(taskScrollControllerProvider(widget.taskId).notifier)
+        .updateIndices(_linkedEntryIndices);
   }
 
   void _scrollToSection(int sectionIndex) {
@@ -199,50 +174,20 @@ class _PremiumTaskDetailsPageState
       return EmptyScaffoldWithTitle(widget.taskId);
     }
 
-    // Force rebuild on scroll state changes
-    // ignore: unused_local_variable
-    final taskCollapsed = _isTaskHeaderCollapsed;
-    // ignore: unused_local_variable
-    final aiCollapsed = _isAiSummaryCollapsed;
-    // ignore: unused_local_variable
-    final checklistCollapsed = _isChecklistsCollapsed;
-
-    // Get linked entries to build indices
+    // Get linked entries
     final linkedEntriesProvider =
         linkedEntriesControllerProvider(id: task.meta.id);
     final entryLinks = ref.watch(linkedEntriesProvider).valueOrNull ?? [];
 
-    // Build linked entry widgets and populate indices
-    final linkedEntries = <Widget>[];
-    _linkedEntryIndices.clear();
-
-    for (var i = 0; i < entryLinks.length; i++) {
-      final link = entryLinks[i];
-      final entryIndex = _SectionIndices.linkedEntriesHeader + 1 + i;
-      _linkedEntryIndices[link.toId] = entryIndex;
-    }
-
-    // Update indices in the scroll controller
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(taskScrollControllerProvider(widget.taskId).notifier)
-          .updateIndices(_linkedEntryIndices);
-    });
-
-    for (var i = 0; i < entryLinks.length; i++) {
-      final link = entryLinks[i];
-
-      linkedEntries.add(
-        EntryDetailsWidget(
-          key: Key('${task.meta.id}-${link.toId}'),
-          itemId: link.toId,
-          popOnDelete: false,
-          parentTags: task.meta.tagIds?.toSet(),
-          linkedFrom: task,
-          link: link,
-          showAiEntry: true,
-        ),
-      );
+    // Update indices only when entry links actually change
+    // This is handled by watching the provider - when it changes, build is called
+    // and we can update indices if needed
+    if (_linkedEntryIndices.length != entryLinks.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _updateLinkedEntryIndices(entryLinks);
+        }
+      });
     }
 
     return Scaffold(
@@ -282,109 +227,122 @@ class _PremiumTaskDetailsPageState
             child: SuperListView.builder(
               controller: _scrollController,
               listController: _listController,
+              cacheExtent: 11111,
+              extentPrecalculationPolicy: MyPrecalcPolicy(),
               itemBuilder: (context, index) {
                 switch (index) {
                   case _SectionIndices.taskHeader:
-                    return Container(
-                      color: context.colorScheme.surface,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: _ExpandedTaskContent(task: task),
+                    return RepaintBoundary(
+                      child: Container(
+                        color: context.colorScheme.surface,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: _ExpandedTaskContent(task: task),
+                      ),
                     );
 
                   case _SectionIndices.aiSummary:
-                    return Container(
-                      color: context.colorScheme.surface,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                MdiIcons.robotOutline,
-                                size: 20,
-                                color: context.colorScheme.outline,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'AI Task Summary',
-                                style: context.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                    return RepaintBoundary(
+                      child: Container(
+                        color: context.colorScheme.surface,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  MdiIcons.robotOutline,
+                                  size: 20,
                                   color: context.colorScheme.outline,
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _AiSummaryContent(taskId: widget.taskId),
-                        ],
+                                const SizedBox(width: 12),
+                                Text(
+                                  'AI Task Summary',
+                                  style:
+                                      context.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colorScheme.outline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _AiSummaryContent(taskId: widget.taskId),
+                          ],
+                        ),
                       ),
                     );
 
                   case _SectionIndices.checklists:
-                    return Container(
-                      color: context.colorScheme.surface,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                MdiIcons.checkboxMultipleOutline,
-                                size: 20,
-                                color: context.colorScheme.outline,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Checklists',
-                                style: context.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                    return RepaintBoundary(
+                      child: Container(
+                        color: context.colorScheme.surface,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  MdiIcons.checkboxMultipleOutline,
+                                  size: 20,
                                   color: context.colorScheme.outline,
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _ChecklistsContent(task: task),
-                        ],
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Checklists',
+                                  style:
+                                      context.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colorScheme.outline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _ChecklistsContent(task: task),
+                          ],
+                        ),
                       ),
                     );
 
                   case _SectionIndices.linkedEntriesHeader:
-                    return Container(
-                      color: context.colorScheme.surface,
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                MdiIcons.link,
-                                size: 20,
-                                color: context.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 8),
+                    return RepaintBoundary(
+                      child: Container(
+                        color: context.colorScheme.surface,
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  MdiIcons.link,
+                                  size: 20,
+                                  color: context.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Linked Entries',
+                                  style:
+                                      context.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Linked entries are handled individually now
+                            if (entryLinks.isEmpty)
                               Text(
-                                'Linked Entries',
-                                style: context.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                'No linked entries yet',
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Linked entries are handled individually now
-                          if (linkedEntries.isEmpty)
-                            Text(
-                              'No linked entries yet',
-                              style: context.textTheme.bodyMedium?.copyWith(
-                                color: context.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          LinkedFromEntriesWidget(task),
-                        ],
+                            LinkedFromEntriesWidget(task),
+                          ],
+                        ),
                       ),
                     );
 
@@ -392,8 +350,19 @@ class _PremiumTaskDetailsPageState
                     // Handle individual linked entries
                     final entryIndex =
                         index - _SectionIndices.linkedEntriesHeader - 1;
-                    if (entryIndex >= 0 && entryIndex < linkedEntries.length) {
-                      return linkedEntries[entryIndex];
+                    if (entryIndex >= 0 && entryIndex < entryLinks.length) {
+                      final link = entryLinks[entryIndex];
+                      return RepaintBoundary(
+                        child: EntryDetailsWidget(
+                          key: Key('${task.meta.id}-${link.toId}'),
+                          itemId: link.toId,
+                          popOnDelete: false,
+                          parentTags: task.meta.tagIds?.toSet(),
+                          linkedFrom: task,
+                          link: link,
+                          showAiEntry: true,
+                        ),
+                      );
                     }
                     // Bottom padding
                     return const SizedBox(height: 200);
@@ -401,128 +370,29 @@ class _PremiumTaskDetailsPageState
               },
               itemCount: _SectionIndices.linkedEntriesHeader +
                   1 +
-                  linkedEntries.length +
+                  entryLinks.length +
                   1, // +1 for bottom padding
             ),
           ),
 
-          // Sticky headers overlay - wrapped in builder to ensure proper rebuilds
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AnimatedBuilder(
-              animation: Listenable.merge([_scrollController]),
-              builder: (context, child) {
-                // Recalculate states in builder to ensure fresh values
-                final offset =
-                    _scrollController.hasClients ? _scrollController.offset : 0;
-                final showTask = offset > 80;
-                final showAi = offset > 300;
-                final showChecklist = offset > 600;
-
-                if (!showTask && !showAi && !showChecklist) {
-                  return const SizedBox.shrink();
-                }
-
-                return SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Task Header - Sticky when collapsed
-                      if (showTask)
-                        GestureDetector(
-                          onTap: () =>
-                              _scrollToSection(_SectionIndices.taskHeader),
-                          child: Container(
-                            height: _taskHeaderHeight,
-                            decoration: BoxDecoration(
-                              color: context.colorScheme.surface,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: context.colorScheme.outlineVariant,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: _TaskHeaderBuilder(
-                              task: task,
-                              isSticky: true,
-                              onTimeRecordingTap: _scrollToTimeRecordingEntry,
-                            ),
-                          ),
-                        ),
-
-                      // AI Summary Header - Sticky when collapsed
-                      if (showAi)
-                        GestureDetector(
-                          onTap: () =>
-                              _scrollToSection(_SectionIndices.aiSummary),
-                          child: Container(
-                            height: _sectionHeaderHeight,
-                            decoration: BoxDecoration(
-                              color: context.colorScheme.surface,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: context.colorScheme.outlineVariant,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: _SectionHeaderBuilder(
-                              icon: MdiIcons.robotOutline,
-                              title: 'AI Task Summary',
-                              isSticky: true,
-                            ),
-                          ),
-                        ),
-
-                      // Checklists Header - Sticky when collapsed
-                      if (showChecklist)
-                        GestureDetector(
-                          onTap: () =>
-                              _scrollToSection(_SectionIndices.checklists),
-                          child: Container(
-                            height: _sectionHeaderHeight,
-                            decoration: BoxDecoration(
-                              color: context.colorScheme.surface,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: context.colorScheme.outlineVariant,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: _ChecklistsHeaderBuilder(
-                              task: task,
-                              isSticky: true,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
+          // Sticky headers overlay - separate widget with its own state
+          if (false)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: TaskStickyHeaders(
+                taskId: widget.taskId,
+                task: task,
+                onTaskHeaderTap: () =>
+                    _scrollToSection(_SectionIndices.taskHeader),
+                onAiSummaryTap: () =>
+                    _scrollToSection(_SectionIndices.aiSummary),
+                onChecklistsTap: () =>
+                    _scrollToSection(_SectionIndices.checklists),
+                onTimeRecordingTap: _scrollToTimeRecordingEntry,
+              ),
             ),
-          ),
 
           // AI Running Animation at the bottom
           Align(
@@ -539,305 +409,6 @@ class _PremiumTaskDetailsPageState
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Task Header Builder
-class _TaskHeaderBuilder extends ConsumerWidget {
-  const _TaskHeaderBuilder({
-    required this.task,
-    required this.isSticky,
-    this.onTimeRecordingTap,
-  });
-
-  final Task task;
-  final bool isSticky;
-  final VoidCallback? onTimeRecordingTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusColor = _getStatusColor();
-    final progressState = ref
-        .watch(
-          taskProgressControllerProvider(id: task.meta.id),
-        )
-        .value;
-    final progressValue = progressState != null &&
-            progressState.estimate.inMinutes > 0
-        ? (progressState.progress.inMinutes / progressState.estimate.inMinutes)
-        : 0.0;
-
-    final timeService = getIt<TimeService>();
-    final currentRecording = ref
-        .watch(
-          StreamProvider<JournalEntity?>((ref) => timeService.getStream()),
-        )
-        .valueOrNull;
-
-    final isRecording = currentRecording != null &&
-        timeService.linkedFrom?.meta.id == task.meta.id;
-
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-        ),
-        boxShadow: isSticky
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  offset: const Offset(0, 1),
-                  blurRadius: 2,
-                ),
-              ]
-            : [],
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
-          children: [
-            // Back button - matching BackWidget style
-            IconButton(
-              onPressed: () => getIt<NavService>().beamBack(),
-              icon: Icon(
-                Icons.chevron_left,
-                size: 30,
-                weight: 500,
-                color: context.colorScheme.outline,
-                semanticLabel: 'Navigate back',
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 40,
-                minHeight: 40,
-              ),
-            ),
-            // Title
-            Expanded(
-              child: Text(
-                task.data.title,
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            // Time recording indicator
-            if (isRecording && onTimeRecordingTap != null)
-              GestureDetector(
-                onTap: onTimeRecordingTap,
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: context.colorScheme.error.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.fiber_manual_record,
-                        size: 12,
-                        color: context.colorScheme.error,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Recording',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: context.colorScheme.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(width: 8),
-            // Progress indicator
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: progressValue.clamp(0.0, 1.0),
-                    backgroundColor:
-                        context.colorScheme.surfaceContainerHighest,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      progressValue > 1.0
-                          ? Colors.red
-                          : progressValue >= 1.0
-                              ? Colors.green
-                              : statusColor,
-                    ),
-                    strokeWidth: 2.5,
-                  ),
-                  Text(
-                    '${(progressValue * 100).toInt()}%',
-                    style: context.textTheme.labelSmall?.copyWith(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      color: progressValue > 1.0 ? Colors.red : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getStatusColor() => task.data.status.map(
-        open: (_) => Colors.blue,
-        inProgress: (_) => Colors.blue,
-        groomed: (_) => Colors.orange,
-        blocked: (_) => Colors.red,
-        onHold: (_) => Colors.amber,
-        done: (_) => Colors.green,
-        rejected: (_) => Colors.red.shade900,
-      );
-}
-
-// Generic Section Header Builder
-class _SectionHeaderBuilder extends StatelessWidget {
-  const _SectionHeaderBuilder({
-    required this.icon,
-    required this.title,
-    required this.isSticky,
-  });
-
-  final IconData icon;
-  final String title;
-  final bool isSticky;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-        ),
-        boxShadow: isSticky
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  offset: const Offset(0, 1),
-                  blurRadius: 1,
-                ),
-              ]
-            : [],
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: context.colorScheme.primary,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: context.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Checklists Header Builder
-class _ChecklistsHeaderBuilder extends StatelessWidget {
-  const _ChecklistsHeaderBuilder({
-    required this.task,
-    required this.isSticky,
-  });
-
-  final Task task;
-  final bool isSticky;
-
-  @override
-  Widget build(BuildContext context) {
-    final totalItems = task.data.checklistIds?.length ?? 0;
-    // TODO: Calculate actual completed items from checklists
-    const completedItems = 0;
-
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-        ),
-        boxShadow: isSticky
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  offset: const Offset(0, 1),
-                  blurRadius: 1,
-                ),
-              ]
-            : [],
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Icon(
-              MdiIcons.checkboxMultipleOutline,
-              size: 20,
-              color: context.colorScheme.primary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Checklists',
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: context.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                '$completedItems/$totalItems',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: context.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1263,10 +834,19 @@ class _ChecklistsContent extends ConsumerWidget {
 
     return ModernBaseCard(
       margin: EdgeInsets.zero,
-      child: ChecklistsWidget(
-        entryId: task.id,
-        task: task,
+      child: RepaintBoundary(
+        child: ChecklistsWidget(
+          entryId: task.id,
+          task: task,
+        ),
       ),
     );
+  }
+}
+
+class MyPrecalcPolicy extends ExtentPrecalculationPolicy {
+  @override
+  bool shouldPrecalculateExtents(ExtentPrecalculationContext context) {
+    return context.numberOfItems < 500;
   }
 }
