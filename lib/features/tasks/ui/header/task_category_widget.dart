@@ -5,7 +5,7 @@ import 'package:lotti/features/categories/ui/widgets/category_selection_modal_co
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 
 typedef CategoryIdCallback = Future<bool> Function(String?);
 
@@ -28,16 +28,20 @@ class TaskCategoryWidget extends StatelessWidget {
         : context.colorScheme.outline.withAlpha(51);
 
     void onTap() {
-      ModalUtils.showSinglePageModal<void>(
+      ModernModalUtils.showModernModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {
-          return CategorySelectionModalContent(
-            onCategorySelected: (category) {
-              onSave(category?.id);
-              Navigator.pop(context);
-            },
-            initialCategoryId: category?.id,
+          return Padding(
+            padding:
+                const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
+            child: CategorySelectionModalContent(
+              onCategorySelected: (category) {
+                onSave(category?.id);
+                Navigator.pop(context);
+              },
+              initialCategoryId: category?.id,
+            ),
           );
         },
       );

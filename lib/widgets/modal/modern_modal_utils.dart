@@ -139,11 +139,13 @@ class ModernModalUtils {
     EdgeInsetsGeometry padding = EdgeInsets.zero,
     double? navBarHeight,
     bool showDivider = false,
+    Widget Function(Widget)? modalDecorator,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
+      modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
           modernModalSheetPage(

@@ -14,6 +14,7 @@ class CreateEntryModal {
       context: context,
       title: context.messages.createEntryTitle,
       showDivider: true,
+      padding: const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
       builder: (_) => Column(
         children: [
           const SizedBox(height: 8),

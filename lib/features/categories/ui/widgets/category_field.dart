@@ -6,7 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/index.dart';
 
 typedef CategoryCallback = void Function(CategoryDefinition?);
 
@@ -26,9 +26,11 @@ class CategoryField extends StatelessWidget {
     final controller = TextEditingController()..text = category?.name ?? '';
 
     void onTap() {
-      ModalUtils.showSinglePageModal<void>(
+      ModernModalUtils.showModernModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
+        padding:
+            const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
         builder: (BuildContext _) {
           return CategorySelectionModalContent(
             onCategorySelected: (category) {

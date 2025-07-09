@@ -142,7 +142,7 @@ void main() {
 
       // Verify the modal is shown with the correct title
       expect(find.byType(IconButton), findsWidgets);
-      expect(find.byIcon(Icons.close), findsOneWidget); // Close button in modal
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget); // Close button in modal
     });
 
     testWidgets('modal contains expected components', (tester) async {
@@ -168,10 +168,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the modal is shown
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
       // Tap on the close button
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       // Verify components are no longer visible
