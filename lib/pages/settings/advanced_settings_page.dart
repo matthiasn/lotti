@@ -20,7 +20,8 @@ class AdvancedSettingsPage extends StatelessWidget {
           // Matrix sync card
           AnimatedModernSettingsCardWithIcon(
             title: 'Matrix Sync',
-            subtitle: context.messages.settingsAdvancedShowCaseMatrixSyncTooltip,
+            subtitle:
+                context.messages.settingsAdvancedShowCaseMatrixSyncTooltip,
             icon: Icons.sync,
             onTap: () => context.beamToNamed('/settings/advanced/matrix_sync'),
             margin: const EdgeInsets.symmetric(
@@ -30,9 +31,11 @@ class AdvancedSettingsPage extends StatelessWidget {
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsSyncOutboxTitle,
-            subtitle: context.messages.settingsAdvancedShowCaseSyncOutboxTooltip,
+            subtitle:
+                context.messages.settingsAdvancedShowCaseSyncOutboxTooltip,
             icon: Icons.mail,
-            onTap: () => context.beamToNamed('/settings/advanced/outbox_monitor'),
+            onTap: () =>
+                context.beamToNamed('/settings/advanced/outbox_monitor'),
             trailing: OutboxBadgeIcon(
               icon: Icon(
                 MdiIcons.mailboxOutline,
@@ -67,7 +70,8 @@ class AdvancedSettingsPage extends StatelessWidget {
           if (isMobile)
             AnimatedModernSettingsCardWithIcon(
               title: context.messages.settingsHealthImportTitle,
-              subtitle: context.messages.settingsAdvancedShowCaseHealthImportTooltip,
+              subtitle:
+                  context.messages.settingsAdvancedShowCaseHealthImportTooltip,
               icon: Icons.health_and_safety_rounded,
               onTap: () => context.beamToNamed('/settings/health_import'),
               margin: const EdgeInsets.symmetric(
@@ -77,7 +81,8 @@ class AdvancedSettingsPage extends StatelessWidget {
             ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsMaintenanceTitle,
-            subtitle: context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
+            subtitle:
+                context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
             icon: Icons.build_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/maintenance'),
             margin: const EdgeInsets.symmetric(
@@ -87,7 +92,8 @@ class AdvancedSettingsPage extends StatelessWidget {
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsAboutTitle,
-            subtitle: context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
+            subtitle:
+                context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
             icon: Icons.info_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/about'),
             margin: const EdgeInsets.symmetric(

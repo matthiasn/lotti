@@ -35,8 +35,7 @@ class MaintenancePage extends StatelessWidget {
             children: [
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceDeleteEditorDb,
-                subtitle:
-                    context.messages.maintenanceDeleteEditorDbDescription,
+                subtitle: context.messages.maintenanceDeleteEditorDbDescription,
                 icon: Icons.edit_note_rounded,
                 onTap: () async {
                   final confirmed = await showConfirmationModal(
