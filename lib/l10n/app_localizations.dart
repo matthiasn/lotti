@@ -1173,6 +1173,12 @@ abstract class AppLocalizations {
   /// **'Receive notifications for reminders, updates, and important events.'**
   String get configFlagEnableNotificationsDescription;
 
+  /// No description provided for @configFlagEnableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable tooltips'**
+  String get configFlagEnableTooltip;
+
   /// No description provided for @configFlagEnableTooltipDescription.
   ///
   /// In en, this message translates to:
@@ -1191,17 +1197,59 @@ abstract class AppLocalizations {
   /// **'Enable this to make your entries private by default. Private entries are only visible to you.'**
   String get configFlagPrivateDescription;
 
+  /// No description provided for @configFlagRecordLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Record location'**
+  String get configFlagRecordLocation;
+
   /// No description provided for @configFlagRecordLocationDescription.
   ///
   /// In en, this message translates to:
   /// **'Automatically record your location with new entries. This helps with location-based organization and search.'**
   String get configFlagRecordLocationDescription;
 
+  /// No description provided for @configFlagResendAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend attachments'**
+  String get configFlagResendAttachments;
+
   /// No description provided for @configFlagResendAttachmentsDescription.
   ///
   /// In en, this message translates to:
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
+
+  /// No description provided for @configFlagEnableLogging.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable logging'**
+  String get configFlagEnableLogging;
+
+  /// No description provided for @configFlagEnableMatrix.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Matrix sync'**
+  String get configFlagEnableMatrix;
+
+  /// No description provided for @configFlagEnableHabitsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Habits page'**
+  String get configFlagEnableHabitsPage;
+
+  /// No description provided for @configFlagEnableDashboardsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Dashboards page'**
+  String get configFlagEnableDashboardsPage;
+
+  /// No description provided for @configFlagEnableCalendarPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Calendar page'**
+  String get configFlagEnableCalendarPage;
 
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///

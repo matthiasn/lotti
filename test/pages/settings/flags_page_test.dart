@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/settings/animated_settings_cards.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:showcaseview/showcaseview.dart';
+
+// Showcase is no longer used
 
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
@@ -60,54 +60,33 @@ void main() {
     testWidgets('page is displayed', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          ShowCaseWidget(
-            builder: (context) => ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: const FlagsPage(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
             ),
+            child: const FlagsPage(),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
+      // The card title is now the localized flag name
       expect(find.text('Show private entries?'), findsOneWidget);
-    });
-  });
-
-  testWidgets('FlagsPage with showcase displays correctly', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: ShowCaseWidget(
-          builder: (context) => const MediaQuery(
-            data: MediaQueryData(size: Size(800, 600)),
-            child: FlagsPage(),
-          ),
+      // The subtitle/description should be present somewhere in the card
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedModernSettingsCardWithIcon),
+          matching: find.text(
+              'Enable this to make your entries private by default. Private entries are only visible to you.'),
         ),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // Verify the showcase icon is displayed
-    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
-
-    // Verify the private flag is displayed
-    expect(find.text('Show private entries?'), findsOneWidget);
-
-    // Verify the back button is present
-    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+        findsOneWidget,
+      );
+      // The toggle switch should be present
+      expect(find.byType(Switch), findsOneWidget);
+      // The icon should be present (may appear more than once)
+      expect(find.byIcon(Icons.lock_outline_rounded), findsAtLeastNWidgets(1));
+    });
   });
 }
