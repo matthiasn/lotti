@@ -945,6 +945,10 @@ void main() {
 
     test('should maintain state consistency across multiple operations', () {
       // Arrange
+      container.read(audioRecorderControllerProvider.notifier)
+        // Perform multiple operations
+        ..setLanguage('de')
+        ..setModalVisible(modalVisible: true);
 
       // Assert - All state properties should be as expected
       final state = container.read(audioRecorderControllerProvider);

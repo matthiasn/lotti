@@ -26,6 +26,7 @@ void main() {
     registerFallbackValue(FakeJournalEntity());
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeTaskData());
+    registerFallbackValue(Exception('Fake exception'));
     registerFallbackValue(
       Checklist(
         meta: Metadata(
@@ -529,11 +530,21 @@ void main() {
       );
 
       // Assert
-      expect(result, isTrue);
+      expect(result, isFalse);
       verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
       verify(
         () => mockLottiLogger.exception(
           'not a checklist',
+          domain: 'persistence_logic',
+          subDomain: 'updateChecklist',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      
+      // The implementation also logs the thrown exception in the catch block
+      verify(
+        () => mockLottiLogger.exception(
+          any<Exception>(),
           domain: 'persistence_logic',
           subDomain: 'updateChecklist',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
