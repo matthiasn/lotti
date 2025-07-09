@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -14,9 +15,13 @@ Future<bool> showConfirmationModal({
 }) async {
   bool? result;
   final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
 
   await WoltModalSheet.show<void>(
     context: context,
+    modalBarrierColor: isDark
+        ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+        : context.colorScheme.outline.withAlpha(128),
     pageListBuilder: (modalSheetContext) {
       return [
         WoltModalSheetPage(

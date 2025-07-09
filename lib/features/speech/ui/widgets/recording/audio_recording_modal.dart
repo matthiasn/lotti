@@ -25,9 +25,14 @@ class AudioRecordingModal {
     }
 
     try {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
       await WoltModalSheet.show<void>(
         context: context,
         useRootNavigator: useRootNavigator,
+        modalBarrierColor: isDark
+            ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+            : context.colorScheme.outline.withAlpha(128),
         pageListBuilder: (modalSheetContext) {
           return [
             _buildRecordingPage(

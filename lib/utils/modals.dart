@@ -136,8 +136,13 @@ class ModalUtils {
     EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
     double? navBarHeight,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WoltModalSheet.show<T>(
       context: context,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
       pageListBuilder: (modalSheetContext) {
         return [
           ModalUtils.modalSheetPage(
@@ -162,8 +167,13 @@ class ModalUtils {
     required SliverWoltModalSheetPage Function(BuildContext) builder,
     Widget Function(Widget)? modalDecorator,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WoltModalSheet.show<T>(
       context: context,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
       pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
       modalTypeBuilder: ModalUtils.modalTypeBuilder,
       modalDecorator: modalDecorator,
@@ -183,10 +193,14 @@ class ModalUtils {
     final theme = Theme.of(context);
     var confirmed = false;
     var operationCompleted = false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     await WoltModalSheet.show<void>(
       context: context,
       pageIndexNotifier: pageIndexNotifier,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
       pageListBuilder: (modalSheetContext) {
         return [
           // Confirmation Page

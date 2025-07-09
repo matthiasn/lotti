@@ -4,6 +4,7 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:research_package/research_package.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -14,10 +15,15 @@ Future<void> runSurvey({
   required void Function(RPTaskResult) resultCallback,
   required BuildContext context,
 }) async {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
   await WoltModalSheet.show<void>(
     context: context,
     useRootNavigator: true,
     useSafeArea: true,
+    modalBarrierColor: isDark
+        ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+        : context.colorScheme.outline.withAlpha(128),
     pageListBuilder: (modalSheetContext) {
       return [
         ModalUtils.modalSheetPage(

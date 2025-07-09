@@ -13,10 +13,15 @@ abstract class SelectionModalBase {
     required String title,
     required Widget child,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     WoltModalSheet.show<void>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
       pageListBuilder: (modalSheetContext) => [
         buildModalPage(
           context: modalSheetContext,

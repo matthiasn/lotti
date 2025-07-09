@@ -140,6 +140,8 @@ class ModernModalUtils {
     double? navBarHeight,
     bool showDivider = false,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WoltModalSheet.show<T>(
       context: context,
       pageListBuilder: (modalSheetContext) {
@@ -165,7 +167,9 @@ class ModernModalUtils {
         }
       },
       barrierDismissible: true,
-      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
     );
   }
 
@@ -176,6 +180,8 @@ class ModernModalUtils {
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WoltModalSheet.show<T>(
       context: context,
       pageListBuilder: pageListBuilder,
@@ -189,7 +195,9 @@ class ModernModalUtils {
       },
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
-      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
     );
   }
 }

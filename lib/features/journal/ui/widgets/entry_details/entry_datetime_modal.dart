@@ -15,9 +15,13 @@ class EntryDateTimeModal {
     required JournalEntity entry,
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
       pageListBuilder: (modalSheetContext) {
         return [
           ModalUtils.modalSheetPage(

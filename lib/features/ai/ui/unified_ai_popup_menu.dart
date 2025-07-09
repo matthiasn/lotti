@@ -97,6 +97,7 @@ class UnifiedAiModal {
         scrollController: scrollController,
       );
     }).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WoltModalSheet.show<void>(
       context: context,
@@ -114,7 +115,9 @@ class UnifiedAiModal {
       },
       barrierDismissible: true,
       pageIndexNotifier: pageIndexNotifier,
-      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
     );
   }
 }

@@ -21,9 +21,13 @@ void showModelManagementModal({
   // Create a stateful wrapper to manage state outside of the modal widget
   final selectedIds = ValueNotifier<Set<String>>(currentSelectedIds.toSet());
   final defaultId = ValueNotifier<String>(currentDefaultId);
+  final isDark = Theme.of(context).brightness == Brightness.dark;
 
   WoltModalSheet.show<void>(
     context: context,
+    modalBarrierColor: isDark
+        ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+        : context.colorScheme.outline.withAlpha(128),
     pageListBuilder: (modalContext) {
       return [
         WoltModalSheetPage(
