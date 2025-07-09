@@ -82,7 +82,6 @@ class DashboardWidget extends StatelessWidget {
         habitChart: (DashboardHabitItem habitItem) {
           return DashboardHabitsChart(
             habitId: habitItem.habitId,
-            dashboardId: dashboardId,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );

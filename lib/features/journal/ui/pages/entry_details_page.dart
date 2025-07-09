@@ -21,11 +21,9 @@ class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
     required this.itemId,
     super.key,
-    this.readOnly = false,
   });
 
   final String itemId;
-  final bool readOnly;
 
   @override
   ConsumerState<EntryDetailsPage> createState() => _EntryDetailsPageState();

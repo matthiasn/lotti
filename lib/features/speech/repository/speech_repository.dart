@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -87,66 +86,6 @@ class SpeechRepository {
         stackTrace: stackTrace,
       );
     }
-  }
-
-  static Future<bool> addAudioTranscript({
-    required String journalEntityId,
-    required AudioTranscript transcript,
-  }) async {
-    try {
-      final persistenceLogic = getIt<PersistenceLogic>();
-
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await journalEntity.maybeMap(
-        journalAudio: (JournalAudio journalAudio) async {
-          final data = journalAudio.data;
-          final updatedData = journalAudio.data.copyWith(
-            transcripts: [
-              ...?data.transcripts,
-              transcript,
-            ],
-          );
-
-          final entryText = journalAudio.entryText;
-
-          final newEntryText = EntryText(
-            plainText: transcript.transcript,
-            markdown: transcript.transcript,
-          );
-
-          final replaceEntryText = entryText == null ||
-              entryText.plainText.isEmpty ||
-              '${entryText.markdown}'.trim().isEmpty;
-
-          await persistenceLogic.updateDbEntity(
-            journalAudio.copyWith(
-              meta: await persistenceLogic.updateMetadata(journalEntity.meta),
-              entryText: replaceEntryText ? newEntryText : entryText,
-              data: updatedData,
-            ),
-          );
-        },
-        orElse: () async => getIt<LoggingService>().captureException(
-          'not an audio entry',
-          domain: 'persistence_logic',
-          subDomain: 'addAudioTranscript',
-        ),
-      );
-    } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addAudioTranscript',
-        stackTrace: stackTrace,
-      );
-    }
-    return true;
   }
 
   static Future<bool> removeAudioTranscript({

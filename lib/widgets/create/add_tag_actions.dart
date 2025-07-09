@@ -6,11 +6,9 @@ import 'package:radial_button/widget/circle_floating_button.dart';
 class RadialAddTagButtons extends StatefulWidget {
   const RadialAddTagButtons({
     super.key,
-    this.navigatorKey,
     this.radius = 120,
   });
 
-  final GlobalKey? navigatorKey;
   final double radius;
 
   @override

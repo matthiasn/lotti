@@ -381,17 +381,6 @@ class EntryController extends _$EntryController {
     }
   }
 
-  // ignore: avoid_positional_boolean_parameters
-  Future<void> setFlagged(bool value) async {
-    final item = await _journalDb.journalEntityById(id);
-    if (item != null) {
-      await _persistenceLogic.updateJournalEntity(
-        item,
-        item.meta.copyWith(flag: value ? EntryFlag.import : EntryFlag.none),
-      );
-    }
-  }
-
   void setController() {
     final entry = state.value?.entry;
 

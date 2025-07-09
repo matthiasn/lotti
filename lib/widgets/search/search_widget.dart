@@ -4,14 +4,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 // adapted from https://github.com/JohannesMilke/filter_listview_example
 class SearchWidget extends StatefulWidget implements PreferredSizeWidget {
   const SearchWidget({
-    required this.text,
     required this.onChanged,
     this.hintText,
     super.key,
     this.margin = const EdgeInsets.all(20),
   });
 
-  final String text;
   final ValueChanged<String> onChanged;
   final String? hintText;
   final EdgeInsets margin;

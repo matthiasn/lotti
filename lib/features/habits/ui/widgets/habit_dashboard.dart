@@ -6,16 +6,13 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/modals.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SelectDashboardWidget extends StatelessWidget {
-  SelectDashboardWidget({super.key});
-
-  final TagsService tagsService = getIt<TagsService>();
+  const SelectDashboardWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

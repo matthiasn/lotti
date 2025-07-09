@@ -169,7 +169,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                                     .messages.settingsHabitsShowCaseDashTooltip,
                               ),
                               showcaseKey: _habitDashKey,
-                              child: SelectDashboardWidget(),
+                              child: const SelectDashboardWidget(),
                             ),
                             inputSpacerSmall,
                             ShowcaseWithWidget(

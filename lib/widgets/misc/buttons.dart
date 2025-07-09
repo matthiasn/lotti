@@ -4,13 +4,11 @@ class RoundedButton extends StatelessWidget {
   const RoundedButton(
     this.label, {
     required this.onPressed,
-    this.padding = const EdgeInsets.all(4),
     super.key,
   });
 
   final String label;
   final void Function()? onPressed;
-  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {

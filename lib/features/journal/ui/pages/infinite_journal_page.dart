@@ -19,10 +19,8 @@ class InfiniteJournalPage extends StatelessWidget {
   const InfiniteJournalPage({
     required this.showTasks,
     super.key,
-    this.navigatorKey,
   });
 
-  final GlobalKey? navigatorKey;
   final bool showTasks;
 
   @override

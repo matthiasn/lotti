@@ -7,7 +7,6 @@ import 'package:lotti/features/sync/model/validation/homeserver.dart';
 import 'package:lotti/features/sync/model/validation/password.dart';
 import 'package:lotti/features/sync/model/validation/username.dart';
 import 'package:lotti/get_it.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'login_form_controller.g.dart';
@@ -117,7 +116,3 @@ class LoginFormController extends _$LoginFormController {
     ref.invalidateSelf();
   }
 }
-
-class LoginFormControllerMock extends _$LoginFormController
-    with Mock
-    implements LoginFormController {}

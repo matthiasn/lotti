@@ -24,10 +24,6 @@ class AdvancedSettingsPage extends StatelessWidget {
                 context.messages.settingsAdvancedShowCaseMatrixSyncTooltip,
             icon: Icons.sync,
             onTap: () => context.beamToNamed('/settings/advanced/matrix_sync'),
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingLarge,
-              vertical: AppTheme.cardSpacing / 2,
-            ),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsSyncOutboxTitle,
@@ -42,30 +38,18 @@ class AdvancedSettingsPage extends StatelessWidget {
                 color: context.colorScheme.primary.withValues(alpha: 0.9),
               ),
             ),
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingLarge,
-              vertical: AppTheme.cardSpacing / 2,
-            ),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsConflictsTitle,
             subtitle: context.messages.settingsAdvancedShowCaseConflictsTooltip,
             icon: Icons.warning_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/conflicts'),
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingLarge,
-              vertical: AppTheme.cardSpacing / 2,
-            ),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLogsTitle,
             subtitle: context.messages.settingsAdvancedShowCaseLogsTooltip,
             icon: Icons.article_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/logging'),
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingLarge,
-              vertical: AppTheme.cardSpacing / 2,
-            ),
           ),
           if (isMobile)
             AnimatedModernSettingsCardWithIcon(
@@ -74,10 +58,6 @@ class AdvancedSettingsPage extends StatelessWidget {
                   context.messages.settingsAdvancedShowCaseHealthImportTooltip,
               icon: Icons.health_and_safety_rounded,
               onTap: () => context.beamToNamed('/settings/health_import'),
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacingLarge,
-                vertical: AppTheme.cardSpacing / 2,
-              ),
             ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsMaintenanceTitle,
@@ -85,10 +65,6 @@ class AdvancedSettingsPage extends StatelessWidget {
                 context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
             icon: Icons.build_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/maintenance'),
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingLarge,
-              vertical: AppTheme.cardSpacing / 2,
-            ),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsAboutTitle,
@@ -96,10 +72,6 @@ class AdvancedSettingsPage extends StatelessWidget {
                 context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
             icon: Icons.info_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/about'),
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingLarge,
-              vertical: AppTheme.cardSpacing / 2,
-            ),
           ),
         ],
       ),

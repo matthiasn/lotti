@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/animated_settings_cards.dart';
 
@@ -49,10 +48,6 @@ class MaintenancePage extends StatelessWidget {
                     await maintenance.deleteEditorDb();
                   }
                 },
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceDeleteLoggingDb,
@@ -71,10 +66,6 @@ class MaintenancePage extends StatelessWidget {
                     await maintenance.deleteLoggingDb();
                   }
                 },
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceDeleteSyncDb,
@@ -92,10 +83,6 @@ class MaintenancePage extends StatelessWidget {
                     await maintenance.deleteSyncDb();
                   }
                 },
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceSyncDefinitions,
@@ -103,20 +90,12 @@ class MaintenancePage extends StatelessWidget {
                     context.messages.maintenanceSyncDefinitionsDescription,
                 icon: Icons.sync_alt_rounded,
                 onTap: () => SyncModal.show(context),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenancePurgeDeleted,
                 subtitle: context.messages.maintenancePurgeDeletedDescription,
                 icon: Icons.delete_forever_rounded,
                 onTap: () => PurgeModal.show(context),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenancePurgeAudioModels,
@@ -124,30 +103,18 @@ class MaintenancePage extends StatelessWidget {
                     context.messages.maintenancePurgeAudioModelsDescription,
                 icon: Icons.audio_file_rounded,
                 onTap: () => AudioPurgeModal.show(context),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceRecreateFts5,
                 subtitle: context.messages.maintenanceRecreateFts5Description,
                 icon: Icons.search_rounded,
                 onTap: () => Fts5RecreateModal.show(context),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceReSync,
                 subtitle: context.messages.maintenanceReSyncDescription,
                 icon: Icons.refresh_rounded,
                 onTap: () => ReSyncModal.show(context),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLarge,
-                  vertical: AppTheme.cardSpacing / 2,
-                ),
               ),
             ],
           ),

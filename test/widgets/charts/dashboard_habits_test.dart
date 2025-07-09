@@ -52,7 +52,6 @@ void main() {
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             habitId: habitFlossing.id,
-            dashboardId: '',
           ),
         ),
       );

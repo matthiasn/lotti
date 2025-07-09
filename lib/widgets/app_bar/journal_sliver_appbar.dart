@@ -37,7 +37,6 @@ class JournalSliverAppBar extends StatelessWidget {
                         vertical: 20,
                         horizontal: 40,
                       ),
-                      text: snapshot.match,
                       onChanged: cubit.setSearchString,
                     ),
                   ),

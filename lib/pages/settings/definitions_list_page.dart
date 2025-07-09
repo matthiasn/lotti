@@ -75,10 +75,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                 showBackButton: true,
               ),
               SliverToBoxAdapter(
-                child: SearchWidget(
-                  text: match,
-                  onChanged: onQueryChanged,
-                ),
+                child: SearchWidget(onChanged: onQueryChanged),
               ),
               SliverToBoxAdapter(
                 child: Padding(
