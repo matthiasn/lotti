@@ -3,7 +3,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/settings/animated_settings_cards.dart';
 
@@ -131,23 +130,21 @@ class _FlagsPageState extends State<FlagsPage> {
           title: context.messages.settingsFlagsTitle,
           child: Column(
             children: [
-              ...orderedFlags.map((flag) => AnimatedModernSettingsCardWithIcon(
-                    title: _titleForFlag(context, flag),
-                    showChevron: false,
-                    subtitle: _subtitleForFlag(context, flag),
-                    icon: _iconForFlag(flag.name),
-                    trailing: Switch.adaptive(
-                      value: flag.status,
-                      onChanged: (bool status) {
-                        getIt<JournalDb>()
-                            .upsertConfigFlag(flag.copyWith(status: status));
-                      },
-                    ),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingLarge,
-                      vertical: AppTheme.cardSpacing / 2,
-                    ),
-                  )),
+              ...orderedFlags.map(
+                (flag) => AnimatedModernSettingsCardWithIcon(
+                  title: _titleForFlag(context, flag),
+                  showChevron: false,
+                  subtitle: _subtitleForFlag(context, flag),
+                  icon: _iconForFlag(flag.name),
+                  trailing: Switch.adaptive(
+                    value: flag.status,
+                    onChanged: (bool status) {
+                      getIt<JournalDb>()
+                          .upsertConfigFlag(flag.copyWith(status: status));
+                    },
+                  ),
+                ),
+              ),
             ],
           ),
         );

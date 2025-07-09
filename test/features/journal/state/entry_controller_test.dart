@@ -1524,65 +1524,6 @@ void main() {
     });
   });
 
-  group('setFlagged method', () {
-    setUp(() {
-      reset(mockPersistenceLogic);
-      // Ensure mocks are set up for this group
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-    });
-
-    test('sets flagged to true', () async {
-      final container = makeProviderContainer();
-      final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
-      final notifier = container.read(testEntryProvider.notifier);
-
-      await container.read(testEntryProvider.future);
-
-      when(
-        () => mockPersistenceLogic.updateJournalEntity(
-          testTextEntry,
-          testTextEntry.meta.copyWith(flag: EntryFlag.import),
-        ),
-      ).thenAnswer((_) async => true);
-
-      await notifier.setFlagged(true);
-
-      verify(
-        () => mockPersistenceLogic.updateJournalEntity(
-          testTextEntry,
-          testTextEntry.meta.copyWith(flag: EntryFlag.import),
-        ),
-      ).called(1);
-    });
-
-    test('sets flagged to false', () async {
-      final container = makeProviderContainer();
-      final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
-      final notifier = container.read(testEntryProvider.notifier);
-
-      await container.read(testEntryProvider.future);
-
-      when(
-        () => mockPersistenceLogic.updateJournalEntity(
-          testTextEntry,
-          testTextEntry.meta.copyWith(flag: EntryFlag.none),
-        ),
-      ).thenAnswer((_) async => true);
-
-      await notifier.setFlagged(false);
-
-      verify(
-        () => mockPersistenceLogic.updateJournalEntity(
-          testTextEntry,
-          testTextEntry.meta.copyWith(flag: EntryFlag.none),
-        ),
-      ).called(1);
-    });
-  });
-
   group('updateTaskStatus method', () {
     setUp(() {
       reset(mockPersistenceLogic);

@@ -22,11 +22,9 @@ class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
     required this.taskId,
     super.key,
-    this.readOnly = false,
   });
 
   final String taskId;
-  final bool readOnly;
 
   @override
   ConsumerState<TaskDetailsPage> createState() => _TaskDetailsPageState();

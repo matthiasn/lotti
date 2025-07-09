@@ -6,7 +6,6 @@ import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
     required this.habitId,
-    required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
     this.tab = 'dashboard',
@@ -14,7 +13,6 @@ class DashboardHabitsChart extends StatefulWidget {
   });
 
   final String habitId;
-  final String? dashboardId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String tab;

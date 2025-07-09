@@ -55,11 +55,6 @@ class AppTheme {
   static const double alphaSurfaceVariant = 0.8;
   static const double alphaSurfaceVariantChevron = 0.6;
   static const double alphaDestructive = 0.3;
-  static const double alphaDestructiveContainer = 0.1;
-  static const double alphaDestructiveGradientStart = 0.2;
-  static const double alphaDestructiveGradientEnd = 0.1;
-  static const double alphaDestructiveIcon = 0.9;
-  static const double alphaDestructiveText = 0.8;
 
   // Animation constants
   static const int animationDuration = 200;
