@@ -1,72 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockLoggingDb extends Mock implements LoggingDb {}
-
-class FakeLogEntry extends Fake implements LogEntry {}
-
-class LogEntryMatcher extends Matcher {
-  LogEntryMatcher({
-    required this.message,
-    required this.domain,
-    required this.subDomain,
-    required this.level,
-    required this.type,
-  });
-
-  final String message;
-  final String domain;
-  final String subDomain;
-  final String level;
-  final String type;
-
-  @override
-  bool matches(dynamic item, Map<dynamic, dynamic> matchState) {
-    if (item is LogEntry) {
-      return item.message.contains(message) &&
-          item.domain == domain &&
-          item.subDomain == subDomain &&
-          item.level == level &&
-          item.type == type;
-    }
-    return false;
-  }
-
-  @override
-  Description describe(Description description) {
-    return description.add(
-      'LogEntry with message: $message, domain: $domain, subDomain: $subDomain, level: $level, type: $type',
-    );
-  }
-}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 void main() {
   late MockJournalDb mockDb;
-  late MockLoggingDb mockLoggingDb;
+  late MockLottiLogger mockLottiLogger;
   late PurgeController controller;
 
   setUpAll(() {
-    registerFallbackValue(FakeLogEntry());
+    registerFallbackValue(StackTrace.current);
+    registerFallbackValue(Exception('Test exception'));
   });
 
   setUp(() {
     mockDb = MockJournalDb();
-    mockLoggingDb = MockLoggingDb();
+    mockLottiLogger = MockLottiLogger();
 
-    // Register mock LoggingDb
-    getIt.registerSingleton<LoggingDb>(mockLoggingDb);
+    // Register mock LottiLogger
+    getIt.registerSingleton<LottiLogger>(mockLottiLogger);
 
     controller = PurgeController(mockDb);
   });
 
   tearDown(() {
-    getIt.unregister<LoggingDb>();
+    getIt.unregister<LottiLogger>();
   });
 
   group('PurgeController', () {
@@ -104,13 +68,6 @@ void main() {
         (_) => Stream.error(Exception(testError)),
       );
 
-      // Capture the log entry for verification
-      LogEntry? capturedLogEntry;
-      when(() => mockLoggingDb.log(any())).thenAnswer((invocation) {
-        capturedLogEntry = invocation.positionalArguments.first as LogEntry;
-        return Future.value(1);
-      });
-
       // Start purge operation
       final purgeFuture = controller.purgeDeleted();
 
@@ -126,13 +83,15 @@ void main() {
       expect(controller.state.progress, 0);
       expect(controller.state.error, contains(testError));
 
-      // Verify logging was called with correct LogEntry
-      expect(capturedLogEntry, isNotNull);
-      expect(capturedLogEntry!.message, contains(testError));
-      expect(capturedLogEntry!.domain, equals('PurgeController'));
-      expect(capturedLogEntry!.subDomain, equals('purgeDeleted'));
-      expect(capturedLogEntry!.level, equals('ERROR'));
-      expect(capturedLogEntry!.type, equals('EXCEPTION'));
+      // Verify logging was called with correct parameters
+      verify(
+        () => mockLottiLogger.exception(
+          any<Exception>(),
+          domain: 'PurgeController',
+          subDomain: 'purgeDeleted',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
     test('purgeDeleted should update progress incrementally', () async {

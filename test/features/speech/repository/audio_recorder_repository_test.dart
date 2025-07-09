@@ -1,25 +1,32 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
   late AudioRecorderRepository repository;
+  late MockLottiLogger mockLottiLogger;
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    mockLottiLogger = MockLottiLogger();
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
+    }
+    getIt.registerSingleton<LottiLogger>(mockLottiLogger);
     repository = AudioRecorderRepository();
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
+    }
+  });
 
   group('AudioRecorderRepository', () {
     test('hasPermission returns false and logs exception on error', () async {
@@ -28,7 +35,7 @@ void main() {
 
       expect(result, isFalse);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any<dynamic>(),
           domain: 'audio_recorder_repository',
           subDomain: 'hasPermission',
@@ -57,11 +64,11 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any<dynamic>(),
           domain: 'audio_recorder_repository',
           subDomain: 'startRecording',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
     });

@@ -4,7 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -24,7 +24,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   }
 
   final Player _audioPlayer = Player();
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final LottiLogger _logger = getIt<LottiLogger>();
 
   void updateProgress(Duration duration) {
     emit(state.copyWith(progress: duration));
@@ -51,7 +51,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       final totalDuration = _audioPlayer.state.duration;
       emit(newState.copyWith(totalDuration: totalDuration));
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -74,7 +74,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         }
       });
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -92,7 +92,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -105,7 +105,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       await _audioPlayer.setRate(speed);
       emit(state.copyWith(speed: speed));
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -123,7 +123,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,

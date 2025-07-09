@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 
@@ -14,7 +14,7 @@ Future<void> saveAttachment(Event event) async {
 
     try {
       if (relativePath != null) {
-        getIt<LoggingService>().captureEvent(
+        getIt<LottiLogger>().event(
           'downloading $relativePath',
           domain: 'MATRIX_SERVICE',
           subDomain: 'writeToFile',
@@ -23,14 +23,14 @@ Future<void> saveAttachment(Event event) async {
         final matrixFile = await event.downloadAndDecryptAttachment();
         final docDir = getDocumentsDirectory();
         await writeToFile(matrixFile.bytes, '${docDir.path}$relativePath');
-        getIt<LoggingService>().captureEvent(
+        getIt<LottiLogger>().event(
           'wrote file $relativePath',
           domain: 'MATRIX_SERVICE',
           subDomain: 'saveAttachment',
         );
       }
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         'failed to save attachment $attachmentMimetype $relativePath',
         domain: 'MATRIX_SERVICE',
         subDomain: 'saveAttachment',
@@ -46,7 +46,7 @@ Future<void> writeToFile(Uint8List? data, String filePath) async {
     await file.writeAsBytes(data);
   } else {
     debugPrint('No bytes for $filePath');
-    getIt<LoggingService>().captureEvent(
+    getIt<LottiLogger>().event(
       'No bytes for $filePath',
       domain: 'INBOX',
       subDomain: 'writeToFile',

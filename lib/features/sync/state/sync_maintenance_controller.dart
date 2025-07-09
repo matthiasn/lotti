@@ -3,13 +3,13 @@ import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 
 class SyncMaintenanceController extends StateNotifier<SyncState> {
   SyncMaintenanceController(this._repository) : super(const SyncState());
 
   final SyncMaintenanceRepository _repository;
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final LottiLogger _logger = getIt<LottiLogger>();
 
   Future<void> syncAll() async {
     state = state.copyWith(isSyncing: true, progress: 0);
@@ -70,7 +70,7 @@ class SyncMaintenanceController extends StateNotifier<SyncState> {
       final syncError = SyncError.fromException(
         e,
         stackTrace,
-        _loggingService,
+        _logger,
       );
 
       state = state.copyWith(

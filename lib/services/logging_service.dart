@@ -1,40 +1,61 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/platform.dart';
+import 'package:lotti/services/lotti_logger.dart';
 
 class LoggingService {
-  bool _enableLogging = !isTestEnv;
+  LoggingService();
 
-  void listenToConfigFlag() {
-    getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
-      _enableLogging = value;
-    });
+
+
+
+
+  /// Log an informational message
+  void info(String message, {String? domain, String? subDomain}) {
+    getIt<LottiLogger>().event(message, domain: domain, subDomain: subDomain);
   }
 
-  Future<void> _captureEventAsync(
-    dynamic event, {
-    required String domain,
+  /// Log a debug message (for development debugging, stored with debug level)
+  void debug(String message, {String? domain, String? subDomain}) {
+    getIt<LottiLogger>().event(message, domain: domain, subDomain: subDomain, level: InsightLevel.debug);
+  }
+
+  /// Log a warning message
+  void warning(String message, {String? domain, String? subDomain}) {
+    getIt<LottiLogger>().event(message, domain: domain, subDomain: subDomain, level: InsightLevel.warn);
+  }
+
+  /// Log an error message
+  void error(
+    String message, {
+    String? domain,
     String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) async {
-    await getIt<LoggingDb>().log(
-      LogEntry(
-        id: uuid.v1(),
-        createdAt: DateTime.now().toIso8601String(),
+    dynamic error,
+    StackTrace? stackTrace,
+  }) {
+    getIt<LottiLogger>().exception(error ?? message,
         domain: domain,
         subDomain: subDomain,
-        message: event.toString(),
-        level: level.name.toUpperCase(),
-        type: type.name.toUpperCase(),
-      ),
-    );
+        stackTrace: stackTrace);
+  }
+
+  /// Log a fatal error (highest severity level for critical failures)
+  void fatal(
+    String message, {
+    String? domain,
+    String? subDomain,
+    dynamic error,
+    StackTrace? stackTrace,
+  }) {
+    getIt<LottiLogger>().exception(error ?? message,
+        domain: domain,
+        subDomain: subDomain,
+        stackTrace: stackTrace,
+        level: InsightLevel.fatal);
+  }
+
+  /// Log a trace message (lowest level logging for detailed debugging)
+  void trace(String message, {String? domain, String? subDomain}) {
+    getIt<LottiLogger>().event(message, domain: domain, subDomain: subDomain, level: InsightLevel.trace);
   }
 
   void captureEvent(
@@ -42,39 +63,12 @@ class LoggingService {
     required String domain,
     String? subDomain,
     InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
   }) {
-    if (!_enableLogging) {
-      return;
-    }
-    _captureEventAsync(
+    getIt<LottiLogger>().event(
       event,
       domain: domain,
       subDomain: subDomain,
       level: level,
-      type: type,
-    );
-  }
-
-  Future<void> _captureExceptionAsync(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) async {
-    await getIt<LoggingDb>().log(
-      LogEntry(
-        id: uuid.v1(),
-        createdAt: DateTime.now().toIso8601String(),
-        domain: domain,
-        subDomain: subDomain,
-        message: exception.toString(),
-        stacktrace: stackTrace.toString(),
-        level: level.name.toUpperCase(),
-        type: type.name.toUpperCase(),
-      ),
     );
   }
 
@@ -82,18 +76,15 @@ class LoggingService {
     dynamic exception, {
     required String domain,
     String? subDomain,
-    dynamic stackTrace,
+    StackTrace? stackTrace,
     InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
   }) {
-    debugPrint('EXCEPTION $domain $subDomain $exception $stackTrace');
-    _captureExceptionAsync(
+    getIt<LottiLogger>().exception(
       exception,
       domain: domain,
       subDomain: subDomain,
       stackTrace: stackTrace,
       level: level,
-      type: type,
     );
   }
 }

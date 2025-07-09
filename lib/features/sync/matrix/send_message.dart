@@ -7,7 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -36,13 +36,13 @@ extension SendExtension on MatrixService {
     SyncMessage syncMessage, {
     String? myRoomId,
   }) async {
-    final loggingService = getIt<LoggingService>();
+    final logger = getIt<LottiLogger>();
 
     final msg = json.encode(syncMessage);
     final roomId = myRoomId ?? syncRoomId;
 
     if (getUnverifiedDevices().isNotEmpty) {
-      loggingService.captureException(
+      logger.exception(
         'Unverified devices found',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
@@ -51,7 +51,7 @@ extension SendExtension on MatrixService {
     }
 
     if (roomId == null) {
-      loggingService.captureEvent(
+      logger.event(
         configNotFound,
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
@@ -59,7 +59,7 @@ extension SendExtension on MatrixService {
       return false;
     }
 
-    loggingService.captureEvent(
+    logger.event(
       'trying to send text message to $syncRoom',
       domain: 'MATRIX_SERVICE',
       subDomain: 'sendMatrixMsg',
@@ -90,7 +90,7 @@ extension SendExtension on MatrixService {
 
     incrementSentCount();
 
-    loggingService.captureEvent(
+    logger.event(
       'sent text message to $syncRoom with event ID $eventId',
       domain: 'MATRIX_SERVICE',
       subDomain: 'sendMatrixMsg',
@@ -139,7 +139,7 @@ extension SendExtension on MatrixService {
     required String relativePath,
   }) async {
     try {
-      getIt<LoggingService>().captureEvent(
+      getIt<LottiLogger>().event(
         'trying to send $relativePath file message to $syncRoom',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
@@ -159,13 +159,13 @@ extension SendExtension on MatrixService {
 
       incrementSentCount();
 
-      getIt<LoggingService>().captureEvent(
+      getIt<LottiLogger>().event(
         'sent $relativePath file message to $syncRoom, event ID $eventId',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         e,
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',

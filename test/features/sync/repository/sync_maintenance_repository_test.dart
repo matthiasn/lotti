@@ -447,7 +447,7 @@ void main() {
             testException,
             domain: 'SYNC_SERVICE',
             subDomain: 'syncTags',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -468,7 +468,7 @@ void main() {
             testException,
             domain: 'SYNC_SERVICE',
             subDomain: 'syncMeasurables',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -489,7 +489,7 @@ void main() {
             testException,
             domain: 'SYNC_SERVICE',
             subDomain: 'syncCategories',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -510,7 +510,7 @@ void main() {
             testException,
             domain: 'SYNC_SERVICE',
             subDomain: 'syncDashboards',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -531,7 +531,7 @@ void main() {
             testException,
             domain: 'SYNC_SERVICE',
             subDomain: 'syncHabits',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -739,7 +739,7 @@ void main() {
           any<Exception>(),
           domain: 'SYNC_SERVICE',
           subDomain: 'syncTags',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
     });

@@ -11,7 +11,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart';
 
@@ -86,7 +86,7 @@ class Maintenance {
     final file = await getDatabaseFile(fts5DbFileName);
     file.deleteSync();
 
-    getIt<LoggingService>().captureEvent(
+    getIt<LottiLogger>().event(
       'FTS5 database DELETED',
       domain: 'MAINTENANCE',
       subDomain: 'recreateFts5',
@@ -97,7 +97,7 @@ class Maintenance {
     try {
       await deleteFts5Db();
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         e,
         domain: 'MAINTENANCE',
         subDomain: 'deleteFts5Db',
@@ -142,7 +142,7 @@ class Maintenance {
           // Add a small delay to make the progress visible
           await Future<void>.delayed(const Duration(milliseconds: 10));
 
-          getIt<LoggingService>().captureEvent(
+          getIt<LottiLogger>().event(
             'Progress: $currentPercentage%, $completed/$entryCount',
             domain: 'MAINTENANCE',
             subDomain: 'recreateFts5',

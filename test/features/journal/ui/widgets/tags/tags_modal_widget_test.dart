@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -12,7 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -93,8 +92,7 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-        ..registerSingleton<LoggingService>(LoggingService())
+        ..registerSingleton<LottiLogger>(LottiLogger())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)

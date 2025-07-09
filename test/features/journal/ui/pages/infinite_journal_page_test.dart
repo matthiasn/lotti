@@ -8,7 +8,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -18,7 +17,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -31,6 +29,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_helper.dart';
 import '../../../../utils/utils.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -55,6 +54,8 @@ void main() {
     });
 
     setUp(() async {
+      setupTestEnvironment();
+
       mockJournalDb = mockJournalDbWithMeasurableTypes([
         measurableWater,
         measurableChocolate,
@@ -104,8 +105,6 @@ void main() {
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<LoggingDb>(MockLoggingDb())
-        ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<TagsService>(mockTagsService)
@@ -140,7 +139,10 @@ void main() {
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
-    tearDown(getIt.reset);
+    tearDown(() async {
+      await getIt.reset();
+      await teardownTestEnvironment();
+    });
 
     // Helper function to replace pumpAndSettle
     Future<void> pumpWithDelay(WidgetTester tester) async {

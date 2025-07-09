@@ -5,7 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_repository.g.dart';
@@ -17,7 +17,7 @@ ChecklistRepository checklistRepository(Ref ref) {
 
 class ChecklistRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final LottiLogger _logger = getIt<LottiLogger>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
   Future<JournalEntity?> createChecklist({
@@ -86,7 +86,7 @@ class ChecklistRepository {
 
       return newChecklist;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createChecklistEntry',
@@ -117,7 +117,7 @@ class ChecklistRepository {
 
       return newChecklistItem;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createChecklistEntry',
@@ -149,19 +149,23 @@ class ChecklistRepository {
 
           await _persistenceLogic.updateDbEntity(updatedChecklist);
         },
-        orElse: () async => _loggingService.captureException(
-          'not a checklist',
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklist',
-        ),
+        orElse: () async {
+          _logger.exception(
+            'not a checklist',
+            domain: 'persistence_logic',
+            subDomain: 'updateChecklist',
+          );
+          throw Exception('Entity is not a checklist');
+        },
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateChecklist',
         stackTrace: stackTrace,
       );
+      return false;
     }
     return true;
   }
@@ -190,19 +194,23 @@ class ChecklistRepository {
             linkedId: taskId,
           );
         },
-        orElse: () async => _loggingService.captureException(
-          'not a checklist item',
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklistItem',
-        ),
+        orElse: () async {
+          _logger.exception(
+            'not a checklist item',
+            domain: 'persistence_logic',
+            subDomain: 'updateChecklistItem',
+          );
+          throw Exception('Entity is not a checklist item');
+        },
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _logger.exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateChecklistItem',
         stackTrace: stackTrace,
       );
+      return false;
     }
     return true;
   }

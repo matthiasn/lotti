@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 
 class SpeechRepository {
   static Future<JournalAudio?> createAudioEntry(
@@ -44,7 +44,7 @@ class SpeechRepository {
 
       return journalEntity;
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'createAudioEntry',
@@ -73,14 +73,14 @@ class SpeechRepository {
             ),
           );
         },
-        orElse: () async => getIt<LoggingService>().captureException(
+        orElse: () async => getIt<LottiLogger>().exception(
           'not an audio entry',
           domain: 'persistence_logic',
           subDomain: 'updateLanguage',
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'updateLanguage',
@@ -132,14 +132,14 @@ class SpeechRepository {
             ),
           );
         },
-        orElse: () async => getIt<LoggingService>().captureException(
+        orElse: () async => getIt<LottiLogger>().exception(
           'not an audio entry',
           domain: 'persistence_logic',
           subDomain: 'addAudioTranscript',
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'addAudioTranscript',
@@ -179,14 +179,14 @@ class SpeechRepository {
             ),
           );
         },
-        orElse: () async => getIt<LoggingService>().captureException(
+        orElse: () async => getIt<LottiLogger>().exception(
           'not an audio entry',
           domain: 'persistence_logic',
           subDomain: 'removeAudioTranscript',
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'persistence_logic',
         subDomain: 'removeAudioTranscript',

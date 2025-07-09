@@ -9,7 +9,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/process_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,7 +22,7 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 class MockJournalEntity extends Mock implements JournalEntity {
   MockJournalEntity([this._affectedIds = const {'default-id'}]);
@@ -53,7 +53,7 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
-  late MockLoggingService mockLoggingService;
+  late MockLottiLogger mockLottiLogger;
   late Directory fakeDirectory;
 
   const eventId = 'event-id-123';
@@ -72,7 +72,7 @@ void main() {
     mockMatrixService = MockMatrixService();
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
-    mockLoggingService = MockLoggingService();
+    mockLottiLogger = MockLottiLogger();
     fakeDirectory = Directory('/fake/path');
 
     // Set up default mocks
@@ -84,7 +84,7 @@ void main() {
       ..reset()
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<LottiLogger>(mockLottiLogger)
       ..registerSingleton<Directory>(fakeDirectory);
   });
 
@@ -104,7 +104,7 @@ void main() {
 
       // Should capture exception for invalid JSON
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any<Object>(),
           domain: 'MATRIX_SERVICE',
           subDomain: 'processMessage',
@@ -126,7 +126,7 @@ void main() {
 
       // Verify error logging
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           any<Object>(),
           domain: 'MATRIX_SERVICE',
           subDomain: 'processMessage',

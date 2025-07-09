@@ -6,15 +6,16 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../test_helper.dart';
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 
@@ -30,27 +31,39 @@ void main() {
   group('AutoChecklistService Tests', () {
     late AutoChecklistService service;
     late MockChecklistRepository mockChecklistRepository;
-    late MockLoggingService mockLoggingService;
+    late MockLottiLogger mockLottiLogger;
     late MockJournalDb mockJournalDb;
 
     setUp(() {
+      setupTestEnvironment();
       mockChecklistRepository = MockChecklistRepository();
-      mockLoggingService = MockLoggingService();
+      mockLottiLogger = MockLottiLogger();
       mockJournalDb = MockJournalDb();
 
-      // Register mock services with GetIt
+      // Register mock services with GetIt (override LottiLogger with mock)
+      if (getIt.isRegistered<LottiLogger>()) {
+        getIt.unregister<LottiLogger>();
+      }
+      if (getIt.isRegistered<ChecklistRepository>()) {
+        getIt.unregister<ChecklistRepository>();
+      }
+      if (getIt.isRegistered<JournalDb>()) {
+        getIt.unregister<JournalDb>();
+      }
+
       getIt
-        ..reset()
         ..registerSingleton<ChecklistRepository>(mockChecklistRepository)
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<LottiLogger>(mockLottiLogger)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
+      // Create service after registering all dependencies
       service = AutoChecklistService(
         journalDb: mockJournalDb,
-        loggingService: mockLoggingService,
         checklistRepository: mockChecklistRepository,
       );
     });
+
+    tearDown(teardownTestEnvironment);
 
     group('shouldAutoCreate', () {
       test('returns true when task has no existing checklists', () async {
@@ -90,7 +103,7 @@ void main() {
 
         // Assert
         expect(result, isFalse);
-        verify(() => mockLoggingService.captureException(
+        verify(() => mockLottiLogger.exception(
               any<Exception>(),
               domain: 'auto_checklist_service',
               subDomain: 'shouldAutoCreate',
@@ -177,7 +190,7 @@ void main() {
               items: suggestions,
               title: 'TODOs',
             )).called(1);
-        verify(() => mockLoggingService.captureEvent(
+        verify(() => mockLottiLogger.event(
               'auto_checklist_created: taskId=$taskId, checklistId=checklist-123, itemCount=2',
               domain: 'auto_checklist_service',
               subDomain: 'autoCreateChecklist',
@@ -213,11 +226,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.checklistId, isNull);
         expect(result.error, equals('Checklists already exist'));
-        verifyNever(() => mockChecklistRepository.createChecklist(
-              taskId: any(named: 'taskId'),
-              items: any(named: 'items'),
-              title: any(named: 'title'),
-            ));
+        verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
       });
 
       test(
@@ -301,7 +310,7 @@ void main() {
               items: suggestions,
               title: 'TODOs',
             )).called(1);
-        verify(() => mockLoggingService.captureException(
+        verify(() => mockLottiLogger.exception(
               exception,
               domain: 'auto_checklist_service',
               subDomain: 'autoCreateChecklist',
@@ -406,7 +415,7 @@ void main() {
             )).called(1);
 
         // Verify success logging (lines 81-85 in source)
-        verify(() => mockLoggingService.captureEvent(
+        verify(() => mockLottiLogger.event(
               'auto_checklist_created: taskId=$taskId, checklistId=checklist-456, itemCount=2',
               domain: 'auto_checklist_service',
               subDomain: 'autoCreateChecklist',

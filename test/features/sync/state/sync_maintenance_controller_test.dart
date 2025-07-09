@@ -5,18 +5,18 @@ import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLottiLogger extends Mock implements LottiLogger {}
 
 void main() {
   late MockSyncMaintenanceRepository mockRepository;
-  late MockLoggingService mockLoggingService;
+  late MockLottiLogger mockLottiLogger;
   late SyncMaintenanceController controller;
   late ProviderContainer container;
 
@@ -27,13 +27,13 @@ void main() {
 
   setUp(() {
     mockRepository = MockSyncMaintenanceRepository();
-    mockLoggingService = MockLoggingService();
+    mockLottiLogger = MockLottiLogger();
 
     // Unregister and register singletons to ensure a fresh state for each test
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<LottiLogger>()) {
+      getIt.unregister<LottiLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<LottiLogger>(mockLottiLogger);
 
     // Initialize the controller and provider container
     controller = SyncMaintenanceController(mockRepository);
@@ -61,9 +61,9 @@ void main() {
         .thenAnswer((_) => Future<void>.value());
     // Mock logging service
     when(
-      () => mockLoggingService.captureException(
+      () => mockLottiLogger.exception(
         any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
         domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
@@ -207,7 +207,7 @@ void main() {
       final expectedErrorString = SyncError.fromException(
         exception,
         StackTrace.current,
-        mockLoggingService,
+        mockLottiLogger,
       ).toString();
       when(
         () => mockRepository.syncCategories(
@@ -254,9 +254,9 @@ void main() {
         () => mockRepository.syncHabits(onProgress: any(named: 'onProgress')),
       );
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLottiLogger.exception(
           exception,
-          stackTrace: any<dynamic>(named: 'stackTrace'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
           domain: 'SYNC_CONTROLLER',
         ),
       ).called(2);

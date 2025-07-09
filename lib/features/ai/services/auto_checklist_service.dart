@@ -3,19 +3,16 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/lotti_logger.dart';
 
 class AutoChecklistService {
   AutoChecklistService({
     JournalDb? journalDb,
-    LoggingService? loggingService,
     ChecklistRepository? checklistRepository,
   })  : _journalDb = journalDb ?? getIt<JournalDb>(),
-        _loggingService = loggingService ?? getIt<LoggingService>(),
         _checklistRepository = checklistRepository ?? ChecklistRepository();
 
   final JournalDb _journalDb;
-  final LoggingService _loggingService;
   final ChecklistRepository _checklistRepository;
 
   Future<bool> shouldAutoCreate({required String taskId}) async {
@@ -29,7 +26,7 @@ class AutoChecklistService {
       final checklistIds = task.data.checklistIds ?? [];
       return checklistIds.isEmpty;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'auto_checklist_service',
         subDomain: 'shouldAutoCreate',
@@ -80,7 +77,7 @@ class AutoChecklistService {
         );
       }
 
-      _loggingService.captureEvent(
+      getIt<LottiLogger>().event(
         'auto_checklist_created: taskId=$taskId, checklistId=${createdChecklist.id}, itemCount=${suggestions.length}',
         domain: 'auto_checklist_service',
         subDomain: 'autoCreateChecklist',
@@ -88,7 +85,7 @@ class AutoChecklistService {
 
       return (success: true, checklistId: createdChecklist.id, error: null);
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      getIt<LottiLogger>().exception(
         exception,
         domain: 'auto_checklist_service',
         subDomain: 'autoCreateChecklist',

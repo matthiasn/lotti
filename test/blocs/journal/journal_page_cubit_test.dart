@@ -5,7 +5,6 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -15,13 +14,13 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 import '../../test_data/sync_config_test_data.dart';
+import '../../test_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +33,9 @@ void main() {
       final secureStorageMock = MockSecureStorage();
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final mockTimeService = MockTimeService();
+
+      // Set up fast logging for tests
+      setupTestEnvironment();
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
@@ -57,8 +59,7 @@ void main() {
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-        ..registerSingleton<LoggingService>(LoggingService())
+        // Logging setup is handled by setupTestEnvironment()
         ..registerSingleton<Fts5Db>(Fts5Db(inMemoryDatabase: true))
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<OutboxService>(OutboxService())
@@ -68,7 +69,7 @@ void main() {
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
         ..registerSingleton<EditorStateService>(EditorStateService());
     });
-    tearDownAll(getIt.reset);
+    tearDownAll(teardownTestEnvironment);
 
     Matcher isJournalPageState() {
       return isA<JournalPageState>();

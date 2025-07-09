@@ -9,9 +9,11 @@ part 'logging_db.g.dart';
 const loggingDbFileName = 'logging_db.sqlite';
 
 enum InsightLevel {
+  fatal,
   error,
   warn,
   info,
+  debug,
   trace,
 }
 
