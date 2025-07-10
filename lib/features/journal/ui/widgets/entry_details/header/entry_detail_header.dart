@@ -54,6 +54,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             !widget.inLinkedEntries)
           CategorySelectionIconButton(entry: entry),
         const SizedBox(width: 10),
+        const Spacer(),
         if (entry is! JournalEvent && (entry?.meta.starred ?? false))
           SwitchIconWidget(
             tooltip: context.messages.journalFavoriteTooltip,
