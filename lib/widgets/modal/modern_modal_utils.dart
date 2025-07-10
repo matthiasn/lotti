@@ -5,6 +5,17 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Enhanced modal utilities with modern, high-budget styling
 class ModernModalUtils {
+  static WoltModalType modalTypeBuilder(
+    BuildContext context,
+  ) {
+    final size = MediaQuery.of(context).size.width;
+    if (size < WoltModalConfig.pageBreakpoint) {
+      return WoltModalType.bottomSheet();
+    } else {
+      return WoltModalType.dialog();
+    }
+  }
+
   static const defaultPadding =
       EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40);
 
@@ -163,14 +174,7 @@ class ModernModalUtils {
           ),
         ];
       },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
+      modalTypeBuilder: modalTypeBuilder,
       barrierDismissible: true,
       modalBarrierColor: isDark
           ? context.colorScheme.surfaceContainerLow.withAlpha(128)
@@ -190,19 +194,164 @@ class ModernModalUtils {
     return WoltModalSheet.show<T>(
       context: context,
       pageListBuilder: pageListBuilder,
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        if (size < WoltModalConfig.pageBreakpoint) {
-          return WoltModalType.bottomSheet();
-        } else {
-          return WoltModalType.dialog();
-        }
-      },
+      modalTypeBuilder: modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
       modalBarrierColor: isDark
           ? context.colorScheme.surfaceContainerLow.withAlpha(128)
           : context.colorScheme.outline.withAlpha(128),
+    );
+  }
+
+  /// Creates a modern styled sliver modal sheet page with enhanced visual effects
+  static SliverWoltModalSheetPage sliverModalSheetPage({
+    required BuildContext context,
+    required List<Widget> slivers,
+    Widget? stickyActionBar,
+    ScrollController? scrollController,
+    String? title,
+    bool isTopBarLayerAlwaysVisible = true,
+    bool showCloseButton = true,
+    void Function()? onTapBack,
+    double? navBarHeight,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = context.colorScheme;
+
+    return SliverWoltModalSheetPage(
+      scrollController: scrollController,
+      stickyActionBar: stickyActionBar,
+      backgroundColor: isDark
+          ? Color.lerp(
+              colorScheme.surfaceContainerLowest,
+              colorScheme.surfaceContainerLow,
+              0.3,
+            )!
+          : colorScheme.surface,
+      hasSabGradient: false,
+      useSafeArea: true,
+      resizeToAvoidBottomInset: true,
+      navBarHeight: navBarHeight ?? 65,
+      topBarTitle: title != null
+          ? Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                title,
+                style: context.textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            )
+          : null,
+      isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
+      leadingNavBarWidget: onTapBack != null
+          ? IconButton(
+              padding: const EdgeInsets.all(12),
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color:
+                      colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ),
+              onPressed: onTapBack,
+            )
+          : null,
+      trailingNavBarWidget: showCloseButton
+          ? IconButton(
+              padding: const EdgeInsets.all(12),
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color:
+                      colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ),
+              onPressed: Navigator.of(context).pop,
+            )
+          : null,
+      mainContentSliversBuilder: (BuildContext context) {
+        // Apply the same modern styling with gradient overlay as the regular page
+        if (isDark) {
+          return [
+            // Subtle gradient overlay as first sliver
+            SliverToBoxAdapter(
+              child: Stack(
+                children: [
+                  Container(
+                    height: 20,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colorScheme.primaryContainer.withValues(alpha: 0.03),
+                          colorScheme.primaryContainer.withValues(alpha: 0.01),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...slivers,
+          ];
+        }
+        return slivers;
+      },
+    );
+  }
+
+  /// Creates a single sliver modal sheet page modal with modern styling
+  static Future<T?> showSingleSliverPageModal<T>({
+    required BuildContext context,
+    required SliverWoltModalSheetPage Function(BuildContext) builder,
+    Widget Function(Widget)? modalDecorator,
+    bool barrierDismissible = true,
+  }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return WoltModalSheet.show<T>(
+      context: context,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
+      pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
+      modalTypeBuilder: modalTypeBuilder,
+      modalDecorator: modalDecorator,
+      barrierDismissible: barrierDismissible,
+    );
+  }
+
+  static Future<T?> showSingleSliverWoltModalSheetPageModal<T>({
+    required BuildContext context,
+    required SliverWoltModalSheetPage Function(BuildContext) builder,
+    Widget Function(Widget)? modalDecorator,
+  }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return WoltModalSheet.show<T>(
+      context: context,
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
+      pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
+      modalTypeBuilder: modalTypeBuilder,
+      modalDecorator: modalDecorator,
     );
   }
 }

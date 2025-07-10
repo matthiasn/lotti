@@ -5,7 +5,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class AudioRecordingModal {
@@ -42,7 +42,7 @@ class AudioRecordingModal {
             ),
           ];
         },
-        modalTypeBuilder: ModalUtils.modalTypeBuilder,
+        modalTypeBuilder: ModernModalUtils.modalTypeBuilder,
       );
     } finally {
       // Modal has been dismissed (either by stop button, back gesture, or tapping outside)

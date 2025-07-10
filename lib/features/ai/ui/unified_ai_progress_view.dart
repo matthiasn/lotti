@@ -11,7 +11,7 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Progress view for unified AI inference
@@ -208,7 +208,7 @@ class UnifiedAiProgressUtils {
     VoidCallback? onTapBack,
     ScrollController? scrollController,
   }) {
-    return ModalUtils.sliverModalSheetPage(
+    return ModernModalUtils.sliverModalSheetPage(
       context: context,
       title: prompt.name,
       onTapBack: onTapBack,
