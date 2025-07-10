@@ -9,7 +9,7 @@ import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class EntryDateTimeModal {
-  static Future<T?> show<T>({
+  static Future<void> show<T>({
     required BuildContext context,
     required JournalEntity entry,
   }) async {
@@ -21,8 +21,6 @@ class EntryDateTimeModal {
         return EntryDateTimeModalContent(item: entry);
       },
     );
-
-    return null;
   }
 }
 
