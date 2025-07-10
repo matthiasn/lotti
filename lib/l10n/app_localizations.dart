@@ -1983,30 +1983,6 @@ abstract class AppLocalizations {
   /// **'Delete sync database'**
   String get maintenanceDeleteSyncDbDescription;
 
-  /// No description provided for @maintenancePurgeAudioModels.
-  ///
-  /// In en, this message translates to:
-  /// **'Purge audio models'**
-  String get maintenancePurgeAudioModels;
-
-  /// No description provided for @maintenancePurgeAudioModelsConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'YES, PURGE MODELS'**
-  String get maintenancePurgeAudioModelsConfirm;
-
-  /// No description provided for @maintenancePurgeAudioModelsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Purge all audio models'**
-  String get maintenancePurgeAudioModelsDescription;
-
-  /// No description provided for @maintenancePurgeAudioModelsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to purge all audio models? This action cannot be undone.'**
-  String get maintenancePurgeAudioModelsMessage;
-
   /// No description provided for @maintenancePurgeDeleted.
   ///
   /// In en, this message translates to:

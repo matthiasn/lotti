@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
@@ -13,7 +11,6 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:path/path.dart';
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
@@ -65,14 +62,6 @@ class Maintenance {
   Future<void> deleteEditorDb() async {
     final file = await getDatabaseFile(editorDbFileName);
     file.deleteSync();
-  }
-
-  Future<void> purgeAudioModels() async {
-    final documentsDir = getDocumentsDirectory();
-    final file = File(join(documentsDir.path, 'huggingface'));
-    if (file.existsSync()) {
-      file.deleteSync(recursive: true);
-    }
   }
 
   Future<void> deleteLoggingDb() async {

@@ -1039,19 +1039,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get maintenanceDeleteSyncDbDescription => 'Delete sync database';
 
   @override
-  String get maintenancePurgeAudioModels => 'Purger les modèles audio';
-
-  @override
-  String get maintenancePurgeAudioModelsConfirm => 'YES, PURGE MODELS';
-
-  @override
-  String get maintenancePurgeAudioModelsDescription => 'Purge all audio models';
-
-  @override
-  String get maintenancePurgeAudioModelsMessage =>
-      'Are you sure you want to purge all audio models? This action cannot be undone.';
-
-  @override
   String get maintenancePurgeDeleted => 'Purger les éléments supprimés';
 
   @override

@@ -3,7 +3,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
-import 'package:lotti/features/sync/ui/audio_purge_modal.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
@@ -96,13 +95,6 @@ class MaintenancePage extends StatelessWidget {
                 subtitle: context.messages.maintenancePurgeDeletedDescription,
                 icon: Icons.delete_forever_rounded,
                 onTap: () => PurgeModal.show(context),
-              ),
-              AnimatedModernSettingsCardWithIcon(
-                title: context.messages.maintenancePurgeAudioModels,
-                subtitle:
-                    context.messages.maintenancePurgeAudioModelsDescription,
-                icon: Icons.audio_file_rounded,
-                onTap: () => AudioPurgeModal.show(context),
               ),
               AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceRecreateFts5,
