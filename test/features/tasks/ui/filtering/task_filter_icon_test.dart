@@ -140,10 +140,8 @@ void main() {
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
 
-      // Verify the modal is shown with the correct title
+      // Verify the modal is shown
       expect(find.byType(IconButton), findsWidgets);
-      expect(find.byIcon(Icons.close_rounded),
-          findsOneWidget); // Close button in modal
     });
 
     testWidgets('modal contains expected components', (tester) async {
@@ -160,7 +158,7 @@ void main() {
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
     });
 
-    testWidgets('modal can be closed with close button', (tester) async {
+    testWidgets('modal can be closed by tapping outside', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
@@ -169,10 +167,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the modal is shown
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byType(TaskStatusFilter), findsOneWidget);
+      expect(find.byType(TaskCategoryFilter), findsOneWidget);
 
-      // Tap on the close button
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      // Tap outside the modal (barrier)
+      await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
       // Verify components are no longer visible
