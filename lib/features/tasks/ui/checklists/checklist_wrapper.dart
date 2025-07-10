@@ -10,14 +10,12 @@ class ChecklistWrapper extends ConsumerWidget {
     required this.entryId,
     required this.taskId,
     this.categoryId,
-    this.padding = EdgeInsets.zero,
     super.key,
   });
 
   final String entryId;
   final String taskId;
   final String? categoryId;
-  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
