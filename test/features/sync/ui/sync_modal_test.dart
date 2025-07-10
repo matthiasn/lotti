@@ -181,11 +181,11 @@ void main() {
       expect(find.text(messages.syncEntitiesMessage), findsOneWidget);
       expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
 
-      // Tap the confirm button
+      // Tap the confirm button to proceed to progress page
       await tester.tap(find.text(messages.syncEntitiesConfirm));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      // Verify that the categories step is shown in the sync indicator
+      // Now check for the categories step in the progress page
       expect(find.text(messages.syncStepCategories), findsOneWidget);
 
       // Verify that the sync operation for categories was called

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/modals.dart';
 
 class AudioPurgeState {
   const AudioPurgeState({
@@ -40,7 +40,7 @@ class AudioPurgeModal {
     final container = ProviderScope.containerOf(context);
     final stateProvider = audioPurgeStateProvider;
 
-    await ModalUtils.showConfirmationAndProgressModal(
+    await ConfirmationProgressModal.show(
       context: context,
       message: context.messages.maintenancePurgeAudioModelsMessage,
       confirmLabel: context.messages.maintenancePurgeAudioModelsConfirm,

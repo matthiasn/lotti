@@ -61,11 +61,11 @@ void main() {
     final confirmText =
         AppLocalizations.of(context)!.maintenanceRecreateFts5Confirm;
 
-    // Tap the confirm button
+    // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // Should show 50% progress in the modal
+    // Should show 50% progress in the modal immediately
     expect(find.text('50%'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
@@ -75,9 +75,9 @@ void main() {
       progress: 0.5,
       error: 'Failed to recreate FTS5',
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // Should show error message
+    // Should show error message immediately
     expect(find.text('Failed to recreate FTS5'), findsOneWidget);
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -86,10 +86,9 @@ void main() {
     testController.state = const Fts5State(
       progress: 1,
     );
-    await tester
-        .pump(); // Only pump a single frame to catch the state before modal closes
+    await tester.pump();
 
-    // Should show checkmark and 100% progress
+    // Should show checkmark and 100% progress immediately
     expect(find.text('100%'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -131,11 +130,11 @@ void main() {
     final confirmText =
         AppLocalizations.of(context)!.maintenanceRecreateFts5Confirm;
 
-    // Tap the confirm button
+    // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // Should show error state
+    // Should show error state immediately
     expect(find.text('Test error'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
