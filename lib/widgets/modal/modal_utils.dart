@@ -282,20 +282,4 @@ class ModalUtils {
       barrierDismissible: barrierDismissible,
     );
   }
-
-  static Future<T?> showSingleSliverWoltModalSheetPageModal<T>({
-    required BuildContext context,
-    required SliverWoltModalSheetPage Function(BuildContext) builder,
-    Widget Function(Widget)? modalDecorator,
-  }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return WoltModalSheet.show<T>(
-      context: context,
-      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
-      pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
-      modalTypeBuilder: modalTypeBuilder,
-      modalDecorator: modalDecorator,
-    );
-  }
 }

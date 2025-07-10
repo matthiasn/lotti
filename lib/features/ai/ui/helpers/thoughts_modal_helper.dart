@@ -29,7 +29,7 @@ class ThoughtsModalHelper {
     );
 
     if (context.mounted && prompt is AiConfigPrompt) {
-      await ModalUtils.showSingleSliverWoltModalSheetPageModal<void>(
+      await ModalUtils.showSingleSliverPageModal<void>(
         context: context,
         builder: (context) => UnifiedAiProgressUtils.progressPage(
           context: context,
