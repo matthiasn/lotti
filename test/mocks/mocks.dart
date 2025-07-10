@@ -35,8 +35,6 @@ MockTagsService mockTagsServiceWithTags(
 ) {
   final mock = MockTagsService();
 
-  when(mock.getAllStoryTags).thenAnswer((_) => storyTags);
-
   return mock;
 }
 

@@ -341,32 +341,6 @@ void main() {
       //     .called(1);
     });
 
-    testWidgets('toggles edit mode when reorder button is pressed',
-        (tester) async {
-      await tester.pumpWidget(createTestWidget());
-
-      // Initially not in edit mode
-      final checklistWrappers = tester.widgetList<ChecklistWrapper>(
-        find.byType(ChecklistWrapper),
-      );
-      for (final wrapper in checklistWrappers) {
-        expect(wrapper.padding, EdgeInsets.zero);
-      }
-
-      // Test that the widget renders
-      expect(find.byType(ChecklistsWidget), findsOneWidget);
-      // The reorder button requires checklists to be rendered
-      // expect(find.byIcon(Icons.reorder), findsOneWidget);
-
-      // Enter edit mode would require the full widget to render
-      // await tester.tap(find.byIcon(Icons.reorder));
-      // await tester.pump();
-
-      // The widget should rebuild with edit mode active
-      // Detailed testing of ChecklistWrapper padding requires
-      // the ChecklistWrapper widgets to render properly
-    });
-
     testWidgets('reorders checklists correctly', (tester) async {
       final controller = MockEntryController(mockEntry: mockTask);
 

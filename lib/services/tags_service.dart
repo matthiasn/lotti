@@ -25,22 +25,6 @@ class TagsService {
     return tagsById[id];
   }
 
-  List<StoryTag> getAllStoryTags() {
-    final storyTags = <StoryTag>[];
-
-    for (final tag in tagsById.values) {
-      tag.map(
-        genericTag: (_) {},
-        personTag: (_) {},
-        storyTag: (StoryTag storyTag) {
-          storyTags.add(storyTag);
-        },
-      );
-    }
-
-    return storyTags;
-  }
-
   List<String> getFilteredStoryTagIds(List<String>? tagIds) {
     final storyTagIds = <String>[];
 
