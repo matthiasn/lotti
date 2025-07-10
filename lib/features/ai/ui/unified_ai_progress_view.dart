@@ -208,6 +208,8 @@ class UnifiedAiProgressUtils {
     VoidCallback? onTapBack,
     ScrollController? scrollController,
   }) {
+    final colorScheme = context.colorScheme;
+
     return ModalUtils.sliverModalSheetPage(
       context: context,
       title: prompt.name,
@@ -223,9 +225,19 @@ class UnifiedAiProgressUtils {
       ),
       slivers: [
         SliverToBoxAdapter(
-            child: UnifiedAiProgressContent(
-          entityId: entityId,
-          promptId: prompt.id,
+            child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primaryContainer.withValues(alpha: 0.03),
+                colorScheme.primaryContainer.withValues(alpha: 0.01),
+              ],
+            ),
+          ),
+          child: UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: prompt.id,
+          ),
         )),
       ],
     );

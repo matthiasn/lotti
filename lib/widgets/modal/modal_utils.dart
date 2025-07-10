@@ -168,7 +168,8 @@ class ModalUtils {
   /// Creates a modal with multiple pages and enhanced navigation
   static Future<T?> showMultiPageModal<T>({
     required BuildContext context,
-    required List<WoltModalSheetPage> Function(BuildContext) pageListBuilder,
+    required List<SliverWoltModalSheetPage> Function(BuildContext)
+        pageListBuilder,
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
   }) async {
@@ -196,7 +197,6 @@ class ModalUtils {
     void Function()? onTapBack,
     double? navBarHeight,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
 
     return SliverWoltModalSheetPage(
@@ -259,32 +259,6 @@ class ModalUtils {
             )
           : null,
       mainContentSliversBuilder: (BuildContext context) {
-        // Apply the same modern styling with gradient overlay as the regular page
-        if (isDark) {
-          return [
-            // Subtle gradient overlay as first sliver
-            SliverToBoxAdapter(
-              child: Stack(
-                children: [
-                  Container(
-                    height: 20,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colorScheme.primaryContainer.withValues(alpha: 0.03),
-                          colorScheme.primaryContainer.withValues(alpha: 0.01),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ...slivers,
-          ];
-        }
         return slivers;
       },
     );
