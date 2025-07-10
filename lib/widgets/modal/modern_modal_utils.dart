@@ -5,6 +5,9 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Enhanced modal utilities with modern, high-budget styling
 class ModernModalUtils {
+  static const defaultPadding =
+      EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40);
+
   /// Creates a modern styled modal sheet page with enhanced visual effects
   static WoltModalSheetPage modernModalSheetPage({
     required BuildContext context,
@@ -14,7 +17,7 @@ class ModernModalUtils {
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = true,
     void Function()? onTapBack,
-    EdgeInsetsGeometry padding = EdgeInsets.zero,
+    EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
     bool showDivider = false,
   }) {
@@ -136,8 +139,7 @@ class ModernModalUtils {
     required Widget Function(BuildContext) builder,
     String? title,
     Widget? stickyActionBar,
-    EdgeInsetsGeometry padding =
-        const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
+    EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
     bool showDivider = false,
     Widget Function(Widget)? modalDecorator,
