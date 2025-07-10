@@ -47,52 +47,6 @@ void main() {
         ),
       );
     });
-
-    testWidgets('modalSheetPage creates page with title and close button',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              final page = ModalUtils.modalSheetPage(
-                context: context,
-                title: 'Test Title',
-                child: const Text('Test Content'),
-              );
-
-              expect(page, isA<WoltModalSheetPage>());
-              expect(page.topBarTitle, isA<Text>());
-              expect(page.trailingNavBarWidget, isA<IconButton>());
-              expect(page.child, isA<Padding>());
-              return const Scaffold();
-            },
-          ),
-        ),
-      );
-    });
-
-    testWidgets('modalSheetPage creates page without title and close button',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              final page = ModalUtils.modalSheetPage(
-                context: context,
-                child: const Text('Test Content'),
-                showCloseButton: false,
-              );
-
-              expect(page, isA<WoltModalSheetPage>());
-              expect(page.topBarTitle, isNull);
-              expect(page.trailingNavBarWidget, isNull);
-              expect(page.child, isA<Padding>());
-              return const Scaffold();
-            },
-          ),
-        ),
-      );
-    });
   });
 
   group('ModalUtils Helper Methods', () {
@@ -450,47 +404,6 @@ void main() {
         expect(find.byIcon(Icons.arrow_back), findsNothing);
         expect(find.byIcon(Icons.close), findsNothing);
         expect(find.text('All null case handled'), findsOneWidget);
-      });
-
-      testWidgets('extracted methods maintain same behavior as original',
-          (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                // Test that the extracted methods produce the same results
-                // as the original inline implementations
-                final extractedTitle =
-                    ModalUtils.buildTopBarTitle(context, 'Test');
-                final extractedLeading =
-                    ModalUtils.buildLeadingNavBarWidget(context, () {});
-                final extractedTrailing = ModalUtils.buildTrailingNavBarWidget(
-                  context,
-                  showCloseButton: true,
-                );
-
-                // Verify they create the expected widget types
-                expect(extractedTitle, isA<Text>());
-                expect(extractedLeading, isA<IconButton>());
-                expect(extractedTrailing, isA<IconButton>());
-
-                // Verify the modal page still works with extracted methods
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  title: 'Test Page',
-                  onTapBack: () {},
-                  child: const Text('Content'),
-                );
-
-                expect(page.topBarTitle, isA<Text>());
-                expect(page.leadingNavBarWidget, isA<IconButton>());
-                expect(page.trailingNavBarWidget, isA<IconButton>());
-
-                return const Scaffold();
-              },
-            ),
-          ),
-        );
       });
     });
   });

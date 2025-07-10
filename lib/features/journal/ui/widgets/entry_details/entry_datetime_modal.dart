@@ -5,38 +5,22 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 
 class EntryDateTimeModal {
   static Future<T?> show<T>({
     required BuildContext context,
     required JournalEntity entry,
   }) async {
-    final pageIndexNotifier = ValueNotifier(0);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return WoltModalSheet.show<T>(
+    await ModernModalUtils.showSinglePageModal<void>(
       context: context,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
-      pageListBuilder: (modalSheetContext) {
-        return [
-          ModalUtils.modalSheetPage(
-            context: modalSheetContext,
-            child: EntryDateTimeModalContent(item: entry),
-            navBarHeight: 20,
-            isTopBarLayerAlwaysVisible: false,
-            showCloseButton: false,
-          ),
-        ];
+      builder: (BuildContext _) {
+        return EntryDateTimeModalContent(item: entry);
       },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      barrierDismissible: true,
-      pageIndexNotifier: pageIndexNotifier,
     );
+
+    return null;
   }
 }
 

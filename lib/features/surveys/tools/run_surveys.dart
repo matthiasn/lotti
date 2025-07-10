@@ -4,10 +4,8 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 import 'package:research_package/research_package.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 Future<void> runSurvey({
   required RPOrderedTask task,
@@ -15,41 +13,25 @@ Future<void> runSurvey({
   required void Function(RPTaskResult) resultCallback,
   required BuildContext context,
 }) async {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-
-  await WoltModalSheet.show<void>(
+  await ModernModalUtils.showSinglePageModal<void>(
     context: context,
-    useRootNavigator: true,
-    useSafeArea: true,
-    modalBarrierColor: isDark
-        ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-        : context.colorScheme.outline.withAlpha(128),
-    pageListBuilder: (modalSheetContext) {
-      return [
-        ModalUtils.modalSheetPage(
-          context: context,
-          backgroundColor: themeData.canvasColor,
-          isTopBarLayerAlwaysVisible: false,
-          showCloseButton: false,
-          child: Theme(
-            data: themeData.copyWith(
-              scaffoldBackgroundColor: Colors.transparent,
-              elevatedButtonTheme: ElevatedButtonThemeData(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: themeData.colorScheme.onPrimary,
-                ),
-              ),
-              textTheme: themeData.textTheme.copyWith(
-                bodyLarge: themeData.textTheme.bodyMedium,
-                headlineSmall: themeData.textTheme.bodyLarge,
-              ),
+    builder: (BuildContext _) {
+      return Theme(
+        data: themeData.copyWith(
+          scaffoldBackgroundColor: Colors.transparent,
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: themeData.colorScheme.onPrimary,
             ),
-            child: SurveyWidget(task, resultCallback),
+          ),
+          textTheme: themeData.textTheme.copyWith(
+            bodyLarge: themeData.textTheme.bodyMedium,
+            headlineSmall: themeData.textTheme.bodyLarge,
           ),
         ),
-      ];
+        child: SurveyWidget(task, resultCallback),
+      );
     },
-    modalTypeBuilder: ModalUtils.modalTypeBuilder,
   );
 }
 

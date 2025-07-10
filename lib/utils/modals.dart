@@ -66,35 +66,6 @@ class ModalUtils {
     );
   }
 
-  static WoltModalSheetPage modalSheetPage({
-    required BuildContext context,
-    required Widget child,
-    Widget? stickyActionBar,
-    String? title,
-    Color? backgroundColor,
-    bool isTopBarLayerAlwaysVisible = true,
-    bool showCloseButton = true,
-    void Function()? onTapBack,
-    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
-    double? navBarHeight,
-  }) {
-    return WoltModalSheetPage(
-      backgroundColor: context.colorScheme.surfaceContainer,
-      stickyActionBar: stickyActionBar,
-      hasSabGradient: false,
-      navBarHeight: navBarHeight ?? 55,
-      topBarTitle: buildTopBarTitle(context, title),
-      isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
-      leadingNavBarWidget: buildLeadingNavBarWidget(context, onTapBack),
-      trailingNavBarWidget:
-          buildTrailingNavBarWidget(context, showCloseButton: showCloseButton),
-      child: Padding(
-        padding: padding,
-        child: child,
-      ),
-    );
-  }
-
   static SliverWoltModalSheetPage sliverModalSheetPage({
     required BuildContext context,
     required List<Widget> slivers,
