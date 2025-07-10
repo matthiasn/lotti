@@ -6,7 +6,6 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class AudioRecordingModal {
   static Future<void> show(
@@ -25,52 +24,21 @@ class AudioRecordingModal {
     }
 
     try {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-
-      await WoltModalSheet.show<void>(
+      await ModalUtils.showSinglePageModal<void>(
         context: context,
-        useRootNavigator: useRootNavigator,
-        modalBarrierColor: isDark
-            ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-            : context.colorScheme.outline.withAlpha(128),
-        pageListBuilder: (modalSheetContext) {
-          return [
-            _buildRecordingPage(
-              context,
-              linkedId: linkedId,
-              categoryId: categoryId,
-            ),
-          ];
+        hasTopBarLayer: false,
+        builder: (BuildContext _) {
+          return AudioRecordingModalContent(
+            linkedId: linkedId,
+            categoryId: categoryId,
+          );
         },
-        modalTypeBuilder: ModalUtils.modalTypeBuilder,
       );
     } finally {
       // Modal has been dismissed (either by stop button, back gesture, or tapping outside)
       // Always set modal visibility to false after dismissal
       controller.setModalVisible(modalVisible: false);
     }
-  }
-
-  static WoltModalSheetPage _buildRecordingPage(
-    BuildContext context, {
-    String? linkedId,
-    String? categoryId,
-  }) {
-    final theme = Theme.of(context);
-
-    return WoltModalSheetPage(
-      backgroundColor: theme.colorScheme.surfaceContainer,
-      hasSabGradient: false,
-      isTopBarLayerAlwaysVisible: false,
-      navBarHeight: 0,
-      child: Theme(
-        data: theme,
-        child: AudioRecordingModalContent(
-          linkedId: linkedId,
-          categoryId: categoryId,
-        ),
-      ),
-    );
   }
 }
 
