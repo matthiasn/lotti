@@ -6,12 +6,12 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/settings/ui/widgets/habits/habit_autocomplete_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/widgets/settings/habits/habit_autocomplete_widget.dart';
 
 class HabitSettingsCubit extends Cubit<HabitSettingsState> {
   HabitSettingsCubit(
