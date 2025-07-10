@@ -5,7 +5,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 
 class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
@@ -44,7 +44,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
             IconButton(
               icon: Icon(Icons.filter_list, color: color),
               onPressed: () {
-                ModalUtils.showSinglePageModal<void>(
+                ModernModalUtils.showSinglePageModal<void>(
                   context: context,
                   builder: (BuildContext _) =>
                       LinkedFilterModalContent(entryId: item.id),

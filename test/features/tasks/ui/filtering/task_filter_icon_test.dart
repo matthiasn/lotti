@@ -10,7 +10,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_list_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -93,7 +92,6 @@ void main() {
       selectedEntryTypes: const [],
       fullTextMatches: {},
       showTasks: true,
-      taskAsListView: true,
       pagingController: mockPagingController,
       taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
       selectedTaskStatuses: {'OPEN'},
@@ -144,7 +142,8 @@ void main() {
 
       // Verify the modal is shown with the correct title
       expect(find.byType(IconButton), findsWidgets);
-      expect(find.byIcon(Icons.close), findsOneWidget); // Close button in modal
+      expect(find.byIcon(Icons.close_rounded),
+          findsOneWidget); // Close button in modal
     });
 
     testWidgets('modal contains expected components', (tester) async {
@@ -157,7 +156,6 @@ void main() {
 
       // Verify the modal contains the expected components
       expect(find.byType(JournalFilter), findsOneWidget);
-      expect(find.byType(TaskListToggle), findsOneWidget);
       expect(find.byType(TaskStatusFilter), findsOneWidget);
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
     });
@@ -171,10 +169,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the modal is shown
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
       // Tap on the close button
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       // Verify components are no longer visible

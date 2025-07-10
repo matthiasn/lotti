@@ -8,7 +8,6 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_info_row.dart';
 import 'package:lotti/features/tasks/ui/task_date_row.dart';
-import 'package:lotti/themes/theme.dart';
 
 class TaskForm extends ConsumerWidget {
   const TaskForm({
@@ -28,7 +27,8 @@ class TaskForm extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final dividerColor = context.colorScheme.outline.withAlpha(60);
+    // only show editor for legacy entries where there is text already
+    final plainText = entryState?.entry?.entryText?.plainText.trim() ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,16 +36,15 @@ class TaskForm extends ConsumerWidget {
         TaskDateRow(taskId: taskId),
         TaskInfoRow(taskId: taskId),
         const SizedBox(height: 10),
-        EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
-        Divider(color: dividerColor),
-        const SizedBox(height: 10),
+        if (entryState?.entry?.entryText != null && plainText.isNotEmpty) ...[
+          EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
+          const SizedBox(height: 10),
+        ],
         LatestAiResponseSummary(
           id: taskId,
           aiResponseType: AiResponseType.taskSummary,
         ),
         ChecklistsWidget(entryId: taskId, task: task),
-        const SizedBox(height: 10),
-        Divider(color: dividerColor),
       ],
     );
   }

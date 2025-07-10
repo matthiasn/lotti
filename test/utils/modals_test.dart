@@ -93,46 +93,6 @@ void main() {
         ),
       );
     });
-
-    testWidgets('showSinglePageModal shows modal and can be closed',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () {
-                    ModalUtils.showSinglePageModal<void>(
-                      context: context,
-                      title: 'Test Modal',
-                      builder: (context) => const Text('Modal Content'),
-                    );
-                  },
-                  child: const Text('Show Modal'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-
-      // Open modal
-      await tester.tap(find.text('Show Modal'));
-      await tester.pumpAndSettle();
-
-      // Verify modal content is visible
-      expect(find.text('Modal Content'), findsOneWidget);
-      expect(find.text('Test Modal'), findsOneWidget);
-
-      // Close modal using close button
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
-
-      // Verify modal is closed
-      expect(find.text('Modal Content'), findsNothing);
-      expect(find.text('Test Modal'), findsNothing);
-    });
   });
 
   group('ModalUtils Helper Methods', () {

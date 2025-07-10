@@ -245,10 +245,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          child: CardWrapperWidget(
-            item: testImage,
-            taskAsListView: false,
-          ),
+          child: CardWrapperWidget(item: testImage),
         ),
       );
       await tester.pumpAndSettle();
@@ -259,16 +256,12 @@ void main() {
       expect(find.byType(AnimatedModernTaskCard), findsNothing);
     });
 
-    testWidgets(
-        'renders AnimatedModernTaskCard for Task when taskAsListView is true',
+    testWidgets('renders AnimatedModernTaskCard for Task entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          child: CardWrapperWidget(
-            item: testTask,
-            taskAsListView: true,
-          ),
+          child: CardWrapperWidget(item: testTask),
         ),
       );
       await tester.pumpAndSettle();
@@ -279,35 +272,12 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets(
-        'renders ModernJournalCard for Task when taskAsListView is false',
-        (WidgetTester tester) async {
-      // Arrange
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: CardWrapperWidget(
-            item: testTask,
-            taskAsListView: false,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Assert
-      expect(find.byType(ModernJournalCard), findsOneWidget);
-      expect(find.byType(AnimatedModernTaskCard), findsNothing);
-      expect(find.byType(ModernJournalImageCard), findsNothing);
-    });
-
     testWidgets('renders ModernJournalCard for JournalEntry entity',
         (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          child: CardWrapperWidget(
-            item: testJournalEntry,
-            taskAsListView: false, // value doesn't matter for non-Task types
-          ),
+          child: CardWrapperWidget(item: testJournalEntry),
         ),
       );
       await tester.pumpAndSettle();
@@ -323,10 +293,7 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          child: CardWrapperWidget(
-            item: testEvent,
-            taskAsListView: false, // value doesn't matter for non-Task types
-          ),
+          child: CardWrapperWidget(item: testEvent),
         ),
       );
       await tester.pumpAndSettle();

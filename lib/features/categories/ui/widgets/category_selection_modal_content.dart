@@ -7,7 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class CategorySelectionModalContent extends ConsumerStatefulWidget {
@@ -39,7 +39,7 @@ class CategorySelectionModalContentState
   Future<void> _showColorPicker(String categoryName) async {
     if (!mounted) return;
 
-    await ModalUtils.showSinglePageModal<void>(
+    await ModernModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createCategoryTitle,
       builder: (BuildContext context) {

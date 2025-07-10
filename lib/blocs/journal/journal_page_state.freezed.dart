@@ -21,7 +21,6 @@ mixin _$JournalPageState {
   Set<DisplayFilter> get filters => throw _privateConstructorUsedError;
   bool get showPrivateEntries => throw _privateConstructorUsedError;
   bool get showTasks => throw _privateConstructorUsedError;
-  bool get taskAsListView => throw _privateConstructorUsedError;
   List<String> get selectedEntryTypes => throw _privateConstructorUsedError;
   Set<String> get fullTextMatches => throw _privateConstructorUsedError;
   PagingController<int, JournalEntity>? get pagingController =>
@@ -49,7 +48,6 @@ abstract class $JournalPageStateCopyWith<$Res> {
       Set<DisplayFilter> filters,
       bool showPrivateEntries,
       bool showTasks,
-      bool taskAsListView,
       List<String> selectedEntryTypes,
       Set<String> fullTextMatches,
       PagingController<int, JournalEntity>? pagingController,
@@ -78,7 +76,6 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
     Object? filters = null,
     Object? showPrivateEntries = null,
     Object? showTasks = null,
-    Object? taskAsListView = null,
     Object? selectedEntryTypes = null,
     Object? fullTextMatches = null,
     Object? pagingController = freezed,
@@ -106,10 +103,6 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
       showTasks: null == showTasks
           ? _value.showTasks
           : showTasks // ignore: cast_nullable_to_non_nullable
-              as bool,
-      taskAsListView: null == taskAsListView
-          ? _value.taskAsListView
-          : taskAsListView // ignore: cast_nullable_to_non_nullable
               as bool,
       selectedEntryTypes: null == selectedEntryTypes
           ? _value.selectedEntryTypes
@@ -153,7 +146,6 @@ abstract class _$$JournalPageStateImplCopyWith<$Res>
       Set<DisplayFilter> filters,
       bool showPrivateEntries,
       bool showTasks,
-      bool taskAsListView,
       List<String> selectedEntryTypes,
       Set<String> fullTextMatches,
       PagingController<int, JournalEntity>? pagingController,
@@ -180,7 +172,6 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
     Object? filters = null,
     Object? showPrivateEntries = null,
     Object? showTasks = null,
-    Object? taskAsListView = null,
     Object? selectedEntryTypes = null,
     Object? fullTextMatches = null,
     Object? pagingController = freezed,
@@ -208,10 +199,6 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
       showTasks: null == showTasks
           ? _value.showTasks
           : showTasks // ignore: cast_nullable_to_non_nullable
-              as bool,
-      taskAsListView: null == taskAsListView
-          ? _value.taskAsListView
-          : taskAsListView // ignore: cast_nullable_to_non_nullable
               as bool,
       selectedEntryTypes: null == selectedEntryTypes
           ? _value._selectedEntryTypes
@@ -250,7 +237,6 @@ class _$JournalPageStateImpl implements _JournalPageState {
       required final Set<DisplayFilter> filters,
       required this.showPrivateEntries,
       required this.showTasks,
-      required this.taskAsListView,
       required final List<String> selectedEntryTypes,
       required final Set<String> fullTextMatches,
       required this.pagingController,
@@ -287,8 +273,6 @@ class _$JournalPageStateImpl implements _JournalPageState {
   final bool showPrivateEntries;
   @override
   final bool showTasks;
-  @override
-  final bool taskAsListView;
   final List<String> _selectedEntryTypes;
   @override
   List<String> get selectedEntryTypes {
@@ -336,7 +320,7 @@ class _$JournalPageStateImpl implements _JournalPageState {
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, taskAsListView: $taskAsListView, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds)';
   }
 
   @override
@@ -351,8 +335,6 @@ class _$JournalPageStateImpl implements _JournalPageState {
                 other.showPrivateEntries == showPrivateEntries) &&
             (identical(other.showTasks, showTasks) ||
                 other.showTasks == showTasks) &&
-            (identical(other.taskAsListView, taskAsListView) ||
-                other.taskAsListView == taskAsListView) &&
             const DeepCollectionEquality()
                 .equals(other._selectedEntryTypes, _selectedEntryTypes) &&
             const DeepCollectionEquality()
@@ -375,7 +357,6 @@ class _$JournalPageStateImpl implements _JournalPageState {
       const DeepCollectionEquality().hash(_filters),
       showPrivateEntries,
       showTasks,
-      taskAsListView,
       const DeepCollectionEquality().hash(_selectedEntryTypes),
       const DeepCollectionEquality().hash(_fullTextMatches),
       pagingController,
@@ -400,7 +381,6 @@ abstract class _JournalPageState implements JournalPageState {
           required final Set<DisplayFilter> filters,
           required final bool showPrivateEntries,
           required final bool showTasks,
-          required final bool taskAsListView,
           required final List<String> selectedEntryTypes,
           required final Set<String> fullTextMatches,
           required final PagingController<int, JournalEntity>? pagingController,
@@ -419,8 +399,6 @@ abstract class _JournalPageState implements JournalPageState {
   bool get showPrivateEntries;
   @override
   bool get showTasks;
-  @override
-  bool get taskAsListView;
   @override
   List<String> get selectedEntryTypes;
   @override

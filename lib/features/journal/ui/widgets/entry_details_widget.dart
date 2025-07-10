@@ -19,6 +19,7 @@ import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
 class EntryDetailsWidget extends ConsumerWidget {
@@ -75,26 +76,23 @@ class EntryDetailsWidget extends ConsumerWidget {
       );
     }
 
-    return Card(
+    return ModernBaseCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: const EdgeInsets.only(
         left: AppTheme.spacingXSmall,
         right: AppTheme.spacingXSmall,
         bottom: AppTheme.spacingMedium,
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            EntryDetailsContent(
-              itemId,
-              linkedFrom: linkedFrom,
-              parentTags: parentTags,
-              link: link,
-            ),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EntryDetailsContent(
+            itemId,
+            linkedFrom: linkedFrom,
+            parentTags: parentTags,
+            link: link,
+          ),
+        ],
       ),
     );
   }
@@ -128,17 +126,6 @@ class EntryDetailsContent extends ConsumerWidget {
     if (item == null || item.meta.deletedAt != null) {
       return const SizedBox.shrink();
     }
-
-    /*  final isFocused = entryState?.isFocused ?? false;
-    if (isFocused && isMobile) {
-      Future.microtask(() {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOutQuint,
-        );
-      });
-    }*/
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

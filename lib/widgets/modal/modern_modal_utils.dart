@@ -131,17 +131,22 @@ class ModernModalUtils {
   }
 
   /// Creates an enhanced single page modal with modern styling
-  static Future<T?> showModernModal<T>({
+  static Future<T?> showSinglePageModal<T>({
     required BuildContext context,
     required Widget Function(BuildContext) builder,
     String? title,
     Widget? stickyActionBar,
-    EdgeInsetsGeometry padding = EdgeInsets.zero,
+    EdgeInsetsGeometry padding =
+        const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
     double? navBarHeight,
     bool showDivider = false,
+    Widget Function(Widget)? modalDecorator,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WoltModalSheet.show<T>(
       context: context,
+      modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
           modernModalSheetPage(
@@ -165,7 +170,9 @@ class ModernModalUtils {
         }
       },
       barrierDismissible: true,
-      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
     );
   }
 
@@ -176,6 +183,8 @@ class ModernModalUtils {
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WoltModalSheet.show<T>(
       context: context,
       pageListBuilder: pageListBuilder,
@@ -189,7 +198,9 @@ class ModernModalUtils {
       },
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
-      modalBarrierColor: context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: isDark
+          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+          : context.colorScheme.outline.withAlpha(128),
     );
   }
 }

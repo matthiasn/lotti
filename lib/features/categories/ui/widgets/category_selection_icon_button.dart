@@ -5,7 +5,7 @@ import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 
 class CategorySelectionIconButton extends ConsumerWidget {
   const CategorySelectionIconButton({
@@ -25,7 +25,7 @@ class CategorySelectionIconButton extends ConsumerWidget {
 
     return IconButton(
       onPressed: () {
-        ModalUtils.showSinglePageModal<void>(
+        ModernModalUtils.showSinglePageModal<void>(
           context: context,
           title: context.messages.habitCategoryLabel,
           builder: (BuildContext _) {

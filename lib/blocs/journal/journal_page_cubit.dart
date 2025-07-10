@@ -31,7 +31,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             selectedEntryTypes: entryTypes,
             fullTextMatches: {},
             showTasks: showTasks,
-            taskAsListView: true,
             pagingController: null,
             taskStatuses: [
               'OPEN',
@@ -95,7 +94,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         selectedEntryTypes: state.selectedEntryTypes,
         fullTextMatches: state.fullTextMatches,
         showTasks: state.showTasks,
-        taskAsListView: state.taskAsListView,
         pagingController: controller,
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: state.selectedTaskStatuses,
@@ -188,7 +186,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   String _query = '';
   bool _showPrivateEntries = false;
   bool showTasks = false;
-  bool taskAsListView = true;
   Set<String> _selectedCategoryIds = {};
 
   Set<String> _fullTextMatches = {};
@@ -205,7 +202,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         match: _query,
         tagIds: <String>{},
         filters: _filters,
-        taskAsListView: taskAsListView,
         showPrivateEntries: _showPrivateEntries,
         showTasks: showTasks,
         selectedEntryTypes: _selectedEntryTypes.toList(),
@@ -249,11 +245,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     _selectedCategoryIds = {};
     persistTasksFilter();
     refreshQuery();
-    emitState();
-  }
-
-  void toggleTaskAsListView() {
-    taskAsListView = !taskAsListView;
     emitState();
   }
 

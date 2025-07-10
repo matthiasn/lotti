@@ -15,9 +15,14 @@ class TimeByCategoryChartCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     void onExpandPressed() {
       WoltModalSheet.show<void>(
         context: context,
+        modalBarrierColor: isDark
+            ? context.colorScheme.surfaceContainerLow.withAlpha(128)
+            : context.colorScheme.outline.withAlpha(128),
         pageListBuilder: (modalSheetContext) {
           return [
             NonScrollingWoltModalSheetPage(

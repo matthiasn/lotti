@@ -3,7 +3,8 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 
 class AiResponseSummary extends StatelessWidget {
   const AiResponseSummary(
@@ -35,45 +36,47 @@ class AiResponseSummary extends StatelessWidget {
       child: GptMarkdown(filteredResponse),
     );
 
-    return GestureDetector(
-      onDoubleTap: () {
-        ModalUtils.showSinglePageModal<void>(
-          context: context,
-          builder: (BuildContext _) {
-            return AiResponseSummaryModalContent(
-              aiResponse,
-              linkedFromId: linkedFromId,
-            );
-          },
-        );
-      },
-      child: fadeOut
-          ? ShaderMask(
-              shaderCallback: (rect) {
-                return const LinearGradient(
-                  begin: Alignment.center,
-                  end: Alignment.bottomCenter,
-                  stops: [0.3, 1.0],
-                  colors: [
-                    Colors.black,
-                    Colors.transparent,
-                  ],
-                ).createShader(
-                  Rect.fromLTRB(
-                    0,
-                    0,
-                    rect.width,
-                    rect.height,
-                  ),
-                );
-              },
-              blendMode: BlendMode.dstIn,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 200),
-                child: content,
-              ),
-            )
-          : content,
+    return ModernBaseCard(
+      child: GestureDetector(
+        onDoubleTap: () {
+          ModernModalUtils.showSinglePageModal<void>(
+            context: context,
+            builder: (BuildContext _) {
+              return AiResponseSummaryModalContent(
+                aiResponse,
+                linkedFromId: linkedFromId,
+              );
+            },
+          );
+        },
+        child: fadeOut
+            ? ShaderMask(
+                shaderCallback: (rect) {
+                  return const LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    stops: [0.3, 1.0],
+                    colors: [
+                      Colors.black,
+                      Colors.transparent,
+                    ],
+                  ).createShader(
+                    Rect.fromLTRB(
+                      0,
+                      0,
+                      rect.width,
+                      rect.height,
+                    ),
+                  );
+                },
+                blendMode: BlendMode.dstIn,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: content,
+                ),
+              )
+            : content,
+      ),
     );
   }
 }

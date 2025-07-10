@@ -49,9 +49,7 @@ class InfiniteJournalPage extends StatelessWidget {
                 : FloatingAddActionButton(categoryId: categoryId);
           },
         ),
-        body: InfiniteJournalPageBody(
-          showTasks: showTasks,
-        ),
+        body: InfiniteJournalPageBody(showTasks: showTasks),
       ),
     );
   }
@@ -116,7 +114,6 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
                           itemBuilder: (context, item, index) {
                             return CardWrapperWidget(
                               item: item,
-                              taskAsListView: snapshot.taskAsListView,
                               key: ValueKey(item.meta.id),
                             );
                           },
