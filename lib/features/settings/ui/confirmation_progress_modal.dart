@@ -3,7 +3,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ConfirmationProgressModal {
   const ConfirmationProgressModal._();
@@ -22,13 +22,13 @@ class ConfirmationProgressModal {
     final colorScheme = theme.colorScheme;
     var confirmed = false;
 
-    await ModernModalUtils.showMultiPageModernModal<void>(
+    await ModalUtils.showMultiPageModernModal<void>(
       context: context,
       pageIndexNotifier: pageIndexNotifier,
       pageListBuilder: (modalSheetContext) {
         return [
           // Confirmation Page
-          ModernModalUtils.modernModalSheetPage(
+          ModalUtils.modernModalSheetPage(
             context: modalSheetContext,
             padding: const EdgeInsets.all(ModalTheme.padding),
             child: Column(
@@ -161,7 +161,7 @@ class ConfirmationProgressModal {
             ),
           ),
           // Progress/Completion Page
-          ModernModalUtils.modernModalSheetPage(
+          ModalUtils.modernModalSheetPage(
             context: modalSheetContext,
             padding: const EdgeInsets.all(ModalTheme.padding),
             child: progressBuilder(modalSheetContext),

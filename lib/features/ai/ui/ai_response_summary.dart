@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class AiResponseSummary extends StatelessWidget {
   const AiResponseSummary(
@@ -39,7 +39,7 @@ class AiResponseSummary extends StatelessWidget {
     return ModernBaseCard(
       child: GestureDetector(
         onDoubleTap: () {
-          ModernModalUtils.showSinglePageModal<void>(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             builder: (BuildContext _) {
               return AiResponseSummaryModalContent(

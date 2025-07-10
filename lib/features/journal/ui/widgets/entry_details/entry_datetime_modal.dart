@@ -6,14 +6,14 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class EntryDateTimeModal {
   static Future<T?> show<T>({
     required BuildContext context,
     required JournalEntity entry,
   }) async {
-    await ModernModalUtils.showSinglePageModal<void>(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       builder: (BuildContext _) {
         return EntryDateTimeModalContent(item: entry);

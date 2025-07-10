@@ -3,8 +3,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-/// Enhanced modal utilities with modern, high-budget styling
-class ModernModalUtils {
+class ModalUtils {
   static WoltModalType modalTypeBuilder(
     BuildContext context,
   ) {

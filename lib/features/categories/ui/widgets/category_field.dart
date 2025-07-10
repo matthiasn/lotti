@@ -26,7 +26,7 @@ class CategoryField extends StatelessWidget {
     final controller = TextEditingController()..text = category?.name ?? '';
 
     void onTap() {
-      ModernModalUtils.showSinglePageModal<void>(
+      ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {

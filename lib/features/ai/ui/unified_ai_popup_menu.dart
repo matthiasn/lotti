@@ -67,7 +67,7 @@ class UnifiedAiModal {
       return;
     }
 
-    final initialModalPage = ModernModalUtils.modernModalSheetPage(
+    final initialModalPage = ModalUtils.modernModalSheetPage(
       context: context,
       title: context.messages.aiAssistantTitle,
       showDivider: true,

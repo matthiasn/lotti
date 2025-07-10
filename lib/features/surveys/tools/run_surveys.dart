@@ -4,7 +4,7 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:research_package/research_package.dart';
 
 Future<void> runSurvey({
@@ -13,7 +13,7 @@ Future<void> runSurvey({
   required void Function(RPTaskResult) resultCallback,
   required BuildContext context,
 }) async {
-  await ModernModalUtils.showSinglePageModal<void>(
+  await ModalUtils.showSinglePageModal<void>(
     context: context,
     builder: (BuildContext _) {
       return Theme(

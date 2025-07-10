@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
         MaterialApp(
           home: Builder(
             builder: (context) {
-              final modalType = ModernModalUtils.modalTypeBuilder(context);
+              final modalType = ModalUtils.modalTypeBuilder(context);
               expect(modalType, isA<WoltModalType>());
               expect(
                 modalType.runtimeType.toString(),
@@ -34,7 +34,7 @@ void main() {
         MaterialApp(
           home: Builder(
             builder: (context) {
-              final modalType = ModernModalUtils.modalTypeBuilder(context);
+              final modalType = ModalUtils.modalTypeBuilder(context);
               expect(modalType, isA<WoltModalType>());
               expect(modalType.runtimeType.toString(), 'WoltDialogType');
               return const Scaffold();

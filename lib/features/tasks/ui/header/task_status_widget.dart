@@ -5,7 +5,7 @@ import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class TaskStatusWidget extends StatelessWidget {
   const TaskStatusWidget({
@@ -23,7 +23,7 @@ class TaskStatusWidget extends StatelessWidget {
     final color = task.data.status.color;
 
     Future<void> onTap() async {
-      final newStatus = await ModernModalUtils.showSinglePageModal<String>(
+      final newStatus = await ModalUtils.showSinglePageModal<String>(
         context: context,
         title: context.messages.taskStatusLabel,
         builder: (BuildContext _) {
