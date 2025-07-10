@@ -101,29 +101,17 @@ class ModalUtils {
               onPressed: Navigator.of(context).pop,
             )
           : null,
-      child: Stack(
-        children: [
-          // Subtle gradient overlay
-          if (isDark)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primaryContainer.withValues(alpha: 0.03),
-                      colorScheme.primaryContainer.withValues(alpha: 0.01),
-                    ],
-                  ),
-                ),
+      child: isDark
+          ? GradientContainer(
+              child: Padding(
+                padding: padding,
+                child: child,
               ),
+            )
+          : Padding(
+              padding: padding,
+              child: child,
             ),
-          // Content
-          Padding(
-            padding: padding,
-            child: child,
-          ),
-        ],
-      ),
     );
   }
 
@@ -280,6 +268,31 @@ class ModalUtils {
       modalTypeBuilder: modalTypeBuilder,
       modalDecorator: modalDecorator,
       barrierDismissible: barrierDismissible,
+    );
+  }
+}
+
+class GradientContainer extends StatelessWidget {
+  const GradientContainer({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primaryContainer.withValues(alpha: 0.03),
+            colorScheme.primaryContainer.withValues(alpha: 0.01),
+          ],
+        ),
+      ),
+      child: child,
     );
   }
 }

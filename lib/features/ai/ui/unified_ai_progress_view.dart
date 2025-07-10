@@ -185,8 +185,9 @@ class UnifiedAiProgressContent extends ConsumerWidget {
             left: 20,
             right: 20,
           ),
-          child: ConstrainedBox(
+          child: Container(
             constraints: const BoxConstraints(minWidth: 600),
+            padding: const EdgeInsets.only(top: 20),
             child: Text(
               state,
               style: textStyle,
@@ -208,8 +209,6 @@ class UnifiedAiProgressUtils {
     VoidCallback? onTapBack,
     ScrollController? scrollController,
   }) {
-    final colorScheme = context.colorScheme;
-
     return ModalUtils.sliverModalSheetPage(
       context: context,
       title: prompt.name,
@@ -225,20 +224,13 @@ class UnifiedAiProgressUtils {
       ),
       slivers: [
         SliverToBoxAdapter(
-            child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primaryContainer.withValues(alpha: 0.03),
-                colorScheme.primaryContainer.withValues(alpha: 0.01),
-              ],
+          child: GradientContainer(
+            child: UnifiedAiProgressContent(
+              entityId: entityId,
+              promptId: prompt.id,
             ),
           ),
-          child: UnifiedAiProgressContent(
-            entityId: entityId,
-            promptId: prompt.id,
-          ),
-        )),
+        ),
       ],
     );
   }
