@@ -15,6 +15,8 @@ class EntryDateTimeModal {
   }) async {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
+      hasTopBarLayer: false,
+      padding: ModalUtils.defaultPadding + const EdgeInsets.only(top: 20),
       builder: (BuildContext _) {
         return EntryDateTimeModalContent(item: entry);
       },

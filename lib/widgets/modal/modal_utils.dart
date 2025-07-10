@@ -15,38 +15,42 @@ class ModalUtils {
     }
   }
 
+  static Color getModalBarrierColor({
+    required bool isDark,
+    required BuildContext context,
+  }) {
+    return isDark
+        ? context.colorScheme.surfaceContainerLow.withAlpha(180)
+        : context.colorScheme.outline.withAlpha(128);
+  }
+
   static const defaultPadding =
       EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40);
 
   /// Creates a modern styled modal sheet page with enhanced visual effects
-  static WoltModalSheetPage modernModalSheetPage({
+  static WoltModalSheetPage modalSheetPage({
     required BuildContext context,
     required Widget child,
     Widget? stickyActionBar,
     String? title,
     bool isTopBarLayerAlwaysVisible = true,
-    bool showCloseButton = true,
+    bool showCloseButton = false,
     void Function()? onTapBack,
     EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
+    bool hasTopBarLayer = true,
     bool showDivider = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
 
     return WoltModalSheetPage(
-      backgroundColor: isDark
-          ? Color.lerp(
-              colorScheme.surfaceContainerLowest,
-              colorScheme.surfaceContainerLow,
-              0.3,
-            )!
-          : colorScheme.surface,
       stickyActionBar: stickyActionBar,
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 65,
+      hasTopBarLayer: hasTopBarLayer,
       topBarTitle: title != null
-          ? Padding(
+          ? Container(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 title,
@@ -105,8 +109,6 @@ class ModalUtils {
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
                     colors: [
                       colorScheme.primaryContainer.withValues(alpha: 0.03),
                       colorScheme.primaryContainer.withValues(alpha: 0.01),
@@ -118,25 +120,7 @@ class ModalUtils {
           // Content
           Padding(
             padding: padding,
-            child: Column(
-              children: [
-                if (showDivider)
-                  Container(
-                    height: 1,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colorScheme.outline.withValues(alpha: 0),
-                          colorScheme.outline.withValues(alpha: 0.2),
-                          colorScheme.outline.withValues(alpha: 0),
-                        ],
-                      ),
-                    ),
-                  ),
-                child,
-              ],
-            ),
+            child: child,
           ),
         ],
       ),
@@ -152,6 +136,7 @@ class ModalUtils {
     EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
     bool showDivider = false,
+    bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -161,7 +146,7 @@ class ModalUtils {
       modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
-          modernModalSheetPage(
+          modalSheetPage(
             context: modalSheetContext,
             stickyActionBar: stickyActionBar,
             title: title,
@@ -170,19 +155,18 @@ class ModalUtils {
             padding: padding,
             navBarHeight: navBarHeight,
             showDivider: showDivider,
+            hasTopBarLayer: hasTopBarLayer,
           ),
         ];
       },
       modalTypeBuilder: modalTypeBuilder,
       barrierDismissible: true,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
     );
   }
 
   /// Creates a modal with multiple pages and enhanced navigation
-  static Future<T?> showMultiPageModernModal<T>({
+  static Future<T?> showMultiPageModal<T>({
     required BuildContext context,
     required List<WoltModalSheetPage> Function(BuildContext) pageListBuilder,
     ValueNotifier<int>? pageIndexNotifier,
@@ -196,9 +180,7 @@ class ModalUtils {
       modalTypeBuilder: modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
     );
   }
 
@@ -220,13 +202,6 @@ class ModalUtils {
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
       stickyActionBar: stickyActionBar,
-      backgroundColor: isDark
-          ? Color.lerp(
-              colorScheme.surfaceContainerLowest,
-              colorScheme.surfaceContainerLow,
-              0.3,
-            )!
-          : colorScheme.surface,
       hasSabGradient: false,
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
@@ -326,9 +301,7 @@ class ModalUtils {
 
     return WoltModalSheet.show<T>(
       context: context,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
       pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
       modalTypeBuilder: modalTypeBuilder,
       modalDecorator: modalDecorator,
@@ -345,9 +318,7 @@ class ModalUtils {
 
     return WoltModalSheet.show<T>(
       context: context,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
+      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
       pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
       modalTypeBuilder: modalTypeBuilder,
       modalDecorator: modalDecorator,

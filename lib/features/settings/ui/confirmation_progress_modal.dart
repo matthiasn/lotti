@@ -22,15 +22,16 @@ class ConfirmationProgressModal {
     final colorScheme = theme.colorScheme;
     var confirmed = false;
 
-    await ModalUtils.showMultiPageModernModal<void>(
+    await ModalUtils.showMultiPageModal<void>(
       context: context,
       pageIndexNotifier: pageIndexNotifier,
       pageListBuilder: (modalSheetContext) {
         return [
           // Confirmation Page
-          ModalUtils.modernModalSheetPage(
+          ModalUtils.modalSheetPage(
             context: modalSheetContext,
             padding: const EdgeInsets.all(ModalTheme.padding),
+            hasTopBarLayer: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -161,8 +162,9 @@ class ConfirmationProgressModal {
             ),
           ),
           // Progress/Completion Page
-          ModalUtils.modernModalSheetPage(
+          ModalUtils.modalSheetPage(
             context: modalSheetContext,
+            hasTopBarLayer: false,
             padding: const EdgeInsets.all(ModalTheme.padding),
             child: progressBuilder(modalSheetContext),
           ),

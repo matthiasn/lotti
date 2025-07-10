@@ -16,7 +16,7 @@ class ExtendedHeaderModal {
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
 
-    final initialModalPage = ModalUtils.modernModalSheetPage(
+    final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.entryActions,
       showDivider: true,
@@ -29,7 +29,7 @@ class ExtendedHeaderModal {
       ),
     );
 
-    final tagsModalPage = ModalUtils.modernModalSheetPage(
+    final tagsModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.journalTagPlusHint,
       child: TagsModal(entryId: entryId),
@@ -37,7 +37,7 @@ class ExtendedHeaderModal {
       showDivider: true,
     );
 
-    final speechRecognitionModalPage = ModalUtils.modernModalSheetPage(
+    final speechRecognitionModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.speechModalTitle,
       child: SpeechModalContent(entryId: entryId),
@@ -45,7 +45,7 @@ class ExtendedHeaderModal {
       showDivider: true,
     );
 
-    return ModalUtils.showMultiPageModernModal<void>(
+    return ModalUtils.showMultiPageModal<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
         return [
