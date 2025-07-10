@@ -211,7 +211,6 @@ class ConfirmationProgressModal {
           ),
         ];
       },
-      barrierDismissible: false,
     );
 
     return confirmed;
