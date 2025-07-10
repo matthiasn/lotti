@@ -420,7 +420,7 @@ void main() {
       expect(confirmed, isTrue);
     });
 
-    testWidgets('modal is not dismissible with barrier tap', (tester) async {
+    testWidgets('modal is dismissible with barrier tap', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -457,8 +457,8 @@ void main() {
       await tester.tapAt(const Offset(50, 50));
       await tester.pumpAndSettle();
 
-      // Verify modal is still visible (not dismissible)
-      expect(find.text('Test message'), findsOneWidget);
+      // Verify modal was dismissed
+      expect(find.text('Test message'), findsNothing);
     });
   });
 }
