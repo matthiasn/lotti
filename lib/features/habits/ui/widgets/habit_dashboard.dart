@@ -4,12 +4,12 @@ import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/modal/modern_modal_utils.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SelectDashboardWidget extends StatelessWidget {
   const SelectDashboardWidget({super.key});

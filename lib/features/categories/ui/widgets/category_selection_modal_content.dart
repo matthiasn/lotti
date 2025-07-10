@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modern_modal_utils.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 class CategorySelectionModalContent extends ConsumerStatefulWidget {
   const CategorySelectionModalContent({

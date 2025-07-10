@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/outbox_monitor.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/sync_config_test_mocks.dart';

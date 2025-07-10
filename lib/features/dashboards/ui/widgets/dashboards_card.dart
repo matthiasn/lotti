@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 
 class DashboardCard extends StatelessWidget {
   const DashboardCard({

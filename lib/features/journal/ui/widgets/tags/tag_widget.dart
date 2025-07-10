@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';

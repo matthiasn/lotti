@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 
 import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
