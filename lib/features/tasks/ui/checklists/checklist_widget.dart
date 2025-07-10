@@ -17,7 +17,6 @@ class ChecklistWidget extends StatefulWidget {
     required this.id,
     required this.taskId,
     required this.updateItemOrder,
-    required this.totalCount,
     this.onDelete,
     super.key,
   });
@@ -33,7 +32,6 @@ class ChecklistWidget extends StatefulWidget {
       updateItemOrder;
   final double completionRate;
   final VoidCallback? onDelete;
-  final int totalCount;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();

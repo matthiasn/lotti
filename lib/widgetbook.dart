@@ -134,7 +134,6 @@ class WidgetbookApp extends StatelessWidget {
                         checklistItem4.meta.id,
                       ],
                       completionRate: 0.5,
-                      totalCount: 4,
                       onCreateChecklistItem: (title) async {
                         return null;
                       },

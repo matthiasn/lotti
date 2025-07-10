@@ -104,29 +104,19 @@ class AppTheme {
 
 // Gradient and shadow constants
 class GradientConstants {
-  // Alpha values for gradient overlays
-  static const double lightCardGradientAlpha = 0.4;
-  static const double darkCardGradientAlpha = 0.3;
-  static const double darkCardGradientEndAlpha = 0.5;
-  static const double backgroundGradientLightAlpha = 0.08;
-  static const double backgroundGradientDarkAlpha = 0.15;
-
   // Color blending factors for gradients
   static const double darkCardBlendFactor = 0.3;
   static const double darkCardEndBlendFactor = 0.5;
 
   // Shadow alpha values for enhanced cards
   static const double enhancedShadowLightAlpha = 0.15;
-  static const double enhancedShadowDarkAlpha = 0.3;
   static const double enhancedShadowSecondaryLightAlpha = 0.1;
   static const double enhancedShadowSecondaryDarkAlpha = 0.2;
 
   // Shadow blur and spread values
   static const double enhancedShadowBlurLight = 15;
-  static const double enhancedShadowBlurDark = 20;
   static const double enhancedShadowSecondaryBlurLight = 30;
   static const double enhancedShadowSecondaryBlurDark = 40;
-  static const double enhancedShadowSpread = 2;
   static const double enhancedShadowSecondarySpread = 4;
   static const double enhancedShadowOffsetY = 8;
   static const double enhancedShadowSecondaryOffsetY = 16;
@@ -136,39 +126,12 @@ class GradientConstants {
 class InputConstants {
   // Border radius values
   static const double inputBorderRadius = 12;
-  static const double chipBorderRadius = 12;
-  static const double bottomSheetBorderRadius = 24;
 
   // Border width values
   static const double focusedBorderWidth = 2.5;
-  static const double segmentedButtonBorderWidth = 1.5;
 
   // Alpha values for borders and fills
   static const int inputBorderAlpha = 80;
-  static const int inputFillAlpha = 20;
-  static const int inputOutlineAlpha = 60;
-
-  // Padding values
-  static const double segmentedButtonHorizontalPadding = 8;
-  static const double segmentedButtonVerticalPadding = 4;
-  static const double textButtonHorizontalPadding = 16;
-  static const double textButtonVerticalPadding = 8;
-  static const double elevatedButtonHorizontalPadding = 20;
-  static const double elevatedButtonVerticalPadding = 12;
-}
-
-// Interactive elements constants
-class InteractiveConstants {
-  // Slider alpha values
-  static const int sliderInactiveAlpha = 150;
-  static const int sliderOverlayAlpha = 100;
-
-  // Slider dimensions
-  static const double sliderThumbRadius = 10;
-
-  // Button elevation values
-  static const double elevatedButtonDefaultElevation = 4;
-  static const double elevatedButtonPressedElevation = 2;
 }
 
 // Spacing and layout constants
@@ -178,21 +141,13 @@ class SpacingConstants {
   static const double inputSpacerHeight = 28;
   static const double inputSpacerSmallHeight = 18;
   static const double enhancedSmallFontSize = 26;
-
-  // Icon container multipliers
-  static const double modalIconSpacerMultiplier = 1.15;
 }
 
 // Typography constants
 class TypographyConstants {
   // Font weight adjustments
-  static const FontWeight enhancedFontWeight = FontWeight.w500;
   static const FontWeight bodyFontWeight = FontWeight.w400;
   static const FontWeight lightFontWeight = FontWeight.w200;
-
-  // Font size adjustments
-  static const double enhancedFontSize = 22;
-  static const double enhancedSmallFontSize = 26;
 }
 
 const double inputBorderRadius = InputConstants.inputBorderRadius;
@@ -599,48 +554,8 @@ class GradientThemes {
     return ModernGradientThemes.accentGradient(context);
   }
 
-  /// Creates a modern success gradient
-  static LinearGradient successGradient() {
-    return ModernGradientThemes.successGradient();
-  }
-
-  /// Creates a modern warning gradient
-  static LinearGradient warningGradient() {
-    return ModernGradientThemes.warningGradient();
-  }
-
-  /// Creates a modern error gradient
-  static LinearGradient errorGradient() {
-    return ModernGradientThemes.errorGradient();
-  }
-
   /// Creates a background gradient
   static LinearGradient backgroundGradient(BuildContext context) {
     return ModernGradientThemes.backgroundGradient(context);
-  }
-
-  /// Creates an elegant gradient for premium features
-  static LinearGradient elegantGradient(BuildContext context) {
-    return ModernGradientThemes.elegantGradient(context);
-  }
-
-  /// Creates a sunset gradient for warm features
-  static LinearGradient sunsetGradient() {
-    return ModernGradientThemes.sunsetGradient();
-  }
-
-  /// Creates an ocean gradient for calm features
-  static LinearGradient oceanGradient() {
-    return ModernGradientThemes.oceanGradient();
-  }
-
-  /// Creates a forest gradient for natural features
-  static LinearGradient forestGradient() {
-    return ModernGradientThemes.forestGradient();
-  }
-
-  /// Creates a sophisticated dark gradient
-  static LinearGradient darkOceanGradient() {
-    return ModernGradientThemes.darkOceanGradient();
   }
 }
