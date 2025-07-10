@@ -58,7 +58,8 @@ class AppTheme {
 
   // Animation constants - Smoother animations
   static const int animationDuration = 300; // Slightly longer
-  static const Curve animationCurve = Curves.easeOutQuart; // More sophisticated curve
+  static const Curve animationCurve =
+      Curves.easeOutQuart; // More sophisticated curve
 
   // Spacing between elements
   static const double spacingBetweenTitleAndSubtitle = 6; // Increased
@@ -211,7 +212,8 @@ InputDecoration inputDecoration({
       inputBorderRadius,
     ),
     borderSide: BorderSide(
-      color: themeData.colorScheme.outline.withAlpha(InputConstants.inputBorderAlpha),
+      color: themeData.colorScheme.outline
+          .withAlpha(InputConstants.inputBorderAlpha),
     ),
   );
 
@@ -232,21 +234,21 @@ InputDecoration inputDecoration({
       borderRadius: BorderRadius.circular(
         inputBorderRadius,
       ),
-              borderSide: BorderSide(
-          color: themeData.colorScheme.outline,
-          width: InputConstants.focusedBorderWidth,
-        ),
+      borderSide: BorderSide(
+        color: themeData.colorScheme.outline,
+        width: InputConstants.focusedBorderWidth,
+      ),
     ),
     floatingLabelBehavior: FloatingLabelBehavior.always,
     suffixIcon: suffixIcon,
     label: Text(
       labelText ?? '',
       semanticsLabel: semanticsLabel,
-              style: TextStyle(
-          fontSize: fontSizeMedium,
-          fontWeight: TypographyConstants.bodyFontWeight,
-          color: themeData.colorScheme.outline,
-        ),
+      style: TextStyle(
+        fontSize: fontSizeMedium,
+        fontWeight: TypographyConstants.bodyFontWeight,
+        color: themeData.colorScheme.outline,
+      ),
     ),
   );
 }
@@ -476,7 +478,6 @@ ThemeData withOverrides(ThemeData themeData) {
               vertical: 4,
             );
           }),
-
         ),
       ),
       chipTheme: ChipThemeData(
@@ -587,57 +588,57 @@ class GradientThemes {
   static LinearGradient iconContainerGradient(BuildContext context) {
     return ModernGradientThemes.accentGradient(context);
   }
-  
+
   /// Creates a modern primary gradient
   static LinearGradient primaryGradient(BuildContext context) {
     return ModernGradientThemes.primaryGradient(context);
   }
-  
+
   /// Creates a modern accent gradient
   static LinearGradient accentGradient(BuildContext context) {
     return ModernGradientThemes.accentGradient(context);
   }
-  
+
   /// Creates a modern success gradient
   static LinearGradient successGradient() {
     return ModernGradientThemes.successGradient();
   }
-  
+
   /// Creates a modern warning gradient
   static LinearGradient warningGradient() {
     return ModernGradientThemes.warningGradient();
   }
-  
+
   /// Creates a modern error gradient
   static LinearGradient errorGradient() {
     return ModernGradientThemes.errorGradient();
   }
-  
+
   /// Creates a background gradient
   static LinearGradient backgroundGradient(BuildContext context) {
     return ModernGradientThemes.backgroundGradient(context);
   }
-  
+
   /// Creates an elegant gradient for premium features
   static LinearGradient elegantGradient(BuildContext context) {
     return ModernGradientThemes.elegantGradient(context);
   }
-  
+
   /// Creates a sunset gradient for warm features
   static LinearGradient sunsetGradient() {
     return ModernGradientThemes.sunsetGradient();
   }
-  
+
   /// Creates an ocean gradient for calm features
   static LinearGradient oceanGradient() {
     return ModernGradientThemes.oceanGradient();
   }
-  
+
   /// Creates a forest gradient for natural features
   static LinearGradient forestGradient() {
     return ModernGradientThemes.forestGradient();
   }
-  
+
   /// Creates a sophisticated dark gradient
   static LinearGradient darkOceanGradient() {
     return ModernGradientThemes.darkOceanGradient();

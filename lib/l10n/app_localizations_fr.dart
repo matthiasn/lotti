@@ -1676,9 +1676,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-    String deviceName,
-    String deviceID,
-  ) {
+      String deviceName, String deviceID) {
     return 'Vous avez vérifié avec succès $deviceName ($deviceID)';
   }
 
