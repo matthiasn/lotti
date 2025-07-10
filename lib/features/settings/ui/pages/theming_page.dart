@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
-import 'package:lotti/features/manual/widget/showcase_text_style.dart';
-import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:lotti/widgets/cards/index.dart';
 
 class ThemingPage extends StatefulWidget {
   const ThemingPage({super.key});
@@ -19,10 +17,6 @@ class ThemingPage extends StatefulWidget {
 }
 
 class _ThemingPageState extends State<ThemingPage> {
-  final GlobalKey<State<StatefulWidget>> _themeModeSelectorKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _lightThemeKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _darkThemeKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ThemingCubit, ThemingState>(
@@ -53,93 +47,58 @@ class _ThemingPageState extends State<ThemingPage> {
         if (snapshot.darkTheme == null) {
           return const SizedBox.shrink();
         }
-        return SliverBoxAdapterShowcasePage(
+        return SliverBoxAdapterPage(
           title: context.messages.settingsThemingTitle,
-          showcaseIcon: IconButton(
-            onPressed: () {
-              ShowCaseWidget.of(context).startShowCase([
-                _themeModeSelectorKey,
-                _lightThemeKey,
-                _darkThemeKey,
-              ]);
-            },
-            icon: const Icon(
-              Icons.info_outline_rounded,
-            ),
-          ),
           showBackButton: true,
-          child: Card(
+          child: ModernBaseCard(
             margin: const EdgeInsets.all(10),
             child: Padding(
               padding: const EdgeInsets.all(25),
               child: Column(
                 children: [
-                  ShowcaseWithWidget(
-                    showcaseKey: _themeModeSelectorKey,
-                    startNav: true,
-                    description: ShowcaseTextStyle(
-                      descriptionText:
-                          context.messages.settingsThemingShowCaseModeTooltip,
-                    ),
-                    child: SegmentedButton<ThemeMode>(
-                      selected: {snapshot.themeMode ?? ThemeMode.system},
-                      showSelectedIcon: false,
-                      onSelectionChanged: cubit.onThemeSelectionChanged,
-                      segments: [
-                        segment(
-                          filter: ThemeMode.dark,
-                          icon: Icons.nightlight_outlined,
-                          activeIcon: Icons.nightlight,
-                          semanticLabel: context.messages.settingsThemingDark,
-                        ),
-                        segment(
-                          filter: ThemeMode.system,
-                          icon: isMobile ? Icons.smartphone : Icons.laptop,
-                          activeIcon: isMobile
-                              ? Icons.smartphone_outlined
-                              : Icons.laptop_outlined,
-                          semanticLabel:
-                              context.messages.settingsThemingAutomatic,
-                        ),
-                        segment(
-                          filter: ThemeMode.light,
-                          icon: Icons.wb_sunny_outlined,
-                          activeIcon: Icons.sunny,
-                          semanticLabel: context.messages.settingsThemingLight,
-                        ),
-                      ],
-                    ),
+                  SegmentedButton<ThemeMode>(
+                    selected: {snapshot.themeMode ?? ThemeMode.system},
+                    showSelectedIcon: false,
+                    onSelectionChanged: cubit.onThemeSelectionChanged,
+                    segments: [
+                      segment(
+                        filter: ThemeMode.dark,
+                        icon: Icons.nightlight_outlined,
+                        activeIcon: Icons.nightlight,
+                        semanticLabel: context.messages.settingsThemingDark,
+                      ),
+                      segment(
+                        filter: ThemeMode.system,
+                        icon: isMobile ? Icons.smartphone : Icons.laptop,
+                        activeIcon: isMobile
+                            ? Icons.smartphone_outlined
+                            : Icons.laptop_outlined,
+                        semanticLabel:
+                            context.messages.settingsThemingAutomatic,
+                      ),
+                      segment(
+                        filter: ThemeMode.light,
+                        icon: Icons.wb_sunny_outlined,
+                        activeIcon: Icons.sunny,
+                        semanticLabel: context.messages.settingsThemingLight,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 25),
-                  ShowcaseWithWidget(
-                    showcaseKey: _lightThemeKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText:
-                          context.messages.settingsThemingShowCaseLightTooltip,
-                    ),
-                    child: SelectTheme(
-                      setTheme: cubit.setLightTheme,
-                      labelText: context.messages.settingThemingLight,
-                      semanticsLabel: 'Select light theme',
-                      getSelected: (snapshot) => snapshot.lightThemeName ?? '',
-                    ),
+                  SelectTheme(
+                    setTheme: cubit.setLightTheme,
+                    labelText: context.messages.settingThemingLight,
+                    semanticsLabel: 'Select light theme',
+                    getSelected: (snapshot) => snapshot.lightThemeName ?? '',
                   ),
                   const SizedBox(
                     height: 25,
                   ),
-                  ShowcaseWithWidget(
-                    endNav: true,
-                    showcaseKey: _darkThemeKey,
-                    description: ShowcaseTextStyle(
-                      descriptionText:
-                          context.messages.settingsThemingShowCaseDarkTooltip,
-                    ),
-                    child: SelectTheme(
-                      setTheme: cubit.setDarkTheme,
-                      labelText: context.messages.settingThemingDark,
-                      semanticsLabel: 'Select dark theme',
-                      getSelected: (snapshot) => snapshot.darkThemeName ?? '',
-                    ),
+                  SelectTheme(
+                    setTheme: cubit.setDarkTheme,
+                    labelText: context.messages.settingThemingDark,
+                    semanticsLabel: 'Select dark theme',
+                    getSelected: (snapshot) => snapshot.darkThemeName ?? '',
                   ),
                 ],
               ),

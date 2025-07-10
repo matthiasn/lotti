@@ -2529,6 +2529,66 @@ abstract class AppLocalizations {
   /// **'About Lotti'**
   String get settingsAboutTitle;
 
+  /// No description provided for @settingsAboutAppTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Personal Journal'**
+  String get settingsAboutAppTagline;
+
+  /// No description provided for @settingsAboutAppInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'App Information'**
+  String get settingsAboutAppInformation;
+
+  /// No description provided for @settingsAboutYourData.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Data'**
+  String get settingsAboutYourData;
+
+  /// No description provided for @settingsAboutCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits'**
+  String get settingsAboutCredits;
+
+  /// No description provided for @settingsAboutBuiltWithFlutter.
+  ///
+  /// In en, this message translates to:
+  /// **'Built with Flutter and love for personal journaling.'**
+  String get settingsAboutBuiltWithFlutter;
+
+  /// No description provided for @settingsAboutThankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for using Lotti!'**
+  String get settingsAboutThankYou;
+
+  /// No description provided for @settingsAboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsAboutVersion;
+
+  /// No description provided for @settingsAboutPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get settingsAboutPlatform;
+
+  /// No description provided for @settingsAboutBuildType.
+  ///
+  /// In en, this message translates to:
+  /// **'Build Type'**
+  String get settingsAboutBuildType;
+
+  /// No description provided for @settingsAboutJournalEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal Entries'**
+  String get settingsAboutJournalEntries;
+
   /// No description provided for @settingsAdvancedShowCaseAboutLottiTooltip.
   ///
   /// In en, this message translates to:

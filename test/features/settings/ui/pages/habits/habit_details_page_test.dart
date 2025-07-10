@@ -161,13 +161,34 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final trashIconFinder = find.byIcon(MdiIcons.trashCanOutline);
-      await tester.tap(trashIconFinder);
+      // Scroll to the bottom to make sure the delete button is visible
+      await tester.fling(
+          find.byType(CustomScrollView), const Offset(0, -300), 1000);
       await tester.pumpAndSettle();
 
+      // Find the delete button by looking for the IconButton with trash icon
+      final deleteButtonFinder = find.descendant(
+        of: find.byType(IconButton),
+        matching: find.byIcon(MdiIcons.trashCanOutline),
+      );
+
+      // Verify the button exists and is visible
+      expect(deleteButtonFinder, findsOneWidget);
+
+      // Ensure the button is actually tappable
+      await tester.ensureVisible(deleteButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Tap the delete button
+      await tester.tap(deleteButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Wait for modal to appear and check for the delete question
       final deleteQuestionFinder =
           find.text('Do you want to delete this habit?');
       final confirmDeleteFinder = find.text('YES, DELETE THIS HABIT');
+
+      // Check if modal appeared
       expect(deleteQuestionFinder, findsOneWidget);
       expect(confirmDeleteFinder, findsOneWidget);
 

@@ -43,9 +43,10 @@ void main() {
 
       final decoration = animatedContainer.decoration! as BoxDecoration;
 
-      // Light theme should have solid color, no gradient
-      expect(decoration.color, isNotNull);
-      expect(decoration.gradient, isNull);
+      // Light theme should have gradient when no background color is specified
+      expect(decoration.color, isNull);
+      expect(decoration.gradient, isNotNull);
+      expect(decoration.gradient, isA<LinearGradient>());
     });
 
     testWidgets('renders with dark theme (gradient, no solid color)',

@@ -1330,6 +1330,37 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAboutTitle => 'Acerca de Lotti';
 
   @override
+  String get settingsAboutAppTagline => 'Tu diario personal';
+
+  @override
+  String get settingsAboutAppInformation => 'Información de la aplicación';
+
+  @override
+  String get settingsAboutYourData => 'Tus datos';
+
+  @override
+  String get settingsAboutCredits => 'Créditos';
+
+  @override
+  String get settingsAboutBuiltWithFlutter =>
+      'Desarrollado con Flutter y amor por el diario personal.';
+
+  @override
+  String get settingsAboutThankYou => '¡Gracias por usar Lotti!';
+
+  @override
+  String get settingsAboutVersion => 'Versión';
+
+  @override
+  String get settingsAboutPlatform => 'Plataforma';
+
+  @override
+  String get settingsAboutBuildType => 'Tipo de compilación';
+
+  @override
+  String get settingsAboutJournalEntries => 'Entradas del diario';
+
+  @override
   String get settingsAdvancedShowCaseAboutLottiTooltip =>
       'Obtén más información sobre la aplicación Lotti, incluida la versión y los créditos.';
 

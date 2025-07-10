@@ -581,8 +581,8 @@ void main() {
         final animatedContainer = tester.widget<AnimatedContainer>(
           find.byType(AnimatedContainer),
         );
-        expect(animatedContainer.duration, const Duration(milliseconds: 200));
-        expect(animatedContainer.curve, Curves.easeOutCubic);
+        expect(animatedContainer.duration, const Duration(milliseconds: 300));
+        expect(animatedContainer.curve, Curves.easeOutQuart);
       });
     });
   });

@@ -1325,6 +1325,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAboutTitle => 'Despre Lotti';
 
   @override
+  String get settingsAboutAppTagline => 'Jurnalul tău personal';
+
+  @override
+  String get settingsAboutAppInformation => 'Informații aplicație';
+
+  @override
+  String get settingsAboutYourData => 'Datele tale';
+
+  @override
+  String get settingsAboutCredits => 'Credite';
+
+  @override
+  String get settingsAboutBuiltWithFlutter =>
+      'Dezvoltat cu Flutter și dragoste pentru jurnalizarea personală.';
+
+  @override
+  String get settingsAboutThankYou => 'Mulțumim că folosești Lotti!';
+
+  @override
+  String get settingsAboutVersion => 'Versiune';
+
+  @override
+  String get settingsAboutPlatform => 'Platformă';
+
+  @override
+  String get settingsAboutBuildType => 'Tip build';
+
+  @override
+  String get settingsAboutJournalEntries => 'Intrări jurnal';
+
+  @override
   String get settingsAdvancedShowCaseAboutLottiTooltip =>
       'Aflați mai multe despre aplicația Lotti, inclusiv versiunea și creditele.';
 
