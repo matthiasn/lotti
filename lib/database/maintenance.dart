@@ -68,8 +68,11 @@ class Maintenance {
   }
 
   Future<void> purgeAudioModels() async {
-    File(join(getDocumentsDirectory().path, 'huggingface'))
-        .deleteSync(recursive: true);
+    final documentsDir = getDocumentsDirectory();
+    final file = File(join(documentsDir.path, 'huggingface'));
+    if (file.existsSync()) {
+      file.deleteSync(recursive: true);
+    }
   }
 
   Future<void> deleteLoggingDb() async {

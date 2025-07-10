@@ -66,14 +66,14 @@ void main() {
     );
     expect(find.text(confirmText), findsOneWidget);
 
-    // Tap the confirm button
+    // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Verify that purgeAudioModels was called
     verify(() => mockMaintenance.purgeAudioModels()).called(1);
 
-    // Verify the success icon is shown
+    // Check for success state immediately after operation completes
     expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     expect(find.text('100%'), findsOneWidget);
   });
@@ -109,17 +109,14 @@ void main() {
     final confirmText =
         AppLocalizations.of(context)!.maintenancePurgeAudioModelsConfirm;
 
-    // Tap the confirm button
+    // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
-    await tester.pump(); // First pump to start the operation
-
-    // Wait for the error state to be set
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Verify that purgeAudioModels was called
     verify(() => mockMaintenance.purgeAudioModels()).called(1);
 
-    // Verify error is shown
+    // Check for error state immediately after operation fails
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
     expect(find.text('Exception: Test error'), findsOneWidget);
   });

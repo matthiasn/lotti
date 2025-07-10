@@ -96,11 +96,11 @@ void main() {
     final BuildContext context = tester.element(find.text('Show Sync Modal'));
     final confirmText = AppLocalizations.of(context)!.syncEntitiesConfirm;
 
-    // Tap the confirm button
+    // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // Should show 50% progress in the modal
+    // Should show 50% progress in the modal immediately
     expect(find.text('50%'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
@@ -110,14 +110,10 @@ void main() {
       currentStep: SyncStep.complete,
       progress: 100,
     );
-    await tester.pump(); // Only pump a single frame
+    await tester.pump();
 
-    // Ensure the modal is still present
-    expect(
-      find.byType(LinearProgressIndicator),
-      findsNothing,
-      reason: 'Progress bar should be gone after completion',
-    );
-    // Removed assertions for 100% and checkmark since the modal may close on completion
+    // Check for completion state immediately - shows checkmark instead of 100% text
+    expect(find.byIcon(Icons.check_circle_outline), findsAtLeastNWidgets(1));
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 }

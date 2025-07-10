@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/modals.dart';
 
 class PurgeModal {
   const PurgeModal._();
@@ -10,7 +10,7 @@ class PurgeModal {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
 
-    await ModalUtils.showConfirmationAndProgressModal(
+    await ConfirmationProgressModal.show(
       context: context,
       message: context.messages.maintenancePurgeDeletedMessage,
       confirmLabel: context.messages.maintenancePurgeDeletedConfirm,
