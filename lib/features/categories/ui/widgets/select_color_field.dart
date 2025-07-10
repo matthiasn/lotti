@@ -4,8 +4,8 @@ import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/utils/modals.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/modal/modern_modal_utils.dart';
 
 class SelectColorField extends StatefulWidget {
   const SelectColorField({
@@ -55,7 +55,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         : context.colorScheme.outline;
 
     Future<void> onTap() async {
-      await ModalUtils.showSinglePageModal<void>(
+      await ModernModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.createCategoryTitle,
         builder: (BuildContext context) {

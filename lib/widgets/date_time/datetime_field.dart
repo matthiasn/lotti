@@ -55,7 +55,8 @@ class _DateTimeFieldState extends State<DateTimeField> {
         text: widget.dateTime != null ? df.format(widget.dateTime!) : '',
       ),
       onTap: () async {
-        final newDateTime = await ModernModalUtils.showModernModal<DateTime>(
+        final newDateTime =
+            await ModernModalUtils.showSinglePageModal<DateTime>(
           context: context,
           builder: (_) {
             return DateTimeBottomSheet(
@@ -63,8 +64,6 @@ class _DateTimeFieldState extends State<DateTimeField> {
               mode: widget.mode,
             );
           },
-          padding:
-              const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
           navBarHeight: 5,
         );
 

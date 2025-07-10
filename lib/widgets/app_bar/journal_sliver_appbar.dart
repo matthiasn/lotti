@@ -126,7 +126,7 @@ class JournalFilterIcon extends StatelessWidget {
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          ModernModalUtils.showModernModal<void>(
+          ModernModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.journalSearchHint,
             modalDecorator: (child) {
@@ -137,8 +137,6 @@ class JournalFilterIcon extends StatelessWidget {
                 child: child,
               );
             },
-            padding:
-                const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
             builder: (_) => const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

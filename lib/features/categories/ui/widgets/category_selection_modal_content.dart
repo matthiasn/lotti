@@ -39,10 +39,9 @@ class CategorySelectionModalContentState
   Future<void> _showColorPicker(String categoryName) async {
     if (!mounted) return;
 
-    await ModernModalUtils.showModernModal<void>(
+    await ModernModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createCategoryTitle,
-      padding: const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
       builder: (BuildContext context) {
         return CategoryCreateModal(
           initialName: categoryName,

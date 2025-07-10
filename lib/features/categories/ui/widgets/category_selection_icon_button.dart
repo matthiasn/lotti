@@ -25,11 +25,9 @@ class CategorySelectionIconButton extends ConsumerWidget {
 
     return IconButton(
       onPressed: () {
-        ModernModalUtils.showModernModal<void>(
+        ModernModalUtils.showSinglePageModal<void>(
           context: context,
           title: context.messages.habitCategoryLabel,
-          padding:
-              const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
           builder: (BuildContext _) {
             return CategorySelectionModalContent(
               onCategorySelected: (category) {

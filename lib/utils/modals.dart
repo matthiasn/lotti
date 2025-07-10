@@ -127,41 +127,6 @@ class ModalUtils {
     );
   }
 
-  static Future<T?> showSinglePageModal<T>({
-    required BuildContext context,
-    required Widget Function(BuildContext) builder,
-    String? title,
-    Widget? stickyActionBar,
-    Widget Function(Widget)? modalDecorator,
-    EdgeInsetsGeometry padding = WoltModalConfig.pagePadding,
-    double? navBarHeight,
-  }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return WoltModalSheet.show<T>(
-      context: context,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
-      pageListBuilder: (modalSheetContext) {
-        return [
-          ModalUtils.modalSheetPage(
-            context: modalSheetContext,
-            stickyActionBar: stickyActionBar,
-            title: title,
-            child: builder(modalSheetContext),
-            isTopBarLayerAlwaysVisible: title != null,
-            showCloseButton: title != null,
-            padding: padding,
-            navBarHeight: navBarHeight,
-          ),
-        ];
-      },
-      modalTypeBuilder: ModalUtils.modalTypeBuilder,
-      modalDecorator: modalDecorator,
-    );
-  }
-
   static Future<T?> showSingleSliverWoltModalSheetPageModal<T>({
     required BuildContext context,
     required SliverWoltModalSheetPage Function(BuildContext) builder,

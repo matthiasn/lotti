@@ -39,7 +39,7 @@ class AiResponseSummary extends StatelessWidget {
     return ModernBaseCard(
       child: GestureDetector(
         onDoubleTap: () {
-          ModernModalUtils.showModernModal<void>(
+          ModernModalUtils.showSinglePageModal<void>(
             context: context,
             builder: (BuildContext _) {
               return AiResponseSummaryModalContent(
@@ -47,8 +47,6 @@ class AiResponseSummary extends StatelessWidget {
                 linkedFromId: linkedFromId,
               );
             },
-            padding:
-                const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
           );
         },
         child: fadeOut

@@ -131,12 +131,13 @@ class ModernModalUtils {
   }
 
   /// Creates an enhanced single page modal with modern styling
-  static Future<T?> showModernModal<T>({
+  static Future<T?> showSinglePageModal<T>({
     required BuildContext context,
     required Widget Function(BuildContext) builder,
     String? title,
     Widget? stickyActionBar,
-    EdgeInsetsGeometry padding = EdgeInsets.zero,
+    EdgeInsetsGeometry padding =
+        const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
     double? navBarHeight,
     bool showDivider = false,
     Widget Function(Widget)? modalDecorator,

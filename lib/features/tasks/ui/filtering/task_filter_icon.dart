@@ -17,27 +17,23 @@ class TaskFilterIcon extends StatelessWidget {
       padding: const EdgeInsets.only(right: 30),
       child: IconButton(
         onPressed: () {
-          ModernModalUtils.showModernModal<void>(
+          ModernModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.tasksFilterTitle,
-            builder: (_) => const Padding(
-              padding:
-                  EdgeInsets.only(bottom: 40, top: 20, left: 20, right: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      JournalFilter(),
-                      SizedBox(width: 10),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  TaskStatusFilter(),
-                  TaskCategoryFilter(),
-                ],
-              ),
+            builder: (_) => const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    JournalFilter(),
+                    SizedBox(width: 10),
+                  ],
+                ),
+                SizedBox(height: 10),
+                TaskStatusFilter(),
+                TaskCategoryFilter(),
+              ],
             ),
             modalDecorator: (child) {
               return MultiBlocProvider(

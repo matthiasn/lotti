@@ -23,11 +23,9 @@ class TaskStatusWidget extends StatelessWidget {
     final color = task.data.status.color;
 
     Future<void> onTap() async {
-      final newStatus = await ModernModalUtils.showModernModal<String>(
+      final newStatus = await ModernModalUtils.showSinglePageModal<String>(
         context: context,
         title: context.messages.taskStatusLabel,
-        padding:
-            const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
         builder: (BuildContext _) {
           return TaskStatusModalContent(task: task);
         },

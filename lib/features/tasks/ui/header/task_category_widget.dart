@@ -28,20 +28,16 @@ class TaskCategoryWidget extends StatelessWidget {
         : context.colorScheme.outline.withAlpha(51);
 
     void onTap() {
-      ModernModalUtils.showModernModal<void>(
+      ModernModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
         builder: (BuildContext _) {
-          return Padding(
-            padding:
-                const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40),
-            child: CategorySelectionModalContent(
-              onCategorySelected: (category) {
-                onSave(category?.id);
-                Navigator.pop(context);
-              },
-              initialCategoryId: category?.id,
-            ),
+          return CategorySelectionModalContent(
+            onCategorySelected: (category) {
+              onSave(category?.id);
+              Navigator.pop(context);
+            },
+            initialCategoryId: category?.id,
           );
         },
       );

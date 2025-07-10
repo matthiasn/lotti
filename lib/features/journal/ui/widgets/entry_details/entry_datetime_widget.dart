@@ -35,7 +35,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
         padding: padding,
         child: Text(
           dfShorter.format(entry.meta.dateFrom),
-          style: context.textTheme.bodySmall?.copyWith(
+          style: context.textTheme.bodyMedium?.copyWith(
             fontFeatures: [const FontFeature.tabularFigures()],
             color: context.colorScheme.onSurfaceVariant
                 .withValues(alpha: AppTheme.alphaSurfaceVariant),
