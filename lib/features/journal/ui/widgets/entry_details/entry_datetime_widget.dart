@@ -29,8 +29,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
     }
 
     return GestureDetector(
-      onTap: () =>
-          EntryDateTimeModal.show<void>(entry: entry, context: context),
+      onTap: () => EntryDateTimeModal.show(entry: entry, context: context),
       child: Padding(
         padding: padding,
         child: Text(

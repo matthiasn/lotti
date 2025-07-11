@@ -122,7 +122,6 @@ class ModalUtils {
     Widget? stickyActionBar,
     EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
-    bool showDivider = false,
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
   }) async {
