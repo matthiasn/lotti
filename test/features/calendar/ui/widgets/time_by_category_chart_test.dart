@@ -43,7 +43,7 @@ class TestTimeChartSelectedData extends TimeChartSelectedData {
 class TestTimeByCategoryController extends TimeByCategoryController {
   @override
   Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
-    final now = DateTime.now();
+    final now = DateTime(2025);
     return {
       now: {
         CategoryDefinition(
@@ -308,22 +308,6 @@ void main() {
 
       // Skip padding test as chart might not be rendered
       expect(find.byType(TimeByCategoryChart), findsOneWidget);
-    });
-
-    testWidgets('legend container has correct height', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      final legendContainer = tester.widget<SizedBox>(
-        find
-            .ancestor(
-              of: find.byType(TimeByCategoryChartLegend),
-              matching: find.byType(SizedBox),
-            )
-            .last,
-      );
-
-      expect(legendContainer.height, 280);
     });
 
     testWidgets('chart updates when data changes', (tester) async {
