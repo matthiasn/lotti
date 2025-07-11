@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
 
 import '../../../test_helper.dart';
 
@@ -30,9 +31,14 @@ void main() {
         type: AiResponseType.taskSummary,
       ),
     );
-    testWidgets('filters out H1 title for task summaries', (tester) async {
+    testWidgets('uses ExpandableAiResponseSummary for task summaries',
+        (tester) async {
       const responseWithTitle = '''
 # Implement user authentication system
+
+**TLDR:** Authentication setup in progress.
+Database and login API are complete.
+Next: password reset and session management. 💪
 
 Achieved results:
 ✅ Set up database schema for users
@@ -59,18 +65,11 @@ Remaining steps:
         ),
       );
 
-      // The title should not be displayed
-      expect(find.text('Implement user authentication system'), findsNothing);
+      // Should use ExpandableAiResponseSummary for task summaries
+      expect(find.byType(ExpandableAiResponseSummary), findsOneWidget);
 
-      // GptMarkdown should be rendered
+      // GptMarkdown should be rendered inside ExpandableAiResponseSummary
       expect(find.byType(GptMarkdown), findsOneWidget);
-
-      // Check that the widget is displaying the filtered content
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(
-          gptMarkdown.data.contains('# Implement user authentication system'),
-          false);
-      expect(gptMarkdown.data.contains('Achieved results:'), true);
     });
 
     testWidgets('does not filter H1 for non-task summary responses',
@@ -105,44 +104,14 @@ The image shows a beautiful landscape with mountains.''';
       expect(gptMarkdown.data.contains('# Analysis Results'), true);
     });
 
-    testWidgets('handles task summary without H1 title', (tester) async {
-      const responseWithoutTitle = '''
-Achieved results:
-✅ Some work done
-
-Remaining steps:
-1. More work to do''';
-
-      final aiResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: responseWithoutTitle,
-          type: AiResponseType.taskSummary,
-        ),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: AiResponseSummary(
-            aiResponse,
-            linkedFromId: 'test-id',
-            fadeOut: false,
-          ),
-        ),
-      );
-
-      // GptMarkdown should be rendered
-      expect(find.byType(GptMarkdown), findsOneWidget);
-
-      // Check that the widget is displaying the content as-is
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, responseWithoutTitle);
-    });
-
-    testWidgets('applies fade out effect when fadeOut is true', (tester) async {
+    testWidgets(
+        'applies fade out effect when fadeOut is true for non-task summaries',
+        (tester) async {
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
           response: 'Test response content',
-          type: AiResponseType.taskSummary,
+          type:
+              AiResponseType.imageAnalysis, // Changed to non-task summary type
         ),
       );
 
@@ -166,11 +135,13 @@ Remaining steps:
       expect(constrainedBox, findsOneWidget);
     });
 
-    testWidgets('opens modal on double tap', (tester) async {
+    testWidgets('opens modal on double tap for non-task summaries',
+        (tester) async {
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
           response: 'Test response content',
-          type: AiResponseType.taskSummary,
+          type:
+              AiResponseType.imageAnalysis, // Changed to non-task summary type
         ),
       );
 
@@ -194,41 +165,6 @@ Remaining steps:
 
       // Modal should be opened (we can't directly test the modal content
       // as it's shown in a different route)
-    });
-
-    testWidgets('filters multiple H1s from task summary', (tester) async {
-      const responseWithMultipleH1s = '''
-# Suggested Title
-
-# Another H1 Header
-
-Achieved results:
-✅ Work completed''';
-
-      final aiResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: responseWithMultipleH1s,
-          type: AiResponseType.taskSummary,
-        ),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: AiResponseSummary(
-            aiResponse,
-            linkedFromId: 'test-id',
-            fadeOut: false,
-          ),
-        ),
-      );
-
-      // Check that only the first H1 is filtered
-      expect(find.byType(GptMarkdown), findsOneWidget);
-
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data.contains('# Suggested Title'), false);
-      expect(gptMarkdown.data.contains('# Another H1 Header'), true);
-      expect(gptMarkdown.data.contains('Achieved results:'), true);
     });
   });
 }

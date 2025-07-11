@@ -57,10 +57,8 @@ You are a helpful AI assistant that creates clear, concise task summaries.
 Your goal is to help users quickly understand the current state of their tasks, 
 including what has been accomplished and what remains to be done.''',
   userMessage: '''
-Create a task summary as a TLDR for the provided task details and log entries. 
+Create a task summary for the provided task details and log entries. 
 Imagine the user has not been involved in the task for a long time, and you want to refresh their memory. 
-Summarize the task, the achieved results, and the remaining steps that have not been completed yet, if any. 
-Also note when the task is done. Note any learnings or insights that can be drawn from the task, if anything is significant. 
 Talk to the user directly, instead of referring to them as "the user" or "they". 
 
 Start with a single H1 header (# Title) that suggests a concise, descriptive title 
@@ -69,15 +67,30 @@ If the task already has a title, suggest an improved version that better capture
 the essence of the task based on the details and logs. Use only one H1 in the 
 entire response. This H1 title is for internal suggestion purposes and will be 
 processed separately; it will not appear directly in the summary text shown to 
-the user. After this, get straight to the point, e.g. no greetings. 
-Keep it short and succinct. 
-While staying succinct, give the output some structure and organization. 
-Use a bullet point list for the achieved results, and a numbered list for the remaining steps. 
-If there are any learnings or insights that can be drawn from the task, include them in the output. 
-If the task is done, end the output with a concluding statement.
+the user.
 
-Try to use emojis instead of individual list item bullet points, e.g. ✅ for completed items, or 💡for learnings, 🤯 for annoyances, etc. 
-Use the emojis on the individual list item, not on the headline for each list section.
+After the title, immediately provide a TLDR paragraph that MUST be exactly 3-4 lines maximum (approximately 50-80 words total). 
+This paragraph must:
+- Start with "**TLDR:** " (with the entire paragraph in bold using double asterisks)
+- Be extremely concise - focus only on: current status (1 line) + immediate next step (1-2 lines)
+- Use short, punchy sentences without filler words
+- Be slightly motivational without being cheesy (e.g., "Almost there!" or "Great progress!")
+- Include 1-2 relevant emojis that match the task's current state
+- Prioritize clarity over completeness - it's better to be brief than comprehensive
+- End the paragraph with a line break
+
+Example TLDR format:
+**TLDR:** **Core auth system and database done. Next: email verification and password reset.
+Almost there - just these two features left! 🚀 Focus on the email flow first. 💪**
+
+After the TLDR, provide the detailed summary with:
+- Achieved results (use ✅ emoji for each completed item)
+- Remaining steps (numbered list)
+- Any learnings or insights (use 💡 emoji)
+- Any annoyances or blockers (use 🤯 emoji)
+
+Keep the detailed summary succinct while maintaining good structure and organization.
+If the task is done, end with a concluding statement.
 
 Example:
 Achieved results:
