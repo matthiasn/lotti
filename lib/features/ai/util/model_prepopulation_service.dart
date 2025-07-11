@@ -72,19 +72,4 @@ class ModelPrepopulationService {
 
     return modelsCreated;
   }
-
-  /// Checks if any known models are missing for a provider and creates them.
-  ///
-  /// This is useful for updating existing providers with new models
-  /// that may have been added to the known models list.
-  Future<int> ensureModelsForProvider(String providerId) async {
-    // Get the provider configuration
-    final providerConfig = await _repository.getConfigById(providerId);
-    if (providerConfig == null ||
-        providerConfig is! AiConfigInferenceProvider) {
-      return 0;
-    }
-
-    return prepopulateModelsForProvider(providerConfig);
-  }
 }

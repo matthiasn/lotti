@@ -158,17 +158,9 @@ class ModalTheme {
   static const double spacing24 = 24;
   static const double spacing40 = 40;
   static const double buttonHeight = 56;
-  static const double progressCardRadius = 28;
-  static const double progressCardVertical = 36;
-  static const double progressCardHorizontal = 24;
-  static const double progressCardMarginV = 32;
-  static const double progressCardMarginH = 8;
   static const double fontSize = 16;
   static const double letterSpacing = 0.5;
   static const double letterSpacingBold = 0.8;
-  static const double progressCardAlpha = 0.98;
-  static const double progressCardShadowBlur = 32;
-  static const Offset progressCardShadowOffset = Offset(0, 12);
   static const double buttonBorderWidth = 1.5;
   static const double iconBorderRadiusExtra = 4;
   static const double headlineLetterSpacing = -0.2;

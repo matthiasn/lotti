@@ -84,7 +84,6 @@ class MeasurablesBarChart extends ConsumerWidget {
             ),
       chartHeader: MeasurablesChartInfoWidget(
         measurableDataType,
-        dashboardId: dashboardId,
         enableCreate: enableCreate,
         aggregationType: chartAggregationType,
       ),

@@ -126,22 +126,6 @@ List<Observation> aggregateByType(
   }
 }
 
-List<Observation> aggregateNoneFilteredBy(
-  List<JournalEntity> entities,
-  String healthType,
-) {
-  return aggregateNone(
-    entities.where((entity) {
-      if (entity is QuantitativeEntry) {
-        return entity.data.dataType == healthType;
-      } else {
-        return false;
-      }
-    }).toList(),
-    healthType,
-  );
-}
-
 num findExtreme(
   List<Observation> observations,
   num Function(num, num) extremeFn,
@@ -165,18 +149,4 @@ num findMin(List<Observation> observations) {
 
 num findMax(List<Observation> observations) {
   return findExtreme(observations, max);
-}
-
-bool nearRange({
-  required num min,
-  required num max,
-  required num lowerBound,
-  required num upperBound,
-}) {
-  const threshold = 2;
-  final minNearLower = (lowerBound - min).abs() < threshold;
-  final minNearUpper = (upperBound - min).abs() < threshold;
-  final maxNearLower = (lowerBound - max).abs() < threshold;
-  final maxNearUpper = (upperBound - max).abs() < threshold;
-  return minNearLower || minNearUpper || maxNearLower || maxNearUpper;
 }

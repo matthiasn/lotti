@@ -22,7 +22,6 @@ class HealthTypeConfig {
     required this.aggregationType,
     required this.unit,
     this.colorByValue,
-    this.hoursMinutes = false,
   });
 
   final HealthChartType chartType;
@@ -31,7 +30,6 @@ class HealthTypeConfig {
   final String healthType;
   final String unit;
   final Map<num, String>? colorByValue;
-  final bool hoursMinutes;
 }
 
 Map<String, HealthTypeConfig> healthTypes = {
@@ -136,7 +134,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.SLEEP_ASLEEP',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
     unit: 'h',
   ),
   'HealthDataType.SLEEP_LIGHT': HealthTypeConfig(
@@ -144,7 +141,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.SLEEP_LIGHT',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
     unit: 'h',
   ),
   'HealthDataType.SLEEP_DEEP': HealthTypeConfig(
@@ -152,7 +148,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.SLEEP_DEEP',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
     unit: 'h',
   ),
   'HealthDataType.SLEEP_REM': HealthTypeConfig(
@@ -160,7 +155,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.SLEEP_REM',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
     unit: 'h',
   ),
   'HealthDataType.SLEEP_IN_BED': HealthTypeConfig(
@@ -168,7 +162,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.SLEEP_IN_BED',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
     unit: 'h',
   ),
   'HealthDataType.SLEEP_AWAKE': HealthTypeConfig(
@@ -176,7 +169,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.SLEEP_AWAKE',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
     unit: 'h',
   ),
 };

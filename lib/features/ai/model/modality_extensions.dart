@@ -24,15 +24,4 @@ extension ModalityExtension on Modality {
         return context.messages.modalityImageDescription;
     }
   }
-
-  IconData get icon {
-    switch (this) {
-      case Modality.text:
-        return Icons.text_fields;
-      case Modality.audio:
-        return Icons.mic;
-      case Modality.image:
-        return Icons.image;
-    }
-  }
 }

@@ -8,14 +8,12 @@ class DashboardHabitsChart extends StatefulWidget {
     required this.habitId,
     required this.rangeStart,
     required this.rangeEnd,
-    this.tab = 'dashboard',
     super.key,
   });
 
   final String habitId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final String tab;
 
   @override
   State<DashboardHabitsChart> createState() => _DashboardHabitsChartState();

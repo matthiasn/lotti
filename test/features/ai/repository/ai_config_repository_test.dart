@@ -147,19 +147,6 @@ void main() {
       // Assert
       verify(() => mockDb.getConfigsByType(type)).called(1);
     });
-
-    test('watchAllConfigs calls db.watchAllConfigs', () async {
-      // Arrange
-      when(() => mockDb.watchAllConfigs()).thenAnswer(
-        (_) => Stream.value([]),
-      );
-
-      // Act
-      repository.watchAllConfigs();
-
-      // Assert
-      verify(() => mockDb.watchAllConfigs()).called(1);
-    });
   });
 
   group('AiConfigRepository with in-memory database', () {
@@ -279,43 +266,6 @@ void main() {
         emits(
           predicate<List<AiConfig>>((configs) {
             return configs.length == 1 && configs.first.id == 'api-id';
-          }),
-        ),
-      );
-    });
-
-    test('watchAllConfigs returns all configs', () async {
-      // Arrange
-      final apiConfig1 = AiConfig.inferenceProvider(
-        id: 'api-id-1',
-        baseUrl: 'https://api1.example.com',
-        apiKey: 'test-api-key-1',
-        name: 'API Config 1',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
-
-      final apiConfig2 = AiConfig.inferenceProvider(
-        id: 'api-id-2',
-        baseUrl: 'https://api2.example.com',
-        apiKey: 'test-api-key-2',
-        name: 'API Config 2',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
-
-      // Save the configs
-      await repository.saveConfig(apiConfig1);
-      await repository.saveConfig(apiConfig2);
-
-      // Act & Assert
-      expect(
-        repository.watchAllConfigs(),
-        emits(
-          predicate<List<AiConfig>>((configs) {
-            return configs.length == 2 &&
-                configs.any((c) => c.id == 'api-id-1') &&
-                configs.any((c) => c.id == 'api-id-2');
           }),
         ),
       );

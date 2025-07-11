@@ -200,8 +200,6 @@ class UnifiedAiProgressContent extends ConsumerWidget {
 }
 
 class UnifiedAiProgressUtils {
-  const UnifiedAiProgressUtils();
-
   static SliverWoltModalSheetPage progressPage({
     required BuildContext context,
     required AiConfigPrompt prompt,

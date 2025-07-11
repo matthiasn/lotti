@@ -63,23 +63,4 @@ extension InferenceErrorTypeExtension on InferenceErrorType {
         return context.messages.aiInferenceErrorUnknownTitle;
     }
   }
-
-  String get defaultMessage {
-    switch (this) {
-      case InferenceErrorType.networkConnection:
-        return 'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.';
-      case InferenceErrorType.timeout:
-        return 'The request took too long to complete. Please try again or check if the service is responding.';
-      case InferenceErrorType.authentication:
-        return 'Authentication failed. Please check your API key and ensure it is valid.';
-      case InferenceErrorType.rateLimit:
-        return 'You have exceeded the rate limit. Please wait a moment before trying again.';
-      case InferenceErrorType.invalidRequest:
-        return 'The request was invalid. Please check your configuration and try again.';
-      case InferenceErrorType.serverError:
-        return 'The AI service encountered an error. Please try again later.';
-      case InferenceErrorType.unknown:
-        return 'An unexpected error occurred. Please try again.';
-    }
-  }
 }

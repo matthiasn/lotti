@@ -62,7 +62,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
             return EntryDetailsWidget(
               key: Key('${item.id}-$toId'),
               itemId: toId,
-              popOnDelete: false,
               parentTags: item.meta.tagIds?.toSet(),
               linkedFrom: item,
               link: link,

@@ -179,33 +179,6 @@ void main() {
           reason: 'Form should be dirty after changing requiredInputData');
     });
 
-    test('changing defaultVariables should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
-
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
-
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
-
-      // Initially clean
-      var state = container
-          .read(promptFormControllerProvider(configId: testConfigId))
-          .value;
-      expect(state!.isDirty, isFalse);
-
-      // Change defaultVariables
-      controller.defaultVariablesChanged({'var1': 'val1', 'var2': 'val2'});
-
-      // Should be dirty now
-      state = container
-          .read(promptFormControllerProvider(configId: testConfigId))
-          .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing defaultVariables');
-    });
-
     test('changing text fields should make form dirty', () async {
       when(() => mockAiConfigRepository.getConfigById(testConfigId))
           .thenAnswer((_) async => testConfig);

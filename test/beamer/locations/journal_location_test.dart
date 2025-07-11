@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
-import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -86,13 +85,9 @@ void main() {
         mockBuildContext,
         newBeamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
       expect(pages[0].child, isA<InfiniteJournalPage>());
-      expect(pages[1].key, isA<ValueKey<String>>());
-      expect(pages[1].child, isA<FillSurveyWithTypePage>());
-      final fillSurveyPage = pages[1].child as FillSurveyWithTypePage;
-      expect(fillSurveyPage.surveyType, surveyType);
     });
   });
 }

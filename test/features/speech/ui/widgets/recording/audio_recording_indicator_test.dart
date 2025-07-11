@@ -116,7 +116,7 @@ void main() {
   group('AudioRecordingIndicator Tests', () {
     testWidgets('shows nothing when not recording', (tester) async {
       final state = AudioRecorderState(
-        status: AudioRecorderStatus.initialized,
+        status: AudioRecorderStatus.initializing,
         dBFS: -160,
         vu: -20,
         progress: Duration.zero,

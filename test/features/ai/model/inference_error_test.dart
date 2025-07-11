@@ -63,39 +63,6 @@ void main() {
   });
 
   group('InferenceErrorTypeExtension', () {
-    group('defaultMessage getter', () {
-      test('returns correct non-localized messages', () {
-        expect(
-          InferenceErrorType.networkConnection.defaultMessage,
-          'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.',
-        );
-        expect(
-          InferenceErrorType.timeout.defaultMessage,
-          'The request took too long to complete. Please try again or check if the service is responding.',
-        );
-        expect(
-          InferenceErrorType.authentication.defaultMessage,
-          'Authentication failed. Please check your API key and ensure it is valid.',
-        );
-        expect(
-          InferenceErrorType.rateLimit.defaultMessage,
-          'You have exceeded the rate limit. Please wait a moment before trying again.',
-        );
-        expect(
-          InferenceErrorType.invalidRequest.defaultMessage,
-          'The request was invalid. Please check your configuration and try again.',
-        );
-        expect(
-          InferenceErrorType.serverError.defaultMessage,
-          'The AI service encountered an error. Please try again later.',
-        );
-        expect(
-          InferenceErrorType.unknown.defaultMessage,
-          'An unexpected error occurred. Please try again.',
-        );
-      });
-    });
-
     group('getTitle with BuildContext', () {
       testWidgets('returns correct localized titles',
           (WidgetTester tester) async {

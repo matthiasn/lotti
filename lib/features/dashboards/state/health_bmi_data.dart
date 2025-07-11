@@ -1,15 +1,5 @@
 import 'dart:core';
 
-num calculateBMI(num height, num weight) {
-  final heightSquare = height * height;
-  return weight / heightSquare;
-}
-
-num weightFromBmi(num height, num bmi) {
-  final heightSquare = height * height;
-  return bmi * heightSquare;
-}
-
 class BmiRangeSegment {
   BmiRangeSegment({
     required this.lowerBoundInclusive,

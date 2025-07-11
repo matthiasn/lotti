@@ -20,10 +20,7 @@ class DashboardsList extends StatelessWidget {
             child: Column(
               children: [
                 ...state.filteredSortedDashboards.mapIndexed(
-                  (index, dashboard) => DashboardCard(
-                    dashboard: dashboard,
-                    index: index,
-                  ),
+                  (index, dashboard) => DashboardCard(dashboard: dashboard),
                 ),
               ],
             ),

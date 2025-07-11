@@ -2,10 +2,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:lotti/features/surveys/tools/run_surveys.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
 
 class SurveyWidget extends StatelessWidget {
@@ -38,64 +34,6 @@ class SurveyWidget extends StatelessWidget {
           }
         },
       ),
-    );
-  }
-}
-
-class FillSurveyPage extends StatelessWidget {
-  const FillSurveyPage({
-    super.key,
-    this.linkedId,
-    this.surveyType,
-  });
-
-  final String? linkedId;
-  final String? surveyType;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TitleAppBar(title: context.messages.addSurveyTitle),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            RoundedButton(
-              'CFQ 11',
-              onPressed: () => runCfq11(
-                linkedId: linkedId,
-                context: context,
-                themeData: Theme.of(context),
-              ),
-            ),
-            const SizedBox(height: 20),
-            RoundedButton(
-              'PANAS',
-              onPressed: () => runPanas(
-                linkedId: linkedId,
-                context: context,
-                themeData: Theme.of(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class FillSurveyWithTypePage extends StatelessWidget {
-  const FillSurveyWithTypePage({
-    super.key,
-    this.surveyType,
-  });
-
-  final String? surveyType;
-
-  @override
-  Widget build(BuildContext context) {
-    return FillSurveyPage(
-      surveyType: surveyType,
     );
   }
 }

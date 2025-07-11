@@ -7,7 +7,6 @@ class DashboardChart extends StatelessWidget {
     required this.height,
     this.overlay,
     this.topMargin = 0,
-    this.transparent = false,
     super.key,
   });
 
@@ -16,7 +15,6 @@ class DashboardChart extends StatelessWidget {
   final Widget? overlay;
   final double height;
   final double topMargin;
-  final bool transparent;
 
   @override
   Widget build(BuildContext context) {

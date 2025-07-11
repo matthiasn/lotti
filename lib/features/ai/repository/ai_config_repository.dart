@@ -153,19 +153,6 @@ class AiConfigRepository {
         );
   }
 
-  /// Stream of all AI configurations
-  Stream<List<AiConfig>> watchAllConfigs() {
-    return _db.watchAllConfigs().map(
-          (entities) => entities
-              .map(
-                (entity) => AiConfig.fromJson(
-                  Map<String, dynamic>.from(_jsonDecode(entity.serialized)),
-                ),
-              )
-              .toList(),
-        );
-  }
-
   /// Helper method to decode JSON
   Map<String, dynamic> _jsonDecode(String serialized) {
     return Map<String, dynamic>.from(

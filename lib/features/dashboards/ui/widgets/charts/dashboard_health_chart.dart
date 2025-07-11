@@ -70,7 +70,6 @@ class DashboardHealthChart extends ConsumerWidget {
 
     if (dataType == 'BLOOD_PRESSURE') {
       return DashboardHealthBpChart(
-        chartConfig: chartConfig,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
         transformationController: transformationController,
