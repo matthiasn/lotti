@@ -69,6 +69,7 @@ class UnifiedAiModal {
     final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.aiAssistantTitle,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
