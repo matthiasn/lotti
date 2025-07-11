@@ -1,19 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
-import 'package:lotti/features/manual/widget/showcase_text_style.dart';
-import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
-import 'package:lotti/features/settings/ui/pages/form_text_field.dart';
-import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
 import 'package:lotti/features/settings/ui/widgets/entity_detail_card.dart';
 import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
 import 'package:lotti/get_it.dart';
@@ -22,12 +14,11 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/sliver_show_case_title_bar.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:uuid/uuid.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
   const DashboardDefinitionPage({
@@ -45,23 +36,10 @@ class DashboardDefinitionPage extends StatefulWidget {
 }
 
 class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
-  final GlobalKey<State<StatefulWidget>> _dashboardNameKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardDescriptionKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardPrivateKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardActiveKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardCateKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardHeartChartKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardSurveyChartKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardWorkoutChartKey =
-      GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardCopyDashboardKey =
-      GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dashboardDeleteDashboardKey =
-      GlobalKey();
-
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
+  final _uuid = const Uuid();
 
   bool dirty = false;
 
@@ -155,6 +133,30 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
       dashboardItems.removeAt(index);
       dirty = true;
     });
+  }
+
+  String _getItemTitle(DashboardItem item) {
+    return item.when(
+      measurement: (id, aggregationType) => 'Measurement',
+      habitChart: (habitId) => 'Habit Chart',
+      healthChart: (color, healthType) => healthTypes[healthType]?.displayName ?? healthType,
+      surveyChart: (colorsByScoreKey, surveyType, surveyName) => surveyName,
+      workoutChart: (workoutType, displayName, color, valueType) => displayName,
+      storyTimeChart: (storyTagId, color) => 'Story Time Chart',
+      wildcardStoryTimeChart: (storySubstring, color) => 'Story Time Chart',
+    );
+  }
+
+  String _getItemSubtitle(DashboardItem item) {
+    return item.when(
+      measurement: (id, aggregationType) => 'Aggregation: ${aggregationType?.toString().split('.').last ?? 'Default'}',
+      habitChart: (habitId) => 'Habit tracking',
+      healthChart: (color, healthType) => 'Health data',
+      surveyChart: (colorsByScoreKey, surveyType, surveyName) => 'Survey responses',
+      workoutChart: (workoutType, displayName, color, valueType) => 'Workout data',
+      storyTimeChart: (storyTagId, color) => 'Story time tracking',
+      wildcardStoryTimeChart: (storySubstring, color) => 'Story time tracking',
+    );
   }
 
   @override
@@ -260,62 +262,17 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               maybePop();
             }
 
-            Future<void> copyDashboard() async {
-              final dashboard = await saveDashboard();
-              final entityDefinitions = <EntityDefinition>[dashboard];
-
-              for (final item in dashboard.items) {
-                await item.map(
-                  measurement:
-                      (DashboardMeasurementItem measurementItem) async {
-                    final dataType =
-                        await _db.getMeasurableDataTypeById(measurementItem.id);
-                    if (dataType != null) {
-                      entityDefinitions.add(dataType);
-                    }
-                  },
-                  healthChart: (_) {},
-                  workoutChart: (_) {},
-                  surveyChart: (_) {},
-                  storyTimeChart: (_) {},
-                  habitChart: (_) {},
-                  wildcardStoryTimeChart: (_) {},
-                );
-              }
-              await Clipboard.setData(
-                ClipboardData(
-                  text: json.encode(
-                    entityDefinitions,
-                  ),
-                ),
-              );
-            }
-
             return Scaffold(
               body: CustomScrollView(
                 slivers: <Widget>[
-                  SliverShowCaseTitleBar(
-                    title: context.messages.settingsDashboardDetailsLabel,
-                    pinned: true,
-                    showcaseIcon: IconButton(
-                      onPressed: () {
-                        ShowCaseWidget.of(context).startShowCase([
-                          _dashboardNameKey,
-                          _dashboardDescriptionKey,
-                          _dashboardPrivateKey,
-                          _dashboardActiveKey,
-                          _dashboardCateKey,
-                          _dashboardHeartChartKey,
-                          _dashboardSurveyChartKey,
-                          _dashboardWorkoutChartKey,
-                          _dashboardCopyDashboardKey,
-                          _dashboardDeleteDashboardKey,
-                        ]);
-                      },
-                      icon: const Icon(
-                        Icons.info_outline_rounded,
+                  SliverAppBar(
+                    title: Text(
+                      context.messages.settingsDashboardDetailsLabel,
+                      style: appBarTextStyleNewLarge.copyWith(
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
+                    pinned: true,
                     actions: [
                       if (dirty)
                         TextButton(
@@ -355,81 +312,99 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             },
                             child: Column(
                               children: <Widget>[
-                                ShowcaseWithWidget(
-                                  startNav: true,
-                                  showcaseKey: _dashboardNameKey,
-                                  description: ShowcaseTextStyle(
-                                    descriptionText: context.messages
-                                        .settingsDashboardsShowCaseNameTooltip,
-                                  ),
-                                  child: FormTextField(
-                                    initialValue: widget.dashboard.name,
+                                FormBuilderTextField(
+                                  name: 'name',
+                                  key: const Key('dashboard_name_field'),
+                                  initialValue: widget.dashboard.name,
+                                  decoration: InputDecoration(
                                     labelText:
                                         context.messages.dashboardNameLabel,
-                                    name: 'name',
-                                    semanticsLabel: 'Dashboard - name field',
-                                    key: const Key('dashboard_name_field'),
-                                    large: true,
+                                    hintText: 'Enter dashboard name',
                                   ),
+                                  onChanged: (_) {
+                                    setState(() {
+                                      dirty = true;
+                                    });
+                                  },
                                 ),
-                                inputSpacer,
-                                ShowcaseWithWidget(
-                                  showcaseKey: _dashboardDescriptionKey,
-                                  description: ShowcaseTextStyle(
-                                    descriptionText: context.messages
-                                        .settingsDashboardsShowCaseDescrTooltip,
-                                  ),
-                                  child: FormTextField(
-                                    initialValue: widget.dashboard.description,
+                                const SizedBox(height: 16),
+                                FormBuilderTextField(
+                                  name: 'description',
+                                  key: const Key(
+                                      'dashboard_description_field'),
+                                  initialValue:
+                                      widget.dashboard.description,
+                                  decoration: InputDecoration(
                                     labelText: context
                                         .messages.dashboardDescriptionLabel,
-                                    name: 'description',
-                                    semanticsLabel:
-                                        'Dashboard - description field',
-                                    fieldRequired: false,
-                                    key: const Key(
-                                      'dashboard_description_field',
-                                    ),
+                                    hintText: 'Enter dashboard description',
                                   ),
+                                  onChanged: (_) {
+                                    setState(() {
+                                      dirty = true;
+                                    });
+                                  },
                                 ),
-                                inputSpacer,
-                                ShowcaseWithWidget(
-                                  showcaseKey: _dashboardPrivateKey,
-                                  description: ShowcaseTextStyle(
-                                    descriptionText: context.messages
-                                        .settingsDashboardsShowCasePrivateTooltip,
-                                  ),
-                                  child: FormSwitch(
+                                const SizedBox(height: 16),
+                                FormSwitch(
                                     name: 'private',
                                     initialValue: widget.dashboard.private,
-                                    title:
-                                        context.messages.dashboardPrivateLabel,
+                                  title: context.messages.dashboardPrivateLabel,
                                     activeColor: context.colorScheme.error,
-                                  ),
                                 ),
-                                ShowcaseWithWidget(
-                                  showcaseKey: _dashboardActiveKey,
-                                  description: ShowcaseTextStyle(
-                                    descriptionText: context.messages
-                                        .settingsDashboardsShowCaseActiveTooltip,
-                                  ),
-                                  child: FormSwitch(
+                                FormSwitch(
                                     name: 'active',
                                     initialValue: widget.dashboard.active,
-                                    title:
-                                        context.messages.dashboardActiveLabel,
+                                  title: context.messages.dashboardActiveLabel,
                                     activeColor: starredGold,
-                                  ),
                                 ),
-                                ShowcaseWithWidget(
-                                  showcaseKey: _dashboardCateKey,
-                                  description: ShowcaseTextStyle(
-                                    descriptionText: context.messages
-                                        .settingsDashboardsShowCaseCatTooltip,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
                                   ),
-                                  child: SelectDashboardCategoryWidget(
-                                    setCategory: setCategory,
-                                    categoryId: categoryId,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Theme.of(context).dividerColor,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child:
+                                      StreamBuilder<List<CategoryDefinition>>(
+                                    stream: _db.watchCategories(),
+                                    builder: (
+                                      BuildContext context,
+                                      AsyncSnapshot<List<CategoryDefinition>>
+                                          snapshot,
+                                    ) {
+                                      final categories = snapshot.data ?? [];
+
+                                      // Create dropdown items from actual categories
+                                      final categoryItems = [
+                                        const DropdownMenuItem<String>(
+                                          child: Text('Select a category'),
+                                        ),
+                                        ...categories.map((category) =>
+                                            DropdownMenuItem<String>(
+                                              value: category.id,
+                                              child: Text(category.name),
+                                            )),
+                                      ];
+
+                                      return DropdownButtonFormField<String>(
+                                        decoration: InputDecoration(
+                                          labelText: context
+                                              .messages.dashboardCategoryLabel,
+                                          hintText: 'Select a category',
+                                        ),
+                                        value: categories.any(
+                                                (cat) => cat.id == categoryId)
+                                            ? categoryId
+                                            : null,
+                                        items: categoryItems,
+                                        onChanged: setCategory,
+                                      );
+                                    },
                                   ),
                                 ),
                               ],
@@ -476,10 +451,106 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     key: Key(
                                       'dashboard-item-${item.hashCode}-$index',
                                     ),
-                                    child: DashboardItemCard(
-                                      item: item,
-                                      index: index,
-                                      updateItemFn: updateItem,
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Theme.of(context).cardTheme.color,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: ListTile(
+                                        title: Text(_getItemTitle(item)),
+                                        subtitle: Text(_getItemSubtitle(item)),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.edit),
+                                              onPressed: () async {
+                                                final item =
+                                                    dashboardItems[index];
+                                                if (item
+                                                    is DashboardMeasurementItem) {
+                                                  final newAggregation =
+                                                      await showDialog<
+                                                          AggregationType>(
+                                                    context: context,
+                                                    builder: (context) {
+                                                      AggregationType?
+                                                          selected =
+                                                          item.aggregationType ??
+                                                              AggregationType
+                                                                  .dailySum;
+                                                      return AlertDialog(
+                                                        title: const Text(
+                                                            'Edit Measurement'),
+                                                        content: DropdownButton<
+                                                            AggregationType>(
+                                                          value: selected,
+                                                          items: AggregationType
+                                                              .values
+                                                              .map((agg) =>
+                                                                  DropdownMenuItem(
+                                                                    value: agg,
+                                                                    child: Text(agg
+                                                                        .toString()
+                                                                        .split(
+                                                                            '.')
+                                                                        .last),
+                                                                  ))
+                                                              .toList(),
+                                                          onChanged: (agg) {
+                                                            selected = agg;
+                                                            (context as Element)
+                                                                .markNeedsBuild();
+                                                          },
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                        context)
+                                                                    .pop(),
+                                                            child: const Text(
+                                                                'Cancel'),
+                                                          ),
+                                                          ElevatedButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                        context)
+                                                                    .pop(
+                                                                        selected),
+                                                            child: const Text(
+                                                                'Save'),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                  if (newAggregation != null) {
+                                                    updateItem(
+                                                      item.copyWith(
+                                                          aggregationType:
+                                                              newAggregation),
+                                                      index,
+                                                    );
+                                                  }
+                                                }
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: Icon(
+                                                MdiIcons.trashCanOutline,
+                                              ),
+                                              onPressed: () {
+                                                dismissItem(index);
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   );
                                 },
@@ -490,33 +561,53 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             context.messages.dashboardAddChartsTitle,
                           ),
                           if (habitSelectItems.isNotEmpty)
-                            ChartMultiSelect<HabitDefinition>(
-                              multiSelectItems: habitSelectItems,
-                              onConfirm: onConfirmAddHabit,
-                              title: context.messages.dashboardAddHabitTitle,
-                              buttonText:
-                                  context.messages.dashboardAddHabitButton,
-                              semanticsLabel: 'Add Habit Chart',
-                              iconData: Icons.insights,
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    context.messages.dashboardAddHabitTitle,
+                                  ),
+                                  ...habitSelectItems.map(
+                                    (item) => CheckboxListTile(
+                                      value: false,
+                                      // No multi-select, so no selected value
+                                      onChanged: (value) {
+                                        if (value!) {
+                                          onConfirmAddHabit([item.value]);
+                                        }
+                                      },
+                                      title: Text(item.value.name),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           if (measurableSelectItems.isNotEmpty)
-                            ChartMultiSelect<MeasurableDataType>(
-                              multiSelectItems: measurableSelectItems,
-                              onConfirm: onConfirmAddMeasurement,
-                              title:
-                                  context.messages.dashboardAddMeasurementTitle,
-                              buttonText: context
-                                  .messages.dashboardAddMeasurementButton,
-                              semanticsLabel: 'Add Measurable Data Chart',
-                              iconData: Icons.insights,
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    context
+                                        .messages.dashboardAddMeasurementTitle,
+                                  ),
+                                  ...measurableSelectItems.map(
+                                    (item) => CheckboxListTile(
+                                      value: false,
+                                      // No multi-select, so no selected value
+                                      onChanged: (value) {
+                                        if (value!) {
+                                          onConfirmAddMeasurement([item.value]);
+                                        }
+                                      },
+                                      title: Text(item.value.displayName),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ShowcaseWithWidget(
-                            showcaseKey: _dashboardHeartChartKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsDashboardsShowCaseHealthChartsTooltip,
-                            ),
-                            child: ChartMultiSelect<HealthTypeConfig>(
+                          ChartMultiSelect<HealthTypeConfig>(
                               multiSelectItems: healthSelectItems,
                               onConfirm: onConfirmAddHealthType,
                               title: context.messages.dashboardAddHealthTitle,
@@ -525,14 +616,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               semanticsLabel: 'Add Health Chart',
                               iconData: MdiIcons.stethoscope,
                             ),
-                          ),
-                          ShowcaseWithWidget(
-                            showcaseKey: _dashboardSurveyChartKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsDashboardsShowCaseSurveyChartsTooltip,
-                            ),
-                            child: ChartMultiSelect<DashboardSurveyItem>(
+                          ChartMultiSelect<DashboardSurveyItem>(
                               multiSelectItems: surveySelectItems,
                               onConfirm: onConfirmAddSurveyType,
                               title: context.messages.dashboardAddSurveyTitle,
@@ -541,15 +625,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               semanticsLabel: 'Add Survey Chart',
                               iconData: MdiIcons.clipboardOutline,
                             ),
-                          ),
-                          ShowcaseWithWidget(
-                            isTooltipTop: true,
-                            showcaseKey: _dashboardWorkoutChartKey,
-                            description: ShowcaseTextStyle(
-                              descriptionText: context.messages
-                                  .settingsDashboardsShowCaseWorkoutChartsTooltip,
-                            ),
-                            child: ChartMultiSelect<DashboardWorkoutItem>(
+                          ChartMultiSelect<DashboardWorkoutItem>(
                               multiSelectItems: workoutSelectItems,
                               onConfirm: onConfirmAddWorkoutType,
                               title: context.messages.dashboardAddWorkoutTitle,
@@ -557,7 +633,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   context.messages.dashboardAddWorkoutButton,
                               semanticsLabel: 'Add Workout Chart',
                               iconData: Icons.sports_gymnastics,
-                            ),
                           ),
                           const SizedBox(height: 16),
                           Padding(
@@ -573,45 +648,50 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 ),
                                 Row(
                                   children: [
-                                    ShowcaseWithWidget(
-                                      isTooltipTop: true,
-                                      showcaseKey: _dashboardCopyDashboardKey,
-                                      description: ShowcaseTextStyle(
-                                        descriptionText: context.messages
-                                            .settingsDashboardsShowCaseCopyTooltip,
-                                      ),
-                                      child: IconButton(
+                                    IconButton(
                                         icon: const Icon(Icons.copy),
                                         iconSize: settingsIconSize,
                                         tooltip:
                                             context.messages.dashboardCopyHint,
-                                        onPressed: copyDashboard,
-                                      ),
+                                      onPressed: () async {
+                                        // Save current dashboard first
+                                        await saveDashboard();
+
+                                        // Create a copy of the dashboard with a new ID
+                                        final copiedDashboard =
+                                            widget.dashboard.copyWith(
+                                          id: _uuid.v1(),
+                                          name:
+                                              '${widget.dashboard.name} (Copy)',
+                                          createdAt: DateTime.now(),
+                                          updatedAt: DateTime.now(),
+                                          lastReviewed: DateTime.now(),
+                                        );
+
+                                        // Save the copied dashboard
+                                        await persistenceLogic
+                                            .upsertDashboardDefinition(
+                                                copiedDashboard);
+
+                                        // Navigate back to the dashboards list
+                                        maybePop();
+                                      },
                                     ),
-                                    ShowcaseWithWidget(
-                                      endNav: true,
-                                      isTooltipTop: true,
-                                      showcaseKey: _dashboardDeleteDashboardKey,
-                                      description: ShowcaseTextStyle(
-                                        descriptionText: context.messages
-                                            .settingsDashboardsShowCaseDelTooltip,
-                                      ),
-                                      child: IconButton(
+                                    IconButton(
                                         icon: Icon(
                                           MdiIcons.trashCanOutline,
                                         ),
                                         iconSize: settingsIconSize,
-                                        tooltip: context
-                                            .messages.dashboardDeleteHint,
+                                      tooltip:
+                                          context.messages.dashboardDeleteHint,
                                         color: context.colorScheme.outline,
                                         onPressed: () async {
                                           const deleteKey = 'deleteKey';
                                           final result =
-                                              await showModalActionSheet<
-                                                  String>(
+                                            await showModalActionSheet<String>(
                                             context: context,
-                                            title: context.messages
-                                                .dashboardDeleteQuestion,
+                                          title: context
+                                              .messages.dashboardDeleteQuestion,
                                             actions: [
                                               ModalSheetAction(
                                                 icon: Icons.warning,
@@ -632,7 +712,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                             maybePop();
                                           }
                                         },
-                                      ),
                                     ),
                                   ],
                                 ),
@@ -676,10 +755,8 @@ class EditDashboardPage extends StatelessWidget {
           return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);
         }
 
-        return ShowCaseWidget(
-          builder: (context) => DashboardDefinitionPage(
+        return DashboardDefinitionPage(
             dashboard: dashboard,
-          ),
         );
       },
     );

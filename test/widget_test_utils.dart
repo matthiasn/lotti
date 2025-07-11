@@ -72,3 +72,20 @@ Widget makeTestableWidgetWithScaffold(
     ),
   );
 }
+
+Widget makeTestableWidgetNoScroll(Widget child) {
+  return MediaQuery(
+    data: const MediaQueryData(),
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        FormBuilderLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child,
+    ),
+  );
+}

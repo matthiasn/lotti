@@ -20,15 +20,13 @@ class AdvancedSettingsPage extends StatelessWidget {
           // Matrix sync card
           AnimatedModernSettingsCardWithIcon(
             title: 'Matrix Sync',
-            subtitle:
-                context.messages.settingsAdvancedShowCaseMatrixSyncTooltip,
+            subtitle: context.messages.settingsAdvancedMatrixSyncSubtitle,
             icon: Icons.sync,
             onTap: () => context.beamToNamed('/settings/advanced/matrix_sync'),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsSyncOutboxTitle,
-            subtitle:
-                context.messages.settingsAdvancedShowCaseSyncOutboxTooltip,
+            subtitle: context.messages.settingsAdvancedOutboxSubtitle,
             icon: Icons.mail,
             onTap: () =>
                 context.beamToNamed('/settings/advanced/outbox_monitor'),
@@ -41,35 +39,32 @@ class AdvancedSettingsPage extends StatelessWidget {
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsConflictsTitle,
-            subtitle: context.messages.settingsAdvancedShowCaseConflictsTooltip,
+            subtitle: context.messages.settingsAdvancedConflictsSubtitle,
             icon: Icons.warning_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/conflicts'),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLogsTitle,
-            subtitle: context.messages.settingsAdvancedShowCaseLogsTooltip,
+            subtitle: context.messages.settingsAdvancedLogsSubtitle,
             icon: Icons.article_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/logging'),
           ),
           if (isMobile)
             AnimatedModernSettingsCardWithIcon(
               title: context.messages.settingsHealthImportTitle,
-              subtitle:
-                  context.messages.settingsAdvancedShowCaseHealthImportTooltip,
+              subtitle: context.messages.settingsAdvancedHealthImportSubtitle,
               icon: Icons.health_and_safety_rounded,
               onTap: () => context.beamToNamed('/settings/health_import'),
             ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsMaintenanceTitle,
-            subtitle:
-                context.messages.settingsAdvancedShowCaseMaintenanceTooltip,
+            subtitle: context.messages.settingsAdvancedMaintenanceSubtitle,
             icon: Icons.build_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/maintenance'),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsAboutTitle,
-            subtitle:
-                context.messages.settingsAdvancedShowCaseAboutLottiTooltip,
+            subtitle: context.messages.settingsAdvancedAboutSubtitle,
             icon: Icons.info_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/about'),
           ),

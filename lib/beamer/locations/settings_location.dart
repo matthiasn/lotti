@@ -27,7 +27,6 @@ import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -221,20 +220,16 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Flags
       if (pathContains('flags'))
-        BeamPage(
-          key: const ValueKey('settings-flags'),
-          child: ShowCaseWidget(
-            builder: (context) => const FlagsPage(),
-          ),
+        const BeamPage(
+          key: ValueKey('settings-flags'),
+          child: FlagsPage(),
         ),
 
       // Theming
       if (pathContains('theming'))
-        BeamPage(
-          key: const ValueKey('settings-theming'),
-          child: ShowCaseWidget(
-            builder: (context) => const ThemingPage(),
-          ),
+        const BeamPage(
+          key: ValueKey('settings-theming'),
+          child: ThemingPage(),
         ),
 
       // Health Import
@@ -246,11 +241,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Advanced Settings
       if (pathContains('advanced'))
-        BeamPage(
-          key: const ValueKey('settings-advanced'),
-          child: ShowCaseWidget(
-            builder: (context) => const AdvancedSettingsPage(),
-          ),
+        const BeamPage(
+          key: ValueKey('settings-advanced'),
+          child: AdvancedSettingsPage(),
         ),
 
       if (pathContains('advanced/outbox_monitor'))

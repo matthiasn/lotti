@@ -125,7 +125,6 @@ dependencies:
   riverpod_lint: ^2.3.10
   rxdart: ^0.28.0
   share_plus: ^11.0.0
-  showcaseview: ^4.0.1
   siri_wave: ^2.3.0
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
@@ -176,6 +175,7 @@ dev_dependencies:
   plugin_platform_interface: any
   riverpod_generator: ^2.4.0
   very_good_analysis: ^9.0.0
+
 
 flutter_icons:
   android: true

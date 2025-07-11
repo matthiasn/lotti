@@ -1343,43 +1343,35 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAboutJournalEntries => 'Tagebucheinträge';
 
   @override
-  String get settingsAdvancedShowCaseAboutLottiTooltip =>
-      'Erfahren Sie mehr über die Lotti-Anwendung, einschließlich Version und Credits.';
-
-  @override
-  String get settingsAdvancedShowCaseApiKeyTooltip =>
-      'Verwalten Sie Ihre API-Schlüssel für verschiedene KI-Anbieter. Fügen Sie Schlüssel hinzu, bearbeiten oder löschen Sie sie, um Integrationen mit unterstützten Diensten wie OpenAI, Gemini und mehr zu konfigurieren. Stellen Sie eine sichere Handhabung sensibler Informationen sicher.';
-
-  @override
-  String get settingsAdvancedShowCaseConflictsTooltip =>
-      'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten.';
-
-  @override
-  String get settingsAdvancedShowCaseHealthImportTooltip =>
-      'Gesundheitsbezogene Daten aus externen Quellen importieren.';
-
-  @override
-  String get settingsAdvancedShowCaseLogsTooltip =>
-      'Zugriff auf Anwendungsprotokolle für Debugging und Überwachung.';
-
-  @override
-  String get settingsAdvancedShowCaseMaintenanceTooltip =>
-      'Wartungsaufgaben durchführen, um die Anwendungsleistung zu optimieren.';
-
-  @override
-  String get settingsAdvancedShowCaseMatrixSyncTooltip =>
-      'Konfigurieren und verwalten Sie die Matrix-Synchronisierungseinstellungen für eine nahtlose Datenintegration.';
-
-  @override
-  String get settingsAdvancedShowCaseModelsTooltip =>
-      'Define AI models that use inference providers';
-
-  @override
-  String get settingsAdvancedShowCaseSyncOutboxTooltip =>
-      'Elemente anzeigen und verwalten, die in der Outbox auf die Synchronisierung warten.';
-
-  @override
   String get settingsAdvancedTitle => 'Erweiterte Einstellungen';
+
+  @override
+  String get settingsAdvancedMatrixSyncSubtitle =>
+      'Matrix-Synchronisierungseinstellungen konfigurieren und verwalten';
+
+  @override
+  String get settingsAdvancedOutboxSubtitle =>
+      'Elemente anzeigen und verwalten, die auf Synchronisierung warten';
+
+  @override
+  String get settingsAdvancedConflictsSubtitle =>
+      'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten';
+
+  @override
+  String get settingsAdvancedLogsSubtitle =>
+      'Auf Anwendungsprotokolle zugreifen und überprüfen für Debugging';
+
+  @override
+  String get settingsAdvancedHealthImportSubtitle =>
+      'Gesundheitsbezogene Daten aus externen Quellen importieren';
+
+  @override
+  String get settingsAdvancedMaintenanceSubtitle =>
+      'Wartungsaufgaben durchführen, um die Anwendungsleistung zu optimieren';
+
+  @override
+  String get settingsAdvancedAboutSubtitle =>
+      'Erfahren Sie mehr über die Lotti-Anwendung';
 
   @override
   String get settingsAiApiKeys => 'AI Inference Providers';
@@ -1400,30 +1392,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesTitle => 'Kategorien';
 
   @override
-  String get settingsCategoryShowCaseActiveTooltip =>
-      'Aktivieren Sie diese Option, um die Kategorie als aktiv zu markieren. Aktive Kategorien sind derzeit in Verwendung und werden für eine bessere Zugänglichkeit gut sichtbar angezeigt.';
-
-  @override
-  String get settingsCategoryShowCaseColorTooltip =>
-      'Wählen Sie eine Farbe aus, die diese Kategorie repräsentiert. Sie können entweder einen gültigen HEX-Farbcode eingeben (z. B. #FF5733) oder die Farbauswahl rechts verwenden, um eine Farbe visuell auszuwählen.';
-
-  @override
-  String get settingsCategoryShowCaseDelTooltip =>
-      'Klicken Sie auf diese Schaltfläche, um die Kategorie zu löschen. Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann. Stellen Sie daher sicher, dass Sie die Kategorie entfernen möchten, bevor Sie fortfahren.';
-
-  @override
-  String get settingsCategoryShowCaseFavTooltip =>
-      'Aktivieren Sie diese Option, um die Kategorie als Favorit zu markieren. Lieblingskategorien sind leichter zugänglich und werden zur schnellen Referenz hervorgehoben.';
-
-  @override
-  String get settingsCategoryShowCaseNameTooltip =>
-      'Geben Sie einen klaren und relevanten Namen für die Kategorie ein. Halten Sie ihn kurz und beschreibend, damit Sie seinen Zweck leicht erkennen können.';
-
-  @override
-  String get settingsCategoryShowCasePrivateTooltip =>
-      'Aktivieren Sie diese Option, um die Kategorie als privat zu markieren. Private Kategorien sind nur für Sie sichtbar und helfen Ihnen, sensible oder persönliche Gewohnheiten und Aufgaben sicher zu organisieren.';
-
-  @override
   String get settingsConflictsResolutionTitle =>
       'Lösung von Synchronisierungskonflikten';
 
@@ -1435,46 +1403,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsDashboardSaveLabel => 'Save';
-
-  @override
-  String get settingsDashboardsShowCaseActiveTooltip =>
-      'Aktivieren Sie diesen Schalter, um das Dashboard als aktiv zu markieren. Aktive Dashboards sind derzeit in Verwendung und werden für eine bessere Zugänglichkeit gut sichtbar angezeigt.';
-
-  @override
-  String get settingsDashboardsShowCaseCatTooltip =>
-      'Wählen Sie eine Kategorie aus, die das Dashboard am besten beschreibt. Dies hilft Ihnen, Ihre Dashboards effektiv zu organisieren und zu kategorisieren. Beispiele: \'Gesundheit\', \'Produktivität\', \'Arbeit\'.';
-
-  @override
-  String get settingsDashboardsShowCaseCopyTooltip =>
-      'Tippen Sie hier, um dieses Dashboard zu kopieren. Dadurch können Sie das Dashboard duplizieren und an anderer Stelle verwenden.';
-
-  @override
-  String get settingsDashboardsShowCaseDelTooltip =>
-      'Tippen Sie auf diese Schaltfläche, um das Dashboard dauerhaft zu löschen. Seien Sie vorsichtig, da diese Aktion nicht rückgängig gemacht werden kann und alle zugehörigen Daten entfernt werden.';
-
-  @override
-  String get settingsDashboardsShowCaseDescrTooltip =>
-      'Geben Sie eine detaillierte Beschreibung für das Dashboard an. Dies hilft Ihnen, den Zweck und den Inhalt des Dashboards zu verstehen. Beispiele: \'Verfolgt tägliche Wellness-Aktivitäten\', \'Überwacht arbeitsbezogene Aufgaben und Ziele\'.';
-
-  @override
-  String get settingsDashboardsShowCaseHealthChartsTooltip =>
-      'Wählen Sie die Gesundheitsdiagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Gewicht\', \'Körperfettanteil\'.';
-
-  @override
-  String get settingsDashboardsShowCaseNameTooltip =>
-      'Geben Sie einen klaren und relevanten Namen für das Dashboard ein. Halten Sie ihn kurz und beschreibend, damit Sie seinen Zweck leicht erkennen können. Beispiele: \'Wellness-Tracker\', \'Tagesziele\', \'Arbeitsplan\'.';
-
-  @override
-  String get settingsDashboardsShowCasePrivateTooltip =>
-      'Aktivieren Sie diesen Schalter, um das Dashboard privat zu machen. Private Dashboards sind nur für Sie sichtbar und werden nicht mit anderen geteilt.';
-
-  @override
-  String get settingsDashboardsShowCaseSurveyChartsTooltip =>
-      'Wählen Sie die Umfragediagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Kundenzufriedenheit\', \'Mitarbeiterfeedback\'.';
-
-  @override
-  String get settingsDashboardsShowCaseWorkoutChartsTooltip =>
-      'Wählen Sie die Trainingsdiagramme aus, die Sie in Ihr Dashboard aufnehmen möchten. Beispiele: \'Gehen\', \'Laufen\', \'Schwimmen\'.';
 
   @override
   String get settingsDashboardsTitle => 'Dashboards';
@@ -1499,50 +1427,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Speichern';
-
-  @override
-  String get settingsHabitsShowCaseAlertTimeTooltip =>
-      'Legen Sie die Uhrzeit fest, zu der Sie eine Erinnerung oder einen Alarm für diese Gewohnheit erhalten möchten. So stellen Sie sicher, dass Sie die Ausführung nie verpassen. Beispiel: \'20:00 Uhr\'.';
-
-  @override
-  String get settingsHabitsShowCaseArchivedTooltip =>
-      'Diesen Schalter umschalten, um die Gewohnheit zu archivieren. Archivierte Gewohnheiten sind nicht mehr aktiv, bleiben aber für spätere Referenz oder Überprüfung gespeichert. Beispiele: \'Gitarre lernen\', \'Abgeschlossener Kurs\'.';
-
-  @override
-  String get settingsHabitsShowCaseCatTooltip =>
-      'Wähle eine Kategorie, die deine Gewohnheit am besten beschreibt, oder erstelle eine neue, indem du die Schaltfläche [+] auswählst.\nBeispiele: \'Gesundheit\', \'Produktivität\', \'Sport\'.';
-
-  @override
-  String get settingsHabitsShowCaseDashTooltip =>
-      'Wähle ein Dashboard aus, um deine Gewohnheit zu organisieren und zu verfolgen, oder erstelle ein neues Dashboard mit der Schaltfläche [+].\nBeispiele: \'Wellness-Tracker\', \'Tägliche Ziele\', \'Arbeitsplan\'.';
-
-  @override
-  String get settingsHabitsShowCaseDelHabitTooltip =>
-      'Tippe auf diese Schaltfläche, um die Gewohnheit dauerhaft zu löschen. Seien Sie vorsichtig, da diese Aktion nicht rückgängig gemacht werden kann und alle zugehörigen Daten entfernt werden.';
-
-  @override
-  String get settingsHabitsShowCaseDescrTooltip =>
-      'Gib eine kurze und aussagekräftige Beschreibung der Gewohnheit an. Füge alle relevanten Details oder\nKontext hinzu, um den Zweck und die Bedeutung der Gewohnheit klar zu definieren.\nBeispiele: \'Jeden Morgen 30 Minuten joggen, um die Fitness zu steigern\' oder \'Täglich ein Kapitel lesen, um Wissen und Konzentration zu verbessern\'.';
-
-  @override
-  String get settingsHabitsShowCaseNameTooltip =>
-      'Gib einen klaren und beschreibenden Namen für die Gewohnheit ein.\nVermeide zu lange Namen und halte ihn kurz genug, um die Gewohnheit leicht zu identifizieren.\nBeispiele: \'Morgenjoggen\', \'Täglich lesen\'.';
-
-  @override
-  String get settingsHabitsShowCasePriorTooltip =>
-      'Schalte den Schalter um, um der Gewohnheit Priorität zuzuweisen. Gewohnheiten mit hoher Priorität stellen oft wichtige oder dringende Aufgaben dar, auf die du dich konzentrieren möchtest. Beispiele: \'Täglich trainieren\', \'An Projekt arbeiten\'.';
-
-  @override
-  String get settingsHabitsShowCasePrivateTooltip =>
-      'Verwende diesen Schalter, um die Gewohnheit als privat zu markieren. Private Gewohnheiten sind nur für dich sichtbar und werden nicht mit anderen geteilt. Beispiele: \'Persönliches Tagebuch\', \'Meditation\'.';
-
-  @override
-  String get settingsHabitsShowCaseStarDateTooltip =>
-      'Wähle das Datum aus, an dem du mit der Verfolgung dieser Gewohnheit beginnen möchtest. Dies hilft, den Beginn der Gewohnheit zu definieren und ermöglicht eine genaue Fortschrittsüberwachung. Beispiel: \'1. Juli 2025\'.';
-
-  @override
-  String get settingsHabitsShowCaseStartTimeTooltip =>
-      'Stelle die Uhrzeit ein, ab der diese Gewohnheit in deinem Zeitplan sichtbar sein oder erscheinen soll. Dies hilft, deinen Tag effektiv zu organisieren. Beispiel: \'7:00 Uhr\'.';
 
   @override
   String get settingsHabitsTitle => 'Gewohnheiten';
@@ -1696,30 +1580,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Speichern';
 
   @override
-  String get settingsMeasurableShowCaseAggreTypeTooltip =>
-      'Wählen Sie die Standardaggregationsart für die Messdaten. Dies bestimmt, wie die Daten im Zeitverlauf zusammengefasst werden. \nOptionen: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.';
-
-  @override
-  String get settingsMeasurableShowCaseDelTooltip =>
-      'Klicken Sie auf diese Schaltfläche, um die Messgröße zu löschen. Bitte beachten Sie, dass diese Aktion unwiderruflich ist. Stellen Sie daher sicher, dass Sie die Messgröße entfernen möchten, bevor Sie fortfahren.';
-
-  @override
-  String get settingsMeasurableShowCaseDescrTooltip =>
-      'Geben Sie eine kurze und aussagekräftige Beschreibung der Messgröße an. Fügen Sie alle relevanten Details oder Kontext hinzu, um deren Zweck und Bedeutung klar zu definieren. \nBeispiele: \'Körpergewicht in Kilogramm gemessen\'';
-
-  @override
-  String get settingsMeasurableShowCaseNameTooltip =>
-      'Geben Sie einen klaren und beschreibenden Namen für die Messgröße ein.\nVermeiden Sie zu lange Namen und machen Sie ihn prägnant genug, um die Messgröße leicht zu identifizieren. \nBeispiele: \'Gewicht\', \'Blutdruck\'.';
-
-  @override
-  String get settingsMeasurableShowCasePrivateTooltip =>
-      'Aktivieren Sie diese Option, um die Messgröße als privat zu markieren. Private Messgrößen sind nur für Sie sichtbar und helfen Ihnen, sensible oder persönliche Daten sicher zu verwalten.';
-
-  @override
-  String get settingsMeasurableShowCaseUnitTooltip =>
-      'Geben Sie eine klare und prägnante Einheitenabkürzung für die Messgröße ein. Dies hilft, die Maßeinheit leicht zu identifizieren.';
-
-  @override
   String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional):';
 
   @override
@@ -1759,26 +1619,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTagsSaveLabel => 'Speichern';
 
   @override
-  String get settingsTagsShowCaseDeleteTooltip =>
-      'Entfernen Sie dieses Tag dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.';
-
-  @override
-  String get settingsTagsShowCaseHideTooltip =>
-      'Aktivieren Sie diese Option, um dieses Tag in Vorschlägen auszublenden. Verwenden Sie es für Tags, die persönlich sind oder nicht häufig benötigt werden.';
-
-  @override
-  String get settingsTagsShowCaseNameTooltip =>
-      'Geben Sie einen klaren und relevanten Namen für das Tag ein. Halten Sie es kurz und beschreibend, damit Sie Ihre Gewohnheiten leicht kategorisieren können. Beispiele: \"Gesundheit\", \"Produktivität\", \"Achtsamkeit\".';
-
-  @override
-  String get settingsTagsShowCasePrivateTooltip =>
-      'Aktivieren Sie diese Option, um das Tag privat zu machen. Private Tags sind nur für Sie sichtbar und werden nicht mit anderen geteilt.';
-
-  @override
-  String get settingsTagsShowCaseTypeTooltip =>
-      'Wählen Sie den Typ des Tags, um es richtig zu kategorisieren: \n[Tag]-> Allgemeine Kategorien wie \'Gesundheit\' oder \'Produktivität\'. \n[Person]-> Verwendung zum Markieren bestimmter Personen. \n[Story]-> Tags an Storys anhängen, um die Organisation zu verbessern.';
-
-  @override
   String get settingsTagsTagName => 'Tag:';
 
   @override
@@ -1806,28 +1646,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemingLight => 'Helles Erscheinungsbild';
 
   @override
-  String get settingsThemingShowCaseDarkTooltip =>
-      'Wählen Sie das dunkle Thema für ein dunkleres Erscheinungsbild.';
-
-  @override
-  String get settingsThemingShowCaseLightTooltip =>
-      'Wählen Sie das helle Thema für ein helleres Erscheinungsbild.';
-
-  @override
-  String get settingsThemingShowCaseModeTooltip =>
-      'Wählen Sie Ihren bevorzugten Themenmodus: Hell, Dunkel oder Automatisch.';
-
-  @override
   String get settingsThemingTitle => 'Farbschema';
-
-  @override
-  String get showcaseCloseButton => 'Schließen';
-
-  @override
-  String get showcaseNextButton => 'Weiter';
-
-  @override
-  String get showcasePreviousButton => 'Zurück';
 
   @override
   String get speechModalAddTranscription => 'Transkription hinzufügen';
