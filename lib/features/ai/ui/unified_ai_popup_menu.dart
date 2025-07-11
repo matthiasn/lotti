@@ -7,7 +7,6 @@ import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/index.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Unified AI popup menu that shows available prompts for the current entity
 class UnifiedAiPopUpMenu extends ConsumerWidget {
@@ -67,10 +66,10 @@ class UnifiedAiModal {
       return;
     }
 
-    final initialModalPage = ModernModalUtils.modernModalSheetPage(
+    final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.aiAssistantTitle,
-      showDivider: true,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
@@ -97,9 +96,8 @@ class UnifiedAiModal {
         scrollController: scrollController,
       );
     }).toList();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return WoltModalSheet.show<void>(
+    return ModalUtils.showMultiPageModal<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
         return [
@@ -107,17 +105,7 @@ class UnifiedAiModal {
           ...promptSliverPages,
         ];
       },
-      modalTypeBuilder: (context) {
-        final size = MediaQuery.of(context).size.width;
-        return size < 600
-            ? WoltModalType.bottomSheet()
-            : WoltModalType.dialog();
-      },
-      barrierDismissible: true,
       pageIndexNotifier: pageIndexNotifier,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
     );
   }
 }

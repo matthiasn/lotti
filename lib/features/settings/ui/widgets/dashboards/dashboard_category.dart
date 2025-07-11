@@ -8,7 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class SelectDashboardCategoryWidget extends StatelessWidget {
   const SelectDashboardCategoryWidget({
@@ -40,7 +40,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
         controller.text = category?.name ?? '';
 
         void onTap() {
-          ModernModalUtils.showSinglePageModal<void>(
+          ModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.dashboardCategoryLabel,
             builder: (BuildContext _) {

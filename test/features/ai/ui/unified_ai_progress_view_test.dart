@@ -677,11 +677,17 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Find the Padding widget
-      final padding = find.byType(Padding);
-      expect(padding, findsOneWidget);
+      // Find the specific Padding widget in UnifiedAiProgressContent
+      final padding = find.descendant(
+        of: find.byType(UnifiedAiProgressContent),
+        matching: find.byType(Padding),
+      );
 
-      final paddingWidget = tester.widget<Padding>(padding);
+      // Should find at least one Padding widget
+      expect(padding, findsWidgets);
+
+      // Get the first (outermost) Padding widget
+      final paddingWidget = tester.widget<Padding>(padding.first);
       final edgeInsets = paddingWidget.padding as EdgeInsets;
 
       expect(edgeInsets.top, 10);
@@ -711,16 +717,24 @@ void main() {
       // Find the main content text
       expect(find.text('Complete!'), findsOneWidget);
 
-      // Find the Padding widget
-      final padding = find.byType(Padding);
-      expect(padding, findsOneWidget);
-
-      // Find the ConstrainedBox within UnifiedAiProgressContent
-      final constrainedBox = find.descendant(
+      // Find Padding widgets within UnifiedAiProgressContent
+      final padding = find.descendant(
         of: find.byType(UnifiedAiProgressContent),
-        matching: find.byType(ConstrainedBox),
+        matching: find.byType(Padding),
       );
-      expect(constrainedBox, findsOneWidget);
+      expect(padding, findsWidgets);
+
+      // Find the Container with constraints within UnifiedAiProgressContent
+      final container = find.descendant(
+        of: find.byType(UnifiedAiProgressContent),
+        matching: find.byType(Container),
+      );
+      expect(container, findsOneWidget);
+
+      // Verify the container has the expected constraints
+      final containerWidget = tester.widget<Container>(container);
+      expect(containerWidget.constraints, isNotNull);
+      expect(containerWidget.constraints!.minWidth, 600);
     });
   });
 }

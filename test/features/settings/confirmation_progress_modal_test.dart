@@ -71,7 +71,6 @@ void main() {
       expect(find.text('DELETE'), findsOneWidget);
       expect(find.text('CANCEL'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
     testWidgets('shows non-destructive modal without warning icon',
@@ -160,8 +159,7 @@ void main() {
       expect(find.text('Test message'), findsNothing);
     });
 
-    testWidgets('cancels operation when close button is pressed',
-        (tester) async {
+    testWidgets('cancels operation when tapping outside modal', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -194,8 +192,8 @@ void main() {
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
 
-      // Tap close button
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      // Tap outside the modal (barrier)
+      await tester.tapAt(const Offset(50, 50));
       await tester.pumpAndSettle();
 
       // Verify modal was dismissed
@@ -255,7 +253,7 @@ void main() {
       // Verify progress page is shown
       expect(find.text('Processing...'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsAtLeastNWidgets(1));
+      // No close button since hasTopBarLayer is false
 
       // Wait for operation to complete
       await tester.pump(const Duration(milliseconds: 250));

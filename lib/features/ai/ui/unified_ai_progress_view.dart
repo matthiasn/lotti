@@ -11,7 +11,7 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/modals.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Progress view for unified AI inference
@@ -185,8 +185,9 @@ class UnifiedAiProgressContent extends ConsumerWidget {
             left: 20,
             right: 20,
           ),
-          child: ConstrainedBox(
+          child: Container(
             constraints: const BoxConstraints(minWidth: 600),
+            padding: const EdgeInsets.only(top: 20),
             child: Text(
               state,
               style: textStyle,
@@ -223,10 +224,13 @@ class UnifiedAiProgressUtils {
       ),
       slivers: [
         SliverToBoxAdapter(
+          child: GradientContainer(
             child: UnifiedAiProgressContent(
-          entityId: entityId,
-          promptId: prompt.id,
-        )),
+              entityId: entityId,
+              promptId: prompt.id,
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -61,7 +61,6 @@ void main() {
           find.text('Sync tags, measurables, dashboards, habits, categories'),
           findsAtLeastNWidgets(1));
       expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
-      expect(find.text('Purge audio models'), findsAtLeastNWidgets(1));
       expect(find.text('Recreate full-text index'), findsAtLeastNWidgets(1));
       expect(find.text('Re-sync messages'), findsAtLeastNWidgets(1));
     });
@@ -279,25 +278,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('purge audio models button opens audio purge modal',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const MaintenancePage(),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final purgeButton = find.text('Purge audio models').first;
-      expect(purgeButton, findsOneWidget);
-      await tester.ensureVisible(purgeButton);
-      await tester.tap(purgeButton);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Purge audio models'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('recreate fts5 button opens fts5 recreate modal',

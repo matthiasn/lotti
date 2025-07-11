@@ -61,10 +61,7 @@ class DurationWidget extends ConsumerWidget {
         final saveFn = ref.read(provider.notifier).save;
 
         return GestureDetector(
-          onTap: () => EntryDateTimeModal.show<void>(
-            entry: item,
-            context: context,
-          ),
+          onTap: () => EntryDateTimeModal.show(entry: item, context: context),
           child: Visibility(
             visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
             child: Row(

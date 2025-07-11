@@ -10,10 +10,9 @@ class CreateEntryModal {
     required String? linkedFromId,
     required String? categoryId,
   }) async {
-    await ModernModalUtils.showSinglePageModal<void>(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createEntryTitle,
-      showDivider: true,
       builder: (_) => Column(
         children: [
           const SizedBox(height: 8),

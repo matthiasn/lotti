@@ -4,7 +4,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ReSyncModalContent extends StatefulWidget {
   const ReSyncModalContent({super.key});
@@ -68,7 +68,7 @@ class _ReSyncModalContentState extends State<ReSyncModalContent> {
 
 class ReSyncModal {
   static Future<void> show(BuildContext context) async {
-    await ModernModalUtils.showSinglePageModal<void>(
+    await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: 'Re-sync entries',
       builder: (_) => const ReSyncModalContent(),

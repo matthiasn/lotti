@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
-import 'package:lotti/widgets/modal/modern_modal_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class DateTimeField extends StatefulWidget {
   const DateTimeField({
@@ -55,8 +55,7 @@ class _DateTimeFieldState extends State<DateTimeField> {
         text: widget.dateTime != null ? df.format(widget.dateTime!) : '',
       ),
       onTap: () async {
-        final newDateTime =
-            await ModernModalUtils.showSinglePageModal<DateTime>(
+        final newDateTime = await ModalUtils.showSinglePageModal<DateTime>(
           context: context,
           builder: (_) {
             return DateTimeBottomSheet(
