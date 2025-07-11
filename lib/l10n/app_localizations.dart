@@ -2565,65 +2565,53 @@ abstract class AppLocalizations {
   /// **'Journal Entries'**
   String get settingsAboutJournalEntries;
 
-  /// No description provided for @settingsAdvancedShowCaseAboutLottiTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn more about the Lotti application, including version and credits.'**
-  String get settingsAdvancedShowCaseAboutLottiTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseApiKeyTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage your AI inference providers for various AI services. Add, edit, or delete providers to configure integrations with supported services like OpenAI, Gemini, Nebius, Ollama, and more. Ensure secure handling of sensitive information.'**
-  String get settingsAdvancedShowCaseApiKeyTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseConflictsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Resolve synchronization conflicts to ensure data consistency.'**
-  String get settingsAdvancedShowCaseConflictsTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseHealthImportTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Import health-related data from external sources.'**
-  String get settingsAdvancedShowCaseHealthImportTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseLogsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Access and review application logs for debugging and monitoring.'**
-  String get settingsAdvancedShowCaseLogsTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseMaintenanceTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Perform maintenance tasks to optimize application performance.'**
-  String get settingsAdvancedShowCaseMaintenanceTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseMatrixSyncTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure and manage Matrix synchronization settings for seamless data integration.'**
-  String get settingsAdvancedShowCaseMatrixSyncTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseModelsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Define AI models that use inference providers'**
-  String get settingsAdvancedShowCaseModelsTooltip;
-
-  /// No description provided for @settingsAdvancedShowCaseSyncOutboxTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'View and manage items waiting to be synchronized in the outbox.'**
-  String get settingsAdvancedShowCaseSyncOutboxTooltip;
-
   /// No description provided for @settingsAdvancedTitle.
   ///
   /// In en, this message translates to:
   /// **'Advanced Settings'**
   String get settingsAdvancedTitle;
+
+  /// No description provided for @settingsAdvancedMatrixSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure and manage Matrix synchronization settings'**
+  String get settingsAdvancedMatrixSyncSubtitle;
+
+  /// No description provided for @settingsAdvancedOutboxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage items waiting to be synchronized'**
+  String get settingsAdvancedOutboxSubtitle;
+
+  /// No description provided for @settingsAdvancedConflictsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve synchronization conflicts to ensure data consistency'**
+  String get settingsAdvancedConflictsSubtitle;
+
+  /// No description provided for @settingsAdvancedLogsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access and review application logs for debugging'**
+  String get settingsAdvancedLogsSubtitle;
+
+  /// No description provided for @settingsAdvancedHealthImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import health-related data from external sources'**
+  String get settingsAdvancedHealthImportSubtitle;
+
+  /// No description provided for @settingsAdvancedMaintenanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform maintenance tasks to optimize application performance'**
+  String get settingsAdvancedMaintenanceSubtitle;
+
+  /// No description provided for @settingsAdvancedAboutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more about the Lotti application'**
+  String get settingsAdvancedAboutSubtitle;
 
   /// No description provided for @settingsAiApiKeys.
   ///
@@ -2661,42 +2649,6 @@ abstract class AppLocalizations {
   /// **'Categories'**
   String get settingsCategoriesTitle;
 
-  /// No description provided for @settingsCategoryShowCaseActiveTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle this option to mark the category as active. Active categories are currently in use and will be prominently displayed for easier accessibility.'**
-  String get settingsCategoryShowCaseActiveTooltip;
-
-  /// No description provided for @settingsCategoryShowCaseColorTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a color to represent this category. You can either enter a valid HEX color code (e.g., #FF5733) or use the color picker on the right to choose a color visually.'**
-  String get settingsCategoryShowCaseColorTooltip;
-
-  /// No description provided for @settingsCategoryShowCaseDelTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Click this button to delete the category. Please note that this action is irreversible, so ensure you want to remove the category before proceeding.'**
-  String get settingsCategoryShowCaseDelTooltip;
-
-  /// No description provided for @settingsCategoryShowCaseFavTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'\'Enable this option to mark the category as a favorite. Favorite categories are easier to access and are highlighted for quick reference.\''**
-  String get settingsCategoryShowCaseFavTooltip;
-
-  /// No description provided for @settingsCategoryShowCaseNameTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a clear and relevant name for the category. Keep it short and descriptive so you can easily identify its purpose.'**
-  String get settingsCategoryShowCaseNameTooltip;
-
-  /// No description provided for @settingsCategoryShowCasePrivateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle this option to mark the category as private. Private categories are only visible to you and help in organizing sensitive or personal habits and tasks securely.'**
-  String get settingsCategoryShowCasePrivateTooltip;
-
   /// No description provided for @settingsConflictsResolutionTitle.
   ///
   /// In en, this message translates to:
@@ -2720,66 +2672,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get settingsDashboardSaveLabel;
-
-  /// No description provided for @settingsDashboardsShowCaseActiveTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle this switch to mark the dashboard as active. Active dashboards are currently in use and will be prominently displayed for easier accessibility.'**
-  String get settingsDashboardsShowCaseActiveTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseCatTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a category that best describes the dashboard. This helps in organizing and categorizing your dashboards effectively. Examples: \'Health\', \'Productivity\', \'Work\'.'**
-  String get settingsDashboardsShowCaseCatTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseCopyTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to copy this dashboard. This will allow you to duplicate the dashboard and use them elsewhere.'**
-  String get settingsDashboardsShowCaseCopyTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseDelTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap this button to permanently delete the dashboard. Be cautious, as this action cannot be undone and all related data will be removed.'**
-  String get settingsDashboardsShowCaseDelTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseDescrTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Provide a detailed description for the dashboard. This helps in understanding the purpose and contents of the dashboard. Examples: \'Tracks daily wellness activities\', \'Monitors work-related tasks and goals\'.'**
-  String get settingsDashboardsShowCaseDescrTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseHealthChartsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the health charts you want to include in your dashboard. Examples: \'Weight\', \'Body Fat Percentage\'.'**
-  String get settingsDashboardsShowCaseHealthChartsTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseNameTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a clear and relevant name for the dashboard. Keep it short and descriptive so you can easily identify its purpose. Examples: \'Wellness Track\', \'Daily Goals\', \'Work Schedule\'.'**
-  String get settingsDashboardsShowCaseNameTooltip;
-
-  /// No description provided for @settingsDashboardsShowCasePrivateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle this switch to make the dashboard private. Private dashboards are only visible to you and won\'t be shared with others.'**
-  String get settingsDashboardsShowCasePrivateTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseSurveyChartsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the survey charts you want to include in your dashboard. Examples: \'Customer Satisfaction\', \'Employee Feedback\'.'**
-  String get settingsDashboardsShowCaseSurveyChartsTooltip;
-
-  /// No description provided for @settingsDashboardsShowCaseWorkoutChartsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the workout charts you want to include in your dashboard. Examples: \'Walking\', \'Running\', \'Swimming\'.'**
-  String get settingsDashboardsShowCaseWorkoutChartsTooltip;
 
   /// No description provided for @settingsDashboardsTitle.
   ///
@@ -2828,72 +2720,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get settingsHabitsSaveLabel;
-
-  /// No description provided for @settingsHabitsShowCaseAlertTimeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Set the specific time you want to receive a reminder or alert for this habit. This ensures you never miss completing it. Example: \'8:00 PM\'.'**
-  String get settingsHabitsShowCaseAlertTimeTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseArchivedTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle this switch to archive the habit. Archived habits are no longer active but remain saved for future reference or review. Examples: \'Learn Guitar\', \'Completed Course\'.'**
-  String get settingsHabitsShowCaseArchivedTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseCatTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a category that best describes your habit or create a new one by selecting the [+] button.\nExamples: \'Health\', \'Productivity\', \'Exercise\'.'**
-  String get settingsHabitsShowCaseCatTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseDashTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a dashboard to organize and track your habit, or create a new dashboard using the [+] button.\nExamples: \'Wellness Tracker\', \'Daily Goals\', \'Work Schedule\'.'**
-  String get settingsHabitsShowCaseDashTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseDelHabitTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap this button to permanently delete the habit. Be cautious, as this action cannot be undone and all related data will be removed.'**
-  String get settingsHabitsShowCaseDelHabitTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseDescrTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Provide a brief and meaningful description of the habit. Include any relevant details or \ncontext to clearly define the habit\'s purpose and importance. \nExamples: \'Jog for 30 minutes every morning to boost fitness\' or \'Read one chapter daily to improve knowledge and focus\''**
-  String get settingsHabitsShowCaseDescrTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseNameTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a clear and descriptive name for the habit.\nAvoid overly long names, and make it concise enough to identify the habit easily. \nExamples: \'Morning Jogs\', \'Read Daily\'.'**
-  String get settingsHabitsShowCaseNameTooltip;
-
-  /// No description provided for @settingsHabitsShowCasePriorTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle the switch to assign priority to the habit. High-priority habits often represent essential or urgent tasks you want to focus on. Examples: \'Exercise Daily\', \'Work on Project\'.'**
-  String get settingsHabitsShowCasePriorTooltip;
-
-  /// No description provided for @settingsHabitsShowCasePrivateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Use this switch to mark the habit as private. Private habits are only visible to you and will not be shared with others. Examples: \'Personal Journal\', \'Meditation\'.'**
-  String get settingsHabitsShowCasePrivateTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseStarDateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the date you want to start tracking this habit. This helps to define when the habit begins and allows for accurate progress monitoring. Example: \'July 1, 2025\'.'**
-  String get settingsHabitsShowCaseStarDateTooltip;
-
-  /// No description provided for @settingsHabitsShowCaseStartTimeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Set the time from which this habit should be visible or start appearing in your schedule. This helps organize your day effectively. Example: \'7:00 AM\'.'**
-  String get settingsHabitsShowCaseStartTimeTooltip;
 
   /// No description provided for @settingsHabitsTitle.
   ///
@@ -3172,42 +2998,6 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get settingsMeasurableSaveLabel;
 
-  /// No description provided for @settingsMeasurableShowCaseAggreTypeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the default aggregation type for the measurable data. This determines how the data will be summarized over time. \nOptions: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.'**
-  String get settingsMeasurableShowCaseAggreTypeTooltip;
-
-  /// No description provided for @settingsMeasurableShowCaseDelTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Click this button to delete the measurable type. Please note that this action is irreversible, so ensure you want to remove the measurable type before proceeding.'**
-  String get settingsMeasurableShowCaseDelTooltip;
-
-  /// No description provided for @settingsMeasurableShowCaseDescrTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Provide a brief and meaningful description of the measurable type. Include any relevant details or context to clearly define its purpose and importance. \nExamples: \'Body weight measured in kilograms\''**
-  String get settingsMeasurableShowCaseDescrTooltip;
-
-  /// No description provided for @settingsMeasurableShowCaseNameTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a clear and descriptive name for the measurable type.\nAvoid overly long names, and make it concise enough to identify the measurable type easily. \nExamples: \'Weight\', \'Blood Pressure\'.'**
-  String get settingsMeasurableShowCaseNameTooltip;
-
-  /// No description provided for @settingsMeasurableShowCasePrivateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle this option to mark the measurable type as private. Private measurable types are only visible to you and help in organizing sensitive or personal data securely.'**
-  String get settingsMeasurableShowCasePrivateTooltip;
-
-  /// No description provided for @settingsMeasurableShowCaseUnitTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a clear and concise unit abbreviation for the measurable type. This helps in identifying the unit of measurement easily.'**
-  String get settingsMeasurableShowCaseUnitTooltip;
-
   /// No description provided for @settingsMeasurableUnitLabel.
   ///
   /// In en, this message translates to:
@@ -3280,36 +3070,6 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get settingsTagsSaveLabel;
 
-  /// No description provided for @settingsTagsShowCaseDeleteTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this tag permanently. This action cannot be undone.'**
-  String get settingsTagsShowCaseDeleteTooltip;
-
-  /// No description provided for @settingsTagsShowCaseHideTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable this option to hide this tag from suggestions. Use it for tags that are personal or not commonly needed.'**
-  String get settingsTagsShowCaseHideTooltip;
-
-  /// No description provided for @settingsTagsShowCaseNameTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a clear and relevant name for the tag. Keep it short and descriptive so you can easily categorize your habits Examples: \"Health\", \"Productivity\", \"Mindfulness\".'**
-  String get settingsTagsShowCaseNameTooltip;
-
-  /// No description provided for @settingsTagsShowCasePrivateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable this option to make the tag private. Private tags are only visible to you and won\'t be shared with others.'**
-  String get settingsTagsShowCasePrivateTooltip;
-
-  /// No description provided for @settingsTagsShowCaseTypeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the type of tag to categorize it properly: \n[Tag]-> General categories like \'Health\' or \'Productivity\'. \n[Person]-> Use for tagging specific individuals. \n[Story]-> Attach tags to stories for better organization.'**
-  String get settingsTagsShowCaseTypeTooltip;
-
   /// No description provided for @settingsTagsTagName.
   ///
   /// In en, this message translates to:
@@ -3364,47 +3124,11 @@ abstract class AppLocalizations {
   /// **'Light Appearance'**
   String get settingsThemingLight;
 
-  /// No description provided for @settingsThemingShowCaseDarkTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose the dark theme for a darker appearance.'**
-  String get settingsThemingShowCaseDarkTooltip;
-
-  /// No description provided for @settingsThemingShowCaseLightTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose the light theme for a brighter appearance.'**
-  String get settingsThemingShowCaseLightTooltip;
-
-  /// No description provided for @settingsThemingShowCaseModeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Select your preferred theme mode: Light, Dark, or Automatic.'**
-  String get settingsThemingShowCaseModeTooltip;
-
   /// No description provided for @settingsThemingTitle.
   ///
   /// In en, this message translates to:
   /// **'Theming'**
   String get settingsThemingTitle;
-
-  /// No description provided for @showcaseCloseButton.
-  ///
-  /// In en, this message translates to:
-  /// **'close'**
-  String get showcaseCloseButton;
-
-  /// No description provided for @showcaseNextButton.
-  ///
-  /// In en, this message translates to:
-  /// **'next'**
-  String get showcaseNextButton;
-
-  /// No description provided for @showcasePreviousButton.
-  ///
-  /// In en, this message translates to:
-  /// **'previous'**
-  String get showcasePreviousButton;
 
   /// No description provided for @speechModalAddTranscription.
   ///

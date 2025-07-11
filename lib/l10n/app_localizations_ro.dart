@@ -1343,43 +1343,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAboutJournalEntries => 'Intrări jurnal';
 
   @override
-  String get settingsAdvancedShowCaseAboutLottiTooltip =>
-      'Aflați mai multe despre aplicația Lotti, inclusiv versiunea și creditele.';
-
-  @override
-  String get settingsAdvancedShowCaseApiKeyTooltip =>
-      'Administrați cheile API pentru diverși furnizori de inteligență artificială. Adăugați, editați sau ștergeți chei pentru a configura integrări cu servicii compatibile precum OpenAI, Gemini și altele. Asigurați-vă că informațiile sensibile sunt gestionate în siguranță.';
-
-  @override
-  String get settingsAdvancedShowCaseConflictsTooltip =>
-      'Rezolvați conflictele de sincronizare pentru a asigura consecvența datelor.';
-
-  @override
-  String get settingsAdvancedShowCaseHealthImportTooltip =>
-      'Importați date legate de sănătate din surse externe.';
-
-  @override
-  String get settingsAdvancedShowCaseLogsTooltip =>
-      'Accesați și revizuiți jurnalele aplicației pentru depanare și monitorizare.';
-
-  @override
-  String get settingsAdvancedShowCaseMaintenanceTooltip =>
-      'Efectuați sarcini de întreținere pentru a optimiza performanța aplicației.';
-
-  @override
-  String get settingsAdvancedShowCaseMatrixSyncTooltip =>
-      'Configurați și gestionați setările de sincronizare Matrix pentru o integrare perfectă a datelor.';
-
-  @override
-  String get settingsAdvancedShowCaseModelsTooltip =>
-      'Define AI models that use inference providers';
-
-  @override
-  String get settingsAdvancedShowCaseSyncOutboxTooltip =>
-      'Vizualizați și gestionați elementele care așteaptă să fie sincronizate în căsuța de ieșire.';
-
-  @override
   String get settingsAdvancedTitle => 'Setari Avansate';
+
+  @override
+  String get settingsAdvancedMatrixSyncSubtitle =>
+      'Configurați și gestionați setările de sincronizare Matrix';
+
+  @override
+  String get settingsAdvancedOutboxSubtitle =>
+      'Vizualizați și gestionați elementele care așteaptă sincronizarea';
+
+  @override
+  String get settingsAdvancedConflictsSubtitle =>
+      'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
+
+  @override
+  String get settingsAdvancedLogsSubtitle =>
+      'Accesați și examinați log-urile aplicației pentru depanare';
+
+  @override
+  String get settingsAdvancedHealthImportSubtitle =>
+      'Importați date legate de sănătate din surse externe';
+
+  @override
+  String get settingsAdvancedMaintenanceSubtitle =>
+      'Efectuați sarcini de întreținere pentru a optimiza performanța aplicației';
+
+  @override
+  String get settingsAdvancedAboutSubtitle =>
+      'Aflați mai multe despre aplicația Lotti';
 
   @override
   String get settingsAiApiKeys => 'AI Inference Providers';
@@ -1400,30 +1392,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categorii';
 
   @override
-  String get settingsCategoryShowCaseActiveTooltip =>
-      'Comutați această opțiune pentru a marca categoria ca activă. Categoriile active sunt utilizate în prezent și vor fi afișate proeminent pentru o accesibilitate mai ușoară.';
-
-  @override
-  String get settingsCategoryShowCaseColorTooltip =>
-      'Selectează o culoare pentru a reprezenta această categorie. Poți introduce un cod de culoare HEX valid (de exemplu, #FF5733) sau poți utiliza selectorul de culori din dreapta pentru a alege o culoare vizual.';
-
-  @override
-  String get settingsCategoryShowCaseDelTooltip =>
-      'Apasă acest buton pentru a șterge categoria. Reține că această acțiune este ireversibilă, așa că asigură-te că vrei să elimini categoria înainte de a continua.';
-
-  @override
-  String get settingsCategoryShowCaseFavTooltip =>
-      'Activează această opțiune pentru a marca categoria ca favorită. Categoriile favorite sunt mai ușor de accesat și sunt evidențiate pentru o referință rapidă.';
-
-  @override
-  String get settingsCategoryShowCaseNameTooltip =>
-      'Introdu un nume clar și relevant pentru categorie. Păstrează-l scurt și descriptiv, astfel încât să poți identifica cu ușurință scopul său.';
-
-  @override
-  String get settingsCategoryShowCasePrivateTooltip =>
-      'Activează această opțiune pentru a marca categoria ca privată. Categoriile private sunt vizibile doar pentru tine și te ajută să organizezi în siguranță obiceiuri și sarcini sensibile sau personale.';
-
-  @override
   String get settingsConflictsResolutionTitle =>
       'Rezolvarea Conflictelor de Sincronizare';
 
@@ -1435,46 +1403,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsDashboardSaveLabel => 'Save';
-
-  @override
-  String get settingsDashboardsShowCaseActiveTooltip =>
-      'Comută acest buton pentru a marca tabloul de bord ca activ. Tablourile de bord active sunt utilizate în prezent și vor fi afișate proeminent pentru o accesibilitate mai ușoară.';
-
-  @override
-  String get settingsDashboardsShowCaseCatTooltip =>
-      'Selectează o categorie care descrie cel mai bine tabloul de bord. Acest lucru ajută la organizarea și clasificarea eficientă a tablourilor de bord. Exemple: \"Sănătate\", \"Productivitate\", \"Muncă\".';
-
-  @override
-  String get settingsDashboardsShowCaseCopyTooltip =>
-      'Atinge pentru a copia acest tablou de bord. Acest lucru îți va permite să duplici tabloul de bord și să îl utilizezi în altă parte.';
-
-  @override
-  String get settingsDashboardsShowCaseDelTooltip =>
-      'Atinge acest buton pentru a șterge definitiv tabloul de bord. Fii atent, deoarece această acțiune nu poate fi anulată și toate datele aferente vor fi eliminate.';
-
-  @override
-  String get settingsDashboardsShowCaseDescrTooltip =>
-      'Oferă o descriere detaliată pentru tabloul de bord. Acest lucru ajută la înțelegerea scopului și a conținutului tabloului de bord. Exemple: \"Urmărește activitățile zilnice de wellness\", \"Monitorizează sarcinile și obiectivele legate de muncă\".';
-
-  @override
-  String get settingsDashboardsShowCaseHealthChartsTooltip =>
-      'Selectează diagramele de sănătate pe care dorești să le incluzi în tabloul de bord. Exemple: \"Greutate\", \"Procentaj de grăsime corporală\".';
-
-  @override
-  String get settingsDashboardsShowCaseNameTooltip =>
-      'Introdu un nume clar și relevant pentru tabloul de bord. Păstrează-l scurt și descriptiv, astfel încât să poți identifica cu ușurință scopul său. Exemple: \"Urmărire Wellness\", \"Obiective Zilnice\", \"Program de Lucru\".';
-
-  @override
-  String get settingsDashboardsShowCasePrivateTooltip =>
-      'Comută acest buton pentru a face tabloul de bord privat. Tablourile de bord private sunt vizibile doar pentru tine și nu vor fi partajate cu alții.';
-
-  @override
-  String get settingsDashboardsShowCaseSurveyChartsTooltip =>
-      'Selectează diagramele de sondaj pe care dorești să le incluzi în tabloul de bord. Exemple: \"Satisfacția clienților\", \"Feedbackul angajaților\".';
-
-  @override
-  String get settingsDashboardsShowCaseWorkoutChartsTooltip =>
-      'Selectează diagramele de antrenament pe care dorești să le incluzi în tabloul de bord. Exemple: \"Mers pe jos\", \"Alergare\", \"Înot\".';
 
   @override
   String get settingsDashboardsTitle => 'Panouri de bord';
@@ -1499,50 +1427,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Salvează';
-
-  @override
-  String get settingsHabitsShowCaseAlertTimeTooltip =>
-      'Setează ora specifică la care dorești să primești o mementă sau o alertă pentru acest obicei. Acest lucru asigură că nu uiți niciodată să îl finalizezi. Exemplu: \"20:00\".';
-
-  @override
-  String get settingsHabitsShowCaseArchivedTooltip =>
-      'Comută acest buton pentru a arhiva obiceiul. Obiceiurile arhivate nu mai sunt active, dar rămân salvate pentru referințe sau revizuiri ulterioare. Exemple: \"Învață chitară\", \"Curs finalizat\".';
-
-  @override
-  String get settingsHabitsShowCaseCatTooltip =>
-      'Alege o categorie care descrie cel mai bine obiceiul tău sau creează una nouă selectând butonul [+].\nExemple: \"Sănătate\", \"Productivitate\", \"Exerciții fizice\".';
-
-  @override
-  String get settingsHabitsShowCaseDashTooltip =>
-      'Selectați un tablou de bord pentru a vă organiza și urmări obiceiurile sau creați un tablou de bord nou folosind butonul [+].\nExemple: \"Monitorizare bunăstare\", \"Obiective zilnice\", \"Program de lucru\".';
-
-  @override
-  String get settingsHabitsShowCaseDelHabitTooltip =>
-      'Atingeți acest buton pentru a șterge definitiv obiceiul. Fiți precaut, deoarece această acțiune nu poate fi anulată și toate datele aferente vor fi eliminate.';
-
-  @override
-  String get settingsHabitsShowCaseDescrTooltip =>
-      'Furnizați o descriere scurtă și semnificativă a obiceiului. Includeți orice detalii relevante sau\ncontext pentru a defini clar scopul și importanța obiceiului.\nExemple: \"Alergați 30 de minute în fiecare dimineață pentru a vă îmbunătăți condiția fizică\" sau \"Citiți un capitol pe zi pentru a vă îmbunătăți cunoștințele și concentrarea\".';
-
-  @override
-  String get settingsHabitsShowCaseNameTooltip =>
-      'Introduceți un nume clar și descriptiv pentru obicei.\nEvitați numele prea lungi și faceți-l suficient de concis pentru a identifica ușor obiceiul.\nExemple: \"Alergări de dimineață\", \"Citit zilnic\".';
-
-  @override
-  String get settingsHabitsShowCasePriorTooltip =>
-      'Comutați pentru a atribui prioritate obiceiului. Obiceiurile cu prioritate ridicată reprezintă adesea sarcini esențiale sau urgente pe care doriți să vă concentrați. Exemple: \"Exerciții zilnice\", \"Lucru la proiect\".';
-
-  @override
-  String get settingsHabitsShowCasePrivateTooltip =>
-      'Utilizați acest comutator pentru a marca obiceiul ca privat. Obiceiurile private sunt vizibile numai pentru dvs. și nu vor fi partajate cu alte persoane. Exemple: \"Jurnal personal\", \"Meditație\".';
-
-  @override
-  String get settingsHabitsShowCaseStarDateTooltip =>
-      'Selectați data de la care doriți să începeți urmărirea acestui obicei. Acest lucru ajută la definirea momentului în care începe obiceiul și permite monitorizarea exactă a progresului. Exemplu: \"1 iulie 2025\".';
-
-  @override
-  String get settingsHabitsShowCaseStartTimeTooltip =>
-      'Setați ora de la care acest obicei ar trebui să fie vizibil sau să înceapă să apară în programul dvs. Acest lucru vă ajută să vă organizați ziua eficient. Exemplu: \"7:00 AM\".';
 
   @override
   String get settingsHabitsTitle => 'Obiceiuri';
@@ -1695,30 +1579,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Salvare';
 
   @override
-  String get settingsMeasurableShowCaseAggreTypeTooltip =>
-      'Selectați tipul implicit de agregare pentru datele măsurabile. Aceasta determină modul în care datele vor fi rezumate în timp. \nOpțiuni: \'dailySum\', \'dailyMax\', \'dailyAvg\', \'hourlySum\'.';
-
-  @override
-  String get settingsMeasurableShowCaseDelTooltip =>
-      'Faceți clic pe acest buton pentru a șterge tipul măsurabil. Rețineți că această acțiune este ireversibilă, așa că asigurați-vă că doriți să eliminați tipul măsurabil înainte de a continua.';
-
-  @override
-  String get settingsMeasurableShowCaseDescrTooltip =>
-      'Furnizați o descriere scurtă și semnificativă a tipului măsurabil. Includeți orice detalii relevante sau context pentru a defini clar scopul și importanța acestuia. \nExemple: \'Greutatea corporală măsurată în kilograme\'';
-
-  @override
-  String get settingsMeasurableShowCaseNameTooltip =>
-      'Introduceți un nume clar și descriptiv pentru tipul măsurabil.\nEvitați numele prea lungi și faceți-l suficient de concis pentru a identifica cu ușurință tipul măsurabil. \nExemple: \'Greutate\', \'Tensiune arterială\'.';
-
-  @override
-  String get settingsMeasurableShowCasePrivateTooltip =>
-      'Comutați această opțiune pentru a marca tipul măsurabil ca privat. Tipurile măsurabile private sunt vizibile numai pentru dvs. și vă ajută să organizați în siguranță datele sensibile sau personale.';
-
-  @override
-  String get settingsMeasurableShowCaseUnitTooltip =>
-      'Introduceți o abreviere clară și concisă a unității pentru tipul măsurabil. Acest lucru ajută la identificarea cu ușurință a unității de măsură.';
-
-  @override
   String get settingsMeasurableUnitLabel => 'Unitatea abrevierii:';
 
   @override
@@ -1758,26 +1618,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsTagsSaveLabel => 'Salveaza eticheta';
 
   @override
-  String get settingsTagsShowCaseDeleteTooltip =>
-      'Eliminați această etichetă definitiv. Această acțiune nu poate fi anulată.';
-
-  @override
-  String get settingsTagsShowCaseHideTooltip =>
-      'Activați această opțiune pentru a ascunde această etichetă din sugestii. Utilizați-o pentru etichetele personale sau care nu sunt necesare în mod obișnuit.';
-
-  @override
-  String get settingsTagsShowCaseNameTooltip =>
-      'Introduceți un nume clar și relevant pentru etichetă. Păstrați-l scurt și descriptiv, astfel încât să puteți clasifica cu ușurință obiceiurile dvs. Exemple: \"Sănătate\", \"Productivitate\", \"Mindfulness\".';
-
-  @override
-  String get settingsTagsShowCasePrivateTooltip =>
-      'Activați această opțiune pentru a face eticheta privată. Etichetele private sunt vizibile numai pentru dvs. și nu vor fi partajate cu alții.';
-
-  @override
-  String get settingsTagsShowCaseTypeTooltip =>
-      'Selectați tipul de etichetă pentru a o clasifica corect: \n[Etichetă]-> Categorii generale precum \'Sănătate\' sau \'Productivitate\'. \n[Persoană]-> Utilizați pentru etichetarea anumitor persoane. \n[Poveste]-> Atașați etichete la povești pentru o mai bună organizare.';
-
-  @override
   String get settingsTagsTagName => 'Etichete:';
 
   @override
@@ -1805,28 +1645,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsThemingLight => 'Aspect luminos';
 
   @override
-  String get settingsThemingShowCaseDarkTooltip =>
-      'Alegeți tema întunecată pentru un aspect mai întunecat.';
-
-  @override
-  String get settingsThemingShowCaseLightTooltip =>
-      'Alegeți tema luminoasă pentru un aspect mai luminos.';
-
-  @override
-  String get settingsThemingShowCaseModeTooltip =>
-      'Selectați modul de temă preferat: Luminos, Întunecat sau Automat.';
-
-  @override
   String get settingsThemingTitle => 'Tematică';
-
-  @override
-  String get showcaseCloseButton => 'închide';
-
-  @override
-  String get showcaseNextButton => 'următorul';
-
-  @override
-  String get showcasePreviousButton => 'anterior';
 
   @override
   String get speechModalAddTranscription => 'Adăugați transcriere';
