@@ -205,7 +205,7 @@ If the image IS relevant:
 - Extract key information that helps with the task
 - Be direct and concise
 - Focus on actionable insights or important details
-- If there is a browser window in the foreground of the image, include the URL from the address bar as a link''',
+- If a browser window is visible in the image, extract and include the full URL from its address bar''',
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
