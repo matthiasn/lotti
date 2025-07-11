@@ -204,7 +204,8 @@ If the image is NOT relevant to the task:
 If the image IS relevant:
 - Extract key information that helps with the task
 - Be direct and concise
-- Focus on actionable insights or important details''',
+- Focus on actionable insights or important details
+- If there is a browser window in the foreground of the image, include the URL from the address bar as a link''',
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
