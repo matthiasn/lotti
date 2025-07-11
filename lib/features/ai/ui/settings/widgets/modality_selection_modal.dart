@@ -19,14 +19,10 @@ import 'package:lotti/widgets/selection/selection.dart';
 /// - Proper accessibility support
 class ModalitySelectionModal extends StatefulWidget {
   const ModalitySelectionModal({
-    required this.title,
     required this.selectedModalities,
     required this.onSave,
     super.key,
   });
-
-  /// Title displayed at the top of the modal
-  final String title;
 
   /// Currently selected modalities
   final List<Modality> selectedModalities;
@@ -45,7 +41,6 @@ class ModalitySelectionModal extends StatefulWidget {
       context: context,
       title: title,
       child: ModalitySelectionModal(
-        title: title,
         selectedModalities: selectedModalities,
         onSave: onSave,
       ),

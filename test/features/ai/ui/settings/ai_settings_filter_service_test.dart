@@ -281,43 +281,6 @@ void main() {
       });
     });
 
-    group('getSuggestedFilters', () {
-      test('returns suggested filter presets', () {
-        final suggestions = service.getSuggestedFilters();
-
-        expect(suggestions, isNotEmpty);
-        expect(suggestions.keys, contains('Vision Models'));
-        expect(suggestions.keys, contains('Reasoning Models'));
-        expect(suggestions.keys, contains('Audio Models'));
-        expect(suggestions.keys, contains('Multimodal Models'));
-      });
-
-      test('vision models filter has correct configuration', () {
-        final suggestions = service.getSuggestedFilters();
-        final visionFilter = suggestions['Vision Models']!;
-
-        expect(visionFilter.activeTab, AiSettingsTab.models);
-        expect(visionFilter.selectedCapabilities, {Modality.image});
-      });
-
-      test('reasoning models filter has correct configuration', () {
-        final suggestions = service.getSuggestedFilters();
-        final reasoningFilter = suggestions['Reasoning Models']!;
-
-        expect(reasoningFilter.activeTab, AiSettingsTab.models);
-        expect(reasoningFilter.reasoningFilter, isTrue);
-      });
-
-      test('multimodal filter has multiple capabilities', () {
-        final suggestions = service.getSuggestedFilters();
-        final multimodalFilter = suggestions['Multimodal Models']!;
-
-        expect(multimodalFilter.activeTab, AiSettingsTab.models);
-        expect(multimodalFilter.selectedCapabilities,
-            {Modality.image, Modality.audio});
-      });
-    });
-
     group('edge cases', () {
       test('handles empty lists gracefully', () {
         final filterState = AiSettingsFilterState.initial();

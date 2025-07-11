@@ -89,7 +89,6 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
                       children: <Widget>[
                         EntryDetailsWidget(
                           itemId: widget.itemId,
-                          popOnDelete: true,
                           showTaskDetails: true,
                           showAiEntry: true,
                         ),

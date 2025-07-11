@@ -6,12 +6,10 @@ import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 class DashboardCard extends StatelessWidget {
   const DashboardCard({
     required this.dashboard,
-    required this.index,
     super.key,
   });
 
   final DashboardDefinition dashboard;
-  final int index;
 
   @override
   Widget build(BuildContext context) {

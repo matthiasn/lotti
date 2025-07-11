@@ -11,7 +11,6 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 class MeasurablesChartInfoWidget extends StatelessWidget {
   const MeasurablesChartInfoWidget(
     this.measurableDataType, {
-    required this.dashboardId,
     required this.aggregationType,
     required this.enableCreate,
     super.key,
@@ -19,7 +18,6 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
 
   final MeasurableDataType measurableDataType;
   final AggregationType aggregationType;
-  final String? dashboardId;
   final bool enableCreate;
 
   @override

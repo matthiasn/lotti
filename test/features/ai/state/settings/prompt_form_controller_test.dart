@@ -367,17 +367,6 @@ void main() {
       expect(state.defaultModelId, 'model1'); // Should remain 'model1'
     });
 
-    test('defaultVariablesChanged updates state', () async {
-      await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
-      const newVars = {'var2': 'val2', 'var3': 'val3'};
-      controller.defaultVariablesChanged(newVars);
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
-      expect(state!.defaultVariables, newVars);
-    });
-
     test('addConfig calls repository saveConfig', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
       final controller =
@@ -496,19 +485,6 @@ void main() {
       expect(savedConfig.updatedAt, isNotNull);
       // Ensure createdAt is not null before calling isAfter
       expect(savedConfig.updatedAt!.isAfter(savedConfig.createdAt), isTrue);
-    });
-
-    test('deleteConfig calls repository deleteConfig', () async {
-      await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
-      const idToDelete = 'config-to-delete';
-      when(() => mockAiConfigRepository.deleteConfig(idToDelete))
-          .thenAnswer((_) async {});
-
-      await controller.deleteConfig(idToDelete);
-
-      verify(() => mockAiConfigRepository.deleteConfig(idToDelete)).called(1);
     });
 
     test('reset clears controllers and resets state', () async {

@@ -202,10 +202,6 @@ class PromptFormController extends _$PromptFormController {
     _setAllFields(description: value);
   }
 
-  void defaultVariablesChanged(Map<String, String> value) {
-    _setAllFields(defaultVariables: value);
-  }
-
   /// Add a new configuration
   Future<void> addConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
@@ -252,12 +248,6 @@ class PromptFormController extends _$PromptFormController {
         updatedAt: DateTime.now(),
       ),
     );
-  }
-
-  /// Delete a configuration
-  Future<void> deleteConfig(String id) async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.deleteConfig(id);
   }
 
   /// Populate the form with a preconfigured prompt template.

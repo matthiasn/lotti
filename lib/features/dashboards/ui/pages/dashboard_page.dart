@@ -15,21 +15,15 @@ class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({
     required this.dashboardId,
     super.key,
-    this.showBackButton = true,
   });
 
   final String dashboardId;
-  final bool showBackButton;
 
   @override
   ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  double zoomStartScale = 10;
-  double scale = 10;
-  double horizontalPan = 0;
-  bool zoomInProgress = false;
   int timeSpanDays = 180;
 
   late TransformationController _transformationController;

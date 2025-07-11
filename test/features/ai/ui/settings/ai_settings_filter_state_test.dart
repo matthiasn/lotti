@@ -29,39 +29,6 @@ void main() {
       expect(updatedState.activeTab, AiSettingsTab.providers);
     });
 
-    test('hasActiveFilters returns true when filters are set', () {
-      expect(
-        AiSettingsFilterState.initial().hasActiveFilters,
-        isFalse,
-      );
-
-      expect(
-        AiSettingsFilterState.initial()
-            .copyWith(searchQuery: 'test')
-            .hasActiveFilters,
-        isTrue,
-      );
-
-      expect(
-        AiSettingsFilterState.initial()
-            .copyWith(selectedProviders: {'provider1'}).hasActiveFilters,
-        isTrue,
-      );
-
-      expect(
-        AiSettingsFilterState.initial()
-            .copyWith(selectedCapabilities: {Modality.image}).hasActiveFilters,
-        isTrue,
-      );
-
-      expect(
-        AiSettingsFilterState.initial()
-            .copyWith(reasoningFilter: true)
-            .hasActiveFilters,
-        isTrue,
-      );
-    });
-
     test('hasModelFilters returns true when model-specific filters are set',
         () {
       expect(
@@ -94,24 +61,6 @@ void main() {
             .hasModelFilters,
         isTrue,
       );
-    });
-
-    test('resetFilters returns state with all filters cleared', () {
-      const state = AiSettingsFilterState(
-        searchQuery: 'test',
-        selectedProviders: {'provider1'},
-        selectedCapabilities: {Modality.image},
-        reasoningFilter: true,
-        activeTab: AiSettingsTab.models,
-      );
-
-      final resetState = state.resetFilters();
-
-      expect(resetState.searchQuery, isEmpty);
-      expect(resetState.selectedProviders, isEmpty);
-      expect(resetState.selectedCapabilities, isEmpty);
-      expect(resetState.reasoningFilter, isFalse);
-      expect(resetState.activeTab, AiSettingsTab.models); // Should preserve tab
     });
 
     test('resetModelFilters preserves search query but clears model filters',

@@ -91,7 +91,6 @@ class ModernCreateAudioItem extends ConsumerWidget {
         AudioRecordingModal.show(
           context,
           linkedId: linkedFromId,
-          categoryId: categoryId,
         );
       },
     );

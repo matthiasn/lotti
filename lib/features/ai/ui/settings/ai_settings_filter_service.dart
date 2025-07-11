@@ -152,31 +152,4 @@ class AiSettingsFilterService {
       (field) => field.toLowerCase().contains(searchLower),
     );
   }
-
-  /// Provides suggested filter combinations for better UX
-  ///
-  /// This method can be used to suggest common filter patterns
-  /// or provide quick filter presets to users.
-  ///
-  /// **Returns:** Map of preset names to filter states
-  Map<String, AiSettingsFilterState> getSuggestedFilters() {
-    return {
-      'Vision Models': const AiSettingsFilterState(
-        activeTab: AiSettingsTab.models,
-        selectedCapabilities: {Modality.image},
-      ),
-      'Reasoning Models': const AiSettingsFilterState(
-        activeTab: AiSettingsTab.models,
-        reasoningFilter: true,
-      ),
-      'Audio Models': const AiSettingsFilterState(
-        activeTab: AiSettingsTab.models,
-        selectedCapabilities: {Modality.audio},
-      ),
-      'Multimodal Models': const AiSettingsFilterState(
-        activeTab: AiSettingsTab.models,
-        selectedCapabilities: {Modality.image, Modality.audio},
-      ),
-    };
-  }
 }

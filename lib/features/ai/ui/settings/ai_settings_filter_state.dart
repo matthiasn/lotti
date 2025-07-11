@@ -67,26 +67,11 @@ enum AiSettingsTab {
 
 /// Extension to add filtering capabilities to AiSettingsFilterState
 extension AiSettingsFilterStateX on AiSettingsFilterState {
-  /// Determines if any filters are currently active
-  bool get hasActiveFilters =>
-      searchQuery.isNotEmpty ||
-      selectedProviders.isNotEmpty ||
-      selectedCapabilities.isNotEmpty ||
-      reasoningFilter;
-
   /// Determines if model-specific filters are active
   bool get hasModelFilters =>
       selectedProviders.isNotEmpty ||
       selectedCapabilities.isNotEmpty ||
       reasoningFilter;
-
-  /// Resets all filters to their default values
-  AiSettingsFilterState resetFilters() => copyWith(
-        searchQuery: '',
-        selectedProviders: const {},
-        selectedCapabilities: const {},
-        reasoningFilter: false,
-      );
 
   /// Resets only model-specific filters (preserves search query)
   AiSettingsFilterState resetModelFilters() => copyWith(

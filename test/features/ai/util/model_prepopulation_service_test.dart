@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -278,78 +277,6 @@ void main() {
         expect(capturedModel!.inferenceProviderId, equals(providerId));
         expect(capturedModel!.inputModalities, contains(Modality.text));
         expect(capturedModel!.description, isNotEmpty);
-      });
-    });
-
-    group('ensureModelsForProvider', () {
-      test('should prepopulate models when provider exists', () async {
-        // Arrange
-        const providerId = 'gemini-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://api.gemini.com',
-          apiKey: 'test-key',
-          name: 'Gemini',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.gemini,
-        );
-
-        when(() => mockRepository.getConfigById(providerId))
-            .thenAnswer((_) async => provider);
-
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
-
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.ensureModelsForProvider(providerId);
-
-        // Assert
-        expect(result, equals(geminiModels.length));
-      });
-
-      test('should return 0 when provider does not exist', () async {
-        // Arrange
-        const providerId = 'non-existent-id';
-
-        when(() => mockRepository.getConfigById(providerId))
-            .thenAnswer((_) async => null);
-
-        // Act
-        final result = await service.ensureModelsForProvider(providerId);
-
-        // Assert
-        expect(result, equals(0));
-        verifyNever(() => mockRepository.saveConfig(any()));
-      });
-
-      test('should return 0 when config is not a provider', () async {
-        // Arrange
-        const providerId = 'prompt-id';
-        final prompt = AiConfigPrompt(
-          id: providerId,
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-id',
-          modelIds: ['model-id'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [],
-          aiResponseType: AiResponseType.taskSummary,
-        );
-
-        when(() => mockRepository.getConfigById(providerId))
-            .thenAnswer((_) async => prompt);
-
-        // Act
-        final result = await service.ensureModelsForProvider(providerId);
-
-        // Assert
-        expect(result, equals(0));
-        verifyNever(() => mockRepository.saveConfig(any()));
       });
     });
   });

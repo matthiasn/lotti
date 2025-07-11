@@ -8,9 +8,6 @@ enum AudioRecorderStatus {
   /// Recorder is being initialized (permissions, setup).
   initializing,
 
-  /// Recorder is ready to start recording.
-  initialized,
-
   /// Actively recording audio.
   recording,
 

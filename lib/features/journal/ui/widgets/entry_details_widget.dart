@@ -25,7 +25,6 @@ import 'package:lotti/widgets/events/event_form.dart';
 class EntryDetailsWidget extends ConsumerWidget {
   const EntryDetailsWidget({
     required this.itemId,
-    required this.popOnDelete,
     required this.showAiEntry,
     super.key,
     this.showTaskDetails = false,
@@ -35,7 +34,6 @@ class EntryDetailsWidget extends ConsumerWidget {
   });
 
   final String itemId;
-  final bool popOnDelete;
   final bool showTaskDetails;
   final bool showAiEntry;
 

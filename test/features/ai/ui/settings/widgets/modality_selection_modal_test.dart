@@ -17,7 +17,6 @@ void main() {
       return AiTestWidgets.createTestWidget(
         child: Scaffold(
           body: ModalitySelectionModal(
-            title: title,
             selectedModalities: selectedModalities,
             onSave: onSave,
           ),

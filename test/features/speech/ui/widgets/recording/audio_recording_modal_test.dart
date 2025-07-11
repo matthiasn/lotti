@@ -101,7 +101,7 @@ void main() {
     }) {
       final testState = state ??
           AudioRecorderState(
-            status: AudioRecorderStatus.initialized,
+            status: AudioRecorderStatus.initializing,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
@@ -182,7 +182,7 @@ void main() {
             audioRecorderControllerProvider.overrideWith(() {
               controller = TestAudioRecorderController(
                 AudioRecorderState(
-                  status: AudioRecorderStatus.initialized,
+                  status: AudioRecorderStatus.initializing,
                   vu: 0,
                   dBFS: -60,
                   progress: Duration.zero,
@@ -204,7 +204,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially should not be recording
-      expect(controller!.state.status, AudioRecorderStatus.initialized);
+      expect(controller!.state.status, AudioRecorderStatus.initializing);
       expect(controller!.state.linkedId, isNull);
 
       // Tap record button
@@ -237,7 +237,7 @@ void main() {
     testWidgets('displays language selector with correct options',
         (tester) async {
       final state = AudioRecorderState(
-        status: AudioRecorderStatus.initialized,
+        status: AudioRecorderStatus.initializing,
         vu: 0,
         dBFS: -60,
         progress: Duration.zero,
@@ -321,7 +321,7 @@ void main() {
       // Modal visibility is now managed by the show() method, not the widget
       final controller = TestAudioRecorderController(
         AudioRecorderState(
-          status: AudioRecorderStatus.initialized,
+          status: AudioRecorderStatus.initializing,
           vu: 0,
           dBFS: -60,
           progress: Duration.zero,
@@ -453,7 +453,7 @@ void main() {
     Widget makeTestableWidget({AudioRecorderState? state}) {
       final testState = state ??
           AudioRecorderState(
-            status: AudioRecorderStatus.initialized,
+            status: AudioRecorderStatus.initializing,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
@@ -497,7 +497,7 @@ void main() {
             audioRecorderControllerProvider.overrideWith(() {
               controller = TestAudioRecorderController(
                 AudioRecorderState(
-                  status: AudioRecorderStatus.initialized,
+                  status: AudioRecorderStatus.initializing,
                   vu: 0,
                   dBFS: -60,
                   progress: Duration.zero,
@@ -570,7 +570,7 @@ void main() {
     Widget makeTestableWidget({AudioRecorderState? state}) {
       final testState = state ??
           AudioRecorderState(
-            status: AudioRecorderStatus.initialized,
+            status: AudioRecorderStatus.initializing,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,

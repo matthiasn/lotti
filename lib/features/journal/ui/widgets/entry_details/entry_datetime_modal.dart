@@ -28,11 +28,9 @@ class EntryDateTimeModalContent extends ConsumerStatefulWidget {
   const EntryDateTimeModalContent({
     required this.item,
     super.key,
-    this.readOnly = false,
   });
 
   final JournalEntity item;
-  final bool readOnly;
 
   @override
   ConsumerState<EntryDateTimeModalContent> createState() =>
