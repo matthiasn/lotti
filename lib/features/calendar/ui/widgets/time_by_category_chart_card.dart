@@ -4,8 +4,7 @@ import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/calendar/ui/widgets/time_by_category_chart.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class TimeByCategoryChartCard extends ConsumerWidget {
   const TimeByCategoryChartCard({super.key});
@@ -15,36 +14,14 @@ class TimeByCategoryChartCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     void onExpandPressed() {
-      WoltModalSheet.show<void>(
+      ModalUtils.showSinglePageModal<void>(
         context: context,
-        modalBarrierColor: isDark
-            ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-            : context.colorScheme.outline.withAlpha(128),
-        pageListBuilder: (modalSheetContext) {
-          return [
-            NonScrollingWoltModalSheetPage(
-              topBarTitle: Text(
-                context.messages.timeByCategoryChartTitle,
-                style: context.textTheme.titleMedium,
-              ),
-              hasTopBarLayer: true,
-              trailingNavBarWidget: IconButton(
-                padding: WoltModalConfig.pagePadding,
-                icon: const Icon(Icons.close),
-                onPressed: Navigator.of(modalSheetContext).pop,
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(10),
-                child: TimeByCategoryChart(height: 260),
-              ),
-            ),
-          ];
+        title: context.messages.timeByCategoryChartTitle,
+        padding: ModalUtils.defaultPadding + const EdgeInsets.only(top: 20),
+        builder: (BuildContext _) {
+          return const TimeByCategoryChart(height: 260);
         },
-        modalTypeBuilder: (_) => WoltModalType.dialog(),
-        barrierDismissible: true,
       );
     }
 

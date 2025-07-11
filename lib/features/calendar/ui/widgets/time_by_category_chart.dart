@@ -179,7 +179,10 @@ class _TimeByCategoryChart extends ConsumerState<TimeByCategoryChart> {
             ),
             if (widget.showLegend) ...[
               const SizedBox(height: 20),
-              const TimeByCategoryChartLegend(),
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 280),
+                child: const TimeByCategoryChartLegend(),
+              ),
             ],
           ],
         ],
