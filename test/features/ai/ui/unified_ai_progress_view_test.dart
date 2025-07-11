@@ -682,7 +682,7 @@ void main() {
         of: find.byType(UnifiedAiProgressContent),
         matching: find.byType(Padding),
       );
-      
+
       // Should find at least one Padding widget
       expect(padding, findsWidgets);
 
@@ -730,7 +730,7 @@ void main() {
         matching: find.byType(Container),
       );
       expect(container, findsOneWidget);
-      
+
       // Verify the container has the expected constraints
       final containerWidget = tester.widget<Container>(container);
       expect(containerWidget.constraints, isNotNull);

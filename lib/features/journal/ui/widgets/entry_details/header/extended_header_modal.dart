@@ -19,7 +19,6 @@ class ExtendedHeaderModal {
     final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
       title: context.messages.entryActions,
-      showDivider: true,
       child: InitialModalPageContent(
         entryId: entryId,
         linkedFromId: linkedFromId,
@@ -34,7 +33,6 @@ class ExtendedHeaderModal {
       title: context.messages.journalTagPlusHint,
       child: TagsModal(entryId: entryId),
       onTapBack: () => pageIndexNotifier.value = 0,
-      showDivider: true,
     );
 
     final speechRecognitionModalPage = ModalUtils.modalSheetPage(
@@ -42,7 +40,6 @@ class ExtendedHeaderModal {
       title: context.messages.speechModalTitle,
       child: SpeechModalContent(entryId: entryId),
       onTapBack: () => pageIndexNotifier.value = 0,
-      showDivider: true,
     );
 
     return ModalUtils.showMultiPageModal<void>(

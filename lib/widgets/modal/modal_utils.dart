@@ -39,7 +39,6 @@ class ModalUtils {
     EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
-    bool showDivider = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
@@ -142,7 +141,6 @@ class ModalUtils {
             isTopBarLayerAlwaysVisible: title != null,
             padding: padding,
             navBarHeight: navBarHeight,
-            showDivider: showDivider,
             hasTopBarLayer: hasTopBarLayer,
           ),
         ];
