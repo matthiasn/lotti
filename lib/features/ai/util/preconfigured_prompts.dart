@@ -69,20 +69,19 @@ entire response. This H1 title is for internal suggestion purposes and will be
 processed separately; it will not appear directly in the summary text shown to 
 the user.
 
-After the title, immediately provide a TLDR paragraph that is exactly 3-4 lines on a mobile device. 
+After the title, immediately provide a TLDR paragraph that MUST be exactly 3-4 lines maximum (approximately 50-80 words total). 
 This paragraph must:
 - Start with "**TLDR:** " (with the entire paragraph in bold using double asterisks)
-- Summarize where we're at in the task and what needs to be done next
-- Be slightly motivational without being cheesy (e.g., "You're making great progress!" or "Almost there! 💪")
+- Be extremely concise - focus only on: current status (1 line) + immediate next step (1-2 lines)
+- Use short, punchy sentences without filler words
+- Be slightly motivational without being cheesy (e.g., "Almost there!" or "Great progress!")
 - Include 1-2 relevant emojis that match the task's current state
-- Focus on the immediate next steps to help you get back into the task quickly
+- Prioritize clarity over completeness - it's better to be brief than comprehensive
 - End the paragraph with a line break
 
 Example TLDR format:
-**TLDR:** You've successfully implemented the core authentication system and database models. 
-Next up is adding the email verification flow and password reset functionality. 
-The foundation is solid - just a few more steps to complete the user management feature! 🚀
-Time to tackle those email templates and make this system production-ready. 💪
+**TLDR:** Core auth system and database done. Next: email verification and password reset.
+Almost there - just these two features left! 🚀 Focus on the email flow first. 💪
 
 After the TLDR, provide the detailed summary with:
 - Achieved results (use ✅ emoji for each completed item)
