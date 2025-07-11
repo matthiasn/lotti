@@ -19,16 +19,6 @@ class AiResponseSummary extends StatelessWidget {
   final String? linkedFromId;
   final bool fadeOut;
 
-  String _filterTaskSummaryResponse(String response) {
-    // Remove the first H1 header (title) from task summaries
-    if (aiResponse.data.type == AiResponseType.taskSummary) {
-      // Match the first H1 and everything on that line, plus any empty lines after it
-      final titleRegex = RegExp(r'^#\s+.+$\n*', multiLine: true);
-      return response.replaceFirst(titleRegex, '').trim();
-    }
-    return response;
-  }
-
   @override
   Widget build(BuildContext context) {
     // Use expandable summary for task summaries
@@ -40,10 +30,8 @@ class AiResponseSummary extends StatelessWidget {
     }
 
     // For other response types, use the original implementation
-    final filteredResponse =
-        _filterTaskSummaryResponse(aiResponse.data.response);
     final content = SelectionArea(
-      child: GptMarkdown(filteredResponse),
+      child: GptMarkdown(aiResponse.data.response),
     );
 
     return ModernBaseCard(

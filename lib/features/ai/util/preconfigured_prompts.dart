@@ -80,8 +80,8 @@ This paragraph must:
 - End the paragraph with a line break
 
 Example TLDR format:
-**TLDR:** Core auth system and database done. Next: email verification and password reset.
-Almost there - just these two features left! 🚀 Focus on the email flow first. 💪
+**TLDR:** **Core auth system and database done. Next: email verification and password reset.
+Almost there - just these two features left! 🚀 Focus on the email flow first. 💪**
 
 After the TLDR, provide the detailed summary with:
 - Achieved results (use ✅ emoji for each completed item)

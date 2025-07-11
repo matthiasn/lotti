@@ -26,7 +26,6 @@ class _ExpandableAiResponseSummaryState
     extends State<ExpandableAiResponseSummary>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _expandAnimation;
   late Animation<double> _rotationAnimation;
   bool _isExpanded = false;
   String? _tldrContent;
@@ -38,10 +37,6 @@ class _ExpandableAiResponseSummaryState
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    _expandAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
     );
     _rotationAnimation = Tween<double>(
       begin: 0,
@@ -153,20 +148,6 @@ class _ExpandableAiResponseSummaryState
                 ),
               ],
             ),
-            if (!_isExpanded && _fullContent != _tldrContent)
-              FadeTransition(
-                opacity: _expandAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Tap to see full summary',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
