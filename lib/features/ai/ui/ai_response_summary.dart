@@ -3,6 +3,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
+import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -30,6 +31,15 @@ class AiResponseSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use expandable summary for task summaries
+    if (aiResponse.data.type == AiResponseType.taskSummary) {
+      return ExpandableAiResponseSummary(
+        aiResponse,
+        linkedFromId: linkedFromId,
+      );
+    }
+
+    // For other response types, use the original implementation
     final filteredResponse =
         _filterTaskSummaryResponse(aiResponse.data.response);
     final content = SelectionArea(
