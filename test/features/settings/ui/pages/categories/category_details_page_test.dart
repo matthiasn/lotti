@@ -6,7 +6,6 @@ import 'package:lotti/features/settings/ui/pages/categories/category_details_pag
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
@@ -57,17 +56,9 @@ void main() {
       ).thenAnswer((_) async => 1);
 
       await tester.pumpWidget(
-        makeTestableWidget(
-          ShowCaseWidget(
-            builder: (context) => ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: EditCategoryPage(
-                categoryId: categoryMindfulness.id,
-              ),
-            ),
+        makeTestableWidgetNoScroll(
+          EditCategoryPage(
+            categoryId: categoryMindfulness.id,
           ),
         ),
       );

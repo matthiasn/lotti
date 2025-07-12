@@ -38,8 +38,8 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
       body: CustomScrollView(
         controller: _scrollController,
         slivers: <Widget>[
-          SliverShowCaseTitleBar(
-            title: widget.title,
+          SliverTitleBar(
+            widget.title,
             pinned: true,
             showBackButton: widget.showBackButton,
           ),

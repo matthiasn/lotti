@@ -4,7 +4,6 @@ import 'package:lotti/blocs/settings/categories/category_settings_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/settings/ui/pages/categories/category_details_page.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class CreateCategoryPage extends StatelessWidget {
   CreateCategoryPage({super.key});
@@ -21,14 +20,12 @@ class CreateCategoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(
-      builder: (context) => BlocProvider<CategorySettingsCubit>(
-        create: (_) => CategorySettingsCubit(
-          categoryDefinition,
-          context: context,
-        ),
-        child: const CategoryDetailsPage(),
+    return BlocProvider<CategorySettingsCubit>(
+      create: (_) => CategorySettingsCubit(
+        categoryDefinition,
+        context: context,
       ),
+      child: const CategoryDetailsPage(),
     );
   }
 }

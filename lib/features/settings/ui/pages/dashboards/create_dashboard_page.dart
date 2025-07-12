@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class CreateDashboardPage extends StatelessWidget {
   CreateDashboardPage({
@@ -25,9 +24,6 @@ class CreateDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(
-      builder: (context) =>
-          DashboardDefinitionPage(dashboard: _dashboardDefinition),
-    );
+    return DashboardDefinitionPage(dashboard: _dashboardDefinition);
   }
 }
