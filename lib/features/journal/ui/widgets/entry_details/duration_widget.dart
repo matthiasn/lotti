@@ -74,10 +74,7 @@ class DurationWidget extends ConsumerWidget {
                     size: 15,
                   ),
                 ),
-                FormattedTime(
-                  labelColor: labelColor,
-                  displayed: displayed,
-                ),
+                FormattedTime(labelColor: labelColor, displayed: displayed),
                 Visibility(
                   visible: isRecent && showRecordIcon && !isRecording,
                   child: IconButton(

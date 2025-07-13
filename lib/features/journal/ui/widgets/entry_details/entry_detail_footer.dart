@@ -40,10 +40,7 @@ class EntryDetailFooter extends ConsumerWidget {
           children: [
             const SizedBox(width: 100),
             if (entry is JournalEntry)
-              DurationWidget(
-                item: entry,
-                linkedFrom: linkedFrom,
-              ),
+              DurationWidget(item: entry, linkedFrom: linkedFrom),
             if (inLinkedEntries)
               SaveButton(entryId: entryId)
             else
