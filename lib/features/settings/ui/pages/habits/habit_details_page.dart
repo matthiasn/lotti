@@ -30,7 +30,6 @@ class HabitDetailsPage extends StatefulWidget {
 }
 
 class _HabitDetailsPageState extends State<HabitDetailsPage> {
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<HabitSettingsCubit, HabitSettingsState>(
@@ -139,8 +138,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                             inputSpacerSmall,
                             DateTimeField(
                               dateTime: item.activeFrom,
-                              labelText:
-                                  context.messages.habitActiveFromLabel,
+                              labelText: context.messages.habitActiveFromLabel,
                               setDateTime: cubit.setActiveFrom,
                               mode: CupertinoDatePickerMode.date,
                             ),
@@ -148,8 +146,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                             if (isDaily) ...[
                               DateTimeField(
                                 dateTime: showFrom,
-                                labelText:
-                                    context.messages.habitShowFromLabel,
+                                labelText: context.messages.habitShowFromLabel,
                                 setDateTime: cubit.setShowFrom,
                                 mode: CupertinoDatePickerMode.time,
                               ),

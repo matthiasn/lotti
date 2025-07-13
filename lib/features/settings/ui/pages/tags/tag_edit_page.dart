@@ -194,8 +194,8 @@ class _TagEditPageState extends State<TagEditPage> {
                                 context.messages.settingsTagsTypeTag,
                             personTag: (_) =>
                                 context.messages.settingsTagsTypePerson,
-                            storyTag: (_) => context
-                                .messages.settingsTagsTypeStory,
+                            storyTag: (_) =>
+                                context.messages.settingsTagsTypeStory,
                           ),
                           decoration: inputDecoration(
                             labelText: context.messages.settingsTagsTypeLabel,

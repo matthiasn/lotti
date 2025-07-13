@@ -207,15 +207,15 @@ void main() {
       expect(getTrimmed(formData, 'description'), testDashboardDescription);
 
       final measurableFinder = find.text(measurableChocolate.displayName);
-      expect(measurableFinder, findsOneWidget);
+      expect(measurableFinder, findsWidgets);
 
       await tester.dragUntilVisible(
-        measurableFinder,
+        measurableFinder.first,
         find.byType(SingleChildScrollView),
         const Offset(0, 50),
       );
 
-      await tester.tap(measurableFinder);
+      await tester.tap(measurableFinder.first);
       await tester.pumpAndSettle();
 
       // The aggregation type is not displayed as text in the current widget structure
@@ -223,7 +223,7 @@ void main() {
       // Instead, verify that the measurable item is displayed
       expect(
         find.text(measurableChocolate.displayName),
-        findsOneWidget,
+        findsWidgets,
       );
     });
 
@@ -327,7 +327,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that copy creates a new dashboard
-      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any())).called(greaterThanOrEqualTo(1));
+      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .called(greaterThanOrEqualTo(1));
     });
 
     // Tests for CreateDashboardPage

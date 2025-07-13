@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -6,6 +9,9 @@ import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
+import 'package:lotti/features/settings/ui/pages/form_text_field.dart';
+import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
 import 'package:lotti/features/settings/ui/widgets/entity_detail_card.dart';
 import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
 import 'package:lotti/get_it.dart';
@@ -18,7 +24,6 @@ import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
   const DashboardDefinitionPage({
@@ -39,7 +44,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
-  final _uuid = const Uuid();
 
   bool dirty = false;
 
@@ -133,30 +137,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
       dashboardItems.removeAt(index);
       dirty = true;
     });
-  }
-
-  String _getItemTitle(DashboardItem item) {
-    return item.when(
-      measurement: (id, aggregationType) => 'Measurement',
-      habitChart: (habitId) => 'Habit Chart',
-      healthChart: (color, healthType) => healthTypes[healthType]?.displayName ?? healthType,
-      surveyChart: (colorsByScoreKey, surveyType, surveyName) => surveyName,
-      workoutChart: (workoutType, displayName, color, valueType) => displayName,
-      storyTimeChart: (storyTagId, color) => 'Story Time Chart',
-      wildcardStoryTimeChart: (storySubstring, color) => 'Story Time Chart',
-    );
-  }
-
-  String _getItemSubtitle(DashboardItem item) {
-    return item.when(
-      measurement: (id, aggregationType) => 'Aggregation: ${aggregationType?.toString().split('.').last ?? 'Default'}',
-      habitChart: (habitId) => 'Habit tracking',
-      healthChart: (color, healthType) => 'Health data',
-      surveyChart: (colorsByScoreKey, surveyType, surveyName) => 'Survey responses',
-      workoutChart: (workoutType, displayName, color, valueType) => 'Workout data',
-      storyTimeChart: (storyTagId, color) => 'Story time tracking',
-      wildcardStoryTimeChart: (storySubstring, color) => 'Story time tracking',
-    );
   }
 
   @override
@@ -262,6 +242,37 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               maybePop();
             }
 
+            Future<void> copyDashboard() async {
+              final dashboard = await saveDashboard();
+              final entityDefinitions = <EntityDefinition>[dashboard];
+
+              for (final item in dashboard.items) {
+                await item.map(
+                  measurement:
+                      (DashboardMeasurementItem measurementItem) async {
+                    final dataType =
+                        await _db.getMeasurableDataTypeById(measurementItem.id);
+                    if (dataType != null) {
+                      entityDefinitions.add(dataType);
+                    }
+                  },
+                  healthChart: (_) {},
+                  workoutChart: (_) {},
+                  surveyChart: (_) {},
+                  storyTimeChart: (_) {},
+                  habitChart: (_) {},
+                  wildcardStoryTimeChart: (_) {},
+                );
+              }
+              await Clipboard.setData(
+                ClipboardData(
+                  text: json.encode(
+                    entityDefinitions,
+                  ),
+                ),
+              );
+            }
+
             return Scaffold(
               body: CustomScrollView(
                 slivers: <Widget>[
@@ -312,100 +323,44 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             },
                             child: Column(
                               children: <Widget>[
-                                FormBuilderTextField(
-                                  name: 'name',
-                                  key: const Key('dashboard_name_field'),
+                                FormTextField(
                                   initialValue: widget.dashboard.name,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        context.messages.dashboardNameLabel,
-                                    hintText: 'Enter dashboard name',
-                                  ),
-                                  onChanged: (_) {
-                                    setState(() {
-                                      dirty = true;
-                                    });
-                                  },
+                                  labelText:
+                                      context.messages.dashboardNameLabel,
+                                  name: 'name',
+                                  semanticsLabel: 'Dashboard - name field',
+                                  key: const Key('dashboard_name_field'),
+                                  large: true,
                                 ),
-                                const SizedBox(height: 16),
-                                FormBuilderTextField(
+                                inputSpacer,
+                                FormTextField(
+                                  initialValue: widget.dashboard.description,
+                                  labelText: context
+                                      .messages.dashboardDescriptionLabel,
                                   name: 'description',
+                                  semanticsLabel:
+                                      'Dashboard - description field',
+                                  fieldRequired: false,
                                   key: const Key(
-                                      'dashboard_description_field'),
-                                  initialValue:
-                                      widget.dashboard.description,
-                                  decoration: InputDecoration(
-                                    labelText: context
-                                        .messages.dashboardDescriptionLabel,
-                                    hintText: 'Enter dashboard description',
+                                    'dashboard_description_field',
                                   ),
-                                  onChanged: (_) {
-                                    setState(() {
-                                      dirty = true;
-                                    });
-                                  },
                                 ),
-                                const SizedBox(height: 16),
+                                inputSpacer,
                                 FormSwitch(
-                                    name: 'private',
-                                    initialValue: widget.dashboard.private,
+                                  name: 'private',
+                                  initialValue: widget.dashboard.private,
                                   title: context.messages.dashboardPrivateLabel,
-                                    activeColor: context.colorScheme.error,
+                                  activeColor: context.colorScheme.error,
                                 ),
                                 FormSwitch(
-                                    name: 'active',
-                                    initialValue: widget.dashboard.active,
+                                  name: 'active',
+                                  initialValue: widget.dashboard.active,
                                   title: context.messages.dashboardActiveLabel,
-                                    activeColor: starredGold,
+                                  activeColor: starredGold,
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Theme.of(context).dividerColor,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child:
-                                      StreamBuilder<List<CategoryDefinition>>(
-                                    stream: _db.watchCategories(),
-                                    builder: (
-                                      BuildContext context,
-                                      AsyncSnapshot<List<CategoryDefinition>>
-                                          snapshot,
-                                    ) {
-                                      final categories = snapshot.data ?? [];
-
-                                      // Create dropdown items from actual categories
-                                      final categoryItems = [
-                                        const DropdownMenuItem<String>(
-                                          child: Text('Select a category'),
-                                        ),
-                                        ...categories.map((category) =>
-                                            DropdownMenuItem<String>(
-                                              value: category.id,
-                                              child: Text(category.name),
-                                            )),
-                                      ];
-
-                                      return DropdownButtonFormField<String>(
-                                        decoration: InputDecoration(
-                                          labelText: context
-                                              .messages.dashboardCategoryLabel,
-                                          hintText: 'Select a category',
-                                        ),
-                                        value: categories.any(
-                                                (cat) => cat.id == categoryId)
-                                            ? categoryId
-                                            : null,
-                                        items: categoryItems,
-                                        onChanged: setCategory,
-                                      );
-                                    },
-                                  ),
+                                SelectDashboardCategoryWidget(
+                                  setCategory: setCategory,
+                                  categoryId: categoryId,
                                 ),
                               ],
                             ),
@@ -451,106 +406,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     key: Key(
                                       'dashboard-item-${item.hashCode}-$index',
                                     ),
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Theme.of(context).cardTheme.color,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: ListTile(
-                                        title: Text(_getItemTitle(item)),
-                                        subtitle: Text(_getItemSubtitle(item)),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.edit),
-                                              onPressed: () async {
-                                                final item =
-                                                    dashboardItems[index];
-                                                if (item
-                                                    is DashboardMeasurementItem) {
-                                                  final newAggregation =
-                                                      await showDialog<
-                                                          AggregationType>(
-                                                    context: context,
-                                                    builder: (context) {
-                                                      AggregationType?
-                                                          selected =
-                                                          item.aggregationType ??
-                                                              AggregationType
-                                                                  .dailySum;
-                                                      return AlertDialog(
-                                                        title: const Text(
-                                                            'Edit Measurement'),
-                                                        content: DropdownButton<
-                                                            AggregationType>(
-                                                          value: selected,
-                                                          items: AggregationType
-                                                              .values
-                                                              .map((agg) =>
-                                                                  DropdownMenuItem(
-                                                                    value: agg,
-                                                                    child: Text(agg
-                                                                        .toString()
-                                                                        .split(
-                                                                            '.')
-                                                                        .last),
-                                                                  ))
-                                                              .toList(),
-                                                          onChanged: (agg) {
-                                                            selected = agg;
-                                                            (context as Element)
-                                                                .markNeedsBuild();
-                                                          },
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () =>
-                                                                Navigator.of(
-                                                                        context)
-                                                                    .pop(),
-                                                            child: const Text(
-                                                                'Cancel'),
-                                                          ),
-                                                          ElevatedButton(
-                                                            onPressed: () =>
-                                                                Navigator.of(
-                                                                        context)
-                                                                    .pop(
-                                                                        selected),
-                                                            child: const Text(
-                                                                'Save'),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
-                                                  );
-                                                  if (newAggregation != null) {
-                                                    updateItem(
-                                                      item.copyWith(
-                                                          aggregationType:
-                                                              newAggregation),
-                                                      index,
-                                                    );
-                                                  }
-                                                }
-                                              },
-                                            ),
-                                            IconButton(
-                                              icon: Icon(
-                                                MdiIcons.trashCanOutline,
-                                              ),
-                                              onPressed: () {
-                                                dismissItem(index);
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                    child: DashboardItemCard(
+                                      item: item,
+                                      index: index,
+                                      updateItemFn: updateItem,
                                     ),
                                   );
                                 },
@@ -561,78 +420,52 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             context.messages.dashboardAddChartsTitle,
                           ),
                           if (habitSelectItems.isNotEmpty)
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    context.messages.dashboardAddHabitTitle,
-                                  ),
-                                  ...habitSelectItems.map(
-                                    (item) => CheckboxListTile(
-                                      value: false,
-                                      // No multi-select, so no selected value
-                                      onChanged: (value) {
-                                        if (value!) {
-                                          onConfirmAddHabit([item.value]);
-                                        }
-                                      },
-                                      title: Text(item.value.name),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            ChartMultiSelect<HabitDefinition>(
+                              multiSelectItems: habitSelectItems,
+                              onConfirm: onConfirmAddHabit,
+                              title: context.messages.dashboardAddHabitTitle,
+                              buttonText:
+                                  context.messages.dashboardAddHabitButton,
+                              semanticsLabel: 'Add Habit Chart',
+                              iconData: Icons.insights,
                             ),
                           if (measurableSelectItems.isNotEmpty)
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    context
-                                        .messages.dashboardAddMeasurementTitle,
-                                  ),
-                                  ...measurableSelectItems.map(
-                                    (item) => CheckboxListTile(
-                                      value: false,
-                                      // No multi-select, so no selected value
-                                      onChanged: (value) {
-                                        if (value!) {
-                                          onConfirmAddMeasurement([item.value]);
-                                        }
-                                      },
-                                      title: Text(item.value.displayName),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            ChartMultiSelect<MeasurableDataType>(
+                              multiSelectItems: measurableSelectItems,
+                              onConfirm: onConfirmAddMeasurement,
+                              title:
+                                  context.messages.dashboardAddMeasurementTitle,
+                              buttonText: context
+                                  .messages.dashboardAddMeasurementButton,
+                              semanticsLabel: 'Add Measurable Data Chart',
+                              iconData: Icons.insights,
                             ),
                           ChartMultiSelect<HealthTypeConfig>(
-                              multiSelectItems: healthSelectItems,
-                              onConfirm: onConfirmAddHealthType,
-                              title: context.messages.dashboardAddHealthTitle,
-                              buttonText:
-                                  context.messages.dashboardAddHealthButton,
-                              semanticsLabel: 'Add Health Chart',
-                              iconData: MdiIcons.stethoscope,
-                            ),
+                            multiSelectItems: healthSelectItems,
+                            onConfirm: onConfirmAddHealthType,
+                            title: context.messages.dashboardAddHealthTitle,
+                            buttonText:
+                                context.messages.dashboardAddHealthButton,
+                            semanticsLabel: 'Add Health Chart',
+                            iconData: MdiIcons.stethoscope,
+                          ),
                           ChartMultiSelect<DashboardSurveyItem>(
-                              multiSelectItems: surveySelectItems,
-                              onConfirm: onConfirmAddSurveyType,
-                              title: context.messages.dashboardAddSurveyTitle,
-                              buttonText:
-                                  context.messages.dashboardAddSurveyButton,
-                              semanticsLabel: 'Add Survey Chart',
-                              iconData: MdiIcons.clipboardOutline,
-                            ),
+                            multiSelectItems: surveySelectItems,
+                            onConfirm: onConfirmAddSurveyType,
+                            title: context.messages.dashboardAddSurveyTitle,
+                            buttonText:
+                                context.messages.dashboardAddSurveyButton,
+                            semanticsLabel: 'Add Survey Chart',
+                            iconData: MdiIcons.clipboardOutline,
+                          ),
                           ChartMultiSelect<DashboardWorkoutItem>(
-                              multiSelectItems: workoutSelectItems,
-                              onConfirm: onConfirmAddWorkoutType,
-                              title: context.messages.dashboardAddWorkoutTitle,
-                              buttonText:
-                                  context.messages.dashboardAddWorkoutButton,
-                              semanticsLabel: 'Add Workout Chart',
-                              iconData: Icons.sports_gymnastics,
+                            multiSelectItems: workoutSelectItems,
+                            onConfirm: onConfirmAddWorkoutType,
+                            title: context.messages.dashboardAddWorkoutTitle,
+                            buttonText:
+                                context.messages.dashboardAddWorkoutButton,
+                            semanticsLabel: 'Add Workout Chart',
+                            iconData: Icons.sports_gymnastics,
                           ),
                           const SizedBox(height: 16),
                           Padding(
@@ -649,69 +482,47 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 Row(
                                   children: [
                                     IconButton(
-                                        icon: const Icon(Icons.copy),
-                                        iconSize: settingsIconSize,
-                                        tooltip:
-                                            context.messages.dashboardCopyHint,
-                                      onPressed: () async {
-                                        // Save current dashboard first
-                                        await saveDashboard();
-
-                                        // Create a copy of the dashboard with a new ID
-                                        final copiedDashboard =
-                                            widget.dashboard.copyWith(
-                                          id: _uuid.v1(),
-                                          name:
-                                              '${widget.dashboard.name} (Copy)',
-                                          createdAt: DateTime.now(),
-                                          updatedAt: DateTime.now(),
-                                          lastReviewed: DateTime.now(),
-                                        );
-
-                                        // Save the copied dashboard
-                                        await persistenceLogic
-                                            .upsertDashboardDefinition(
-                                                copiedDashboard);
-
-                                        // Navigate back to the dashboards list
-                                        maybePop();
-                                      },
+                                      icon: const Icon(Icons.copy),
+                                      iconSize: settingsIconSize,
+                                      tooltip:
+                                          context.messages.dashboardCopyHint,
+                                      onPressed: copyDashboard,
                                     ),
                                     IconButton(
-                                        icon: Icon(
-                                          MdiIcons.trashCanOutline,
-                                        ),
-                                        iconSize: settingsIconSize,
+                                      icon: Icon(
+                                        MdiIcons.trashCanOutline,
+                                      ),
+                                      iconSize: settingsIconSize,
                                       tooltip:
                                           context.messages.dashboardDeleteHint,
-                                        color: context.colorScheme.outline,
-                                        onPressed: () async {
-                                          const deleteKey = 'deleteKey';
-                                          final result =
+                                      color: context.colorScheme.outline,
+                                      onPressed: () async {
+                                        const deleteKey = 'deleteKey';
+                                        final result =
                                             await showModalActionSheet<String>(
-                                            context: context,
+                                          context: context,
                                           title: context
                                               .messages.dashboardDeleteQuestion,
-                                            actions: [
-                                              ModalSheetAction(
-                                                icon: Icons.warning,
-                                                label: context.messages
-                                                    .dashboardDeleteConfirm,
-                                                key: deleteKey,
-                                                isDestructiveAction: true,
-                                                isDefaultAction: true,
-                                              ),
-                                            ],
-                                          );
+                                          actions: [
+                                            ModalSheetAction(
+                                              icon: Icons.warning,
+                                              label: context.messages
+                                                  .dashboardDeleteConfirm,
+                                              key: deleteKey,
+                                              isDestructiveAction: true,
+                                              isDefaultAction: true,
+                                            ),
+                                          ],
+                                        );
 
-                                          if (result == deleteKey) {
-                                            await persistenceLogic
-                                                .deleteDashboardDefinition(
-                                              widget.dashboard,
-                                            );
-                                            maybePop();
-                                          }
-                                        },
+                                        if (result == deleteKey) {
+                                          await persistenceLogic
+                                              .deleteDashboardDefinition(
+                                            widget.dashboard,
+                                          );
+                                          maybePop();
+                                        }
+                                      },
                                     ),
                                   ],
                                 ),
@@ -755,9 +566,7 @@ class EditDashboardPage extends StatelessWidget {
           return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);
         }
 
-        return DashboardDefinitionPage(
-            dashboard: dashboard,
-        );
+        return DashboardDefinitionPage(dashboard: dashboard);
       },
     );
   }
