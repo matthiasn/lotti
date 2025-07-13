@@ -31,7 +31,6 @@ class MeasurableDetailsPage extends StatefulWidget {
 }
 
 class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
-
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
@@ -160,8 +159,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                             fontSize: 40,
                             color: context.textTheme.titleLarge?.color,
                           ),
-                          items:
-                              AggregationType.values.map((aggregationType) {
+                          items: AggregationType.values.map((aggregationType) {
                             return DropdownMenuItem(
                               value: aggregationType,
                               child: Padding(
@@ -187,19 +185,18 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                         IconButton(
                           icon: Icon(MdiIcons.trashCanOutline),
                           iconSize: settingsIconSize,
-                          tooltip: context
-                              .messages.settingsMeasurableDeleteTooltip,
+                          tooltip:
+                              context.messages.settingsMeasurableDeleteTooltip,
                           onPressed: () async {
                             const deleteKey = 'deleteKey';
                             final result = await showModalActionSheet<String>(
                               context: context,
-                              title:
-                                  context.messages.measurableDeleteQuestion,
+                              title: context.messages.measurableDeleteQuestion,
                               actions: [
                                 ModalSheetAction(
                                   icon: Icons.warning,
-                                  label: context
-                                      .messages.measurableDeleteConfirm,
+                                  label:
+                                      context.messages.measurableDeleteConfirm,
                                   key: deleteKey,
                                   isDestructiveAction: true,
                                   isDefaultAction: true,

@@ -327,7 +327,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that copy creates a new dashboard
-      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any())).called(greaterThanOrEqualTo(1));
+      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .called(greaterThanOrEqualTo(1));
     });
 
     // Tests for CreateDashboardPage
