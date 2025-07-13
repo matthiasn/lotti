@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/features/manual/widget/showcase_text_style.dart';
-import 'package:lotti/features/manual/widget/showcase_with_widget.dart';
 import 'package:lotti/features/settings/ui/pages/form_text_field.dart';
 import 'package:lotti/features/settings/ui/widgets/entity_detail_card.dart';
 import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
@@ -13,9 +11,8 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:lotti/widgets/app_bar/sliver_show_case_title_bar.dart';
+
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class TagEditPage extends StatefulWidget {
   const TagEditPage({
@@ -34,11 +31,6 @@ class TagEditPage extends StatefulWidget {
 }
 
 class _TagEditPageState extends State<TagEditPage> {
-  final GlobalKey<State<StatefulWidget>> _tagNameKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _tagPrivateKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _tagHideKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _tagTypeTagKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _tagDeleteKey = GlobalKey();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
 
@@ -127,23 +119,14 @@ class _TagEditPageState extends State<TagEditPage> {
     return Scaffold(
       body: CustomScrollView(
         slivers: <Widget>[
-          SliverShowCaseTitleBar(
-            title: context.messages.settingsTagsDetailsLabel,
-            pinned: true,
-            showcaseIcon: IconButton(
-              onPressed: () {
-                ShowCaseWidget.of(context).startShowCase([
-                  _tagNameKey,
-                  _tagPrivateKey,
-                  _tagHideKey,
-                  _tagTypeTagKey,
-                  _tagDeleteKey,
-                ]);
-              },
-              icon: const Icon(
-                Icons.info_outline_rounded,
+          SliverAppBar(
+            title: Text(
+              context.messages.settingsTagsDetailsLabel,
+              style: appBarTextStyleNewLarge.copyWith(
+                color: Theme.of(context).primaryColor,
               ),
             ),
+            pinned: true,
             actions: [
               if (dirty)
                 TextButton(
@@ -181,99 +164,70 @@ class _TagEditPageState extends State<TagEditPage> {
                     },
                     child: Column(
                       children: <Widget>[
-                        ShowcaseWithWidget(
-                          showcaseKey: _tagNameKey,
-                          startNav: true,
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsTagsShowCaseNameTooltip,
+                        FormTextField(
+                          initialValue: widget.tagEntity.tag,
+                          labelText: context.messages.settingsTagsTagName,
+                          name: 'tag',
+                          key: const Key(
+                            'tag_name_field',
                           ),
-                          child: FormTextField(
-                            initialValue: widget.tagEntity.tag,
-                            labelText: context.messages.settingsTagsTagName,
-                            name: 'tag',
-                            key: const Key(
-                              'tag_name_field',
-                            ),
-                            large: true,
-                          ),
+                          large: true,
                         ),
                         inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          showcaseKey: _tagPrivateKey,
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsTagsShowCasePrivateTooltip,
-                          ),
-                          child: FormSwitch(
-                            name: 'private',
-                            initialValue: widget.tagEntity.private,
-                            title: context.messages.settingsTagsPrivateLabel,
-                            activeColor: errorColor,
-                          ),
+                        FormSwitch(
+                          name: 'private',
+                          initialValue: widget.tagEntity.private,
+                          title: context.messages.settingsTagsPrivateLabel,
+                          activeColor: errorColor,
                         ),
-                        ShowcaseWithWidget(
-                          showcaseKey: _tagHideKey,
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsTagsShowCaseHideTooltip,
-                          ),
-                          child: FormSwitch(
-                            name: 'inactive',
-                            initialValue: widget.tagEntity.inactive,
-                            title: context.messages.settingsTagsHideLabel,
-                            activeColor: errorColor,
-                          ),
+                        FormSwitch(
+                          name: 'inactive',
+                          initialValue: widget.tagEntity.inactive,
+                          title: context.messages.settingsTagsHideLabel,
+                          activeColor: errorColor,
                         ),
                         inputSpacerSmall,
-                        ShowcaseWithWidget(
-                          showcaseKey: _tagTypeTagKey,
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsTagsShowCaseTypeTooltip,
+                        FormBuilderChoiceChips<String>(
+                          name: 'type',
+                          initialValue: widget.tagEntity.map(
+                            genericTag: (_) =>
+                                context.messages.settingsTagsTypeTag,
+                            personTag: (_) =>
+                                context.messages.settingsTagsTypePerson,
+                            storyTag: (_) =>
+                                context.messages.settingsTagsTypeStory,
                           ),
-                          child: FormBuilderChoiceChips<String>(
-                            name: 'type',
-                            initialValue: widget.tagEntity.map(
-                              genericTag: (_) =>
-                                  context.messages.settingsTagsTypeTag,
-                              personTag: (_) =>
-                                  context.messages.settingsTagsTypePerson,
-                              storyTag: (_) => context
-                                  .messages.settingsTagsTypeStory, // 'STORY',
-                            ),
-                            decoration: inputDecoration(
-                              labelText: context.messages.settingsTagsTypeLabel,
-                              themeData: Theme.of(context),
-                            ),
-                            selectedColor: widget.tagEntity.map(
-                              genericTag: getTagColor,
-                              personTag: getTagColor,
-                              storyTag: getTagColor,
-                            ),
-                            runSpacing: 4,
-                            spacing: 4,
-                            options: [
-                              FormBuilderChipOption<String>(
-                                value: 'TAG',
-                                child: Text(
-                                  context.messages.settingsTagsTypeTag,
-                                ),
-                              ),
-                              FormBuilderChipOption<String>(
-                                value: 'PERSON',
-                                child: Text(
-                                  context.messages.settingsTagsTypePerson,
-                                ),
-                              ),
-                              FormBuilderChipOption<String>(
-                                value: 'STORY',
-                                child: Text(
-                                  context.messages.settingsTagsTypeStory,
-                                ),
-                              ),
-                            ],
+                          decoration: inputDecoration(
+                            labelText: context.messages.settingsTagsTypeLabel,
+                            themeData: Theme.of(context),
                           ),
+                          selectedColor: widget.tagEntity.map(
+                            genericTag: getTagColor,
+                            personTag: getTagColor,
+                            storyTag: getTagColor,
+                          ),
+                          runSpacing: 4,
+                          spacing: 4,
+                          options: [
+                            FormBuilderChipOption<String>(
+                              value: 'TAG',
+                              child: Text(
+                                context.messages.settingsTagsTypeTag,
+                              ),
+                            ),
+                            FormBuilderChipOption<String>(
+                              value: 'PERSON',
+                              child: Text(
+                                context.messages.settingsTagsTypePerson,
+                              ),
+                            ),
+                            FormBuilderChipOption<String>(
+                              value: 'STORY',
+                              child: Text(
+                                context.messages.settingsTagsTypeStory,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -286,29 +240,21 @@ class _TagEditPageState extends State<TagEditPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Spacer(),
-                        ShowcaseWithWidget(
-                          showcaseKey: _tagDeleteKey,
-                          endNav: true,
-                          description: ShowcaseTextStyle(
-                            descriptionText: context
-                                .messages.settingsTagsShowCaseDeleteTooltip,
+                        IconButton(
+                          icon: Icon(
+                            MdiIcons.trashCanOutline,
                           ),
-                          child: IconButton(
-                            icon: Icon(
-                              MdiIcons.trashCanOutline,
-                            ),
-                            iconSize: 24,
-                            tooltip: context.messages.settingsTagsDeleteTooltip,
-                            color: context.colorScheme.outline,
-                            onPressed: () {
-                              TagsRepository.upsertTagEntity(
-                                widget.tagEntity.copyWith(
-                                  deletedAt: DateTime.now(),
-                                ),
-                              );
-                              Navigator.of(context).maybePop();
-                            },
-                          ),
+                          iconSize: 24,
+                          tooltip: context.messages.settingsTagsDeleteTooltip,
+                          color: context.colorScheme.outline,
+                          onPressed: () {
+                            TagsRepository.upsertTagEntity(
+                              widget.tagEntity.copyWith(
+                                deletedAt: DateTime.now(),
+                              ),
+                            );
+                            Navigator.of(context).maybePop();
+                          },
                         ),
                       ],
                     ),
@@ -344,10 +290,8 @@ class EditExistingTagPage extends StatelessWidget {
       );
     }
 
-    return ShowCaseWidget(
-      builder: (context) => TagEditPage(
-        tagEntity: tagEntity,
-      ),
+    return TagEditPage(
+      tagEntity: tagEntity,
     );
   }
 }

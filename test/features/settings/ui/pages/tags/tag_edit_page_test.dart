@@ -7,7 +7,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../mocks/sync_config_test_mocks.dart';
@@ -52,16 +51,14 @@ void main() {
       'then save button becomes visible editing tag name ',
       (tester) async {
         await tester.pumpWidget(
-          ShowCaseWidget(
-            builder: (context) => makeTestableWidget(
-              ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 1000,
-                  maxWidth: 1000,
-                ),
-                child: TagEditPage(
-                  tagEntity: testTag1,
-                ),
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: TagEditPage(
+                tagEntity: testTag1,
               ),
             ),
           ),
@@ -94,16 +91,14 @@ void main() {
       'then save button becomes visible editing tag name ',
       (tester) async {
         await tester.pumpWidget(
-          ShowCaseWidget(
-            builder: (context) => makeTestableWidget(
-              ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 1000,
-                  maxWidth: 1000,
-                ),
-                child: TagEditPage(
-                  tagEntity: testStoryTag1,
-                ),
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: TagEditPage(
+                tagEntity: testStoryTag1,
               ),
             ),
           ),
@@ -136,16 +131,14 @@ void main() {
       'then save button becomes visible editing tag name ',
       (tester) async {
         await tester.pumpWidget(
-          ShowCaseWidget(
-            builder: (context) => makeTestableWidget(
-              ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 1000,
-                  maxWidth: 1000,
-                ),
-                child: TagEditPage(
-                  tagEntity: testPersonTag1,
-                ),
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: TagEditPage(
+                tagEntity: testPersonTag1,
               ),
             ),
           ),
