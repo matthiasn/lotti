@@ -167,8 +167,7 @@ void main() {
       expect(find.byType(QuillEditor), findsOneWidget);
     });
 
-    testWidgets('uses Stack layout for content and gradient overlay',
-        (tester) async {
+    testWidgets('contains QuillEditor for displaying content', (tester) async {
       const entryText = EntryText(
         plainText: 'Test content',
       );
@@ -182,16 +181,11 @@ void main() {
         ),
       );
 
-      expect(find.byType(Stack), findsOneWidget);
+      // Should contain QuillEditor
+      expect(find.byType(QuillEditor), findsOneWidget);
 
-      // Stack should contain QuillEditor
-      expect(
-        find.descendant(
-          of: find.byType(Stack),
-          matching: find.byType(QuillEditor),
-        ),
-        findsOneWidget,
-      );
+      // Should be wrapped in AbsorbPointer to prevent interaction
+      expect(find.byType(AbsorbPointer), findsWidgets);
     });
 
     testWidgets('handles empty plainText gracefully', (tester) async {
@@ -269,8 +263,31 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should have the basic structure
-        expect(find.byType(Stack), findsOneWidget);
         expect(find.byType(QuillEditor), findsOneWidget);
+        expect(find.byType(AbsorbPointer), findsWidgets);
+      });
+
+      testWidgets('shows ShaderMask when content overflows', (tester) async {
+        // Create long content that will overflow
+        final longText =
+            List.generate(50, (i) => 'Line $i of long content').join('\n');
+        final entryText = EntryText(
+          plainText: longText,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            TextViewerWidgetNonScrollable(
+              entryText: entryText,
+              maxHeight: 100, // Small height to force overflow
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // When content overflows, ShaderMask should be present
+        expect(find.byType(ShaderMask), findsWidgets);
       });
 
       testWidgets('triggers overflow check on layout changes', (tester) async {

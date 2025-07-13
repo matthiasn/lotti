@@ -1,5 +1,6 @@
 // ignore_for_file: equal_keys_in_map
 import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -524,12 +525,39 @@ ThemeData withOverrides(ThemeData themeData) {
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{},
       ),
-      extensions: const <ThemeExtension>[
-        WoltModalSheetThemeData(
+      extensions: <ThemeExtension>[
+        const WoltModalSheetThemeData(
           animationStyle: WoltModalSheetAnimationStyle(
             paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
               modalSheetHeightTransitionCurve: Interval(0, 0.1),
             ),
+          ),
+        ),
+        GptMarkdownThemeData(
+          brightness: themeData.brightness,
+          h1: themeData.textTheme.titleLarge?.copyWith(
+            fontSize: fontSizeMediumLarge,
+            fontWeight: FontWeight.w600,
+          ),
+          h2: themeData.textTheme.titleMedium?.copyWith(
+            fontSize: fontSizeMedium + 2,
+            fontWeight: FontWeight.w500,
+          ),
+          h3: themeData.textTheme.titleSmall?.copyWith(
+            fontSize: fontSizeMedium,
+            fontWeight: FontWeight.w500,
+          ),
+          h4: themeData.textTheme.bodyLarge?.copyWith(
+            fontSize: fontSizeMedium,
+            fontWeight: FontWeight.w500,
+          ),
+          h5: themeData.textTheme.bodyMedium?.copyWith(
+            fontSize: fontSizeMedium,
+            fontWeight: FontWeight.w400,
+          ),
+          h6: themeData.textTheme.bodySmall?.copyWith(
+            fontSize: fontSizeSmall,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ]);

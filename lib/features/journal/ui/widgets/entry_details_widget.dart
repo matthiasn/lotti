@@ -81,6 +81,8 @@ class EntryDetailsWidget extends ConsumerWidget {
         right: AppTheme.spacingXSmall,
         bottom: AppTheme.spacingMedium,
       ),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppTheme.cardPaddingCompact),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

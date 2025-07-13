@@ -21,6 +21,9 @@ class TextViewerWidgetNonScrollable extends StatefulWidget {
       _TextViewerWidgetNonScrollableState();
 }
 
+/// Height of the gradient fade area in pixels
+const double _gradientHeight = 32;
+
 class _TextViewerWidgetNonScrollableState
     extends State<TextViewerWidgetNonScrollable> {
   bool _showGradient = false;
@@ -86,10 +89,9 @@ class _TextViewerWidgetNonScrollableState
 
         return LimitedBox(
           maxHeight: widget.maxHeight,
-          child: Stack(
-            children: [
-              // The QuillEditor with disabled scrolling
-              AbsorbPointer(
+          child: Builder(
+            builder: (context) {
+              final editor = AbsorbPointer(
                 child: QuillEditor(
                   key: _quillKey,
                   controller: _controller!,
@@ -100,38 +102,33 @@ class _TextViewerWidgetNonScrollableState
                         customEditorStyles(themeData: Theme.of(context)),
                   ),
                 ),
-              ),
-              // Gradient overlay at the bottom for fade effect - only when overflowing
-              if (_showGradient)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 32, // Height of the gradient fade
-                  child: IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Theme.of(context)
-                                .scaffoldBackgroundColor
-                                .withValues(alpha: 0),
-                            Theme.of(context)
-                                .scaffoldBackgroundColor
-                                .withValues(alpha: 0.7),
-                            Theme.of(context)
-                                .scaffoldBackgroundColor
-                                .withValues(alpha: 0.95),
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+              );
+
+              if (!_showGradient) {
+                return editor;
+              }
+
+              return ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: const [
+                      Colors.black,
+                      Colors.black,
+                      Colors.transparent,
+                    ],
+                    stops: [
+                      0.0,
+                      (bounds.height - _gradientHeight) / bounds.height,
+                      1.0,
+                    ],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.dstIn,
+                child: editor,
+              );
+            },
           ),
         );
       },
