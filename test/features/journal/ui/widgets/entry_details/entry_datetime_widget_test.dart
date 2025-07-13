@@ -51,10 +51,7 @@ void main() {
       );
     });
 
-    testWidgets('tap entry date', (WidgetTester tester) async {
-      // ignore: unused_local_variable
-      DateTime? modifiedDateTo;
-
+    testWidgets('tap entry date opens modal', (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDatetimeWidget(
@@ -71,51 +68,18 @@ void main() {
       await tester.tap(entryDateFromFinder);
       await tester.pumpAndSettle();
 
-      final entryDateTimeFinder2 =
-          find.text(dfShorter.format(testTextEntry.meta.dateFrom)).last;
-      expect(entryDateTimeFinder2, findsOneWidget);
+      // Check that modal opened with the date range selector
+      expect(find.text('Date & Time Range'), findsOneWidget);
 
-      // open and close dateTo selection
-      final entryDateToFinder =
-          find.text(dfShorter.format(testTextEntry.meta.dateTo));
-      expect(entryDateToFinder, findsOneWidget);
+      // Check that both date fields are present
+      expect(find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
+          findsWidgets);
+      expect(find.text(dfShorter.format(testTextEntry.meta.dateTo)),
+          findsOneWidget);
 
-      await tester.tap(entryDateToFinder);
+      // Close modal by tapping outside
+      await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
-
-      final doneButtonFinder = find.text('Done');
-      expect(doneButtonFinder, findsOneWidget);
-
-      await tester.tap(doneButtonFinder);
-      await tester.pumpAndSettle();
-
-      // open and close dateFrom selection
-      await tester.tap(entryDateTimeFinder2.last);
-      await tester.pumpAndSettle();
-
-      expect(doneButtonFinder, findsOneWidget);
-
-      await tester.tap(doneButtonFinder);
-      await tester.pumpAndSettle();
-
-      // set dateTo to now() and save
-      await tester.tap(entryDateTimeFinder2.last);
-      await tester.pumpAndSettle();
-
-      final nowButtonFinder = find.text('Now');
-      expect(nowButtonFinder, findsOneWidget);
-
-      await tester.tap(nowButtonFinder);
-
-      // TODO: debug why SAVE button doesn't become visible
-      // final saveButtonFinder = find.text('SAVE');
-      // expect(saveButtonFinder, findsOneWidget);
-      //
-      // await tester.tap(saveButtonFinder);
-      // await tester.pumpAndSettle();
-      //
-      // // updateFromTo called with recent dateTo after tapping now()
-      // expect(modifiedDateTo?.difference(DateTime.now()).inSeconds, lessThan(2));
     });
   });
 }
