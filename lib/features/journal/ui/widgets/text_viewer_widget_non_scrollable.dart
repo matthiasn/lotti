@@ -21,6 +21,9 @@ class TextViewerWidgetNonScrollable extends StatefulWidget {
       _TextViewerWidgetNonScrollableState();
 }
 
+/// Height of the gradient fade area in pixels
+const double _gradientHeight = 32;
+
 class _TextViewerWidgetNonScrollableState
     extends State<TextViewerWidgetNonScrollable> {
   bool _showGradient = false;
@@ -86,50 +89,47 @@ class _TextViewerWidgetNonScrollableState
 
         return LimitedBox(
           maxHeight: widget.maxHeight,
-          child: _showGradient
-              ? ShaderMask(
-                  shaderCallback: (Rect bounds) {
-                    return LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: const [
-                        Colors.black,
-                        Colors.black,
-                        Colors.transparent,
-                      ],
-                      stops: [
-                        0.0,
-                        (bounds.height - 32) / bounds.height,
-                        1.0,
-                      ],
-                    ).createShader(bounds);
-                  },
-                  blendMode: BlendMode.dstIn,
-                  child: AbsorbPointer(
-                    child: QuillEditor(
-                      key: _quillKey,
-                      controller: _controller!,
-                      scrollController: ScrollController(),
-                      focusNode: FocusNode(),
-                      config: QuillEditorConfig(
-                        customStyles:
-                            customEditorStyles(themeData: Theme.of(context)),
-                      ),
-                    ),
-                  ),
-                )
-              : AbsorbPointer(
-                  child: QuillEditor(
-                    key: _quillKey,
-                    controller: _controller!,
-                    scrollController: ScrollController(),
-                    focusNode: FocusNode(),
-                    config: QuillEditorConfig(
-                      customStyles:
-                          customEditorStyles(themeData: Theme.of(context)),
-                    ),
+          child: Builder(
+            builder: (context) {
+              final editor = AbsorbPointer(
+                child: QuillEditor(
+                  key: _quillKey,
+                  controller: _controller!,
+                  scrollController: ScrollController(),
+                  focusNode: FocusNode(),
+                  config: QuillEditorConfig(
+                    customStyles:
+                        customEditorStyles(themeData: Theme.of(context)),
                   ),
                 ),
+              );
+
+              if (!_showGradient) {
+                return editor;
+              }
+
+              return ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: const [
+                      Colors.black,
+                      Colors.black,
+                      Colors.transparent,
+                    ],
+                    stops: [
+                      0.0,
+                      (bounds.height - _gradientHeight) / bounds.height,
+                      1.0,
+                    ],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.dstIn,
+                child: editor,
+              );
+            },
+          ),
         );
       },
     );
