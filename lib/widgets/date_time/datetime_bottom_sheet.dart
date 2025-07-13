@@ -20,11 +20,8 @@ class DateTimeBottomSheet extends StatefulWidget {
 }
 
 class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
-  DateTime? dateTime = DateTime.now();
-
   @override
   void initState() {
-    dateTime = widget.initial;
     super.initState();
     // Pass initial value to callback
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -50,12 +47,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
           initialDateTime: widget.initial,
           mode: widget.mode,
           use24hFormat: true,
-          onDateTimeChanged: (DateTime value) {
-            setState(() {
-              dateTime = value;
-            });
-            widget.onDateTimeSelected(value);
-          },
+          onDateTimeChanged: widget.onDateTimeSelected,
         ),
       ),
     );

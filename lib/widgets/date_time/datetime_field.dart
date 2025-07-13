@@ -55,16 +55,18 @@ class _DateTimeFieldState extends State<DateTimeField> {
         text: widget.dateTime != null ? df.format(widget.dateTime!) : '',
       ),
       onTap: () async {
-        var selectedDateTime = widget.dateTime;
+        var selectedDateTime = widget.dateTime ?? DateTime.now();
 
         await ModalUtils.showSinglePageModal<void>(
           context: context,
           builder: (modalContext) {
             return DateTimeBottomSheet(
-              widget.dateTime ?? DateTime.now(),
+              selectedDateTime,
               mode: widget.mode,
               onDateTimeSelected: (dateTime) {
-                selectedDateTime = dateTime;
+                if (dateTime != null) {
+                  selectedDateTime = dateTime;
+                }
               },
             );
           },
@@ -76,9 +78,7 @@ class _DateTimeFieldState extends State<DateTimeField> {
               Navigator.of(context).pop();
             },
             onDone: () {
-              if (selectedDateTime != null) {
-                widget.setDateTime(selectedDateTime!);
-              }
+              widget.setDateTime(selectedDateTime);
               Navigator.of(context).pop();
             },
           ),

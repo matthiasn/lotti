@@ -230,30 +230,6 @@ void main() {
       expect(selectedDate, equals(initialDate));
     });
 
-    testWidgets('calls onDateTimeSelected when date is changed',
-        (WidgetTester tester) async {
-      final selectedDates = <DateTime?>[];
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeBottomSheet(
-            DateTime(2024, 1, 15),
-            mode: CupertinoDatePickerMode.date,
-            onDateTimeSelected: selectedDates.add,
-          ),
-        ),
-      );
-
-      // Find and interact with the date picker
-      final picker = find.byType(CupertinoDatePicker);
-      expect(picker, findsOneWidget);
-
-      // Verify initial date was passed to callback
-      await tester.pumpAndSettle();
-      expect(selectedDates.length, greaterThan(0));
-      expect(selectedDates.first, DateTime(2024, 1, 15));
-    });
-
     testWidgets('respects different picker modes', (WidgetTester tester) async {
       // Test date-only mode
       await tester.pumpWidget(
