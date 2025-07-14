@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
@@ -61,7 +61,7 @@ class DurationWidget extends ConsumerWidget {
         final saveFn = ref.read(provider.notifier).save;
 
         return GestureDetector(
-          onTap: () => EntryDateTimeModal.show(entry: item, context: context),
+          onTap: () => EntryDateTimeMultiPageModal.show(entry: item, context: context),
           child: Visibility(
             visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
             child: Row(
