@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/cards/modal_card.dart';
-import 'package:lotti/widgets/modal/animated_modal_item.dart';
+import 'package:lotti/widgets/modal/animated_modal_card_item.dart';
 
 /// A modern modal prompt item designed for AI prompts and similar content
 ///
@@ -42,18 +42,15 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
   Widget build(BuildContext context) {
     final effectiveIconColor = widget.iconColor ?? context.colorScheme.primary;
 
-    return AnimatedModalItem(
+    return AnimatedModalCardItem(
       onTap: widget.onTap,
       isDisabled: widget.isDisabled,
-      childBuilder: (context, controller) => ModalCard(
+      cardBuilder: (context, controller) => ModalCard(
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
           vertical: AppTheme.cardPadding / 2,
         ),
         backgroundColor: context.colorScheme.surfaceContainerHighest,
-        onTap: widget.onTap,
-        isDisabled: widget.isDisabled,
-        animationController: controller,
         child: Row(
           children: [
             // Icon with gradient container

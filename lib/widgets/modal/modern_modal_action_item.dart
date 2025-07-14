@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modal_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
-import 'package:lotti/widgets/modal/animated_modal_item.dart';
+import 'package:lotti/widgets/modal/animated_modal_card_item.dart';
 
 /// A modern modal action item with gradient styling and polished animations
 ///
@@ -49,18 +49,15 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
         ? context.colorScheme.error.withValues(alpha: 0.8)
         : context.colorScheme.onSurfaceVariant;
 
-    return AnimatedModalItem(
+    return AnimatedModalCardItem(
       onTap: widget.onTap,
       isDisabled: widget.isDisabled,
-      childBuilder: (context, controller) => ModalCard(
+      cardBuilder: (context, controller) => ModalCard(
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
           vertical: AppTheme.cardSpacing,
         ),
         backgroundColor: context.colorScheme.surfaceContainerHighest,
-        onTap: widget.onTap,
-        isDisabled: widget.isDisabled,
-        animationController: controller,
         child: Row(
           children: [
             // Icon with gradient container

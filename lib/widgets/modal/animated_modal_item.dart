@@ -5,8 +5,8 @@ import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 /// A wrapper widget that provides hover and tap animations for modal items
 class AnimatedModalItem extends StatefulWidget {
   const AnimatedModalItem({
+    required this.child,
     required this.onTap,
-    this.child,
     this.isDisabled = false,
     this.hoverScale = 0.99,
     this.tapScale = 0.98,
@@ -15,12 +15,10 @@ class AnimatedModalItem extends StatefulWidget {
     this.controller,
     this.margin,
     this.disableShadow = false,
-    this.childBuilder,
     super.key,
-  }) : assert(child != null || childBuilder != null, 
-             'Either child or childBuilder must be provided');
+  });
 
-  final Widget? child;
+  final Widget child;
   final VoidCallback? onTap;
   final bool isDisabled;
   final double hoverScale;
@@ -30,7 +28,6 @@ class AnimatedModalItem extends StatefulWidget {
   final AnimatedModalItemController? controller;
   final EdgeInsets? margin;
   final bool disableShadow;
-  final Widget Function(BuildContext, AnimatedModalItemController)? childBuilder;
 
   @override
   State<AnimatedModalItem> createState() => _AnimatedModalItemState();
@@ -128,6 +125,24 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
     }
   }
 
+  void _handleTapDown(TapDownDetails details) {
+    if (!widget.isDisabled) {
+      _controller.startTap();
+    }
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    if (!widget.isDisabled) {
+      _controller.endTap();
+    }
+  }
+
+  void _handleTapCancel() {
+    if (!widget.isDisabled) {
+      _controller.endTap();
+    }
+  }
+
   List<BoxShadow>? _buildBoxShadow(BuildContext context, bool isDark) {
     if (widget.disableShadow) return null;
 
@@ -157,34 +172,37 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
             _hoverScaleAnimation.value * _tapScaleAnimation.value;
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        final child = widget.childBuilder != null
-            ? widget.childBuilder!(context, _controller)
-            : widget.child!;
-
-        return MouseRegion(
-          onEnter: (_) => _handleHoverChanged(true),
-          onExit: (_) => _handleHoverChanged(false),
-          child: Transform.scale(
-            scale: combinedScale,
-            child: AnimatedOpacity(
-              opacity: widget.isDisabled ? 0.5 : _tapOpacityAnimation.value,
-              duration: const Duration(milliseconds: 150),
-              child: Container(
-                margin: widget.margin ??
-                    const EdgeInsets.symmetric(
-                      horizontal: AppTheme.cardPadding,
-                      vertical: AppTheme.cardSpacing / 2,
+        return GestureDetector(
+          onTapDown: _handleTapDown,
+          onTapUp: _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          onTap: widget.isDisabled ? null : widget.onTap,
+          child: MouseRegion(
+            onEnter: (_) => _handleHoverChanged(true),
+            onExit: (_) => _handleHoverChanged(false),
+            child: Transform.scale(
+              scale: combinedScale,
+              child: AnimatedOpacity(
+                opacity: widget.isDisabled ? 0.5 : _tapOpacityAnimation.value,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  margin: widget.margin ??
+                      const EdgeInsets.symmetric(
+                        horizontal: AppTheme.cardPadding,
+                        vertical: AppTheme.cardSpacing / 2,
+                      ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.cardBorderRadius),
+                      boxShadow: _buildBoxShadow(context, isDark),
                     ),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.cardBorderRadius),
-                    boxShadow: _buildBoxShadow(context, isDark),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-                    child: child,
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.cardBorderRadius),
+                      child: widget.child,
+                    ),
                   ),
                 ),
               ),

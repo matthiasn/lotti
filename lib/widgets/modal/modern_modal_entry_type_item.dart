@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modal_card.dart';
-import 'package:lotti/widgets/modal/animated_modal_item_with_icon.dart';
+import 'package:lotti/widgets/modal/animated_modal_card_item_with_icon.dart';
 
 /// A modern modal entry type item for creating different entry types
 ///
@@ -30,15 +30,59 @@ class ModernModalEntryTypeItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveIconColor = iconColor ?? context.colorScheme.primary;
 
-    return AnimatedModalItemWithIcon(
+    return AnimatedModalCardItemWithIcon(
       onTap: isDisabled ? null : onTap,
       isDisabled: isDisabled,
+      modalCard: ModalCard(
+        backgroundColor: context.colorScheme.surfaceContainerHighest,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: AppTheme.cardPadding * 0.6,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppTheme.modalIconSpacerWidth,
+          ),
+          child: Row(
+            children: [
+              // Spacer for icon
+              const SizedBox(width: AppTheme.modalIconSpacerWidth),
+              const SizedBox(width: AppTheme.modalChevronSpacerWidth),
+
+              // Title
+              Expanded(
+                child: Text(
+                  title,
+                  style: context.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: AppTheme.titleFontSize,
+                    color: context.colorScheme.onSurface,
+                    letterSpacing: AppTheme.letterSpacingTitle * 0.8,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // Badge if present
+              if (badge != null) ...[
+                const SizedBox(width: AppTheme.spacingMedium),
+                badge!,
+              ],
+
+              // Spacer for chevron
+              const SizedBox(width: AppTheme.chevronSize),
+              const SizedBox(width: AppTheme.spacingSmall),
+            ],
+          ),
+        ),
+      ),
       iconBuilder: (context, iconAnimation, {required bool isPressed}) {
         return Positioned.fill(
           child: IgnorePointer(
             child: Row(
               children: [
-                const SizedBox(width: AppTheme.cardPadding),
+                const SizedBox(width: AppTheme.cardPadding * 2),
                 // Animated icon container
                 Transform.scale(
                   scale: iconAnimation.value,
@@ -89,56 +133,12 @@ class ModernModalEntryTypeItem extends StatelessWidget {
                     color: effectiveIconColor,
                   ),
                 ),
-                const SizedBox(width: AppTheme.cardPadding),
+                const SizedBox(width: AppTheme.cardPadding * 2),
               ],
             ),
           ),
         );
       },
-      child: ModalCard(
-        backgroundColor: context.colorScheme.surfaceContainerHighest,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.cardPadding,
-          vertical: AppTheme.cardPadding * 0.6,
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: AppTheme.modalIconSpacerWidth,
-          ),
-          child: Row(
-            children: [
-              // Spacer for icon
-              const SizedBox(width: AppTheme.modalIconSpacerWidth),
-              const SizedBox(width: AppTheme.modalChevronSpacerWidth),
-
-              // Title
-              Expanded(
-                child: Text(
-                  title,
-                  style: context.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: AppTheme.titleFontSize,
-                    color: context.colorScheme.onSurface,
-                    letterSpacing: AppTheme.letterSpacingTitle * 0.8,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-
-              // Badge if present
-              if (badge != null) ...[
-                const SizedBox(width: AppTheme.spacingMedium),
-                badge!,
-              ],
-
-              // Spacer for chevron
-              const SizedBox(width: AppTheme.chevronSize),
-              const SizedBox(width: AppTheme.spacingSmall),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/modal/animated_modal_item.dart';
+import 'package:lotti/widgets/cards/modal_card.dart';
+import 'package:lotti/widgets/modal/animated_modal_card_item.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 
-/// A specialized version of AnimatedModalItem that also animates an icon
+/// A specialized version for ModalCard widgets that also animates an icon
 ///
-/// This widget composes AnimatedModalItem to reuse its animation logic,
-/// while adding icon-specific animations on top.
-class AnimatedModalItemWithIcon extends StatefulWidget {
-  const AnimatedModalItemWithIcon({
-    required this.child,
+/// This widget combines AnimatedModalCardItem functionality with icon animations,
+/// specifically designed for modal card use cases.
+class AnimatedModalCardItemWithIcon extends StatefulWidget {
+  const AnimatedModalCardItemWithIcon({
+    required this.modalCard,
     required this.onTap,
     required this.iconBuilder,
     this.isDisabled = false,
@@ -22,7 +23,7 @@ class AnimatedModalItemWithIcon extends StatefulWidget {
     super.key,
   });
 
-  final Widget child;
+  final ModalCard modalCard;
   final VoidCallback? onTap;
   final Widget Function(BuildContext context, Animation<double> iconAnimation,
       {required bool isPressed}) iconBuilder;
@@ -36,12 +37,12 @@ class AnimatedModalItemWithIcon extends StatefulWidget {
   final bool disableShadow;
 
   @override
-  State<AnimatedModalItemWithIcon> createState() =>
-      _AnimatedModalItemWithIconState();
+  State<AnimatedModalCardItemWithIcon> createState() =>
+      _AnimatedModalCardItemWithIconState();
 }
 
-class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
-    with TickerProviderStateMixin {
+class _AnimatedModalCardItemWithIconState
+    extends State<AnimatedModalCardItemWithIcon> with TickerProviderStateMixin {
   late AnimatedModalItemController _controller;
   late Animation<double> _iconScaleAnimation;
   bool _isPressed = false;
@@ -66,7 +67,7 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
   }
 
   @override
-  void didUpdateWidget(AnimatedModalItemWithIcon oldWidget) {
+  void didUpdateWidget(AnimatedModalCardItemWithIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.iconScaleOnTap != oldWidget.iconScaleOnTap) {
       _initializeAnimations();
@@ -92,29 +93,28 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedModalItem(
-      controller: _controller,
-      onTap: widget.onTap,
-      isDisabled: widget.isDisabled,
-      hoverScale: widget.hoverScale,
-      tapScale: widget.tapScale,
-      tapOpacity: widget.tapOpacity,
-      hoverElevation: widget.hoverElevation,
-      margin: widget.margin,
-      disableShadow: widget.disableShadow,
-      child: Stack(
-        children: [
-          widget.child,
-          AnimatedBuilder(
-            animation: _iconScaleAnimation,
-            builder: (context, _) => widget.iconBuilder(
-              context,
-              _iconScaleAnimation,
-              isPressed: _isPressed,
-            ),
+    return Stack(
+      children: [
+        AnimatedModalCardItem(
+          onTap: widget.onTap,
+          isDisabled: widget.isDisabled,
+          hoverScale: widget.hoverScale,
+          tapScale: widget.tapScale,
+          tapOpacity: widget.tapOpacity,
+          hoverElevation: widget.hoverElevation,
+          margin: widget.margin,
+          disableShadow: widget.disableShadow,
+          cardBuilder: (context, controller) => widget.modalCard,
+        ),
+        AnimatedBuilder(
+          animation: _iconScaleAnimation,
+          builder: (context, _) => widget.iconBuilder(
+            context,
+            _iconScaleAnimation,
+            isPressed: _isPressed,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
