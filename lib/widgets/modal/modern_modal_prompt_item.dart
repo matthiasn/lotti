@@ -45,12 +45,15 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
     return AnimatedModalItem(
       onTap: widget.onTap,
       isDisabled: widget.isDisabled,
-      child: ModalCard(
+      childBuilder: (context, controller) => ModalCard(
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
           vertical: AppTheme.cardPadding / 2,
         ),
         backgroundColor: context.colorScheme.surfaceContainerHighest,
+        onTap: widget.onTap,
+        isDisabled: widget.isDisabled,
+        animationController: controller,
         child: Row(
           children: [
             // Icon with gradient container

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/widgets/cards/modal_card.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 
@@ -102,9 +103,19 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
       hoverElevation: widget.hoverElevation,
       margin: widget.margin,
       disableShadow: widget.disableShadow,
-      child: Stack(
+      childBuilder: (context, controller) => Stack(
         children: [
-          widget.child,
+          if (widget.child is ModalCard)
+            ModalCard(
+              padding: (widget.child as ModalCard).padding,
+              backgroundColor: (widget.child as ModalCard).backgroundColor,
+              onTap: widget.onTap,
+              isDisabled: widget.isDisabled,
+              animationController: controller,
+              child: (widget.child as ModalCard).child,
+            )
+          else
+            widget.child,
           AnimatedBuilder(
             animation: _iconScaleAnimation,
             builder: (context, _) => widget.iconBuilder(

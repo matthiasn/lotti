@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
 
 /// A card widget specifically designed for use in modals
 /// Provides better contrast and visual separation against modal backgrounds
@@ -8,12 +9,36 @@ class ModalCard extends StatelessWidget {
     required this.child,
     this.padding,
     this.backgroundColor,
+    this.onTap,
+    this.isDisabled = false,
+    this.animationController,
     super.key,
   });
 
   final Widget child;
   final EdgeInsets? padding;
   final Color? backgroundColor;
+  final VoidCallback? onTap;
+  final bool isDisabled;
+  final AnimatedModalItemController? animationController;
+
+  void _handleTapDown(TapDownDetails details) {
+    if (!isDisabled && onTap != null) {
+      animationController?.startTap();
+    }
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    if (!isDisabled && onTap != null) {
+      animationController?.endTap();
+    }
+  }
+
+  void _handleTapCancel() {
+    if (!isDisabled && onTap != null) {
+      animationController?.endTap();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +46,19 @@ class ModalCard extends StatelessWidget {
       elevation: 2,
       surfaceTintColor: context.colorScheme.surfaceTint,
       color: backgroundColor,
-      child: Container(
-        padding: padding,
-        child: child,
+      clipBehavior: Clip.hardEdge,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isDisabled ? null : onTap,
+          onTapDown: _handleTapDown,
+          onTapUp: _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          child: Container(
+            padding: padding,
+            child: child,
+          ),
+        ),
       ),
     );
   }
