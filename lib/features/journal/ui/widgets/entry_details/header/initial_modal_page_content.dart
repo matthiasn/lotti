@@ -73,7 +73,6 @@ class InitialModalPageContent extends StatelessWidget {
             link: link,
           ),
         ModernCopyImageItem(entryId: entryId),
-        const SizedBox(height: 24),
       ],
     );
   }

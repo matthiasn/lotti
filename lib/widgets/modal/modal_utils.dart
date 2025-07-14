@@ -37,15 +37,16 @@ class ModalUtils {
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = false,
     void Function()? onTapBack,
-    EdgeInsetsGeometry padding = defaultPadding,
+    EdgeInsets padding = defaultPadding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
+    Widget? leadingNavBarWidget,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
 
     return WoltModalSheetPage(
       stickyActionBar: stickyActionBar,
+      backgroundColor: getModalBackgroundColor(context),
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 65,
       hasTopBarLayer: hasTopBarLayer,
@@ -82,7 +83,7 @@ class ModalUtils {
               ),
               onPressed: onTapBack,
             )
-          : null,
+          : leadingNavBarWidget,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
               padding: const EdgeInsets.all(12),
@@ -102,17 +103,10 @@ class ModalUtils {
               onPressed: Navigator.of(context).pop,
             )
           : null,
-      child: isDark
-          ? GradientContainer(
-              child: Padding(
-                padding: padding,
-                child: child,
-              ),
-            )
-          : Padding(
-              padding: padding,
-              child: child,
-            ),
+      child: Padding(
+        padding: padding,
+        child: child,
+      ),
     );
   }
 
@@ -123,42 +117,28 @@ class ModalUtils {
     String? title,
     Widget? titleWidget,
     Widget? stickyActionBar,
-    EdgeInsetsGeometry padding = defaultPadding,
+    EdgeInsets padding = defaultPadding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
   }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
       modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
-          WoltModalSheetPage(
+          modalSheetPage(
             stickyActionBar: stickyActionBar,
-            hasSabGradient: false,
-            navBarHeight: navBarHeight ?? 65,
+            title: title,
+            titleWidget: titleWidget,
             hasTopBarLayer: hasTopBarLayer,
-            topBarTitle: titleWidget ??
-                (title != null
-                    ? Container(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          title,
-                          style: context.textTheme.titleMedium?.copyWith(
-                            color: context.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      )
-                    : null),
-            isTopBarLayerAlwaysVisible: title != null || titleWidget != null,
-            child: Padding(
-              padding: padding,
-              child: builder(modalSheetContext),
-            ),
+            navBarHeight: navBarHeight,
+            padding: padding,
+            child: builder(modalSheetContext),
+            context: modalSheetContext,
           ),
         ];
       },
@@ -175,11 +155,13 @@ class ModalUtils {
         pageListBuilder,
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
+    Widget Function(Widget)? modalDecorator,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
+      modalDecorator: modalDecorator,
       pageListBuilder: pageListBuilder,
       modalTypeBuilder: modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
@@ -205,6 +187,7 @@ class ModalUtils {
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
       stickyActionBar: stickyActionBar,
+      backgroundColor: getModalBackgroundColor(context),
       hasSabGradient: false,
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
@@ -285,29 +268,9 @@ class ModalUtils {
       barrierDismissible: barrierDismissible,
     );
   }
-}
 
-class GradientContainer extends StatelessWidget {
-  const GradientContainer({
-    required this.child,
-    super.key,
-  });
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withValues(alpha: 0.03),
-            colorScheme.primaryContainer.withValues(alpha: 0.01),
-          ],
-        ),
-      ),
-      child: child,
-    );
+  static Color? getModalBackgroundColor(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.colorScheme.surfaceContainerHigh;
   }
 }

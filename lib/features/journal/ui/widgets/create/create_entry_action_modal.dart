@@ -13,9 +13,9 @@ class CreateEntryModal {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createEntryTitle,
+      padding: const EdgeInsets.only(bottom: 30, top: 10),
       builder: (_) => Column(
         children: [
-          const SizedBox(height: 8),
           ModernCreateEventItem(linkedFromId, categoryId: categoryId),
           ModernCreateTaskItem(linkedFromId, categoryId: categoryId),
           ModernCreateAudioItem(linkedFromId, categoryId: categoryId),
@@ -25,7 +25,6 @@ class CreateEntryModal {
           if (isMacOS)
             ModernCreateScreenshotItem(linkedFromId, categoryId: categoryId),
           ModernPasteImageItem(linkedFromId, categoryId: categoryId),
-          const SizedBox(height: 24),
         ],
       ),
     );

@@ -16,7 +16,7 @@ class AppTheme {
   static const double cardPaddingCompact = 14;
   static const double cardElevationLight = 8; // Enhanced shadows
   static const double cardElevationDark = 12;
-  static const double cardSpacing = 12; // Increased spacing between cards
+  static const double cardSpacing = 10; // Increased spacing between cards
 
   // Icon container constants
   static const double iconContainerSize = 44; // Slightly larger
@@ -99,7 +99,7 @@ class AppTheme {
   static const double statusIndicatorFontSizeTiny = 10;
 
   // Modal item spacer widths
-  static const double modalIconSpacerWidth = iconContainerSize * 1.15;
+  static const double modalIconSpacerWidth = iconContainerSize;
   static const double modalChevronSpacerWidth = spacingLarge;
 }
 
@@ -379,8 +379,6 @@ ThemeData withOverrides(ThemeData themeData) {
   return themeData.copyWith(
       cardTheme: themeData.cardTheme.copyWith(
         clipBehavior: Clip.hardEdge,
-        color: themeData.colorScheme.surfaceContainer,
-        elevation: 0, // Let our custom cards handle elevation
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         ),

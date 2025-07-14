@@ -26,7 +26,7 @@ class AnimatedModalItem extends StatefulWidget {
   final double tapOpacity;
   final double hoverElevation;
   final AnimatedModalItemController? controller;
-  final EdgeInsetsGeometry? margin;
+  final EdgeInsets? margin;
   final bool disableShadow;
 
   @override
@@ -198,7 +198,11 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
                           BorderRadius.circular(AppTheme.cardBorderRadius),
                       boxShadow: _buildBoxShadow(context, isDark),
                     ),
-                    child: widget.child,
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.cardBorderRadius),
+                      child: widget.child,
+                    ),
                   ),
                 ),
               ),

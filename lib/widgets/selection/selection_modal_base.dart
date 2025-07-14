@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Base class for selection modals using Wolt Modal Sheet
 ///
@@ -13,51 +12,13 @@ abstract class SelectionModalBase {
     required String title,
     required Widget child,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    WoltModalSheet.show<void>(
+    ModalUtils.showSinglePageModal<void>(
       context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      modalBarrierColor: isDark
-          ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-          : context.colorScheme.outline.withAlpha(128),
-      pageListBuilder: (modalSheetContext) => [
-        buildModalPage(
-          context: modalSheetContext,
-          title: title,
-          child: child,
-        ),
-      ],
-    );
-  }
-
-  /// Builds a standard Wolt modal sheet page
-  static WoltModalSheetPage buildModalPage({
-    required BuildContext context,
-    required String title,
-    required Widget child,
-  }) {
-    return WoltModalSheetPage(
-      hasSabGradient: false,
-      backgroundColor: context.colorScheme.surfaceContainerHigh,
-      topBarTitle: Text(
-        title,
-        style: context.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onSurface,
-        ),
-      ),
-      trailingNavBarWidget: IconButton(
-        onPressed: () => Navigator.of(context).pop(),
-        icon: Icon(
-          Icons.close,
-          color: context.colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-        tooltip: 'Close',
-      ),
-      isTopBarLayerAlwaysVisible: true,
-      child: child,
+      title: title,
+      padding: EdgeInsets.zero,
+      builder: (BuildContext _) {
+        return child;
+      },
     );
   }
 }
@@ -73,7 +34,7 @@ class SelectionModalContent extends StatelessWidget {
   });
 
   final List<Widget> children;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
