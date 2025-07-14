@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/cards/modal_card.dart';
+import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 
 /// A modern modal action item with gradient styling and polished animations
@@ -51,82 +52,83 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
     return AnimatedModalItem(
       onTap: widget.onTap,
       isDisabled: widget.isDisabled,
-      child: ModernBaseCard(
+      child: ModalCard(
         onTap: widget.isDisabled ? null : widget.onTap,
-        padding: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.cardPadding),
-          child: Row(
-            children: [
-              // Icon with gradient container
-              ModernIconContainer(
-                icon: widget.icon,
-                iconColor: effectiveIconColor,
-                gradient: widget.isDestructive
-                    ? LinearGradient(
-                        colors: [
-                          context.colorScheme.errorContainer
-                              .withValues(alpha: 0.3),
-                          context.colorScheme.errorContainer
-                              .withValues(alpha: 0.2),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                borderColor: widget.isDestructive
-                    ? context.colorScheme.error
-                        .withValues(alpha: AppTheme.alphaDestructive)
-                    : null,
-              ),
-              const SizedBox(width: AppTheme.spacingLarge),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: AppTheme.cardSpacing,
+        ),
+        backgroundColor: context.colorScheme.surfaceContainerHighest,
+        child: Row(
+          children: [
+            // Icon with gradient container
+            ModernIconContainer(
+              icon: widget.icon,
+              iconColor: effectiveIconColor,
+              gradient: widget.isDestructive
+                  ? LinearGradient(
+                      colors: [
+                        context.colorScheme.errorContainer
+                            .withValues(alpha: 0.3),
+                        context.colorScheme.errorContainer
+                            .withValues(alpha: 0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              borderColor: widget.isDestructive
+                  ? context.colorScheme.error
+                      .withValues(alpha: AppTheme.alphaDestructive)
+                  : null,
+            ),
+            const SizedBox(width: AppTheme.spacingLarge),
 
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    widget.title,
+                    style: context.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: AppTheme.titleFontSize,
+                      color: effectiveTextColor,
+                      letterSpacing: AppTheme.letterSpacingTitle,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  // Subtitle
+                  if (widget.subtitle != null &&
+                      widget.subtitle!.isNotEmpty) ...[
+                    const SizedBox(
+                        height: AppTheme.spacingBetweenTitleAndSubtitle),
                     Text(
-                      widget.title,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: AppTheme.titleFontSize,
-                        color: effectiveTextColor,
-                        letterSpacing: AppTheme.letterSpacingTitle,
+                      widget.subtitle!,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: effectiveSubtitleColor,
+                        fontSize: AppTheme.subtitleFontSize,
+                        height: AppTheme.lineHeightSubtitle,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-
-                    // Subtitle
-                    if (widget.subtitle != null &&
-                        widget.subtitle!.isNotEmpty) ...[
-                      const SizedBox(
-                          height: AppTheme.spacingBetweenTitleAndSubtitle),
-                      Text(
-                        widget.subtitle!,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: effectiveSubtitleColor,
-                          fontSize: AppTheme.subtitleFontSize,
-                          height: AppTheme.lineHeightSubtitle,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
+            ),
 
-              // Trailing widget
-              if (widget.trailing != null) ...[
-                const SizedBox(width: AppTheme.spacingMedium),
-                widget.trailing!,
-              ],
+            // Trailing widget
+            if (widget.trailing != null) ...[
+              const SizedBox(width: AppTheme.spacingMedium),
+              widget.trailing!,
             ],
-          ),
+          ],
         ),
       ),
     );

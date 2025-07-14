@@ -140,7 +140,7 @@ class ModalUtils {
               padding: padding,
               child: builder(modalSheetContext),
             ),
-            context: context,
+            context: modalSheetContext,
           ),
         ];
       },
@@ -157,11 +157,13 @@ class ModalUtils {
         pageListBuilder,
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
+    Widget Function(Widget)? modalDecorator,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
+      modalDecorator: modalDecorator,
       pageListBuilder: pageListBuilder,
       modalTypeBuilder: modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
@@ -271,7 +273,6 @@ class ModalUtils {
 
   static Color? getModalBackgroundColor(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return isDark ? theme.colorScheme.surfaceContainerHighest : null;
+    return theme.colorScheme.surfaceContainerHigh;
   }
 }
