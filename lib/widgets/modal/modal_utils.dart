@@ -33,6 +33,7 @@ class ModalUtils {
     required Widget child,
     Widget? stickyActionBar,
     String? title,
+    Widget? titleWidget,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = false,
     void Function()? onTapBack,
@@ -48,19 +49,20 @@ class ModalUtils {
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 65,
       hasTopBarLayer: hasTopBarLayer,
-      topBarTitle: title != null
-          ? Container(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                title,
-                style: context.textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            )
-          : null,
+      topBarTitle: titleWidget ??
+          (title != null
+              ? Container(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    title,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                )
+              : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? IconButton(
@@ -119,6 +121,7 @@ class ModalUtils {
     required BuildContext context,
     required Widget Function(BuildContext) builder,
     String? title,
+    Widget? titleWidget,
     Widget? stickyActionBar,
     EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
@@ -132,15 +135,30 @@ class ModalUtils {
       modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
-          modalSheetPage(
-            context: modalSheetContext,
+          WoltModalSheetPage(
             stickyActionBar: stickyActionBar,
-            title: title,
-            child: builder(modalSheetContext),
-            isTopBarLayerAlwaysVisible: title != null,
-            padding: padding,
-            navBarHeight: navBarHeight,
+            hasSabGradient: false,
+            navBarHeight: navBarHeight ?? 65,
             hasTopBarLayer: hasTopBarLayer,
+            topBarTitle: titleWidget ??
+                (title != null
+                    ? Container(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          title,
+                          style: context.textTheme.titleMedium?.copyWith(
+                            color: context.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      )
+                    : null),
+            isTopBarLayerAlwaysVisible: title != null || titleWidget != null,
+            child: Padding(
+              padding: padding,
+              child: builder(modalSheetContext),
+            ),
           ),
         ];
       },

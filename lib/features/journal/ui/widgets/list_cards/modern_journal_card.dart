@@ -86,7 +86,8 @@ class ModernJournalCard extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Leading icon
         if (_hasLeadingIcon()) ...[
@@ -99,40 +100,34 @@ class ModernJournalCard extends StatelessWidget {
           ),
         ],
 
-        // Date and category
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    _formatDate(),
-                    style: context.textTheme.bodySmall?.copyWith(
-                      fontFeatures: [const FontFeature.tabularFigures()],
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                      fontSize: isCompact
-                          ? AppTheme.subtitleFontSizeCompact
-                          : AppTheme.subtitleFontSize,
-                    ),
-                  ),
-                  if (_shouldShowCategoryIcon()) ...[
-                    const SizedBox(width: 8),
-                    CategoryColorIcon(item.meta.categoryId, size: 16),
-                  ],
-                ],
+        Row(
+          children: [
+            Text(
+              _formatDate(),
+              style: context.textTheme.bodySmall?.copyWith(
+                fontFeatures: [const FontFeature.tabularFigures()],
+                color: context.colorScheme.onSurfaceVariant
+                    .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                fontSize: isCompact
+                    ? AppTheme.subtitleFontSizeCompact
+                    : AppTheme.subtitleFontSize,
               ),
-              if (item is Task || item is JournalEvent) ...[
-                const SizedBox(height: 4),
-                _buildTitleRow(context),
-              ],
+            ),
+            if (_shouldShowCategoryIcon()) ...[
+              const SizedBox(width: 8),
+              CategoryColorIcon(item.meta.categoryId, size: 16),
             ],
-          ),
+          ],
         ),
+        if (item is Task || item is JournalEvent) ...[
+          const SizedBox(height: 4),
+          _buildTitleRow(context),
+        ],
 
         // Status indicators
+        const SizedBox(height: 10),
         _buildStatusIndicators(context),
+        const SizedBox(height: 5),
       ],
     );
   }
