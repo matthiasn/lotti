@@ -15,7 +15,7 @@ Future<bool> showConfirmationModal({
 
   await ModalUtils.showSinglePageModal<void>(
     context: context,
-    navBarHeight: 0,
+    hasTopBarLayer: false,
     builder: (BuildContext context) {
       return Column(
         mainAxisSize: MainAxisSize.min,

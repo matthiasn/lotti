@@ -195,7 +195,7 @@ void main() {
       expect(find.text('0 models selected'), findsOneWidget);
 
       // Close modal
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       // Test 1 model selected
@@ -204,7 +204,7 @@ void main() {
       expect(find.text('1 model selected'), findsOneWidget);
 
       // Close modal
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       // Test 2 models selected
@@ -246,7 +246,7 @@ void main() {
       expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
 
       // Close modal
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       // Open modal with selection
