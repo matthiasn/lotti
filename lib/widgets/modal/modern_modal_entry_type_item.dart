@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modal_card.dart';
-import 'package:lotti/widgets/modal/animated_modal_card_item_with_icon.dart';
+import 'package:lotti/widgets/modal/animated_modal_card_item.dart';
 
 /// A modern modal entry type item for creating different entry types
 ///
 /// This widget provides a clean, production-quality design for entry type selection
 /// with subtle animations and visual feedback optimized for the create entry flow.
-/// It now uses AnimatedModalItemWithIcon to eliminate code duplication.
 class ModernModalEntryTypeItem extends StatelessWidget {
   const ModernModalEntryTypeItem({
     required this.icon,
@@ -30,23 +29,52 @@ class ModernModalEntryTypeItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveIconColor = iconColor ?? context.colorScheme.primary;
 
-    return AnimatedModalCardItemWithIcon(
+    return AnimatedModalCardItem(
       onTap: isDisabled ? null : onTap,
       isDisabled: isDisabled,
-      modalCard: ModalCard(
+      cardBuilder: (context, controller) => ModalCard(
         backgroundColor: context.colorScheme.surfaceContainerHighest,
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
           vertical: AppTheme.cardPadding * 0.6,
         ),
+        onTap: isDisabled ? null : onTap,
+        isDisabled: isDisabled,
+        animationController: controller,
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             minHeight: AppTheme.modalIconSpacerWidth,
           ),
           child: Row(
             children: [
-              // Spacer for icon
-              const SizedBox(width: AppTheme.modalIconSpacerWidth),
+              // Icon container
+              Container(
+                width: AppTheme.modalIconSpacerWidth,
+                height: AppTheme.modalIconSpacerWidth,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      effectiveIconColor.withValues(alpha: 0.25),
+                      effectiveIconColor.withValues(alpha: 0.15),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    AppTheme.iconContainerBorderRadius,
+                  ),
+                  border: Border.all(
+                    color: effectiveIconColor.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: AppTheme.iconSize,
+                    color: effectiveIconColor.withValues(alpha: 0.9),
+                  ),
+                ),
+              ),
               const SizedBox(width: AppTheme.modalChevronSpacerWidth),
 
               // Title
@@ -70,75 +98,16 @@ class ModernModalEntryTypeItem extends StatelessWidget {
                 badge!,
               ],
 
-              // Spacer for chevron
-              const SizedBox(width: AppTheme.chevronSize),
-              const SizedBox(width: AppTheme.spacingSmall),
+              // Add chevron
+              Icon(
+                Icons.add_circle_outline_rounded,
+                size: AppTheme.chevronSize,
+                color: effectiveIconColor.withValues(alpha: 0.4),
+              ),
             ],
           ),
         ),
       ),
-      iconBuilder: (context, iconAnimation, {required bool isPressed}) {
-        return Positioned.fill(
-          child: IgnorePointer(
-            child: Row(
-              children: [
-                const SizedBox(width: AppTheme.cardPadding * 2),
-                // Animated icon container
-                Transform.scale(
-                  scale: iconAnimation.value,
-                  child: Container(
-                    width: AppTheme.modalIconSpacerWidth,
-                    height: AppTheme.modalIconSpacerWidth,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isPressed
-                            ? [
-                                effectiveIconColor.withValues(alpha: 0.4),
-                                effectiveIconColor.withValues(alpha: 0.3),
-                              ]
-                            : [
-                                effectiveIconColor.withValues(alpha: 0.25),
-                                effectiveIconColor.withValues(alpha: 0.15),
-                              ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(
-                        AppTheme.iconContainerBorderRadius,
-                      ),
-                      border: Border.all(
-                        color: effectiveIconColor.withValues(
-                            alpha: isPressed ? 0.3 : 0.2),
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        size: AppTheme.iconSize,
-                        color: effectiveIconColor.withValues(
-                          alpha: isPressed ? 1.0 : 0.9,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                // Subtle chevron with animation
-                AnimatedOpacity(
-                  opacity: isPressed ? 1.0 : 0.4,
-                  duration: const Duration(milliseconds: 100),
-                  child: Icon(
-                    Icons.add_circle_outline_rounded,
-                    size: AppTheme.chevronSize,
-                    color: effectiveIconColor,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.cardPadding * 2),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

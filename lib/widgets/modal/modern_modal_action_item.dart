@@ -58,6 +58,9 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
           vertical: AppTheme.cardSpacing,
         ),
         backgroundColor: context.colorScheme.surfaceContainerHighest,
+        onTap: widget.onTap,
+        isDisabled: widget.isDisabled,
+        animationController: controller,
         child: Row(
           children: [
             // Icon with gradient container

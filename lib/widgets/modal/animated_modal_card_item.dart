@@ -54,7 +54,6 @@ class _AnimatedModalCardItemState extends State<AnimatedModalCardItem>
 
   @override
   Widget build(BuildContext context) {
-    final card = widget.cardBuilder(context, _controller);
     return AnimatedModalItem(
       controller: _controller,
       onTap: widget.onTap,
@@ -65,14 +64,7 @@ class _AnimatedModalCardItemState extends State<AnimatedModalCardItem>
       hoverElevation: widget.hoverElevation,
       margin: widget.margin,
       disableShadow: widget.disableShadow,
-      child: ModalCard(
-        padding: card.padding,
-        backgroundColor: card.backgroundColor,
-        onTap: widget.onTap,
-        isDisabled: widget.isDisabled,
-        animationController: _controller,
-        child: card.child,
-      ),
+      child: widget.cardBuilder(context, _controller),
     );
   }
 }

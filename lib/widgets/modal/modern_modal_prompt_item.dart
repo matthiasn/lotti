@@ -51,6 +51,9 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
           vertical: AppTheme.cardPadding / 2,
         ),
         backgroundColor: context.colorScheme.surfaceContainerHighest,
+        onTap: widget.onTap,
+        isDisabled: widget.isDisabled,
+        animationController: controller,
         child: Row(
           children: [
             // Icon with gradient container
