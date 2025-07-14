@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/cards/modal_card.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_with_icon.dart';
 
 /// A modern modal entry type item for creating different entry types
@@ -70,7 +70,7 @@ class ModernModalEntryTypeItem extends StatelessWidget {
                     child: Center(
                       child: Icon(
                         icon,
-                        size: AppTheme.iconSize * 1.1,
+                        size: AppTheme.iconSize,
                         color: effectiveIconColor.withValues(
                           alpha: isPressed ? 1.0 : 0.9,
                         ),
@@ -95,11 +95,12 @@ class ModernModalEntryTypeItem extends StatelessWidget {
           ),
         );
       },
-      child: ModernBaseCard(
+      child: ModalCard(
+        backgroundColor: context.colorScheme.surfaceContainerHighest,
         onTap: isDisabled ? null : onTap,
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
-          vertical: AppTheme.cardPadding * 0.75,
+          vertical: AppTheme.cardPadding * 0.6,
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(

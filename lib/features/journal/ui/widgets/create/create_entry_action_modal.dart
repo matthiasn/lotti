@@ -16,7 +16,6 @@ class CreateEntryModal {
       padding: const EdgeInsetsGeometry.only(bottom: 20),
       builder: (_) => Column(
         children: [
-          const SizedBox(height: 8),
           ModernCreateEventItem(linkedFromId, categoryId: categoryId),
           ModernCreateTaskItem(linkedFromId, categoryId: categoryId),
           ModernCreateAudioItem(linkedFromId, categoryId: categoryId),
@@ -26,7 +25,6 @@ class CreateEntryModal {
           if (isMacOS)
             ModernCreateScreenshotItem(linkedFromId, categoryId: categoryId),
           ModernPasteImageItem(linkedFromId, categoryId: categoryId),
-          const SizedBox(height: 24),
         ],
       ),
     );

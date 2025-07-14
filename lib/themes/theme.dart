@@ -99,7 +99,7 @@ class AppTheme {
   static const double statusIndicatorFontSizeTiny = 10;
 
   // Modal item spacer widths
-  static const double modalIconSpacerWidth = iconContainerSize * 1.15;
+  static const double modalIconSpacerWidth = iconContainerSize;
   static const double modalChevronSpacerWidth = spacingLarge;
 }
 

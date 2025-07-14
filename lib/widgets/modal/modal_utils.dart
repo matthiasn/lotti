@@ -136,6 +136,7 @@ class ModalUtils {
             titleWidget: titleWidget,
             hasTopBarLayer: hasTopBarLayer,
             navBarHeight: navBarHeight,
+            padding: padding,
             child: Padding(
               padding: padding,
               child: builder(modalSheetContext),
