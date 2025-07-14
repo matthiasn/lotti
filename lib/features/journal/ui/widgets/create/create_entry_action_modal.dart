@@ -13,6 +13,7 @@ class CreateEntryModal {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.createEntryTitle,
+      padding: const EdgeInsetsGeometry.only(bottom: 20),
       builder: (_) => Column(
         children: [
           const SizedBox(height: 8),

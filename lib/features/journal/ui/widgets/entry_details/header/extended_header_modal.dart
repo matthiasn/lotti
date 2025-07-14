@@ -18,6 +18,7 @@ class ExtendedHeaderModal {
 
     final initialModalPage = ModalUtils.modalSheetPage(
       context: context,
+      padding: const EdgeInsetsGeometry.only(bottom: 20),
       title: context.messages.entryActions,
       child: InitialModalPageContent(
         entryId: entryId,

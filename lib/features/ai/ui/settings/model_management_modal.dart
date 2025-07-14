@@ -7,7 +7,6 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 // Updated show method to use proper WoltModal pattern with sticky action bar
 void showModelManagementModal({
@@ -21,19 +20,14 @@ void showModelManagementModal({
   // Create a stateful wrapper to manage state outside of the modal widget
   final selectedIds = ValueNotifier<Set<String>>(currentSelectedIds.toSet());
   final defaultId = ValueNotifier<String>(currentDefaultId);
-  final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  WoltModalSheet.show<void>(
+  ModalUtils.showMultiPageModal<void>(
     context: context,
-    modalBarrierColor: isDark
-        ? context.colorScheme.surfaceContainerLow.withAlpha(128)
-        : context.colorScheme.outline.withAlpha(128),
     pageListBuilder: (modalContext) {
       return [
-        WoltModalSheetPage(
-          backgroundColor: modalContext.colorScheme.surface,
-          hasSabGradient: false,
-          navBarHeight: 54,
+        ModalUtils.modalSheetPage(
+          context: context,
+          padding: EdgeInsets.zero,
           leadingNavBarWidget: ValueListenableBuilder<Set<String>>(
             valueListenable: selectedIds,
             builder: (context, selectedIdsValue, _) {
@@ -76,7 +70,7 @@ void showModelManagementModal({
               );
             },
           ),
-          topBarTitle: ValueListenableBuilder<Set<String>>(
+          titleWidget: ValueListenableBuilder<Set<String>>(
             valueListenable: selectedIds,
             builder: (context, selectedIdsValue, _) {
               final count = selectedIdsValue.length;
@@ -93,25 +87,7 @@ void showModelManagementModal({
               );
             },
           ),
-          isTopBarLayerAlwaysVisible: true,
-          trailingNavBarWidget: IconButton(
-            padding: const EdgeInsets.all(16),
-            icon: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: modalContext.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.close,
-                size: 20,
-                color: modalContext.colorScheme.onSurface,
-              ),
-            ),
-            onPressed: Navigator.of(modalContext).pop,
-          ),
+          showCloseButton: true,
           stickyActionBar: ValueListenableBuilder<Set<String>>(
             valueListenable: selectedIds,
             builder: (context, selectedIdsValue, _) {
@@ -142,33 +118,11 @@ void showModelManagementModal({
                   },
                 ),
               ),
-              // Gradient fade effect at the bottom
-              Positioned(
-                bottom: 70,
-                left: 0,
-                right: 0,
-                height: 30,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          modalContext.colorScheme.surface.withValues(alpha: 0),
-                          modalContext.colorScheme.surface,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ];
     },
-    modalTypeBuilder: ModalUtils.modalTypeBuilder,
   );
 }
 
@@ -189,88 +143,73 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.colorScheme.surface.withValues(alpha: 0.85),
-            border: Border(
-              top: BorderSide(
-                color: context.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.3),
-                width: 0.5,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: context.colorScheme.outline
-                                .withValues(alpha: 0.3),
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                        child: Text(
-                          context.messages.cancelButton,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            letterSpacing: -0.2,
-                            color: context.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color:
+                            context.colorScheme.outline.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: Text(
+                      context.messages.cancelButton,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
+                        color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: FilledButton(
-                        onPressed: (selectedIds.isNotEmpty &&
-                                defaultId.isNotEmpty &&
-                                selectedIds.contains(defaultId))
-                            ? () {
-                                onSave(selectedIds.toList(), defaultId);
-                                Navigator.of(context).pop();
-                              }
-                            : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: context.colorScheme.primary,
-                          disabledBackgroundColor:
-                              context.colorScheme.surfaceContainerHighest,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          context.messages.saveButtonLabel,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: FilledButton(
+                    onPressed: (selectedIds.isNotEmpty &&
+                            defaultId.isNotEmpty &&
+                            selectedIds.contains(defaultId))
+                        ? () {
+                            onSave(selectedIds.toList(), defaultId);
+                            Navigator.of(context).pop();
+                          }
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.colorScheme.primary,
+                      disabledBackgroundColor:
+                          context.colorScheme.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      context.messages.saveButtonLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

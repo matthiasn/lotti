@@ -40,12 +40,15 @@ class ModalUtils {
     EdgeInsetsGeometry padding = defaultPadding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
+    Widget? leadingNavBarWidget,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
 
     return WoltModalSheetPage(
       stickyActionBar: stickyActionBar,
+      backgroundColor: getModalBackgroundColor(context),
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 65,
       hasTopBarLayer: hasTopBarLayer,
@@ -82,7 +85,7 @@ class ModalUtils {
               ),
               onPressed: onTapBack,
             )
-          : null,
+          : leadingNavBarWidget,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
               padding: const EdgeInsets.all(12),
@@ -128,7 +131,8 @@ class ModalUtils {
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
   }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
@@ -137,6 +141,7 @@ class ModalUtils {
         return [
           WoltModalSheetPage(
             stickyActionBar: stickyActionBar,
+            backgroundColor: getModalBackgroundColor(context),
             hasSabGradient: false,
             navBarHeight: navBarHeight ?? 65,
             hasTopBarLayer: hasTopBarLayer,
@@ -205,6 +210,7 @@ class ModalUtils {
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
       stickyActionBar: stickyActionBar,
+      backgroundColor: getModalBackgroundColor(context),
       hasSabGradient: false,
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
@@ -284,6 +290,12 @@ class ModalUtils {
       modalDecorator: modalDecorator,
       barrierDismissible: barrierDismissible,
     );
+  }
+
+  static Color? getModalBackgroundColor(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return isDark ? theme.colorScheme.surfaceContainerHighest : null;
   }
 }
 
