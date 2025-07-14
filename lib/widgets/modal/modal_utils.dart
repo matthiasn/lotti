@@ -42,8 +42,6 @@ class ModalUtils {
     bool hasTopBarLayer = true,
     Widget? leadingNavBarWidget,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
 
     return WoltModalSheetPage(
@@ -105,17 +103,10 @@ class ModalUtils {
               onPressed: Navigator.of(context).pop,
             )
           : null,
-      child: isDark
-          ? GradientContainer(
-              child: Padding(
-                padding: padding,
-                child: child,
-              ),
-            )
-          : Padding(
-              padding: padding,
-              child: child,
-            ),
+      child: Padding(
+        padding: padding,
+        child: child,
+      ),
     );
   }
 
@@ -296,30 +287,5 @@ class ModalUtils {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return isDark ? theme.colorScheme.surfaceContainerHighest : null;
-  }
-}
-
-class GradientContainer extends StatelessWidget {
-  const GradientContainer({
-    required this.child,
-    super.key,
-  });
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withValues(alpha: 0.03),
-            colorScheme.primaryContainer.withValues(alpha: 0.01),
-          ],
-        ),
-      ),
-      child: child,
-    );
   }
 }

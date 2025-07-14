@@ -234,9 +234,8 @@ void main() {
                   padding: const EdgeInsets.all(10),
                 );
 
-                // The padding is applied either in GradientContainer or Padding widget
-                expect(page.child,
-                    anyOf(isA<GradientContainer>(), isA<Padding>()));
+                // The padding is applied in Padding widget
+                expect(page.child, isA<Padding>());
 
                 return const SizedBox();
               },
@@ -285,7 +284,7 @@ void main() {
         );
       });
 
-      testWidgets('dark theme adds gradient overlay', (tester) async {
+      testWidgets('uses padding wrapper for content', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             theme: ThemeData.dark(),
@@ -296,8 +295,8 @@ void main() {
                   child: const Text('Test Content'),
                 );
 
-                // The child should be a GradientContainer in dark theme
-                expect(page.child, isA<GradientContainer>());
+                // The child should be a Padding widget
+                expect(page.child, isA<Padding>());
 
                 return const SizedBox();
               },
@@ -879,191 +878,4 @@ void main() {
     });
   });
 
-  group('GradientContainer', () {
-    testWidgets('renders child widget', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GradientContainer(
-              child: Text('Test Child'),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Test Child'), findsOneWidget);
-    });
-
-    testWidgets('applies gradient decoration', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: const Scaffold(
-            body: GradientContainer(
-              child: SizedBox(
-                width: 100,
-                height: 100,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final container = tester.widget<Container>(find.byType(Container));
-      expect(container.decoration, isNotNull);
-      expect(container.decoration, isA<BoxDecoration>());
-
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.gradient, isNotNull);
-      expect(decoration.gradient, isA<LinearGradient>());
-    });
-
-    testWidgets('uses correct gradient colors from theme', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Builder(
-            builder: (context) {
-              final colorScheme = Theme.of(context).colorScheme;
-
-              return Scaffold(
-                body: GradientContainer(
-                  child: Builder(
-                    builder: (innerContext) {
-                      final container = innerContext
-                          .findAncestorWidgetOfExactType<Container>()!;
-                      final decoration = container.decoration! as BoxDecoration;
-                      final gradient = decoration.gradient! as LinearGradient;
-
-                      expect(gradient.colors.length, 2);
-
-                      // Check first color
-                      final firstColor = gradient.colors[0];
-                      expect(firstColor.r, colorScheme.primaryContainer.r);
-                      expect(firstColor.g, colorScheme.primaryContainer.g);
-                      expect(firstColor.b, colorScheme.primaryContainer.b);
-                      expect(firstColor.a, closeTo(0.03, 0.001));
-
-                      // Check second color
-                      final secondColor = gradient.colors[1];
-                      expect(secondColor.r, colorScheme.primaryContainer.r);
-                      expect(secondColor.g, colorScheme.primaryContainer.g);
-                      expect(secondColor.b, colorScheme.primaryContainer.b);
-                      expect(secondColor.a, closeTo(0.01, 0.001));
-
-                      return const SizedBox();
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    });
-
-    testWidgets('gradient colors adapt to dark theme', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Builder(
-            builder: (context) {
-              final colorScheme = Theme.of(context).colorScheme;
-
-              return Scaffold(
-                body: GradientContainer(
-                  child: Builder(
-                    builder: (innerContext) {
-                      final container = innerContext
-                          .findAncestorWidgetOfExactType<Container>()!;
-                      final decoration = container.decoration! as BoxDecoration;
-                      final gradient = decoration.gradient! as LinearGradient;
-
-                      expect(gradient.colors.length, 2);
-
-                      // Check that it uses the dark theme's primaryContainer
-                      final firstColor = gradient.colors[0];
-                      expect(firstColor.r, colorScheme.primaryContainer.r);
-                      expect(firstColor.g, colorScheme.primaryContainer.g);
-                      expect(firstColor.b, colorScheme.primaryContainer.b);
-
-                      return const SizedBox();
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    });
-
-    testWidgets('preserves child widget properties', (tester) async {
-      const testKey = Key('test-child');
-      const testPadding = EdgeInsets.all(16);
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GradientContainer(
-              child: Padding(
-                key: testKey,
-                padding: testPadding,
-                child: Text('Padded Text'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final padding = tester.widget<Padding>(find.byKey(testKey));
-      expect(padding.padding, equals(testPadding));
-      expect(find.text('Padded Text'), findsOneWidget);
-    });
-
-    testWidgets('modalSheetPage uses GradientContainer in dark theme',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Builder(
-            builder: (context) {
-              final page = ModalUtils.modalSheetPage(
-                context: context,
-                child: const Text('Test Content'),
-              );
-
-              // The child should use GradientContainer in dark theme
-              expect(page.child, isA<GradientContainer>());
-
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
-    });
-
-    testWidgets('modalSheetPage does not use GradientContainer in light theme',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Builder(
-            builder: (context) {
-              final page = ModalUtils.modalSheetPage(
-                context: context,
-                child: const Text('Test Content'),
-              );
-
-              // The child should be a Padding widget in light theme
-              expect(page.child, isA<Padding>());
-              expect(page.child, isNot(isA<GradientContainer>()));
-
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
-    });
-  });
 }

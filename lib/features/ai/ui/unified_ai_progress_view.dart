@@ -222,11 +222,9 @@ class UnifiedAiProgressUtils {
       ),
       slivers: [
         SliverToBoxAdapter(
-          child: GradientContainer(
-            child: UnifiedAiProgressContent(
-              entityId: entityId,
-              promptId: prompt.id,
-            ),
+          child: UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: prompt.id,
           ),
         ),
       ],
