@@ -6,8 +6,7 @@ void main() {
   group('ModalCard', () {
     Widget createTestWidget({
       required Widget child,
-      VoidCallback? onTap,
-      EdgeInsetsGeometry? padding,
+      EdgeInsets? padding,
       double? elevation,
       Color? shadowColor,
       Color? backgroundColor,
@@ -18,10 +17,7 @@ void main() {
         home: Scaffold(
           body: Center(
             child: ModalCard(
-              onTap: onTap,
               padding: padding,
-              elevation: elevation,
-              shadowColor: shadowColor,
               backgroundColor: backgroundColor,
               child: child,
             ),
@@ -84,23 +80,6 @@ void main() {
 
       final card = tester.widget<Card>(find.byType(Card));
       expect(card.color, equals(customColor));
-    });
-
-    testWidgets('onTap parameter is stored but not used internally',
-        (tester) async {
-      // The ModalCard stores onTap but doesn't use it internally.
-      // Parent widgets handle the tap detection.
-      void testCallback() {}
-
-      await tester.pumpWidget(
-        createTestWidget(
-          onTap: testCallback,
-          child: const Text('Card with onTap'),
-        ),
-      );
-
-      final modalCard = tester.widget<ModalCard>(find.byType(ModalCard));
-      expect(modalCard.onTap, equals(testCallback));
     });
 
     testWidgets('applies surface tint color from theme', (tester) async {
@@ -258,14 +237,12 @@ void main() {
       const testPadding = EdgeInsets.all(32);
       const testColor = Colors.amber;
       const testElevation = 8.0;
-      var tapDetected = false;
 
       await tester.pumpWidget(
         createTestWidget(
           padding: testPadding,
           backgroundColor: testColor,
           elevation: testElevation,
-          onTap: () => tapDetected = true,
           child: const Text('All Properties'),
         ),
       );
@@ -284,12 +261,6 @@ void main() {
           equals(
               2)); // Note: elevation parameter is not used in current implementation
       expect(container.padding, equals(testPadding));
-
-      // Note: onTap is stored but not used internally by ModalCard
-      expect(tapDetected, isFalse);
-
-      final modalCard = tester.widget<ModalCard>(find.byType(ModalCard));
-      expect(modalCard.onTap, isNotNull);
     });
 
     testWidgets('renders correctly inside a modal-like environment',

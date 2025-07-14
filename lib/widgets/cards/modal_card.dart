@@ -6,19 +6,13 @@ import 'package:lotti/themes/theme.dart';
 class ModalCard extends StatelessWidget {
   const ModalCard({
     required this.child,
-    this.onTap,
     this.padding,
-    this.elevation,
-    this.shadowColor,
     this.backgroundColor,
     super.key,
   });
 
   final Widget child;
-  final VoidCallback? onTap;
-  final EdgeInsetsGeometry? padding;
-  final double? elevation;
-  final Color? shadowColor;
+  final EdgeInsets? padding;
   final Color? backgroundColor;
 
   @override

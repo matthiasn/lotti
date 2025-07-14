@@ -97,7 +97,6 @@ class ModernModalEntryTypeItem extends StatelessWidget {
       },
       child: ModalCard(
         backgroundColor: context.colorScheme.surfaceContainerHighest,
-        onTap: isDisabled ? null : onTap,
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
           vertical: AppTheme.cardPadding * 0.6,

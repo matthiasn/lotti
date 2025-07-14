@@ -21,7 +21,7 @@ class ExtendedHeaderModal {
       pageListBuilder: (modalSheetContext) {
         final tagsModalPage = ModalUtils.modalSheetPage(
           context: modalSheetContext,
-          padding: const EdgeInsetsGeometry.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: 20),
           title: context.messages.journalTagPlusHint,
           child: TagsModal(entryId: entryId),
           onTapBack: () => pageIndexNotifier.value = 0,
@@ -29,7 +29,7 @@ class ExtendedHeaderModal {
 
         final speechRecognitionModalPage = ModalUtils.modalSheetPage(
           context: modalSheetContext,
-          padding: const EdgeInsetsGeometry.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: 20),
           title: context.messages.speechModalTitle,
           child: SpeechModalContent(entryId: entryId),
           onTapBack: () => pageIndexNotifier.value = 0,
@@ -37,7 +37,7 @@ class ExtendedHeaderModal {
 
         final initialModalPage = ModalUtils.modalSheetPage(
           context: modalSheetContext,
-          padding: const EdgeInsetsGeometry.only(bottom: 30),
+          padding: const EdgeInsets.only(bottom: 30),
           title: context.messages.entryActions,
           child: InitialModalPageContent(
             entryId: entryId,

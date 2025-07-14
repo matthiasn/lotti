@@ -53,7 +53,6 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
       onTap: widget.onTap,
       isDisabled: widget.isDisabled,
       child: ModalCard(
-        onTap: widget.isDisabled ? null : widget.onTap,
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPadding,
           vertical: AppTheme.cardSpacing,

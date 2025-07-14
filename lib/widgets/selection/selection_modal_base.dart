@@ -34,7 +34,7 @@ class SelectionModalContent extends StatelessWidget {
   });
 
   final List<Widget> children;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {

@@ -26,7 +26,7 @@ class AnimatedModalItem extends StatefulWidget {
   final double tapOpacity;
   final double hoverElevation;
   final AnimatedModalItemController? controller;
-  final EdgeInsetsGeometry? margin;
+  final EdgeInsets? margin;
   final bool disableShadow;
 
   @override

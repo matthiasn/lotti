@@ -32,7 +32,7 @@ class AnimatedModalItemWithIcon extends StatefulWidget {
   final double tapOpacity;
   final double hoverElevation;
   final double iconScaleOnTap;
-  final EdgeInsetsGeometry? margin;
+  final EdgeInsets? margin;
   final bool disableShadow;
 
   @override

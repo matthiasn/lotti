@@ -13,7 +13,7 @@ class TimeRecordingIcon extends StatelessWidget {
   });
 
   final String taskId;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {

@@ -273,7 +273,7 @@ void main() {
   group('SelectionModalContent', () {
     Widget createTestWidget({
       required List<Widget> children,
-      EdgeInsetsGeometry? padding,
+      EdgeInsets? padding,
     }) {
       return WidgetTestBench(
         child: Center(
