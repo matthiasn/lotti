@@ -130,31 +130,17 @@ class ModalUtils {
       modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
-          WoltModalSheetPage(
+          modalSheetPage(
             stickyActionBar: stickyActionBar,
-            backgroundColor: getModalBackgroundColor(context),
-            hasSabGradient: false,
-            navBarHeight: navBarHeight ?? 65,
+            title: title,
+            titleWidget: titleWidget,
             hasTopBarLayer: hasTopBarLayer,
-            topBarTitle: titleWidget ??
-                (title != null
-                    ? Container(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          title,
-                          style: context.textTheme.titleMedium?.copyWith(
-                            color: context.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      )
-                    : null),
-            isTopBarLayerAlwaysVisible: title != null || titleWidget != null,
+            navBarHeight: navBarHeight,
             child: Padding(
               padding: padding,
               child: builder(modalSheetContext),
             ),
+            context: context,
           ),
         ];
       },
