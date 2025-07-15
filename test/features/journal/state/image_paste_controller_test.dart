@@ -269,5 +269,35 @@ void main() {
       verify(() => mockReader.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
     });
+
+    test('paste handles only JPEG when both PNG and JPEG are available',
+        () async {
+      when(() => mockReader.canProvide(Formats.png)).thenReturn(true);
+      when(() => mockReader.canProvide(Formats.jpeg)).thenReturn(true);
+
+      when(() => mockReader.getFile(Formats.jpeg, any()))
+          .thenAnswer((invocation) {
+        final callback =
+            invocation.positionalArguments[1] as void Function(DataReaderFile);
+        callback(mockFile);
+        return null;
+      });
+
+      when(() => mockFile.readAll())
+          .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+
+      final controller = container.read(
+        imagePasteControllerProvider(
+          linkedFromId: 'testLink',
+          categoryId: 'testCategory',
+        ).notifier,
+      );
+
+      await controller.paste();
+
+      verify(() => mockReader.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockFile.readAll()).called(1);
+      verifyNever(() => mockReader.getFile(Formats.png, any()));
+    });
   });
 }
