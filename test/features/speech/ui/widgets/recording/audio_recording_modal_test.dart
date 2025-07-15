@@ -18,6 +18,9 @@ import 'package:record/record.dart' show Amplitude;
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
+// Register fake for navigation
+class FakeRoute extends Fake implements Route<dynamic> {}
+
 // Mock classes
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
@@ -66,6 +69,11 @@ class TestAudioRecorderController extends AudioRecorderController {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Register fake for Route
+  setUpAll(() {
+    registerFallbackValue(FakeRoute());
+  });
 
   group('AudioRecordingModalContent Tests', () {
     late MockJournalDb mockJournalDb;
@@ -352,6 +360,21 @@ void main() {
       // Modal visibility is not set by the widget anymore
       expect(controller.state.modalVisible, isFalse);
     });
+
+    testWidgets('passes categoryId correctly to the modal', (tester) async {
+      const testCategoryId = 'test-category-id';
+
+      await tester.pumpWidget(
+        makeTestableWidget(categoryId: testCategoryId),
+      );
+
+      // The widget itself doesn't call setCategoryId, it's called by the show method
+      // So we verify that the categoryId is passed to the widget
+      final modalContent = tester.widget<AudioRecordingModalContent>(
+        find.byType(AudioRecordingModalContent),
+      );
+      expect(modalContent.categoryId, testCategoryId);
+    });
   });
 
   group('Stop Button and Transcription Tests', () {
@@ -420,6 +443,97 @@ void main() {
 
       // Verify controller state changed to stopped
       expect(controller!.state.status, AudioRecorderStatus.stopped);
+    });
+
+    testWidgets('navigates to entry when linkedId is null after recording',
+        (tester) async {
+      TestAudioRecorderController? controller;
+      String? capturedNavigationPath;
+
+      // Mock navigation to capture the path
+      when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+        capturedNavigationPath = invocation.positionalArguments[0] as String;
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioRecorderRepositoryProvider
+                .overrideWithValue(mockRecorderRepository),
+            audioRecorderControllerProvider.overrideWith(() {
+              controller = TestAudioRecorderController(
+                AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  vu: -10,
+                  dBFS: -20,
+                  progress: const Duration(seconds: 30),
+                  showIndicator: false,
+                  modalVisible: false,
+                  language: 'en',
+                ),
+              );
+              return controller!;
+            }),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const AudioRecordingModalContent(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap stop button
+      await tester.tap(find.text('STOP'));
+      await tester.pump();
+
+      // Verify navigation happened to the created entry
+      expect(capturedNavigationPath, '/journal/test-entry-id');
+    });
+
+    testWidgets('does not navigate when linkedId is provided', (tester) async {
+      TestAudioRecorderController? controller;
+      var navigationCalled = false;
+
+      // Mock navigation to detect if it's called
+      when(() => mockNavService.beamToNamed(any())).thenAnswer((_) {
+        navigationCalled = true;
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioRecorderRepositoryProvider
+                .overrideWithValue(mockRecorderRepository),
+            audioRecorderControllerProvider.overrideWith(() {
+              controller = TestAudioRecorderController(
+                AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  vu: -10,
+                  dBFS: -20,
+                  progress: const Duration(seconds: 30),
+                  showIndicator: false,
+                  modalVisible: false,
+                  language: 'en',
+                ),
+              );
+              return controller!;
+            }),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const AudioRecordingModalContent(
+              linkedId: 'existing-entry-id', // Has linked ID
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap stop button
+      await tester.tap(find.text('STOP'));
+      await tester.pump();
+
+      // Verify navigation was NOT called
+      expect(navigationCalled, false);
     });
   });
 

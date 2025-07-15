@@ -66,6 +66,10 @@ class ModernJournalCard extends StatelessWidget {
         horizontal: removeHorizontalMargin ? 0 : AppTheme.spacingLarge,
         vertical: AppTheme.cardSpacing / 2,
       ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPadding,
+        vertical: AppTheme.cardPaddingCompact,
+      ),
       child: _buildContent(context),
     );
   }
@@ -75,18 +79,16 @@ class ModernJournalCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
-        if (!isCompact) ...[
-          const SizedBox(height: 8),
-          TagsViewWidget(item: item),
-        ],
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         _buildBody(context),
+        const SizedBox(height: 5),
+        TagsViewWidget(item: item),
       ],
     );
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Leading icon
@@ -100,34 +102,39 @@ class ModernJournalCard extends StatelessWidget {
           ),
         ],
 
-        Row(
-          children: [
-            Text(
-              _formatDate(),
-              style: context.textTheme.bodySmall?.copyWith(
-                fontFeatures: [const FontFeature.tabularFigures()],
-                color: context.colorScheme.onSurfaceVariant
-                    .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                fontSize: isCompact
-                    ? AppTheme.subtitleFontSizeCompact
-                    : AppTheme.subtitleFontSize,
+        // Main content
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    _formatDate(),
+                    style: context.textTheme.bodySmall?.copyWith(
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                      color: context.colorScheme.onSurfaceVariant
+                          .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                      fontSize: isCompact
+                          ? AppTheme.subtitleFontSizeCompact
+                          : AppTheme.subtitleFontSize,
+                    ),
+                  ),
+                  if (_shouldShowCategoryIcon()) ...[
+                    const SizedBox(width: 8),
+                    CategoryColorIcon(item.meta.categoryId, size: 16),
+                  ],
+                  const Spacer(),
+                  _buildStatusIndicators(context),
+                ],
               ),
-            ),
-            if (_shouldShowCategoryIcon()) ...[
-              const SizedBox(width: 8),
-              CategoryColorIcon(item.meta.categoryId, size: 16),
+              if (item is Task || item is JournalEvent) ...[
+                const SizedBox(height: 4),
+                _buildTitleRow(context),
+              ],
             ],
-          ],
+          ),
         ),
-        if (item is Task || item is JournalEvent) ...[
-          const SizedBox(height: 4),
-          _buildTitleRow(context),
-        ],
-
-        // Status indicators
-        const SizedBox(height: 10),
-        _buildStatusIndicators(context),
-        const SizedBox(height: 5),
       ],
     );
   }
@@ -159,18 +166,22 @@ class ModernJournalCard extends StatelessWidget {
       );
     } else if (item is JournalEvent) {
       final event = item as JournalEvent;
-      return Text(
-        event.data.title,
-        style: context.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          letterSpacing: AppTheme.letterSpacingTitle,
-          fontSize: isCompact
-              ? AppTheme.titleFontSizeCompact
-              : AppTheme.titleFontSize,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
+      final title = event.data.title;
+
+      if (title.isNotEmpty) {
+        return Text(
+          title,
+          style: context.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: AppTheme.letterSpacingTitle,
+            fontSize: isCompact
+                ? AppTheme.titleFontSizeCompact
+                : AppTheme.titleFontSize,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      }
     }
     return const SizedBox.shrink();
   }

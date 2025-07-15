@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -81,102 +82,99 @@ class _AudioRecordingModalContentState
     final state = ref.watch(audioRecorderControllerProvider);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnalogVuMeter(
-                vu: state.vu,
-                dBFS: state.dBFS,
-                size: 400,
-                colorScheme: theme.colorScheme,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnalogVuMeter(
+              vu: state.vu,
+              dBFS: state.dBFS,
+              size: 400,
+              colorScheme: theme.colorScheme,
+            ),
+
+            // Duration display
+            Text(
+              formatDuration(state.progress.toString()),
+              style: GoogleFonts.inconsolata(
+                fontSize: fontSizeLarge,
+                fontWeight: FontWeight.w300,
+                color: theme.colorScheme.primaryFixedDim,
               ),
+            ),
 
-              // Duration display
-              Text(
-                formatDuration(state.progress.toString()),
-                style: GoogleFonts.inconsolata(
-                  fontSize: fontSizeLarge,
-                  fontWeight: FontWeight.w300,
-                  color: theme.colorScheme.primaryFixedDim,
-                ),
-              ),
+            const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
-
-              // Control buttons in a row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Language selector - compact
-                  Container(
-                    height: 48, // Same height as record/stop button
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(24), // Same radius
-                      border: Border.all(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                      ),
+            // Control buttons in a row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Language selector - compact
+                Container(
+                  height: 48, // Same height as record/stop button
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(24), // Same radius
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(24),
-                        onTap: () => _showLanguageMenu(
-                            context, controller, state.language ?? ''),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.language,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                size: 18,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () => _showLanguageMenu(
+                          context, controller, state.language ?? ''),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.language,
+                              color: theme.colorScheme.onSurfaceVariant,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _getLanguageDisplay(state.language ?? ''),
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _getLanguageDisplay(state.language ?? ''),
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurface,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                size: 18,
-                              ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              color: theme.colorScheme.onSurfaceVariant,
+                              size: 18,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
+                ),
 
-                  const SizedBox(width: 20),
-                  // Record/Stop button
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: _isRecording(state)
-                        ? _buildStopButton(context, _stop, theme)
-                        : _buildRecordButton(context, controller, theme),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+                const SizedBox(width: 20),
+                // Record/Stop button
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _isRecording(state)
+                      ? _buildStopButton(context, _stop, theme)
+                      : _buildRecordButton(context, controller, theme),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -187,9 +185,13 @@ class _AudioRecordingModalContentState
 
   Future<void> _stop() async {
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    await controller.stop();
+    final createdId = await controller.stop();
+
     if (mounted) {
       Navigator.of(context).pop();
+    }
+    if (widget.linkedId == null && createdId != null) {
+      beamToNamed('/journal/$createdId');
     }
   }
 
