@@ -7,15 +7,17 @@ import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage roomConfigPage({
   required BuildContext context,
-  required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  return WoltModalSheetPage(
+  return ModalUtils.modalSheetPage(
+    context: context,
+    showCloseButton: true,
     stickyActionBar: Padding(
       padding: WoltModalConfig.pagePadding,
       child: Row(
@@ -39,20 +41,9 @@ SliverWoltModalSheetPage roomConfigPage({
         ],
       ),
     ),
-    topBarTitle: Text(
-      context.messages.settingsMatrixRoomConfigTitle,
-      style: textTheme.titleMedium,
-    ),
-    isTopBarLayerAlwaysVisible: true,
-    trailingNavBarWidget: IconButton(
-      padding: WoltModalConfig.pagePadding,
-      icon: const Icon(Icons.close),
-      onPressed: Navigator.of(context).pop,
-    ),
-    child: Padding(
-      padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
-      child: const RoomConfig(),
-    ),
+    title: context.messages.settingsMatrixRoomConfigTitle,
+    padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
+    child: const RoomConfig(),
   );
 }
 

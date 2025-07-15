@@ -1522,6 +1522,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixTitle => 'Matrix-Synchronisierungseinstellungen';
 
   @override
+  String get settingsMatrixSubtitle =>
+      'Ende-zu-Ende verschlüsselte Synchronisation konfigurieren';
+
+  @override
   String get settingsMatrixUnverifiedDevicesPage => 'Nicht verifizierte Geräte';
 
   @override

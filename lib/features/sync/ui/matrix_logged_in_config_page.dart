@@ -4,32 +4,22 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage homeServerLoggedInPage({
   required BuildContext context,
-  required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  return WoltModalSheetPage(
+  return ModalUtils.modalSheetPage(
+    context: context,
+    showCloseButton: true,
     stickyActionBar: LoggedInPageStickyActionBar(
       pageIndexNotifier: pageIndexNotifier,
     ),
-    topBarTitle: Text(
-      context.messages.settingsMatrixHomeserverConfigTitle,
-      style: textTheme.titleMedium,
-    ),
-    isTopBarLayerAlwaysVisible: true,
-    trailingNavBarWidget: IconButton(
-      padding: WoltModalConfig.pagePadding,
-      icon: const Icon(Icons.close),
-      onPressed: Navigator.of(context).pop,
-    ),
-    child: const Padding(
-      padding: WoltModalConfig.pagePadding,
-      child: HomeserverLoggedInWidget(),
-    ),
+    title: context.messages.settingsMatrixHomeserverConfigTitle,
+    child: const HomeserverLoggedInWidget(),
   );
 }
 

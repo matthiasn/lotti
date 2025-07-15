@@ -2895,6 +2895,12 @@ abstract class AppLocalizations {
   /// **'Matrix Sync Settings'**
   String get settingsMatrixTitle;
 
+  /// No description provided for @settingsMatrixSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure end-to-end encrypted sync'**
+  String get settingsMatrixSubtitle;
+
   /// No description provided for @settingsMatrixUnverifiedDevicesPage.
   ///
   /// In en, this message translates to:
