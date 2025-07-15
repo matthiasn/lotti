@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/ui/room_config_page.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class MatrixSettingsCard extends StatelessWidget {
@@ -32,36 +31,28 @@ class MatrixSettingsCard extends StatelessWidget {
         ModalUtils.showMultiPageModal<void>(
           context: context,
           pageIndexNotifier: pageIndexNotifier,
-          pageListBuilder: (modalSheetContext) {
-            final textTheme = context.textTheme;
-            return [
-              syncLoginModalPage(
-                context: modalSheetContext,
-                textTheme: textTheme,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-              homeServerLoggedInPage(
-                context: modalSheetContext,
-                textTheme: textTheme,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-              roomConfigPage(
-                context: modalSheetContext,
-                textTheme: textTheme,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-              unverifiedDevicesPage(
-                context: modalSheetContext,
-                textTheme: textTheme,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-              matrixStatsPage(
-                context: modalSheetContext,
-                textTheme: textTheme,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-            ];
-          },
+          pageListBuilder: (modalSheetContext) => [
+            syncLoginModalPage(
+              context: modalSheetContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+            homeServerLoggedInPage(
+              context: modalSheetContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+            roomConfigPage(
+              context: modalSheetContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+            unverifiedDevicesPage(
+              context: modalSheetContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+            matrixStatsPage(
+              context: modalSheetContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+          ],
         );
       },
     );

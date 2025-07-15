@@ -11,7 +11,6 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage unverifiedDevicesPage({
   required BuildContext context,
-  required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
   return ModalUtils.modalSheetPage(
