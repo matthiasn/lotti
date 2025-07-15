@@ -454,7 +454,7 @@ ThemeData withOverrides(ThemeData themeData) {
       chipTheme: ChipThemeData(
         side: BorderSide.none,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // More rounded
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

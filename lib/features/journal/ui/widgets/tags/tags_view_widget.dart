@@ -71,6 +71,7 @@ class TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
+      labelPadding: EdgeInsets.zero,
       label: Text(
         tagEntity.tag,
         style: const TextStyle(
@@ -80,6 +81,7 @@ class TagChip extends StatelessWidget {
       ),
       backgroundColor: getTagColor(tagEntity),
       visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
