@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -72,6 +73,15 @@ void main() {
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
+
+      when(() => mockEntitiesCacheService.getCategoryById(any()))
+          .thenReturn(null);
+      when(() => mockEntitiesCacheService.getHabitById(any())).thenReturn(null);
+      when(() => mockEntitiesCacheService.getDataTypeById(any()))
+          .thenReturn(null);
+      when(() => mockEntitiesCacheService.getDashboardById(any()))
+          .thenReturn(null);
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
@@ -169,7 +179,7 @@ void main() {
       expect(saveButtonFinder, findsNothing);
     });
 
-    testWidgets('map icon visible (outlined) when no geolocation exists',
+    testWidgets('map action not visible when no geolocation exists',
         (WidgetTester tester) async {
       // Create an entry without geolocation
       final entryWithoutGeo = testTextEntry.copyWith(geolocation: null);
@@ -187,12 +197,23 @@ void main() {
       await tester.tap(moreHorizIconFinder);
       await tester.pumpAndSettle();
 
-      final mapIconFinder = find.byIcon(Icons.map_outlined);
-      expect(mapIconFinder, findsOneWidget);
+      // Map action should not be visible when there's no geolocation
+      final mapIconOutlinedFinder = find.byIcon(Icons.map_outlined);
+      final mapIconFilledFinder = find.byIcon(Icons.map_rounded);
+      expect(mapIconOutlinedFinder, findsNothing);
+      expect(mapIconFilledFinder, findsNothing);
+
+      // Also verify the text is not present
+      expect(find.text('Show map'), findsNothing);
+      expect(find.text('Hide map'), findsNothing);
     });
 
-    testWidgets('map icon tappable when geolocation exists for entry',
+    testWidgets('map action visible and tappable when geolocation exists',
         (WidgetTester tester) async {
+      // testTextEntry already has geolocation, so we should see the map action
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
@@ -204,15 +225,48 @@ void main() {
       await tester.tap(moreHorizIconFinder);
       await tester.pumpAndSettle();
 
-      // First try to find the map action by text
-      final mapTextFinder = find.text('Show map');
-      expect(mapTextFinder, findsOneWidget);
+      // The map action should be visible with the outlined icon initially
+      final mapIconFinder = find.byIcon(Icons.map_outlined);
+      expect(mapIconFinder, findsOneWidget);
 
-      await tester.tap(mapTextFinder);
+      // Tap the map action
+      await tester.tap(mapIconFinder);
       await tester.pumpAndSettle();
 
-      // TODO: check that provider method is called instead
-      // verify(entryCubit.toggleMapVisible).called(1);
+      // After tapping, the modal should close
+      expect(find.byIcon(Icons.map_outlined), findsNothing);
+    });
+
+    testWidgets('map action not visible for Task entries',
+        (WidgetTester tester) async {
+      // Create a Task entry with geolocation (map should still not show)
+      final taskEntry = testTask.copyWith(
+        geolocation: Geolocation(
+          geohashString: '',
+          longitude: 13.43,
+          latitude: 52.51,
+          createdAt: DateTime(2022, 7, 7, 13),
+        ),
+      );
+      when(() => mockJournalDb.journalEntityById(taskEntry.meta.id))
+          .thenAnswer((_) async => taskEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailHeader(entryId: taskEntry.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      await tester.tap(moreHorizIconFinder);
+      await tester.pumpAndSettle();
+
+      // Map action should not be visible for tasks even with geolocation
+      final mapIconOutlinedFinder = find.byIcon(Icons.map_outlined);
+      final mapIconFilledFinder = find.byIcon(Icons.map_rounded);
+      expect(mapIconOutlinedFinder, findsNothing);
+      expect(mapIconFilledFinder, findsNothing);
     });
   });
 

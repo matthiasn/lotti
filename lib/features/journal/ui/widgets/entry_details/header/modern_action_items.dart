@@ -123,16 +123,20 @@ class ModernToggleMapItem extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
-    if (entryState == null) {
+    final entry = entryState?.entry;
+    final geolocation = entry?.geolocation;
+
+    if (entryState == null || geolocation == null || entry is Task) {
       return const SizedBox.shrink();
     }
 
-    final entry = entryState.entry;
-    final showMap = entry?.geolocation != null;
+    final showMap = entryState.showMap;
 
     return ModernModalActionItem(
       icon: showMap ? Icons.map_rounded : Icons.map_outlined,
-      title: 'Show map',
+      title: showMap
+          ? context.messages.journalHideMapHint
+          : context.messages.journalShowMapHint,
       onTap: notifier.toggleMapVisible,
     );
   }
