@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage matrixStatsPage({
@@ -10,7 +11,9 @@ SliverWoltModalSheetPage matrixStatsPage({
   required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  return WoltModalSheetPage(
+  return ModalUtils.modalSheetPage(
+    context: context,
+    showCloseButton: true,
     stickyActionBar: Padding(
       padding: WoltModalConfig.pagePadding,
       child: Row(
@@ -33,20 +36,9 @@ SliverWoltModalSheetPage matrixStatsPage({
         ],
       ),
     ),
-    topBarTitle: Text(
-      context.messages.settingsMatrixStatsTitle,
-      style: textTheme.titleMedium,
-    ),
-    isTopBarLayerAlwaysVisible: true,
-    trailingNavBarWidget: IconButton(
-      padding: WoltModalConfig.pagePadding,
-      icon: const Icon(Icons.close),
-      onPressed: Navigator.of(context).pop,
-    ),
-    child: Padding(
-      padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
-      child: const IncomingStats(),
-    ),
+    title: context.messages.settingsMatrixStatsTitle,
+    padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
+    child: const IncomingStats(),
   );
 }
 

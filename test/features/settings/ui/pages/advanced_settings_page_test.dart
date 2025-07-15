@@ -47,7 +47,7 @@ void main() {
       final context = tester.element(find.byType(AdvancedSettingsPage));
 
       // Verify all cards are present
-      expect(find.text('Matrix Sync'), findsOneWidget);
+      expect(find.text(context.messages.settingsMatrixTitle), findsOneWidget);
       expect(
           find.text(context.messages.settingsSyncOutboxTitle), findsOneWidget);
       expect(

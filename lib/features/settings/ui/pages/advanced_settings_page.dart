@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -17,13 +18,7 @@ class AdvancedSettingsPage extends StatelessWidget {
       title: context.messages.settingsAdvancedTitle,
       child: Column(
         children: [
-          // Matrix sync card
-          AnimatedModernSettingsCardWithIcon(
-            title: 'Matrix Sync',
-            subtitle: context.messages.settingsAdvancedMatrixSyncSubtitle,
-            icon: Icons.sync,
-            onTap: () => context.beamToNamed('/settings/advanced/matrix_sync'),
-          ),
+          const MatrixSettingsCard(),
           AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsSyncOutboxTitle,
             subtitle: context.messages.settingsAdvancedOutboxSubtitle,
