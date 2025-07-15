@@ -1,10 +1,10 @@
 name: lotti
 version: 0.8.248
-summary: Lotti - a smart journal
-description: Super Cool App that does everything!
+summary: Lotti - a smart digital assistant
+description: Manage your life, privacy first
 
 confinement: strict
-base: core18
+base: core22
 grade: stable
 
 slots:
@@ -16,7 +16,7 @@ slots:
 apps:
   lotti:
     command: lotti
-    extensions: [flutter-master]
+    extensions: [flutter-stable]
     plugs:
       - network
     slots:
