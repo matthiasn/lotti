@@ -101,6 +101,19 @@ class AppTheme {
   // Modal item spacer widths
   static const double modalIconSpacerWidth = iconContainerSize;
   static const double modalChevronSpacerWidth = spacingLarge;
+  static const double errorModalMargin = 16;
+  static const double errorModalPadding = 20;
+  static const double errorModalBorderRadius = 16;
+  static const double errorModalIconPadding = 12;
+  static const double errorModalIconBorderRadius = 12;
+  static const double errorModalIconSize = 32;
+  static const double errorModalSpacingLarge = 16;
+  static const double errorModalSpacingSmall = 8;
+  static const double errorModalSuggestionPadding = 12;
+  static const double errorModalSuggestionBorderRadius = 8;
+  static const double errorModalSuggestionSpacing = 4;
+  static const double errorModalSpacingButton = 20;
+  static const double errorModalSpacingButtonSecondary = 12;
 }
 
 // Gradient and shadow constants

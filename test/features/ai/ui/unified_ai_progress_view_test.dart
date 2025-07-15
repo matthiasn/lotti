@@ -316,7 +316,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       // Should see starting message
-      expect(find.text('Starting inference...'), findsOneWidget);
+      expect(find.text('Processing...'), findsOneWidget);
 
       // Wait for processing
       await tester.pump(const Duration(milliseconds: 150));
@@ -417,7 +417,7 @@ void main() {
 
       expect(widget.entityId, 'test-entity');
       expect(widget.promptId, 'test-prompt');
-      expect(widget, isA<ConsumerWidget>());
+      expect(widget, isA<ConsumerStatefulWidget>());
     });
 
     testWidgets('widget can be instantiated with key', (tester) async {

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// A widget that displays AI inference errors in a user-friendly way
-class AiErrorDisplay extends StatelessWidget {
+class AiErrorDisplay extends StatefulWidget {
   const AiErrorDisplay({
     required this.error,
     this.onRetry,
@@ -15,121 +16,158 @@ class AiErrorDisplay extends StatelessWidget {
   final VoidCallback? onRetry;
 
   @override
+  State<AiErrorDisplay> createState() => _AiErrorDisplayState();
+}
+
+class _AiErrorDisplayState extends State<AiErrorDisplay> {
+  @override
   Widget build(BuildContext context) {
+    // Use modal surface background for the outer container
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(AppTheme.errorModalMargin),
+      padding: const EdgeInsets.all(AppTheme.errorModalPadding),
       decoration: BoxDecoration(
-        color: context.colorScheme.errorContainer.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.colorScheme.error.withValues(alpha: 0.3),
-        ),
+        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.errorModalBorderRadius),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Error icon
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.colorScheme.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              _getErrorIcon(),
-              color: context.colorScheme.error,
-              size: 32,
+      child: Center(
+        child: Card(
+          color: context.colorScheme.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular(AppTheme.errorModalBorderRadius),
+            side: BorderSide(
+              color: context.colorScheme.error.withValues(alpha: 0.25),
+              width: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Error title
-          Text(
-            error.type.getTitle(context),
-            style: context.textTheme.titleMedium?.copyWith(
-              color: context.colorScheme.error,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Error message - selectable for copying
-          SelectableText(
-            error.message,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.8),
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          // Suggestions based on error type
-          if (_getSuggestions().isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.messages.aiInferenceErrorSuggestionsTitle,
-                    style: context.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.errorModalPadding),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Error icon
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.errorModalIconPadding),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.errorModalIconBorderRadius),
+                  ),
+                  child: Icon(
+                    _getErrorIcon(),
+                    color: context.colorScheme.error,
+                    size: AppTheme.errorModalIconSize,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.errorModalSpacingLarge),
+                // Error title
+                Text(
+                  widget.error.type.getTitle(context),
+                  style: context.textTheme.titleMedium?.copyWith(
+                    color: context.colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.errorModalSpacingSmall),
+                // Error message - selectable for copying
+                SelectableText(
+                  widget.error.message,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: context.colorScheme.onSurface.withValues(alpha: 0.8),
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                // Suggestions based on error type
+                if (_getSuggestions().isNotEmpty) ...[
+                  const SizedBox(height: AppTheme.errorModalSpacingLarge),
+                  Container(
+                    padding: const EdgeInsets.all(
+                        AppTheme.errorModalSuggestionPadding),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.errorModalSuggestionBorderRadius),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.messages.aiInferenceErrorSuggestionsTitle,
+                          style: context.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.errorModalSpacingSmall),
+                        ..._getSuggestions().map((suggestion) => Padding(
+                              padding: const EdgeInsets.only(
+                                  bottom: AppTheme.errorModalSuggestionSpacing),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '• ',
+                                    style: context.textTheme.bodySmall,
+                                  ),
+                                  Expanded(
+                                    child: SelectableText(
+                                      suggestion,
+                                      style:
+                                          context.textTheme.bodySmall?.copyWith(
+                                        color: context.colorScheme.onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  ..._getSuggestions().map((suggestion) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '• ',
-                              style: context.textTheme.bodySmall,
-                            ),
-                            Expanded(
-                              child: SelectableText(
-                                suggestion,
-                                style: context.textTheme.bodySmall?.copyWith(
-                                  color: context.colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
                 ],
-              ),
+                // Retry button
+                if (widget.onRetry != null && _canRetry()) ...[
+                  const SizedBox(height: AppTheme.errorModalSpacingButton),
+                  FilledButton.icon(
+                    onPressed: widget.onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(context.messages.aiInferenceErrorRetryButton),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.colorScheme.primary,
+                      foregroundColor: context.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+                // View Log button
+                const SizedBox(
+                    height: AppTheme.errorModalSpacingButtonSecondary),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    beamToNamed('/settings/advanced/logging');
+                  },
+                  icon: const Icon(Icons.article_outlined),
+                  label: Text(context.messages.aiInferenceErrorViewLogButton),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.colorScheme.primary,
+                    side: BorderSide(
+                        color:
+                            context.colorScheme.primary.withValues(alpha: 0.5)),
+                  ),
+                ),
+              ],
             ),
-          ],
-
-          // Retry button
-          if (onRetry != null && _canRetry()) ...[
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(context.messages.aiInferenceErrorRetryButton),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.colorScheme.primary,
-                foregroundColor: context.colorScheme.onPrimary,
-              ),
-            ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
 
   IconData _getErrorIcon() {
-    switch (error.type) {
+    switch (widget.error.type) {
       case InferenceErrorType.networkConnection:
         return Icons.wifi_off_rounded;
       case InferenceErrorType.timeout:
@@ -148,6 +186,7 @@ class AiErrorDisplay extends StatelessWidget {
   }
 
   List<String> _getSuggestions() {
+    final error = widget.error;
     switch (error.type) {
       case InferenceErrorType.networkConnection:
         return [
@@ -175,16 +214,12 @@ class AiErrorDisplay extends StatelessWidget {
           'Reduce the frequency of requests',
         ];
       case InferenceErrorType.invalidRequest:
-        // Check if this is a model not found error
         if (error.message.contains('not found') &&
             error.message.contains('model')) {
-          // Extract model name if present
           final modelMatch =
               RegExp(r'model\s*"([^"]+)"').firstMatch(error.message);
           final modelName = modelMatch?.group(1) ?? 'the model';
-
           if (error.message.contains('pulling')) {
-            // Ollama-specific error
             return [
               'Run: ollama pull $modelName',
               'Make sure Ollama is running',
@@ -221,8 +256,7 @@ class AiErrorDisplay extends StatelessWidget {
   }
 
   bool _canRetry() {
-    // Allow retry for most error types except authentication
-    return error.type != InferenceErrorType.authentication &&
-        error.type != InferenceErrorType.invalidRequest;
+    return widget.error.type != InferenceErrorType.authentication &&
+        widget.error.type != InferenceErrorType.invalidRequest;
   }
 }

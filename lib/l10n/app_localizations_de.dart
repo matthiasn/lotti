@@ -327,6 +327,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiInferenceErrorSuggestionsTitle => 'Suggestions:';
 
   @override
+  String get aiInferenceErrorViewLogButton => 'View Log';
+
+  @override
   String get aiInferenceErrorTimeoutMessage =>
       'The request took too long to complete. Please try again or check if the service is responding.';
 
@@ -1758,4 +1761,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commonUnknown => 'Unknown';
+
+  @override
+  String get aiTranscribingAudio => 'Transcribing audio...';
 }

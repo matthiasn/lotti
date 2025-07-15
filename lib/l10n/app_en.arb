@@ -138,6 +138,7 @@
   "aiInferenceErrorServerMessage": "The AI service encountered an error. Please try again later.",
   "aiInferenceErrorServerTitle": "Server Error",
   "aiInferenceErrorSuggestionsTitle": "Suggestions:",
+  "aiInferenceErrorViewLogButton": "View Log",
   "aiInferenceErrorTimeoutMessage": "The request took too long to complete. Please try again or check if the service is responding.",
   "aiInferenceErrorTimeoutTitle": "Request Timed Out",
   "aiInferenceErrorUnknownMessage": "An unexpected error occurred. Please try again.",
@@ -482,7 +483,6 @@
   "settingsAboutPlatform": "Platform",
   "settingsAboutBuildType": "Build Type",
   "settingsAboutJournalEntries": "Journal Entries",
-
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsAdvancedMatrixSyncSubtitle": "Configure and manage Matrix synchronization settings",
   "settingsAdvancedOutboxSubtitle": "View and manage items waiting to be synchronized",
@@ -622,5 +622,6 @@
   "viewMenuTitle": "View",
   "commonLoading": "Loading...",
   "commonError": "Error",
-  "commonUnknown": "Unknown"
+  "commonUnknown": "Unknown",
+  "aiTranscribingAudio": "Transcribing audio..."
 }
