@@ -1521,6 +1521,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixTitle => 'Setări sincronizare Matrix';
 
   @override
+  String get settingsMatrixSubtitle => 'Configure end-to-end encrypted sync';
+
+  @override
   String get settingsMatrixUnverifiedDevicesPage => 'Dispozitive neverificate';
 
   @override

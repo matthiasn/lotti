@@ -538,6 +538,7 @@
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Matrix Sync Settings",
+  "settingsMatrixSubtitle": "Configure end-to-end encrypted sync",
   "settingsMatrixUnverifiedDevicesPage": "Unverified Devices",
   "settingsMatrixUserLabel": "User",
   "settingsMatrixUserNameTooShort": "User name too short",

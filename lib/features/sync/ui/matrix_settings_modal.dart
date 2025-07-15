@@ -10,13 +10,30 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class MatrixSettingsCard extends StatelessWidget {
+class MatrixSettingsCard extends StatefulWidget {
   const MatrixSettingsCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final pageIndexNotifier = ValueNotifier(0);
+  State<MatrixSettingsCard> createState() => _MatrixSettingsCardState();
+}
 
+class _MatrixSettingsCardState extends State<MatrixSettingsCard> {
+  late final ValueNotifier<int> pageIndexNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    pageIndexNotifier = ValueNotifier(0);
+  }
+
+  @override
+  void dispose() {
+    pageIndexNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedModernSettingsCardWithIcon(
       title: context.messages.settingsMatrixTitle,
       subtitle: 'Configure end-to-end encrypted sync',

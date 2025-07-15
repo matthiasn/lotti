@@ -245,6 +245,7 @@
   "settingsMatrixStartVerificationLabel": "Verifizierung starten",
   "settingsMatrixStatsTitle": "Matrix-Statistiken",
   "settingsMatrixTitle": "Matrix-Synchronisierungseinstellungen",
+  "settingsMatrixSubtitle": "Ende-zu-Ende verschlüsselte Synchronisation konfigurieren",
   "settingsMatrixUnverifiedDevicesPage": "Nicht verifizierte Geräte",
   "settingsMatrixUserLabel": "Benutzer",
   "settingsMatrixUserNameTooShort": "Benutzername zu kurz",
