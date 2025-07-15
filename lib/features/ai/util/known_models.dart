@@ -68,7 +68,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [
   KnownModel(
-    providerModelId: 'models/gemini-2.5-pro-preview-05-06',
+    providerModelId: 'models/gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text],
@@ -77,7 +77,7 @@ const List<KnownModel> geminiModels = [
         'Latest Gemini Pro with enhanced multimodal and reasoning capabilities',
   ),
   KnownModel(
-    providerModelId: 'models/gemini-2.5-flash-preview-04-17',
+    providerModelId: 'models/gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text],
