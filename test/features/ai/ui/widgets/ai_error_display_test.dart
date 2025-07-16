@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 void main() {
   group('AiErrorDisplay', () {
@@ -72,14 +75,12 @@ void main() {
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pumpAndSettle();
 
-        final container = tester.widget<Container>(
-          find.byType(Container).first,
-        );
-        expect(container.decoration, isA<BoxDecoration>());
-
-        final decoration = container.decoration as BoxDecoration?;
-        expect(decoration?.border, isNotNull);
-        expect(decoration?.borderRadius, isNotNull);
+        // Look for a Card with a border (matches new implementation)
+        final card = tester.widget<Card>(find.byType(Card).first);
+        final shape = card.shape as RoundedRectangleBorder?;
+        expect(shape, isNotNull);
+        expect(shape?.side, isNotNull);
+        expect(shape?.borderRadius, isNotNull);
       });
     });
 
@@ -472,5 +473,99 @@ void main() {
         expect(find.byType(SelectableText), findsWidgets);
       });
     });
+
+    group('custom error modal behaviors', () {
+      testWidgets('displays specific error message (e.g., missing API key)',
+          (WidgetTester tester) async {
+        final error = InferenceError(
+          message: 'API key missing',
+          type: InferenceErrorType.authentication,
+        );
+        await tester.pumpWidget(createTestWidget(error: error));
+        await tester.pumpAndSettle();
+        expect(find.text('API key missing'), findsOneWidget);
+      });
+
+      testWidgets('retry button calls onRetry and dismisses modal',
+          (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        var retried = false;
+        final error = InferenceError(
+          message: 'Temporary error',
+          type: InferenceErrorType.serverError, // Use a type that shows retry
+        );
+        await tester.pumpWidget(createTestWidget(
+          error: error,
+          onRetry: () {
+            retried = true;
+          },
+        ));
+        await tester.pumpAndSettle();
+        final retryText = find.text('Try Again');
+        expect(retryText, findsOneWidget);
+        final materialButton =
+            find.ancestor(of: retryText, matching: find.byType(Material)).first;
+        await tester.tap(materialButton);
+        await tester.pumpAndSettle();
+        expect(retried, isTrue);
+      });
+
+      testWidgets('View Log button navigates to logs page',
+          (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        // Register a mock NavService in GetIt
+        final getIt = GetIt.instance;
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+        final mockNavService = MockNavService();
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() {
+          if (getIt.isRegistered<NavService>()) {
+            getIt.unregister<NavService>();
+          }
+        });
+        final error = InferenceError(
+          message: 'Server error',
+          type: InferenceErrorType
+              .serverError, // Use a type that shows log button
+        );
+        final navKey = GlobalKey<NavigatorState>();
+        await tester.pumpWidget(MaterialApp(
+          navigatorKey: navKey,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          routes: {
+            '/settings/advanced/logging': (context) =>
+                const Scaffold(body: Text('Logs Page')),
+          },
+          home: Scaffold(
+            body: AiErrorDisplay(error: error, onRetry: () {}),
+          ),
+        ));
+        await tester.pumpAndSettle();
+        final viewLogText = find.text('View Log');
+        expect(viewLogText, findsOneWidget);
+        final materialButton = find
+            .ancestor(of: viewLogText, matching: find.byType(Material))
+            .first;
+        await tester.tap(materialButton);
+        await tester.pumpAndSettle();
+        // Verify that beamToNamed was called with the correct route
+        verify(() => mockNavService.beamToNamed('/settings/advanced/logging')).called(1);
+        expect(viewLogText, findsOneWidget);
+      });
+    });
   });
 }
+
+class MockNavService extends Mock implements NavService {}

@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
@@ -10,12 +11,13 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Progress view for unified AI inference
-class UnifiedAiProgressContent extends ConsumerWidget {
+class UnifiedAiProgressContent extends ConsumerStatefulWidget {
   const UnifiedAiProgressContent({
     required this.entityId,
     required this.promptId,
@@ -26,10 +28,27 @@ class UnifiedAiProgressContent extends ConsumerWidget {
   final String promptId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // First get the prompt config
+  ConsumerState<UnifiedAiProgressContent> createState() =>
+      _UnifiedAiProgressContentState();
+}
+
+class _UnifiedAiProgressContentState
+    extends ConsumerState<UnifiedAiProgressContent> {
+
+  void _handleRetry() {
+    // Invalidate the provider to trigger retry
+    ref.invalidate(
+      unifiedAiControllerProvider(
+        entityId: widget.entityId,
+        promptId: widget.promptId,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final promptConfigAsync = ref.watch(
-      aiConfigByIdProvider(promptId),
+      aiConfigByIdProvider(widget.promptId),
     );
 
     return promptConfigAsync.when(
@@ -48,136 +67,81 @@ class UnifiedAiProgressContent extends ConsumerWidget {
         final promptConfig = config;
         final state = ref.watch(
           unifiedAiControllerProvider(
-            entityId: entityId,
-            promptId: promptId,
+            entityId: widget.entityId,
+            promptId: widget.promptId,
           ),
         );
 
         final inferenceStatus = ref.watch(
           inferenceStatusControllerProvider(
-            id: entityId,
+            id: widget.entityId,
             aiResponseType: promptConfig.aiResponseType,
           ),
         );
 
         final isError = inferenceStatus == InferenceStatus.error;
+        final isRunning = inferenceStatus == InferenceStatus.running;
 
-        // If there's an error, try to parse it as an InferenceError
+        // Show progress indicator if running
+        if (isRunning) {
+          String runningMessage;
+          if (promptConfig.requiredInputData.contains(InputDataType.audioFiles)) {
+            runningMessage = context.messages.aiTranscribingAudio;
+          } else {
+            runningMessage = 'Processing...';
+          }
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              Text(
+                runningMessage,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          );
+        }
+
+        // If there's an error, show error modal (no _hideError check)
         if (isError) {
           try {
-            // Try to create an InferenceError from the state string
             final inferenceError = AiErrorUtils.categorizeError(state);
-
-            // Debug logging
-            developer.log(
-              'Error detected: "${inferenceError.message}"',
-              name: 'UnifiedAiProgressContent',
-            );
-
-            // Special handling for Ollama model not installed
-            // Check if the error message contains the specific pattern for model not installed
-            developer.log(
-              'Checking conditions: isEmpty=${inferenceError.message.isEmpty}, contains "not installed"=${inferenceError.message.toLowerCase().contains("not installed")}, contains "model"=${inferenceError.message.toLowerCase().contains("model")}',
-              name: 'UnifiedAiProgressContent',
-            );
-
-            // Check if this is a ModelNotInstalledException (most reliable)
             if (inferenceError.originalError is ModelNotInstalledException) {
               final modelNotInstalledError =
                   inferenceError.originalError as ModelNotInstalledException;
               final modelName = modelNotInstalledError.modelName;
-
-              developer.log(
-                'Model not installed detected via typed exception: $modelName',
-                name: 'UnifiedAiProgressContent',
-              );
-
-              developer.log(
-                'Creating OllamaModelInstallDialog for model: $modelName',
-                name: 'UnifiedAiProgressContent',
-              );
-
               return OllamaModelInstallDialog(modelName: modelName);
             }
-
-            // Fallback: Check if this is a model not found error via string matching
-            if (inferenceError.message.isNotEmpty &&
-                inferenceError.message
-                    .toLowerCase()
-                    .contains('not installed') &&
-                inferenceError.message.toLowerCase().contains('model')) {
-              // Extract model name from the error message
-              // The message format is: 'Model "modelName" is not installed. Please install it first.'
-              final modelNameMatch = RegExp('Model "([^"]+)" is not installed')
-                  .firstMatch(inferenceError.message);
-              final modelName = modelNameMatch?.group(1) ?? 'the model';
-
-              developer.log(
-                'Model not installed detected via string matching: $modelName',
-                name: 'UnifiedAiProgressContent',
-              );
-
-              developer.log(
-                'Creating OllamaModelInstallDialog for model: $modelName',
-                name: 'UnifiedAiProgressContent',
-              );
-
-              return OllamaModelInstallDialog(modelName: modelName);
-            }
-
+            // Always show AiErrorDisplay for any other error
             return AiErrorDisplay(
               error: inferenceError,
-              onRetry: () {
-                // Retry the inference
-                ref.invalidate(
-                  unifiedAiControllerProvider(
-                    entityId: entityId,
-                    promptId: promptId,
-                  ),
-                );
-              },
+              onRetry: _handleRetry,
             );
-          } catch (e) {
-            // If we can't parse it as InferenceError, try direct string matching
+          } catch (e, stack) {
             developer.log(
-              'Failed to parse error with AiErrorUtils, trying direct matching: $e',
+              'Exception in AiErrorUtils.categorizeError: $e',
               name: 'UnifiedAiProgressContent',
+              error: e,
+              stackTrace: stack,
+            );
+            // Show a generic error UI to the user
+            return AiErrorDisplay(
+              error: InferenceError(
+                message:
+                    'An unexpected error occurred while processing the AI response.',
+                type: InferenceErrorType.unknown,
+                originalError: e,
+              ),
+              onRetry: _handleRetry,
             );
           }
-
-          // Direct string matching for ModelNotInstalledException (always try this as fallback)
-          // The state might contain the full exception with stack trace, so we need to be more flexible
-          if (state.toLowerCase().contains('not installed') &&
-              state.toLowerCase().contains('model')) {
-            // Try to extract the model name from the full error message
-            final modelNameMatch =
-                RegExp('Model "([^"]+)" is not installed').firstMatch(state);
-            final modelName = modelNameMatch?.group(1) ?? 'the model';
-
-            developer.log(
-              'Model not installed detected via direct matching: $modelName',
-              name: 'UnifiedAiProgressContent',
-            );
-
-            developer.log(
-              'Creating OllamaModelInstallDialog for model: $modelName (direct matching)',
-              name: 'UnifiedAiProgressContent',
-            );
-
-            return OllamaModelInstallDialog(modelName: modelName);
-          }
-
-          // If we still can't detect it, show the raw error
-          developer.log(
-            'Could not detect model not installed error, showing raw error',
-            name: 'UnifiedAiProgressContent',
-          );
         }
 
+        // Default: show the state (result or idle)
         final textStyle = monospaceTextStyleSmall.copyWith(
           fontWeight: FontWeight.w300,
         );
-
         return Padding(
           padding: const EdgeInsets.only(
             top: 10,

@@ -669,6 +669,12 @@ abstract class AppLocalizations {
   /// **'Suggestions:'**
   String get aiInferenceErrorSuggestionsTitle;
 
+  /// No description provided for @aiInferenceErrorViewLogButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View Log'**
+  String get aiInferenceErrorViewLogButton;
+
   /// No description provided for @aiInferenceErrorTimeoutMessage.
   ///
   /// In en, this message translates to:
@@ -3345,6 +3351,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get commonUnknown;
+
+  /// No description provided for @aiTranscribingAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing audio...'**
+  String get aiTranscribingAudio;
 }
 
 class _AppLocalizationsDelegate
