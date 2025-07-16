@@ -50,16 +50,8 @@ class EntryDetailFooter extends ConsumerWidget {
         Visibility(
           visible: showMap,
           child: Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-                bottomRight: Radius.circular(8),
-              ),
-              child: MapWidget(
-                geolocation: entry.geolocation,
-              ),
-            ),
+            padding: const EdgeInsets.only(top: 5, bottom: 10),
+            child: MapWidget(geolocation: entry.geolocation),
           ),
         ),
       ],
