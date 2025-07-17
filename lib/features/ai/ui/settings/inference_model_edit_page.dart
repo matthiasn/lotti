@@ -331,6 +331,16 @@ class _InferenceModelEditPageState
                 onChanged: formController.isReasoningModelChanged,
                 icon: Icons.psychology_alt_rounded,
               ),
+              const SizedBox(height: 20),
+
+              // Supports Function Calling Switch
+              AiSwitchField(
+                label: 'Function Calling',
+                description: 'This model supports function/tool calling',
+                value: formState.supportsFunctionCalling,
+                onChanged: formController.supportsFunctionCallingChanged,
+                icon: Icons.functions_rounded,
+              ),
             ],
           ),
           const SizedBox(height: 32),

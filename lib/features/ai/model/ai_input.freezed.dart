@@ -324,6 +324,7 @@ AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) {
 mixin _$AiActionItem {
   String get title => throw _privateConstructorUsedError;
   bool get completed => throw _privateConstructorUsedError;
+  String? get id => throw _privateConstructorUsedError;
   DateTime? get deadline => throw _privateConstructorUsedError;
   DateTime? get completionDate => throw _privateConstructorUsedError;
 
@@ -346,6 +347,7 @@ abstract class $AiActionItemCopyWith<$Res> {
   $Res call(
       {String title,
       bool completed,
+      String? id,
       DateTime? deadline,
       DateTime? completionDate});
 }
@@ -367,6 +369,7 @@ class _$AiActionItemCopyWithImpl<$Res, $Val extends AiActionItem>
   $Res call({
     Object? title = null,
     Object? completed = null,
+    Object? id = freezed,
     Object? deadline = freezed,
     Object? completionDate = freezed,
   }) {
@@ -379,6 +382,10 @@ class _$AiActionItemCopyWithImpl<$Res, $Val extends AiActionItem>
           ? _value.completed
           : completed // ignore: cast_nullable_to_non_nullable
               as bool,
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
       deadline: freezed == deadline
           ? _value.deadline
           : deadline // ignore: cast_nullable_to_non_nullable
@@ -402,6 +409,7 @@ abstract class _$$AiActionItemImplCopyWith<$Res>
   $Res call(
       {String title,
       bool completed,
+      String? id,
       DateTime? deadline,
       DateTime? completionDate});
 }
@@ -421,6 +429,7 @@ class __$$AiActionItemImplCopyWithImpl<$Res>
   $Res call({
     Object? title = null,
     Object? completed = null,
+    Object? id = freezed,
     Object? deadline = freezed,
     Object? completionDate = freezed,
   }) {
@@ -433,6 +442,10 @@ class __$$AiActionItemImplCopyWithImpl<$Res>
           ? _value.completed
           : completed // ignore: cast_nullable_to_non_nullable
               as bool,
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
       deadline: freezed == deadline
           ? _value.deadline
           : deadline // ignore: cast_nullable_to_non_nullable
@@ -451,6 +464,7 @@ class _$AiActionItemImpl implements _AiActionItem {
   const _$AiActionItemImpl(
       {required this.title,
       required this.completed,
+      this.id,
       this.deadline,
       this.completionDate});
 
@@ -462,13 +476,15 @@ class _$AiActionItemImpl implements _AiActionItem {
   @override
   final bool completed;
   @override
+  final String? id;
+  @override
   final DateTime? deadline;
   @override
   final DateTime? completionDate;
 
   @override
   String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, deadline: $deadline, completionDate: $completionDate)';
+    return 'AiActionItem(title: $title, completed: $completed, id: $id, deadline: $deadline, completionDate: $completionDate)';
   }
 
   @override
@@ -479,6 +495,7 @@ class _$AiActionItemImpl implements _AiActionItem {
             (identical(other.title, title) || other.title == title) &&
             (identical(other.completed, completed) ||
                 other.completed == completed) &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
             (identical(other.completionDate, completionDate) ||
@@ -488,7 +505,7 @@ class _$AiActionItemImpl implements _AiActionItem {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, title, completed, deadline, completionDate);
+      Object.hash(runtimeType, title, completed, id, deadline, completionDate);
 
   /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
@@ -510,6 +527,7 @@ abstract class _AiActionItem implements AiActionItem {
   const factory _AiActionItem(
       {required final String title,
       required final bool completed,
+      final String? id,
       final DateTime? deadline,
       final DateTime? completionDate}) = _$AiActionItemImpl;
 
@@ -520,6 +538,8 @@ abstract class _AiActionItem implements AiActionItem {
   String get title;
   @override
   bool get completed;
+  @override
+  String? get id;
   @override
   DateTime? get deadline;
   @override

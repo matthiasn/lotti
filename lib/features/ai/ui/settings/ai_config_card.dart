@@ -466,6 +466,14 @@ class _CapabilityIndicators extends StatelessWidget {
             'Reasoning',
             true,
           ),
+        // Function calling support (if applicable)
+        if (model.supportsFunctionCalling)
+          _buildCapabilityIcon(
+            context,
+            Icons.functions_rounded,
+            'Function Calling',
+            true,
+          ),
       ],
     );
   }

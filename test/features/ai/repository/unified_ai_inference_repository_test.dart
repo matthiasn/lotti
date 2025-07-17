@@ -1,3 +1,6 @@
+// ignore_for_file: unawaited_futures
+
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -9,12 +12,14 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -48,6 +53,18 @@ class MockDirectory extends Mock implements Directory {}
 class MockFile extends Mock implements File {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
+
+class MockChecklistCompletionService extends Mock
+    implements ChecklistCompletionService {
+  MockChecklistCompletionService({this.onAddSuggestions});
+
+  final void Function(List<ChecklistCompletionSuggestion>)? onAddSuggestions;
+
+  @override
+  void addSuggestions(List<ChecklistCompletionSuggestion> suggestions) {
+    onAddSuggestions?.call(suggestions);
+  }
+}
 
 class FakeAiConfigModel extends Fake implements AiConfigModel {}
 
@@ -899,6 +916,10 @@ void main() {
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
+
+        // Mock getLinkedToEntities to return empty list (no linked tasks)
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []);
 
         try {
           await repository.runInference(
@@ -1968,6 +1989,10 @@ Some task summary content...''';
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
 
+        // Mock getLinkedToEntities to return empty list (no linked tasks)
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []);
+
         try {
           await repository.runInference(
             entityId: 'test-id',
@@ -2437,6 +2462,10 @@ Remaining steps:
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
 
+        // Mock getLinkedToEntities to return empty list (no linked tasks)
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []);
+
         try {
           await repository.runInference(
             entityId: 'test-id',
@@ -2839,6 +2868,10 @@ Remaining steps:
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
+
+        // Mock getLinkedToEntities to return empty list (no linked tasks)
+        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
+            .thenAnswer((_) async => []);
 
         try {
           // Run inference
@@ -5118,13 +5151,244 @@ Take into account the following task context:
         tempDir.deleteSync(recursive: true);
       }
     });
+
+    group('Tool call accumulation', () {
+      test('handles multiple tool calls with empty IDs correctly', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            checklistIds: ['checklist-1'],
+          ),
+        );
+
+        // No need to set up checklist items for this test as we're mocking the tool calls
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        ).copyWith(supportsFunctionCalling: true);
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openRouter,
+        );
+
+        when(() => mockAiInputRepo.getEntity(taskEntity.id))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+            .thenAnswer((_) async => '{"task": "details"}');
+
+        // Create stream with multiple tool calls with empty IDs
+        final streamController = StreamController<
+            CreateChatCompletionStreamResponse>()
+
+          // Add chunks with multiple tool calls, all with empty IDs
+          // Since the implementation uses dynamic checking, we can send a custom object
+          ..add(CreateChatCompletionStreamResponse(
+            id: 'test-completion-id',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    _createMockToolCall(
+                      index: 0,
+                      id: '', // Empty ID
+                      functionName: 'suggest_checklist_completion',
+                      arguments:
+                          '{"checklistItemId":"item-1","reason":"Developed","confidence":"high"}',
+                    ),
+                    _createMockToolCall(
+                      index: 0,
+                      id: '', // Empty ID
+                      functionName: 'suggest_checklist_completion',
+                      arguments:
+                          '{"checklistItemId":"item-2","reason":"Added tests","confidence":"high"}',
+                    ),
+                    _createMockToolCall(
+                      index: 0,
+                      id: '', // Empty ID
+                      functionName: 'suggest_checklist_completion',
+                      arguments:
+                          '{"checklistItemId":"item-3","reason":"Released","confidence":"high"}',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: 'test-model',
+            object: 'chat.completion.chunk',
+          ))
+
+          // Add content chunk
+          ..add(_createStreamChunk('Task completed'))
+          ..close();
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        final checklistCompletionSuggestions =
+            <ChecklistCompletionSuggestion>[];
+
+        when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
+            .thenReturn(MockChecklistCompletionService(
+          onAddSuggestions: checklistCompletionSuggestions.addAll,
+        ));
+
+        await repository.runInference(
+          entityId: taskEntity.id,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify all three suggestions were processed
+        expect(checklistCompletionSuggestions.length, 3);
+        expect(
+          checklistCompletionSuggestions.map((s) => s.checklistItemId),
+          containsAll(['item-1', 'item-2', 'item-3']),
+        );
+      });
+
+      test('processes concatenated JSON in tool call arguments', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        ).copyWith(supportsFunctionCalling: true);
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openRouter,
+        );
+
+        when(() => mockAiInputRepo.getEntity(taskEntity.id))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+            .thenAnswer((_) async => '{"task": "details"}');
+
+        // Create stream with concatenated JSON in a single tool call
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>()
+              ..add(_createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'suggest_checklist_completion',
+                  arguments:
+                      '{"checklistItemId":"item-1","reason":"Done 1","confidence":"high"} '
+                      '{"checklistItemId":"item-2","reason":"Done 2","confidence":"medium"} '
+                      '{"checklistItemId":"item-3","reason":"Done 3","confidence":"low"}',
+                ),
+              ]))
+              ..add(_createStreamChunk('Task completed'))
+              ..close();
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        final checklistCompletionSuggestions =
+            <ChecklistCompletionSuggestion>[];
+
+        when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
+            .thenReturn(MockChecklistCompletionService(
+          onAddSuggestions: checklistCompletionSuggestions.addAll,
+        ));
+
+        await repository.runInference(
+          entityId: taskEntity.id,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify all three suggestions were parsed from concatenated JSON
+        expect(checklistCompletionSuggestions.length, 3);
+        expect(
+          checklistCompletionSuggestions.map((s) => s.checklistItemId),
+          containsAll(['item-1', 'item-2', 'item-3']),
+        );
+        expect(
+          checklistCompletionSuggestions.map((s) => s.confidence),
+          containsAll([
+            ChecklistCompletionConfidence.high,
+            ChecklistCompletionConfidence.medium,
+            ChecklistCompletionConfidence.low,
+          ]),
+        );
+      });
+    });
   });
 }
 
 // Helper methods to create test objects
-Metadata _createMetadata() {
+Metadata _createMetadata({String? id}) {
   return Metadata(
-    id: 'test-id',
+    id: id ?? 'test-id',
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
     dateFrom: DateTime.now(),
@@ -5198,5 +5462,43 @@ CreateChatCompletionStreamResponse _createStreamChunk(String content) {
     created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
     object: 'chat.completion.chunk',
+  );
+}
+
+CreateChatCompletionStreamResponse _createStreamChunkWithToolCalls(
+  List<ChatCompletionStreamMessageToolCallChunk> toolCalls,
+) {
+  return CreateChatCompletionStreamResponse(
+    id: 'test-completion-id',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(
+          toolCalls: toolCalls,
+        ),
+      ),
+    ],
+    created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    model: 'test-model',
+    object: 'chat.completion.chunk',
+  );
+}
+
+// Create a mock tool call that mimics the structure the implementation expects
+ChatCompletionStreamMessageToolCallChunk _createMockToolCall({
+  required int index,
+  required String? id,
+  required String functionName,
+  required String arguments,
+}) {
+  // Use the actual constructor with proper types
+  return ChatCompletionStreamMessageToolCallChunk(
+    index: index,
+    id: id,
+    type: ChatCompletionStreamMessageToolCallChunkType.function,
+    function: ChatCompletionStreamMessageFunctionCall(
+      name: functionName,
+      arguments: arguments,
+    ),
   );
 }

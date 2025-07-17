@@ -38,6 +38,7 @@ _$AiActionItemImpl _$$AiActionItemImplFromJson(Map<String, dynamic> json) =>
     _$AiActionItemImpl(
       title: json['title'] as String,
       completed: json['completed'] as bool,
+      id: json['id'] as String?,
       deadline: json['deadline'] == null
           ? null
           : DateTime.parse(json['deadline'] as String),
@@ -50,6 +51,7 @@ Map<String, dynamic> _$$AiActionItemImplToJson(_$AiActionItemImpl instance) =>
     <String, dynamic>{
       'title': instance.title,
       'completed': instance.completed,
+      'id': instance.id,
       'deadline': instance.deadline?.toIso8601String(),
       'completionDate': instance.completionDate?.toIso8601String(),
     };

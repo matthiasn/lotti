@@ -112,6 +112,7 @@ void main() {
         expect(state.inputModalities, equals([Modality.text]));
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isFalse);
+        expect(state.supportsFunctionCalling, isFalse);
         expect(state.isValid,
             isFalse); // Invalid because required fields are empty
       });
@@ -127,6 +128,7 @@ void main() {
           inputModalities: [Modality.text, Modality.image],
           outputModalities: [Modality.text],
           isReasoningModel: true,
+          supportsFunctionCalling: true,
         );
 
         expect(state.id, equals('test-id'));
@@ -138,6 +140,7 @@ void main() {
         expect(state.inputModalities, equals([Modality.text, Modality.image]));
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isTrue);
+        expect(state.supportsFunctionCalling, isTrue);
       });
 
       test('copyWith maintains existing values when not specified', () {
@@ -147,6 +150,7 @@ void main() {
           providerModelId: const ProviderModelId.dirty('original-id'),
           inferenceProviderId: 'provider-id',
           isReasoningModel: true,
+          supportsFunctionCalling: true,
         );
 
         final copied = original.copyWith();
@@ -157,6 +161,8 @@ void main() {
         expect(
             copied.inferenceProviderId, equals(original.inferenceProviderId));
         expect(copied.isReasoningModel, equals(original.isReasoningModel));
+        expect(copied.supportsFunctionCalling,
+            equals(original.supportsFunctionCalling));
       });
 
       test('copyWith updates specified values', () {
@@ -172,6 +178,7 @@ void main() {
           inputModalities: [Modality.text, Modality.audio],
           outputModalities: [Modality.text, Modality.image],
           isReasoningModel: true,
+          supportsFunctionCalling: true,
         );
 
         expect(updated.id, equals('new-id'));
@@ -185,6 +192,7 @@ void main() {
         expect(
             updated.outputModalities, equals([Modality.text, Modality.image]));
         expect(updated.isReasoningModel, isTrue);
+        expect(updated.supportsFunctionCalling, isTrue);
       });
 
       test('FormzMixin validation works correctly', () {
@@ -237,6 +245,7 @@ void main() {
             inputModalities: [Modality.text, Modality.image],
             outputModalities: [Modality.text],
             isReasoningModel: true,
+            supportsFunctionCalling: true,
           );
 
           final config = state.toAiConfig();
@@ -252,6 +261,7 @@ void main() {
               equals([Modality.text, Modality.image]));
           expect(modelConfig.outputModalities, equals([Modality.text]));
           expect(modelConfig.isReasoningModel, isTrue);
+          expect(modelConfig.supportsFunctionCalling, isTrue);
           expect(modelConfig.maxCompletionTokens, equals(2000));
           expect(modelConfig.createdAt, isA<DateTime>());
         });

@@ -64,12 +64,24 @@ class CloudInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
+    List<ChatCompletionTool>? tools,
   }) {
+    developer.log(
+      'CloudInferenceRepository.generate called with tools: ${tools?.length ?? 0}',
+      name: 'CloudInferenceRepository',
+    );
     final client = overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
         );
+
+    if (tools != null && tools.isNotEmpty) {
+      developer.log(
+        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.function.name).join(', ')}',
+        name: 'CloudInferenceRepository',
+      );
+    }
 
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
@@ -84,6 +96,12 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         stream: true,
+        tools: tools,
+        toolChoice: tools != null
+            ? const ChatCompletionToolChoiceOption.mode(
+                ChatCompletionToolChoiceMode.auto,
+              )
+            : null,
       ),
     );
 
@@ -100,6 +118,7 @@ class CloudInferenceRepository {
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
     AiConfigInferenceProvider? provider,
+    List<ChatCompletionTool>? tools,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -120,6 +139,13 @@ class CloudInferenceRepository {
     }
 
     // For other providers, use the standard OpenAI-compatible format
+    if (tools != null && tools.isNotEmpty) {
+      developer.log(
+        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.function.name).join(', ')}',
+        name: 'CloudInferenceRepository',
+      );
+    }
+
     final res = client.createChatCompletionStream(
       request: CreateChatCompletionRequest(
         messages: [
@@ -144,6 +170,12 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxTokens: maxCompletionTokens,
         stream: true,
+        tools: tools,
+        toolChoice: tools != null
+            ? const ChatCompletionToolChoiceOption.mode(
+                ChatCompletionToolChoiceMode.auto,
+              )
+            : null,
       ),
     );
 
@@ -484,6 +516,7 @@ class CloudInferenceRepository {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
+    List<ChatCompletionTool>? tools,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -543,6 +576,13 @@ class CloudInferenceRepository {
     }
 
     // For other providers, use the standard OpenAI-compatible format
+    if (tools != null && tools.isNotEmpty) {
+      developer.log(
+        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
+        name: 'CloudInferenceRepository',
+      );
+    }
+
     return client
         .createChatCompletionStream(
           request: CreateChatCompletionRequest(
@@ -564,6 +604,12 @@ class CloudInferenceRepository {
             model: ChatCompletionModel.modelId(model),
             maxCompletionTokens: maxCompletionTokens,
             stream: true,
+            tools: tools,
+            toolChoice: tools != null
+                ? const ChatCompletionToolChoiceOption.mode(
+                    ChatCompletionToolChoiceMode.auto,
+                  )
+                : null,
           ),
         )
         .asBroadcastStream();

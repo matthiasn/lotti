@@ -63,6 +63,8 @@ _$AiConfigModelImpl _$$AiConfigModelImplFromJson(Map<String, dynamic> json) =>
           .map((e) => $enumDecode(_$ModalityEnumMap, e))
           .toList(),
       isReasoningModel: json['isReasoningModel'] as bool,
+      supportsFunctionCalling:
+          json['supportsFunctionCalling'] as bool? ?? false,
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),
@@ -83,6 +85,7 @@ Map<String, dynamic> _$$AiConfigModelImplToJson(_$AiConfigModelImpl instance) =>
       'outputModalities':
           instance.outputModalities.map((e) => _$ModalityEnumMap[e]!).toList(),
       'isReasoningModel': instance.isReasoningModel,
+      'supportsFunctionCalling': instance.supportsFunctionCalling,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'description': instance.description,
       'maxCompletionTokens': instance.maxCompletionTokens,

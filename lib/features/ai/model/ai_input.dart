@@ -24,6 +24,7 @@ class AiActionItem with _$AiActionItem {
   const factory AiActionItem({
     required String title,
     required bool completed,
+    String? id,
     DateTime? deadline,
     DateTime? completionDate,
   }) = _AiActionItem;
