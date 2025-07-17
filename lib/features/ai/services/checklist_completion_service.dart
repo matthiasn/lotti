@@ -96,8 +96,20 @@ Based on the context, identify which checklist items appear to be completed.
             try {
               final arguments = jsonDecode(toolCall.function.arguments)
                   as Map<String, dynamic>;
+              final checklistItemId = arguments['checklistItemId'] as String;
+              
+              // Validate that the suggested item ID exists in the incomplete items list
+              final isValidItemId = incompleteItems.any((item) => item.id == checklistItemId);
+              if (!isValidItemId) {
+                developer.log(
+                  'Skipping invalid checklist item ID from AI: $checklistItemId',
+                  name: 'ChecklistCompletionService',
+                );
+                continue;
+              }
+              
               final suggestion = ChecklistCompletionSuggestion(
-                checklistItemId: arguments['checklistItemId'] as String,
+                checklistItemId: checklistItemId,
                 reason: arguments['reason'] as String,
                 confidence: ChecklistCompletionConfidence.values.firstWhere(
                   (e) => e.name == arguments['confidence'],
