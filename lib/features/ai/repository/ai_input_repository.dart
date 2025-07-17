@@ -99,6 +99,7 @@ class AiInputRepository {
           (item) => AiActionItem(
             title: item.title,
             completed: item.isChecked,
+            id: item.id,
           ),
         )
         .toList();

@@ -52,6 +52,7 @@ void main() {
       inputModalities: [Modality.text, Modality.image],
       outputModalities: [Modality.text],
       isReasoningModel: false,
+      supportsFunctionCalling: true,
       description: 'A test model for unit tests',
     );
 
@@ -203,6 +204,30 @@ void main() {
         final switchWidget = tester.widget<Switch>(reasoningSwitch.first);
         expect(switchWidget.value, isNotNull);
       }
+    });
+
+    testWidgets('displays reasoning model and function calling toggles',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Check for reasoning model toggle
+      expect(find.text('Reasoning Model'), findsOneWidget);
+      expect(find.text('This model has advanced reasoning capabilities'),
+          findsOneWidget);
+      expect(find.byIcon(Icons.psychology_alt_rounded), findsOneWidget);
+
+      // Check for function calling toggle
+      expect(find.text('Function Calling'), findsOneWidget);
+      expect(find.text('This model supports function/tool calling'),
+          findsOneWidget);
+      expect(find.byIcon(Icons.functions_rounded), findsOneWidget);
+
+      // Should have at least 2 switches
+      expect(find.byType(Switch), findsAtLeastNWidgets(2));
     });
 
     testWidgets('has cancel and save buttons', (WidgetTester tester) async {

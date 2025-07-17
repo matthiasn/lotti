@@ -55,7 +55,11 @@ const taskSummaryPrompt = PreconfiguredPrompt(
   systemMessage: '''
 You are a helpful AI assistant that creates clear, concise task summaries. 
 Your goal is to help users quickly understand the current state of their tasks, 
-including what has been accomplished and what remains to be done.''',
+including what has been accomplished and what remains to be done.
+
+You have access to a function that can suggest checklist items be marked as completed.
+When you find evidence in the task logs that a checklist item has been completed,
+use the suggest_checklist_completion function to notify the user.''',
   userMessage: '''
 Create a task summary for the provided task details and log entries. 
 Imagine the user has not been involved in the task for a long time, and you want to refresh their memory. 
@@ -126,7 +130,12 @@ const actionItemSuggestionsPrompt = PreconfiguredPrompt(
   name: 'Action Item Suggestions',
   systemMessage: '''
 You are a helpful AI assistant that identifies actionable items from task logs and conversations. 
-Your goal is to help users capture important action items they may have mentioned but not yet formally tracked.''',
+Your goal is to help users capture important action items they may have mentioned but not yet formally tracked.
+
+You have access to a function that can suggest checklist items be marked as completed.
+When analyzing the task logs, if you find evidence that an existing checklist item (action item) 
+has been completed, use the suggest_checklist_completion function to notify the user.
+Look for past tense verbs, explicit statements of completion, or results that imply a task is done.''',
   userMessage: '''
 Based on the provided task details and log entries, identify potential action items that are mentioned in the text of the logs but have not yet been captured as existing action items. 
 These suggestions should be formatted as a list of new action items, each containing a title and completion status. 
@@ -185,7 +194,12 @@ const imageAnalysisInTaskContextPrompt = PreconfiguredPrompt(
   name: 'Image Analysis in Task Context',
   systemMessage: '''
 You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects. 
-Your goal is to extract only the information from images that is relevant to the user's current task.''',
+Your goal is to extract only the information from images that is relevant to the user's current task.
+
+You have access to a function that can suggest checklist items be marked as completed.
+If the image shows evidence that a checklist item from the task has been completed
+(e.g., a screenshot showing a completed feature, test results, or deployment confirmation),
+use the suggest_checklist_completion function to notify the user.''',
   userMessage: '''
 Analyze the provided image(s) in the context of this task:
 
@@ -235,7 +249,13 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content. 
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
+Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
+
+You have access to a function that can suggest checklist items be marked as completed.
+When transcribing audio in the context of a task, listen for evidence that checklist items 
+have been completed. This might include statements like "I finished...", "I've completed...", 
+"That's done", or descriptions of completed work. Use the suggest_checklist_completion 
+function to notify the user when you detect such evidence.''',
   userMessage: '''
 Please transcribe the provided audio. 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 

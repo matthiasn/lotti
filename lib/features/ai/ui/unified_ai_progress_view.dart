@@ -34,7 +34,6 @@ class UnifiedAiProgressContent extends ConsumerStatefulWidget {
 
 class _UnifiedAiProgressContentState
     extends ConsumerState<UnifiedAiProgressContent> {
-
   void _handleRetry() {
     // Invalidate the provider to trigger retry
     ref.invalidate(
@@ -85,7 +84,8 @@ class _UnifiedAiProgressContentState
         // Show progress indicator if running
         if (isRunning) {
           String runningMessage;
-          if (promptConfig.requiredInputData.contains(InputDataType.audioFiles)) {
+          if (promptConfig.requiredInputData
+              .contains(InputDataType.audioFiles)) {
             runningMessage = context.messages.aiTranscribingAudio;
           } else {
             runningMessage = 'Processing...';

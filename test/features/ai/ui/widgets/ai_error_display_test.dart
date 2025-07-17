@@ -561,7 +561,8 @@ void main() {
         await tester.tap(materialButton);
         await tester.pumpAndSettle();
         // Verify that beamToNamed was called with the correct route
-        verify(() => mockNavService.beamToNamed('/settings/advanced/logging')).called(1);
+        verify(() => mockNavService.beamToNamed('/settings/advanced/logging'))
+            .called(1);
         expect(viewLogText, findsOneWidget);
       });
     });

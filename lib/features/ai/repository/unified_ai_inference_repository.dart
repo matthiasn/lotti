@@ -9,6 +9,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
@@ -16,10 +17,12 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -210,13 +213,201 @@ class UnifiedAiInferenceRepository {
         audioBase64: audioBase64,
         temperature: 0.6,
         systemMessage: promptConfig.systemMessage,
+        entity: entity,
       );
 
-      // Process the stream
+      // Process the stream and accumulate tool calls
+      final toolCallAccumulator = <String, Map<String, dynamic>>{};
+      var toolCallCounter = 0;
+
       await for (final chunk in stream) {
         final text = _extractTextFromChunk(chunk);
         buffer.write(text);
         onProgress(buffer.toString());
+
+        // Accumulate tool calls from chunks
+        if (chunk.choices.isNotEmpty) {
+          final delta = chunk.choices.first.delta;
+          if (delta?.toolCalls != null) {
+            developer.log(
+              'Received tool call chunk with ${delta!.toolCalls!.length} tool calls',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            // Special handling: if we receive multiple tool calls in one chunk all with the same index,
+            // they might be complete tool calls rather than chunks
+            if (delta.toolCalls!.length > 1 &&
+                delta.toolCalls!.every(
+                    (tc) => tc.index == 0 && tc.function?.arguments != null)) {
+              developer.log(
+                'Detected ${delta.toolCalls!.length} complete tool calls in single chunk',
+                name: 'UnifiedAiInferenceRepository',
+              );
+
+              // Each is a complete tool call
+              for (final toolCallChunk in delta.toolCalls!) {
+                final toolCallId = 'tool_${toolCallCounter++}';
+                toolCallAccumulator[toolCallId] = {
+                  'id': toolCallId,
+                  'index': toolCallChunk.index ?? 0,
+                  'type': toolCallChunk.type?.toString() ?? 'function',
+                  'function': <String, dynamic>{
+                    'name': toolCallChunk.function?.name ?? '',
+                    'arguments': toolCallChunk.function?.arguments ?? '',
+                  },
+                };
+                developer.log(
+                  'Added complete tool call $toolCallId: ${toolCallChunk.function?.name}',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              }
+            } else {
+              // Normal streaming chunk processing
+              for (final toolCallChunk in delta.toolCalls!) {
+                // Log the raw chunk data for debugging
+                developer.log(
+                  'Tool call chunk - id: ${toolCallChunk.id}, index: ${toolCallChunk.index}, '
+                  'type: ${toolCallChunk.type}, function: ${toolCallChunk.function?.name}, '
+                  'args length: ${toolCallChunk.function?.arguments?.length ?? 0}',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+
+                // If this chunk has an ID or has function data, it's starting a new tool call
+                var toolCallId = toolCallChunk.id;
+
+                // Generate ID if not provided or if it's an empty string
+                if (toolCallId == null || toolCallId.isEmpty) {
+                  toolCallId = 'tool_${toolCallCounter++}';
+                }
+
+                if (toolCallChunk.id != null ||
+                    toolCallChunk.function?.name != null) {
+                  // This is a new tool call
+                  toolCallAccumulator[toolCallId] = {
+                    'id': toolCallId,
+                    'index': toolCallChunk.index ?? toolCallAccumulator.length,
+                    'type': toolCallChunk.type?.toString() ?? 'function',
+                    'function': <String, dynamic>{
+                      'name': toolCallChunk.function?.name ?? '',
+                      'arguments': toolCallChunk.function?.arguments ?? '',
+                    },
+                  };
+                  developer.log(
+                    'Started new tool call $toolCallId: ${toolCallChunk.function?.name}',
+                    name: 'UnifiedAiInferenceRepository',
+                  );
+                } else if (toolCallChunk.index != null) {
+                  // Try to find by index if no ID
+                  final targetKey = toolCallAccumulator.entries
+                      .firstWhereOrNull(
+                          (e) => e.value['index'] == toolCallChunk.index)
+                      ?.key;
+
+                  if (targetKey != null) {
+                    final existing = toolCallAccumulator[targetKey]!;
+                    final functionData =
+                        existing['function'] as Map<String, dynamic>;
+
+                    if (toolCallChunk.function != null) {
+                      if (toolCallChunk.function!.name != null) {
+                        functionData['name'] = toolCallChunk.function!.name;
+                      }
+                      if (toolCallChunk.function!.arguments != null) {
+                        functionData['arguments'] =
+                            ((functionData['arguments'] ?? '') as String) +
+                                toolCallChunk.function!.arguments!;
+                      }
+                    }
+                    developer.log(
+                      'Continued tool call $targetKey (index ${toolCallChunk.index}) with arguments chunk',
+                      name: 'UnifiedAiInferenceRepository',
+                    );
+                  }
+                } else {
+                  // This is a continuation of an existing tool call
+                  // Find the most recent tool call to append to
+                  if (toolCallAccumulator.isNotEmpty) {
+                    final lastKey = toolCallAccumulator.keys.last;
+                    final existing = toolCallAccumulator[lastKey]!;
+                    final functionData =
+                        existing['function'] as Map<String, dynamic>;
+
+                    if (toolCallChunk.function != null) {
+                      if (toolCallChunk.function!.name != null) {
+                        functionData['name'] = toolCallChunk.function!.name;
+                      }
+                      if (toolCallChunk.function!.arguments != null) {
+                        functionData['arguments'] =
+                            ((functionData['arguments'] ?? '') as String) +
+                                toolCallChunk.function!.arguments!;
+                      }
+                    }
+                    developer.log(
+                      'Continued tool call $lastKey with arguments chunk (no index)',
+                      name: 'UnifiedAiInferenceRepository',
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Process accumulated tool calls
+      List<ChatCompletionMessageToolCall>? toolCalls;
+      if (toolCallAccumulator.isNotEmpty) {
+        developer.log(
+          'Processing ${toolCallAccumulator.length} accumulated tool calls',
+          name: 'UnifiedAiInferenceRepository',
+        );
+
+        // Log all accumulated tool calls for debugging
+        toolCallAccumulator.forEach((key, value) {
+          final functionData = value['function'] as Map<String, dynamic>?;
+          developer.log(
+            'Accumulated tool call $key: function=${functionData?['name']}, '
+            'args length=${functionData?['arguments']?.toString().length ?? 0}',
+            name: 'UnifiedAiInferenceRepository',
+          );
+        });
+
+        toolCalls = toolCallAccumulator.values.where((data) {
+          // Only process tool calls with valid function data
+          final functionData = data['function'] as Map<String, dynamic>?;
+          final hasValidArgs =
+              functionData?['arguments']?.toString().isNotEmpty ?? false;
+          if (!hasValidArgs) {
+            developer.log(
+              'Skipping tool call ${data['id']} - no valid arguments',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          }
+          return hasValidArgs;
+        }).map((data) {
+          final functionData = data['function'] as Map<String, dynamic>;
+          developer.log(
+            'Creating tool call ${data['id']}: ${functionData['name']} with args: ${functionData['arguments']}',
+            name: 'UnifiedAiInferenceRepository',
+          );
+          return ChatCompletionMessageToolCall(
+            id: data['id'] as String,
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: functionData['name'] as String,
+              arguments: functionData['arguments'] as String,
+            ),
+          );
+        }).toList();
+
+        developer.log(
+          'Created ${toolCalls.length} tool calls from accumulator',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      } else {
+        developer.log(
+          'No tool calls accumulated from stream',
+          name: 'UnifiedAiInferenceRepository',
+        );
       }
 
       // Process the complete response
@@ -229,6 +420,7 @@ class UnifiedAiInferenceRepository {
         entity: entity,
         start: start,
         isRerun: isRerun,
+        toolCalls: toolCalls,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -341,10 +533,34 @@ class UnifiedAiInferenceRepository {
     required List<String> images,
     required String? audioBase64,
     required double temperature,
+    required JournalEntity entity,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
 
     if (audioBase64 != null) {
+      // Include checklist completion tools if processing audio linked to a task with function calling support
+      List<ChatCompletionTool>? tools;
+
+      // Check if this is audio linked to a task
+      Task? linkedTask;
+      if (entity is JournalAudio && model.supportsFunctionCalling) {
+        linkedTask = await _getTaskForEntity(entity);
+
+        if (linkedTask != null) {
+          tools = ChecklistCompletionFunctions.getTools();
+          developer.log(
+            'Including checklist completion tools for audio transcription linked to task ${linkedTask.id}',
+            name: 'UnifiedAiInferenceRepository',
+          );
+        }
+      } else if (entity is Task && model.supportsFunctionCalling) {
+        tools = ChecklistCompletionFunctions.getTools();
+        developer.log(
+          'Including checklist completion tools for audio transcription of task ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
       return cloudRepo.generateWithAudio(
         prompt,
         model: model.providerModelId,
@@ -353,8 +569,32 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
+        tools: tools,
       );
     } else if (images.isNotEmpty) {
+      // Include checklist completion tools if processing image linked to a task with function calling support
+      List<ChatCompletionTool>? tools;
+
+      // Check if this is image linked to a task
+      Task? linkedTask;
+      if (entity is JournalImage && model.supportsFunctionCalling) {
+        linkedTask = await _getTaskForEntity(entity);
+
+        if (linkedTask != null) {
+          tools = ChecklistCompletionFunctions.getTools();
+          developer.log(
+            'Including checklist completion tools for image analysis linked to task ${linkedTask.id}',
+            name: 'UnifiedAiInferenceRepository',
+          );
+        }
+      } else if (entity is Task && model.supportsFunctionCalling) {
+        tools = ChecklistCompletionFunctions.getTools();
+        developer.log(
+          'Including checklist completion tools for image analysis of task ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
       return cloudRepo.generateWithImages(
         prompt,
         model: model.providerModelId,
@@ -364,8 +604,24 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
+        tools: tools,
       );
     } else {
+      // Include checklist completion tools if processing a task with function calling support
+      List<ChatCompletionTool>? tools;
+      if (entity is Task && model.supportsFunctionCalling) {
+        tools = ChecklistCompletionFunctions.getTools();
+        developer.log(
+          'Including checklist completion tools for task ${entity.id} with model ${model.providerModelId}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      } else {
+        developer.log(
+          'NOT including tools - entity is Task: ${entity is Task}, supportsFunctionCalling: ${model.supportsFunctionCalling}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
       return cloudRepo.generate(
         prompt,
         model: model.providerModelId,
@@ -374,6 +630,7 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         systemMessage: systemMessage,
         maxCompletionTokens: model.maxCompletionTokens,
+        tools: tools,
       );
     }
   }
@@ -408,6 +665,7 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
     required DateTime start,
     required bool isRerun,
+    List<ChatCompletionMessageToolCall>? toolCalls,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -433,6 +691,25 @@ class UnifiedAiInferenceRepository {
       } catch (e) {
         // Failed to parse action items, continue without them
       }
+    }
+
+    // Process tool calls for checklist completions
+    final taskForToolCalls = await _getTaskForEntity(entity);
+
+    if (toolCalls != null && toolCalls.isNotEmpty && taskForToolCalls != null) {
+      developer.log(
+        'Processing ${toolCalls.length} tool calls for task ${taskForToolCalls.id} (from ${entity.runtimeType})',
+        name: 'UnifiedAiInferenceRepository',
+      );
+      await _processChecklistCompletionToolCalls(
+        toolCalls: toolCalls,
+        task: taskForToolCalls,
+      );
+    } else {
+      developer.log(
+        'No tool calls to process - toolCalls: ${toolCalls?.length ?? 0}, taskForToolCalls: ${taskForToolCalls?.id ?? 'null'}, entity: ${entity.runtimeType}',
+        name: 'UnifiedAiInferenceRepository',
+      );
     }
 
     // Create AI response data
@@ -800,6 +1077,152 @@ class UnifiedAiInferenceRepository {
         error: e,
       );
     }
+  }
+
+  /// Process tool calls for checklist completion suggestions
+  Future<void> _processChecklistCompletionToolCalls({
+    required List<ChatCompletionMessageToolCall> toolCalls,
+    required Task task,
+  }) async {
+    developer.log(
+      'Starting to process ${toolCalls.length} tool calls for checklist completions',
+      name: 'UnifiedAiInferenceRepository',
+    );
+
+    final suggestions = <ChecklistCompletionSuggestion>[];
+
+    for (final toolCall in toolCalls) {
+      developer.log(
+        'Processing tool call: ${toolCall.function.name}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      if (toolCall.function.name ==
+          ChecklistCompletionFunctions.suggestChecklistCompletion) {
+        // Handle case where multiple JSON objects might be concatenated
+        final argumentsStr = toolCall.function.arguments;
+
+        // Try to split multiple JSON objects if they're concatenated
+        // This regex matches JSON objects by looking for balanced braces
+        // NOTE: This manual parsing logic may fail if the reason field contains
+        // unmatched { or } characters. This is a known limitation but should be
+        // rare in practice since AI-generated reasons are typically well-formed.
+        final jsonObjects = <String>[];
+        var depth = 0;
+        var start = -1;
+
+        for (var i = 0; i < argumentsStr.length; i++) {
+          if (argumentsStr[i] == '{') {
+            if (depth == 0) {
+              start = i;
+            }
+            depth++;
+          } else if (argumentsStr[i] == '}') {
+            depth--;
+            if (depth == 0 && start != -1) {
+              jsonObjects.add(argumentsStr.substring(start, i + 1));
+              start = -1;
+            }
+          }
+        }
+
+        if (jsonObjects.isEmpty) {
+          developer.log(
+            'No valid JSON found in arguments: $argumentsStr',
+            name: 'UnifiedAiInferenceRepository',
+          );
+          continue;
+        }
+
+        developer.log(
+          'Found ${jsonObjects.length} JSON objects in arguments',
+          name: 'UnifiedAiInferenceRepository',
+        );
+
+        for (final jsonStr in jsonObjects) {
+          try {
+            developer.log(
+              'Parsing individual JSON: $jsonStr',
+              name: 'UnifiedAiInferenceRepository',
+            );
+
+            final arguments = jsonDecode(jsonStr) as Map<String, dynamic>;
+            final suggestion = ChecklistCompletionSuggestion(
+              checklistItemId: arguments['checklistItemId'] as String,
+              reason: arguments['reason'] as String,
+              confidence: ChecklistCompletionConfidence.values.firstWhere(
+                (e) => e.name == arguments['confidence'],
+                orElse: () => ChecklistCompletionConfidence.low,
+              ),
+            );
+            suggestions.add(suggestion);
+
+            developer.log(
+              'Created suggestion for item ${suggestion.checklistItemId} with confidence ${suggestion.confidence.name}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          } catch (e) {
+            developer.log(
+              'Error parsing individual checklist completion JSON: $e',
+              name: 'UnifiedAiInferenceRepository',
+              error: e,
+            );
+          }
+        }
+      } else {
+        developer.log(
+          'Skipping unknown tool call: ${toolCall.function.name}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+    }
+
+    if (suggestions.isNotEmpty) {
+      developer.log(
+        'About to store ${suggestions.length} suggestions:',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      for (final suggestion in suggestions) {
+        developer.log(
+          '  - Item ${suggestion.checklistItemId}: ${suggestion.reason} (${suggestion.confidence.name})',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
+      // Store suggestions in the service
+      ref
+          .read(checklistCompletionServiceProvider.notifier)
+          .addSuggestions(suggestions);
+
+      // Force refresh of all checklist items in this task
+      // This will cause the UI to re-check for suggestions
+      ref.invalidate(checklistItemControllerProvider);
+
+      developer.log(
+        'Processed ${suggestions.length} checklist completion suggestions for task ${task.id}',
+        name: 'UnifiedAiInferenceRepository',
+      );
+    } else {
+      developer.log(
+        'No suggestions to process after parsing tool calls',
+        name: 'UnifiedAiInferenceRepository',
+      );
+    }
+  }
+
+  /// Helper method to get the associated task for a given entity
+  Future<Task?> _getTaskForEntity(JournalEntity entity) async {
+    if (entity is Task) {
+      return entity;
+    }
+    if (entity is JournalAudio || entity is JournalImage) {
+      final linkedEntities = await ref
+          .read(journalRepositoryProvider)
+          .getLinkedToEntities(linkedTo: entity.id);
+      return linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
+    }
+    return null;
   }
 }
 

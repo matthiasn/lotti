@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
@@ -92,7 +92,9 @@ class ChecklistItemWrapper extends ConsumerWidget {
                 );
                 return result ?? false;
               },
-              child: ChecklistItemWidget(
+              child: ChecklistItemWithSuggestionWidget(
+                itemId: item.id,
+                taskId: taskId,
                 title: item.data.title,
                 isChecked: item.data.isChecked,
                 onChanged: (checked) =>

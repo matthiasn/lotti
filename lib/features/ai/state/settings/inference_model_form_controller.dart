@@ -50,6 +50,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         inputModalities: _config!.inputModalities,
         outputModalities: _config!.outputModalities,
         isReasoningModel: _config!.isReasoningModel,
+        supportsFunctionCalling: _config!.supportsFunctionCalling,
       );
     }
 
@@ -65,6 +66,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     List<Modality>? inputModalities,
     List<Modality>? outputModalities,
     bool? isReasoningModel,
+    bool? supportsFunctionCalling,
   }) {
     final prev = state.valueOrNull;
     if (prev == null) return;
@@ -76,7 +78,10 @@ class InferenceModelFormController extends _$InferenceModelFormController {
             !listEquals(inputModalities, prev.inputModalities)) ||
         (outputModalities != null &&
             !listEquals(outputModalities, prev.outputModalities)) ||
-        (isReasoningModel != null && isReasoningModel != prev.isReasoningModel);
+        (isReasoningModel != null &&
+            isReasoningModel != prev.isReasoningModel) ||
+        (supportsFunctionCalling != null &&
+            supportsFunctionCalling != prev.supportsFunctionCalling);
 
     state = AsyncData(
       prev.copyWith(
@@ -98,6 +103,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         inputModalities: inputModalities,
         outputModalities: outputModalities,
         isReasoningModel: isReasoningModel,
+        supportsFunctionCalling: supportsFunctionCalling,
       ),
     );
   }
@@ -145,6 +151,11 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   // ignore: avoid_positional_boolean_parameters
   void isReasoningModelChanged(bool value) {
     _setAllFields(isReasoningModel: value);
+  }
+
+  // ignore: avoid_positional_boolean_parameters
+  void supportsFunctionCallingChanged(bool value) {
+    _setAllFields(supportsFunctionCalling: value);
   }
 
   /// Add a new configuration

@@ -22,6 +22,7 @@ void main() {
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'Test description',
     maxCompletionTokens: 4000,
   );
@@ -336,6 +337,25 @@ void main() {
 
       // Assert
       expect(formState?.isReasoningModel, isTrue);
+    });
+
+    test('should update form state when supportsFunctionCalling is changed',
+        () async {
+      // Arrange
+      final controller = container.read(
+        inferenceModelFormControllerProvider(configId: null).notifier,
+      );
+      await container
+          .read(inferenceModelFormControllerProvider(configId: null).future);
+
+      // Act
+      controller.supportsFunctionCallingChanged(true);
+      final formState = container
+          .read(inferenceModelFormControllerProvider(configId: null))
+          .valueOrNull;
+
+      // Assert
+      expect(formState?.supportsFunctionCalling, isTrue);
     });
   });
 }

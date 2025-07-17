@@ -51,6 +51,7 @@ class AiConfig with _$AiConfig {
     required List<Modality> inputModalities,
     required List<Modality> outputModalities,
     required bool isReasoningModel,
+    @Default(false) bool supportsFunctionCalling,
     DateTime? updatedAt,
     String? description,
     int? maxCompletionTokens,

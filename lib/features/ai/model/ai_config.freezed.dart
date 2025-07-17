@@ -57,6 +57,7 @@ mixin _$AiConfig {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)
@@ -102,6 +103,7 @@ mixin _$AiConfig {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -147,6 +149,7 @@ mixin _$AiConfig {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -443,6 +446,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)
@@ -492,6 +496,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -541,6 +546,7 @@ class _$AiConfigInferenceProviderImpl implements AiConfigInferenceProvider {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -668,6 +674,7 @@ abstract class _$$AiConfigModelImplCopyWith<$Res>
       List<Modality> inputModalities,
       List<Modality> outputModalities,
       bool isReasoningModel,
+      bool supportsFunctionCalling,
       DateTime? updatedAt,
       String? description,
       int? maxCompletionTokens});
@@ -694,6 +701,7 @@ class __$$AiConfigModelImplCopyWithImpl<$Res>
     Object? inputModalities = null,
     Object? outputModalities = null,
     Object? isReasoningModel = null,
+    Object? supportsFunctionCalling = null,
     Object? updatedAt = freezed,
     Object? description = freezed,
     Object? maxCompletionTokens = freezed,
@@ -731,6 +739,10 @@ class __$$AiConfigModelImplCopyWithImpl<$Res>
           ? _value.isReasoningModel
           : isReasoningModel // ignore: cast_nullable_to_non_nullable
               as bool,
+      supportsFunctionCalling: null == supportsFunctionCalling
+          ? _value.supportsFunctionCalling
+          : supportsFunctionCalling // ignore: cast_nullable_to_non_nullable
+              as bool,
       updatedAt: freezed == updatedAt
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -759,6 +771,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
       required final List<Modality> inputModalities,
       required final List<Modality> outputModalities,
       required this.isReasoningModel,
+      this.supportsFunctionCalling = false,
       this.updatedAt,
       this.description,
       this.maxCompletionTokens,
@@ -800,6 +813,9 @@ class _$AiConfigModelImpl implements AiConfigModel {
   @override
   final bool isReasoningModel;
   @override
+  @JsonKey()
+  final bool supportsFunctionCalling;
+  @override
   final DateTime? updatedAt;
   @override
   final String? description;
@@ -811,7 +827,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
 
   @override
   String toString() {
-    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)';
+    return 'AiConfig.model(id: $id, name: $name, providerModelId: $providerModelId, inferenceProviderId: $inferenceProviderId, createdAt: $createdAt, inputModalities: $inputModalities, outputModalities: $outputModalities, isReasoningModel: $isReasoningModel, supportsFunctionCalling: $supportsFunctionCalling, updatedAt: $updatedAt, description: $description, maxCompletionTokens: $maxCompletionTokens)';
   }
 
   @override
@@ -833,6 +849,9 @@ class _$AiConfigModelImpl implements AiConfigModel {
                 .equals(other._outputModalities, _outputModalities) &&
             (identical(other.isReasoningModel, isReasoningModel) ||
                 other.isReasoningModel == isReasoningModel) &&
+            (identical(
+                    other.supportsFunctionCalling, supportsFunctionCalling) ||
+                other.supportsFunctionCalling == supportsFunctionCalling) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.description, description) ||
@@ -853,6 +872,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
       const DeepCollectionEquality().hash(_inputModalities),
       const DeepCollectionEquality().hash(_outputModalities),
       isReasoningModel,
+      supportsFunctionCalling,
       updatedAt,
       description,
       maxCompletionTokens);
@@ -887,6 +907,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)
@@ -919,6 +940,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
         inputModalities,
         outputModalities,
         isReasoningModel,
+        supportsFunctionCalling,
         updatedAt,
         description,
         maxCompletionTokens);
@@ -946,6 +968,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -978,6 +1001,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
         inputModalities,
         outputModalities,
         isReasoningModel,
+        supportsFunctionCalling,
         updatedAt,
         description,
         maxCompletionTokens);
@@ -1005,6 +1029,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -1039,6 +1064,7 @@ class _$AiConfigModelImpl implements AiConfigModel {
           inputModalities,
           outputModalities,
           isReasoningModel,
+          supportsFunctionCalling,
           updatedAt,
           description,
           maxCompletionTokens);
@@ -1099,6 +1125,7 @@ abstract class AiConfigModel implements AiConfig {
       required final List<Modality> inputModalities,
       required final List<Modality> outputModalities,
       required final bool isReasoningModel,
+      final bool supportsFunctionCalling,
       final DateTime? updatedAt,
       final String? description,
       final int? maxCompletionTokens}) = _$AiConfigModelImpl;
@@ -1117,6 +1144,7 @@ abstract class AiConfigModel implements AiConfig {
   List<Modality> get inputModalities;
   List<Modality> get outputModalities;
   bool get isReasoningModel;
+  bool get supportsFunctionCalling;
   @override
   DateTime? get updatedAt;
   @override
@@ -1436,6 +1464,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)
@@ -1500,6 +1529,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?
@@ -1564,6 +1594,7 @@ class _$AiConfigPromptImpl implements AiConfigPrompt {
             List<Modality> inputModalities,
             List<Modality> outputModalities,
             bool isReasoningModel,
+            bool supportsFunctionCalling,
             DateTime? updatedAt,
             String? description,
             int? maxCompletionTokens)?

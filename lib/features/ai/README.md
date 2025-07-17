@@ -389,6 +389,65 @@ A: The system uses a simple "Read-Current-Write" pattern to prevent stale data o
 - **Auto-checklist Protection**: Uses a simple `Set<String> _autoCreatingTasks` to prevent duplicate checklist creation for the same task
 - **No Complex Transactions**: No database transactions or retry logic needed since conflicts are resolved by reading current state
 
+### Q: How does the checklist completion suggestion feature work?
+A: The system uses OpenAI-style function calling to detect when checklist items may have been completed:
+- **Function Calling Support**: Models that support function calling (OpenAI, Anthropic, Gemini) can suggest checklist completions
+- **Automatic Detection**: During audio transcriptions, task summaries, or image analysis, the AI looks for evidence of completion
+- **Evidence Types**: Past tense verbs ("I finished..."), explicit statements ("That's done"), visual confirmation (screenshots)
+- **Streaming Support**: Tool calls are accumulated from streaming chunks and processed after the response completes
+- **Visual Indication**: Suggested items show a pulsing colored indicator (color indicates confidence level)
+- **User Control**: Users can accept or dismiss suggestions with a single tap
+
+### Q: How do I enable checklist completion suggestions?
+A: To enable this feature:
+1. Use a model that supports function calling (check `supportsFunctionCalling` in model settings)
+2. Create or update prompts from the preconfigured templates (they now include instructions for using the function)
+3. The feature works automatically when processing tasks with checklists
+4. Suggestions appear as visual indicators on checklist items in the task UI
+
+## Technical Details
+
+### Function Calling Implementation
+
+The checklist completion suggestion feature uses OpenAI-compatible function calling:
+
+```dart
+// Function definition in ChecklistCompletionFunctions
+static List<ChatCompletionTool> getTools() {
+  return [
+    const ChatCompletionTool(
+      type: ChatCompletionToolType.function,
+      function: FunctionObject(
+        name: 'suggest_checklist_completion',
+        description: 'Suggest that a checklist item should be marked as completed...',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            'checklistItemId': {'type': 'string', 'description': 'The ID of the checklist item'},
+            'reason': {'type': 'string', 'description': 'Why this item appears completed'},
+            'confidence': {'type': 'string', 'enum': ['high', 'medium', 'low']},
+          },
+          'required': ['checklistItemId', 'reason', 'confidence'],
+        },
+      ),
+    ),
+  ];
+}
+```
+
+**Tool Call Processing in Streaming:**
+- Tool calls arrive as chunks in the streaming response
+- `UnifiedAiInferenceRepository` accumulates chunks by index or ID
+- **Empty ID Handling**: When the API sends multiple tool calls with empty IDs (common with some providers), the system automatically generates unique IDs (`tool_0`, `tool_1`, etc.) to prevent overwriting
+- **Concatenated JSON Support**: Some providers send multiple JSON objects concatenated in a single tool call's arguments field. The system detects and parses these using regex pattern matching
+- After streaming completes, tool calls are reconstructed and processed
+- `ChecklistCompletionService` stores suggestions and notifies UI with visual pulsing indicators
+
+**Model Support:**
+- Models must have `supportsFunctionCalling: true` in their configuration
+- Currently supported: OpenAI GPT-4, Anthropic Claude, Google Gemini
+- Not supported: Local models (Ollama), Whisper (audio-only)
+
 ## Testing
 
 The system includes comprehensive test coverage:

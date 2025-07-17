@@ -23,6 +23,7 @@ class KnownModel {
     required this.outputModalities,
     required this.isReasoningModel,
     required this.description,
+    this.supportsFunctionCalling = false,
     this.maxCompletionTokens,
   });
 
@@ -32,6 +33,7 @@ class KnownModel {
   final List<Modality> outputModalities;
   final bool isReasoningModel;
   final String description;
+  final bool supportsFunctionCalling;
   final int? maxCompletionTokens;
 
   /// Creates an AiConfigModel from this known model configuration
@@ -48,6 +50,7 @@ class KnownModel {
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
+      supportsFunctionCalling: supportsFunctionCalling,
       description: description,
       maxCompletionTokens: maxCompletionTokens,
     );
@@ -73,6 +76,7 @@ const List<KnownModel> geminiModels = [
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description:
         'Latest Gemini Pro with enhanced multimodal and reasoning capabilities',
   ),
@@ -82,6 +86,7 @@ const List<KnownModel> geminiModels = [
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description:
         'Fast multimodal model with reasoning capabilities optimized for speed',
   ),
@@ -164,6 +169,7 @@ const List<KnownModel> openaiModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
+    supportsFunctionCalling: true,
     description: 'Flagship GPT model for complex tasks',
   ),
   KnownModel(
@@ -172,6 +178,7 @@ const List<KnownModel> openaiModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'Our most powerful reasoning model',
   ),
   KnownModel(
@@ -180,6 +187,7 @@ const List<KnownModel> openaiModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'Faster, more affordable reasoning model',
   ),
 ];
@@ -192,6 +200,7 @@ const List<KnownModel> anthropicModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'Highest level of intelligence and capability',
     maxCompletionTokens: 2000,
   ),
@@ -201,6 +210,7 @@ const List<KnownModel> anthropicModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'High intelligence and balanced performance',
     maxCompletionTokens: 2000,
   ),
@@ -210,6 +220,7 @@ const List<KnownModel> anthropicModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
+    supportsFunctionCalling: true,
     description: 'Intelligence at blazing speeds',
     maxCompletionTokens: 2000,
   ),
@@ -223,6 +234,7 @@ const List<KnownModel> openRouterModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'Highest level of intelligence and capability',
   ),
   KnownModel(
@@ -231,6 +243,7 @@ const List<KnownModel> openRouterModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'High intelligence and balanced performance',
   ),
   KnownModel(
@@ -239,6 +252,7 @@ const List<KnownModel> openRouterModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'OpenAI o4-mini is a compact reasoning model in the o-series.',
   ),
   KnownModel(
@@ -247,6 +261,7 @@ const List<KnownModel> openRouterModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description:
         'OpenAI o4-mini-high is the same model as o4-mini with reasoning_effort set to high',
   ),
@@ -256,6 +271,7 @@ const List<KnownModel> openRouterModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
+    supportsFunctionCalling: true,
     description:
         'GPT-4.1 is a flagship large language model optimized for advanced instruction following, real-world software engineering, and long-context reasoning.',
   ),
