@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
@@ -68,15 +69,8 @@ class _ChecklistItemWithSuggestionWidgetState
   Widget build(BuildContext context) {
     final completionService = ref.watch(checklistCompletionServiceProvider);
     final suggestion = completionService.whenOrNull(
-      data: (suggestions) {
-        try {
-          return suggestions.firstWhere(
-            (s) => s.checklistItemId == widget.itemId,
-          );
-        } catch (_) {
-          return null;
-        }
-      },
+      data: (suggestions) => suggestions
+          .firstWhereOrNull((s) => s.checklistItemId == widget.itemId),
     );
 
     // Start pulsing animation if there's a suggestion

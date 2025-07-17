@@ -544,10 +544,7 @@ class UnifiedAiInferenceRepository {
       // Check if this is audio linked to a task
       Task? linkedTask;
       if (entity is JournalAudio && model.supportsFunctionCalling) {
-        final linkedEntities = await ref
-            .read(journalRepositoryProvider)
-            .getLinkedToEntities(linkedTo: entity.id);
-        linkedTask = linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
+        linkedTask = await _getTaskForEntity(entity);
 
         if (linkedTask != null) {
           tools = ChecklistCompletionFunctions.getTools();
@@ -581,10 +578,7 @@ class UnifiedAiInferenceRepository {
       // Check if this is image linked to a task
       Task? linkedTask;
       if (entity is JournalImage && model.supportsFunctionCalling) {
-        final linkedEntities = await ref
-            .read(journalRepositoryProvider)
-            .getLinkedToEntities(linkedTo: entity.id);
-        linkedTask = linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
+        linkedTask = await _getTaskForEntity(entity);
 
         if (linkedTask != null) {
           tools = ChecklistCompletionFunctions.getTools();
@@ -700,17 +694,7 @@ class UnifiedAiInferenceRepository {
     }
 
     // Process tool calls for checklist completions
-    Task? taskForToolCalls;
-    if (entity is Task) {
-      taskForToolCalls = entity;
-    } else if (entity is JournalAudio || entity is JournalImage) {
-      // For audio/images, check if they are linked to a task
-      final linkedEntities = await ref
-          .read(journalRepositoryProvider)
-          .getLinkedToEntities(linkedTo: entity.id);
-      taskForToolCalls =
-          linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
-    }
+    final taskForToolCalls = await _getTaskForEntity(entity);
 
     if (toolCalls != null && toolCalls.isNotEmpty && taskForToolCalls != null) {
       developer.log(
@@ -1120,6 +1104,9 @@ class UnifiedAiInferenceRepository {
 
         // Try to split multiple JSON objects if they're concatenated
         // This regex matches JSON objects by looking for balanced braces
+        // NOTE: This manual parsing logic may fail if the reason field contains
+        // unmatched { or } characters. This is a known limitation but should be
+        // rare in practice since AI-generated reasons are typically well-formed.
         final jsonObjects = <String>[];
         var depth = 0;
         var start = -1;
@@ -1222,6 +1209,20 @@ class UnifiedAiInferenceRepository {
         name: 'UnifiedAiInferenceRepository',
       );
     }
+  }
+
+  /// Helper method to get the associated task for a given entity
+  Future<Task?> _getTaskForEntity(JournalEntity entity) async {
+    if (entity is Task) {
+      return entity;
+    }
+    if (entity is JournalAudio || entity is JournalImage) {
+      final linkedEntities = await ref
+          .read(journalRepositoryProvider)
+          .getLinkedToEntities(linkedTo: entity.id);
+      return linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
+    }
+    return null;
   }
 }
 

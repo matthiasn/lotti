@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -97,9 +98,10 @@ Based on the context, identify which checklist items appear to be completed.
               final arguments = jsonDecode(toolCall.function.arguments)
                   as Map<String, dynamic>;
               final checklistItemId = arguments['checklistItemId'] as String;
-              
+
               // Validate that the suggested item ID exists in the incomplete items list
-              final isValidItemId = incompleteItems.any((item) => item.id == checklistItemId);
+              final isValidItemId =
+                  incompleteItems.any((item) => item.id == checklistItemId);
               if (!isValidItemId) {
                 developer.log(
                   'Skipping invalid checklist item ID from AI: $checklistItemId',
@@ -107,7 +109,7 @@ Based on the context, identify which checklist items appear to be completed.
                 );
                 continue;
               }
-              
+
               final suggestion = ChecklistCompletionSuggestion(
                 checklistItemId: checklistItemId,
                 reason: arguments['reason'] as String,
@@ -184,11 +186,7 @@ Based on the context, identify which checklist items appear to be completed.
   /// Get suggestion for a specific checklist item
   ChecklistCompletionSuggestion? getSuggestionForItem(String checklistItemId) {
     final suggestions = state.value ?? [];
-    try {
-      return suggestions
-          .firstWhere((s) => s.checklistItemId == checklistItemId);
-    } catch (_) {
-      return null;
-    }
+    return suggestions
+        .firstWhereOrNull((s) => s.checklistItemId == checklistItemId);
   }
 }
