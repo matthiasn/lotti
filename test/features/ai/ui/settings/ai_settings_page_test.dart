@@ -250,7 +250,7 @@ void main() {
 
       // Should show error message
       expect(find.textContaining('Test error'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+              expect(find.text('RETRY'), findsOneWidget);
     });
 
     testWidgets('should clear search when clear button is tapped',

@@ -3,6 +3,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ConfirmationProgressModal {
@@ -109,7 +110,7 @@ class ConfirmationProgressModal {
                     Expanded(
                       child: SizedBox(
                         height: ModalTheme.buttonHeight,
-                        child: FilledButton(
+                        child: LottiPrimaryButton(
                           onPressed: () async {
                             confirmed = true;
                             pageIndexNotifier.value = 1;
@@ -128,31 +129,9 @@ class ConfirmationProgressModal {
                               }
                             }
                           },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: isDestructive
-                                ? colorScheme.error
-                                : colorScheme.primary,
-                            foregroundColor: isDestructive
-                                ? colorScheme.onError
-                                : colorScheme.onPrimary,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.cardBorderRadius),
-                            ),
-                            padding: EdgeInsets.zero,
-                            textStyle: const TextStyle(
-                              fontSize: ModalTheme.fontSize,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: ModalTheme.letterSpacingBold,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              confirmLabel.toUpperCase(),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
+                          label: confirmLabel.toUpperCase(),
+                          icon: Icons.check_circle_rounded,
+                          isDestructive: isDestructive,
                         ),
                       ),
                     ),

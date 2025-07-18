@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -26,11 +27,9 @@ SliverWoltModalSheetPage matrixStatsPage({
             ),
           ),
           const SizedBox(height: 8),
-          FilledButton(
+          LottiPrimaryButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Center(
-              child: Text(context.messages.settingsMatrixDone),
-            ),
+            label: context.messages.settingsMatrixDone,
           ),
         ],
       ),
