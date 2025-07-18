@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   const ChecklistItemWithSuggestionWidget({
@@ -190,7 +191,7 @@ class _ChecklistItemWithSuggestionWidgetState
               },
               child: const Text('Dismiss'),
             ),
-            FilledButton(
+            LottiPrimaryButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 widget.onChanged(true);
@@ -198,7 +199,8 @@ class _ChecklistItemWithSuggestionWidgetState
                     .read(checklistCompletionServiceProvider.notifier)
                     .clearSuggestion(widget.itemId);
               },
-              child: const Text('Mark Complete'),
+              label: 'Mark Complete',
+              icon: Icons.check_circle,
             ),
           ],
         );

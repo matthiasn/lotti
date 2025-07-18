@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 class DateTimeBottomSheet extends StatefulWidget {
   const DateTimeBottomSheet(
@@ -110,12 +111,9 @@ class DateTimeStickyActionBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: FilledButton(
+            child: LottiPrimaryButton(
               onPressed: onDone,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: Text(context.messages.doneButton),
+              label: context.messages.doneButton,
             ),
           ),
         ],

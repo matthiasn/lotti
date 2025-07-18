@@ -5,6 +5,7 @@ import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
@@ -304,15 +305,15 @@ void main() {
       // Find the confirm button and verify it uses error color
       final confirmButtonFinder = find.ancestor(
         of: find.text('DELETE'),
-        matching: find.byType(FilledButton),
+        matching: find.byType(LottiPrimaryButton),
       );
-      final confirmButton = tester.widget<FilledButton>(confirmButtonFinder);
-      final theme = Theme.of(tester.element(confirmButtonFinder));
+      final confirmButton = tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+      Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses error styling for destructive operations
       expect(
-        confirmButton.style?.backgroundColor?.resolve({}),
-        theme.colorScheme.error,
+        confirmButton.isDestructive,
+        isTrue,
       );
     });
 
@@ -357,15 +358,15 @@ void main() {
       // Find the confirm button and verify it uses primary color
       final confirmButtonFinder = find.ancestor(
         of: find.text('CONTINUE'),
-        matching: find.byType(FilledButton),
+        matching: find.byType(LottiPrimaryButton),
       );
-      final confirmButton = tester.widget<FilledButton>(confirmButtonFinder);
-      final theme = Theme.of(tester.element(confirmButtonFinder));
+      final confirmButton = tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+      Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses primary styling for non-destructive operations
       expect(
-        confirmButton.style?.backgroundColor?.resolve({}),
-        theme.colorScheme.primary,
+        confirmButton.isDestructive,
+        isFalse,
       );
     });
 

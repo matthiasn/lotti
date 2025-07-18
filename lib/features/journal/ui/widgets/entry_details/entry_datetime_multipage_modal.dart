@@ -6,6 +6,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -376,7 +377,7 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               child: SizedBox(
                 height: 48,
-                child: FilledButton(
+                child: LottiPrimaryButton(
                   onPressed: valid && changed
                       ? () async {
                           try {
@@ -392,6 +393,8 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
                           }
                         }
                       : null,
+                  label: context.messages.journalDateSaveButton,
+                  icon: Icons.check_rounded,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.colorScheme.primary,
                     foregroundColor: context.colorScheme.onPrimary,
@@ -400,26 +403,6 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_rounded,
-                        size: 20,
-                        color: valid && changed
-                            ? context.colorScheme.onPrimary
-                            : context.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        context.messages.journalDateSaveButton,
-                        style: context.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -490,12 +473,19 @@ class _DateTimePickerStickyActionBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: FilledButton(
+            child: LottiPrimaryButton(
               onPressed: onDone,
+              label: context.messages.doneButton,
+              icon: Icons.check_rounded,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: context.colorScheme.primary,
+                foregroundColor: context.colorScheme.onPrimary,
+                disabledBackgroundColor:
+                    context.colorScheme.surfaceContainerHighest,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: Text(context.messages.doneButton),
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 void main() {
   group('ConfigErrorState', () {
@@ -39,10 +40,10 @@ void main() {
         },
       ));
 
-      expect(find.text('Retry'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+              expect(find.text('RETRY'), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
 
-      await tester.tap(find.text('Retry'));
+        await tester.tap(find.text('RETRY'));
       await tester.pump();
 
       expect(retryPressed, isTrue);
@@ -54,8 +55,8 @@ void main() {
         error: 'Test error',
       ));
 
-      expect(find.text('Retry'), findsNothing);
-      expect(find.byType(FilledButton), findsNothing);
+              expect(find.text('RETRY'), findsNothing);
+        expect(find.byType(LottiPrimaryButton), findsNothing);
     });
 
     testWidgets('displays error icon with correct size and color',
@@ -142,24 +143,24 @@ void main() {
       expect(errorText.textAlign, TextAlign.center);
     });
 
-    testWidgets('retry button is properly styled as FilledButton',
+    testWidgets('retry button is properly styled as LottiPrimaryButton',
         (WidgetTester tester) async {
       await tester.pumpWidget(createWidget(
         error: 'Error',
         onRetry: () {},
       ));
 
-      // Find any button that extends FilledButton (including FilledButton.icon)
-      final filledButton = find.byWidgetPredicate(
-        (widget) => widget is FilledButton,
+      // Find LottiPrimaryButton
+      final primaryButton = find.byWidgetPredicate(
+        (widget) => widget is LottiPrimaryButton,
       );
-      expect(filledButton, findsOneWidget);
+      expect(primaryButton, findsOneWidget);
 
       // The button should have a retry icon
       expect(find.byIcon(Icons.refresh), findsOneWidget);
 
       // The button should have a retry label
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('RETRY'), findsOneWidget);
     });
   });
 }

@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 // Create a proper test controller that extends the actual controller
 class TestAiConfigByTypeController extends AiConfigByTypeController {
@@ -429,11 +430,11 @@ void main() {
 
       // Find save button and verify it's disabled
       final saveButton =
-          find.widgetWithText(FilledButton, l10n.saveButtonLabel);
+          find.widgetWithText(LottiPrimaryButton, l10n.saveButtonLabel);
       expect(saveButton, findsOneWidget);
 
-      final filledButton = tester.widget<FilledButton>(saveButton);
-      expect(filledButton.onPressed, isNull);
+      final primaryButton = tester.widget<LottiPrimaryButton>(saveButton);
+      expect(primaryButton.onPressed, isNull);
     });
 
     testWidgets('shows empty state when no models available', (tester) async {

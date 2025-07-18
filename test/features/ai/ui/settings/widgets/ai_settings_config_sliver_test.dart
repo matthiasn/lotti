@@ -178,10 +178,10 @@ void main() {
           },
         ));
 
-        expect(find.text('Retry'), findsOneWidget);
+        expect(find.text('RETRY'), findsOneWidget);
         expect(find.byIcon(Icons.refresh), findsOneWidget);
 
-        await tester.tap(find.text('Retry'));
+        await tester.tap(find.text('RETRY'));
         await tester.pump();
 
         expect(retryPressed, isTrue);
