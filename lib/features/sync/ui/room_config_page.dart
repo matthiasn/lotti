@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -31,12 +32,10 @@ SliverWoltModalSheetPage roomConfigPage({
             ),
           ),
           const SizedBox(height: 8),
-          FilledButton(
+          LottiPrimaryButton(
             onPressed: () =>
                 pageIndexNotifier.value = pageIndexNotifier.value + 1,
-            child: Center(
-              child: Text(context.messages.settingsMatrixNextPage),
-            ),
+            label: context.messages.settingsMatrixNextPage,
           ),
         ],
       ),

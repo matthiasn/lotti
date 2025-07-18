@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/state/login_form_controller.dart';
 import 'package:lotti/features/sync/state/matrix_config_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
@@ -69,7 +70,7 @@ class LoginStickyActionBar extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 8),
-          FilledButton(
+          LottiPrimaryButton(
             key: const Key('matrix_login'),
             onPressed: enableLoginButton
                 ? () async {
@@ -79,10 +80,8 @@ class LoginStickyActionBar extends ConsumerWidget {
                     }
                   }
                 : null,
-            child: Text(
-              context.messages.settingsMatrixLoginButtonLabel,
-              semanticsLabel: context.messages.settingsMatrixLoginButtonLabel,
-            ),
+            label: context.messages.settingsMatrixLoginButtonLabel,
+            semanticsLabel: context.messages.settingsMatrixLoginButtonLabel,
           ),
         ],
       ),

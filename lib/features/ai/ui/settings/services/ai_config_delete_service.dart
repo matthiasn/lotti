@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 /// Service that handles stylish delete operations for AI configurations
 ///
@@ -278,13 +279,11 @@ class AiConfigDeleteService {
                   style: TextStyle(color: context.colorScheme.onSurfaceVariant),
                 ),
               ),
-              FilledButton(
+              LottiPrimaryButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.colorScheme.error,
-                  foregroundColor: context.colorScheme.onError,
-                ),
-                child: const Text('Delete'),
+                label: 'Delete',
+                icon: Icons.delete_forever_outlined,
+                isDestructive: true,
               ),
             ],
           ),

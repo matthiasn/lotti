@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// shows a confirmation modal with customizable message and action labels.
@@ -46,50 +48,34 @@ Future<bool> showConfirmationModal({
           Row(
             children: [
               Expanded(
-                child: FilledButton(
+                child: LottiSecondaryButton(
                   onPressed: () {
                     result = false;
                     Navigator.of(context).pop();
                   },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surfaceTint,
+                  label: cancelLabel,
+                  style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: Text(
-                    cancelLabel,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.onError,
-                      fontWeight: FontWeight.w500,
-                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FilledButton(
+                child: LottiPrimaryButton(
                   onPressed: () {
                     result = true;
                     Navigator.of(context).pop();
                   },
+                  label: confirmLabel.toUpperCase(),
+                  isDestructive: isDestructive,
                   style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: Text(
-                    confirmLabel.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimary,
-                      letterSpacing: 0.5,
-                    ),
                   ),
                 ),
               ),

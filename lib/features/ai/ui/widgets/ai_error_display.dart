@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 /// A widget that displays AI inference errors in a user-friendly way
 class AiErrorDisplay extends StatefulWidget {
@@ -132,10 +133,10 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                 // Retry button
                 if (widget.onRetry != null && _canRetry()) ...[
                   const SizedBox(height: AppTheme.errorModalSpacingButton),
-                  FilledButton.icon(
+                  LottiPrimaryButton(
                     onPressed: widget.onRetry,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: Text(context.messages.aiInferenceErrorRetryButton),
+                    icon: Icons.refresh_rounded,
+                    label: context.messages.aiInferenceErrorRetryButton,
                     style: FilledButton.styleFrom(
                       backgroundColor: context.colorScheme.primary,
                       foregroundColor: context.colorScheme.onPrimary,
