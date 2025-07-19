@@ -32,7 +32,7 @@ LazyDatabase openDbConnection(
       return NativeDatabase.memory();
     }
 
-    final dbFolder = await getApplicationDocumentsDirectory();
+    final dbFolder = await findDocumentsDirectory();
     final file = File(p.join(dbFolder.path, fileName));
 
     if (Platform.isAndroid) {
