@@ -311,5 +311,169 @@ void main() {
       expect(unassignedChip, isNotNull);
       expect(unassignedChip!.isSelected, isTrue);
     });
+
+    testWidgets('shows multiple selected categories', (tester) async {
+      // Update state to have multiple categories selected
+      final stateWithMultiple = JournalPageState(
+        match: '',
+        tagIds: <String>{},
+        filters: {},
+        showPrivateEntries: false,
+        selectedEntryTypes: const [],
+        fullTextMatches: {},
+        showTasks: true,
+        pagingController: mockPagingController,
+        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
+        selectedTaskStatuses: {'OPEN'},
+        selectedCategoryIds: {'cat1', 'cat2'},
+      );
+
+      when(() => mockCubit.state).thenReturn(stateWithMultiple);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Find selected chips
+      final selectedChips = tester
+          .widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip))
+          .where((chip) => chip.isSelected)
+          .toList();
+
+      // Should have 2 selected (Work and Personal)
+      expect(selectedChips.length, 2);
+    });
+
+    testWidgets('displays category colors correctly', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Find the Work category chip
+      final workChip = find.byWidgetPredicate(
+        (widget) => widget is FilterChoiceChip && widget.label == 'Work',
+      );
+
+      expect(workChip, findsOneWidget);
+
+      // Verify the color is set correctly (red from #FF0000)
+      final chip = tester.widget<FilterChoiceChip>(workChip);
+      expect(chip.selectedColor, equals(const Color(0xFFFF0000)));
+    });
+
+    testWidgets('shows only favorite and selected categories by default',
+        (tester) async {
+      // Create a non-favorite, non-selected category
+      final allCategories = [
+        ...mockCategories,
+        CategoryDefinition(
+          id: 'cat4',
+          createdAt: DateTime(2023),
+          updatedAt: DateTime(2023),
+          name: 'Hidden',
+          vectorClock: null,
+          private: false,
+          active: true,
+          favorite: false, // Not favorite
+          color: '#FFFF00',
+        ),
+      ];
+
+      when(() => mockEntitiesCacheService.sortedCategories)
+          .thenReturn(allCategories);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Should not find the Hidden category
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is FilterChoiceChip && widget.label == 'Hidden',
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('all chip shows correct selection state', (tester) async {
+      // First state - some categories selected
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      var allChip = find.byWidgetPredicate(
+        (widget) =>
+            widget is FilterChoiceChip &&
+            widget.label.toLowerCase().contains('all'),
+      );
+
+      // All chip should not be selected when categories are selected
+      expect(
+          tester.widget<FilterChoiceChip>(allChip).isSelected, equals(false));
+
+      // Update state to no categories selected
+      final stateNoneSelected = JournalPageState(
+        match: '',
+        tagIds: <String>{},
+        filters: {},
+        showPrivateEntries: false,
+        selectedEntryTypes: const [],
+        fullTextMatches: {},
+        showTasks: true,
+        pagingController: mockPagingController,
+        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
+        selectedTaskStatuses: {'OPEN'},
+        selectedCategoryIds: {},
+      );
+
+      // Create a new mock cubit with the new state
+      final mockCubitNoSelection = MockJournalPageCubit();
+      when(() => mockCubitNoSelection.state).thenReturn(stateNoneSelected);
+
+      // Rebuild with new cubit
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: BlocProvider<JournalPageCubit>.value(
+            value: mockCubitNoSelection,
+            child: const TaskCategoryFilter(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      allChip = find.byWidgetPredicate(
+        (widget) =>
+            widget is FilterChoiceChip &&
+            widget.label.toLowerCase().contains('all'),
+      );
+
+      // All chip should be selected when no categories are selected
+      expect(tester.widget<FilterChoiceChip>(allChip).isSelected, equals(true));
+    });
+
+    testWidgets('ellipsis chip is not shown when all categories visible',
+        (tester) async {
+      // Use only 2 categories (both favorites, so all visible)
+      final fewCategories =
+          mockCategories.where((c) => c.favorite ?? false).toList();
+
+      when(() => mockEntitiesCacheService.sortedCategories)
+          .thenReturn(fewCategories);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Toggle to show all
+      final ellipsisChip = find.byWidgetPredicate(
+        (widget) => widget is FilterChoiceChip && widget.label == '...',
+      );
+
+      await tester.tap(ellipsisChip);
+      await tester.pumpAndSettle();
+
+      // Should not find ellipsis since all categories are already visible
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is FilterChoiceChip && widget.label == '...',
+        ),
+        findsNothing,
+      );
+    });
   });
 }
