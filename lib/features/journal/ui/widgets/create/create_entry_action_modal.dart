@@ -21,8 +21,9 @@ class CreateEntryModal {
           CreateAudioItem(linkedFromId, categoryId: categoryId),
           if (linkedFromId != null) CreateTimerItem(linkedFromId),
           CreateTextItem(linkedFromId, categoryId: categoryId),
-          ImportImageItem(linkedFromId, categoryId: categoryId),
-          if (isDesktop)
+          if (isMacOS || isMobile)
+            ImportImageItem(linkedFromId, categoryId: categoryId),
+          if (isMacOS || isLinux)
             CreateScreenshotItem(linkedFromId, categoryId: categoryId),
           PasteImageItem(linkedFromId, categoryId: categoryId),
         ],
