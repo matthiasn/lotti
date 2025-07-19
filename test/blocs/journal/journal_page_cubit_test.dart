@@ -191,8 +191,8 @@ void main() {
           id: 'cat1',
           name: 'Work',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 1, 10),
+          updatedAt: DateTime(2024, 1, 1, 10),
           active: true,
           private: false,
           vectorClock: null,
@@ -273,8 +273,8 @@ void main() {
             id: 'cat1',
             name: 'Work',
             color: '#FF0000',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 1, 1, 10),
+            updatedAt: DateTime(2024, 1, 1, 10),
             active: true,
             private: false,
             vectorClock: null,
@@ -438,59 +438,115 @@ void main() {
       },
     );
 
-    blocTest<JournalPageCubit, JournalPageState>(
-      'updateVisibility refreshes when becoming visible',
-      build: () {
-        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-        return JournalPageCubit(showTasks: false);
-      },
-      act: (cubit) async {
-        // First, simulate being invisible
-        cubit.updateVisibility(
-          const MockVisibilityInfo(visibleBounds: Rect.zero),
-        );
+    test('updateVisibility refreshes when becoming visible', () async {
+      // Track refresh calls
+      var refreshCallCount = 0;
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Mock the getJournalEntities to track calls
+      final mockJournalDb = getIt<JournalDb>();
+      when(() => mockJournalDb.getJournalEntities(
+            types: any(named: 'types'),
+            starredStatuses: any(named: 'starredStatuses'),
+            privateStatuses: any(named: 'privateStatuses'),
+            flaggedStatuses: any(named: 'flaggedStatuses'),
+            ids: any(named: 'ids'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            categoryIds: any(named: 'categoryIds'),
+          )).thenAnswer((_) async {
+        refreshCallCount++;
+        return [];
+      });
 
-        // Now simulate becoming visible - this should trigger refreshQuery
-        cubit.updateVisibility(
-          const MockVisibilityInfo(
-            visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-          ),
-        );
-      },
-      wait: defaultWait,
-      verify: (cubit) {
-        // Just verify the cubit is in a valid state
-        expect(cubit.state.pagingController, isNotNull);
-      },
-    );
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-    blocTest<JournalPageCubit, JournalPageState>(
-      'does not refresh when staying invisible',
-      build: () {
-        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-        return JournalPageCubit(showTasks: false);
-      },
-      act: (cubit) async {
-        // Simulate being invisible
-        cubit.updateVisibility(
-          const MockVisibilityInfo(visibleBounds: Rect.zero),
-        );
+      final cubit = JournalPageCubit(showTasks: false);
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Wait for initialization
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // Stay invisible - this should NOT trigger refreshQuery
-        cubit.updateVisibility(
-          const MockVisibilityInfo(visibleBounds: Rect.zero),
-        );
-      },
-      wait: defaultWait,
-      verify: (cubit) {
-        // Just verify the cubit is still in a valid state
-        expect(cubit.state.pagingController, isNotNull);
-      },
-    );
+      // Should have been called once during initialization
+      expect(refreshCallCount, equals(1));
+
+      // First, simulate being invisible
+      cubit.updateVisibility(
+        const MockVisibilityInfo(visibleBounds: Rect.zero),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Count should still be 1 (no refresh when invisible)
+      expect(refreshCallCount, equals(1));
+
+      // Now simulate becoming visible - this should trigger refreshQuery
+      cubit.updateVisibility(
+        const MockVisibilityInfo(
+          visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+        ),
+      );
+
+      // Wait for the refresh to complete
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Should have been called again due to visibility change
+      expect(refreshCallCount, equals(2));
+
+      await cubit.close();
+    });
+
+    test('does not refresh when staying invisible', () async {
+      // Track refresh calls
+      var refreshCallCount = 0;
+
+      // Mock the getJournalEntities to track calls
+      final mockJournalDb = getIt<JournalDb>();
+      when(() => mockJournalDb.getJournalEntities(
+            types: any(named: 'types'),
+            starredStatuses: any(named: 'starredStatuses'),
+            privateStatuses: any(named: 'privateStatuses'),
+            flaggedStatuses: any(named: 'flaggedStatuses'),
+            ids: any(named: 'ids'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            categoryIds: any(named: 'categoryIds'),
+          )).thenAnswer((_) async {
+        refreshCallCount++;
+        return [];
+      });
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+
+      final cubit = JournalPageCubit(showTasks: false);
+
+      // Wait for initialization
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Should have been called once during initialization
+      expect(refreshCallCount, equals(1));
+
+      // Simulate being invisible
+      cubit.updateVisibility(
+        const MockVisibilityInfo(visibleBounds: Rect.zero),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Count should still be 1
+      expect(refreshCallCount, equals(1));
+
+      // Stay invisible - this should NOT trigger refreshQuery
+      cubit.updateVisibility(
+        const MockVisibilityInfo(visibleBounds: Rect.zero),
+      );
+
+      // Wait to ensure no refresh happens
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Should still only have been called once (during initialization)
+      expect(refreshCallCount, equals(1));
+
+      await cubit.close();
+    });
   });
 }
 

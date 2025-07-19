@@ -447,27 +447,87 @@ void main() {
       expect(tester.widget<FilterChoiceChip>(allChip).isSelected, equals(true));
     });
 
-    testWidgets('ellipsis chip is not shown when all categories visible',
+    testWidgets('tapping ellipsis chip shows all categories and hides itself',
         (tester) async {
-      // Use only 2 categories (both favorites, so all visible)
-      final fewCategories =
-          mockCategories.where((c) => c.favorite ?? false).toList();
-
+      // Use all categories - 2 favorites and 1 non-favorite
       when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(fewCategories);
+          .thenReturn(mockCategories);
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Toggle to show all
+      // Initially, only favorites should be visible (Work and Health)
+      // Plus unassigned, all, and ellipsis = 5 total
+      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+
+      // Verify Personal category is not visible initially
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is FilterChoiceChip && widget.label == 'Personal',
+        ),
+        findsNothing,
+      );
+
+      // Find and tap the ellipsis chip
       final ellipsisChip = find.byWidgetPredicate(
         (widget) => widget is FilterChoiceChip && widget.label == '...',
       );
+      expect(ellipsisChip, findsOneWidget);
 
       await tester.tap(ellipsisChip);
       await tester.pumpAndSettle();
 
-      // Should not find ellipsis since all categories are already visible
+      // After tapping, all categories should be visible
+      // All 3 categories + unassigned + all = 5 total (no ellipsis)
+      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+
+      // Verify Personal category is now visible
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is FilterChoiceChip && widget.label == 'Personal',
+        ),
+        findsOneWidget,
+      );
+
+      // Ellipsis chip should be hidden
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is FilterChoiceChip && widget.label == '...',
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('ellipsis chip behavior with only favorite categories',
+        (tester) async {
+      // Use only favorite categories (which are shown by default)
+      final favoriteCategories =
+          mockCategories.where((c) => c.favorite ?? false).toList();
+
+      when(() => mockEntitiesCacheService.sortedCategories)
+          .thenReturn(favoriteCategories);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Even with only favorites, ellipsis is shown initially
+      // 2 favorites + unassigned + all + ellipsis = 5 total
+      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+
+      // Find and tap the ellipsis chip
+      final ellipsisChip = find.byWidgetPredicate(
+        (widget) => widget is FilterChoiceChip && widget.label == '...',
+      );
+      expect(ellipsisChip, findsOneWidget);
+
+      await tester.tap(ellipsisChip);
+      await tester.pumpAndSettle();
+
+      // After tapping, ellipsis should disappear
+      // 2 favorites + unassigned + all = 4 total
+      expect(find.byType(FilterChoiceChip), findsNWidgets(4));
+
+      // Verify ellipsis chip is no longer present
       expect(
         find.byWidgetPredicate(
           (widget) => widget is FilterChoiceChip && widget.label == '...',

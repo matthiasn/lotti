@@ -289,19 +289,16 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   void selectSingleTaskStatus(String taskStatus) {
     _selectedTaskStatuses = {taskStatus};
     persistTasksFilter();
-    emitState();
   }
 
   void selectAllTaskStatuses() {
     _selectedTaskStatuses = state.taskStatuses.toSet();
     persistTasksFilter();
-    emitState();
   }
 
   void clearSelectedTaskStatuses() {
     _selectedTaskStatuses = {};
     persistTasksFilter();
-    emitState();
   }
 
   Future<void> persistTasksFilter() async {
