@@ -111,7 +111,11 @@ Lotti is currently available for beta testing for these platforms:
   that contains the app. From limited testing, the app works fine on Linux, but is missing an app
   icon (could be a nice small PR).
 
-**The goal is to get Lotti out on all app stores in 2023.**
+## Install on Linux
+
+```
+$ sudo apt install pulseaudio-utils
+```
 
 
 ## Blog posts

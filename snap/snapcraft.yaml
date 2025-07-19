@@ -1,5 +1,5 @@
 name: lotti
-version: 0.8.248
+version: 0.9.644
 summary: Lotti - a smart digital assistant
 description: Manage your life, privacy first
 
@@ -16,7 +16,7 @@ slots:
 apps:
   lotti:
     command: lotti
-    extensions: [flutter-stable]
+    extensions: [gnome]
     plugs:
       - network
     slots:

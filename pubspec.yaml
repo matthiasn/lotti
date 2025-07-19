@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.643+3173
+version: 0.9.644+3175
 
 msix_config:
   display_name: LottiApp
@@ -160,7 +160,13 @@ dev_dependencies:
   build_runner: ^2.5.4
   dart_style: ^3.0.1
   drift_dev: ^2.16.0
-  flutter_launcher_icons: ^0.14.1
+  # flutter_launcher_icons: ^0.14.1
+
+  flutter_launcher_icons:
+    git:
+      url: https://github.com/devmil/flutter_launcher_icons
+      ref: f23536e
+
   flutter_lints: ^6.0.0
   flutter_native_splash: ^2.2.16
   flutter_test:
@@ -177,7 +183,7 @@ dev_dependencies:
   very_good_analysis: ^9.0.0
 
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
@@ -190,6 +196,9 @@ flutter_icons:
     generate: true
     image_path: "assets/icon/app_icon_1024.png"
     icon_size: 256
+  linux:
+    generate: true
+    image_path: "assets/icon/app_icon_1024.png"
 
 analyzer:
   plugins:
@@ -209,6 +218,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - assets/icon/
     - assets/lang/
     - assets/sqlite/
     # from https://www.iconfinder.com/paomedia

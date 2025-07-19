@@ -84,6 +84,7 @@ whisper.cpp/whisper.cpp-*/
 
 # FVM Version Cache
 .fvm/
+.fvm/flutter_sdk
 
 integration_test/docker/config/jetstream/
 integration_test/docker/config/logs/

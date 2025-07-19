@@ -9,8 +9,8 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
 /// Modern version of create event item
-class ModernCreateEventItem extends ConsumerWidget {
-  const ModernCreateEventItem(
+class CreateEventItem extends ConsumerWidget {
+  const CreateEventItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,
@@ -38,8 +38,8 @@ class ModernCreateEventItem extends ConsumerWidget {
 }
 
 /// Modern version of create task item
-class ModernCreateTaskItem extends ConsumerWidget {
-  const ModernCreateTaskItem(
+class CreateTaskItem extends ConsumerWidget {
+  const CreateTaskItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,
@@ -71,8 +71,8 @@ class ModernCreateTaskItem extends ConsumerWidget {
 }
 
 /// Modern version of create audio item
-class ModernCreateAudioItem extends ConsumerWidget {
-  const ModernCreateAudioItem(
+class CreateAudioItem extends ConsumerWidget {
+  const CreateAudioItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,
@@ -99,8 +99,8 @@ class ModernCreateAudioItem extends ConsumerWidget {
 }
 
 /// Modern version of create timer item
-class ModernCreateTimerItem extends ConsumerWidget {
-  const ModernCreateTimerItem(
+class CreateTimerItem extends ConsumerWidget {
+  const CreateTimerItem(
     this.linkedFromId, {
     super.key,
   });
@@ -124,8 +124,8 @@ class ModernCreateTimerItem extends ConsumerWidget {
 }
 
 /// Modern version of create text item
-class ModernCreateTextItem extends ConsumerWidget {
-  const ModernCreateTextItem(
+class CreateTextItem extends ConsumerWidget {
+  const CreateTextItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,
@@ -153,8 +153,8 @@ class ModernCreateTextItem extends ConsumerWidget {
 }
 
 /// Modern version of import image item
-class ModernImportImageItem extends ConsumerWidget {
-  const ModernImportImageItem(
+class ImportImageItem extends ConsumerWidget {
+  const ImportImageItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,
@@ -183,8 +183,8 @@ class ModernImportImageItem extends ConsumerWidget {
 }
 
 /// Modern version of create screenshot item
-class ModernCreateScreenshotItem extends ConsumerWidget {
-  const ModernCreateScreenshotItem(
+class CreateScreenshotItem extends ConsumerWidget {
+  const CreateScreenshotItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,
@@ -212,8 +212,8 @@ class ModernCreateScreenshotItem extends ConsumerWidget {
 }
 
 /// Modern version of paste image item
-class ModernPasteImageItem extends ConsumerWidget {
-  const ModernPasteImageItem(
+class PasteImageItem extends ConsumerWidget {
+  const PasteImageItem(
     this.linkedFromId, {
     this.categoryId,
     super.key,

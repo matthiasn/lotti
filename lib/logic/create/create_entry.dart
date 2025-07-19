@@ -89,7 +89,7 @@ Future<JournalEntity?> createScreenshot({
   String? categoryId,
 }) async {
   final persistenceLogic = getIt<PersistenceLogic>();
-  final imageData = await takeScreenshotMac();
+  final imageData = await takeScreenshot();
   final entry = await JournalRepository.createImageEntry(
     imageData,
     linkedId: linkedId,

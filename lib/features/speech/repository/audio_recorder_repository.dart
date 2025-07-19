@@ -108,8 +108,14 @@ class AudioRecorderRepository {
         duration: Duration.zero,
       );
 
+      const sampleRate = 48000;
+      const autoGain = true;
+
       await _audioRecorder.start(
-        const RecordConfig(sampleRate: 48000, autoGain: true),
+        const RecordConfig(
+          sampleRate: sampleRate,
+          autoGain: autoGain,
+        ),
         path: filePath,
       );
 
