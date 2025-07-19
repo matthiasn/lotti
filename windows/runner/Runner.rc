@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.matthiasnehlsen" "\0"
-            VALUE "FileDescription", "lotti" "\0"
+            VALUE "FileDescription", "A private digital assistant" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "lotti" "\0"
+            VALUE "InternalName", "Lotti" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.matthiasnehlsen. All rights reserved." "\0"
             VALUE "OriginalFilename", "lotti.exe" "\0"
-            VALUE "ProductName", "lotti" "\0"
+            VALUE "ProductName", "Lotti" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
