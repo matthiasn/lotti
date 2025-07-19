@@ -8,7 +8,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
-Future<ImageData> takeScreenshotMac() async {
+Future<ImageData> takeScreenshot() async {
   try {
     final id = uuid.v1();
     final filename = '$id.screenshot.jpg';
@@ -21,17 +21,29 @@ Future<ImageData> takeScreenshotMac() async {
 
     await Future<void>.delayed(const Duration(seconds: 1));
 
-    final process = await Process.start(
-      'screencapture',
-      ['-tjpg', filename],
-      runInShell: true,
-      workingDirectory: directory,
-    );
+    if (Platform.isMacOS) {
+      final process = await Process.start(
+        'screencapture',
+        ['-tjpg', filename],
+        runInShell: true,
+        workingDirectory: directory,
+      );
 
-    await stdout.addStream(process.stdout);
-    await stderr.addStream(process.stderr);
+      await stdout.addStream(process.stdout);
+      await stderr.addStream(process.stderr);
+      await process.exitCode;
+    } else if (Platform.isLinux) {
+      final process = await Process.start(
+        'spectacle',
+        ['-f', '-b', '-n', '-o', filename],
+        runInShell: true,
+        workingDirectory: directory,
+      );
 
-    await process.exitCode;
+      await stdout.addStream(process.stdout);
+      await stderr.addStream(process.stderr);
+      await process.exitCode;
+    }
 
     final imageData = ImageData(
       imageId: id,
