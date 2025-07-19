@@ -32,7 +32,7 @@ class _TaskCategoryFilterState extends State<TaskCategoryFilter> {
             : categories.where((category) {
                 final isSelected =
                     state.selectedCategoryIds.contains(category.id);
-                return category.favorite ?? isSelected;
+                return (category.favorite ?? false) || isSelected;
               }).toList();
 
         // Show at least the unassigned filter even when no categories exist
