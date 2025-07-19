@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/journal/ui/widgets/create/modern_create_entry_items.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/index.dart';
@@ -16,15 +16,15 @@ class CreateEntryModal {
       padding: const EdgeInsets.only(bottom: 30, top: 10),
       builder: (_) => Column(
         children: [
-          ModernCreateEventItem(linkedFromId, categoryId: categoryId),
-          ModernCreateTaskItem(linkedFromId, categoryId: categoryId),
-          ModernCreateAudioItem(linkedFromId, categoryId: categoryId),
-          if (linkedFromId != null) ModernCreateTimerItem(linkedFromId),
-          ModernCreateTextItem(linkedFromId, categoryId: categoryId),
-          ModernImportImageItem(linkedFromId, categoryId: categoryId),
-          if (isMacOS)
-            ModernCreateScreenshotItem(linkedFromId, categoryId: categoryId),
-          ModernPasteImageItem(linkedFromId, categoryId: categoryId),
+          CreateEventItem(linkedFromId, categoryId: categoryId),
+          CreateTaskItem(linkedFromId, categoryId: categoryId),
+          CreateAudioItem(linkedFromId, categoryId: categoryId),
+          if (linkedFromId != null) CreateTimerItem(linkedFromId),
+          CreateTextItem(linkedFromId, categoryId: categoryId),
+          ImportImageItem(linkedFromId, categoryId: categoryId),
+          if (isDesktop)
+            CreateScreenshotItem(linkedFromId, categoryId: categoryId),
+          PasteImageItem(linkedFromId, categoryId: categoryId),
         ],
       ),
     );

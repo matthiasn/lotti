@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/ui/widgets/create/modern_create_entry_items.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -53,7 +53,7 @@ void main() {
     testWidgets('renders task item correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ModernCreateTaskItem(
+          const CreateTaskItem(
             'linked-id',
             categoryId: 'category-id',
           ),
@@ -76,7 +76,7 @@ void main() {
                   onPressed: () {
                     showModalBottomSheet<void>(
                       context: context,
-                      builder: (_) => const ModernCreateTaskItem(
+                      builder: (_) => const CreateTaskItem(
                         'linked-id',
                         categoryId: 'category-id',
                       ),
@@ -105,7 +105,7 @@ void main() {
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ModernCreateEventItem(
+          const CreateEventItem(
             'linked-id',
             categoryId: 'category-id',
           ),
@@ -123,7 +123,7 @@ void main() {
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ModernCreateAudioItem(
+          const CreateAudioItem(
             'linked-id',
             categoryId: 'category-id',
           ),
@@ -173,7 +173,7 @@ void main() {
           ],
           child: makeTestableWidgetWithScaffold(
             Builder(
-              builder: (context) => const ModernCreateAudioItem(
+              builder: (context) => const CreateAudioItem(
                 'test-linked-id',
                 categoryId: 'test-category-id',
               ),
@@ -183,7 +183,7 @@ void main() {
       );
 
       // Tap the audio item to trigger the modal
-      await tester.tap(find.byType(ModernCreateAudioItem));
+      await tester.tap(find.byType(CreateAudioItem));
       await tester.pump();
 
       // Verify that setCategoryId was called with the correct value
@@ -202,7 +202,7 @@ void main() {
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ModernCreateTextItem(
+          const CreateTextItem(
             'linked-id',
             categoryId: 'category-id',
           ),
@@ -220,7 +220,7 @@ void main() {
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ModernImportImageItem(
+          const ImportImageItem(
             'linked-id',
             categoryId: 'category-id',
           ),
@@ -238,7 +238,7 @@ void main() {
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ModernCreateScreenshotItem(
+          const CreateScreenshotItem(
             'linked-id',
             categoryId: 'category-id',
           ),
