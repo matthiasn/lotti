@@ -254,7 +254,7 @@ void main() {
       when(
         () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
-          categoryIds: [],
+          categoryIds: [''], // When no categories exist, default to unassigned
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),
