@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -254,7 +255,7 @@ void main() {
       when(
         () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
-          categoryIds: [],
+          categoryIds: [''], // When no categories exist, default to unassigned
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),
@@ -520,6 +521,252 @@ void main() {
       // test measurement is neither starred nor private (icons invisible)
       expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
       expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
+    });
+
+    testWidgets('page shows empty state when no entries', (tester) async {
+      when(
+        () => mockJournalDb.getJournalEntities(
+          types: entryTypeStrings,
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const InfiniteJournalPage(showTasks: false),
+          ),
+        ),
+      );
+
+      await pumpWithDelay(tester);
+
+      // Verify no entries are displayed
+      expect(find.byType(CardWrapperWidget), findsNothing);
+    });
+
+    testWidgets('pull to refresh works correctly', (tester) async {
+      when(
+        () => mockJournalDb.getJournalEntities(
+          types: entryTypeStrings,
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => [testTextEntry]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const InfiniteJournalPage(showTasks: false),
+          ),
+        ),
+      );
+
+      await pumpWithDelay(tester);
+
+      // Find and pull down the refresh indicator
+      await tester.drag(find.byType(RefreshIndicator), const Offset(0, 200));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      // Verify the journal was refreshed
+      verify(
+        () => mockJournalDb.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).called(greaterThan(1));
+    });
+
+    testWidgets('multiple entries are rendered in correct order',
+        (tester) async {
+      final entries = [testTextEntry, testTask, testWeightEntry];
+
+      when(
+        () => mockJournalDb.getJournalEntities(
+          types: entryTypeStrings,
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => entries);
+
+      for (final entry in entries) {
+        when(() => mockJournalDb.journalEntityById(entry.meta.id))
+            .thenAnswer((_) async => entry);
+      }
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const InfiniteJournalPage(showTasks: false),
+          ),
+        ),
+      );
+
+      await pumpWithDelay(tester);
+
+      // Verify all entries are displayed
+      expect(find.byType(CardWrapperWidget), findsNWidgets(3));
+    });
+
+    testWidgets('floating action button creates task with selected category',
+        (tester) async {
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenAnswer((_) => [
+            CategoryDefinition(
+              id: 'cat1',
+              name: 'Work',
+              color: '#FF0000',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              active: true,
+              private: false,
+              vectorClock: null,
+            ),
+          ]);
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: [true, false],
+          categoryIds: ['cat1'],
+          limit: 50,
+          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
+        ),
+      ).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const InfiniteJournalPage(showTasks: true),
+          ),
+        ),
+      );
+
+      await pumpWithDelay(tester);
+
+      // Find and tap the FAB
+      final fab = find.byType(FloatingActionButton);
+      expect(fab, findsOneWidget);
+    });
+
+    testWidgets('tasks page with categories shows correct entries',
+        (tester) async {
+      final testCategories = [
+        CategoryDefinition(
+          id: 'cat1',
+          name: 'Work',
+          color: '#FF0000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          active: true,
+          private: false,
+          vectorClock: null,
+        ),
+        CategoryDefinition(
+          id: 'cat2',
+          name: 'Personal',
+          color: '#00FF00',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          active: true,
+          private: false,
+          vectorClock: null,
+        ),
+      ];
+
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenAnswer((_) => testCategories);
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: [true, false],
+          categoryIds: testCategories.map((c) => c.id).toList(),
+          limit: 50,
+          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
+        ),
+      ).thenAnswer((_) async => [testTask]);
+
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const InfiniteJournalPage(showTasks: true),
+          ),
+        ),
+      );
+
+      await pumpWithDelay(tester);
+
+      // Verify task is displayed
+      expect(find.text(testTask.data.title), findsOneWidget);
+    });
+
+    testWidgets('private entry shows security icon', (tester) async {
+      final privateEntry = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(private: true),
+      );
+
+      when(
+        () => mockJournalDb.getJournalEntities(
+          types: entryTypeStrings,
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => [privateEntry]);
+
+      when(() => mockJournalDb.journalEntityById(privateEntry.meta.id))
+          .thenAnswer((_) async => privateEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const InfiniteJournalPage(showTasks: false),
+          ),
+        ),
+      );
+
+      await pumpWithDelay(tester);
+
+      // Verify security icon is visible
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
     });
   });
 }

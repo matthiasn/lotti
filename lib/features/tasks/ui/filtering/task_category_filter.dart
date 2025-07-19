@@ -35,9 +35,8 @@ class _TaskCategoryFilterState extends State<TaskCategoryFilter> {
                 return category.favorite ?? isSelected;
               }).toList();
 
-        if (categories.isEmpty) {
-          return const SizedBox.shrink();
-        }
+        // Show at least the unassigned filter even when no categories exist
+        // This improves onboarding experience
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

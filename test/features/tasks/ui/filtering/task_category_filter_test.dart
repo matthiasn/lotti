@@ -246,15 +246,70 @@ void main() {
       verify(() => mockCubit.selectedAllCategories()).called(1);
     });
 
-    testWidgets('renders empty state when no categories', (tester) async {
+    testWidgets('renders unassigned and all chips when no categories',
+        (tester) async {
       // Set up EntitiesCacheService mock to return empty categories
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Verify that no filter choice chips are rendered
-      expect(find.byType(FilterChoiceChip), findsNothing);
+      // Verify that the widget is rendered
+      expect(find.byType(TaskCategoryFilter), findsOneWidget);
+
+      // Should show unassigned chip, all chip, and "..." button
+      expect(find.byType(FilterChoiceChip), findsNWidgets(3));
+
+      // Verify the "All" chip is rendered
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is FilterChoiceChip &&
+              widget.label.toLowerCase().contains('all'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('selects unassigned by default when no categories exist',
+        (tester) async {
+      // Set up EntitiesCacheService mock to return empty categories
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+
+      // Update the mock state to have unassigned selected by default
+      final stateWithUnassigned = JournalPageState(
+        match: '',
+        tagIds: <String>{},
+        filters: {},
+        showPrivateEntries: false,
+        selectedEntryTypes: const [],
+        fullTextMatches: {},
+        showTasks: true,
+        pagingController: mockPagingController,
+        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
+        selectedTaskStatuses: {'OPEN'},
+        selectedCategoryIds: {''}, // Unassigned is selected
+      );
+
+      when(() => mockCubit.state).thenReturn(stateWithUnassigned);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Find the unassigned chip
+      final chips =
+          tester.widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip));
+
+      FilterChoiceChip? unassignedChip;
+      for (final chip in chips) {
+        if (!chip.label.toLowerCase().contains('all')) {
+          unassignedChip = chip;
+          break;
+        }
+      }
+
+      expect(unassignedChip, isNotNull);
+      expect(unassignedChip!.isSelected, isTrue);
     });
   });
 }

@@ -49,6 +49,19 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             selectedCategoryIds: {},
           ),
         ) {
+    // Check if we need to set default category selection for tasks
+    if (showTasks) {
+      final allCategoryIds = getIt<EntitiesCacheService>()
+          .sortedCategories
+          .map((e) => e.id)
+          .toSet();
+
+      // If no categories exist, default to showing unassigned tasks
+      if (allCategoryIds.isEmpty) {
+        _selectedCategoryIds = {''};
+      }
+    }
+
     // Create the controller right after initialization
     final controller = PagingController<int, JournalEntity>(
       getNextPageKey: (PagingState<int, JournalEntity> state) {
@@ -97,7 +110,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         pagingController: controller,
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: state.selectedTaskStatuses,
-        selectedCategoryIds: state.selectedCategoryIds,
+        selectedCategoryIds: _selectedCategoryIds,
       ),
     );
 
@@ -387,8 +400,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           .map((e) => e.id)
           .toSet();
 
-      final categoryIds =
-          _selectedCategoryIds.isEmpty ? allCategoryIds : _selectedCategoryIds;
+      Set<String> categoryIds;
+      if (_selectedCategoryIds.isEmpty) {
+        // If no categories are selected and no categories exist,
+        // default to showing unassigned tasks for better onboarding
+        categoryIds = allCategoryIds.isEmpty ? {''} : allCategoryIds;
+      } else {
+        categoryIds = _selectedCategoryIds;
+      }
 
       final res = await _db.getTasks(
         ids: ids,
