@@ -47,6 +47,7 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "lotti");
   }
 
+  gtk_window_set_icon_from_file(window, "assets/icon/app_icon_1024.png", NULL);
   gtk_window_set_default_size(window, 1280, 720);
   gtk_widget_show(GTK_WIDGET(window));
 
