@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.645+3177
+version: 0.9.645+3178
 
 msix_config:
   display_name: LottiApp
@@ -116,13 +116,6 @@ dependencies:
   quiver: ^3.2.1
   radial_button: ^1.0.1
   record: ^6.0.0
-
-  record_linux:
-    git:
-      url: https://github.com/matthiasn/record
-      ref: 066780f
-      path: record_linux
-
   research_package:
     git:
       url: https://github.com/matthiasn/research.package
