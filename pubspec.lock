@@ -2336,12 +2336,13 @@ packages:
     source: hosted
     version: "1.0.0"
   record_linux:
-    dependency: transitive
+    dependency: "direct main"
     description:
-      name: record_linux
-      sha256: "0626678a092c75ce6af1e32fe7fd1dea709b92d308bc8e3b6d6348e2430beb95"
-      url: "https://pub.dev"
-    source: hosted
+      path: record_linux
+      ref: "066780f"
+      resolved-ref: "066780f157e6933f75ecb2827d93bbd183333f5b"
+      url: "https://github.com/matthiasn/record"
+    source: git
     version: "1.1.1"
   record_macos:
     dependency: transitive
