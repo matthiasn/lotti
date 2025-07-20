@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: e55636ed79578b9abca5fecf9437947798f5ef7456308b5cb85720b793eac92f
+      sha256: da0d9209ca76bde579f2da330aeb9df62b6319c834fa7baae052021b0462401f
       url: "https://pub.dev"
     source: hosted
-    version: "82.0.0"
+    version: "85.0.0"
   accessibility_tools:
     dependency: transitive
     description:
@@ -21,18 +21,18 @@ packages:
     dependency: "direct dev"
     description:
       name: analyzer
-      sha256: "904ae5bb474d32c38fb9482e2d925d5454cda04ddd0e55d2e6826bc72f6ba8c0"
+      sha256: f4ad0fea5f102201015c9aae9d93bc02f75dd9491529a8c21f88d17a8523d44c
       url: "https://pub.dev"
     source: hosted
-    version: "7.4.5"
+    version: "7.6.0"
   analyzer_plugin:
     dependency: "direct overridden"
     description:
       name: analyzer_plugin
-      sha256: ee188b6df6c85f1441497c7171c84f1392affadc0384f71089cb10a3bc508cef
+      sha256: a5ab7590c27b779f3d4de67f31c4109dbe13dd7339f86461a6f2a8ab2594d8ce
       url: "https://pub.dev"
     source: hosted
-    version: "0.13.1"
+    version: "0.13.4"
   ansicolor:
     dependency: transitive
     description:
@@ -453,10 +453,10 @@ packages:
     dependency: transitive
     description:
       name: custom_lint_visitor
-      sha256: cba5b6d7a6217312472bf4468cdf68c949488aed7ffb0eab792cd0b6c435054d
+      sha256: "4a86a0d8415a91fbb8298d6ef03e9034dc8e323a599ddc4120a0e36c433983a2"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0+7.4.5"
+    version: "1.0.0+7.7.0"
   dart_console:
     dependency: transitive
     description:
@@ -493,10 +493,10 @@ packages:
     dependency: "direct dev"
     description:
       name: dart_style
-      sha256: "5b236382b47ee411741447c1f1e111459c941ea1b3f2b540dde54c210a3662af"
+      sha256: "8a0e5fba27e8ee025d2ffb4ee820b4e6e2cf5e4246a6b1a477eb66866947e0bb"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.0"
+    version: "3.1.1"
   dbus:
     dependency: transitive
     description:
@@ -2336,12 +2336,13 @@ packages:
     source: hosted
     version: "1.0.0"
   record_linux:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: record_linux
-      sha256: "0626678a092c75ce6af1e32fe7fd1dea709b92d308bc8e3b6d6348e2430beb95"
-      url: "https://pub.dev"
-    source: hosted
+      path: record_linux
+      ref: "066780f"
+      resolved-ref: "066780f157e6933f75ecb2827d93bbd183333f5b"
+      url: "https://github.com/matthiasn/record"
+    source: git
     version: "1.1.1"
   record_macos:
     dependency: transitive
