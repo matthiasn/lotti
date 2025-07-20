@@ -153,6 +153,8 @@ dependency_overrides:
   get_it: ^8.0.2
   intl: ^0.20.2
 
+  # TODO: Remove this override when `record_linux` with VU meter support is on pub.dev.
+  # This commit (066780f) enables amplitude stream on Linux.
   record_linux:
     git:
       url: https://github.com/matthiasn/record
