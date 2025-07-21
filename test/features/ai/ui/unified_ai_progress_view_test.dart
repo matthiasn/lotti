@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/get_it.dart';
@@ -315,12 +316,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // Should see starting message
-      expect(find.text('Processing...'), findsOneWidget);
+      // Should see the waveform animation instead of "Processing..." text
+      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
 
       // Wait for processing
       await tester.pump(const Duration(milliseconds: 150));
-      expect(find.text('Processing...'), findsOneWidget);
+      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
 
       // Wait for completion
       await tester.pumpAndSettle();
@@ -523,8 +524,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Assert - should show the running text
-      expect(find.text('Processing...'), findsOneWidget);
+      // Assert - should show the waveform animation instead of "Processing..." text
+      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
 
       // Complete the future to avoid pending timers
       completer.complete();
@@ -735,6 +736,82 @@ void main() {
       final containerWidget = tester.widget<Container>(container);
       expect(containerWidget.constraints, isNotNull);
       expect(containerWidget.constraints!.minWidth, 600);
+    });
+  });
+
+  group('Image Analysis Auto-Retry After Model Installation', () {
+    testWidgets('handles model installation flow correctly', (tester) async {
+      // Arrange
+      const testEntityId = 'image-entity-1';
+      const testPromptId = 'image-analysis-prompt';
+      const missingModelName = 'gemma3:4b';
+      final now = DateTime.now();
+      final testPromptConfig = AiConfig.prompt(
+        id: testPromptId,
+        name: 'Image Analysis',
+        systemMessage: 'Analyze the image',
+        userMessage: 'Analyze this image',
+        defaultModelId: missingModelName,
+        modelIds: [missingModelName],
+        createdAt: now,
+        useReasoning: false,
+        requiredInputData: [InputDataType.images],
+        aiResponseType: AiResponseType.imageAnalysis,
+        description: 'Image analysis prompt',
+      ) as AiConfigPrompt;
+
+      // Mock the unified AI inference repository
+      final mockRepository = MockUnifiedAiInferenceRepository();
+      when(() => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+          )).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(String);
+        final onStatusChange = invocation.namedArguments[#onStatusChange]
+            as void Function(InferenceStatus);
+
+        onStatusChange(InferenceStatus.running);
+        onProgress('Starting image analysis...');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        onProgress('Analysis complete!');
+        onStatusChange(InferenceStatus.idle);
+      });
+
+      // Override providers for the test
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockRepository),
+            aiConfigByIdProvider(testPromptId)
+                .overrideWith((ref) => Future.value(testPromptConfig)),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: [Locale('en', '')],
+            home: UnifiedAiProgressContent(
+              entityId: testEntityId,
+              promptId: testPromptId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show the progress content
+      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
+
+      // Should show the analysis result
+      expect(find.text('Analysis complete!'), findsOneWidget);
     });
   });
 }

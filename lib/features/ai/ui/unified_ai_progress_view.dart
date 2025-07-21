@@ -11,7 +11,6 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -88,23 +87,13 @@ class _UnifiedAiProgressContentState
 
         // Show progress indicator if running
         if (isRunning) {
-          String runningMessage;
-          if (promptConfig.requiredInputData
-              .contains(InputDataType.audioFiles)) {
-            runningMessage = context.messages.aiTranscribingAudio;
-          } else {
-            runningMessage = 'Processing...';
-          }
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 32),
-              const SizedBox(height: 24),
-              Text(
-                runningMessage,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
+          // Show only the animation, no text
+          return Center(
+            child: AiRunningAnimationWrapper(
+              entryId: widget.entityId,
+              height: 50,
+              responseTypes: {promptConfig.aiResponseType},
+            ),
           );
         }
 
@@ -124,20 +113,67 @@ class _UnifiedAiProgressContentState
 
             // First, try the reliable typed exception
             if (inferenceError.originalError is ModelNotInstalledException) {
-              final modelNotInstalledError = inferenceError.originalError as ModelNotInstalledException;
+              final modelNotInstalledError =
+                  inferenceError.originalError as ModelNotInstalledException;
               modelNameToInstall = modelNotInstalledError.modelName;
             }
             // Fallback to string matching if the typed exception isn't present
             else if (inferenceError.message.isNotEmpty) {
               // The message format is expected to be: 'Model "modelName" is not installed. Please install it first.'
               // A case-insensitive regex is used for robustness.
-              final modelNameMatch = _modelNotInstalledRegex.firstMatch(inferenceError.message);
+              final modelNameMatch =
+                  _modelNotInstalledRegex.firstMatch(inferenceError.message);
               // Only proceed if we could successfully extract the model name.
               modelNameToInstall = modelNameMatch?.group(1);
             }
 
             if (modelNameToInstall != null) {
-              return OllamaModelInstallDialog(modelName: modelNameToInstall);
+              // Pass a callback to re-trigger inference and re-show progress modal sheet after install
+              return OllamaModelInstallDialog(
+                modelName: modelNameToInstall,
+                onModelInstalled: () async {
+                  try {
+                    // Check if widget is still mounted before proceeding
+                    if (!mounted) return;
+                    
+                    // Invalidate the provider to re-trigger inference
+                    ref.invalidate(
+                      unifiedAiControllerProvider(
+                        entityId: widget.entityId,
+                        promptId: widget.promptId,
+                      ),
+                    );
+                    
+                    // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
+                    final prompt = await ref.read(
+                      aiConfigByIdProvider(widget.promptId).future,
+                    );
+                    
+                    // Double-check mounted state after async operation
+                    if (!mounted || !context.mounted) return;
+                    
+                    if (prompt is AiConfigPrompt) {
+                      await ModalUtils.showSingleSliverPageModal<void>(
+                        context: context,
+                        builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+                          context: ctx,
+                          prompt: prompt,
+                          entityId: widget.entityId,
+                          onTapBack: () => Navigator.of(ctx).pop(),
+                        ),
+                      );
+                    }
+                  } catch (e, stack) {
+                    developer.log(
+                      'Error in onModelInstalled callback: $e',
+                      name: 'UnifiedAiProgressContent',
+                      error: e,
+                      stackTrace: stack,
+                    );
+                    // Don't re-throw - this is a callback error that shouldn't crash the app
+                  }
+                },
+              );
             }
 
             return AiErrorDisplay(
@@ -190,8 +226,6 @@ class _UnifiedAiProgressContentState
 }
 
 class UnifiedAiProgressUtils {
-  const UnifiedAiProgressUtils._();
-
   static SliverWoltModalSheetPage progressPage({
     required BuildContext context,
     required AiConfigPrompt prompt,
@@ -225,9 +259,14 @@ class UnifiedAiProgressUtils {
 }
 
 class OllamaModelInstallDialog extends ConsumerStatefulWidget {
-  const OllamaModelInstallDialog({required this.modelName, super.key});
+  const OllamaModelInstallDialog({
+    required this.modelName,
+    this.onModelInstalled,
+    super.key,
+  });
 
   final String modelName;
+  final VoidCallback? onModelInstalled;
 
   @override
   ConsumerState<OllamaModelInstallDialog> createState() =>
@@ -285,6 +324,8 @@ class OllamaModelInstallDialogState
             backgroundColor: Colors.green,
           ),
         );
+        // Call the callback if provided
+        widget.onModelInstalled?.call();
       }
     } catch (e) {
       developer.log(
