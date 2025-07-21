@@ -67,4 +67,16 @@ class ProviderConfig {
   static bool requiresApiKey(InferenceProviderType type) {
     return !noApiKeyRequired.contains(type);
   }
+
+  /// Validate if a provider type is a local provider
+  ///
+  /// Local providers run on the user's machine and don't require internet connectivity.
+  static bool isLocalProvider(InferenceProviderType type) {
+    return noApiKeyRequired.contains(type);
+  }
+
+  /// Get a list of all supported provider types
+  static List<InferenceProviderType> getSupportedProviders() {
+    return InferenceProviderType.values.toList();
+  }
 }

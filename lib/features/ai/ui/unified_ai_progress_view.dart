@@ -34,6 +34,11 @@ class UnifiedAiProgressContent extends ConsumerStatefulWidget {
 
 class _UnifiedAiProgressContentState
     extends ConsumerState<UnifiedAiProgressContent> {
+  static final _modelNotInstalledRegex = RegExp(
+    'model "([^"]+)" is not installed',
+    caseSensitive: false,
+  );
+
   void _handleRetry() {
     // Invalidate the provider to trigger retry
     ref.invalidate(
@@ -107,13 +112,34 @@ class _UnifiedAiProgressContentState
         if (isError) {
           try {
             final inferenceError = AiErrorUtils.categorizeError(state);
+
+            // Debug logging
+            developer.log(
+              'Error detected: "${inferenceError.message}"',
+              name: 'UnifiedAiProgressContent',
+            );
+
+            // Check for model not installed error
+            String? modelNameToInstall;
+
+            // First, try the reliable typed exception
             if (inferenceError.originalError is ModelNotInstalledException) {
-              final modelNotInstalledError =
-                  inferenceError.originalError as ModelNotInstalledException;
-              final modelName = modelNotInstalledError.modelName;
-              return OllamaModelInstallDialog(modelName: modelName);
+              final modelNotInstalledError = inferenceError.originalError as ModelNotInstalledException;
+              modelNameToInstall = modelNotInstalledError.modelName;
             }
-            // Always show AiErrorDisplay for any other error
+            // Fallback to string matching if the typed exception isn't present
+            else if (inferenceError.message.isNotEmpty) {
+              // The message format is expected to be: 'Model "modelName" is not installed. Please install it first.'
+              // A case-insensitive regex is used for robustness.
+              final modelNameMatch = _modelNotInstalledRegex.firstMatch(inferenceError.message);
+              // Only proceed if we could successfully extract the model name.
+              modelNameToInstall = modelNameMatch?.group(1);
+            }
+
+            if (modelNameToInstall != null) {
+              return OllamaModelInstallDialog(modelName: modelNameToInstall);
+            }
+
             return AiErrorDisplay(
               error: inferenceError,
               onRetry: _handleRetry,
@@ -164,6 +190,8 @@ class _UnifiedAiProgressContentState
 }
 
 class UnifiedAiProgressUtils {
+  const UnifiedAiProgressUtils._();
+
   static SliverWoltModalSheetPage progressPage({
     required BuildContext context,
     required AiConfigPrompt prompt,
