@@ -8,9 +8,9 @@ const imageAnalysisConst = 'ImageAnalysis';
 const audioTranscriptionConst = 'AudioTranscription';
 
 // Ollama API constants
-const ollamaDefaultTimeoutSeconds = 30;
+const ollamaDefaultTimeoutSeconds = 120; // 2 minutes for regular requests
 const ollamaImageAnalysisTimeoutSeconds =
-    300; // 5 minutes for image analysis (first load can be slow)
+    900; // 15 minutes for image analysis (large models can be very slow)
 const ollamaMaxTemperature = 2.0;
 const ollamaMinTemperature = 0.0;
 const ollamaContentType = 'application/json';

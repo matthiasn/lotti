@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -218,100 +219,124 @@ class CloudInferenceRepository {
 
     return Stream.fromFuture(
       () async {
-        try {
-          // Warm up the model if this is an image analysis request
-          if (images.isNotEmpty) {
-            await warmUpModel(model, provider.baseUrl);
-          }
+        return _retryWithExponentialBackoff(
+          operation: () async {
+            // Warm up the model if this is an image analysis request
+            if (images.isNotEmpty) {
+              await warmUpModel(model, provider.baseUrl);
+            }
+            final response = await _httpClient
+                .post(
+                  Uri.parse('${provider.baseUrl}$ollamaGenerateEndpoint'),
+                  headers: {
+                    'Content-Type': ollamaContentType,
+                  },
+                  body: jsonEncode({
+                    'model': model,
+                    'prompt': prompt,
+                    'images': images,
+                    'stream': false,
+                    'options': {
+                      'temperature': temperature,
+                      if (maxCompletionTokens != null)
+                        'num_predict': maxCompletionTokens,
+                    }
+                  }),
+                )
+                .timeout(Duration(
+                    seconds: images.isNotEmpty
+                        ? ollamaImageAnalysisTimeoutSeconds
+                        : ollamaDefaultTimeoutSeconds));
 
-          final response = await _httpClient
-              .post(
-                Uri.parse('${provider.baseUrl}$ollamaGenerateEndpoint'),
-                headers: {
-                  'Content-Type': ollamaContentType,
-                },
-                body: jsonEncode({
-                  'model': model,
-                  'prompt': prompt,
-                  'images': images,
-                  'stream': false,
-                  'options': {
-                    'temperature': temperature,
-                    if (maxCompletionTokens != null)
-                      'num_predict': maxCompletionTokens,
-                  }
-                }),
-              )
-              .timeout(Duration(
-                  seconds: images.isNotEmpty
-                      ? ollamaImageAnalysisTimeoutSeconds
-                      : ollamaDefaultTimeoutSeconds));
-
-          if (response.statusCode != httpStatusOk) {
-            final responseBody = response.body;
-
-            // Check if this is a model not found error
-            if (response.statusCode == httpStatusNotFound &&
-                responseBody.contains('not found') &&
-                responseBody.contains('model')) {
-              throw ModelNotInstalledException(model);
+            if (response.statusCode != httpStatusOk) {
+              final responseBody = response.body;
+              // Check if this is a model not found error
+              if (response.statusCode == httpStatusNotFound &&
+                  responseBody.contains('not found') &&
+                  responseBody.contains('model')) {
+                throw ModelNotInstalledException(model);
+              }
+              developer.log(
+                'Ollama API error: HTTP ${response.statusCode}',
+                name: 'CloudInferenceRepository',
+              );
+              throw Exception(
+                  'Ollama API request failed with status ${response.statusCode}. Please check your Ollama installation and try again.');
             }
 
-            developer.log(
-              'Ollama API error: HTTP ${response.statusCode}',
-              name: 'CloudInferenceRepository',
-            );
-            throw Exception(
-                'Ollama API request failed with status ${response.statusCode}. Please check your Ollama installation and try again.');
-          }
-
-          final result = jsonDecode(response.body) as Map<String, dynamic>;
-
-          // Validate response structure
-          if (!result.containsKey('response')) {
-            throw Exception(
-                'Invalid response format: missing "response" field');
-          }
-
-          final ollamaResponse = result['response'] as String?;
-          if (ollamaResponse == null) {
-            throw Exception('Invalid response format: "response" is null');
-          }
-
-          final created = result['created_at'] as String?;
-          final timestamp = created != null
-              ? DateTime.parse(created).millisecondsSinceEpoch ~/ 1000
-              : DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-          // Create a mock stream response to match the expected format
-          return CreateChatCompletionStreamResponse(
-            id: 'ollama-${DateTime.now().millisecondsSinceEpoch}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: ollamaResponse,
+            final result = jsonDecode(response.body) as Map<String, dynamic>;
+            // Validate response structure
+            if (!result.containsKey('response')) {
+              throw Exception(
+                  'Invalid response format: missing "response" field');
+            }
+            final ollamaResponse = result['response'] as String?;
+            if (ollamaResponse == null) {
+              throw Exception('Invalid response format: "response" is null');
+            }
+            final created = result['created_at'] as String?;
+            final timestamp = created != null
+                ? DateTime.parse(created).millisecondsSinceEpoch ~/ 1000
+                : DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            // Create a mock stream response to match the expected format
+            return CreateChatCompletionStreamResponse(
+              id: 'ollama-${DateTime.now().millisecondsSinceEpoch}',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: ollamaResponse,
+                  ),
+                  index: 0,
                 ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: timestamp,
-          );
-        } catch (e) {
-          if (e is ModelNotInstalledException) {
-            rethrow;
-          }
-          if (e is TimeoutException) {
-            final timeoutSeconds = images.isNotEmpty
-                ? ollamaImageAnalysisTimeoutSeconds
-                : ollamaDefaultTimeoutSeconds;
-            throw Exception(
-                'Request timed out after $timeoutSeconds seconds. This can happen when the model is loading for the first time. Please try again - subsequent requests should be faster.');
-          }
-          rethrow;
-        }
+              ],
+              object: 'chat.completion.chunk',
+              created: timestamp,
+            );
+          },
+          maxRetries: 3,
+          baseDelay: const Duration(seconds: 2),
+          context: 'Ollama generation',
+          timeoutErrorMessage: 'Request timed out after ${images.isNotEmpty ? ollamaImageAnalysisTimeoutSeconds : ollamaDefaultTimeoutSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+          networkErrorMessage: 'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
+        );
       }(),
     ).asBroadcastStream();
+  }
+
+  /// Helper for retrying an async operation with exponential backoff on TimeoutException and SocketException
+  Future<T> _retryWithExponentialBackoff<T>({
+    required Future<T> Function() operation,
+    required int maxRetries,
+    required Duration baseDelay,
+    required String context,
+    required String timeoutErrorMessage,
+    required String networkErrorMessage,
+  }) async {
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        return await operation();
+      } on Exception catch (e) {
+        if (e is TimeoutException || e is SocketException) {
+          if (attempt >= maxRetries) {
+            if (e is TimeoutException) {
+              throw Exception(timeoutErrorMessage);
+            } else {
+              throw Exception(networkErrorMessage);
+            }
+          }
+          final reason = e is TimeoutException ? 'Timeout' : 'Network error';
+          developer.log(
+              ' [33m$reason during $context, retrying (attempt $attempt)... [0m',
+              name: 'CloudInferenceRepository');
+          await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
+          continue;
+        }
+        // For all other errors, do not retry. Rethrow to preserve the original error.
+        rethrow;
+      }
+    }
   }
 
   /// Check if a model is installed in Ollama
@@ -334,7 +359,8 @@ class CloudInferenceRepository {
       });
     } catch (e) {
       developer.log(
-        'Error checking if model is installed: $e',
+        'Error checking if model is installed',
+        error: e,
         name: 'CloudInferenceRepository',
       );
       return false;
@@ -371,9 +397,11 @@ class CloudInferenceRepository {
       }
 
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
       developer.log(
-        'Error getting model info: $e',
+        'Error getting model info',
+        error: e,
+        stackTrace: stackTrace,
         name: 'CloudInferenceRepository',
       );
       return null;
@@ -383,65 +411,111 @@ class CloudInferenceRepository {
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(
       String modelName, String baseUrl) async* {
-    try {
-      final request = http.Request(
-        'POST',
-        Uri.parse('$baseUrl/api/pull'),
-      );
-      request.headers['Content-Type'] = ollamaContentType;
-      request.body = jsonEncode({'name': modelName});
-
-      final streamedResponse = await _httpClient.send(request);
-
-      if (streamedResponse.statusCode != httpStatusOk) {
-        developer.log(
-          'Model installation failed: HTTP ${streamedResponse.statusCode}',
-          name: 'CloudInferenceRepository',
+    const maxRetries = 3;
+    const installTimeout = Duration(minutes: 10); // 10 minutes for large models
+    const baseDelay = Duration(seconds: 2);
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        final request = http.Request(
+          'POST',
+          Uri.parse('$baseUrl/api/pull'),
         );
-        throw Exception(
-            'Failed to start model installation. Please check your Ollama installation and try again.');
-      }
+        request.headers['Content-Type'] = ollamaContentType;
+        request.body = jsonEncode({'name': modelName});
 
-      await for (final chunk
-          in streamedResponse.stream.transform(utf8.decoder)) {
-        final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
+        // Use a timeout for the entire send operation
+        final streamedResponse = await _retryWithExponentialBackoff(
+          operation: () async {
+            return _httpClient.send(request).timeout(installTimeout);
+          },
+          maxRetries: maxRetries,
+          baseDelay: baseDelay,
+          context: 'model installation',
+          timeoutErrorMessage: 'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
+          networkErrorMessage: 'Network error during model installation. Please check your connection and that the Ollama server is running.',
+        );
 
-        for (final line in lines) {
-          Map<String, dynamic> data;
-          try {
-            data = jsonDecode(line) as Map<String, dynamic>;
-          } catch (e) {
-            // Skip malformed JSON lines
-            continue;
-          }
-
-          if (data.containsKey('error')) {
-            final errorMessage = data['error'] as String;
-            developer.log(
-              'Model installation error: $errorMessage',
-              name: 'CloudInferenceRepository',
-            );
-            throw Exception(
-                'Model installation failed: ${errorMessage.contains('not found') ? 'Model not found' : 'Installation error'}. Please check your Ollama installation and try again.');
-          }
-
-          final status =
-              data['status'] is String ? data['status'] as String : '';
-          final total = data['total'] is int ? data['total'] as int : 0;
-          final completed =
-              data['completed'] is int ? data['completed'] as int : 0;
-
-          yield OllamaPullProgress(
-            status: status,
-            total: total,
-            completed: completed,
-            progress: total > 0 ? (completed / total) : 0.0,
+        if (streamedResponse.statusCode != httpStatusOk) {
+          developer.log(
+            'Model installation failed: HTTP ${streamedResponse.statusCode}',
+            name: 'CloudInferenceRepository',
           );
+          throw Exception(
+              'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.');
         }
+
+        await for (final chunk
+            in streamedResponse.stream.transform(utf8.decoder)) {
+          final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
+
+          for (final line in lines) {
+            Map<String, dynamic> data;
+            try {
+              data = jsonDecode(line) as Map<String, dynamic>;
+            } catch (e) {
+              // Skip malformed JSON lines
+              continue;
+            }
+
+            if (data.containsKey('error')) {
+              final errorMessage = data['error'] as String;
+              developer.log(
+                'Model installation error: $errorMessage',
+                name: 'CloudInferenceRepository',
+              );
+              // Provide more specific error messages
+              if (errorMessage.contains('not found')) {
+                throw Exception('Model installation failed: Model not found.');
+              } else if (errorMessage.contains('disk full')) {
+                throw Exception(
+                    'Model installation failed: Disk is full. Please free up space and try again.');
+              } else if (errorMessage.contains('connection refused')) {
+                throw Exception(
+                    'Model installation failed: Connection refused. Is the Ollama server running?');
+              } else {
+                throw Exception('Model installation failed. Please check your Ollama installation and try again.');
+              }
+            }
+
+            final status =
+                data['status'] is String ? data['status'] as String : '';
+            final total = data['total'] is int ? data['total'] as int : 0;
+            final completed =
+                data['completed'] is int ? data['completed'] as int : 0;
+
+            yield OllamaPullProgress(
+              status: status,
+              total: total,
+              completed: completed,
+              progress: total > 0 ? (completed / total) : 0.0,
+            );
+          }
+        }
+        // If we reach here, installation succeeded
+        break;
+      } on Exception catch (e) {
+        if (e is TimeoutException || e is SocketException) {
+          if (attempt >= maxRetries) {
+            if (e is TimeoutException) {
+              throw Exception(
+                  'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.');
+            } else {
+              throw Exception(
+                  'Network error during model installation. Please check your connection and that the Ollama server is running.');
+            }
+          }
+          final reason = e is TimeoutException ? 'Timeout' : 'Network error';
+          developer.log(
+              '$reason during model installation, retrying (attempt $attempt)...',
+              name: 'CloudInferenceRepository');
+          await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
+          continue;
+        }
+        // For all other errors, do not retry. Rethrow to preserve the original error.
+        rethrow;
       }
-    } catch (e) {
-      throw Exception(
-          'Model installation failed. Please check your Ollama installation and try again.');
     }
   }
 
@@ -479,9 +553,11 @@ class CloudInferenceRepository {
         'Model warmed up successfully: $modelName',
         name: 'CloudInferenceRepository',
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       developer.log(
-        'Warning: Model warm-up failed: $e',
+        'Warning: Model warm-up failed',
+        error: e,
+        stackTrace: stackTrace,
         name: 'CloudInferenceRepository',
       );
       // Don't throw, just log warning
