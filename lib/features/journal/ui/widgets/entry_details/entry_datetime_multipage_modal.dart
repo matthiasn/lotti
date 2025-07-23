@@ -448,8 +448,8 @@ class _DateTimePickerStickyActionBar extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: LottiSecondaryButton(
-              label: context.messages.saveButtonLabel,
-              onPressed: onDone,
+              label: context.messages.journalDateNowButton,
+              onPressed: onNow,
               fullWidth: true,
             ),
           ),

@@ -146,6 +146,7 @@ class _EstimatedTimeStickyActionBar extends StatelessWidget {
             child: LottiSecondaryButton(
               label: context.messages.cancelButton,
               onPressed: onCancel,
+              fullWidth: true,
             ),
           ),
           const SizedBox(width: 12),

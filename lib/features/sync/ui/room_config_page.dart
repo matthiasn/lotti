@@ -89,8 +89,17 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
         const SizedBox(height: 20),
         if (isRoomDefined) ...[
           LottiSecondaryButton(
-            label: context.messages.cancelButton,
+            label: 'Leave room',
             onPressed: roomNotifier.leaveRoom,
+          ),
+          const SizedBox(height: 20),
+          LottiSecondaryButton(
+            label: 'Invite',
+            onPressed: () {
+              setState(() {
+                showCam = true;
+              });
+            },
           ),
           const SizedBox(height: 20),
           if (showCam && isMobile)
