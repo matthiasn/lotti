@@ -332,9 +332,18 @@ class OllamaModelInstallDialogState
         'Model installation error: $e',
         name: '_OllamaModelInstallDialogState',
       );
+      
+      // The repository provides user-friendly error messages.
+      // We can use them directly instead of parsing the error string.
+      var errorMessage = e.toString();
+      // The repository provides user-friendly error messages.
+      // We can use them directly instead of parsing the error string.
+      if (e is Exception) {
+        errorMessage = errorMessage.replaceFirst('Exception: ', '');
+      }
+      
       setState(() {
-        _error =
-            'Installation failed. Please check your Ollama installation and try again.';
+        _error = errorMessage;
         _isInstalling = false;
       });
     }
