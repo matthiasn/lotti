@@ -5,6 +5,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/login/login_sticky_action_bar.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -84,7 +85,7 @@ void main() {
       expect(loginButton, findsOneWidget);
 
       // The button should be disabled because the form is initially invalid
-      expect(tester.widget<FilledButton>(loginButton).onPressed, isNull);
+      expect(tester.widget<LottiPrimaryButton>(loginButton).onPressed, isNull);
 
       // Verify that the delete button is not rendered when config is null
       expect(find.byKey(const Key('matrix_config_delete')), findsNothing);

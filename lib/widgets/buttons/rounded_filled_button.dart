@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
 
 class RoundedFilledButton extends StatelessWidget {
   const RoundedFilledButton({
@@ -18,18 +19,16 @@ class RoundedFilledButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
+    return LottiPrimaryButton(
       onPressed: onPressed,
+      label: labelText,
+      semanticsLabel: semanticsLabel,
       style: FilledButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-      ),
-      child: Text(
-        labelText,
-        semanticsLabel: semanticsLabel,
       ),
     );
   }
