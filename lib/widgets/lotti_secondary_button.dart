@@ -1,76 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 
+/// A customizable secondary (outlined) button for consistent app theming.
 class LottiSecondaryButton extends StatelessWidget {
   const LottiSecondaryButton({
-    required this.onPressed,
     required this.label,
+    required this.onPressed,
     this.icon,
-    this.style,
-    this.semanticsLabel,
+    this.enabled = true,
+    this.fullWidth = false,
     super.key,
   });
 
+  final String label;
   final VoidCallback? onPressed;
-  final dynamic label; // String or Widget
-  final dynamic icon; // IconData, Widget, or null
-  final ButtonStyle? style;
-  final String? semanticsLabel;
+  final IconData? icon;
+  final bool enabled;
+  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final defaultStyle = OutlinedButton.styleFrom(
-      backgroundColor: Colors.transparent,
-      foregroundColor: colorScheme.onSurfaceVariant,
-      textStyle: const TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      side: BorderSide(
-        color: colorScheme.outline.withValues(alpha: 0.5),
-        width: 1.5,
-      ),
-    );
-
-    final effectiveStyle = defaultStyle.merge(style);
-
-    final labelWidget = label is Widget
-        ? label as Widget
-        : Text(
-            label.toString(),
-            semanticsLabel: semanticsLabel,
+    final isEnabled = enabled && onPressed != null;
+    final buttonChild = icon == null
+        ? Text(
+            label,
+            style: TextStyle(
+              color: isEnabled
+                  ? context.colorScheme.primary
+                  : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isEnabled
+                    ? context.colorScheme.primary
+                    : context.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.5),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isEnabled
+                      ? context.colorScheme.primary
+                      : context.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           );
 
-    Widget? iconWidget;
-    if (icon != null) {
-      if (icon is Widget) {
-        iconWidget = icon as Widget;
-      } else if (icon is IconData) {
-        iconWidget = Icon(icon as IconData, size: 20);
-      } else {
-        throw ArgumentError('Icon must be either Widget or IconData, got ${icon.runtimeType}');
-      }
-    }
+    final button = OutlinedButton(
+      onPressed: isEnabled ? onPressed : null,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: context.colorScheme.primary,
+        side: BorderSide(
+          color: isEnabled
+              ? context.colorScheme.primary.withValues(alpha: 0.5)
+              : context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+      ),
+      child: buttonChild,
+    );
 
-    if (iconWidget != null) {
-      return OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: iconWidget,
-        label: labelWidget,
-        style: effectiveStyle,
-      );
-    } else {
-      return OutlinedButton(
-        onPressed: onPressed,
-        style: effectiveStyle,
-        child: labelWidget,
-      );
+    if (fullWidth) {
+      return SizedBox(width: double.infinity, child: button);
     }
+    return button;
   }
-} 
+}

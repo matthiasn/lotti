@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 // Updated show method to use proper WoltModal pattern with sticky action bar
@@ -152,31 +153,10 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: SizedBox(
-                  height: 40,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color:
-                            context.colorScheme.outline.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    child: Text(
-                      context.messages.cancelButton,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                        letterSpacing: -0.2,
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+                child: LottiSecondaryButton(
+                  label: context.messages.cancelButton,
+                  onPressed: () => Navigator.pop(context),
+                  fullWidth: true,
                 ),
               ),
               const SizedBox(width: 12),

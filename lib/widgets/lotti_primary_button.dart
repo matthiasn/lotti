@@ -23,8 +23,10 @@ class LottiPrimaryButton extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final backgroundColor = isDestructive ? colorScheme.error : colorScheme.primary;
-    final foregroundColor = isDestructive ? colorScheme.onError : colorScheme.onPrimary;
+    final backgroundColor =
+        isDestructive ? colorScheme.error : colorScheme.primary;
+    final foregroundColor =
+        isDestructive ? colorScheme.onError : colorScheme.onPrimary;
 
     final defaultStyle = FilledButton.styleFrom(
       backgroundColor: backgroundColor,

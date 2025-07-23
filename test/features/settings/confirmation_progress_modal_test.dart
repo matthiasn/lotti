@@ -70,7 +70,7 @@ void main() {
       expect(
           find.text('Are you sure you want to delete this?'), findsOneWidget);
       expect(find.text('DELETE'), findsOneWidget);
-      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
 
@@ -152,8 +152,9 @@ void main() {
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
 
-      // Tap cancel button
-      await tester.tap(find.text('CANCEL'));
+      // Instead of using context.messages.cancelButton, use 'Cancel' directly if that's the label in the widget.
+      expect(find.text('Cancel'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
       // Verify modal was dismissed
@@ -307,7 +308,8 @@ void main() {
         of: find.text('DELETE'),
         matching: find.byType(LottiPrimaryButton),
       );
-      final confirmButton = tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+      final confirmButton =
+          tester.widget<LottiPrimaryButton>(confirmButtonFinder);
       Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses error styling for destructive operations
@@ -360,7 +362,8 @@ void main() {
         of: find.text('CONTINUE'),
         matching: find.byType(LottiPrimaryButton),
       );
-      final confirmButton = tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+      final confirmButton =
+          tester.widget<LottiPrimaryButton>(confirmButtonFinder);
       Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses primary styling for non-destructive operations

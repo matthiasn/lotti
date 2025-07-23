@@ -40,10 +40,10 @@ void main() {
         },
       ));
 
-              expect(find.text('RETRY'), findsOneWidget);
-        expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.text('RETRY'), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
 
-        await tester.tap(find.text('RETRY'));
+      await tester.tap(find.text('RETRY'));
       await tester.pump();
 
       expect(retryPressed, isTrue);
@@ -55,8 +55,8 @@ void main() {
         error: 'Test error',
       ));
 
-              expect(find.text('RETRY'), findsNothing);
-        expect(find.byType(LottiPrimaryButton), findsNothing);
+      expect(find.text('RETRY'), findsNothing);
+      expect(find.byType(LottiPrimaryButton), findsNothing);
     });
 
     testWidgets('displays error icon with correct size and color',

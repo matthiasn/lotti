@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -67,12 +68,6 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
     final camDimension =
         max(MediaQuery.of(context).size.width - 100, 300).toDouble();
 
-    Future<void> invitePressed() async {
-      setState(() {
-        showCam = true;
-      });
-    }
-
     Future<void> joinRoom() async {
       await roomNotifier.joinRoom(manualRoomId);
     }
@@ -93,16 +88,18 @@ class _RoomConfigState extends ConsumerState<RoomConfig> {
         if (isRoomDefined) SelectableText(room),
         const SizedBox(height: 20),
         if (isRoomDefined) ...[
-          OutlinedButton(
-            key: const Key('matrix_invite_to_room'),
-            onPressed: invitePressed,
-            child: const Text('Invite'),
+          LottiSecondaryButton(
+            label: 'Leave room',
+            onPressed: roomNotifier.leaveRoom,
           ),
           const SizedBox(height: 20),
-          OutlinedButton(
-            key: const Key('matrix_leave_room'),
-            onPressed: roomNotifier.leaveRoom,
-            child: const Text('Leave room'),
+          LottiSecondaryButton(
+            label: 'Invite',
+            onPressed: () {
+              setState(() {
+                showCam = true;
+              });
+            },
           ),
           const SizedBox(height: 20),
           if (showCam && isMobile)

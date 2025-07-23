@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -438,37 +439,18 @@ class _DateTimePickerStickyActionBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton(
+            child: LottiSecondaryButton(
+              label: context.messages.cancelButton,
               onPressed: onCancel,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: context.colorScheme.outline.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                context.messages.cancelButton,
-                style: TextStyle(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              fullWidth: true,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: OutlinedButton(
+            child: LottiSecondaryButton(
+              label: context.messages.journalDateNowButton,
               onPressed: onNow,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                side: BorderSide(
-                  color: context.colorScheme.primary.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Text(
-                context.messages.journalDateNowButton,
-                style: TextStyle(
-                  color: context.colorScheme.primary,
-                ),
-              ),
+              fullWidth: true,
             ),
           ),
           const SizedBox(width: 12),

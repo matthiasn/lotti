@@ -135,7 +135,7 @@ class _UnifiedAiProgressContentState
                   try {
                     // Check if widget is still mounted before proceeding
                     if (!mounted) return;
-                    
+
                     // Invalidate the provider to re-trigger inference
                     ref.invalidate(
                       unifiedAiControllerProvider(
@@ -143,15 +143,15 @@ class _UnifiedAiProgressContentState
                         promptId: widget.promptId,
                       ),
                     );
-                    
+
                     // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
                     final prompt = await ref.read(
                       aiConfigByIdProvider(widget.promptId).future,
                     );
-                    
+
                     // Double-check mounted state after async operation
                     if (!mounted || !context.mounted) return;
-                    
+
                     if (prompt is AiConfigPrompt) {
                       await ModalUtils.showSingleSliverPageModal<void>(
                         context: context,
@@ -332,7 +332,7 @@ class OllamaModelInstallDialogState
         'Model installation error: $e',
         name: '_OllamaModelInstallDialogState',
       );
-      
+
       // The repository provides user-friendly error messages.
       // We can use them directly instead of parsing the error string.
       var errorMessage = e.toString();
@@ -341,7 +341,7 @@ class OllamaModelInstallDialogState
       if (e is Exception) {
         errorMessage = errorMessage.replaceFirst('Exception: ', '');
       }
-      
+
       setState(() {
         _error = errorMessage;
         _isInstalling = false;

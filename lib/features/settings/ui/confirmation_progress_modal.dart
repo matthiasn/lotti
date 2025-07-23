@@ -4,6 +4,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ConfirmationProgressModal {
@@ -17,7 +18,6 @@ class ConfirmationProgressModal {
     required Future<void> Function() operation,
     bool isDestructive = true,
   }) async {
-    final cancelLabel = context.messages.cancelButton.toUpperCase();
     final pageIndexNotifier = ValueNotifier(0);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -73,36 +73,13 @@ class ConfirmationProgressModal {
                     Expanded(
                       child: SizedBox(
                         height: ModalTheme.buttonHeight,
-                        child: OutlinedButton(
+                        child: LottiSecondaryButton(
+                          label: context.messages.cancelButton,
                           onPressed: () {
                             confirmed = false;
                             Navigator.of(modalSheetContext).pop();
                           },
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: colorScheme.onSurfaceVariant,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.cardBorderRadius),
-                            ),
-                            side: BorderSide(
-                              color: colorScheme.outline
-                                  .withValues(alpha: AppTheme.alphaOutline),
-                              width: ModalTheme.buttonBorderWidth,
-                            ),
-                            padding: EdgeInsets.zero,
-                            textStyle: const TextStyle(
-                              fontSize: ModalTheme.fontSize,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: ModalTheme.letterSpacing,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              cancelLabel,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
+                          fullWidth: true,
                         ),
                       ),
                     ),

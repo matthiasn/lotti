@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../widget_test_utils.dart';
@@ -173,7 +174,8 @@ void main() {
       expect(find.text('Done'), findsOneWidget);
 
       // Verify button types
-      expect(find.byType(OutlinedButton), findsNWidgets(2));
+      expect(find.byType(LottiSecondaryButton), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Now'), findsOneWidget);
       expect(find.byType(FilledButton), findsOneWidget);
     });
 

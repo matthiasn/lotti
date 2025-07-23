@@ -4,6 +4,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 
 /// A widget that displays AI inference errors in a user-friendly way
 class AiErrorDisplay extends StatefulWidget {
@@ -146,18 +147,13 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                 // View Log button
                 const SizedBox(
                     height: AppTheme.errorModalSpacingButtonSecondary),
-                OutlinedButton.icon(
+                LottiSecondaryButton(
+                  label: context.messages.aiInferenceErrorViewLogButton,
+                  icon: Icons.article_outlined,
                   onPressed: () {
                     beamToNamed('/settings/advanced/logging');
                   },
-                  icon: const Icon(Icons.article_outlined),
-                  label: Text(context.messages.aiInferenceErrorViewLogButton),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.colorScheme.primary,
-                    side: BorderSide(
-                        color:
-                            context.colorScheme.primary.withValues(alpha: 0.5)),
-                  ),
+                  fullWidth: true,
                 ),
               ],
             ),

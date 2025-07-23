@@ -4,8 +4,8 @@ import 'package:formz/formz.dart';
 import 'package:lotti/features/sync/state/login_form_controller.dart';
 import 'package:lotti/features/sync/state/matrix_config_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
@@ -58,16 +58,10 @@ class LoginStickyActionBar extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (config != null)
-            OutlinedButton(
+            LottiSecondaryButton(
               key: const Key('matrix_config_delete'),
+              label: context.messages.settingsMatrixDeleteLabel,
               onPressed: deleteConfig,
-              child: Text(
-                context.messages.settingsMatrixDeleteLabel,
-                style: TextStyle(
-                  color: context.colorScheme.error,
-                ),
-                semanticsLabel: 'Delete Matrix Config',
-              ),
             ),
           const SizedBox(height: 8),
           LottiPrimaryButton(

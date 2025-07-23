@@ -54,12 +54,6 @@ Future<bool> showConfirmationModal({
                     Navigator.of(context).pop();
                   },
                   label: cancelLabel,
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
