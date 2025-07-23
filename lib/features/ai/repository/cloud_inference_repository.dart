@@ -296,8 +296,10 @@ class CloudInferenceRepository {
           maxRetries: 3,
           baseDelay: const Duration(seconds: 2),
           context: 'Ollama generation',
-          timeoutErrorMessage: 'Request timed out after ${images.isNotEmpty ? ollamaImageAnalysisTimeoutSeconds : ollamaDefaultTimeoutSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
-          networkErrorMessage: 'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
+          timeoutErrorMessage:
+              'Request timed out after ${images.isNotEmpty ? ollamaImageAnalysisTimeoutSeconds : ollamaDefaultTimeoutSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+          networkErrorMessage:
+              'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
         );
       }(),
     ).asBroadcastStream();
@@ -433,8 +435,10 @@ class CloudInferenceRepository {
           maxRetries: maxRetries,
           baseDelay: baseDelay,
           context: 'model installation',
-          timeoutErrorMessage: 'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
-          networkErrorMessage: 'Network error during model installation. Please check your connection and that the Ollama server is running.',
+          timeoutErrorMessage:
+              'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
+          networkErrorMessage:
+              'Network error during model installation. Please check your connection and that the Ollama server is running.',
         );
 
         if (streamedResponse.statusCode != httpStatusOk) {
@@ -448,7 +452,8 @@ class CloudInferenceRepository {
 
         await for (final chunk
             in streamedResponse.stream.transform(utf8.decoder)) {
-          final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
+          final lines =
+              chunk.split('\n').where((line) => line.trim().isNotEmpty);
 
           for (final line in lines) {
             Map<String, dynamic> data;
@@ -475,7 +480,8 @@ class CloudInferenceRepository {
                 throw Exception(
                     'Model installation failed: Connection refused. Is the Ollama server running?');
               } else {
-                throw Exception('Model installation failed. Please check your Ollama installation and try again.');
+                throw Exception(
+                    'Model installation failed. Please check your Ollama installation and try again.');
               }
             }
 

@@ -4,6 +4,7 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -41,16 +42,12 @@ class LoggedInPageStickyActionBar extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          OutlinedButton(
-            key: const Key('matrix_logout'),
+          LottiSecondaryButton(
+            label: context.messages.settingsMatrixLogoutButtonLabel,
             onPressed: () async {
               await ref.read(matrixLoginControllerProvider.notifier).logout();
               pageIndexNotifier.value = 0;
             },
-            child: Text(
-              context.messages.settingsMatrixLogoutButtonLabel,
-              semanticsLabel: context.messages.settingsMatrixLogoutButtonLabel,
-            ),
           ),
           const SizedBox(height: 8),
           LottiPrimaryButton(

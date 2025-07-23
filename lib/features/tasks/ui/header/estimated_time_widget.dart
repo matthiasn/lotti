@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class EstimatedTimeWidget extends ConsumerWidget {
@@ -142,20 +143,9 @@ class _EstimatedTimeStickyActionBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton(
+            child: LottiSecondaryButton(
+              label: context.messages.cancelButton,
               onPressed: onCancel,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                side: BorderSide(
-                  color: context.colorScheme.outline.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                context.messages.cancelButton,
-                style: TextStyle(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
             ),
           ),
           const SizedBox(width: 12),
