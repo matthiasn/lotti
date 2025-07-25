@@ -90,6 +90,16 @@ const List<KnownModel> geminiModels = [
     description:
         'Fast multimodal model with reasoning capabilities optimized for speed',
   ),
+  KnownModel(
+    providerModelId: 'models/gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    inputModalities: [Modality.text, Modality.image, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description:
+        'Fast & legacy multimodal model without reasoning capabilities optimized for speed',
+  ),
 ];
 
 /// Nebius models - High-performance text and image models
