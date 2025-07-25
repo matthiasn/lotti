@@ -101,7 +101,7 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
                       color: effectiveTextColor,
                       letterSpacing: AppTheme.letterSpacingTitle,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
 

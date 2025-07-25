@@ -121,6 +121,7 @@ class ModalUtils {
     double? navBarHeight,
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
+    bool showCloseButton = true,
   }) async {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -136,6 +137,7 @@ class ModalUtils {
             titleWidget: titleWidget,
             hasTopBarLayer: hasTopBarLayer,
             navBarHeight: navBarHeight,
+            showCloseButton: showCloseButton,
             padding: padding,
             child: builder(modalSheetContext),
             context: modalSheetContext,

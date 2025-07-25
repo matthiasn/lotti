@@ -203,7 +203,7 @@ class AiConfigCard extends ConsumerWidget {
                               : AppTheme.titleFontSize,
                           color: context.colorScheme.onSurface,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
 
