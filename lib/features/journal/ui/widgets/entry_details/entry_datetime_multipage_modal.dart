@@ -458,7 +458,6 @@ class _DateTimePickerStickyActionBar extends StatelessWidget {
             child: LottiPrimaryButton(
               onPressed: onDone,
               label: context.messages.doneButton,
-              icon: Icons.check_rounded,
               style: FilledButton.styleFrom(
                 backgroundColor: context.colorScheme.primary,
                 foregroundColor: context.colorScheme.onPrimary,
