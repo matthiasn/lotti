@@ -22,14 +22,17 @@ class ExpandableAiResponseSummary extends StatefulWidget {
       _ExpandableAiResponseSummaryState();
 }
 
+const _animationDuration = Duration(milliseconds: 500);
+
 class _ExpandableAiResponseSummaryState
     extends State<ExpandableAiResponseSummary>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
+  late Animation<double> _expandAnimation;
   bool _isExpanded = false;
-  String? _tldrContent;
-  String? _fullContent;
+  late String? _tldrContent;
+  late String? _additionalContent;
 
   @override
   void initState() {
@@ -45,6 +48,10 @@ class _ExpandableAiResponseSummaryState
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
 
     _parseContent();
   }
@@ -64,29 +71,43 @@ class _ExpandableAiResponseSummaryState
       response = response.replaceFirst(titleRegex, '').trim();
     }
 
-    // Extract TLDR paragraph using regex
-    // Match content starting with **TLDR:** and ending at the first double line break
+    // Extract TLDR paragraph - match from **TLDR:** to the end of the paragraph
+    // A paragraph ends with double newline or end of string
     final tldrRegex = RegExp(
-      r'^\*\*TLDR:\*\*.*?(?=\n\n|\n$|\z)',
+      r'^\*\*TLDR:\*\*[^\n]*(?:\n(?!\n)[^\n]*)*',
       multiLine: true,
-      dotAll: true,
     );
 
     final tldrMatch = tldrRegex.firstMatch(response);
     if (tldrMatch != null) {
       _tldrContent = tldrMatch.group(0)?.trim();
-      _fullContent = response;
+      // Extract the content after TLDR match
+      final matchEnd = tldrMatch.end;
+      _additionalContent = response.substring(matchEnd).trim();
+      if (_additionalContent?.startsWith('\n') ?? false) {
+        _additionalContent = _additionalContent?.substring(1).trim();
+      }
+      if (_additionalContent?.isEmpty ?? true) {
+        _additionalContent = null;
+      }
     } else {
       // Fallback: if no TLDR found, use first paragraph
       final paragraphs = response.split(RegExp(r'\n\n+'));
       _tldrContent = paragraphs.isNotEmpty ? paragraphs.first.trim() : response;
-      _fullContent = response;
+      // Get remaining paragraphs
+      if (paragraphs.length > 1) {
+        _additionalContent = paragraphs.skip(1).join('\n\n').trim();
+      } else {
+        _additionalContent = null;
+      }
     }
   }
 
   void _toggleExpanded() {
     setState(() {
       _isExpanded = !_isExpanded;
+      _animationController.duration = _animationDuration;
+
       if (_isExpanded) {
         _animationController.forward();
       } else {
@@ -110,43 +131,71 @@ class _ExpandableAiResponseSummaryState
             },
           );
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: SelectionArea(
-                      child: GptMarkdown(
-                        _isExpanded ? _fullContent ?? '' : _tldrContent ?? '',
+            // Content with padding for the button
+            Padding(
+              padding: const EdgeInsets.only(right: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // TLDR content (always visible)
+                  SelectionArea(
+                    child: GptMarkdown(_tldrContent ?? ''),
+                  ),
+                  // Accordion-style expanding content
+                  if (_additionalContent != null &&
+                      _additionalContent!.isNotEmpty)
+                    AnimatedBuilder(
+                      animation: _expandAnimation,
+                      builder: (context, child) {
+                        // Use Offstage to prevent widget from being found when collapsed
+                        if (_expandAnimation.value == 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return ClipRect(
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            heightFactor: _expandAnimation.value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          SelectionArea(
+                            child: GptMarkdown(_additionalContent!),
+                          ),
+                        ],
                       ),
+                    ),
+                ],
+              ),
+            ),
+            // Expand/collapse button positioned at top right
+            Positioned(
+              top: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: _toggleExpanded,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surface.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: RotationTransition(
+                    turns: _rotationAnimation,
+                    child: Icon(
+                      Icons.expand_more,
+                      size: 20,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _toggleExpanded,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.surface.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: RotationTransition(
-                      turns: _rotationAnimation,
-                      child: Icon(
-                        Icons.expand_more,
-                        size: 20,
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
