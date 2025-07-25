@@ -28,6 +28,7 @@ class AudioRecordingModal {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
         hasTopBarLayer: false,
+        showCloseButton: false,
         builder: (BuildContext _) {
           return AudioRecordingModalContent(
             linkedId: linkedId,

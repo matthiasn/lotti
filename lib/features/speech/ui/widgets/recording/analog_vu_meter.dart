@@ -209,7 +209,7 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
   Widget build(BuildContext context) {
     return SizedBox(
       width: widget.size,
-      height: widget.size * 0.5,
+      height: widget.size * 0.4,
       child: AnimatedBuilder(
         animation: Listenable.merge(
             [_needleAnimation, _peakAnimation, _clipAnimation]),
