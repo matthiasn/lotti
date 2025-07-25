@@ -117,12 +117,109 @@ Lotti is currently available for beta testing for these platforms:
 $ sudo apt install pulseaudio-utils
 ```
 
+### Building with Flatpak (Recommended for Distribution)
+
+To build Lotti as a Flatpak package for easy distribution and installation:
+
+1. **Install Flatpak Builder:**
+   ```bash
+   sudo apt install flatpak-builder
+   ```
+
+2. **Add Flathub Repository:**
+   ```bash
+   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+   ```
+
+3. **Install Required SDK and Platform:**
+   ```bash
+   flatpak install flathub org.gnome.Sdk//45
+   flatpak install flathub org.gnome.Platform//45
+   ```
+
+4. **Create Flatpak Manifest:**
+   Create a file named `com.github.matthiasn.lotti.yml` in the project root with the following content:
+   ```yaml
+   app-id: com.github.matthiasn.lotti
+   runtime: org.gnome.Platform
+   runtime-version: '45'
+   sdk: org.gnome.Sdk
+   command: lotti
+   finish-args:
+     - --share=network
+     - --share=ipc
+     - --socket=fallback-x11
+     - --socket=wayland
+     - --device=dri
+     - --socket=pulseaudio
+     - --filesystem=home
+     - --filesystem=xdg-documents
+     - --filesystem=xdg-pictures
+     - --filesystem=xdg-music
+     - --filesystem=xdg-videos
+     - --filesystem=xdg-download
+   modules:
+     - name: flutter
+       buildsystem: simple
+       build-commands:
+         - mkdir -p /app/flutter
+         - tar xf flutter_linux_3.32.7-stable.tar.xz -C /app/flutter --strip-components=1
+       sources:
+         - type: file
+           url: https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.7-stable.tar.xz
+           sha256: [REPLACE_WITH_ACTUAL_SHA256]
+     - name: lotti
+       buildsystem: simple
+       build-commands:
+         - export PATH="/app/flutter/bin:$PATH"
+         - flutter config --no-analytics
+         - flutter pub get
+         - flutter build linux --release
+         - install -D build/linux/x64/release/bundle/lotti /app/bin/lotti
+       sources:
+         - type: dir
+           path: .
+   ```
+
+5. **Download Flutter SDK and Get SHA256:**
+   ```bash
+   wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.7-stable.tar.xz
+   sha256sum flutter_linux_3.32.7-stable.tar.xz
+   ```
+   Replace `[REPLACE_WITH_ACTUAL_SHA256]` in the manifest with the output from the sha256sum command.
+
+6. **Build the Flatpak:**
+   ```bash
+   flatpak-builder build-dir com.github.matthiasn.lotti.yml
+   ```
+
+7. **Test the Build:**
+   ```bash
+   flatpak-builder --run build-dir com.github.matthiasn.lotti.yml lotti
+   ```
+
+8. **Install Locally (Optional):**
+   ```bash
+   flatpak-builder --user --install --force-clean build-dir com.github.matthiasn.lotti.yml
+   flatpak run com.github.matthiasn.lotti
+   ```
+
+### Traditional Build (Development)
+
+For development and testing, you can build Lotti traditionally:
+
+```
+$ sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
+$ flutter packages get
+$ make build_runner
+```
+
+In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
 
 ## Blog posts
 
 - [Introducing Lotti or how I learned to love Flutter and Buildkite](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)
 - [How I switched to Flutter and lost 10 kilos](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/)
-
 
 ## Getting Started
 
@@ -133,19 +230,16 @@ $ sudo apt install pulseaudio-utils
 5. Open in your favorite IDE, e.g. [Android Studio](https://developer.android.com/studio) 
 6. Run, either from the IDE or using e.g. `flutter run -d macos`
 
-
 ## widgetbook
 
 Lotti uses [widgetbook](https://pub.dev/packages/widgetbook) for developing and documenting widgets, for now only 
 for select widgets. To run the widgetbook, run e.g. `fvm flutter run -d macos -t lib/widgetbook.dart`.
-
 
 ## Platform-specific setup
 
 ### Mac
 
 Tested on `macOS 13.3`: no additional steps necessary. You only need to have Xcode installed.
-
 
 ### Linux
 
@@ -160,18 +254,15 @@ $ make build_runner
 
 In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
 
-
 ### Windows
 
 If your system is set up to run the Flutter counter example app, you should be good to go.
-
 
 ## Continuous Integration
 
 This project uses [Buildkite](https://buildkite.com/docs/agent/v3/macos) on macOS for releasing to
 TestFlight on iOS and macOS, and GitHub Actions for publishing to GitHub Releases for all other
 platforms. 
-
 
 ## Contributions
 

@@ -47,7 +47,19 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "Lotti");
   }
 
-  gtk_window_set_icon_from_file(window, "assets/icon/app_icon_1024.png", NULL);
+  // Set window class for better desktop integration (modern approach)
+  gtk_widget_set_name(GTK_WIDGET(window), "lotti");
+  
+  // Try to set icon with absolute path first, then fallback to relative
+  gchar* icon_path = g_build_filename(g_get_current_dir(), "assets", "icon", "app_icon_1024.png", NULL);
+  if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+    gtk_window_set_icon_from_file(window, icon_path, NULL);
+  } else {
+    // Fallback to relative path
+    gtk_window_set_icon_from_file(window, "assets/icon/app_icon_1024.png", NULL);
+  }
+  g_free(icon_path);
+  
   gtk_window_set_default_size(window, 1280, 720);
   gtk_widget_show(GTK_WIDGET(window));
 

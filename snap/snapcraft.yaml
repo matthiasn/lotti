@@ -31,3 +31,8 @@ parts:
     - libsecret-1-dev
     - libjsoncpp-dev
     - libkeybinder-3.0-dev
+    - pulseaudio-utils
+    - spectacle
+    - gnome-screenshot
+    - scrot
+    - imagemagick
