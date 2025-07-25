@@ -1,0 +1,154 @@
+# Lotti Flatpak
+
+This directory contains the Flatpak configuration for distributing Lotti on Linux.
+
+## Files
+
+- `org.lotti.lotti.yml.template` - Main Flatpak manifest template
+- `org.lotti.lotti.desktop` - Desktop entry file
+- `org.lotti.lotti.metainfo.xml.template` - AppStream metadata template
+- `build.sh` - Build script
+
+## Prerequisites
+
+1. Install Flatpak and flatpak-builder:
+   ```bash
+   sudo apt install flatpak flatpak-builder
+   ```
+
+2. Add the Flutter runtime (if not already added):
+   ```bash
+   flatpak install org.gnome.Platform//45 org.gnome.Sdk//45
+   ```
+
+## Configuration
+
+The build process supports environment variables for customization:
+
+- `LOTTI_REPO_URL` - Git repository URL (default: https://github.com/matthiasn/lotti.git)
+- `LOTTI_VERSION` - Version/tag to build (default: v0.9.645)
+- `LOTTI_RELEASE_DATE` - Release date in YYYY-MM-DD format (default: 2025-01-26)
+
+### Example Configuration
+```bash
+export LOTTI_REPO_URL="https://github.com/yourusername/lotti.git"
+export LOTTI_VERSION="v1.0.0"
+export LOTTI_RELEASE_DATE="2025-02-01"
+```
+
+Or copy and customize the example file:
+```bash
+cp flatpak/env.example .env
+# Edit .env file with your values
+source .env
+```
+
+## Building
+
+### Quick Build (Recommended)
+```bash
+./flatpak/build.sh
+```
+
+### Manual Build
+The template files contain placeholders that need variable substitution. You have two options:
+
+```bash
+# Option 1: Use the build script (recommended)
+./flatpak/build.sh
+
+# Option 2: Manual substitution (advanced users)
+# First, set environment variables
+export LOTTI_REPO_URL="https://github.com/matthiasn/lotti.git"
+export LOTTI_VERSION="v0.9.645" 
+export LOTTI_RELEASE_DATE="2025-01-26"
+
+# Generate manifest with substituted variables
+sed -e "s|{{LOTTI_REPO_URL}}|$LOTTI_REPO_URL|g" \
+    -e "s|{{LOTTI_VERSION}}|$LOTTI_VERSION|g" \
+    flatpak/org.lotti.lotti.yml.template > flatpak/org.lotti.lotti.yml
+
+# Generate metainfo with substituted variables  
+sed -e "s|{{LOTTI_VERSION}}|$LOTTI_VERSION|g" \
+    -e "s|{{LOTTI_RELEASE_DATE}}|$LOTTI_RELEASE_DATE|g" \
+    flatpak/org.lotti.lotti.metainfo.xml.template > flatpak/org.lotti.lotti.generated.metainfo.xml
+
+# Build with generated manifest
+flatpak-builder --force-clean --repo=repo build-dir flatpak/org.lotti.lotti.yml
+```
+
+## Installing
+
+### Install Locally
+The build script will show you the correct installation command. Alternatively, you can use:
+
+**Option 1: Use the build script (recommended)**
+```bash
+./flatpak/build.sh
+# Follow the installation instructions shown by the script
+```
+
+**Option 2: Manual installation after build**
+```bash
+# After running ./flatpak/build.sh successfully, install with the generated manifest
+flatpak-builder --user --install --force-clean build-dir org.lotti.lotti.yml
+```
+
+**Option 3: Install from template (requires environment variables)**
+```bash
+# Set your environment variables first
+export LOTTI_REPO_URL="https://github.com/matthiasn/lotti.git"
+export LOTTI_VERSION="v0.9.645"
+export LOTTI_RELEASE_DATE="2025-01-26"
+
+# Install directly from template
+flatpak-builder --user --install --force-clean build-dir flatpak/org.lotti.lotti.yml.template
+```
+
+Note: The `org.lotti.lotti.yml` file is generated in the project root by the build script.
+
+### Create Bundle
+```bash
+flatpak build-bundle repo lotti.flatpak org.lotti.lotti
+```
+
+## Distribution
+
+### Flathub
+To submit to Flathub:
+1. Fork the [Flathub repository](https://github.com/flathub/flathub)
+2. Add the manifest to `org.lotti.Lotti.yml`
+3. Submit a pull request
+
+### Direct Distribution
+Users can install the bundle with:
+```bash
+flatpak install lotti.flatpak
+```
+
+## Permissions
+
+The app requests the following permissions:
+- Network access
+- Home directory access
+- Audio (pulseaudio)
+- Display (X11/Wayland)
+- DRI (for hardware acceleration)
+
+## Screenshot Tools
+
+The app includes support for multiple screenshot tools:
+- spectacle (KDE)
+- gnome-screenshot (GNOME)
+- scrot (lightweight)
+- import (ImageMagick)
+
+These are handled by the app's internal screenshot functionality.
+
+## Future Improvements
+
+### Icon Optimization
+Currently, the Flatpak uses a single 1024px icon file for all sizes. For better quality and performance:
+- Create pre-scaled icons: 512px, 256px, 128px, 64px, 48px, 32px, 16px
+- Update the manifest to use appropriately sized icons
+- This will improve rendering quality and reduce memory usage 

@@ -1,0 +1,40 @@
+app-id: org.lotti.lotti
+runtime: org.gnome.Platform
+runtime-version: '45'
+sdk: org.gnome.Sdk
+command: lotti
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --filesystem=home
+  - --device=dri
+  - --socket=gpg-agent
+modules:
+  - name: lotti
+    buildsystem: flutter
+    build-options:
+      strip: true
+      no-debuginfo: true
+    sources:
+      - type: git
+        url: {{LOTTI_REPO_URL}}
+        tag: {{LOTTI_VERSION}}
+    modules:
+      - name: flutter-common
+        buildsystem: simple
+        build-commands:
+          - install -D flatpak/org.lotti.Lotti.desktop /app/share/applications/org.lotti.lotti.desktop
+          - install -D flatpak/org.lotti.lotti.generated.metainfo.xml /app/share/metainfo/org.lotti.lotti.metainfo.xml
+          # Install icons - using 1024px source for all sizes (TODO: Create properly sized icons for better quality)
+          - |
+            for size in 1024 512 256 128 64 48 32 16; do
+              install -D assets/icon/app_icon_1024.png /app/share/icons/hicolor/${size}x${size}/apps/org.lotti.lotti.png
+            done
+        sources:
+          - type: file
+            path: flatpak/org.lotti.Lotti.desktop
+          - type: file
+            path: flatpak/org.lotti.lotti.generated.metainfo.xml 
