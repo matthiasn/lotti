@@ -52,7 +52,7 @@ void main() {
       final sizedBox = find.byType(SizedBox).first;
       final sizedBoxWidget = tester.widget<SizedBox>(sizedBox);
       expect(sizedBoxWidget.width, 400);
-      expect(sizedBoxWidget.height, 200); // size * 0.5
+      expect(sizedBoxWidget.height, 160); // size * 0.4
     });
 
     testWidgets('needle animates when decibels change', (tester) async {
@@ -115,7 +115,7 @@ void main() {
 
       var sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(sizedBox.width, 200);
-      expect(sizedBox.height, 100); // Maintains 2:1 ratio
+      expect(sizedBox.height, 80); // Maintains 2.5:1 ratio (size * 0.4)
 
       // Test large size
       await tester.pumpWidget(makeTestableWidget(
@@ -126,7 +126,7 @@ void main() {
 
       sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(sizedBox.width, 600);
-      expect(sizedBox.height, 300); // Maintains 2:1 ratio
+      expect(sizedBox.height, 240); // Maintains 2.5:1 ratio (size * 0.4)
     });
 
     testWidgets('CustomPainter receives correct theme mode', (tester) async {

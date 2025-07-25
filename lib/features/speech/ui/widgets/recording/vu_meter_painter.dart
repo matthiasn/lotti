@@ -22,12 +22,13 @@ class VuMeterPainter extends CustomPainter {
   // Needle sweeps from about 200 degrees (lower left) to 340 degrees (lower right)
   static const double _startAngle = 200 * math.pi / 180;
   static const double _sweepAngle = 140 * math.pi / 180;
+  static const _needlePositionVertical = 0.90;
 
   @override
   void paint(Canvas canvas, Size size) {
     // Define internal coordinate system
     const double internalWidth = 350;
-    const double internalHeight = 175;
+    const double internalHeight = 140;
 
     // Calculate scale factor to fit the actual size
     final scaleX = size.width / internalWidth;
@@ -49,7 +50,8 @@ class VuMeterPainter extends CustomPainter {
     _drawVuText(canvas, internalSize);
 
     // Needle pivot at bottom center of meter face - moved down slightly
-    const needlePivot = Offset(internalWidth / 2, internalHeight * 0.8);
+    const needlePivot =
+        Offset(internalWidth / 2, internalHeight * _needlePositionVertical);
 
     // Draw peak indicator line
     if (peakValue > 0) {
@@ -71,7 +73,7 @@ class VuMeterPainter extends CustomPainter {
 
   void _drawScale(Canvas canvas, Size size) {
     // Needle pivot at bottom center of meter face - moved down slightly
-    final pivot = Offset(size.width / 2, size.height * 0.8);
+    final pivot = Offset(size.width / 2, size.height * _needlePositionVertical);
     final radius = size.width * 0.275; // Medium size arc
 
     // Get theme colors with better contrast
