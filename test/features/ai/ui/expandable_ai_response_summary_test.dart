@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -46,9 +45,9 @@ Achieved results:
 ✅ Implemented password hashing
 
 Remaining steps:
-1. Implement password reset functionality
-2. Add session management
-3. Create user profile endpoints
+1. Add password reset functionality
+2. Implement session management
+3. Add OAuth integration
 
 Learnings:
 💡 Using bcrypt for password hashing provides good security
@@ -122,101 +121,24 @@ Remaining steps:
 
       // Tap the expand icon
       await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pump();
-      await tester
-          .pump(const Duration(milliseconds: 350)); // Wait for animation
+      await tester.pump(); // Start the animation
+
+      // Pump a few frames to let the animation progress
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       // Now full content should be visible
       expect(find.textContaining('Quick summary'), findsOneWidget);
-      // Check for the text in GptMarkdown widget
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data.contains('Achieved results:'), true);
-      expect(gptMarkdown.data.contains('First achievement'), true);
-      expect(gptMarkdown.data.contains('Remaining steps:'), true);
+      // Check that the expanded content is visible
+      expect(find.textContaining('Achieved results:'), findsOneWidget);
+      expect(find.textContaining('First achievement'), findsOneWidget);
+      expect(find.textContaining('Remaining steps:'), findsOneWidget);
     });
-
-    // TODO: Fix rotation animation test
-    /* testWidgets('rotates chevron icon when expanding/collapsing',
-        (tester) async {
-      const responseWithTldr = '''
-# Task Title
-
-**TLDR:** Summary content here. 🎯
-
-Detailed content follows...''';
-
-      final aiResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: responseWithTldr,
-          type: AiResponseType.taskSummary,
-        ),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: ExpandableAiResponseSummary(
-            aiResponse,
-            linkedFromId: 'test-id',
-          ),
-        ),
-      );
-
-      // Find the RotationTransition widget that contains the expand icon
-      final rotationTransition = tester.widget<RotationTransition>(
-        find
-            .ancestor(
-              of: find.byIcon(Icons.expand_more),
-              matching: find.byType(RotationTransition),
-            )
-            .first,
-      );
-
-      // Initially should have rotation 0
-      expect(rotationTransition.turns.value, 0.0);
-
-      // Tap to expand
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pump();
-      await tester.pump(
-          const Duration(milliseconds: 350)); // Wait for animation to complete
-
-      // After expansion, should be rotated (0.5 = 180 degrees)
-      final rotationTransitionExpanded = tester.widget<RotationTransition>(
-        find
-            .ancestor(
-              of: find.byIcon(Icons.expand_more),
-              matching: find.byType(RotationTransition),
-            )
-            .first,
-      );
-      // Check that the animation value has changed (might not be exactly 0.5 due to animation)
-      expect(rotationTransitionExpanded.turns.value, greaterThan(0.4));
-      expect(rotationTransitionExpanded.turns.value, lessThanOrEqualTo(0.5));
-
-      // Tap to collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pump();
-      await tester.pump(
-          const Duration(milliseconds: 350)); // Wait for animation to complete
-
-      // Should be back to 0
-      final rotationTransitionCollapsed = tester.widget<RotationTransition>(
-        find
-            .ancestor(
-              of: find.byIcon(Icons.expand_more),
-              matching: find.byType(RotationTransition),
-            )
-            .first,
-      );
-      expect(rotationTransitionCollapsed.turns.value, 0.0);
-    }); */
 
     testWidgets('handles response without TLDR format', (tester) async {
       const responseWithoutTldr = '''
-# Task Title
-
-This is the first paragraph of content without TLDR formatting.
-It should still be shown as the collapsed content.
+This is just the first paragraph of content.
 
 Achieved results:
 ✅ Some work done
@@ -240,70 +162,31 @@ Remaining steps:
         ),
       );
 
-      // First paragraph should be visible (check GptMarkdown content)
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data.contains('first paragraph'), true);
+      // First paragraph should be visible
+      expect(find.textContaining('first paragraph'), findsOneWidget);
 
       // Rest should not be visible (initially collapsed)
-      expect(gptMarkdown.data.contains('Achieved results:'), false);
+      expect(find.textContaining('Achieved results:'), findsNothing);
 
       // Expand and verify full content
       await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pump();
-      await tester
-          .pump(const Duration(milliseconds: 350)); // Wait for animation
+      await tester.pump(); // Start the animation
 
-      // Check that the full content is shown in the GptMarkdown widget
-      final expandedGptMarkdown =
-          tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(expandedGptMarkdown.data.contains('Achieved results:'), true);
-      expect(expandedGptMarkdown.data.contains('Some work done'), true);
-    });
+      // Pump a few frames to let the animation progress
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-    testWidgets('opens modal on double tap', (tester) async {
-      const responseWithTldr = '''
-# Task Title
-
-**TLDR:** Test summary content. 🎯
-
-Detailed content...''';
-
-      final aiResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: responseWithTldr,
-          type: AiResponseType.taskSummary,
-        ),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: ExpandableAiResponseSummary(
-            aiResponse,
-            linkedFromId: 'test-id',
-          ),
-        ),
-      );
-
-      // Double tap to open modal
-      await tester.pumpAndSettle();
-      // Find the main content area (not the expand button)
-      final gestureDetector = find.byType(GestureDetector).first;
-      await tester.tap(gestureDetector, warnIfMissed: false);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(gestureDetector, warnIfMissed: false);
-      await tester.pumpAndSettle();
-
-      // Modal should be opened (we can't directly test the modal content
-      // as it's shown in a different route)
+      // Check that the full content is now visible
+      expect(find.textContaining('Achieved results:'), findsOneWidget);
+      expect(find.textContaining('Some work done'), findsOneWidget);
     });
 
     testWidgets('removes H1 title from task summary display', (tester) async {
       const responseWithTitle = '''
-# Implement Authentication System
+# Task Title to be Removed
 
-**TLDR:** Authentication setup is progressing well. 
-Database and login are ready. 
-Focus on password reset next! 💪
+**TLDR:** This summary should be visible. 📋
 
 More content here...''';
 
@@ -324,23 +207,23 @@ More content here...''';
       );
 
       // Title should not be visible
-      expect(find.text('Implement Authentication System'), findsNothing);
-      expect(find.textContaining('# Implement Authentication System'),
-          findsNothing);
+      expect(find.text('Task Title to be Removed'), findsNothing);
+      expect(find.text('# Task Title to be Removed'), findsNothing);
 
       // TLDR should be visible
-      expect(find.textContaining('Authentication setup'), findsOneWidget);
+      expect(find.textContaining('This summary should be visible'),
+          findsOneWidget);
     });
 
     testWidgets('handles TLDR with bold formatting correctly', (tester) async {
       const responseWithBoldTldr = '''
 # Task Title
 
-**TLDR:** **This entire paragraph should be bold.** 
-**Including this line too.** 
-**And this final line with emoji!** 🚀
+**TLDR:** **This entire paragraph should be bold. 
+Including this second line. 
+And this third line with emoji 🎉**
 
-Other content...''';
+Additional content after TLDR...''';
 
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
@@ -358,14 +241,9 @@ Other content...''';
         ),
       );
 
-      // The GptMarkdown widget should be rendering the TLDR content
-      expect(find.byType(GptMarkdown), findsOneWidget);
-
-      // The GptMarkdown widget should contain the TLDR text
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data.contains('TLDR:'), true);
-      expect(
-          gptMarkdown.data.contains('entire paragraph should be bold'), true);
+      // TLDR content should be visible
+      expect(find.textContaining('entire paragraph should be bold'),
+          findsOneWidget);
     });
   });
 }
