@@ -84,13 +84,13 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
                       Expanded(
                         child: Text(
                           widget.title,
-                          style: context.textTheme.titleSmall?.copyWith(
+                          style: context.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: AppTheme.titleFontSize,
                             color: context.colorScheme.onSurface,
                             letterSpacing: AppTheme.letterSpacingTitle,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
