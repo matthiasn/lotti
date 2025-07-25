@@ -74,12 +74,6 @@ class UnifiedAiModal {
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
         onPromptSelected: (prompt, index) {
-          ref.read(
-            triggerNewInferenceProvider(
-              entityId: journalEntity.id,
-              promptId: prompt.id,
-            ),
-          );
           pageIndexNotifier.value = index + 1;
         },
       ),
