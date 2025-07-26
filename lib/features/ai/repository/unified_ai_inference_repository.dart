@@ -76,6 +76,13 @@ class UnifiedAiInferenceRepository {
     final validPrompts = <AiConfigPrompt>[];
 
     for (final config in allPrompts) {
+      // TODO(matthiasn): remove after some deprecation period
+      if (config is AiConfigPrompt &&
+          config.aiResponseType == AiResponseType.actionItemSuggestions) {
+        await ref.read(aiConfigRepositoryProvider).deleteConfig(config.id);
+        ref.invalidateSelf();
+      }
+
       if (config is AiConfigPrompt && !config.archived) {
         validPrompts.add(config);
         activeChecks.add(_isPromptActiveForEntity(config, entity));
@@ -1202,7 +1209,7 @@ class UnifiedAiInferenceRepository {
                   linkedChecklists: [],
                 ),
               ],
-              title: 'to-do',
+              title: 'TODOs',
             );
 
             if (result.success) {

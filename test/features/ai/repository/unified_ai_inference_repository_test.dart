@@ -5483,7 +5483,7 @@ Take into account the following task context:
       verify(() => mockAutoChecklistService.autoCreateChecklist(
             taskId: taskEntity.id,
             suggestions: any(named: 'suggestions'),
-            title: 'to-do',
+            title: 'TODOs',
           )).called(1);
     });
 
