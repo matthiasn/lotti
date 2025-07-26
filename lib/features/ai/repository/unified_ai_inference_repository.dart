@@ -67,15 +67,23 @@ class UnifiedAiInferenceRepository {
     final activeChecks = <Future<bool>>[];
     final validPrompts = <AiConfigPrompt>[];
 
-    for (final config in allPrompts) {
-      // TODO(matthiasn): remove after some deprecation period
-      if (config is AiConfigPrompt &&
-          // ignore: deprecated_member_use_from_same_package
-          config.aiResponseType == AiResponseType.actionItemSuggestions) {
-        await ref.read(aiConfigRepositoryProvider).deleteConfig(config.id);
-        ref.invalidateSelf();
-      }
+    // TODO(matthiasn): remove after some deprecation period
+    final deprecatedConfigs = allPrompts
+        .whereType<AiConfigPrompt>()
+        .where((p) =>
+            // ignore: deprecated_member_use_from_same_package
+            p.aiResponseType == AiResponseType.actionItemSuggestions)
+        .toList();
 
+    if (deprecatedConfigs.isNotEmpty) {
+      final configRepo = ref.read(aiConfigRepositoryProvider);
+      await Future.wait(
+          deprecatedConfigs.map((c) => configRepo.deleteConfig(c.id)));
+      ref.invalidateSelf();
+      return []; // Return early to avoid using stale data. The provider will rebuild.
+    }
+
+    for (final config in allPrompts) {
       if (config is AiConfigPrompt && !config.archived) {
         validPrompts.add(config);
         activeChecks.add(_isPromptActiveForEntity(config, entity));
