@@ -8,6 +8,7 @@ part 'checklist_completion_functions.g.dart';
 class ChecklistCompletionFunctions {
   static const String suggestChecklistCompletion =
       'suggest_checklist_completion';
+  static const String addChecklistItem = 'add_checklist_item';
 
   /// Get all available function definitions for checklist operations
   static List<ChatCompletionTool> getTools() {
@@ -41,6 +42,24 @@ class ChecklistCompletionFunctions {
           },
         ),
       ),
+      const ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: addChecklistItem,
+          description:
+              'Add a new checklist item to the task. If no checklist exists, create a "to-do" checklist first.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'actionItemDescription': {
+                'type': 'string',
+                'description': 'The description of the checklist item to add',
+              },
+            },
+            'required': ['actionItemDescription'],
+          },
+        ),
+      ),
     ];
   }
 }
@@ -62,4 +81,17 @@ enum ChecklistCompletionConfidence {
   high,
   medium,
   low,
+}
+
+/// Response from the add checklist item function
+@freezed
+class AddChecklistItemResult with _$AddChecklistItemResult {
+  const factory AddChecklistItemResult({
+    required String checklistId,
+    required String checklistItemId,
+    required bool checklistCreated,
+  }) = _AddChecklistItemResult;
+
+  factory AddChecklistItemResult.fromJson(Map<String, dynamic> json) =>
+      _$AddChecklistItemResultFromJson(json);
 }

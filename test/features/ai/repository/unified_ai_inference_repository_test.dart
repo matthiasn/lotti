@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -85,6 +86,10 @@ class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeJournalAudio extends Fake implements JournalAudio {}
 
+class FakeChecklistData extends Fake implements ChecklistData {}
+
+class FakeChecklistItemData extends Fake implements ChecklistItemData {}
+
 void main() {
   late UnifiedAiInferenceRepository repository;
   late MockRef mockRef;
@@ -110,6 +115,8 @@ void main() {
     registerFallbackValue(FakeAiResponseData());
     registerFallbackValue(FakeJournalEntity());
     registerFallbackValue(FakeJournalAudio());
+    registerFallbackValue(FakeChecklistData());
+    registerFallbackValue(FakeChecklistItemData());
   });
 
   setUp(() {
@@ -5381,6 +5388,536 @@ Take into account the following task context:
           ]),
         );
       });
+    });
+  });
+
+  group('Add checklist item tool calls', () {
+    test('creates new checklist when none exists', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: [], // No existing checklists
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Mock auto checklist creation
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'to-do',
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'new-checklist-id',
+            error: null,
+          ));
+
+      // Create stream with add_checklist_item tool call
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'add_checklist_item',
+                arguments: '{"actionItemDescription":"Review documentation"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      await repository.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify auto checklist creation was called
+      verify(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'to-do',
+          )).called(1);
+    });
+
+    test('adds item to existing checklist', () async {
+      const existingChecklistId = 'existing-checklist-id';
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: [existingChecklistId], // Has existing checklist
+        ),
+      );
+
+      final existingChecklist = Checklist(
+        meta: _createMetadata(id: existingChecklistId),
+        data: ChecklistData(
+          title: 'Existing Checklist',
+          linkedChecklistItems: ['item-1', 'item-2'],
+          linkedTasks: [taskEntity.id],
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Mock journal repository for fetching existing checklist
+      when(() => mockJournalRepo.getJournalEntityById(existingChecklistId))
+          .thenAnswer((_) async => existingChecklist);
+
+      // Mock checklist repository for creating item
+      final newChecklistItem = ChecklistItem(
+        meta: _createMetadata(id: 'new-item-id'),
+        data: const ChecklistItemData(
+          title: 'New checklist item',
+          isChecked: false,
+          linkedChecklists: [existingChecklistId],
+        ),
+      );
+
+      when(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: existingChecklistId,
+            title: 'New checklist item',
+            isChecked: false,
+            categoryId: taskEntity.meta.categoryId,
+          )).thenAnswer((_) async => newChecklistItem);
+
+      // Create stream with add_checklist_item tool call
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'add_checklist_item',
+                arguments: '{"actionItemDescription":"New checklist item"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      await repository.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify item was created using atomic method
+      verify(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: existingChecklistId,
+            title: 'New checklist item',
+            isChecked: false,
+            categoryId: taskEntity.meta.categoryId,
+          )).called(1);
+    });
+  });
+
+  group('Auto-check high confidence suggestions', () {
+    test('automatically checks items with high confidence', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: ['checklist-1'],
+        ),
+      );
+
+      final checklistItem = ChecklistItem(
+        meta: _createMetadata(id: 'item-1'),
+        data: const ChecklistItemData(
+          title: 'Test item',
+          isChecked: false,
+          linkedChecklists: ['checklist-1'],
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Mock getting the checklist item
+      when(() => mockJournalRepo.getJournalEntityById('item-1'))
+          .thenAnswer((_) async => checklistItem);
+
+      // Mock updating the checklist item
+      when(() => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(named: 'data'),
+            taskId: taskEntity.id,
+          )).thenAnswer((_) async => true);
+
+      // Create stream with high confidence suggestion
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'suggest_checklist_completion',
+                arguments:
+                    '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      // Mock the checklist completion service
+      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
+      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
+          .thenReturn(MockChecklistCompletionService(
+        onAddSuggestions: checklistCompletionSuggestions.addAll,
+      ));
+
+      await repository.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify the item was updated to be checked
+      verify(() => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(
+                named: 'data',
+                that: isA<ChecklistItemData>().having(
+                  (data) => data.isChecked,
+                  'isChecked',
+                  true,
+                )),
+            taskId: taskEntity.id,
+          )).called(1);
+    });
+
+    test('does not auto-check items with medium or low confidence', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: ['checklist-1'],
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Create stream with medium confidence suggestion
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'suggest_checklist_completion',
+                arguments:
+                    '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      // Mock the checklist completion service
+      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
+      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
+          .thenReturn(MockChecklistCompletionService(
+        onAddSuggestions: checklistCompletionSuggestions.addAll,
+      ));
+
+      await repository.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify no update was made
+      verifyNever(() => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ));
+    });
+
+    test('does not update already checked items', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: ['checklist-1'],
+        ),
+      );
+
+      final alreadyCheckedItem = ChecklistItem(
+        meta: _createMetadata(id: 'item-3'),
+        data: const ChecklistItemData(
+          title: 'Already checked item',
+          isChecked: true, // Already checked
+          linkedChecklists: ['checklist-1'],
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Mock getting the already checked item
+      when(() => mockJournalRepo.getJournalEntityById('item-3'))
+          .thenAnswer((_) async => alreadyCheckedItem);
+
+      // Create stream with high confidence suggestion for already checked item
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'suggest_checklist_completion',
+                arguments:
+                    '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      // Mock the checklist completion service
+      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
+      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
+          .thenReturn(MockChecklistCompletionService(
+        onAddSuggestions: checklistCompletionSuggestions.addAll,
+      ));
+
+      await repository.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify no update was made since item was already checked
+      verifyNever(() => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ));
     });
   });
 }

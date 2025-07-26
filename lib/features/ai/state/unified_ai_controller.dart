@@ -46,6 +46,19 @@ class UnifiedAiController extends _$UnifiedAiController {
       }
       final promptConfig = config;
 
+      // Reset the inference status to idle before starting
+      ref
+          .read(
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: promptConfig.aiResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
+
+      // Clear any previous progress message
+      state = '';
+
       await ref.read(unifiedAiInferenceRepositoryProvider).runInference(
             entityId: entityId,
             promptConfig: promptConfig,

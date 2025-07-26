@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -715,6 +717,280 @@ void main() {
           exception,
           domain: 'persistence_logic',
           subDomain: 'updateChecklistItem',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('addItemToChecklist', () {
+    test('successfully creates item and updates checklist atomically',
+        () async {
+      // Arrange
+      const checklistId = 'checklist-id';
+      const title = 'New Item';
+      const isChecked = false;
+      const categoryId = 'category-id';
+
+      final checklist = Checklist(
+        meta: Metadata(
+          id: checklistId,
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: const ChecklistData(
+          title: 'Test Checklist',
+          linkedChecklistItems: ['existing-item-1', 'existing-item-2'],
+          linkedTasks: ['task-1'],
+        ),
+      );
+
+      final newItem = ChecklistItem(
+        meta: Metadata(
+          id: 'new-item-id',
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: const ChecklistItemData(
+          title: title,
+          isChecked: isChecked,
+          linkedChecklists: [checklistId],
+        ),
+      );
+
+      when(() => mockPersistenceLogic.createMetadata())
+          .thenAnswer((_) async => newItem.meta);
+      when(() => mockPersistenceLogic.createDbEntity(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+      when(() => mockPersistenceLogic.updateMetadata(any()))
+          .thenAnswer((_) async => checklist.meta.copyWith(
+                updatedAt: DateTime.now(),
+              ));
+      when(() => mockPersistenceLogic.updateDbEntity(any()))
+          .thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.addItemToChecklist(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      // Assert
+      expect(result, isNotNull);
+      expect(result!.data.title, equals(title));
+      expect(result.data.isChecked, equals(isChecked));
+
+      // Verify that the checklist was updated with the new item
+      final capturedChecklist = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured.first as Checklist;
+
+      expect(
+        capturedChecklist.data.linkedChecklistItems,
+        equals(['existing-item-1', 'existing-item-2', 'new-item-id']),
+      );
+    });
+
+    test('returns null when checklist not found', () async {
+      // Arrange
+      const checklistId = 'non-existent-checklist-id';
+      const title = 'New Item';
+      const isChecked = false;
+      const categoryId = 'category-id';
+
+      final newItem = ChecklistItem(
+        meta: Metadata(
+          id: 'new-item-id',
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: const ChecklistItemData(
+          title: title,
+          isChecked: isChecked,
+          linkedChecklists: [checklistId],
+        ),
+      );
+
+      when(() => mockPersistenceLogic.createMetadata())
+          .thenAnswer((_) async => newItem.meta);
+      when(() => mockPersistenceLogic.createDbEntity(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => null);
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.addItemToChecklist(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      // Assert
+      expect(result, isNull);
+      verify(
+        () => mockLoggingService.captureException(
+          'Entity is not a checklist',
+          domain: 'persistence_logic',
+          subDomain: 'addItemToChecklist',
+        ),
+      ).called(1);
+    });
+
+    test('returns null when entity is not a checklist', () async {
+      // Arrange
+      const checklistId = 'task-id';
+      const title = 'New Item';
+      const isChecked = false;
+      const categoryId = 'category-id';
+
+      final task = Task(
+        meta: Metadata(
+          id: checklistId,
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final newItem = ChecklistItem(
+        meta: Metadata(
+          id: 'new-item-id',
+          categoryId: categoryId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+          utcOffset: 0,
+          vectorClock: const VectorClock({}),
+        ),
+        data: const ChecklistItemData(
+          title: title,
+          isChecked: isChecked,
+          linkedChecklists: [checklistId],
+        ),
+      );
+
+      when(() => mockPersistenceLogic.createMetadata())
+          .thenAnswer((_) async => newItem.meta);
+      when(() => mockPersistenceLogic.createDbEntity(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => task);
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.addItemToChecklist(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      // Assert
+      expect(result, isNull);
+      verify(
+        () => mockLoggingService.captureException(
+          'Entity is not a checklist',
+          domain: 'persistence_logic',
+          subDomain: 'addItemToChecklist',
+        ),
+      ).called(1);
+    });
+
+    test('handles exceptions gracefully', () async {
+      // Arrange
+      const checklistId = 'checklist-id';
+      const title = 'New Item';
+      const isChecked = false;
+      const categoryId = 'category-id';
+
+      final exception = Exception('Test exception');
+
+      when(() => mockPersistenceLogic.createMetadata()).thenThrow(exception);
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      // Act
+      final result = await repository.addItemToChecklist(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      // Assert
+      expect(result, isNull);
+      verify(
+        () => mockLoggingService.captureException(
+          exception,
+          domain: 'persistence_logic',
+          subDomain: 'createChecklistEntry',
           stackTrace: any(named: 'stackTrace'),
         ),
       ).called(1);
