@@ -5722,11 +5722,13 @@ Take into account the following task context:
       // Verify the item was updated to be checked
       verify(() => mockChecklistRepo.updateChecklistItem(
             checklistItemId: 'item-1',
-            data: any(named: 'data', that: isA<ChecklistItemData>().having(
-              (data) => data.isChecked,
-              'isChecked',
-              true,
-            )),
+            data: any(
+                named: 'data',
+                that: isA<ChecklistItemData>().having(
+                  (data) => data.isChecked,
+                  'isChecked',
+                  true,
+                )),
             taskId: taskEntity.id,
           )).called(1);
     });
