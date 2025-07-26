@@ -189,7 +189,6 @@ void main() {
           testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark));
     });
 
-
     testWidgets('normal mode uses standard sizes', (tester) async {
       const testLabel = 'On Hold';
       const testColor = Colors.red;

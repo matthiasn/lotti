@@ -76,7 +76,7 @@ Future<void> registerSingletons() async {
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 
   // Check and run maintenance task to remove deprecated action item suggestions
-  await _checkAndRemoveActionItemSuggestions();
+  unawaited(_checkAndRemoveActionItemSuggestions());
 }
 
 Future<void> _checkAndRemoveActionItemSuggestions() async {
