@@ -32,6 +32,7 @@ void main() {
       const responseTypes = [
         AiResponseType.taskSummary,
         AiResponseType.imageAnalysis,
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.actionItemSuggestions,
         AiResponseType.audioTranscription,
       ];

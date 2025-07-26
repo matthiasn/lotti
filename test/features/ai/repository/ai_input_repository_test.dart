@@ -11,9 +11,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
@@ -663,47 +661,6 @@ void main() {
         ).thenAnswer((_) async => null);
 
         // Act - omit optional parameters
-        await repository.createAiResponseEntry(
-          data: testData,
-          start: testStart,
-        );
-
-        // Assert
-        verify(
-          () => mockPersistenceLogic.createAiResponseEntry(
-            data: testData,
-            dateFrom: testStart,
-          ),
-        ).called(1);
-      });
-
-      test('handles response with suggested action items', () async {
-        // Arrange
-        const testData = AiResponseData(
-          model: 'test-model',
-          systemMessage: 'test-system-message',
-          prompt: 'test-prompt',
-          thoughts: 'test-thoughts',
-          response: 'test-response',
-          suggestedActionItems: [
-            AiActionItem(title: 'Action 1', completed: false),
-            AiActionItem(title: 'Action 2', completed: true),
-          ],
-          type: AiResponseType.actionItemSuggestions,
-        );
-
-        final testStart = DateTime(2023);
-
-        when(
-          () => mockPersistenceLogic.createAiResponseEntry(
-            data: any(named: 'data'),
-            dateFrom: any(named: 'dateFrom'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Act
         await repository.createAiResponseEntry(
           data: testData,
           start: testStart,

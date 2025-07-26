@@ -26,6 +26,8 @@ const httpStatusRequestTimeout = 408;
 
 enum AiResponseType {
   @JsonValue(actionItemSuggestionsConst)
+  @Deprecated('no longer supported')
+  // TODO(matthiasn): remove after some deprecation period
   actionItemSuggestions,
   @JsonValue(taskSummaryConst)
   taskSummary,
@@ -39,6 +41,7 @@ extension AiResponseTypeDisplay on AiResponseType {
   String localizedName(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     switch (this) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.actionItemSuggestions:
         return l10n.aiResponseTypeActionItemSuggestions;
       case AiResponseType.taskSummary:
@@ -55,6 +58,7 @@ extension AiResponseTypeDisplay on AiResponseType {
     switch (this) {
       case AiResponseType.taskSummary:
         return Icons.summarize_outlined;
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.actionItemSuggestions:
         return Icons.checklist_outlined;
       case AiResponseType.imageAnalysis:

@@ -161,6 +161,7 @@ void main() {
   group('InferenceRunningController', () {
     const testId = 'test-id';
     const responseType1 = AiResponseType.taskSummary;
+    // ignore: deprecated_member_use_from_same_package
     const responseType2 = AiResponseType.actionItemSuggestions;
     final responseTypes = {responseType1, responseType2};
 

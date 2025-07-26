@@ -240,7 +240,7 @@ void main() {
       expect(state!.isDirty, isFalse);
 
       // Change aiResponseType
-      controller.aiResponseTypeChanged(AiResponseType.actionItemSuggestions);
+      controller.aiResponseTypeChanged(AiResponseType.imageAnalysis);
 
       // Should be dirty now
       state = container

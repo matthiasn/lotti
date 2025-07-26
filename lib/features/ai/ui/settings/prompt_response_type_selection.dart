@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/prompt_form_state.dart';
@@ -130,13 +131,19 @@ class _ResponseTypeSelectionModalState
 
   @override
   Widget build(BuildContext context) {
+    final options = AiResponseType.values
+        // TODO(matthiasn): remove after some deprecation period
+        // ignore: deprecated_member_use_from_same_package
+        .whereNot((option) => option == AiResponseType.actionItemSuggestions)
+        .toList();
+
     return SelectionModalContent(
       children: [
         // Response type options
         SelectionOptionsList(
-          itemCount: AiResponseType.values.length,
+          itemCount: options.length,
           itemBuilder: (context, index) {
-            final type = AiResponseType.values[index];
+            final type = options[index];
             final isSelected = _selectedType == type;
 
             return SelectionOption(
@@ -163,6 +170,7 @@ class _ResponseTypeSelectionModalState
   /// Returns appropriate icon for each response type
   IconData _getTypeIcon(AiResponseType type) {
     switch (type) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.actionItemSuggestions:
         return Icons.lightbulb_outline_rounded;
       case AiResponseType.taskSummary:
