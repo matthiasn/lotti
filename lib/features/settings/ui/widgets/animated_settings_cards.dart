@@ -11,11 +11,12 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
     this.onTap,
     this.subtitle,
     this.trailing,
-    this.isCompact = false,
     this.showChevron = true,
     this.iconColor,
     this.backgroundColor,
     this.borderColor,
+    this.maxTitleLines = 3,
+    this.maxSubtitleLines = 4,
     super.key,
   });
 
@@ -24,11 +25,12 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
   final IconData icon;
   final Widget? trailing;
   final VoidCallback? onTap;
-  final bool isCompact;
   final bool showChevron;
   final Color? iconColor;
   final Color? backgroundColor;
   final Color? borderColor;
+  final int maxTitleLines;
+  final int maxSubtitleLines;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
       disableShadow: true, // ModernBaseCard already has its own shadow
       iconBuilder: (context, iconAnimation, {required isPressed}) {
         return Positioned(
-          left: isCompact ? 12 : 16,
+          left: 16,
           top: 0,
           bottom: 0,
           child: Align(
@@ -46,7 +48,6 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
               scale: iconAnimation.value,
               child: ModernIconContainer(
                 icon: icon,
-                isCompact: isCompact,
                 iconColor: iconColor,
               ),
             ),
@@ -56,27 +57,24 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
       child: ModernBaseCard(
         backgroundColor: backgroundColor,
         borderColor: borderColor,
-        isCompact: isCompact,
         child: ModernCardContent(
           title: title,
           subtitle: subtitle,
           leading: ModernIconContainer(
             icon: icon,
-            isCompact: isCompact,
             iconColor: iconColor,
           ),
-          isCompact: isCompact,
+          maxTitleLines: maxTitleLines,
+          maxSubtitleLines: maxSubtitleLines,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (trailing != null) trailing!,
               if (showChevron) ...[
-                if (trailing != null) SizedBox(width: isCompact ? 4 : 8),
+                if (trailing != null) const SizedBox(width: 8),
                 Icon(
                   Icons.chevron_right_rounded,
-                  size: isCompact
-                      ? AppTheme.chevronSizeCompact
-                      : AppTheme.chevronSize,
+                  size: AppTheme.chevronSize,
                   color: context.colorScheme.onSurfaceVariant
                       .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
                 ),

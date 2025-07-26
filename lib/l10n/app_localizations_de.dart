@@ -1047,6 +1047,21 @@ class AppLocalizationsDe extends AppLocalizations {
       'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
+  String get maintenanceRemoveActionItemSuggestions =>
+      'Remove deprecated AI suggestions';
+
+  @override
+  String get maintenanceRemoveActionItemSuggestionsDescription =>
+      'Remove old action item suggestions';
+
+  @override
+  String get maintenanceRemoveActionItemSuggestionsMessage =>
+      'Are you sure you want to remove all deprecated action item suggestions? This will permanently delete these entries.';
+
+  @override
+  String get maintenanceRemoveActionItemSuggestionsConfirm => 'YES, REMOVE';
+
+  @override
   String get maintenanceReSync => 'Nachrichten erneut synchronisieren';
 
   @override

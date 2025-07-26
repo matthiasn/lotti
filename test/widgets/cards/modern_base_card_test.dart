@@ -193,33 +193,6 @@ void main() {
       expect(find.byType(InkWell), findsNothing);
     });
 
-    testWidgets('compact mode uses smaller padding', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ModernBaseCard(
-            isCompact: true,
-            child: Text('Test Content'),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(Material),
-              matching: find.byType(Container),
-            )
-            .last,
-      );
-
-      expect(
-        container.padding,
-        const EdgeInsets.all(AppTheme.cardPaddingCompact),
-      );
-    });
-
     testWidgets('normal mode uses standard padding', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

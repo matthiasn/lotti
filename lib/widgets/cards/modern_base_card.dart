@@ -17,7 +17,6 @@ class ModernBaseCard extends StatelessWidget {
     this.gradient,
     this.margin,
     this.padding,
-    this.isCompact = false,
     this.isEnhanced = false,
     super.key,
   });
@@ -29,7 +28,6 @@ class ModernBaseCard extends StatelessWidget {
   final LinearGradient? gradient;
   final EdgeInsets? margin;
   final EdgeInsets? padding;
-  final bool isCompact;
   final bool isEnhanced;
 
   @override
@@ -110,22 +108,13 @@ class ModernBaseCard extends StatelessWidget {
                 highlightColor: context.colorScheme.primary
                     .withValues(alpha: AppTheme.alphaPrimaryHighlight),
                 child: Container(
-                  padding: padding ??
-                      EdgeInsets.all(
-                        isCompact
-                            ? AppTheme.cardPaddingCompact
-                            : AppTheme.cardPadding,
-                      ),
+                  padding:
+                      padding ?? const EdgeInsets.all(AppTheme.cardPadding),
                   child: child,
                 ),
               )
             : Container(
-                padding: padding ??
-                    EdgeInsets.all(
-                      isCompact
-                          ? AppTheme.cardPaddingCompact
-                          : AppTheme.cardPadding,
-                    ),
+                padding: padding ?? const EdgeInsets.all(AppTheme.cardPadding),
                 child: child,
               ),
       ),
@@ -141,7 +130,6 @@ class EnhancedModernCard extends StatelessWidget {
     this.gradient,
     this.margin,
     this.padding,
-    this.isCompact = false,
     super.key,
   });
 
@@ -150,7 +138,6 @@ class EnhancedModernCard extends StatelessWidget {
   final LinearGradient? gradient;
   final EdgeInsets? margin;
   final EdgeInsets? padding;
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +146,6 @@ class EnhancedModernCard extends StatelessWidget {
       gradient: gradient ?? GradientThemes.primaryGradient(context),
       margin: margin,
       padding: padding,
-      isCompact: isCompact,
       isEnhanced: true,
       child: child,
     );

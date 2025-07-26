@@ -205,7 +205,6 @@ void main() {
               child: AiConfigCard(
                 config: testProvider,
                 onTap: () {},
-                isCompact: true,
               ),
             ),
           ),

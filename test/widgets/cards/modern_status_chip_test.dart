@@ -189,47 +189,6 @@ void main() {
           testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark));
     });
 
-    testWidgets('compact mode uses smaller sizes and padding', (tester) async {
-      const testLabel = 'Groomed';
-      const testColor = Colors.lightGreenAccent;
-      const testIcon = Icons.check;
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ModernStatusChip(
-            label: testLabel,
-            color: testColor,
-            icon: testIcon,
-            isCompact: true,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Check padding
-      final container = tester.widget<Container>(find.byType(Container));
-      expect(
-          container.padding,
-          const EdgeInsets.symmetric(
-            horizontal: AppTheme.statusIndicatorPaddingHorizontalCompact,
-            vertical: AppTheme.statusIndicatorPaddingVertical,
-          ));
-
-      // Check border radius
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.borderRadius,
-          BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall));
-
-      // Check icon size
-      final icon = tester.widget<Icon>(find.byIcon(testIcon));
-      expect(icon.size, AppTheme.statusIndicatorIconSizeCompact);
-
-      // Check text size
-      final text = tester.widget<Text>(find.text(testLabel));
-      expect(text.style?.fontSize, AppTheme.statusIndicatorFontSizeCompact);
-    });
-
     testWidgets('normal mode uses standard sizes', (tester) async {
       const testLabel = 'On Hold';
       const testColor = Colors.red;
@@ -241,7 +200,6 @@ void main() {
             label: testLabel,
             color: testColor,
             icon: testIcon,
-            // isCompact defaults to false
           ),
         ),
       );

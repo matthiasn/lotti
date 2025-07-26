@@ -44,14 +44,12 @@ class AiConfigCard extends ConsumerWidget {
     required this.config,
     required this.onTap,
     this.showCapabilities = false,
-    this.isCompact = false,
     super.key,
   });
 
   final AiConfig config;
   final VoidCallback onTap;
   final bool showCapabilities;
-  final bool isCompact;
 
   /// Determines the model family from a model configuration
   ///
@@ -138,8 +136,7 @@ class AiConfigCard extends ConsumerWidget {
           highlightColor: context.colorScheme.primary
               .withValues(alpha: AppTheme.alphaPrimaryHighlight),
           child: Container(
-            padding: EdgeInsets.all(
-                isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding),
+            padding: const EdgeInsets.all(AppTheme.cardPadding),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
             ),
@@ -147,12 +144,8 @@ class AiConfigCard extends ConsumerWidget {
               children: [
                 // Icon with premium container
                 Container(
-                  width: isCompact
-                      ? AppTheme.iconContainerSizeCompact
-                      : AppTheme.iconContainerSize,
-                  height: isCompact
-                      ? AppTheme.iconContainerSizeCompact
-                      : AppTheme.iconContainerSize,
+                  width: AppTheme.iconContainerSize,
+                  height: AppTheme.iconContainerSize,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -173,18 +166,13 @@ class AiConfigCard extends ConsumerWidget {
                   ),
                   child: Icon(
                     _getConfigIcon(),
-                    size: isCompact
-                        ? AppTheme.iconSizeCompact
-                        : AppTheme.iconSize,
+                    size: AppTheme.iconSize,
                     color: context.colorScheme.primary
                         .withValues(alpha: AppTheme.alphaPrimaryIcon),
                   ),
                 ),
 
-                SizedBox(
-                    width: isCompact
-                        ? AppTheme.spacingMedium
-                        : AppTheme.spacingLarge),
+                const SizedBox(width: AppTheme.spacingLarge),
 
                 // Config info with enhanced typography
                 Expanded(
@@ -198,12 +186,10 @@ class AiConfigCard extends ConsumerWidget {
                         style: context.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: AppTheme.letterSpacingTitle,
-                          fontSize: isCompact
-                              ? AppTheme.titleFontSizeCompact
-                              : AppTheme.titleFontSize,
+                          fontSize: AppTheme.titleFontSize,
                           color: context.colorScheme.onSurface,
                         ),
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
 
@@ -215,30 +201,25 @@ class AiConfigCard extends ConsumerWidget {
                         _CompactProviderName(
                           providerId:
                               (config as AiConfigModel).inferenceProviderId,
-                          isCompact: isCompact,
                         ),
                       ],
 
                       // Description
                       if (config.description != null &&
                           config.description!.isNotEmpty) ...[
-                        SizedBox(
-                            height: isCompact
-                                ? AppTheme.spacingBetweenTitleAndSubtitleCompact
-                                : AppTheme.spacingBetweenTitleAndSubtitle),
+                        const SizedBox(
+                            height: AppTheme.spacingBetweenTitleAndSubtitle),
                         Text(
                           config.description!,
                           style: context.textTheme.bodySmall?.copyWith(
                             color: context.colorScheme.onSurfaceVariant
                                 .withValues(
                                     alpha: AppTheme.alphaSurfaceVariant),
-                            fontSize: isCompact
-                                ? AppTheme.subtitleFontSizeCompact
-                                : AppTheme.subtitleFontSize,
+                            fontSize: AppTheme.subtitleFontSize,
                             height: AppTheme.lineHeightSubtitle,
                             letterSpacing: AppTheme.letterSpacingSubtitle,
                           ),
-                          maxLines: isCompact ? 1 : 2,
+                          maxLines: 4,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -248,7 +229,6 @@ class AiConfigCard extends ConsumerWidget {
                         const SizedBox(height: AppTheme.spacingBetweenElements),
                         _CapabilityIndicators(
                           model: config as AiConfigModel,
-                          isCompact: isCompact,
                         ),
                       ],
                     ],
@@ -258,9 +238,7 @@ class AiConfigCard extends ConsumerWidget {
                 // Chevron
                 Icon(
                   Icons.chevron_right,
-                  size: isCompact
-                      ? AppTheme.chevronSizeCompact
-                      : AppTheme.chevronSize,
+                  size: AppTheme.chevronSize,
                   color: context.colorScheme.onSurfaceVariant
                       .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
                 ),
@@ -315,11 +293,9 @@ class AiConfigCard extends ConsumerWidget {
 class _CompactProviderName extends ConsumerWidget {
   const _CompactProviderName({
     required this.providerId,
-    this.isCompact = false,
   });
 
   final String providerId;
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -329,10 +305,8 @@ class _CompactProviderName extends ConsumerWidget {
       data: (provider) {
         final providerName = provider?.name ?? context.messages.commonUnknown;
         return Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isCompact
-                ? AppTheme.statusIndicatorPaddingHorizontalCompact
-                : AppTheme.statusIndicatorPaddingHorizontal,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.statusIndicatorPaddingHorizontal,
             vertical: AppTheme.statusIndicatorPaddingVertical,
           ),
           decoration: BoxDecoration(
@@ -360,9 +334,7 @@ class _CompactProviderName extends ConsumerWidget {
               color: context.colorScheme.primary
                   .withValues(alpha: AppTheme.alphaPrimaryIcon),
               fontWeight: FontWeight.w600,
-              fontSize: isCompact
-                  ? AppTheme.statusIndicatorFontSizeCompact
-                  : AppTheme.statusIndicatorFontSize,
+              fontSize: AppTheme.statusIndicatorFontSize,
               letterSpacing: AppTheme.letterSpacingTitle,
             ),
             maxLines: 1,
@@ -371,10 +343,8 @@ class _CompactProviderName extends ConsumerWidget {
         );
       },
       loading: () => Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isCompact
-              ? AppTheme.statusIndicatorPaddingHorizontalCompact
-              : AppTheme.statusIndicatorPaddingHorizontal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
           vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
@@ -388,17 +358,13 @@ class _CompactProviderName extends ConsumerWidget {
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.onSurfaceVariant
                 .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
-            fontSize: isCompact
-                ? AppTheme.statusIndicatorFontSizeTiny
-                : AppTheme.statusIndicatorFontSizeCompact,
+            fontSize: AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
       ),
       error: (_, __) => Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isCompact
-              ? AppTheme.statusIndicatorPaddingHorizontalCompact
-              : AppTheme.statusIndicatorPaddingHorizontal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
           vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
@@ -412,9 +378,7 @@ class _CompactProviderName extends ConsumerWidget {
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error
                 .withValues(alpha: AppTheme.alphaErrorText),
-            fontSize: isCompact
-                ? AppTheme.statusIndicatorFontSizeTiny
-                : AppTheme.statusIndicatorFontSizeCompact,
+            fontSize: AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
       ),
@@ -425,17 +389,14 @@ class _CompactProviderName extends ConsumerWidget {
 class _CapabilityIndicators extends StatelessWidget {
   const _CapabilityIndicators({
     required this.model,
-    this.isCompact = false,
   });
 
   final AiConfigModel model;
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing:
-          isCompact ? AppTheme.spacingSmall : AppTheme.spacingBetweenElements,
+      spacing: AppTheme.spacingBetweenElements,
       children: [
         // Text support (always present)
         _buildCapabilityIcon(
@@ -487,12 +448,8 @@ class _CapabilityIndicators extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Container(
-        width: isCompact
-            ? AppTheme.statusIndicatorSizeCompact
-            : AppTheme.statusIndicatorSize,
-        height: isCompact
-            ? AppTheme.statusIndicatorSizeCompact
-            : AppTheme.statusIndicatorSize,
+        width: AppTheme.statusIndicatorSize,
+        height: AppTheme.statusIndicatorSize,
         decoration: BoxDecoration(
           color: isSupported
               ? context.colorScheme.primaryContainer
@@ -504,9 +461,7 @@ class _CapabilityIndicators extends StatelessWidget {
         ),
         child: Icon(
           icon,
-          size: isCompact
-              ? AppTheme.statusIndicatorIconSizeCompact
-              : AppTheme.statusIndicatorIconSize,
+          size: AppTheme.statusIndicatorIconSize,
           color: isSupported
               ? context.colorScheme.primary
               : context.colorScheme.onSurfaceVariant

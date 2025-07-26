@@ -72,7 +72,6 @@ class AppTheme {
 
   // Status indicator constants
   static const double statusIndicatorPaddingHorizontal = 8; // Increased
-  static const double statusIndicatorPaddingHorizontalCompact = 6;
   static const double statusIndicatorPaddingVertical = 3; // Increased
   static const double statusIndicatorBorderRadius = 8; // More rounded
   static const double statusIndicatorBorderRadiusSmall = 6;

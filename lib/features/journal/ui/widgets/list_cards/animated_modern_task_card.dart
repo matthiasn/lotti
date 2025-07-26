@@ -30,10 +30,7 @@ class AnimatedModernTaskCard extends StatelessWidget {
       hoverElevation: 2, // Less elevation for list items
       margin: EdgeInsets.zero, // ModernTaskCard already has its own margins
       disableShadow: true, // ModernTaskCard already has its own shadow
-      child: ModernTaskCard(
-        task: task,
-        isCompact: isCompact,
-      ),
+      child: ModernTaskCard(task: task),
     );
   }
 }

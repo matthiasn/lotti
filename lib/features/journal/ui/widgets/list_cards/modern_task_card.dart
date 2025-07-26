@@ -13,12 +13,10 @@ import 'package:lotti/widgets/cards/index.dart';
 class ModernTaskCard extends StatelessWidget {
   const ModernTaskCard({
     required this.task,
-    this.isCompact = false,
     super.key,
   });
 
   final Task task;
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
@@ -26,19 +24,17 @@ class ModernTaskCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
-      isCompact: isCompact,
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
       ),
       child: ModernCardContent(
         title: task.data.title,
-        isCompact: isCompact,
+        maxTitleLines: 3,
         leading: ModernIconContainer(
-          isCompact: isCompact,
           child: CategoryColorIcon(task.meta.categoryId),
         ),
-        subtitleWidget: !isCompact ? _buildSubtitleRow(context) : null,
+        subtitleWidget: _buildSubtitleRow(context),
         trailing: TimeRecordingIcon(
           taskId: task.meta.id,
           padding: const EdgeInsets.only(left: 8),
@@ -54,7 +50,6 @@ class ModernTaskCard extends StatelessWidget {
           label: _getStatusLabel(context, task.data.status),
           color: _getStatusColor(task.data.status),
           icon: _getStatusIcon(task.data.status),
-          isCompact: isCompact,
         ),
         if (task.data.due != null) ...[
           const SizedBox(width: 8),
