@@ -360,24 +360,6 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsNothing);
     });
 
-    testWidgets('compact mode hides subtitle row', (WidgetTester tester) async {
-      final task = createTestTask();
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: ModernTaskCard(
-            task: task,
-            isCompact: true,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // In compact mode, status chip and progress should not be visible
-      expect(find.byType(ModernStatusChip), findsNothing);
-      expect(find.byType(CompactTaskProgress), findsNothing);
-    });
-
     testWidgets('navigates to task detail on tap', (WidgetTester tester) async {
       final task = createTestTask(id: 'test-task-123');
 
@@ -457,37 +439,6 @@ void main() {
           vertical: AppTheme.cardSpacing / 2,
         ),
       );
-    });
-
-    testWidgets('uses correct compact mode for child widgets',
-        (WidgetTester tester) async {
-      final task = createTestTask();
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: ModernTaskCard(
-            task: task,
-            isCompact: true,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Check that compact mode is passed to child widgets
-      final modernBaseCard = tester.widget<ModernBaseCard>(
-        find.byType(ModernBaseCard),
-      );
-      expect(modernBaseCard.isCompact, true);
-
-      final modernCardContent = tester.widget<ModernCardContent>(
-        find.byType(ModernCardContent),
-      );
-      expect(modernCardContent.isCompact, true);
-
-      final modernIconContainer = tester.widget<ModernIconContainer>(
-        find.byType(ModernIconContainer),
-      );
-      expect(modernIconContainer.isCompact, true);
     });
   });
 }

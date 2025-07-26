@@ -157,25 +157,6 @@ void main() {
       expect(find.text('Test Task Title'), findsOneWidget);
     });
 
-    testWidgets('passes compact mode to underlying card',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: AnimatedModernTaskCard(
-            task: testTask,
-            isCompact: true,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Verify the ModernTaskCard receives the compact flag
-      final modernTaskCard = tester.widget<ModernTaskCard>(
-        find.byType(ModernTaskCard),
-      );
-      expect(modernTaskCard.isCompact, true);
-    });
-
     testWidgets('navigates to task detail on tap', (WidgetTester tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(

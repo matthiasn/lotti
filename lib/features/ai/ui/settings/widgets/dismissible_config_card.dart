@@ -29,7 +29,6 @@ class DismissibleConfigCard<T extends AiConfig> extends ConsumerWidget {
     required this.config,
     required this.onTap,
     this.showCapabilities = false,
-    this.isCompact = false,
     super.key,
   });
 
@@ -41,9 +40,6 @@ class DismissibleConfigCard<T extends AiConfig> extends ConsumerWidget {
 
   /// Whether to show capability indicators (for models)
   final bool showCapabilities;
-
-  /// Whether to use compact card layout
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,7 +58,6 @@ class DismissibleConfigCard<T extends AiConfig> extends ConsumerWidget {
       child: AiConfigCard(
         config: config,
         showCapabilities: showCapabilities,
-        isCompact: isCompact,
         onTap: onTap,
       ),
     );

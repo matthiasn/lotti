@@ -34,7 +34,6 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
     required this.emptyIcon,
     required this.onConfigTap,
     this.showCapabilities = false,
-    this.isCompact = false,
     this.enableSwipeToDelete = true,
     this.onRetry,
     super.key,
@@ -57,9 +56,6 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
 
   /// Whether to show capability indicators (for models)
   final bool showCapabilities;
-
-  /// Whether to use compact card layout
-  final bool isCompact;
 
   /// Whether to enable swipe-to-delete functionality
   final bool enableSwipeToDelete;
@@ -102,7 +98,6 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
               return AiConfigCard(
                 config: config,
                 showCapabilities: showCapabilities,
-                isCompact: isCompact,
                 onTap: () => onConfigTap(config),
               );
             }
@@ -110,7 +105,6 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
             return DismissibleConfigCard(
               config: config,
               showCapabilities: showCapabilities,
-              isCompact: isCompact,
               onTap: () => onConfigTap(config),
             );
           },

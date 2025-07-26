@@ -10,7 +10,6 @@ class ModernStatusChip extends StatelessWidget {
     required this.label,
     required this.color,
     this.icon,
-    this.isCompact = false,
     this.isDark,
     super.key,
   });
@@ -18,7 +17,6 @@ class ModernStatusChip extends StatelessWidget {
   final String label;
   final Color color;
   final IconData? icon;
-  final bool isCompact;
   final bool? isDark;
 
   @override
@@ -41,18 +39,14 @@ class ModernStatusChip extends StatelessWidget {
     );
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact
-            ? AppTheme.statusIndicatorPaddingHorizontalCompact
-            : AppTheme.statusIndicatorPaddingHorizontal,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.statusIndicatorPaddingHorizontal,
         vertical: AppTheme.statusIndicatorPaddingVertical,
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(
-          isCompact
-              ? AppTheme.statusIndicatorBorderRadiusSmall
-              : AppTheme.statusIndicatorBorderRadius,
+          AppTheme.statusIndicatorBorderRadius,
         ),
         border: Border.all(
           color: borderColor,
@@ -65,9 +59,7 @@ class ModernStatusChip extends StatelessWidget {
           if (icon != null) ...[
             Icon(
               icon,
-              size: isCompact
-                  ? AppTheme.statusIndicatorIconSizeCompact
-                  : AppTheme.statusIndicatorIconSize,
+              size: AppTheme.statusIndicatorIconSize,
               color: color.withValues(alpha: AppTheme.alphaPrimaryIcon),
             ),
             const SizedBox(width: 4),
@@ -75,9 +67,7 @@ class ModernStatusChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: isCompact
-                  ? AppTheme.statusIndicatorFontSizeCompact
-                  : AppTheme.statusIndicatorFontSize,
+              fontSize: AppTheme.statusIndicatorFontSize,
               fontWeight: FontWeight.w600,
               color: contentColor,
             ),

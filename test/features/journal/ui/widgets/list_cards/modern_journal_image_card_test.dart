@@ -191,27 +191,6 @@ void main() {
       expect(find.byIcon(MdiIcons.flag), findsOneWidget);
     });
 
-    testWidgets('renders in compact mode', (tester) async {
-      final imageEntry = testImageEntry;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(
-            item: imageEntry,
-            isCompact: true,
-          ),
-        ),
-      );
-
-      expect(find.byType(ModernJournalImageCard), findsOneWidget);
-
-      // Image should be smaller in compact mode
-      final cardImageWidget = tester.widget<CardImageWidget>(
-        find.byType(CardImageWidget),
-      );
-      expect(cardImageWidget.height, 120.0);
-    });
-
     testWidgets('hides deleted entries', (tester) async {
       final deletedEntry = testImageEntry.copyWith(
         meta: testImageEntry.meta.copyWith(
@@ -292,33 +271,6 @@ void main() {
       expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
     });
 
-    testWidgets('shows compact text preview in compact mode', (tester) async {
-      final imageEntry = testImageEntry.copyWith(
-        entryText: const EntryText(
-          plainText:
-              'This is a test entry with some text content that should be truncated',
-          markdown:
-              'This is a test entry with some text content that should be truncated',
-        ),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(
-            item: imageEntry,
-            isCompact: true,
-          ),
-        ),
-      );
-
-      // Text should be limited to 3 lines in compact mode
-      final textWidget = tester.widget<Text>(
-        find.text(imageEntry.entryText!.plainText),
-      );
-      expect(textWidget.maxLines, 3);
-      expect(textWidget.overflow, TextOverflow.ellipsis);
-    });
-
     testWidgets('uses correct border radius for image', (tester) async {
       final imageEntry = testImageEntry;
 
@@ -364,44 +316,6 @@ void main() {
       // Verify that maxHeight is not infinity (our bug fix)
       expect(textViewer.maxHeight, isNot(double.infinity));
       expect(textViewer.maxHeight, greaterThan(0));
-    });
-
-    testWidgets('calculates different maxHeight for compact vs regular mode',
-        (tester) async {
-      final imageEntry = testImageEntry.copyWith(
-        entryText: const EntryText(
-          plainText: 'Test content',
-          markdown: 'Test content',
-        ),
-      );
-
-      // Test regular mode
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(item: imageEntry),
-        ),
-      );
-
-      final regularTextViewer = tester.widget<TextViewerWidgetNonScrollable>(
-        find.byType(TextViewerWidgetNonScrollable),
-      );
-      final regularMaxHeight = regularTextViewer.maxHeight;
-
-      // Test compact mode
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(item: imageEntry, isCompact: true),
-        ),
-      );
-
-      // In compact mode, text is handled differently (plain Text widget, not TextViewer)
-      // So we expect no TextViewerWidgetNonScrollable in compact mode
-      expect(find.byType(TextViewerWidgetNonScrollable), findsNothing);
-      expect(find.byType(Text), findsWidgets);
-
-      // Verify regular mode had a reasonable height
-      expect(regularMaxHeight, greaterThan(0));
-      expect(regularMaxHeight, lessThan(200)); // Should be reasonable height
     });
   });
 }

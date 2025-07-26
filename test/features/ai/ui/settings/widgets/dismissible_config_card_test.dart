@@ -43,7 +43,6 @@ void main() {
     Widget createWidget<T extends AiConfig>({
       required T config,
       bool showCapabilities = false,
-      bool isCompact = false,
     }) {
       return ProviderScope(
         overrides: [
@@ -62,7 +61,6 @@ void main() {
                   config: config,
                   onTap: () => tapCalled = true,
                   showCapabilities: showCapabilities,
-                  isCompact: isCompact,
                 ),
               ],
             ),
@@ -138,19 +136,6 @@ void main() {
       expect(card.showCapabilities, isTrue);
     });
 
-    testWidgets('passes isCompact to AiConfigCard',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        config: testProvider,
-        isCompact: true,
-      ));
-
-      final card = tester.widget<AiConfigCard>(
-        find.byType(AiConfigCard),
-      );
-      expect(card.isCompact, isTrue);
-    });
-
     testWidgets('works with different config types - provider',
         (WidgetTester tester) async {
       await tester.pumpWidget(createWidget(config: testProvider));
@@ -186,10 +171,7 @@ void main() {
       await tester.pump();
 
       // Trigger rebuild by updating widget
-      await tester.pumpWidget(createWidget(
-        config: testProvider,
-        isCompact: true,
-      ));
+      await tester.pumpWidget(createWidget(config: testProvider));
 
       // Card should still be visible
       expect(find.byType(AiConfigCard), findsOneWidget);

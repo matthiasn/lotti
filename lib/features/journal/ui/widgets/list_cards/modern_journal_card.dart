@@ -61,7 +61,6 @@ class ModernJournalCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
-      isCompact: isCompact,
       margin: EdgeInsets.symmetric(
         horizontal: removeHorizontalMargin ? 0 : AppTheme.spacingLarge,
         vertical: AppTheme.cardSpacing / 2,

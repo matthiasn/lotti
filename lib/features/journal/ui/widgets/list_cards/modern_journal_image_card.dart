@@ -17,7 +17,6 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class ModernJournalImageCard extends StatelessWidget {
   const ModernJournalImageCard({
     required this.item,
-    this.isCompact = false,
     super.key,
   });
 
@@ -33,7 +32,6 @@ class ModernJournalImageCard extends StatelessWidget {
   static const double compactSpacingAfterHeader = 4;
 
   final JournalImage item;
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +43,6 @@ class ModernJournalImageCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
-      isCompact: isCompact,
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
@@ -57,10 +54,8 @@ class ModernJournalImageCard extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     // Image dimensions
-    const compactImageHeight = 120;
-    const regularImageHeight = 160;
+    const imageHeight = 160;
 
-    final imageHeight = isCompact ? compactImageHeight : regularImageHeight;
     final maxWidth =
         max(MediaQuery.of(context).size.width / 2, minImageSectionWidth) -
             cardHorizontalPadding;
@@ -88,9 +83,7 @@ class ModernJournalImageCard extends StatelessWidget {
         // Content section
         Expanded(
           child: Container(
-            padding: EdgeInsets.all(
-              isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding,
-            ),
+            padding: const EdgeInsets.all(AppTheme.cardPadding),
             height: imageHeight.toDouble(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,22 +91,14 @@ class ModernJournalImageCard extends StatelessWidget {
                 // Header with date and icons
                 _buildHeader(context),
 
-                if (!isCompact) ...[
-                  const SizedBox(height: 8),
-                  // Tags
-                  TagsViewWidget(item: item),
-                  const SizedBox(height: 8),
-                  // Text content
-                  Expanded(
-                    child: _buildTextContent(context),
-                  ),
-                ] else ...[
-                  const SizedBox(height: 4),
-                  // Compact text preview
-                  Expanded(
-                    child: _buildCompactTextContent(context),
-                  ),
-                ],
+                const SizedBox(height: 8),
+                // Tags
+                TagsViewWidget(item: item),
+                const SizedBox(height: 8),
+                // Text content
+                Expanded(
+                  child: _buildTextContent(context),
+                ),
               ],
             ),
           ),
@@ -136,9 +121,7 @@ class ModernJournalImageCard extends StatelessWidget {
                   fontFeatures: [const FontFeature.tabularFigures()],
                   color: context.colorScheme.onSurfaceVariant
                       .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                  fontSize: isCompact
-                      ? AppTheme.subtitleFontSizeCompact
-                      : AppTheme.subtitleFontSize,
+                  fontSize: AppTheme.subtitleFontSize,
                 ),
               ),
               const SizedBox(width: 8),
@@ -191,40 +174,19 @@ class ModernJournalImageCard extends StatelessWidget {
     }
 
     // Calculate available height based on image height and padding
-    const compactImageHeight = 120;
-    const regularImageHeight = 160;
-    final imageHeight = isCompact ? compactImageHeight : regularImageHeight;
-    final padding =
-        isCompact ? AppTheme.cardPaddingCompact : AppTheme.cardPadding;
+    const imageHeight = 160;
+    const padding = AppTheme.cardPadding;
     // Calculate reserved height for header and spacing
-    final reservedHeight = isCompact
-        ? headerHeight + compactSpacingAfterHeader
-        : headerHeight + spacingAfterHeader + tagsHeight + spacingAfterTags;
+    const reservedHeight =
+        headerHeight + spacingAfterHeader + tagsHeight + spacingAfterTags;
 
-    final availableHeight = imageHeight -
+    const availableHeight = imageHeight -
         (padding * 2) -
         reservedHeight; // Account for header and tags
 
     return TextViewerWidgetNonScrollable(
       entryText: item.entryText,
       maxHeight: availableHeight,
-    );
-  }
-
-  Widget _buildCompactTextContent(BuildContext context) {
-    if (item.entryText == null || item.entryText!.plainText.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Text(
-      item.entryText!.plainText,
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
-      style: context.textTheme.bodySmall?.copyWith(
-        color: context.colorScheme.onSurfaceVariant
-            .withValues(alpha: AppTheme.alphaSurfaceVariant),
-        fontSize: AppTheme.subtitleFontSize,
-      ),
     );
   }
 }

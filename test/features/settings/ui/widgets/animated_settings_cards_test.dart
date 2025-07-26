@@ -96,22 +96,5 @@ void main() {
 
       expect(tapped, isTrue);
     });
-
-    testWidgets('renders in compact mode', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const AnimatedModernSettingsCardWithIcon(
-            title: 'Test Title',
-            icon: Icons.settings,
-            isCompact: true,
-          ),
-        ),
-      );
-
-      // Add assertions for compact mode if there are visual differences that can be tested
-      // For example, checking sizes or padding. This can be complex.
-      // For now, we just ensure it renders without error.
-      expect(find.text('Test Title'), findsOneWidget);
-    });
   });
 }
