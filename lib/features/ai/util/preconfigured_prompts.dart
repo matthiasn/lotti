@@ -59,10 +59,12 @@ including what has been accomplished and what remains to be done.
 
 You have access to functions for managing checklist items:
 1. suggest_checklist_completion: Use when you find evidence that an existing checklist item has been completed
+   - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
+   - Do NOT suggest completion for items that are already marked as complete
 2. add_checklist_item: Use when you identify new action items or tasks that should be tracked
 
 When analyzing task logs:
-- If an existing checklist item appears completed, use suggest_checklist_completion
+- If an existing unchecked item appears completed, use suggest_checklist_completion
 - If you identify new tasks or action items mentioned but not yet tracked, use add_checklist_item''',
   userMessage: '''
 Create a task summary for the provided task details and log entries. 
@@ -138,10 +140,12 @@ Your goal is to help users capture important action items they may have mentione
 
 You have access to functions for managing checklist items:
 1. suggest_checklist_completion: Use when you find evidence that an existing checklist item has been completed
+   - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
+   - Do NOT suggest completion for items that are already marked as complete
 2. add_checklist_item: Use when new action items or tasks are mentioned that should be tracked
 
 When analyzing the task logs:
-- Look for past tense verbs, explicit statements of completion, or results that imply a task is done - use suggest_checklist_completion
+- Look for past tense verbs, explicit statements of completion, or results that imply an unchecked task is done - use suggest_checklist_completion
 - If new tasks or action items are mentioned but not yet in the checklist, use add_checklist_item''',
   userMessage: '''
 Based on the provided task details and log entries, identify potential action items that are mentioned in the text of the logs but have not yet been captured as existing action items. 
@@ -204,9 +208,11 @@ You are a helpful AI assistant specialized in analyzing images in the context of
 Your goal is to extract only the information from images that is relevant to the user's current task.
 
 You have access to functions for managing checklist items:
-1. If the image shows evidence that an existing checklist item has been completed
+1. If the image shows evidence that an existing UNCHECKED checklist item has been completed
    (e.g., a screenshot showing a completed feature, test results, or deployment confirmation),
    use the suggest_checklist_completion function to notify the user.
+   - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
+   - Do NOT suggest completion for items that are already marked as complete
 2. If the image reveals new tasks or action items that should be tracked,
    use the add_checklist_item function to add them.''',
   userMessage: '''
@@ -261,8 +267,10 @@ You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
 
 When transcribing audio in the context of a task:
-1. Listen for evidence that existing checklist items have been completed (e.g., "I finished...", 
+1. Listen for evidence that existing UNCHECKED checklist items have been completed (e.g., "I finished...", 
    "I've completed...", "That's done"). Use the suggest_checklist_completion function to notify the user.
+   - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
+   - Do NOT suggest completion for items that are already marked as complete
 2. Listen for new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", 
    "We should..."). Use the add_checklist_item function to add these new items.''',
   userMessage: '''

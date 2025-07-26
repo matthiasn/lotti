@@ -1292,6 +1292,52 @@ class UnifiedAiInferenceRepository {
           .read(checklistCompletionServiceProvider.notifier)
           .addSuggestions(suggestions);
 
+      // Auto-check items with high confidence
+      final checklistRepository = ref.read(checklistRepositoryProvider);
+      final journalRepository = ref.read(journalRepositoryProvider);
+
+      for (final suggestion in suggestions) {
+        if (suggestion.confidence == ChecklistCompletionConfidence.high) {
+          developer.log(
+            'Auto-checking item ${suggestion.checklistItemId} due to high confidence',
+            name: 'UnifiedAiInferenceRepository',
+          );
+
+          try {
+            // Get the current checklist item
+            final checklistItem = await journalRepository
+                .getJournalEntityById(suggestion.checklistItemId);
+
+            if (checklistItem is ChecklistItem) {
+              if (!checklistItem.data.isChecked) {
+                // Update the item to be checked
+                await checklistRepository.updateChecklistItem(
+                  checklistItemId: suggestion.checklistItemId,
+                  data: checklistItem.data.copyWith(isChecked: true),
+                  taskId: task.id,
+                );
+
+                developer.log(
+                  'Successfully auto-checked item ${suggestion.checklistItemId}',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              } else {
+                developer.log(
+                  'Skipping auto-check for item ${suggestion.checklistItemId} - already checked',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              }
+            }
+          } catch (e) {
+            developer.log(
+              'Error auto-checking item ${suggestion.checklistItemId}: $e',
+              name: 'UnifiedAiInferenceRepository',
+              error: e,
+            );
+          }
+        }
+      }
+
       // Force refresh of all checklist items in this task
       // This will cause the UI to re-check for suggestions
       ref.invalidate(checklistItemControllerProvider);
