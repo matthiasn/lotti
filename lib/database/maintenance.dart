@@ -149,6 +149,25 @@ class Maintenance {
   Future<void> removeActionItemSuggestions({
     void Function(double)? onProgress,
   }) async {
+    // Create backup before running destructive operation
+    try {
+      await createDbBackup(journalDbFileName);
+      getIt<LoggingService>().captureEvent(
+        'Database backup created before removeActionItemSuggestions',
+        domain: 'MAINTENANCE',
+        subDomain: 'removeActionItemSuggestions',
+      );
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'MAINTENANCE',
+        subDomain: 'removeActionItemSuggestions_backup',
+        stackTrace: stackTrace,
+      );
+      // Re-throw to prevent running the destructive operation if backup fails
+      rethrow;
+    }
+
     final persistenceLogic = getIt<PersistenceLogic>();
     final entryCount = await _db.getJournalCount();
     const pageSize = 100;
