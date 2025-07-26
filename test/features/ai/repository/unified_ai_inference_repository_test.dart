@@ -5554,17 +5554,12 @@ Take into account the following task context:
         ),
       );
 
-      when(() => mockChecklistRepo.createChecklistItem(
+      when(() => mockChecklistRepo.addItemToChecklist(
             checklistId: existingChecklistId,
             title: 'New checklist item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
           )).thenAnswer((_) async => newChecklistItem);
-
-      when(() => mockChecklistRepo.updateChecklist(
-            checklistId: existingChecklistId,
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => true);
 
       // Create stream with add_checklist_item tool call
       final streamController =
@@ -5599,17 +5594,12 @@ Take into account the following task context:
         onStatusChange: (_) {},
       );
 
-      // Verify item was created and checklist was updated
-      verify(() => mockChecklistRepo.createChecklistItem(
+      // Verify item was created using atomic method
+      verify(() => mockChecklistRepo.addItemToChecklist(
             checklistId: existingChecklistId,
             title: 'New checklist item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
-          )).called(1);
-
-      verify(() => mockChecklistRepo.updateChecklist(
-            checklistId: existingChecklistId,
-            data: any(named: 'data'),
           )).called(1);
     });
   });

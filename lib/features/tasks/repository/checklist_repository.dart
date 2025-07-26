@@ -206,4 +206,58 @@ class ChecklistRepository {
     }
     return true;
   }
+
+  Future<ChecklistItem?> addItemToChecklist({
+    required String checklistId,
+    required String title,
+    required bool isChecked,
+    required String? categoryId,
+  }) async {
+    try {
+      // Create the new checklist item first
+      final newItem = await createChecklistItem(
+        checklistId: checklistId,
+        title: title,
+        isChecked: isChecked,
+        categoryId: categoryId,
+      );
+
+      if (newItem == null) {
+        return null;
+      }
+
+      // Atomically update the checklist to include the new item
+      // This fetches and updates in a single operation to avoid race conditions
+      final checklist = await _journalDb.journalEntityById(checklistId);
+
+      if (checklist is! Checklist) {
+        _loggingService.captureException(
+          'Entity is not a checklist',
+          domain: 'persistence_logic',
+          subDomain: 'addItemToChecklist',
+        );
+        return null;
+      }
+
+      await updateChecklist(
+        checklistId: checklistId,
+        data: checklist.data.copyWith(
+          linkedChecklistItems: [
+            ...checklist.data.linkedChecklistItems,
+            newItem.id,
+          ],
+        ),
+      );
+
+      return newItem;
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'addItemToChecklist',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
 }

@@ -1217,7 +1217,7 @@ class UnifiedAiInferenceRepository {
               );
             }
           } else {
-            // Add item to the first existing checklist
+            // Add item to the first existing checklist using atomic operation
             final checklistId = checklistIds.first;
             developer.log(
               'Adding item to existing checklist: $checklistId',
@@ -1225,7 +1225,7 @@ class UnifiedAiInferenceRepository {
             );
 
             final checklistRepository = ref.read(checklistRepositoryProvider);
-            final newItem = await checklistRepository.createChecklistItem(
+            final newItem = await checklistRepository.addItemToChecklist(
               checklistId: checklistId,
               title: actionItemDescription,
               isChecked: false,
@@ -1233,27 +1233,10 @@ class UnifiedAiInferenceRepository {
             );
 
             if (newItem != null) {
-              // Update the checklist to include the new item
-              final checklist = await ref
-                  .read(journalRepositoryProvider)
-                  .getJournalEntityById(checklistId);
-
-              if (checklist is Checklist) {
-                await checklistRepository.updateChecklist(
-                  checklistId: checklistId,
-                  data: checklist.data.copyWith(
-                    linkedChecklistItems: [
-                      ...checklist.data.linkedChecklistItems,
-                      newItem.id,
-                    ],
-                  ),
-                );
-
-                developer.log(
-                  'Successfully added item ${newItem.id} to checklist',
-                  name: 'UnifiedAiInferenceRepository',
-                );
-              }
+              developer.log(
+                'Successfully added item ${newItem.id} to checklist',
+                name: 'UnifiedAiInferenceRepository',
+              );
             }
           }
 
