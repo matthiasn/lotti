@@ -9,6 +9,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -73,4 +74,39 @@ Future<void> registerSingletons() async {
   getIt<LoggingService>().listenToConfigFlag();
 
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
+
+  // Check and run maintenance task to remove deprecated action item suggestions
+  await _checkAndRemoveActionItemSuggestions();
+}
+
+Future<void> _checkAndRemoveActionItemSuggestions() async {
+  const settingsKey = 'maintenance_actionItemSuggestionsRemoved';
+  final settingsDb = getIt<SettingsDb>();
+  final maintenance = getIt<Maintenance>();
+
+  // Check if we've already run this maintenance task
+  final hasRun = await settingsDb.itemByKey(settingsKey);
+
+  if (hasRun == null || hasRun != 'true') {
+    try {
+      // Run the maintenance task
+      await maintenance.removeActionItemSuggestions();
+
+      // Mark as completed
+      await settingsDb.saveSettingsItem(settingsKey, 'true');
+
+      getIt<LoggingService>().captureEvent(
+        'Automatic removal of action item suggestions completed',
+        domain: 'MAINTENANCE',
+        subDomain: 'startup',
+      );
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'MAINTENANCE',
+        subDomain: 'startup_removeActionItemSuggestions',
+        stackTrace: stackTrace,
+      );
+    }
+  }
 }

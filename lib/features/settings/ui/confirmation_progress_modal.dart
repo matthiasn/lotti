@@ -70,20 +70,17 @@ class ConfirmationProgressModal {
                 const SizedBox(height: ModalTheme.spacing40),
                 Row(
                   children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: ModalTheme.buttonHeight,
-                        child: LottiSecondaryButton(
-                          label: context.messages.cancelButton,
-                          onPressed: () {
-                            confirmed = false;
-                            Navigator.of(modalSheetContext).pop();
-                          },
-                          fullWidth: true,
-                        ),
+                    SizedBox(
+                      height: ModalTheme.buttonHeight,
+                      child: LottiSecondaryButton(
+                        label: context.messages.cancelButton,
+                        onPressed: () {
+                          confirmed = false;
+                          Navigator.of(modalSheetContext).pop();
+                        },
                       ),
                     ),
-                    const SizedBox(width: AppTheme.spacingLarge + 4),
+                    const SizedBox(width: AppTheme.spacingLarge),
                     Expanded(
                       child: SizedBox(
                         height: ModalTheme.buttonHeight,

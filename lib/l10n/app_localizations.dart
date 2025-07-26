@@ -2013,6 +2013,30 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to purge all deleted items? This action cannot be undone.'**
   String get maintenancePurgeDeletedMessage;
 
+  /// No description provided for @maintenanceRemoveActionItemSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove deprecated AI suggestions'**
+  String get maintenanceRemoveActionItemSuggestions;
+
+  /// No description provided for @maintenanceRemoveActionItemSuggestionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove old action item suggestions'**
+  String get maintenanceRemoveActionItemSuggestionsDescription;
+
+  /// No description provided for @maintenanceRemoveActionItemSuggestionsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove all deprecated action item suggestions? This will permanently delete these entries.'**
+  String get maintenanceRemoveActionItemSuggestionsMessage;
+
+  /// No description provided for @maintenanceRemoveActionItemSuggestionsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'YES, REMOVE'**
+  String get maintenanceRemoveActionItemSuggestionsConfirm;
+
   /// No description provided for @maintenanceReSync.
   ///
   /// In en, this message translates to:

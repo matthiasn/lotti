@@ -6,9 +6,11 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -142,5 +144,80 @@ class Maintenance {
         }
       }
     }
+  }
+
+  Future<void> removeActionItemSuggestions({
+    void Function(double)? onProgress,
+  }) async {
+    final persistenceLogic = getIt<PersistenceLogic>();
+    final entryCount = await _db.getJournalCount();
+    const pageSize = 100;
+    final pages = (entryCount / pageSize).ceil();
+    var processed = 0;
+    var deleted = 0;
+    var lastReportedProgress = 0;
+
+    for (var page = 0; page <= pages; page++) {
+      final dbEntities =
+          await _db.orderedJournal(pageSize, page * pageSize).get();
+
+      final entries = entityStreamMapper(dbEntities);
+
+      for (final entry in entries) {
+        processed++;
+
+        // Check if this is an AI response entry with actionItemSuggestions type
+        if (entry is AiResponseEntry) {
+          final aiData = entry.data;
+          // ignore: deprecated_member_use_from_same_package
+          if (aiData.type == AiResponseType.actionItemSuggestions) {
+            try {
+              // Mark as deleted by setting deletedAt timestamp
+              await persistenceLogic.updateDbEntity(
+                entry.copyWith(
+                  meta: await persistenceLogic.updateMetadata(
+                    entry.meta,
+                    deletedAt: DateTime.now(),
+                  ),
+                ),
+              );
+              deleted++;
+
+              getIt<LoggingService>().captureEvent(
+                'Deleted deprecated AI response: ${entry.meta.id}',
+                domain: 'MAINTENANCE',
+                subDomain: 'removeActionItemSuggestions',
+              );
+            } catch (e, stackTrace) {
+              getIt<LoggingService>().captureException(
+                e,
+                domain: 'MAINTENANCE',
+                subDomain: 'removeActionItemSuggestions',
+                stackTrace: stackTrace,
+              );
+            }
+          }
+        }
+
+        // Calculate current progress percentage
+        final currentProgress = entryCount > 0 ? (processed / entryCount) : 0.0;
+        final currentPercentage = (currentProgress * 100).round();
+
+        // Only update if we've moved to a new percentage point
+        if (currentPercentage > lastReportedProgress) {
+          lastReportedProgress = currentPercentage;
+          onProgress?.call(currentProgress);
+
+          // Add a small delay to make the progress visible
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      }
+    }
+
+    getIt<LoggingService>().captureEvent(
+      'Removed $deleted actionItemSuggestions entries out of $processed total entries',
+      domain: 'MAINTENANCE',
+      subDomain: 'removeActionItemSuggestions',
+    );
   }
 }

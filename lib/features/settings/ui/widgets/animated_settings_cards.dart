@@ -16,6 +16,8 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
     this.iconColor,
     this.backgroundColor,
     this.borderColor,
+    this.maxTitleLines = 3,
+    this.maxSubtitleLines = 4,
     super.key,
   });
 
@@ -29,6 +31,8 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
   final Color? iconColor;
   final Color? backgroundColor;
   final Color? borderColor;
+  final int maxTitleLines;
+  final int maxSubtitleLines;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +70,8 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
             iconColor: iconColor,
           ),
           isCompact: isCompact,
+          maxTitleLines: maxTitleLines,
+          maxSubtitleLines: maxSubtitleLines,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
