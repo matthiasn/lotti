@@ -397,6 +397,8 @@ A: The system uses OpenAI-style function calling to detect when checklist items 
 - **Streaming Support**: Tool calls are accumulated from streaming chunks and processed after the response completes
 - **Visual Indication**: Suggested items show a pulsing colored indicator (color indicates confidence level)
 - **User Control**: Users can accept or dismiss suggestions with a single tap
+- **High Confidence Auto-Check**: Items suggested with high confidence are automatically checked off while still showing the visual indicator
+- **Smart Duplicate Prevention**: AI is instructed not to suggest completion for items that are already checked
 
 ### Q: How do I enable checklist completion suggestions?
 A: To enable this feature:
@@ -404,6 +406,13 @@ A: To enable this feature:
 2. Create or update prompts from the preconfigured templates (they now include instructions for using the function)
 3. The feature works automatically when processing tasks with checklists
 4. Suggestions appear as visual indicators on checklist items in the task UI
+
+### Q: What is the add_checklist_item function?
+A: The system can automatically create new checklist items based on AI analysis:
+- **Automatic Detection**: AI identifies new action items or tasks mentioned in audio, text, or images
+- **Smart Creation**: If no checklist exists, creates a "to-do" checklist first
+- **Context Awareness**: Works during audio transcriptions, task summaries, and image analysis
+- **Common Triggers**: "I need to...", "Next I'll...", "We should...", or any newly mentioned tasks
 
 ## Technical Details
 
