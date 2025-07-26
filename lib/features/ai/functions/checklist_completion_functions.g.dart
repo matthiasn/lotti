@@ -29,3 +29,19 @@ const _$ChecklistCompletionConfidenceEnumMap = {
   ChecklistCompletionConfidence.medium: 'medium',
   ChecklistCompletionConfidence.low: 'low',
 };
+
+_$AddChecklistItemResultImpl _$$AddChecklistItemResultImplFromJson(
+        Map<String, dynamic> json) =>
+    _$AddChecklistItemResultImpl(
+      checklistId: json['checklistId'] as String,
+      checklistItemId: json['checklistItemId'] as String,
+      checklistCreated: json['checklistCreated'] as bool,
+    );
+
+Map<String, dynamic> _$$AddChecklistItemResultImplToJson(
+        _$AddChecklistItemResultImpl instance) =>
+    <String, dynamic>{
+      'checklistId': instance.checklistId,
+      'checklistItemId': instance.checklistItemId,
+      'checklistCreated': instance.checklistCreated,
+    };

@@ -701,7 +701,7 @@ class UnifiedAiInferenceRepository {
         'Processing ${toolCalls.length} tool calls for task ${taskForToolCalls.id} (from ${entity.runtimeType})',
         name: 'UnifiedAiInferenceRepository',
       );
-      await _processChecklistCompletionToolCalls(
+      await _processChecklistToolCalls(
         toolCalls: toolCalls,
         task: taskForToolCalls,
       );
@@ -1079,13 +1079,13 @@ class UnifiedAiInferenceRepository {
     }
   }
 
-  /// Process tool calls for checklist completion suggestions
-  Future<void> _processChecklistCompletionToolCalls({
+  /// Process tool calls for checklist operations (completion suggestions and item additions)
+  Future<void> _processChecklistToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required Task task,
   }) async {
     developer.log(
-      'Starting to process ${toolCalls.length} tool calls for checklist completions',
+      'Starting to process ${toolCalls.length} tool calls for checklist operations',
       name: 'UnifiedAiInferenceRepository',
     );
 
@@ -1168,6 +1168,103 @@ class UnifiedAiInferenceRepository {
               error: e,
             );
           }
+        }
+      } else if (toolCall.function.name ==
+          ChecklistCompletionFunctions.addChecklistItem) {
+        // Handle add checklist item
+        try {
+          final arguments =
+              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+          final actionItemDescription =
+              arguments['actionItemDescription'] as String;
+
+          developer.log(
+            'Adding checklist item: $actionItemDescription',
+            name: 'UnifiedAiInferenceRepository',
+          );
+
+          // Check if task has existing checklists
+          final checklistIds = task.data.checklistIds ?? [];
+
+          if (checklistIds.isEmpty) {
+            // Create a new "to-do" checklist with the item
+            developer.log(
+              'No existing checklists found, creating new "to-do" checklist',
+              name: 'UnifiedAiInferenceRepository',
+            );
+
+            final result = await autoChecklistService.autoCreateChecklist(
+              taskId: task.id,
+              suggestions: [
+                ChecklistItemData(
+                  title: actionItemDescription,
+                  isChecked: false,
+                  linkedChecklists: [],
+                ),
+              ],
+              title: 'to-do',
+            );
+
+            if (result.success) {
+              developer.log(
+                'Created new checklist ${result.checklistId} with item',
+                name: 'UnifiedAiInferenceRepository',
+              );
+            } else {
+              developer.log(
+                'Failed to create checklist: ${result.error}',
+                name: 'UnifiedAiInferenceRepository',
+              );
+            }
+          } else {
+            // Add item to the first existing checklist
+            final checklistId = checklistIds.first;
+            developer.log(
+              'Adding item to existing checklist: $checklistId',
+              name: 'UnifiedAiInferenceRepository',
+            );
+
+            final checklistRepository = ref.read(checklistRepositoryProvider);
+            final newItem = await checklistRepository.createChecklistItem(
+              checklistId: checklistId,
+              title: actionItemDescription,
+              isChecked: false,
+              categoryId: task.meta.categoryId,
+            );
+
+            if (newItem != null) {
+              // Update the checklist to include the new item
+              final checklist = await ref
+                  .read(journalRepositoryProvider)
+                  .getJournalEntityById(checklistId);
+
+              if (checklist is Checklist) {
+                await checklistRepository.updateChecklist(
+                  checklistId: checklistId,
+                  data: checklist.data.copyWith(
+                    linkedChecklistItems: [
+                      ...checklist.data.linkedChecklistItems,
+                      newItem.id,
+                    ],
+                  ),
+                );
+
+                developer.log(
+                  'Successfully added item ${newItem.id} to checklist',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              }
+            }
+          }
+
+          // Force refresh of checklists UI
+          ref.invalidate(checklistItemControllerProvider);
+        } catch (e) {
+          developer.log(
+            'Error processing add checklist item: $e',
+            name: 'UnifiedAiInferenceRepository',
+            error: e,
+          );
         }
       } else {
         developer.log(

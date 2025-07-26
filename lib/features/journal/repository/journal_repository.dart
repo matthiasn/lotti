@@ -22,6 +22,10 @@ part 'journal_repository.g.dart';
 class JournalRepository {
   JournalRepository();
 
+  Future<JournalEntity?> getJournalEntityById(String id) async {
+    return getIt<JournalDb>().journalEntityById(id);
+  }
+
   Future<bool> updateCategoryId(
     String journalEntityId, {
     required String? categoryId,

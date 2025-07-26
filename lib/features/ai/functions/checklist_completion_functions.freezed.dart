@@ -224,3 +224,202 @@ abstract class _ChecklistCompletionSuggestion
           _$ChecklistCompletionSuggestionImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
+
+AddChecklistItemResult _$AddChecklistItemResultFromJson(
+    Map<String, dynamic> json) {
+  return _AddChecklistItemResult.fromJson(json);
+}
+
+/// @nodoc
+mixin _$AddChecklistItemResult {
+  String get checklistId => throw _privateConstructorUsedError;
+  String get checklistItemId => throw _privateConstructorUsedError;
+  bool get checklistCreated => throw _privateConstructorUsedError;
+
+  /// Serializes this AddChecklistItemResult to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of AddChecklistItemResult
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $AddChecklistItemResultCopyWith<AddChecklistItemResult> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AddChecklistItemResultCopyWith<$Res> {
+  factory $AddChecklistItemResultCopyWith(AddChecklistItemResult value,
+          $Res Function(AddChecklistItemResult) then) =
+      _$AddChecklistItemResultCopyWithImpl<$Res, AddChecklistItemResult>;
+  @useResult
+  $Res call(
+      {String checklistId, String checklistItemId, bool checklistCreated});
+}
+
+/// @nodoc
+class _$AddChecklistItemResultCopyWithImpl<$Res,
+        $Val extends AddChecklistItemResult>
+    implements $AddChecklistItemResultCopyWith<$Res> {
+  _$AddChecklistItemResultCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of AddChecklistItemResult
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? checklistId = null,
+    Object? checklistItemId = null,
+    Object? checklistCreated = null,
+  }) {
+    return _then(_value.copyWith(
+      checklistId: null == checklistId
+          ? _value.checklistId
+          : checklistId // ignore: cast_nullable_to_non_nullable
+              as String,
+      checklistItemId: null == checklistItemId
+          ? _value.checklistItemId
+          : checklistItemId // ignore: cast_nullable_to_non_nullable
+              as String,
+      checklistCreated: null == checklistCreated
+          ? _value.checklistCreated
+          : checklistCreated // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$AddChecklistItemResultImplCopyWith<$Res>
+    implements $AddChecklistItemResultCopyWith<$Res> {
+  factory _$$AddChecklistItemResultImplCopyWith(
+          _$AddChecklistItemResultImpl value,
+          $Res Function(_$AddChecklistItemResultImpl) then) =
+      __$$AddChecklistItemResultImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String checklistId, String checklistItemId, bool checklistCreated});
+}
+
+/// @nodoc
+class __$$AddChecklistItemResultImplCopyWithImpl<$Res>
+    extends _$AddChecklistItemResultCopyWithImpl<$Res,
+        _$AddChecklistItemResultImpl>
+    implements _$$AddChecklistItemResultImplCopyWith<$Res> {
+  __$$AddChecklistItemResultImplCopyWithImpl(
+      _$AddChecklistItemResultImpl _value,
+      $Res Function(_$AddChecklistItemResultImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of AddChecklistItemResult
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? checklistId = null,
+    Object? checklistItemId = null,
+    Object? checklistCreated = null,
+  }) {
+    return _then(_$AddChecklistItemResultImpl(
+      checklistId: null == checklistId
+          ? _value.checklistId
+          : checklistId // ignore: cast_nullable_to_non_nullable
+              as String,
+      checklistItemId: null == checklistItemId
+          ? _value.checklistItemId
+          : checklistItemId // ignore: cast_nullable_to_non_nullable
+              as String,
+      checklistCreated: null == checklistCreated
+          ? _value.checklistCreated
+          : checklistCreated // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AddChecklistItemResultImpl implements _AddChecklistItemResult {
+  const _$AddChecklistItemResultImpl(
+      {required this.checklistId,
+      required this.checklistItemId,
+      required this.checklistCreated});
+
+  factory _$AddChecklistItemResultImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AddChecklistItemResultImplFromJson(json);
+
+  @override
+  final String checklistId;
+  @override
+  final String checklistItemId;
+  @override
+  final bool checklistCreated;
+
+  @override
+  String toString() {
+    return 'AddChecklistItemResult(checklistId: $checklistId, checklistItemId: $checklistItemId, checklistCreated: $checklistCreated)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AddChecklistItemResultImpl &&
+            (identical(other.checklistId, checklistId) ||
+                other.checklistId == checklistId) &&
+            (identical(other.checklistItemId, checklistItemId) ||
+                other.checklistItemId == checklistItemId) &&
+            (identical(other.checklistCreated, checklistCreated) ||
+                other.checklistCreated == checklistCreated));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, checklistId, checklistItemId, checklistCreated);
+
+  /// Create a copy of AddChecklistItemResult
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AddChecklistItemResultImplCopyWith<_$AddChecklistItemResultImpl>
+      get copyWith => __$$AddChecklistItemResultImplCopyWithImpl<
+          _$AddChecklistItemResultImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AddChecklistItemResultImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _AddChecklistItemResult implements AddChecklistItemResult {
+  const factory _AddChecklistItemResult(
+      {required final String checklistId,
+      required final String checklistItemId,
+      required final bool checklistCreated}) = _$AddChecklistItemResultImpl;
+
+  factory _AddChecklistItemResult.fromJson(Map<String, dynamic> json) =
+      _$AddChecklistItemResultImpl.fromJson;
+
+  @override
+  String get checklistId;
+  @override
+  String get checklistItemId;
+  @override
+  bool get checklistCreated;
+
+  /// Create a copy of AddChecklistItemResult
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$AddChecklistItemResultImplCopyWith<_$AddChecklistItemResultImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
