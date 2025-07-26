@@ -100,7 +100,7 @@ void main() {
           defaultModelId: 'gpt-4',
           useReasoning: true,
           aiResponseType: const PromptAiResponseType.dirty(
-            AiResponseType.actionItemSuggestions,
+            AiResponseType.taskSummary,
           ),
         );
 
@@ -109,7 +109,7 @@ void main() {
         expect(updatedState.useReasoning, isTrue);
         expect(
           updatedState.aiResponseType.value,
-          AiResponseType.actionItemSuggestions,
+          AiResponseType.taskSummary,
         );
         expect(updatedState.id, initialState.id);
         expect(updatedState.userMessage, initialState.userMessage);

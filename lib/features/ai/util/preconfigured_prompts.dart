@@ -42,7 +42,6 @@ class PreconfiguredPrompt {
 /// All available preconfigured prompts
 const List<PreconfiguredPrompt> preconfiguredPrompts = [
   taskSummaryPrompt,
-  actionItemSuggestionsPrompt,
   imageAnalysisPrompt,
   imageAnalysisInTaskContextPrompt,
   audioTranscriptionPrompt,
@@ -126,64 +125,9 @@ Annoyances:
 ```''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.taskSummary,
-  useReasoning: false,
-  description:
-      'Generate a comprehensive summary of a task including progress, remaining work, and insights',
-);
-
-/// Action Item Suggestions prompt template
-const actionItemSuggestionsPrompt = PreconfiguredPrompt(
-  name: 'Action Item Suggestions',
-  systemMessage: '''
-You are a helpful AI assistant that identifies actionable items from task logs and conversations. 
-Your goal is to help users capture important action items they may have mentioned but not yet formally tracked.
-
-You have access to functions for managing checklist items:
-1. suggest_checklist_completion: Use when you find evidence that an existing checklist item has been completed
-   - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
-   - Do NOT suggest completion for items that are already marked as complete
-2. add_checklist_item: Use when new action items or tasks are mentioned that should be tracked
-
-When analyzing the task logs:
-- Look for past tense verbs, explicit statements of completion, or results that imply an unchecked task is done - use suggest_checklist_completion
-- If new tasks or action items are mentioned but not yet in the checklist, use add_checklist_item''',
-  userMessage: '''
-Based on the provided task details and log entries, identify potential action items that are mentioned in the text of the logs but have not yet been captured as existing action items. 
-These suggestions should be formatted as a list of new action items, each containing a title and completion status. 
-Ensure that only actions not already listed under `actionItems` are included in your suggestions.
-Provide these suggested action items in JSON format.
-
-**Task Details:**
-```json
-{{task}}
-```
-
-Provide these suggested action items in JSON format, adhering to the structure defined by the given classes.
-Double check that the returned JSON ONLY contains action items that are not already listed under `actionItems` array in the task details. 
-Do not simply return the example response, but the open action items you have found. 
-If there are none, return an empty array. 
-Double check the items you want to return. 
-If any is very similar to an item already listed in the actionItems array of the task details, then remove it from the response.
-
-**Example Response:**
-
-```json
-[
-  {
-    "title": "Review project documentation",
-    "completed": false
-  },
-  {
-    "title": "Schedule team meeting for next week",
-    "completed": true
-  }
-]
-```''',
-  requiredInputData: [InputDataType.task],
-  aiResponseType: AiResponseType.actionItemSuggestions,
   useReasoning: true,
   description:
-      "Extract actionable items from task logs that haven't been formally captured yet",
+      'Generate a comprehensive summary of a task including progress, remaining work, and insights',
 );
 
 /// Image Analysis prompt template

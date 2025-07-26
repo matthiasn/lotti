@@ -67,7 +67,6 @@ void main() {
 
         // Each prompt type should have its icon (we have duplicates now)
         expect(find.byIcon(Icons.summarize_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.checklist_outlined), findsOneWidget);
         expect(find.byIcon(Icons.image_outlined),
             findsNWidgets(2)); // 2 image prompts
         expect(find.byIcon(Icons.mic_outlined),

@@ -127,7 +127,6 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                 height: 50,
                 responseTypes: const {
                   AiResponseType.taskSummary,
-                  AiResponseType.actionItemSuggestions,
                   AiResponseType.imageAnalysis,
                   AiResponseType.audioTranscription,
                 },

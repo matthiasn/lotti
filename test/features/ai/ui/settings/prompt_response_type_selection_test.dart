@@ -201,7 +201,7 @@ void main() {
     });
 
     testWidgets('displays selected type localized name', (tester) async {
-      const selectedType = AiResponseType.actionItemSuggestions;
+      const selectedType = AiResponseType.imageAnalysis;
       fakePromptFormController.primeInitialBuildState(
         AsyncData(
           createDefaultPromptFormState(
@@ -275,7 +275,11 @@ void main() {
     });
 
     group('Modal Interaction', () {
-      const allTypes = AiResponseType.values;
+      // Exclude deprecated actionItemSuggestions from displayed types
+      final allTypes = AiResponseType.values
+          // ignore: deprecated_member_use_from_same_package
+          .where((type) => type != AiResponseType.actionItemSuggestions)
+          .toList();
 
       Future<void> openModal(
         WidgetTester tester, {
@@ -376,10 +380,11 @@ void main() {
           (tester) async {
         await openModal(
           tester,
-          initialSelection: AiResponseType.actionItemSuggestions,
+          initialSelection: AiResponseType.imageAnalysis,
         );
 
-        const typeToSelect = AiResponseType.imageAnalysis;
+        const typeToSelect =
+            AiResponseType.taskSummary; // Changed to select a different type
 
         final typeOptionFinder = find
             .ancestor(
@@ -388,7 +393,7 @@ void main() {
             )
             .last;
 
-        // Check initial state - should not have filled radio button
+        // Check initial state - should not have filled radio button since it's not selected
         expect(
           find.descendant(
             of: typeOptionFinder,
@@ -458,7 +463,7 @@ void main() {
         }
 
         // Select an option
-        const typeToSelect = AiResponseType.actionItemSuggestions;
+        const typeToSelect = AiResponseType.imageAnalysis;
         final typeOptionFinder = find
             .ancestor(
               of: find.text(typeToSelect.localizedNameFromContext(l10n)),
@@ -482,7 +487,7 @@ void main() {
 
       testWidgets('tapping "Save" calls aiResponseTypeChanged and closes modal',
           (tester) async {
-        const initialType = AiResponseType.actionItemSuggestions;
+        const initialType = AiResponseType.imageAnalysis;
         const typeToSelectInModal = AiResponseType.taskSummary;
 
         fakePromptFormController.primeInitialBuildState(
@@ -600,6 +605,7 @@ extension AiResponseTypeTestDisplay on AiResponseType {
   String localizedNameFromContext(AppLocalizations l10nParam) {
     // This helper should mirror the logic in AiResponseType.localizedName(context)
     switch (this) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.actionItemSuggestions:
         return l10nParam.aiResponseTypeActionItemSuggestions;
       case AiResponseType.taskSummary:
