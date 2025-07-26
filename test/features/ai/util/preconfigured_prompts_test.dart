@@ -5,8 +5,8 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
   group('PreconfiguredPrompts', () {
-    test('should have exactly 6 preconfigured prompts', () {
-      expect(preconfiguredPrompts.length, equals(6));
+    test('should have exactly 5 preconfigured prompts', () {
+      expect(preconfiguredPrompts.length, equals(5));
     });
 
     test('should contain all expected prompt types', () {
@@ -16,7 +16,6 @@ void main() {
         promptTypes,
         containsAll([
           AiResponseType.taskSummary,
-          AiResponseType.actionItemSuggestions,
           AiResponseType.imageAnalysis,
           AiResponseType.audioTranscription,
         ]),
@@ -32,7 +31,7 @@ void main() {
             taskSummaryPrompt.requiredInputData, equals([InputDataType.task]));
         expect(taskSummaryPrompt.aiResponseType,
             equals(AiResponseType.taskSummary));
-        expect(taskSummaryPrompt.useReasoning, isFalse);
+        expect(taskSummaryPrompt.useReasoning, isTrue);
       });
 
       test('should have non-empty messages', () {
@@ -49,37 +48,6 @@ void main() {
         expect(taskSummaryPrompt.userMessage, contains('✅'));
         expect(taskSummaryPrompt.userMessage, contains('💡'));
         expect(taskSummaryPrompt.userMessage, contains('🤯'));
-      });
-    });
-
-    group('Action Item Suggestions Prompt', () {
-      test('should have correct configuration', () {
-        expect(actionItemSuggestionsPrompt.aiResponseType,
-            equals(AiResponseType.actionItemSuggestions));
-        expect(actionItemSuggestionsPrompt.name,
-            equals('Action Item Suggestions'));
-        expect(actionItemSuggestionsPrompt.requiredInputData,
-            equals([InputDataType.task]));
-        expect(actionItemSuggestionsPrompt.aiResponseType,
-            equals(AiResponseType.actionItemSuggestions));
-        expect(actionItemSuggestionsPrompt.useReasoning, isTrue);
-      });
-
-      test('should have non-empty messages', () {
-        expect(actionItemSuggestionsPrompt.systemMessage, isNotEmpty);
-        expect(actionItemSuggestionsPrompt.userMessage, isNotEmpty);
-        expect(actionItemSuggestionsPrompt.description, isNotEmpty);
-      });
-
-      test('should have user message with task placeholder', () {
-        expect(actionItemSuggestionsPrompt.userMessage, contains('{{task}}'));
-      });
-
-      test('should include JSON example in user message', () {
-        expect(actionItemSuggestionsPrompt.userMessage, contains('```json'));
-        expect(actionItemSuggestionsPrompt.userMessage, contains('"title"'));
-        expect(
-            actionItemSuggestionsPrompt.userMessage, contains('"completed"'));
       });
     });
 
@@ -275,10 +243,6 @@ void main() {
         expect(
           taskSummaryPrompt.aiResponseType,
           equals(AiResponseType.taskSummary),
-        );
-        expect(
-          actionItemSuggestionsPrompt.aiResponseType,
-          equals(AiResponseType.actionItemSuggestions),
         );
         expect(
           imageAnalysisPrompt.aiResponseType,
