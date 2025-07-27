@@ -7,7 +7,6 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_controller.g.dart';
@@ -20,8 +19,6 @@ class UnifiedAiController extends _$UnifiedAiController {
     required String entityId,
     required String promptId,
   }) {
-    ref.cacheFor(entryCacheDuration);
-
     // Start inference immediately
     Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
       runInference();

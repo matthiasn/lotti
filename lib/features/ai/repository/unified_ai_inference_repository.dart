@@ -1073,6 +1073,15 @@ class UnifiedAiInferenceRepository {
                   'Refreshed task, now has ${task.data.checklistIds?.length ?? 0} checklists',
                   name: 'UnifiedAiInferenceRepository',
                 );
+              } else {
+                // The task should exist since we just created a checklist for it.
+                // If not, it was likely deleted concurrently. Stop processing to avoid further errors.
+                developer.log(
+                  'Failed to refresh task ${task.id} after creating checklist. It might have been deleted concurrently.',
+                  name: 'UnifiedAiInferenceRepository',
+                  level: 1000, // SEVERE
+                );
+                break;
               }
             } else {
               developer.log(
