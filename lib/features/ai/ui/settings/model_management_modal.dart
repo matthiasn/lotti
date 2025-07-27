@@ -112,7 +112,7 @@ void showModelManagementModal({
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20)
-                    .copyWith(bottom: 90),
+                    .copyWith(bottom: 100),
                 child: _ModelManagementContent(
                   currentSelectedIds: currentSelectedIds,
                   currentDefaultId: currentDefaultId,
@@ -149,20 +149,24 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Padding(
-          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            bottom: 30,
+          ),
           child: Row(
             children: [
-              Expanded(
+              SizedBox(
+                height: ModalTheme.buttonHeight,
                 child: LottiSecondaryButton(
                   label: context.messages.cancelButton,
                   onPressed: () => Navigator.pop(context),
-                  fullWidth: true,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: SizedBox(
-                  height: 40,
+                  height: ModalTheme.buttonHeight,
                   child: LottiPrimaryButton(
                     onPressed: (selectedIds.isNotEmpty &&
                             defaultId.isNotEmpty &&

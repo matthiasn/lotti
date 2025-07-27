@@ -47,14 +47,12 @@ Future<bool> showConfirmationModal({
           // Action Buttons
           Row(
             children: [
-              Expanded(
-                child: LottiSecondaryButton(
-                  onPressed: () {
-                    result = false;
-                    Navigator.of(context).pop();
-                  },
-                  label: cancelLabel,
-                ),
+              LottiSecondaryButton(
+                onPressed: () {
+                  result = false;
+                  Navigator.of(context).pop();
+                },
+                label: cancelLabel,
               ),
               const SizedBox(width: 12),
               Expanded(
