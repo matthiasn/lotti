@@ -4483,6 +4483,160 @@ Take into account the following task context:
             categoryId: taskEntity.meta.categoryId,
           )).called(1);
     });
+
+    test(
+        'creates only one checklist when processing multiple add_checklist_item calls',
+        () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: [], // No existing checklists
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      // Mock auto checklist creation
+      const newChecklistId = 'new-checklist-id';
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: newChecklistId,
+            error: null,
+          ));
+
+      // Mock the task refresh after checklist creation
+      final updatedTaskEntity = Task(
+        meta: taskEntity.meta,
+        data: taskEntity.data.copyWith(
+          checklistIds: [newChecklistId],
+        ),
+      );
+      when(() => mockJournalDb.journalEntityById(taskEntity.id))
+          .thenAnswer((_) async => updatedTaskEntity);
+
+      // Mock adding items to the newly created checklist
+      when(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: newChecklistId,
+            title: any(named: 'title'),
+            isChecked: false,
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => ChecklistItem(
+            meta: _createMetadata(
+                id: 'item-${DateTime.now().millisecondsSinceEpoch}'),
+            data: const ChecklistItemData(
+              title: 'Test Item',
+              isChecked: false,
+              linkedChecklists: [newChecklistId],
+            ),
+          ));
+
+      // Create stream with multiple add_checklist_item tool calls
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'add_checklist_item',
+                arguments: '{"actionItemDescription":"First item"}',
+              ),
+              _createMockToolCall(
+                index: 1,
+                id: 'call-2',
+                functionName: 'add_checklist_item',
+                arguments: '{"actionItemDescription":"Second item"}',
+              ),
+              _createMockToolCall(
+                index: 2,
+                id: 'call-3',
+                functionName: 'add_checklist_item',
+                arguments: '{"actionItemDescription":"Third item"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      await repository.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that checklist creation was called only once
+      verify(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).called(1);
+
+      // Verify that the task was refreshed after checklist creation
+      verify(() => mockJournalDb.journalEntityById(taskEntity.id)).called(1);
+
+      // Verify that subsequent items were added to the existing checklist
+      verify(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: newChecklistId,
+            title: 'Second item',
+            isChecked: false,
+            categoryId: taskEntity.meta.categoryId,
+          )).called(1);
+
+      verify(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: newChecklistId,
+            title: 'Third item',
+            isChecked: false,
+            categoryId: taskEntity.meta.categoryId,
+          )).called(1);
+    });
   });
 
   group('Auto-check high confidence suggestions', () {
