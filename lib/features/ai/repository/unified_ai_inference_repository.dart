@@ -4,11 +4,13 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -22,6 +24,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -695,7 +698,7 @@ class UnifiedAiInferenceRepository {
         'Processing ${toolCalls.length} tool calls for task ${taskForToolCalls.id} (from ${entity.runtimeType})',
         name: 'UnifiedAiInferenceRepository',
       );
-      await _processChecklistToolCalls(
+      await processChecklistToolCalls(
         toolCalls: toolCalls,
         task: taskForToolCalls,
       );
@@ -929,7 +932,8 @@ class UnifiedAiInferenceRepository {
   }
 
   /// Process tool calls for checklist operations (completion suggestions and item additions)
-  Future<void> _processChecklistToolCalls({
+  @visibleForTesting
+  Future<void> processChecklistToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required Task task,
   }) async {
@@ -1059,6 +1063,17 @@ class UnifiedAiInferenceRepository {
                 'Created new checklist ${result.checklistId} with item',
                 name: 'UnifiedAiInferenceRepository',
               );
+
+              // Refresh the task to get the updated checklistIds
+              final journalDb = getIt<JournalDb>();
+              final updatedEntity = await journalDb.journalEntityById(task.id);
+              if (updatedEntity is Task) {
+                task = updatedEntity;
+                developer.log(
+                  'Refreshed task, now has ${task.data.checklistIds?.length ?? 0} checklists',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              }
             } else {
               developer.log(
                 'Failed to create checklist: ${result.error}',
