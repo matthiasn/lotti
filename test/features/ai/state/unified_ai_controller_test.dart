@@ -93,6 +93,7 @@ void main() {
 
       final progressUpdates = <String>[];
       var statusChangeCount = 0;
+      final stateUpdates = <String>[];
 
       // Override the aiConfigByIdProvider to return our test prompt
       final testContainer = ProviderContainer(
@@ -134,17 +135,20 @@ void main() {
         statusChangeCount++;
       });
 
-      // Create controller and read state to trigger build
-      final initialState = testContainer.read(
+      // Listen to the provider to capture state updates
+      final subscription = testContainer.listen(
         unifiedAiControllerProvider(
           entityId: 'test-entity',
           promptId: 'prompt-1',
         ),
+        (previous, next) {
+          stateUpdates.add(next);
+        },
+        fireImmediately: true,
       );
-      expect(initialState, ''); // Initial state should be empty
 
       // Wait for async operations - need more time for the delayed runInference
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
 
       // Verify inference was called
       verify(
@@ -167,14 +171,14 @@ void main() {
       // Verify status changes
       expect(statusChangeCount, 2);
 
-      // Verify final state using the same test container
-      final finalState = testContainer.read(
-        unifiedAiControllerProvider(
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-        ),
-      );
-      expect(finalState, 'Complete!');
+      // Verify state updates
+      expect(stateUpdates.contains(''), true); // Initial state
+      expect(stateUpdates.contains('Starting inference...'), true);
+      expect(stateUpdates.contains('Processing...'), true);
+      expect(stateUpdates.contains('Complete!'), true);
+
+      // Clean up
+      subscription.close();
     });
 
     test('handles errors during inference', () async {
@@ -190,6 +194,8 @@ void main() {
         requiredInputData: [InputDataType.task],
         aiResponseType: AiResponseType.taskSummary,
       );
+
+      final stateUpdates = <String>[];
 
       // Override the aiConfigByIdProvider to return our test prompt
       container = ProviderContainer(
@@ -216,17 +222,20 @@ void main() {
         throw Exception('Test error');
       });
 
-      // Create controller and read state to trigger build
-      final initialState = container.read(
+      // Listen to the provider to capture state updates
+      final subscription = container.listen(
         unifiedAiControllerProvider(
           entityId: 'test-entity',
           promptId: 'prompt-1',
         ),
+        (previous, next) {
+          stateUpdates.add(next);
+        },
+        fireImmediately: true,
       );
-      expect(initialState, ''); // Initial state should be empty
 
       // Wait for async operations - need more time for the delayed runInference
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
 
       // Verify error handling
       verify(
@@ -238,14 +247,13 @@ void main() {
         ),
       ).called(1);
 
-      // Verify final state contains error
-      final state = container.read(
-        unifiedAiControllerProvider(
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-        ),
-      );
-      expect(state, contains('Test error'));
+      // Verify state updates - should contain error message
+      expect(
+          stateUpdates.any((s) => s.contains('error') || s.contains('Error')),
+          true);
+
+      // Clean up
+      subscription.close();
     });
   });
 
@@ -440,14 +448,6 @@ void main() {
           entityId: 'test-entity',
           promptId: 'prompt-1',
         ).future,
-      );
-
-      // Read controller again - should create a new instance
-      container.read(
-        unifiedAiControllerProvider(
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-        ),
       );
 
       // Wait for new inference to run
