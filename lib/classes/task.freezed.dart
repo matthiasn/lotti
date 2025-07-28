@@ -2368,6 +2368,7 @@ mixin _$TaskData {
   DateTime? get due => throw _privateConstructorUsedError;
   Duration? get estimate => throw _privateConstructorUsedError;
   List<String>? get checklistIds => throw _privateConstructorUsedError;
+  String? get languageCode => throw _privateConstructorUsedError;
 
   /// Serializes this TaskData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -2392,7 +2393,8 @@ abstract class $TaskDataCopyWith<$Res> {
       String title,
       DateTime? due,
       Duration? estimate,
-      List<String>? checklistIds});
+      List<String>? checklistIds,
+      String? languageCode});
 
   $TaskStatusCopyWith<$Res> get status;
 }
@@ -2420,6 +2422,7 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
     Object? due = freezed,
     Object? estimate = freezed,
     Object? checklistIds = freezed,
+    Object? languageCode = freezed,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -2454,6 +2457,10 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
           ? _value.checklistIds
           : checklistIds // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      languageCode: freezed == languageCode
+          ? _value.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -2484,7 +2491,8 @@ abstract class _$$TaskDataImplCopyWith<$Res>
       String title,
       DateTime? due,
       Duration? estimate,
-      List<String>? checklistIds});
+      List<String>? checklistIds,
+      String? languageCode});
 
   @override
   $TaskStatusCopyWith<$Res> get status;
@@ -2511,6 +2519,7 @@ class __$$TaskDataImplCopyWithImpl<$Res>
     Object? due = freezed,
     Object? estimate = freezed,
     Object? checklistIds = freezed,
+    Object? languageCode = freezed,
   }) {
     return _then(_$TaskDataImpl(
       status: null == status
@@ -2545,6 +2554,10 @@ class __$$TaskDataImplCopyWithImpl<$Res>
           ? _value._checklistIds
           : checklistIds // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      languageCode: freezed == languageCode
+          ? _value.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -2560,7 +2573,8 @@ class _$TaskDataImpl implements _TaskData {
       required this.title,
       this.due,
       this.estimate,
-      final List<String>? checklistIds})
+      final List<String>? checklistIds,
+      this.languageCode})
       : _statusHistory = statusHistory,
         _checklistIds = checklistIds;
 
@@ -2598,8 +2612,11 @@ class _$TaskDataImpl implements _TaskData {
   }
 
   @override
+  final String? languageCode;
+
+  @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode)';
   }
 
   @override
@@ -2618,7 +2635,9 @@ class _$TaskDataImpl implements _TaskData {
             (identical(other.estimate, estimate) ||
                 other.estimate == estimate) &&
             const DeepCollectionEquality()
-                .equals(other._checklistIds, _checklistIds));
+                .equals(other._checklistIds, _checklistIds) &&
+            (identical(other.languageCode, languageCode) ||
+                other.languageCode == languageCode));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2632,7 +2651,8 @@ class _$TaskDataImpl implements _TaskData {
       title,
       due,
       estimate,
-      const DeepCollectionEquality().hash(_checklistIds));
+      const DeepCollectionEquality().hash(_checklistIds),
+      languageCode);
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
@@ -2659,7 +2679,8 @@ abstract class _TaskData implements TaskData {
       required final String title,
       final DateTime? due,
       final Duration? estimate,
-      final List<String>? checklistIds}) = _$TaskDataImpl;
+      final List<String>? checklistIds,
+      final String? languageCode}) = _$TaskDataImpl;
 
   factory _TaskData.fromJson(Map<String, dynamic> json) =
       _$TaskDataImpl.fromJson;
@@ -2680,6 +2701,8 @@ abstract class _TaskData implements TaskData {
   Duration? get estimate;
   @override
   List<String>? get checklistIds;
+  @override
+  String? get languageCode;
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.

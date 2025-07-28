@@ -1,5 +1,5 @@
 /// Screenshot-related constants and configuration
-/// 
+///
 /// This file contains all constants related to screenshot functionality,
 /// including tool names, file extensions, error messages, and timing values.
 /// Following the codebase pattern of centralized constants for maintainability.
