@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
+import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_wrapper.dart';
 
 class TaskInfoRow extends StatelessWidget {
@@ -24,9 +25,10 @@ class TaskInfoRow extends StatelessWidget {
               child: EstimatedTimeWrapper(taskId: taskId),
             ),
             Flexible(
-              flex: 4,
+              flex: 3,
               child: TaskCategoryWrapper(taskId: taskId),
             ),
+            TaskLanguageWrapper(taskId: taskId),
             Container(
               constraints: const BoxConstraints(minWidth: 90),
               child: TaskStatusWrapper(taskId: taskId),
