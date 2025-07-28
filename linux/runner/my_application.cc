@@ -14,11 +14,23 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+// Icon and application constants
+static const gchar* const ICON_PRODUCTION_PATH = "data/flutter_assets/assets/icon/app_icon_1024.png";
+static const gchar* const ICON_DEVELOPMENT_PATH = "assets/icon/app_icon_1024.png";
+static const gchar* const ICON_ALTERNATIVE_PATH = "../assets/icon/app_icon_1024.png";
+static const gchar* const ICON_THEME_NAME = "com.matthiasnehlsen.lotti";
+static const gchar* const APP_TITLE = "Lotti";
+static const gchar* const WINDOW_NAME = "lotti";
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+
+  // Set window properties for proper desktop integration
+  // The application ID is already set in my_application_new() which provides WM_CLASS
+  gtk_widget_set_name(GTK_WIDGET(window), WINDOW_NAME);
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -40,14 +52,45 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "Lotti");
+    gtk_header_bar_set_title(header_bar, APP_TITLE);
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "Lotti");
+    gtk_window_set_title(window, APP_TITLE);
   }
 
-  gtk_window_set_icon_from_file(window, "assets/icon/app_icon_1024.png", NULL);
+  // Try multiple icon paths to work in both development and production environments
+  const gchar* const icon_paths[] = {
+    ICON_PRODUCTION_PATH,   // Production path
+    ICON_DEVELOPMENT_PATH,  // Development path  
+    ICON_ALTERNATIVE_PATH,  // Alternative dev path
+    NULL
+  };
+  
+  gboolean icon_loaded = FALSE;
+  for (gsize i = 0; icon_paths[i] != NULL && !icon_loaded; i++) {
+    g_autoptr(GError) error = NULL;
+    if (gtk_window_set_icon_from_file(window, icon_paths[i], &error)) {
+      icon_loaded = TRUE;
+#ifdef DEBUG
+      g_debug("Successfully loaded icon from: %s", icon_paths[i]);
+#endif
+    } else {
+#ifdef DEBUG
+      g_debug("Failed to load icon from %s: %s", icon_paths[i], 
+              error ? error->message : "Unknown error");
+#endif
+      // Error is automatically freed by g_autoptr
+    }
+  }
+  
+  if (!icon_loaded) {
+    g_warning("Could not load application icon from any file path, using theme fallback");
+  }
+
+  // Set the icon name for desktop integration fallback
+  gtk_window_set_icon_name(window, ICON_THEME_NAME);
+
   gtk_window_set_default_size(window, 1280, 720);
   gtk_widget_show(GTK_WIDGET(window));
 
