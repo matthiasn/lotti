@@ -1755,7 +1755,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskStatusRejected => 'RESPINS';
 
   @override
-  String get taskLanguageLabel => 'Language:';
+  String get taskLanguageLabel => 'Limbă:';
 
   @override
   String get taskLanguageArabic => 'Arabic';

@@ -1757,121 +1757,121 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskStatusRejected => 'Abgelehnt';
 
   @override
-  String get taskLanguageLabel => 'Language:';
+  String get taskLanguageLabel => 'Sprache:';
 
   @override
-  String get taskLanguageArabic => 'Arabic';
+  String get taskLanguageArabic => 'Arabisch';
 
   @override
-  String get taskLanguageBengali => 'Bengali';
+  String get taskLanguageBengali => 'Bengalisch';
 
   @override
-  String get taskLanguageBulgarian => 'Bulgarian';
+  String get taskLanguageBulgarian => 'Bulgarisch';
 
   @override
-  String get taskLanguageChinese => 'Chinese';
+  String get taskLanguageChinese => 'Chinesisch';
 
   @override
-  String get taskLanguageCroatian => 'Croatian';
+  String get taskLanguageCroatian => 'Kroatisch';
 
   @override
-  String get taskLanguageCzech => 'Czech';
+  String get taskLanguageCzech => 'Tschechisch';
 
   @override
-  String get taskLanguageDanish => 'Danish';
+  String get taskLanguageDanish => 'Dänisch';
 
   @override
-  String get taskLanguageDutch => 'Dutch';
+  String get taskLanguageDutch => 'Niederländisch';
 
   @override
-  String get taskLanguageEnglish => 'English';
+  String get taskLanguageEnglish => 'Englisch';
 
   @override
-  String get taskLanguageEstonian => 'Estonian';
+  String get taskLanguageEstonian => 'Estnisch';
 
   @override
-  String get taskLanguageFinnish => 'Finnish';
+  String get taskLanguageFinnish => 'Finnisch';
 
   @override
-  String get taskLanguageFrench => 'French';
+  String get taskLanguageFrench => 'Französisch';
 
   @override
-  String get taskLanguageGerman => 'German';
+  String get taskLanguageGerman => 'Deutsch';
 
   @override
-  String get taskLanguageGreek => 'Greek';
+  String get taskLanguageGreek => 'Griechisch';
 
   @override
-  String get taskLanguageHebrew => 'Hebrew';
+  String get taskLanguageHebrew => 'Hebräisch';
 
   @override
   String get taskLanguageHindi => 'Hindi';
 
   @override
-  String get taskLanguageHungarian => 'Hungarian';
+  String get taskLanguageHungarian => 'Ungarisch';
 
   @override
-  String get taskLanguageIndonesian => 'Indonesian';
+  String get taskLanguageIndonesian => 'Indonesisch';
 
   @override
-  String get taskLanguageItalian => 'Italian';
+  String get taskLanguageItalian => 'Italienisch';
 
   @override
-  String get taskLanguageJapanese => 'Japanese';
+  String get taskLanguageJapanese => 'Japanisch';
 
   @override
-  String get taskLanguageKorean => 'Korean';
+  String get taskLanguageKorean => 'Koreanisch';
 
   @override
-  String get taskLanguageLatvian => 'Latvian';
+  String get taskLanguageLatvian => 'Lettisch';
 
   @override
-  String get taskLanguageLithuanian => 'Lithuanian';
+  String get taskLanguageLithuanian => 'Litauisch';
 
   @override
-  String get taskLanguageNorwegian => 'Norwegian';
+  String get taskLanguageNorwegian => 'Norwegisch';
 
   @override
-  String get taskLanguagePolish => 'Polish';
+  String get taskLanguagePolish => 'Polnisch';
 
   @override
-  String get taskLanguagePortuguese => 'Portuguese';
+  String get taskLanguagePortuguese => 'Portugiesisch';
 
   @override
-  String get taskLanguageRomanian => 'Romanian';
+  String get taskLanguageRomanian => 'Rumänisch';
 
   @override
-  String get taskLanguageRussian => 'Russian';
+  String get taskLanguageRussian => 'Russisch';
 
   @override
-  String get taskLanguageSerbian => 'Serbian';
+  String get taskLanguageSerbian => 'Serbisch';
 
   @override
-  String get taskLanguageSlovak => 'Slovak';
+  String get taskLanguageSlovak => 'Slowakisch';
 
   @override
-  String get taskLanguageSlovenian => 'Slovenian';
+  String get taskLanguageSlovenian => 'Slowenisch';
 
   @override
-  String get taskLanguageSpanish => 'Spanish';
+  String get taskLanguageSpanish => 'Spanisch';
 
   @override
   String get taskLanguageSwahili => 'Swahili';
 
   @override
-  String get taskLanguageSwedish => 'Swedish';
+  String get taskLanguageSwedish => 'Schwedisch';
 
   @override
-  String get taskLanguageThai => 'Thai';
+  String get taskLanguageThai => 'Thailändisch';
 
   @override
-  String get taskLanguageTurkish => 'Turkish';
+  String get taskLanguageTurkish => 'Türkisch';
 
   @override
-  String get taskLanguageUkrainian => 'Ukrainian';
+  String get taskLanguageUkrainian => 'Ukrainisch';
 
   @override
-  String get taskLanguageVietnamese => 'Vietnamese';
+  String get taskLanguageVietnamese => 'Vietnamesisch';
 
   @override
   String get tasksFilterTitle => 'Aufgabenfilter';

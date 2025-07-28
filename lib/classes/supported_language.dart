@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -46,11 +47,8 @@ enum SupportedLanguage {
   final String name;
 
   static SupportedLanguage? fromCode(String code) {
-    try {
-      return SupportedLanguage.values.firstWhere((lang) => lang.code == code);
-    } catch (e) {
-      return null;
-    }
+    return SupportedLanguage.values
+        .firstWhereOrNull((lang) => lang.code == code);
   }
 
   String localizedName(BuildContext context) {
