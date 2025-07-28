@@ -126,3 +126,52 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Desktop integration files
+set(DESKTOP_FILE "${CMAKE_CURRENT_SOURCE_DIR}/com.matthiasnehlsen.lotti.desktop")
+set(ICON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/icons")
+
+# Validate required files exist before installation
+if(NOT EXISTS "${DESKTOP_FILE}")
+  message(WARNING "Desktop file not found: ${DESKTOP_FILE}")
+endif()
+
+if(NOT EXISTS "${ICON_DIR}")
+  message(WARNING "Icon directory not found: ${ICON_DIR}")
+endif()
+
+# Install desktop file for desktop integration
+# Note: This installs to the bundle directory for development.
+# For system-wide installation, these would go to /usr/share/applications and /usr/share/icons
+if(EXISTS "${DESKTOP_FILE}")
+  install(FILES "${DESKTOP_FILE}"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
+    COMPONENT Runtime)
+else()
+  message(WARNING "Skipping desktop file installation - file not found")
+endif()
+
+# Install icons in various sizes for desktop integration
+if(EXISTS "${ICON_DIR}")
+  file(GLOB_RECURSE ICON_FILES "${ICON_DIR}/hicolor/*/apps/*.png")
+  
+  if(ICON_FILES)
+    foreach(ICON_FILE ${ICON_FILES})
+      # Extract the relative path from the icons directory
+      file(RELATIVE_PATH ICON_RELATIVE_PATH "${ICON_DIR}" "${ICON_FILE}")
+      get_filename_component(ICON_RELATIVE_DIR "${ICON_RELATIVE_PATH}" DIRECTORY)
+      install(FILES "${ICON_FILE}"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/${ICON_RELATIVE_DIR}"
+        COMPONENT Runtime)
+    endforeach()
+    
+    # Copy icons to assets directory for runtime access
+    install(DIRECTORY "${ICON_DIR}/"
+      DESTINATION "${INSTALL_BUNDLE_DATA_DIR}/${FLUTTER_ASSET_DIR_NAME}/assets/icons_linux"
+      COMPONENT Runtime)
+  else()
+    message(WARNING "No icon files found in ${ICON_DIR}")
+  endif()
+else()
+  message(WARNING "Skipping icon installation - directory not found")
+endif()

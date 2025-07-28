@@ -117,7 +117,7 @@ flatpak build-bundle repo lotti.flatpak org.lotti.lotti
 ### Flathub
 To submit to Flathub:
 1. Fork the [Flathub repository](https://github.com/flathub/flathub)
-2. Add the manifest to `org.lotti.Lotti.yml`
+2. Add the manifest to `org.lotti.lotti.yml` (filename must match app-id)
 3. Submit a pull request
 
 ### Direct Distribution
@@ -128,12 +128,26 @@ flatpak install lotti.flatpak
 
 ## Permissions
 
-The app requests the following permissions:
-- Network access
-- Home directory access
-- Audio (pulseaudio)
-- Display (X11/Wayland)
-- DRI (for hardware acceleration)
+The app follows the **principle of least privilege** and requests only necessary permissions:
+
+### Network & System
+- `--share=network` - For sync features and online functionality
+- `--share=ipc` - Inter-process communication for GUI
+- `--socket=pulseaudio` - Audio recording/playback for voice notes
+- `--socket=wayland` + `--socket=fallback-x11` - Display protocols
+- `--device=dri` - Hardware-accelerated graphics
+
+### Secure Filesystem Access
+- `--filesystem=xdg-documents:rw` - Read/write access to Documents folder for importing/exporting journal data
+- `--filesystem=xdg-pictures:ro` - Read-only access to Pictures for importing images
+- `--filesystem=xdg-download:rw` - Read/write access to Downloads for saving exports
+- **App data**: Automatically stored in `~/.var/app/org.lotti.lotti/` (secure default)
+
+### Security Notes
+- ❌ **No `--filesystem=home`** - Removed broad home directory access for security
+- ❌ **No `--socket=gpg-agent`** - Removed unnecessary GPG access
+- ✅ **Minimal permissions** - Only specific directories needed for functionality
+- ✅ **Read-only where possible** - Pictures access is read-only for security
 
 ## Screenshot Tools
 

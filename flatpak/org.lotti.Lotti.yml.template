@@ -9,9 +9,13 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --socket=pulseaudio
-  - --filesystem=home
+  # Secure filesystem permissions following principle of least privilege
+  - --filesystem=xdg-documents:rw    # For importing/exporting journal data
+  - --filesystem=xdg-pictures:ro     # For importing images into journal entries
+  - --filesystem=xdg-download:rw     # For downloading/saving exports
+  # App data is automatically available in ~/.var/app/org.lotti.lotti/
   - --device=dri
-  - --socket=gpg-agent
+  # Removed --socket=gpg-agent (not needed unless app specifically uses GPG)
 modules:
   - name: lotti
     buildsystem: flutter
@@ -26,7 +30,7 @@ modules:
       - name: flutter-common
         buildsystem: simple
         build-commands:
-          - install -D flatpak/org.lotti.Lotti.desktop /app/share/applications/org.lotti.lotti.desktop
+          - install -D flatpak/org.lotti.lotti.desktop /app/share/applications/org.lotti.lotti.desktop
           - install -D flatpak/org.lotti.lotti.generated.metainfo.xml /app/share/metainfo/org.lotti.lotti.metainfo.xml
           # Install icons - using 1024px source for all sizes (TODO: Create properly sized icons for better quality)
           - |
@@ -35,6 +39,6 @@ modules:
             done
         sources:
           - type: file
-            path: flatpak/org.lotti.Lotti.desktop
+            path: flatpak/org.lotti.lotti.desktop
           - type: file
             path: flatpak/org.lotti.lotti.generated.metainfo.xml 
