@@ -20,6 +20,7 @@ _$AiInputTaskObjectImpl _$$AiInputTaskObjectImplFromJson(
       logEntries: (json['logEntries'] as List<dynamic>)
           .map((e) => AiInputLogEntryObject.fromJson(e as Map<String, dynamic>))
           .toList(),
+      languageCode: json['languageCode'] as String?,
     );
 
 Map<String, dynamic> _$$AiInputTaskObjectImplToJson(
@@ -32,6 +33,7 @@ Map<String, dynamic> _$$AiInputTaskObjectImplToJson(
       'creationDate': instance.creationDate.toIso8601String(),
       'actionItems': instance.actionItems,
       'logEntries': instance.logEntries,
+      'languageCode': instance.languageCode,
     };
 
 _$AiActionItemImpl _$$AiActionItemImplFromJson(Map<String, dynamic> json) =>
@@ -62,6 +64,9 @@ _$AiInputLogEntryObjectImpl _$$AiInputLogEntryObjectImplFromJson(
       creationTimestamp: DateTime.parse(json['creationTimestamp'] as String),
       loggedDuration: json['loggedDuration'] as String,
       text: json['text'] as String,
+      audioTranscript: json['audioTranscript'] as String?,
+      transcriptLanguage: json['transcriptLanguage'] as String?,
+      entryType: json['entryType'] as String?,
     );
 
 Map<String, dynamic> _$$AiInputLogEntryObjectImplToJson(
@@ -70,6 +75,9 @@ Map<String, dynamic> _$$AiInputLogEntryObjectImplToJson(
       'creationTimestamp': instance.creationTimestamp.toIso8601String(),
       'loggedDuration': instance.loggedDuration,
       'text': instance.text,
+      'audioTranscript': instance.audioTranscript,
+      'transcriptLanguage': instance.transcriptLanguage,
+      'entryType': instance.entryType,
     };
 
 _$AiInputActionItemsListImpl _$$AiInputActionItemsListImplFromJson(

@@ -67,11 +67,33 @@ class AiInputRepository {
       if (linked is JournalEntry ||
           linked is JournalImage ||
           linked is JournalAudio) {
+        String? audioTranscript;
+        String? transcriptLanguage;
+        String? entryType;
+
+        if (linked is JournalAudio) {
+          entryType = 'audio';
+          // Get the most recent transcript if available
+          final transcripts = linked.data.transcripts;
+          if (transcripts != null && transcripts.isNotEmpty) {
+            final latestTranscript = transcripts.last;
+            audioTranscript = latestTranscript.transcript;
+            transcriptLanguage = latestTranscript.detectedLanguage;
+          }
+        } else if (linked is JournalImage) {
+          entryType = 'image';
+        } else if (linked is JournalEntry) {
+          entryType = 'text';
+        }
+
         logEntries.add(
           AiInputLogEntryObject(
             creationTimestamp: linked.meta.dateFrom,
             loggedDuration: formatHhMm(entryDuration(linked)),
             text: linked.entryText?.plainText ?? '',
+            audioTranscript: audioTranscript,
+            transcriptLanguage: transcriptLanguage,
+            entryType: entryType,
           ),
         );
       }
@@ -120,6 +142,7 @@ class AiInputRepository {
       logEntries: logEntries,
       estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),
       timeSpent: formatHhMm(timeSpent),
+      languageCode: task.data.languageCode,
     );
 
     return aiInput;

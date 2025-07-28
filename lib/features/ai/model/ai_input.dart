@@ -13,6 +13,7 @@ class AiInputTaskObject with _$AiInputTaskObject {
     required DateTime creationDate,
     required List<AiActionItem> actionItems,
     required List<AiInputLogEntryObject> logEntries,
+    String? languageCode,
   }) = _AiInputTaskObject;
 
   factory AiInputTaskObject.fromJson(Map<String, dynamic> json) =>
@@ -39,6 +40,9 @@ class AiInputLogEntryObject with _$AiInputLogEntryObject {
     required DateTime creationTimestamp,
     required String loggedDuration,
     required String text,
+    String? audioTranscript,
+    String? transcriptLanguage,
+    String? entryType,
   }) = _AiInputLogEntryObject;
 
   factory AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =>

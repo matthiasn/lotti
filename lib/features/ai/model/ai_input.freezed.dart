@@ -28,6 +28,7 @@ mixin _$AiInputTaskObject {
   List<AiActionItem> get actionItems => throw _privateConstructorUsedError;
   List<AiInputLogEntryObject> get logEntries =>
       throw _privateConstructorUsedError;
+  String? get languageCode => throw _privateConstructorUsedError;
 
   /// Serializes this AiInputTaskObject to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -52,7 +53,8 @@ abstract class $AiInputTaskObjectCopyWith<$Res> {
       String timeSpent,
       DateTime creationDate,
       List<AiActionItem> actionItems,
-      List<AiInputLogEntryObject> logEntries});
+      List<AiInputLogEntryObject> logEntries,
+      String? languageCode});
 }
 
 /// @nodoc
@@ -77,6 +79,7 @@ class _$AiInputTaskObjectCopyWithImpl<$Res, $Val extends AiInputTaskObject>
     Object? creationDate = null,
     Object? actionItems = null,
     Object? logEntries = null,
+    Object? languageCode = freezed,
   }) {
     return _then(_value.copyWith(
       title: null == title
@@ -107,6 +110,10 @@ class _$AiInputTaskObjectCopyWithImpl<$Res, $Val extends AiInputTaskObject>
           ? _value.logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
               as List<AiInputLogEntryObject>,
+      languageCode: freezed == languageCode
+          ? _value.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -126,7 +133,8 @@ abstract class _$$AiInputTaskObjectImplCopyWith<$Res>
       String timeSpent,
       DateTime creationDate,
       List<AiActionItem> actionItems,
-      List<AiInputLogEntryObject> logEntries});
+      List<AiInputLogEntryObject> logEntries,
+      String? languageCode});
 }
 
 /// @nodoc
@@ -149,6 +157,7 @@ class __$$AiInputTaskObjectImplCopyWithImpl<$Res>
     Object? creationDate = null,
     Object? actionItems = null,
     Object? logEntries = null,
+    Object? languageCode = freezed,
   }) {
     return _then(_$AiInputTaskObjectImpl(
       title: null == title
@@ -179,6 +188,10 @@ class __$$AiInputTaskObjectImplCopyWithImpl<$Res>
           ? _value._logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
               as List<AiInputLogEntryObject>,
+      languageCode: freezed == languageCode
+          ? _value.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -193,7 +206,8 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
       required this.timeSpent,
       required this.creationDate,
       required final List<AiActionItem> actionItems,
-      required final List<AiInputLogEntryObject> logEntries})
+      required final List<AiInputLogEntryObject> logEntries,
+      this.languageCode})
       : _actionItems = actionItems,
         _logEntries = logEntries;
 
@@ -227,8 +241,11 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
   }
 
   @override
+  final String? languageCode;
+
+  @override
   String toString() {
-    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries)';
+    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, languageCode: $languageCode)';
   }
 
   @override
@@ -247,7 +264,9 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
             const DeepCollectionEquality()
                 .equals(other._actionItems, _actionItems) &&
             const DeepCollectionEquality()
-                .equals(other._logEntries, _logEntries));
+                .equals(other._logEntries, _logEntries) &&
+            (identical(other.languageCode, languageCode) ||
+                other.languageCode == languageCode));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -260,7 +279,8 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
       timeSpent,
       creationDate,
       const DeepCollectionEquality().hash(_actionItems),
-      const DeepCollectionEquality().hash(_logEntries));
+      const DeepCollectionEquality().hash(_logEntries),
+      languageCode);
 
   /// Create a copy of AiInputTaskObject
   /// with the given fields replaced by the non-null parameter values.
@@ -281,14 +301,14 @@ class _$AiInputTaskObjectImpl implements _AiInputTaskObject {
 
 abstract class _AiInputTaskObject implements AiInputTaskObject {
   const factory _AiInputTaskObject(
-          {required final String title,
-          required final String status,
-          required final String estimatedDuration,
-          required final String timeSpent,
-          required final DateTime creationDate,
-          required final List<AiActionItem> actionItems,
-          required final List<AiInputLogEntryObject> logEntries}) =
-      _$AiInputTaskObjectImpl;
+      {required final String title,
+      required final String status,
+      required final String estimatedDuration,
+      required final String timeSpent,
+      required final DateTime creationDate,
+      required final List<AiActionItem> actionItems,
+      required final List<AiInputLogEntryObject> logEntries,
+      final String? languageCode}) = _$AiInputTaskObjectImpl;
 
   factory _AiInputTaskObject.fromJson(Map<String, dynamic> json) =
       _$AiInputTaskObjectImpl.fromJson;
@@ -307,6 +327,8 @@ abstract class _AiInputTaskObject implements AiInputTaskObject {
   List<AiActionItem> get actionItems;
   @override
   List<AiInputLogEntryObject> get logEntries;
+  @override
+  String? get languageCode;
 
   /// Create a copy of AiInputTaskObject
   /// with the given fields replaced by the non-null parameter values.
@@ -563,6 +585,9 @@ mixin _$AiInputLogEntryObject {
   DateTime get creationTimestamp => throw _privateConstructorUsedError;
   String get loggedDuration => throw _privateConstructorUsedError;
   String get text => throw _privateConstructorUsedError;
+  String? get audioTranscript => throw _privateConstructorUsedError;
+  String? get transcriptLanguage => throw _privateConstructorUsedError;
+  String? get entryType => throw _privateConstructorUsedError;
 
   /// Serializes this AiInputLogEntryObject to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -580,7 +605,13 @@ abstract class $AiInputLogEntryObjectCopyWith<$Res> {
           $Res Function(AiInputLogEntryObject) then) =
       _$AiInputLogEntryObjectCopyWithImpl<$Res, AiInputLogEntryObject>;
   @useResult
-  $Res call({DateTime creationTimestamp, String loggedDuration, String text});
+  $Res call(
+      {DateTime creationTimestamp,
+      String loggedDuration,
+      String text,
+      String? audioTranscript,
+      String? transcriptLanguage,
+      String? entryType});
 }
 
 /// @nodoc
@@ -602,6 +633,9 @@ class _$AiInputLogEntryObjectCopyWithImpl<$Res,
     Object? creationTimestamp = null,
     Object? loggedDuration = null,
     Object? text = null,
+    Object? audioTranscript = freezed,
+    Object? transcriptLanguage = freezed,
+    Object? entryType = freezed,
   }) {
     return _then(_value.copyWith(
       creationTimestamp: null == creationTimestamp
@@ -616,6 +650,18 @@ class _$AiInputLogEntryObjectCopyWithImpl<$Res,
           ? _value.text
           : text // ignore: cast_nullable_to_non_nullable
               as String,
+      audioTranscript: freezed == audioTranscript
+          ? _value.audioTranscript
+          : audioTranscript // ignore: cast_nullable_to_non_nullable
+              as String?,
+      transcriptLanguage: freezed == transcriptLanguage
+          ? _value.transcriptLanguage
+          : transcriptLanguage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      entryType: freezed == entryType
+          ? _value.entryType
+          : entryType // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -629,7 +675,13 @@ abstract class _$$AiInputLogEntryObjectImplCopyWith<$Res>
       __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({DateTime creationTimestamp, String loggedDuration, String text});
+  $Res call(
+      {DateTime creationTimestamp,
+      String loggedDuration,
+      String text,
+      String? audioTranscript,
+      String? transcriptLanguage,
+      String? entryType});
 }
 
 /// @nodoc
@@ -649,6 +701,9 @@ class __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>
     Object? creationTimestamp = null,
     Object? loggedDuration = null,
     Object? text = null,
+    Object? audioTranscript = freezed,
+    Object? transcriptLanguage = freezed,
+    Object? entryType = freezed,
   }) {
     return _then(_$AiInputLogEntryObjectImpl(
       creationTimestamp: null == creationTimestamp
@@ -663,6 +718,18 @@ class __$$AiInputLogEntryObjectImplCopyWithImpl<$Res>
           ? _value.text
           : text // ignore: cast_nullable_to_non_nullable
               as String,
+      audioTranscript: freezed == audioTranscript
+          ? _value.audioTranscript
+          : audioTranscript // ignore: cast_nullable_to_non_nullable
+              as String?,
+      transcriptLanguage: freezed == transcriptLanguage
+          ? _value.transcriptLanguage
+          : transcriptLanguage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      entryType: freezed == entryType
+          ? _value.entryType
+          : entryType // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -673,7 +740,10 @@ class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
   const _$AiInputLogEntryObjectImpl(
       {required this.creationTimestamp,
       required this.loggedDuration,
-      required this.text});
+      required this.text,
+      this.audioTranscript,
+      this.transcriptLanguage,
+      this.entryType});
 
   factory _$AiInputLogEntryObjectImpl.fromJson(Map<String, dynamic> json) =>
       _$$AiInputLogEntryObjectImplFromJson(json);
@@ -684,10 +754,16 @@ class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
   final String loggedDuration;
   @override
   final String text;
+  @override
+  final String? audioTranscript;
+  @override
+  final String? transcriptLanguage;
+  @override
+  final String? entryType;
 
   @override
   String toString() {
-    return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text)';
+    return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType)';
   }
 
   @override
@@ -699,13 +775,19 @@ class _$AiInputLogEntryObjectImpl implements _AiInputLogEntryObject {
                 other.creationTimestamp == creationTimestamp) &&
             (identical(other.loggedDuration, loggedDuration) ||
                 other.loggedDuration == loggedDuration) &&
-            (identical(other.text, text) || other.text == text));
+            (identical(other.text, text) || other.text == text) &&
+            (identical(other.audioTranscript, audioTranscript) ||
+                other.audioTranscript == audioTranscript) &&
+            (identical(other.transcriptLanguage, transcriptLanguage) ||
+                other.transcriptLanguage == transcriptLanguage) &&
+            (identical(other.entryType, entryType) ||
+                other.entryType == entryType));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, creationTimestamp, loggedDuration, text);
+  int get hashCode => Object.hash(runtimeType, creationTimestamp,
+      loggedDuration, text, audioTranscript, transcriptLanguage, entryType);
 
   /// Create a copy of AiInputLogEntryObject
   /// with the given fields replaced by the non-null parameter values.
@@ -728,7 +810,10 @@ abstract class _AiInputLogEntryObject implements AiInputLogEntryObject {
   const factory _AiInputLogEntryObject(
       {required final DateTime creationTimestamp,
       required final String loggedDuration,
-      required final String text}) = _$AiInputLogEntryObjectImpl;
+      required final String text,
+      final String? audioTranscript,
+      final String? transcriptLanguage,
+      final String? entryType}) = _$AiInputLogEntryObjectImpl;
 
   factory _AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =
       _$AiInputLogEntryObjectImpl.fromJson;
@@ -739,6 +824,12 @@ abstract class _AiInputLogEntryObject implements AiInputLogEntryObject {
   String get loggedDuration;
   @override
   String get text;
+  @override
+  String? get audioTranscript;
+  @override
+  String? get transcriptLanguage;
+  @override
+  String? get entryType;
 
   /// Create a copy of AiInputLogEntryObject
   /// with the given fields replaced by the non-null parameter values.

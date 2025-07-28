@@ -28,6 +28,7 @@ dependencies:
   calendar_view: ^1.2.0
   collection: ^1.18.0
   connectivity_plus: ^6.1.2
+  country_flags: ^3.0.0
   crypto: ^3.0.1
   dart_geohash: ^2.0.1
   delta_markdown:
