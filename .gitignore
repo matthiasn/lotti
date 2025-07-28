@@ -14,6 +14,13 @@
 .claude/
 tmp/
 
+# Flatpak generated files
+flatpak/*.generated.*
+flatpak/build-dir/
+flatpak/repo/
+*.flatpak
+org.lotti.lotti.yml
+
 !Podfile.lock
 !pubspec.lock
 

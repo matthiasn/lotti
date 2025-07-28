@@ -117,12 +117,47 @@ Lotti is currently available for beta testing for these platforms:
 $ sudo apt install pulseaudio-utils
 ```
 
+### Building with Flatpak (Recommended for Distribution)
+
+Lotti now includes complete Flatpak support for easy distribution and installation. The Flatpak configuration is located in the `flatpak/` directory.
+
+**Quick Start:**
+```bash
+# Install prerequisites
+sudo apt install flatpak flatpak-builder
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub org.gnome.Sdk//45 org.gnome.Platform//45
+
+# Build and install the Flatpak
+./flatpak/build.sh
+
+# The build script will show you installation options when complete
+```
+
+**For detailed instructions, see [flatpak/README.md](flatpak/README.md).**
+
+The Flatpak includes:
+- Proper desktop integration with icons
+- Screenshot functionality support
+- All necessary permissions for full functionality
+- AppStream metadata for store distribution
+
+### Traditional Build (Development)
+
+For development and testing, you can build Lotti traditionally:
+
+```
+$ sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
+$ flutter packages get
+$ make build_runner
+```
+
+In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
 
 ## Blog posts
 
 - [Introducing Lotti or how I learned to love Flutter and Buildkite](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)
 - [How I switched to Flutter and lost 10 kilos](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/)
-
 
 ## Getting Started
 
@@ -133,19 +168,16 @@ $ sudo apt install pulseaudio-utils
 5. Open in your favorite IDE, e.g. [Android Studio](https://developer.android.com/studio) 
 6. Run, either from the IDE or using e.g. `flutter run -d macos`
 
-
 ## widgetbook
 
 Lotti uses [widgetbook](https://pub.dev/packages/widgetbook) for developing and documenting widgets, for now only 
 for select widgets. To run the widgetbook, run e.g. `fvm flutter run -d macos -t lib/widgetbook.dart`.
-
 
 ## Platform-specific setup
 
 ### Mac
 
 Tested on `macOS 13.3`: no additional steps necessary. You only need to have Xcode installed.
-
 
 ### Linux
 
@@ -160,18 +192,15 @@ $ make build_runner
 
 In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
 
-
 ### Windows
 
 If your system is set up to run the Flutter counter example app, you should be good to go.
-
 
 ## Continuous Integration
 
 This project uses [Buildkite](https://buildkite.com/docs/agent/v3/macos) on macOS for releasing to
 TestFlight on iOS and macOS, and GitHub Actions for publishing to GitHub Releases for all other
 platforms. 
-
 
 ## Contributions
 
