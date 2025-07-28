@@ -58,7 +58,7 @@ const taskSummaryPrompt = PreconfiguredPrompt(
 ```
 
 The prompt template includes:
-- System message setting context
+- System message setting context (with language preference if set)
 - Detailed user message with formatting instructions
 - Placeholder `{{task}}` replaced with actual task JSON
 
@@ -68,6 +68,8 @@ The prompt template includes:
    - Task title, status, duration
    - Action items (completed and pending)
    - Log entries with timestamps and text
+   - Language preference (if set)
+   - Transcript languages from audio entries
 
 2. **Inference Execution**:
    ```dart
@@ -414,6 +416,106 @@ A: The system can automatically create new checklist items based on AI analysis:
 - **Context Awareness**: Works during audio transcriptions, task summaries, and image analysis
 - **Common Triggers**: "I need to...", "Next I'll...", "We should...", or any newly mentioned tasks
 
+### Q: How does multilingual task summary generation work?
+A: The system supports generating task summaries in 38 different languages:
+- **Automatic Language Detection**: AI analyzes task content (especially audio transcripts) to detect the primary language
+- **Manual Language Selection**: Users can manually set their preferred language for summaries via the task header
+- **Language Persistence**: Once set (manually or automatically), the language preference is saved with the task
+- **Supported Languages**: All 38 languages supported by Gemini Code Assist, including major languages like English, Spanish, Chinese, Japanese, Arabic, Hindi, and many more
+
+## Language Support
+
+### Overview
+
+The AI system supports multilingual task summary generation, allowing users to receive AI-generated content in their preferred language. This feature is particularly useful for international teams and users who work in multiple languages.
+
+### Supported Languages
+
+The system supports all 38 languages from Gemini Code Assist:
+- **European**: English (en), Spanish (es), French (fr), German (de), Italian (it), Portuguese (pt), Dutch (nl), Polish (pl), Russian (ru), Ukrainian (uk), Czech (cs), Bulgarian (bg), Croatian (hr), Danish (da), Estonian (et), Finnish (fi), Greek (el), Hungarian (hu), Latvian (lv), Lithuanian (lt), Norwegian (no), Romanian (ro), Serbian (sr), Slovak (sk), Slovenian (sl), Swedish (sv)
+- **Asian**: Chinese (zh), Japanese (ja), Korean (ko), Hindi (hi), Bengali (bn), Indonesian (id), Thai (th), Vietnamese (vi), Turkish (tr)
+- **Middle Eastern**: Arabic (ar), Hebrew (he)
+- **African**: Swahili (sw)
+
+### Language Detection and Setting
+
+The system uses AI function calling to automatically detect and set task language:
+
+```dart
+// Function definition in TaskFunctions
+static const String setTaskLanguage = 'set_task_language';
+
+ChatCompletionTool(
+  type: ChatCompletionToolType.function,
+  function: FunctionObject(
+    name: setTaskLanguage,
+    description: 'Set the detected language for the task based on the content analysis',
+    parameters: {
+      'languageCode': {
+        'type': 'string',
+        'enum': ['ar', 'bn', 'bg', ...], // All 38 language codes
+      },
+      'confidence': {
+        'type': 'string',
+        'enum': ['high', 'medium', 'low'],
+      },
+      'reason': {
+        'type': 'string',
+        'description': 'Brief explanation of why this language was detected',
+      },
+    },
+  ),
+),
+```
+
+### How It Works
+
+1. **Automatic Detection**: When generating a task summary, the AI analyzes:
+   - Audio transcript languages (prioritized)
+   - Text content in log entries
+   - Overall task context
+
+2. **Language Setting**: If no language is set, the AI:
+   - Detects the primary language with confidence level
+   - Calls `set_task_language` function
+   - Updates the task with the detected language
+   - Only sets language once (doesn't override existing preferences)
+
+3. **Summary Generation**: Once a language is set:
+   - System message includes language preference
+   - AI generates all content in that language
+   - Language preference persists for future summaries
+
+4. **Manual Override**: Users can manually select language via:
+   - Task header language widget
+   - Modal with searchable language list
+   - Visual country flags for easy identification
+
+### Implementation Details
+
+#### Data Model
+```dart
+// In TaskData
+class TaskData {
+  final String? languageCode; // ISO 639-1 code
+  // ... other fields
+}
+```
+
+#### System Message Enhancement
+When a language preference exists, the system message is enhanced:
+```dart
+if (language != null) {
+  systemMessage += '\n\nIMPORTANT: Generate the entire summary in ${language.name} (${language.code}). '
+    'All text, headings, and content should be in this language.';
+}
+```
+
+#### UI Components
+- **TaskLanguageWidget**: Displays current language with flag
+- **LanguageSelectionModalContent**: Searchable language selector
+- **Visual Design**: Flags in rounded frames for dark mode visibility
+
 ## Technical Details
 
 ### Function Calling Implementation
@@ -466,6 +568,11 @@ The system includes comprehensive test coverage:
 - **Service Tests**: Tests for `AutoChecklistService` including edge cases and error handling
 - **Controller Tests**: Tests for `ChecklistSuggestionsController` and state management
 - **Concurrency Tests**: Semaphore protection and race condition prevention
+- **Language Support Tests**: 
+  - Task functions schema validation for language detection
+  - AI input repository language data inclusion
+  - Unified AI inference repository language handling
+  - Language preference persistence and override protection
 
 ### Integration Tests
 - **Auto-checklist Creation**: End-to-end testing of automatic checklist creation flow
