@@ -620,7 +620,7 @@
   "taskStatusOnHold": "On Hold",
   "taskStatusOpen": "Open",
   "taskStatusRejected": "Rejected",
-  "taskLanguageLabel": "Language",
+  "taskLanguageLabel": "Language:",
   "taskLanguageArabic": "Arabic",
   "taskLanguageBengali": "Bengali",
   "taskLanguageBulgarian": "Bulgarian",

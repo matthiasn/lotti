@@ -3337,7 +3337,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskLanguageLabel.
   ///
   /// In en, this message translates to:
-  /// **'Language'**
+  /// **'Language:'**
   String get taskLanguageLabel;
 
   /// No description provided for @taskLanguageArabic.

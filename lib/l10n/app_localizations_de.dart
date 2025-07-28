@@ -1757,7 +1757,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskStatusRejected => 'Abgelehnt';
 
   @override
-  String get taskLanguageLabel => 'Language';
+  String get taskLanguageLabel => 'Language:';
 
   @override
   String get taskLanguageArabic => 'Arabic';

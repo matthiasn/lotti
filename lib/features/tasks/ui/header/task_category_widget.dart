@@ -64,11 +64,9 @@ class TaskCategoryWidget extends StatelessWidget {
                   size: 12,
                 ),
                 const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    category?.name ?? '-',
-                    style: context.textTheme.titleMedium,
-                  ),
+                Text(
+                  category?.name ?? '-',
+                  style: context.textTheme.titleMedium,
                 ),
               ],
             ),

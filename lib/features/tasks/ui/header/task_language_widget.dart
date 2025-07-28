@@ -23,34 +23,56 @@ class TaskLanguageWidget extends StatelessWidget {
     final language =
         languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
 
-    if (language == null) {
-      return InkWell(
-        onTap: () => _showLanguageSelector(context),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            Icons.language,
-            color: context.colorScheme.outline.withAlpha(128),
-            size: 32,
-          ),
-        ),
-      );
-    }
-
     return InkWell(
       onTap: () => _showLanguageSelector(context),
-      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: SizedBox(
-          width: 40,
-          height: 30,
-          child: CountryFlag.fromLanguageCode(
-            language.code,
-            height: 30,
-            width: 40,
-          ),
+        padding: const EdgeInsets.only(right: 5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.messages.taskLanguageLabel,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (language != null)
+              Container(
+                width: 32,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: context.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: context.colorScheme.primary.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: CountryFlag.fromLanguageCode(
+                    language.code,
+                    height: 20,
+                    width: 30,
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: context.colorScheme.outline.withAlpha(51),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.language,
+                  size: 16,
+                  color: context.colorScheme.outline,
+                ),
+              ),
+          ],
         ),
       ),
     );
