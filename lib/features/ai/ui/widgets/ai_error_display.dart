@@ -138,10 +138,6 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                     onPressed: widget.onRetry,
                     icon: Icons.refresh_rounded,
                     label: context.messages.aiInferenceErrorRetryButton,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.colorScheme.primary,
-                      foregroundColor: context.colorScheme.onPrimary,
-                    ),
                   ),
                 ],
                 // View Log button

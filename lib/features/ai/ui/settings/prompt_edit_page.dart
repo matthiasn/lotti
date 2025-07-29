@@ -16,6 +16,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error
 import 'package:lotti/features/ai/ui/settings/widgets/preconfigured_prompt_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_secondary_button.dart';
 
 class PromptEditPage extends ConsumerStatefulWidget {
   const PromptEditPage({
@@ -414,28 +416,47 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
         ],
 
         // Manage Models Button
-        AiFormButton(
-          label: modelCount > 0
-              ? context.messages.promptAddOrRemoveModelsButton
-              : context.messages.promptSelectModelsButton,
-          onPressed: () {
-            showModelManagementModal(
-              context: context,
-              currentSelectedIds: formState.modelIds,
-              currentDefaultId: formState.defaultModelId,
-              promptConfig: tempPromptConfig,
-              onSave: (List<String> newSelectedIds, String newDefaultId) {
-                controller.modelIdsChanged(newSelectedIds);
-                if (newSelectedIds.contains(newDefaultId)) {
-                  controller.defaultModelIdChanged(newDefaultId);
-                }
-              },
-            );
-          },
-          icon: Icons.tune_rounded,
-          fullWidth: true,
-          style: modelCount > 0 ? AiButtonStyle.text : AiButtonStyle.primary,
-        ),
+        if (modelCount > 0) TextButton(
+                onPressed: () {
+                  showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: formState.modelIds,
+                    currentDefaultId: formState.defaultModelId,
+                    promptConfig: tempPromptConfig,
+                    onSave: (List<String> newSelectedIds, String newDefaultId) {
+                      controller.modelIdsChanged(newSelectedIds);
+                      if (newSelectedIds.contains(newDefaultId)) {
+                        controller.defaultModelIdChanged(newDefaultId);
+                      }
+                    },
+                  );
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.tune_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text(context.messages.promptAddOrRemoveModelsButton),
+                  ],
+                ),
+              ) else LottiPrimaryButton(
+                label: context.messages.promptSelectModelsButton,
+                onPressed: () {
+                  showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: formState.modelIds,
+                    currentDefaultId: formState.defaultModelId,
+                    promptConfig: tempPromptConfig,
+                    onSave: (List<String> newSelectedIds, String newDefaultId) {
+                      controller.modelIdsChanged(newSelectedIds);
+                      if (newSelectedIds.contains(newDefaultId)) {
+                        controller.defaultModelIdChanged(newDefaultId);
+                      }
+                    },
+                  );
+                },
+                icon: Icons.tune_rounded,
+              ),
       ],
     );
   }
@@ -480,11 +501,10 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            AiFormButton(
+            LottiSecondaryButton(
               label: context.messages.promptGoBackButton,
               onPressed: () => Navigator.of(context).pop(),
               icon: Icons.arrow_back_rounded,
-              style: AiButtonStyle.secondary,
             ),
           ],
         ),
