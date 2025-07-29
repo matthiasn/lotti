@@ -312,6 +312,8 @@ void main() {
           .thenAnswer((_) async => '{"title": "Test Task"}');
       when(() => mockJournalRepo.updateJournalEntity(any()))
           .thenAnswer((_) async => true);
+      when(() => mockJournalRepo.getJournalEntityById('test-id'))
+          .thenAnswer((_) async => taskEntity);
 
       // Mock response with function call
       when(() => mockCloudInferenceRepo.generate(

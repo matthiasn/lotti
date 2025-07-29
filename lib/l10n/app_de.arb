@@ -23,6 +23,7 @@
   "aiAssistantTranscribeAudio": "Audio transkribieren",
   "aiTaskSummaryRunning": "Denke über die Zusammenfassung der Aufgabe nach...",
   "aiTaskSummaryTitle": "KI-Aufgabenzusammenfassung",
+  "aiSettingsClearFiltersButton": "Löschen",
   "cancelButton": "Abbrechen",
   "categoryDeleteConfirm": "JA, DIESE KATEGORIE LÖSCHEN",
   "categoryDeleteQuestion": "Möchten Sie diese Kategorie löschen?",

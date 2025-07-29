@@ -726,7 +726,7 @@ class UnifiedAiInferenceRepository {
         'Processing ${toolCalls.length} tool calls for task ${taskForToolCalls.id} (from ${entity.runtimeType})',
         name: 'UnifiedAiInferenceRepository',
       );
-      final languageWasSet = await processChecklistToolCalls(
+      final languageWasSet = await processToolCalls(
         toolCalls: toolCalls,
         task: taskForToolCalls,
       );
@@ -976,10 +976,10 @@ class UnifiedAiInferenceRepository {
     }
   }
 
-  /// Process tool calls for checklist operations (completion suggestions and item additions)
+  /// Process various tool calls including checklist operations and language detection
   /// Returns true if language was detected and set
   @visibleForTesting
-  Future<bool> processChecklistToolCalls({
+  Future<bool> processToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required Task task,
   }) async {
@@ -1172,22 +1172,36 @@ class UnifiedAiInferenceRepository {
       } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {
         // Handle set task language
         try {
-          final arguments =
-              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
-          final languageCode = arguments['languageCode'] as String;
-          final confidence = arguments['confidence'] as String;
-          final reason = arguments['reason'] as String;
+          final result = SetTaskLanguageResult.fromJson(
+            jsonDecode(toolCall.function.arguments) as Map<String, dynamic>,
+          );
+          final languageCode = result.languageCode;
+          final confidence = result.confidence.name;
+          final reason = result.reason;
 
           developer.log(
             'Setting task language to: $languageCode (confidence: $confidence, reason: $reason)',
             name: 'UnifiedAiInferenceRepository',
           );
 
+          // Re-fetch the task to get the latest state and avoid race conditions
+          final journalRepo = ref.read(journalRepositoryProvider);
+          final freshEntity = await journalRepo.getJournalEntityById(task.id);
+
+          if (freshEntity is! Task) {
+            developer.log(
+              'Task ${task.id} not found or is not a Task anymore, skipping language update',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          final freshTask = freshEntity;
+
           // Only set language if task doesn't already have one
-          if (task.data.languageCode == null) {
-            final journalRepo = ref.read(journalRepositoryProvider);
-            final updated = task.copyWith(
-              data: task.data.copyWith(
+          if (freshTask.data.languageCode == null) {
+            final updated = freshTask.copyWith(
+              data: freshTask.data.copyWith(
                 languageCode: languageCode,
               ),
             );
@@ -1208,7 +1222,7 @@ class UnifiedAiInferenceRepository {
             }
           } else {
             developer.log(
-              'Task ${task.id} already has language set to ${task.data.languageCode}, not overwriting',
+              'Task ${task.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
               name: 'UnifiedAiInferenceRepository',
             );
           }

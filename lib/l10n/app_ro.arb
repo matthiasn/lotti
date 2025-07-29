@@ -23,6 +23,7 @@
   "aiAssistantTranscribeAudio": "Transcrie audio",
   "aiTaskSummaryRunning": "Se gândește la rezumarea sarcinii...",
   "aiTaskSummaryTitle": "Rezumatul sarcinii AI",
+  "aiSettingsClearFiltersButton": "Șterge",
   "cancelButton": "Anulează",
   "categoryDeleteConfirm": "DA, ȘTERGE ACEASTĂ CATEGORIE",
   "categoryDeleteQuestion": "Doriți să ștergeți această categorie?",

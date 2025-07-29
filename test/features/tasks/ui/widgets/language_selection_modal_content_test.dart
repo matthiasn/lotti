@@ -132,8 +132,8 @@ void main() {
         ),
       );
 
-      // Verify clear option is displayed
-      expect(find.text('clear'), findsOneWidget);
+      // Verify clear option is displayed with localized text
+      expect(find.text('Clear'), findsOneWidget); // English localization
       expect(find.byIcon(Icons.clear), findsOneWidget);
     });
 
@@ -151,11 +151,11 @@ void main() {
 
       // Scroll to find clear option and tap it
       await tester.dragUntilVisible(
-        find.text('clear'),
+        find.text('Clear'), // Use capitalized English localization
         find.byType(SingleChildScrollView),
         const Offset(0, -100),
       );
-      await tester.tap(find.text('clear'));
+      await tester.tap(find.text('Clear'));
       await tester.pump();
 
       // Verify callback was called with null

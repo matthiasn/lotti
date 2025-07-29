@@ -421,7 +421,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
 
   @override
-  String get aiSettingsClearFiltersButton => 'Clear';
+  String get aiSettingsClearFiltersButton => 'Limpiar';
 
   @override
   String aiSettingsFilterByCapabilityTooltip(String capability) {

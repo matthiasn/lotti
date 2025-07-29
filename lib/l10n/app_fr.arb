@@ -23,6 +23,7 @@
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
   "aiTaskSummaryRunning": "Réflexion sur le résumé de la tâche...",
   "aiTaskSummaryTitle": "Résumé de la tâche IA",
+  "aiSettingsClearFiltersButton": "Effacer",
   "cancelButton": "Annuler",
   "categoryDeleteConfirm": "OUI, SUPPRIMER CETTE CATÉGORIE",
   "categoryDeleteQuestion": "Voulez-vous supprimer cette catégorie ?",

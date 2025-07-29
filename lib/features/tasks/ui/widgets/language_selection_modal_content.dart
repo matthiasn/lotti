@@ -85,6 +85,8 @@ class LanguageSelectionModalContentState
               ),
               Flexible(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -120,7 +122,7 @@ class LanguageSelectionModalContentState
                       if (widget.initialLanguageCode != null)
                         SettingsCard(
                           onTap: () => widget.onLanguageSelected(null),
-                          title: 'clear',
+                          title: context.messages.aiSettingsClearFiltersButton,
                           titleColor: context.colorScheme.outline,
                           leading: Icon(
                             Icons.clear,
