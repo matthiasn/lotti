@@ -11,6 +11,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -129,24 +130,12 @@ class _TagEditPageState extends State<TagEditPage> {
             pinned: true,
             actions: [
               if (dirty)
-                TextButton(
+                LottiTertiaryButton(
                   key: const Key(
                     'tag_save',
                   ),
+                  label: context.messages.settingsTagsSaveLabel,
                   onPressed: onSavePressed,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                    ),
-                    child: Text(
-                      context.messages.settingsTagsSaveLabel,
-                      style: saveButtonStyle(
-                        Theme.of(
-                          context,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
             ],
           ),

@@ -5,8 +5,10 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 
 class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   const ChecklistItemWithSuggestionWidget({
@@ -182,14 +184,14 @@ class _ChecklistItemWithSuggestionWidgetState
             ],
           ),
           actions: [
-            TextButton(
+            LottiTertiaryButton(
+              label: context.messages.cancelButton,
               onPressed: () {
                 Navigator.of(context).pop();
                 ref
                     .read(checklistCompletionServiceProvider.notifier)
                     .clearSuggestion(widget.itemId);
               },
-              child: const Text('Dismiss'),
             ),
             LottiPrimaryButton(
               onPressed: () {

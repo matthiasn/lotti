@@ -54,6 +54,9 @@ Primary action button with Lotti's design system styling. Used for main actions.
 ### LottiSecondaryButton
 Secondary (outlined) button with Lotti's design system styling. Used for secondary actions.
 
+### LottiTertiaryButton
+Tertiary (text) button with Lotti's design system styling. Used for text-only buttons with minimal styling, typically for secondary actions or links.
+
 ### RoundedButton
 Basic rounded button with customizable appearance.
 

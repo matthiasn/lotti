@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 
 enum AiButtonStyle { primary, secondary, text }
 
@@ -131,20 +132,10 @@ class AiFormButton extends StatelessWidget {
   }
 
   Widget _buildTextButton(BuildContext context, bool isEnabled) {
-    return TextButton(
+    return LottiTertiaryButton(
+      label: label,
       onPressed: isEnabled ? onPressed : null,
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: _buildButtonContent(
-        context,
-        color: isEnabled
-            ? context.colorScheme.primary
-            : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-      ),
+      icon: icon,
     );
   }
 

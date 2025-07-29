@@ -5,6 +5,7 @@ import 'package:lotti/features/tasks/ui/checklists/progress_indicator.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ChecklistWidget extends StatefulWidget {
@@ -146,17 +147,13 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                             context.messages.checklistItemDeleteWarning,
                           ),
                           actions: [
-                            TextButton(
+                            LottiTertiaryButton(
+                              label: context.messages.checklistItemDeleteCancel,
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: Text(
-                                context.messages.checklistItemDeleteCancel,
-                              ),
                             ),
-                            TextButton(
+                            LottiTertiaryButton(
+                              label: context.messages.checklistItemDeleteConfirm,
                               onPressed: () => Navigator.of(context).pop(true),
-                              child: Text(
-                                context.messages.checklistItemDeleteConfirm,
-                              ),
                             ),
                           ],
                         );
