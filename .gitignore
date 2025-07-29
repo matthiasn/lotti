@@ -19,7 +19,7 @@ flatpak/*.generated.*
 flatpak/build-dir/
 flatpak/repo/
 *.flatpak
-flatpak/org.lotti.lotti.yml
+flatpak/com.matthiasnehlsen.lotti.generated.yml
 
 !Podfile.lock
 !pubspec.lock

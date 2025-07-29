@@ -1,4 +1,4 @@
-app-id: org.lotti.lotti
+app-id: com.matthiasnehlsen.lotti
 runtime: org.gnome.Platform
 runtime-version: '45'
 sdk: org.gnome.Sdk
@@ -13,7 +13,7 @@ finish-args:
   - --filesystem=xdg-documents:rw    # For importing/exporting journal data
   - --filesystem=xdg-pictures:ro     # For importing images into journal entries
   - --filesystem=xdg-download:rw     # For downloading/saving exports
-  # App data is automatically available in ~/.var/app/org.lotti.lotti/
+  # App data is automatically available in ~/.var/app/com.matthiasnehlsen.lotti/
   - --device=dri
   # Removed --socket=gpg-agent (not needed unless app specifically uses GPG)
 modules:
@@ -30,15 +30,15 @@ modules:
       - name: flutter-common
         buildsystem: simple
         build-commands:
-          - install -D flatpak/org.lotti.lotti.desktop /app/share/applications/org.lotti.lotti.desktop
-          - install -D flatpak/org.lotti.lotti.generated.metainfo.xml /app/share/metainfo/org.lotti.lotti.metainfo.xml
+          - install -D flatpak/com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
+          - install -D flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
           # Install icons - using 1024px source for all sizes (TODO: Create properly sized icons for better quality)
           - |
             for size in 1024 512 256 128 64 48 32 16; do
-              install -D assets/icon/app_icon_1024.png /app/share/icons/hicolor/${size}x${size}/apps/org.lotti.lotti.png
+              install -D assets/icon/app_icon_1024.png /app/share/icons/hicolor/${size}x${size}/apps/com.matthiasnehlsen.lotti.png
             done
         sources:
           - type: file
-            path: flatpak/org.lotti.lotti.desktop
+            path: flatpak/com.matthiasnehlsen.lotti.desktop
           - type: file
-            path: flatpak/org.lotti.lotti.generated.metainfo.xml 
+            path: flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml 

@@ -30,8 +30,8 @@ if ! command -v flatpak-builder &> /dev/null; then
 fi
 
 # Create temporary manifest with substituted variables
-readonly TEMP_MANIFEST="flatpak/org.lotti.lotti.generated.yml"
-readonly TEMP_METAINFO="flatpak/org.lotti.lotti.generated.metainfo.xml"
+readonly TEMP_MANIFEST="flatpak/com.matthiasnehlsen.lotti.generated.yml"
+readonly TEMP_METAINFO="flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml"
 
 # Set up cleanup trap
 trap 'rm -f "$TEMP_MANIFEST" "$TEMP_METAINFO"' EXIT
@@ -41,7 +41,7 @@ echo "Generating manifest and metainfo files..."
 # Generate manifest
 if ! sed -e "s|{{LOTTI_REPO_URL}}|${LOTTI_REPO_URL}|g" \
         -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
-        flatpak/org.lotti.lotti.yml.template > "${TEMP_MANIFEST}"; then
+        flatpak/com.matthiasnehlsen.lotti.yml > "${TEMP_MANIFEST}"; then
     echo "Error: Failed to generate manifest file"
     exit 1
 fi
@@ -49,7 +49,7 @@ fi
 # Generate metainfo
 if ! sed -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
         -e "s|{{LOTTI_RELEASE_DATE}}|${LOTTI_RELEASE_DATE}|g" \
-        flatpak/org.lotti.lotti.metainfo.xml.template > "${TEMP_METAINFO}"; then
+        flatpak/com.matthiasnehlsen.lotti.metainfo.xml > "${TEMP_METAINFO}"; then
     echo "Error: Failed to generate metainfo file"
     exit 1
 fi
@@ -64,10 +64,10 @@ fi
 echo "Flatpak build completed successfully!"
 echo ""
 echo "To install from the local repository:"
-echo "  flatpak remote-add --user --if-not-exists lotti-repo repo --no-gpg-verify && flatpak install --user -y lotti-repo org.lotti.lotti"
+echo "  flatpak remote-add --user --if-not-exists lotti-repo repo --no-gpg-verify && flatpak install --user -y lotti-repo com.matthiasnehlsen.lotti"
 echo ""
 echo "To create a bundle:"
-echo "  flatpak build-bundle repo lotti.flatpak org.lotti.lotti"
+echo "  flatpak build-bundle repo lotti.flatpak com.matthiasnehlsen.lotti"
 echo ""
 echo "To run directly from build:"
 echo "  flatpak-builder --run build-dir ${TEMP_MANIFEST} lotti"
