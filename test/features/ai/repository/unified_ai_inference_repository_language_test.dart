@@ -424,6 +424,8 @@ void main() {
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
           .thenAnswer(
               (_) async => '{"title": "Test Task", "languageCode": "fr"}');
+      when(() => mockJournalRepo.getJournalEntityById('test-id'))
+          .thenAnswer((_) async => taskEntity);
 
       // Mock response with function call trying to change language
       when(() => mockCloudInferenceRepo.generate(
