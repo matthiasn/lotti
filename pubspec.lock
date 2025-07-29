@@ -1858,10 +1858,10 @@ packages:
     dependency: "direct dev"
     description:
       name: msix
-      sha256: edde648a8133bf301883c869d19d127049683037c65ff64173ba526ac7a8af2f
+      sha256: bbb9b3ff4a9f8e7e7507b2a22dc0517fd1fe3db44e72de7ab052cb6b362406ee
       url: "https://pub.dev"
     source: hosted
-    version: "3.16.9"
+    version: "3.16.10"
   multi_select_flutter:
     dependency: "direct main"
     description:
@@ -2745,10 +2745,10 @@ packages:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: "84731e8bfd8303a3389903e01fb2141b6e59b5973cacbb0929021df08dddbe8b"
+      sha256: "6ef422a4525ecc601db6c0a2233ff448c731307906e92cabc9ba292afaae16a6"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.5"
+    version: "2.5.6"
   sqflite_common_ffi:
     dependency: "direct main"
     description:
@@ -2777,18 +2777,18 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: "608b56d594e4c8498c972c8f1507209f9fd74939971b948ddbbfbfd1c9cb3c15"
+      sha256: dd806fff004a0aeb01e208b858dbc649bc72104670d425a81a6dd17698535f6e
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.7"
+    version: "2.8.0"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "60464aa06f3f6f6fba9abd7564e315526c1fee6d6a77d6ee52a1f7f48a9107f6"
+      sha256: fd996da5515a73aacd0a04ae7063db5fe8df42670d974df4c3ee538c652eef2e
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.37"
+    version: "0.5.38"
   sqlparser:
     dependency: transitive
     description:
