@@ -2,4 +2,4 @@
 #include "Warnings.xcconfig"
 
 PRODUCT_NAME=LottiDev
-PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.lotti.desktop.debug
+PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.lotti.debug

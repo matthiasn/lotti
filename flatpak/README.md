@@ -4,9 +4,9 @@ This directory contains the Flatpak configuration for distributing Lotti on Linu
 
 ## Files
 
-- `org.lotti.lotti.yml.template` - Main Flatpak manifest template
-- `org.lotti.lotti.desktop` - Desktop entry file
-- `org.lotti.lotti.metainfo.xml.template` - AppStream metadata template
+- `com.matthiasnehlsen.lotti.yml` - Main Flatpak manifest
+- `com.matthiasnehlsen.lotti.desktop` - Desktop entry file
+- `com.matthiasnehlsen.lotti.metainfo.xml` - AppStream metadata
 - `build.sh` - Build script
 
 ## Prerequisites
@@ -66,15 +66,15 @@ export LOTTI_RELEASE_DATE="2025-01-26"
 # Generate manifest with substituted variables
 sed -e "s|{{LOTTI_REPO_URL}}|$LOTTI_REPO_URL|g" \
     -e "s|{{LOTTI_VERSION}}|$LOTTI_VERSION|g" \
-    flatpak/org.lotti.lotti.yml.template > flatpak/org.lotti.lotti.yml
+    flatpak/com.matthiasnehlsen.lotti.yml > flatpak/com.matthiasnehlsen.lotti.generated.yml
 
 # Generate metainfo with substituted variables  
 sed -e "s|{{LOTTI_VERSION}}|$LOTTI_VERSION|g" \
     -e "s|{{LOTTI_RELEASE_DATE}}|$LOTTI_RELEASE_DATE|g" \
-    flatpak/org.lotti.lotti.metainfo.xml.template > flatpak/org.lotti.lotti.generated.metainfo.xml
+    flatpak/com.matthiasnehlsen.lotti.metainfo.xml > flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml
 
 # Build with generated manifest
-flatpak-builder --force-clean --repo=repo build-dir flatpak/org.lotti.lotti.yml
+flatpak-builder --force-clean --repo=repo build-dir flatpak/com.matthiasnehlsen.lotti.generated.yml
 ```
 
 ## Installing
@@ -91,7 +91,7 @@ The build script will show you the correct installation command. Alternatively, 
 **Option 2: Manual installation after build**
 ```bash
 # After running ./flatpak/build.sh successfully, install with the generated manifest
-flatpak-builder --user --install --force-clean build-dir org.lotti.lotti.yml
+flatpak-builder --user --install --force-clean build-dir com.matthiasnehlsen.lotti.generated.yml
 ```
 
 **Option 3: Install from template (requires environment variables)**
@@ -102,14 +102,14 @@ export LOTTI_VERSION="v0.9.645"
 export LOTTI_RELEASE_DATE="2025-01-26"
 
 # Install directly from template
-flatpak-builder --user --install --force-clean build-dir flatpak/org.lotti.lotti.yml.template
+flatpak-builder --user --install --force-clean build-dir flatpak/com.matthiasnehlsen.lotti.yml
 ```
 
-Note: The `org.lotti.lotti.yml` file is generated in the project root by the build script.
+Note: The `com.matthiasnehlsen.lotti.generated.yml` file is generated in the project root by the build script.
 
 ### Create Bundle
 ```bash
-flatpak build-bundle repo lotti.flatpak org.lotti.lotti
+flatpak build-bundle repo lotti.flatpak com.matthiasnehlsen.lotti
 ```
 
 ## Distribution
@@ -117,7 +117,7 @@ flatpak build-bundle repo lotti.flatpak org.lotti.lotti
 ### Flathub
 To submit to Flathub:
 1. Fork the [Flathub repository](https://github.com/flathub/flathub)
-2. Add the manifest to `org.lotti.lotti.yml` (filename must match app-id)
+2. Add the manifest to `com.matthiasnehlsen.lotti.yml` (filename must match app-id)
 3. Submit a pull request
 
 ### Direct Distribution
@@ -141,7 +141,7 @@ The app follows the **principle of least privilege** and requests only necessary
 - `--filesystem=xdg-documents:rw` - Read/write access to Documents folder for importing/exporting journal data
 - `--filesystem=xdg-pictures:ro` - Read-only access to Pictures for importing images
 - `--filesystem=xdg-download:rw` - Read/write access to Downloads for saving exports
-- **App data**: Automatically stored in `~/.var/app/org.lotti.lotti/` (secure default)
+- **App data**: Automatically stored in `~/.var/app/com.matthiasnehlsen.lotti/` (secure default)
 
 ### Security Notes
 - ❌ **No `--filesystem=home`** - Removed broad home directory access for security
