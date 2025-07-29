@@ -96,6 +96,10 @@ void main() {
         ),
       );
 
+      // Should not show status indicators
+      expect(find.byIcon(Icons.check_circle_outline_rounded), findsNothing);
+      expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
+
       // Save button should be enabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
