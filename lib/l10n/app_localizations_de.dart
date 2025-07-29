@@ -420,7 +420,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
 
   @override
-  String get aiSettingsClearFiltersButton => 'Clear';
+  String get aiSettingsClearFiltersButton => 'Löschen';
 
   @override
   String aiSettingsFilterByCapabilityTooltip(String capability) {
@@ -1755,6 +1755,123 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskStatusRejected => 'Abgelehnt';
+
+  @override
+  String get taskLanguageLabel => 'Sprache:';
+
+  @override
+  String get taskLanguageArabic => 'Arabisch';
+
+  @override
+  String get taskLanguageBengali => 'Bengalisch';
+
+  @override
+  String get taskLanguageBulgarian => 'Bulgarisch';
+
+  @override
+  String get taskLanguageChinese => 'Chinesisch';
+
+  @override
+  String get taskLanguageCroatian => 'Kroatisch';
+
+  @override
+  String get taskLanguageCzech => 'Tschechisch';
+
+  @override
+  String get taskLanguageDanish => 'Dänisch';
+
+  @override
+  String get taskLanguageDutch => 'Niederländisch';
+
+  @override
+  String get taskLanguageEnglish => 'Englisch';
+
+  @override
+  String get taskLanguageEstonian => 'Estnisch';
+
+  @override
+  String get taskLanguageFinnish => 'Finnisch';
+
+  @override
+  String get taskLanguageFrench => 'Französisch';
+
+  @override
+  String get taskLanguageGerman => 'Deutsch';
+
+  @override
+  String get taskLanguageGreek => 'Griechisch';
+
+  @override
+  String get taskLanguageHebrew => 'Hebräisch';
+
+  @override
+  String get taskLanguageHindi => 'Hindi';
+
+  @override
+  String get taskLanguageHungarian => 'Ungarisch';
+
+  @override
+  String get taskLanguageIndonesian => 'Indonesisch';
+
+  @override
+  String get taskLanguageItalian => 'Italienisch';
+
+  @override
+  String get taskLanguageJapanese => 'Japanisch';
+
+  @override
+  String get taskLanguageKorean => 'Koreanisch';
+
+  @override
+  String get taskLanguageLatvian => 'Lettisch';
+
+  @override
+  String get taskLanguageLithuanian => 'Litauisch';
+
+  @override
+  String get taskLanguageNorwegian => 'Norwegisch';
+
+  @override
+  String get taskLanguagePolish => 'Polnisch';
+
+  @override
+  String get taskLanguagePortuguese => 'Portugiesisch';
+
+  @override
+  String get taskLanguageRomanian => 'Rumänisch';
+
+  @override
+  String get taskLanguageRussian => 'Russisch';
+
+  @override
+  String get taskLanguageSerbian => 'Serbisch';
+
+  @override
+  String get taskLanguageSlovak => 'Slowakisch';
+
+  @override
+  String get taskLanguageSlovenian => 'Slowenisch';
+
+  @override
+  String get taskLanguageSpanish => 'Spanisch';
+
+  @override
+  String get taskLanguageSwahili => 'Swahili';
+
+  @override
+  String get taskLanguageSwedish => 'Schwedisch';
+
+  @override
+  String get taskLanguageThai => 'Thailändisch';
+
+  @override
+  String get taskLanguageTurkish => 'Türkisch';
+
+  @override
+  String get taskLanguageUkrainian => 'Ukrainisch';
+
+  @override
+  String get taskLanguageVietnamese => 'Vietnamesisch';
 
   @override
   String get tasksFilterTitle => 'Aufgabenfilter';

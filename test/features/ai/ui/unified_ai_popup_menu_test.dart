@@ -549,7 +549,7 @@ void main() {
       expect(descriptionTextFinder, findsOneWidget);
 
       final descriptionText = tester.widget<Text>(descriptionTextFinder);
-      expect(descriptionText.maxLines, 2);
+      expect(descriptionText.maxLines, 4);
       expect(descriptionText.overflow, TextOverflow.ellipsis);
     });
   });

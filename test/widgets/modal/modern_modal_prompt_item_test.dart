@@ -157,8 +157,9 @@ void main() {
 
     testWidgets('truncates long description', (tester) async {
       const longDescription = 'This is a very long description that should '
-          'be truncated after two lines. It contains a lot of text to ensure '
-          'that the overflow behavior works correctly.';
+          'be truncated after four lines. It contains a lot of text to ensure '
+          'that the overflow behavior works correctly. Adding more text here '
+          'to make sure it would overflow after four lines.';
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -175,7 +176,7 @@ void main() {
         find.text(longDescription),
       );
       expect(textWidget.overflow, TextOverflow.ellipsis);
-      expect(textWidget.maxLines, 2);
+      expect(textWidget.maxLines, 4);
     });
   });
 }

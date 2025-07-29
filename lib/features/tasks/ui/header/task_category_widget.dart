@@ -58,6 +58,7 @@ class TaskCategoryWidget extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 ColorIcon(
                   color,
@@ -68,6 +69,8 @@ class TaskCategoryWidget extends StatelessWidget {
                   child: Text(
                     category?.name ?? '-',
                     style: context.textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],

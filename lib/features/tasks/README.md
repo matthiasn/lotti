@@ -15,16 +15,17 @@ Tasks in Lotti are structured journal entries that can contain:
 ## Key Components
 
 ### Data Models
-- `Task`: Main task entity with status, dates, and linked checklists
+- `Task`: Main task entity with status, dates, linked checklists, and language preference
 - `Checklist`: Container for checklist items
 - `ChecklistItem`: Individual checklist item with completion status
 - `TaskProgressState`: Tracks time spent vs. estimated
+- `SupportedLanguage`: Enum of 38 supported languages for multilingual summaries
 
 ### UI Components
 
 #### Task Details Page (`task_details_page.dart`)
 The main interface for viewing and editing tasks, featuring:
-- Header with title, status, category, and time tracking
+- Header with title, status, category, language preference, and time tracking
 - Checklists section with drag-and-drop reordering
 - Linked entries timeline
 - AI-powered features menu
@@ -48,6 +49,52 @@ The main interface for viewing and editing tasks, featuring:
 - Pulsing colored indicator (color indicates confidence: high/medium/low)
 - Tap indicator to see AI's reasoning
 - Accept or dismiss suggestions with one tap
+
+## Language Support
+
+Tasks support multilingual AI-generated summaries in 38 different languages. This feature is particularly useful for:
+- International teams working in different languages
+- Users who record audio notes in their native language
+- Tasks that involve multilingual content
+
+### How It Works
+
+1. **Automatic Language Detection**: When generating a task summary, the AI analyzes:
+   - Language of audio transcripts (highest priority)
+   - Text content in log entries
+   - Overall task context
+   
+2. **Manual Language Selection**: Users can manually set their preferred language:
+   - Click the language indicator in the task header
+   - Search and select from 38 supported languages
+   - Visual country flags for easy identification
+
+3. **Language Persistence**: Once set (manually or automatically), the language preference:
+   - Is saved with the task
+   - Applies to all future AI-generated content
+   - Can be changed at any time
+
+### UI Components
+
+**TaskLanguageWidget**: Displays in the task header
+- Shows country flag when language is set
+- Shows language icon placeholder when not set
+- Tap to open language selection modal
+- Flag in rounded frame for dark mode visibility
+
+**LanguageSelectionModalContent**: Language selection interface
+- Searchable list of 38 languages
+- Country flags for visual identification
+- Selected language appears at the top
+- Clear option to remove language preference
+
+### Supported Languages
+
+All 38 languages from Gemini Code Assist are supported:
+- **European**: English, Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Czech, Bulgarian, Croatian, Danish, Estonian, Finnish, Greek, Hungarian, Latvian, Lithuanian, Norwegian, Romanian, Serbian, Slovak, Slovenian, Swedish
+- **Asian**: Chinese, Japanese, Korean, Hindi, Bengali, Indonesian, Thai, Vietnamese, Turkish
+- **Middle Eastern**: Arabic, Hebrew
+- **African**: Swahili
 
 ## AI-Powered Features
 
@@ -160,7 +207,38 @@ Checklists support sophisticated drag-and-drop operations:
 
 ## Usage Examples
 
-### Example 1: Audio-Based Completion Detection
+### Language Support Examples
+
+#### Example 1: Automatic Language Detection from Audio
+
+Create a task "Proyecto de migración de base de datos" and record audio in Spanish:
+"He completado el análisis de la estructura actual y el diseño del nuevo esquema. Todavía necesito migrar los datos."
+
+Result: 
+- AI detects Spanish language with high confidence
+- Sets task language to Spanish (es)
+- All future summaries are generated in Spanish
+
+#### Example 2: Manual Language Selection
+
+Working on "International Marketing Campaign":
+1. Click the language icon in task header
+2. Search for "Japanese" or scroll to find 🇯🇵
+3. Select Japanese
+4. All AI summaries now generate in Japanese
+
+#### Example 3: Mixed Language Task
+
+Task "多语言文档翻译" (Multilingual Documentation Translation) with entries in multiple languages:
+- Chinese audio notes
+- English text entries
+- German screenshots
+
+Result: AI detects primary language (Chinese) based on audio transcript prevalence and generates summaries in Chinese.
+
+### Checklist Examples
+
+#### Example 1: Audio-Based Completion Detection
 
 Create a task "Deploy new feature" with checklist:
 - [ ] Write unit tests
@@ -172,7 +250,7 @@ Record audio: "I've finished writing all the unit tests and the integration test
 
 Result: The AI will suggest marking "Write unit tests" and "Run integration tests" as complete.
 
-### Example 2: Screenshot-Based Detection
+#### Example 2: Screenshot-Based Detection
 
 Working on "Fix login bug" with checklist:
 - [ ] Reproduce the issue
@@ -184,7 +262,7 @@ Attach a screenshot showing successful login on different devices.
 
 Result: The AI analyzes the image and suggests marking "Test on multiple devices" as complete.
 
-### Example 3: Task Summary Updates
+#### Example 3: Task Summary Updates
 
 Task "Refactor database module" with checklist:
 - [ ] Analyze current structure
@@ -194,7 +272,7 @@ Task "Refactor database module" with checklist:
 
 Generate a task summary after working. If your logs mention "completed the data migration" or "finished updating all endpoints", those items will be suggested for completion.
 
-### Example 4: Automatic Item Creation
+#### Example 4: Automatic Item Creation
 
 Working on "Website Redesign" task with no checklists yet.
 
@@ -205,7 +283,7 @@ Result: AI creates a "to-do" checklist with:
 - [ ] Implement responsive design
 - [ ] Set up deployment pipeline
 
-### Example 5: Adding to Existing Checklists
+#### Example 5: Adding to Existing Checklists
 
 Task "API Integration" already has a "Development" checklist:
 - [x] Set up authentication

@@ -111,7 +111,7 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
                       height: AppTheme.lineHeightSubtitle,
                       letterSpacing: AppTheme.letterSpacingSubtitle,
                     ),
-                    maxLines: 2,
+                    maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],

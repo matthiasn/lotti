@@ -91,7 +91,8 @@ void main() {
     });
 
     group('takeScreenshot', () {
-      test('creates ImageData with correct properties on supported platform', () async {
+      test('creates ImageData with correct properties on supported platform',
+          () async {
         // Mock the directory creation
         when(() => mockDirectory.create(recursive: any(named: 'recursive')))
             .thenAnswer((_) async => mockDirectory);

@@ -65,6 +65,7 @@ class EstimatedTimeWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 formattedEstimate,

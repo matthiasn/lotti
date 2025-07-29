@@ -3334,6 +3334,240 @@ abstract class AppLocalizations {
   /// **'Rejected'**
   String get taskStatusRejected;
 
+  /// No description provided for @taskLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language:'**
+  String get taskLanguageLabel;
+
+  /// No description provided for @taskLanguageArabic.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get taskLanguageArabic;
+
+  /// No description provided for @taskLanguageBengali.
+  ///
+  /// In en, this message translates to:
+  /// **'Bengali'**
+  String get taskLanguageBengali;
+
+  /// No description provided for @taskLanguageBulgarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulgarian'**
+  String get taskLanguageBulgarian;
+
+  /// No description provided for @taskLanguageChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get taskLanguageChinese;
+
+  /// No description provided for @taskLanguageCroatian.
+  ///
+  /// In en, this message translates to:
+  /// **'Croatian'**
+  String get taskLanguageCroatian;
+
+  /// No description provided for @taskLanguageCzech.
+  ///
+  /// In en, this message translates to:
+  /// **'Czech'**
+  String get taskLanguageCzech;
+
+  /// No description provided for @taskLanguageDanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Danish'**
+  String get taskLanguageDanish;
+
+  /// No description provided for @taskLanguageDutch.
+  ///
+  /// In en, this message translates to:
+  /// **'Dutch'**
+  String get taskLanguageDutch;
+
+  /// No description provided for @taskLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get taskLanguageEnglish;
+
+  /// No description provided for @taskLanguageEstonian.
+  ///
+  /// In en, this message translates to:
+  /// **'Estonian'**
+  String get taskLanguageEstonian;
+
+  /// No description provided for @taskLanguageFinnish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finnish'**
+  String get taskLanguageFinnish;
+
+  /// No description provided for @taskLanguageFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get taskLanguageFrench;
+
+  /// No description provided for @taskLanguageGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get taskLanguageGerman;
+
+  /// No description provided for @taskLanguageGreek.
+  ///
+  /// In en, this message translates to:
+  /// **'Greek'**
+  String get taskLanguageGreek;
+
+  /// No description provided for @taskLanguageHebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Hebrew'**
+  String get taskLanguageHebrew;
+
+  /// No description provided for @taskLanguageHindi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hindi'**
+  String get taskLanguageHindi;
+
+  /// No description provided for @taskLanguageHungarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Hungarian'**
+  String get taskLanguageHungarian;
+
+  /// No description provided for @taskLanguageIndonesian.
+  ///
+  /// In en, this message translates to:
+  /// **'Indonesian'**
+  String get taskLanguageIndonesian;
+
+  /// No description provided for @taskLanguageItalian.
+  ///
+  /// In en, this message translates to:
+  /// **'Italian'**
+  String get taskLanguageItalian;
+
+  /// No description provided for @taskLanguageJapanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get taskLanguageJapanese;
+
+  /// No description provided for @taskLanguageKorean.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean'**
+  String get taskLanguageKorean;
+
+  /// No description provided for @taskLanguageLatvian.
+  ///
+  /// In en, this message translates to:
+  /// **'Latvian'**
+  String get taskLanguageLatvian;
+
+  /// No description provided for @taskLanguageLithuanian.
+  ///
+  /// In en, this message translates to:
+  /// **'Lithuanian'**
+  String get taskLanguageLithuanian;
+
+  /// No description provided for @taskLanguageNorwegian.
+  ///
+  /// In en, this message translates to:
+  /// **'Norwegian'**
+  String get taskLanguageNorwegian;
+
+  /// No description provided for @taskLanguagePolish.
+  ///
+  /// In en, this message translates to:
+  /// **'Polish'**
+  String get taskLanguagePolish;
+
+  /// No description provided for @taskLanguagePortuguese.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get taskLanguagePortuguese;
+
+  /// No description provided for @taskLanguageRomanian.
+  ///
+  /// In en, this message translates to:
+  /// **'Romanian'**
+  String get taskLanguageRomanian;
+
+  /// No description provided for @taskLanguageRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get taskLanguageRussian;
+
+  /// No description provided for @taskLanguageSerbian.
+  ///
+  /// In en, this message translates to:
+  /// **'Serbian'**
+  String get taskLanguageSerbian;
+
+  /// No description provided for @taskLanguageSlovak.
+  ///
+  /// In en, this message translates to:
+  /// **'Slovak'**
+  String get taskLanguageSlovak;
+
+  /// No description provided for @taskLanguageSlovenian.
+  ///
+  /// In en, this message translates to:
+  /// **'Slovenian'**
+  String get taskLanguageSlovenian;
+
+  /// No description provided for @taskLanguageSpanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get taskLanguageSpanish;
+
+  /// No description provided for @taskLanguageSwahili.
+  ///
+  /// In en, this message translates to:
+  /// **'Swahili'**
+  String get taskLanguageSwahili;
+
+  /// No description provided for @taskLanguageSwedish.
+  ///
+  /// In en, this message translates to:
+  /// **'Swedish'**
+  String get taskLanguageSwedish;
+
+  /// No description provided for @taskLanguageThai.
+  ///
+  /// In en, this message translates to:
+  /// **'Thai'**
+  String get taskLanguageThai;
+
+  /// No description provided for @taskLanguageTurkish.
+  ///
+  /// In en, this message translates to:
+  /// **'Turkish'**
+  String get taskLanguageTurkish;
+
+  /// No description provided for @taskLanguageUkrainian.
+  ///
+  /// In en, this message translates to:
+  /// **'Ukrainian'**
+  String get taskLanguageUkrainian;
+
+  /// No description provided for @taskLanguageVietnamese.
+  ///
+  /// In en, this message translates to:
+  /// **'Vietnamese'**
+  String get taskLanguageVietnamese;
+
   /// No description provided for @tasksFilterTitle.
   ///
   /// In en, this message translates to:

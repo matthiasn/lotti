@@ -181,6 +181,7 @@ _$TaskDataImpl _$$TaskDataImplFromJson(Map<String, dynamic> json) =>
       checklistIds: (json['checklistIds'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      languageCode: json['languageCode'] as String?,
     );
 
 Map<String, dynamic> _$$TaskDataImplToJson(_$TaskDataImpl instance) =>
@@ -193,4 +194,5 @@ Map<String, dynamic> _$$TaskDataImplToJson(_$TaskDataImpl instance) =>
       'due': instance.due?.toIso8601String(),
       'estimate': instance.estimate?.inMicroseconds,
       'checklistIds': instance.checklistIds,
+      'languageCode': instance.languageCode,
     };

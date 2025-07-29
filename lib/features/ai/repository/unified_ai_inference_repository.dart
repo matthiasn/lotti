@@ -10,8 +10,10 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -216,6 +218,19 @@ class UnifiedAiInferenceRepository {
 
       // Run the inference
       final buffer = StringBuffer();
+
+      // Modify system message if task has language preference
+      var systemMessage = promptConfig.systemMessage;
+      if (entity is Task &&
+          entity.data.languageCode != null &&
+          promptConfig.aiResponseType == AiResponseType.taskSummary) {
+        final language = SupportedLanguage.fromCode(entity.data.languageCode!);
+        if (language != null) {
+          systemMessage =
+              '$systemMessage\n\nIMPORTANT: The task has a language preference set to ${language.name} (${language.code}). Generate the entire summary in this language.';
+        }
+      }
+
       final stream = await _runCloudInference(
         prompt: prompt,
         model: model,
@@ -223,7 +238,7 @@ class UnifiedAiInferenceRepository {
         images: images,
         audioBase64: audioBase64,
         temperature: 0.6,
-        systemMessage: promptConfig.systemMessage,
+        systemMessage: systemMessage,
         entity: entity,
       );
 
@@ -431,6 +446,8 @@ class UnifiedAiInferenceRepository {
         entity: entity,
         start: start,
         isRerun: isRerun,
+        onProgress: onProgress,
+        onStatusChange: onStatusChange,
         toolCalls: toolCalls,
       );
 
@@ -565,9 +582,12 @@ class UnifiedAiInferenceRepository {
           );
         }
       } else if (entity is Task && model.supportsFunctionCalling) {
-        tools = ChecklistCompletionFunctions.getTools();
+        tools = [
+          ...ChecklistCompletionFunctions.getTools(),
+          ...TaskFunctions.getTools(),
+        ];
         developer.log(
-          'Including checklist completion tools for audio transcription of task ${entity.id}',
+          'Including checklist completion and task tools for audio transcription of task ${entity.id}',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -599,9 +619,12 @@ class UnifiedAiInferenceRepository {
           );
         }
       } else if (entity is Task && model.supportsFunctionCalling) {
-        tools = ChecklistCompletionFunctions.getTools();
+        tools = [
+          ...ChecklistCompletionFunctions.getTools(),
+          ...TaskFunctions.getTools(),
+        ];
         developer.log(
-          'Including checklist completion tools for image analysis of task ${entity.id}',
+          'Including checklist completion and task tools for image analysis of task ${entity.id}',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -618,12 +641,15 @@ class UnifiedAiInferenceRepository {
         tools: tools,
       );
     } else {
-      // Include checklist completion tools if processing a task with function calling support
+      // Include checklist completion and task tools if processing a task with function calling support
       List<ChatCompletionTool>? tools;
       if (entity is Task && model.supportsFunctionCalling) {
-        tools = ChecklistCompletionFunctions.getTools();
+        tools = [
+          ...ChecklistCompletionFunctions.getTools(),
+          ...TaskFunctions.getTools(),
+        ];
         developer.log(
-          'Including checklist completion tools for task ${entity.id} with model ${model.providerModelId}',
+          'Including checklist completion and task tools for task ${entity.id} with model ${model.providerModelId}',
           name: 'UnifiedAiInferenceRepository',
         );
       } else {
@@ -676,6 +702,8 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
     required DateTime start,
     required bool isRerun,
+    required void Function(String) onProgress,
+    required void Function(InferenceStatus) onStatusChange,
     List<ChatCompletionMessageToolCall>? toolCalls,
   }) async {
     var thoughts = '';
@@ -698,10 +726,27 @@ class UnifiedAiInferenceRepository {
         'Processing ${toolCalls.length} tool calls for task ${taskForToolCalls.id} (from ${entity.runtimeType})',
         name: 'UnifiedAiInferenceRepository',
       );
-      await processChecklistToolCalls(
+      final languageWasSet = await processToolCalls(
         toolCalls: toolCalls,
         task: taskForToolCalls,
       );
+
+      // If language was set and response is empty, we need to re-run
+      if (languageWasSet && response.trim().isEmpty && !isRerun) {
+        developer.log(
+          'Language was detected and set, but response is empty. Triggering automatic re-run for task ${taskForToolCalls.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+        // Re-run the inference with the same prompt to generate the summary in the detected language
+        await _runInferenceInternal(
+          entityId: entity.id,
+          promptConfig: promptConfig,
+          onProgress: onProgress,
+          onStatusChange: onStatusChange,
+          isRerun: true,
+        );
+        return; // Exit early to avoid duplicate processing
+      }
     } else {
       developer.log(
         'No tool calls to process - toolCalls: ${toolCalls?.length ?? 0}, taskForToolCalls: ${taskForToolCalls?.id ?? 'null'}, entity: ${entity.runtimeType}',
@@ -931,12 +976,14 @@ class UnifiedAiInferenceRepository {
     }
   }
 
-  /// Process tool calls for checklist operations (completion suggestions and item additions)
+  /// Process various tool calls including checklist operations and language detection
+  /// Returns true if language was detected and set
   @visibleForTesting
-  Future<void> processChecklistToolCalls({
+  Future<bool> processToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required Task task,
   }) async {
+    var languageWasSet = false;
     developer.log(
       'Starting to process ${toolCalls.length} tool calls for checklist operations',
       name: 'UnifiedAiInferenceRepository',
@@ -1122,6 +1169,70 @@ class UnifiedAiInferenceRepository {
             error: e,
           );
         }
+      } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {
+        // Handle set task language
+        try {
+          final result = SetTaskLanguageResult.fromJson(
+            jsonDecode(toolCall.function.arguments) as Map<String, dynamic>,
+          );
+          final languageCode = result.languageCode;
+          final confidence = result.confidence.name;
+          final reason = result.reason;
+
+          developer.log(
+            'Setting task language to: $languageCode (confidence: $confidence, reason: $reason)',
+            name: 'UnifiedAiInferenceRepository',
+          );
+
+          // Re-fetch the task to get the latest state and avoid race conditions
+          final journalRepo = ref.read(journalRepositoryProvider);
+          final freshEntity = await journalRepo.getJournalEntityById(task.id);
+
+          if (freshEntity is! Task) {
+            developer.log(
+              'Task ${task.id} not found or is not a Task anymore, skipping language update',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          final freshTask = freshEntity;
+
+          // Only set language if task doesn't already have one
+          if (freshTask.data.languageCode == null) {
+            final updated = freshTask.copyWith(
+              data: freshTask.data.copyWith(
+                languageCode: languageCode,
+              ),
+            );
+
+            try {
+              await journalRepo.updateJournalEntity(updated);
+              developer.log(
+                'Successfully set task language to $languageCode for task ${task.id}',
+                name: 'UnifiedAiInferenceRepository',
+              );
+              languageWasSet = true;
+            } catch (e) {
+              developer.log(
+                'Failed to update task language for task ${task.id}',
+                name: 'UnifiedAiInferenceRepository',
+                error: e,
+              );
+            }
+          } else {
+            developer.log(
+              'Task ${task.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
+              name: 'UnifiedAiInferenceRepository',
+            );
+          }
+        } catch (e) {
+          developer.log(
+            'Error processing set task language: $e',
+            name: 'UnifiedAiInferenceRepository',
+            error: e,
+          );
+        }
       } else {
         developer.log(
           'Skipping unknown tool call: ${toolCall.function.name}',
@@ -1208,6 +1319,8 @@ class UnifiedAiInferenceRepository {
         name: 'UnifiedAiInferenceRepository',
       );
     }
+
+    return languageWasSet;
   }
 
   /// Helper method to get the associated task for a given entity

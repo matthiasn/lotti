@@ -420,7 +420,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
 
   @override
-  String get aiSettingsClearFiltersButton => 'Clear';
+  String get aiSettingsClearFiltersButton => 'Șterge';
 
   @override
   String aiSettingsFilterByCapabilityTooltip(String capability) {
@@ -1753,6 +1753,123 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskStatusRejected => 'RESPINS';
+
+  @override
+  String get taskLanguageLabel => 'Limbă:';
+
+  @override
+  String get taskLanguageArabic => 'Arabă';
+
+  @override
+  String get taskLanguageBengali => 'Bengaleză';
+
+  @override
+  String get taskLanguageBulgarian => 'Bulgară';
+
+  @override
+  String get taskLanguageChinese => 'Chineză';
+
+  @override
+  String get taskLanguageCroatian => 'Croată';
+
+  @override
+  String get taskLanguageCzech => 'Cehă';
+
+  @override
+  String get taskLanguageDanish => 'Daneză';
+
+  @override
+  String get taskLanguageDutch => 'Olandeză';
+
+  @override
+  String get taskLanguageEnglish => 'Engleză';
+
+  @override
+  String get taskLanguageEstonian => 'Estonă';
+
+  @override
+  String get taskLanguageFinnish => 'Finlandeză';
+
+  @override
+  String get taskLanguageFrench => 'Franceză';
+
+  @override
+  String get taskLanguageGerman => 'Germană';
+
+  @override
+  String get taskLanguageGreek => 'Greacă';
+
+  @override
+  String get taskLanguageHebrew => 'Ebraică';
+
+  @override
+  String get taskLanguageHindi => 'Hindi';
+
+  @override
+  String get taskLanguageHungarian => 'Maghiară';
+
+  @override
+  String get taskLanguageIndonesian => 'Indoneziană';
+
+  @override
+  String get taskLanguageItalian => 'Italiană';
+
+  @override
+  String get taskLanguageJapanese => 'Japoneză';
+
+  @override
+  String get taskLanguageKorean => 'Coreeană';
+
+  @override
+  String get taskLanguageLatvian => 'Letonă';
+
+  @override
+  String get taskLanguageLithuanian => 'Lituaniană';
+
+  @override
+  String get taskLanguageNorwegian => 'Norvegiană';
+
+  @override
+  String get taskLanguagePolish => 'Poloneză';
+
+  @override
+  String get taskLanguagePortuguese => 'Portugheză';
+
+  @override
+  String get taskLanguageRomanian => 'Română';
+
+  @override
+  String get taskLanguageRussian => 'Rusă';
+
+  @override
+  String get taskLanguageSerbian => 'Sârbă';
+
+  @override
+  String get taskLanguageSlovak => 'Slovacă';
+
+  @override
+  String get taskLanguageSlovenian => 'Slovenă';
+
+  @override
+  String get taskLanguageSpanish => 'Spaniolă';
+
+  @override
+  String get taskLanguageSwahili => 'Swahili';
+
+  @override
+  String get taskLanguageSwedish => 'Suedeză';
+
+  @override
+  String get taskLanguageThai => 'Thailandeză';
+
+  @override
+  String get taskLanguageTurkish => 'Turcă';
+
+  @override
+  String get taskLanguageUkrainian => 'Ucraineană';
+
+  @override
+  String get taskLanguageVietnamese => 'Vietnameză';
 
   @override
   String get tasksFilterTitle => 'Filtru sarcini';
