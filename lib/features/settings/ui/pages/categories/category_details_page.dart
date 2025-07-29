@@ -14,6 +14,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -56,25 +57,12 @@ class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
                     pinned: true,
                     actions: [
                       if (state.dirty && state.valid)
-                        TextButton(
+                        LottiTertiaryButton(
                           key: const Key(
                             'category_save',
                           ),
+                          label: context.messages.settingsHabitsSaveLabel,
                           onPressed: cubit.onSavePressed,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                            ),
-                            child: Text(
-                              context.messages.settingsHabitsSaveLabel,
-                              style: saveButtonStyle(
-                                Theme.of(
-                                  context,
-                                ),
-                              ),
-                              semanticsLabel: 'Save Category',
-                            ),
-                          ),
                         ),
                     ],
                   ),

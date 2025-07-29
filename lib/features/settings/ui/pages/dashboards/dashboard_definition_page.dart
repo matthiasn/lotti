@@ -20,6 +20,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -286,24 +287,12 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     pinned: true,
                     actions: [
                       if (dirty)
-                        TextButton(
+                        LottiTertiaryButton(
                           key: const Key(
                             'dashboard_save',
                           ),
+                          label: context.messages.settingsDashboardSaveLabel,
                           onPressed: saveDashboardPress,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                            ),
-                            child: Text(
-                              context.messages.settingsDashboardSaveLabel,
-                              style: saveButtonStyle(
-                                Theme.of(
-                                  context,
-                                ),
-                              ),
-                            ),
-                          ),
                         ),
                     ],
                   ),

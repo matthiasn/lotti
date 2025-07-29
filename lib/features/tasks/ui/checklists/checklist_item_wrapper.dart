@@ -5,6 +5,7 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class ChecklistItemWrapper extends ConsumerWidget {
@@ -76,15 +77,13 @@ class ChecklistItemWrapper extends ConsumerWidget {
                         context.messages.checklistItemDeleteWarning,
                       ),
                       actions: [
-                        TextButton(
+                        LottiTertiaryButton(
+                          label: context.messages.checklistItemDeleteCancel,
                           onPressed: () => Navigator.of(context).pop(false),
-                          child:
-                              Text(context.messages.checklistItemDeleteCancel),
                         ),
-                        TextButton(
+                        LottiTertiaryButton(
+                          label: context.messages.checklistItemDeleteConfirm,
                           onPressed: () => Navigator.of(context).pop(true),
-                          child:
-                              Text(context.messages.checklistItemDeleteConfirm),
                         ),
                       ],
                     );
