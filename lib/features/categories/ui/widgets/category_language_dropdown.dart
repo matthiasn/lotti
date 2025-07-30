@@ -19,8 +19,8 @@ class CategoryLanguageDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final language =
-        languageCode != null ? SupportedLanguage.fromCode(languageCode!) : null;
+    final code = languageCode;
+    final language = code != null ? SupportedLanguage.fromCode(code) : null;
 
     return InkWell(
       onTap: onTap,

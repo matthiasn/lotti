@@ -70,14 +70,18 @@ class CategoryColorPicker extends StatelessWidget {
   }
 
   void _showColorPicker(BuildContext context) {
+    var pickedColor = selectedColor ?? Colors.red;
+
     showDialog<Color>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(context.messages.selectColor),
         content: SingleChildScrollView(
           child: ColorPicker(
-            pickerColor: selectedColor ?? Colors.red,
-            onColorChanged: onColorChanged,
+            pickerColor: pickedColor,
+            onColorChanged: (color) {
+              pickedColor = color;
+            },
             enableAlpha: false,
             labelTypes: const [],
             pickerAreaBorderRadius: BorderRadius.circular(10),
@@ -89,7 +93,10 @@ class CategoryColorPicker extends StatelessWidget {
             child: Text(context.messages.cancelButton),
           ),
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
+            onPressed: () {
+              onColorChanged(pickedColor);
+              Navigator.of(dialogContext).pop();
+            },
             child: Text(context.messages.selectButton),
           ),
         ],
