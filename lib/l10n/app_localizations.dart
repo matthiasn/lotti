@@ -2802,7 +2802,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryPrivateDescription.
   ///
   /// In en, this message translates to:
-  /// **'Private categories are not synced across devices'**
+  /// **'Hide this category when private mode is enabled'**
   String get categoryPrivateDescription;
 
   /// No description provided for @activeLabel.

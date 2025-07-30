@@ -1,15 +1,18 @@
-import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
+import 'package:lotti/features/categories/ui/widgets/category_automatic_prompts.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
+import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
+import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
+import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.dart';
+import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -20,7 +23,6 @@ import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/ui/empty_state_widget.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
@@ -364,16 +366,13 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildNameField() {
-    // In create mode, we don't have a controller yet
     final isCreateMode = widget.categoryId == null;
 
-    return LottiTextField(
+    return CategoryNameField(
       controller: _nameController,
-      labelText: context.messages.settingsCategoriesNameLabel,
-      hintText: context.messages.enterCategoryName,
-      prefixIcon: Icons.category_outlined,
+      isCreateMode: isCreateMode,
       onChanged: isCreateMode
-          ? null // In create mode, we handle name via TextEditingController
+          ? null
           : (value) {
               ref
                   .read(
@@ -382,106 +381,25 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   )
                   .updateFormField(name: value);
             },
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return context.messages.categoryNameRequired;
-        }
-        return null;
-      },
     );
   }
 
   Widget _buildColorPicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.messages.colorLabel,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: _showColorPicker,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).dividerColor,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color:
-                        _selectedColor ?? Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  _selectedColor != null
-                      ? colorToCssHex(_selectedColor!)
-                      : context.messages.selectColor,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const Spacer(),
-                const Icon(Icons.palette_outlined),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showColorPicker() {
-    showDialog<Color>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.messages.selectColor),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: _selectedColor ?? Colors.red,
-            onColorChanged: (color) {
-              setState(() {
-                _selectedColor = color;
-              });
-              // Only update controller in edit mode
-              if (!widget.isCreateMode) {
-                ref
-                    .read(
-                      categoryDetailsControllerProvider(widget.categoryId!)
-                          .notifier,
-                    )
-                    .updateFormField(color: colorToCssHex(color));
-              }
-            },
-            enableAlpha: false,
-            labelTypes: const [],
-            pickerAreaBorderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.messages.cancelButton),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text(context.messages.selectButton),
-          ),
-        ],
-      ),
+    return CategoryColorPicker(
+      selectedColor: _selectedColor,
+      onColorChanged: (color) {
+        setState(() {
+          _selectedColor = color;
+        });
+        // Only update controller in edit mode
+        if (!widget.isCreateMode) {
+          ref
+              .read(
+                categoryDetailsControllerProvider(widget.categoryId!).notifier,
+              )
+              .updateFormField(color: colorToCssHex(color));
+        }
+      },
     );
   }
 
@@ -490,32 +408,22 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
-    return Column(
-      children: [
-        LottiSwitchField(
-          title: context.messages.privateLabel,
-          subtitle: context.messages.categoryPrivateDescription,
-          value: category.private,
-          onChanged: (value) => controller.updateFormField(private: value),
-          icon: Icons.lock_outline,
-        ),
-        const SizedBox(height: 8),
-        LottiSwitchField(
-          title: context.messages.activeLabel,
-          subtitle: context.messages.categoryActiveDescription,
-          value: category.active,
-          onChanged: (value) => controller.updateFormField(active: value),
-          icon: Icons.visibility_outlined,
-        ),
-        const SizedBox(height: 8),
-        LottiSwitchField(
-          title: context.messages.favoriteLabel,
-          subtitle: context.messages.categoryFavoriteDescription,
-          value: category.favorite ?? false,
-          onChanged: (value) => controller.updateFormField(favorite: value),
-          icon: Icons.star_outline,
-        ),
-      ],
+    return CategorySwitchTiles(
+      settings: CategorySwitchSettings(
+        isPrivate: category.private,
+        isActive: category.active,
+        isFavorite: category.favorite ?? false,
+      ),
+      onChanged: (field, {required value}) {
+        switch (field) {
+          case SwitchFieldType.private:
+            controller.updateFormField(private: value);
+          case SwitchFieldType.active:
+            controller.updateFormField(active: value);
+          case SwitchFieldType.favorite:
+            controller.updateFormField(favorite: value);
+        }
+      },
     );
   }
 
@@ -524,50 +432,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
-    final languageCode = category.defaultLanguageCode;
-    final language =
-        languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
-
-    return InkWell(
-      onTap: () => _showLanguageSelector(context, controller, languageCode),
-      borderRadius: BorderRadius.circular(8),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: context.messages.defaultLanguage,
-          hintText: context.messages.selectLanguage,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          prefixIcon: const Icon(Icons.translate),
-        ),
-        child: Row(
-          children: [
-            if (language != null) ...[
-              CountryFlag.fromLanguageCode(
-                language.code,
-                height: 20,
-                width: 30,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  language.localizedName(context),
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-            ] else
-              Expanded(
-                child: Text(
-                  context.messages.noDefaultLanguage,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).hintColor,
-                      ),
-                ),
-              ),
-            const Icon(Icons.arrow_drop_down),
-          ],
-        ),
-      ),
+    return CategoryLanguageDropdown(
+      languageCode: category.defaultLanguageCode,
+      onTap: () => _showLanguageSelector(
+          context, controller, category.defaultLanguageCode),
     );
   }
 
@@ -595,6 +463,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final promptsAsync = ref.watch(
       aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
     );
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
 
     return promptsAsync.when(
       data: (prompts) {
@@ -604,122 +475,41 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             .toList()
           ..sort((a, b) => a.name.compareTo(b.name));
 
-        if (promptConfigs.isEmpty) {
-          return _buildEmptyPromptsState();
-        }
-
-        return _buildPromptCheckboxList(category, promptConfigs);
+        return CategoryPromptSelection(
+          prompts: promptConfigs,
+          allowedPromptIds: category.allowedPromptIds ?? [],
+          onPromptToggled: (promptId, {required isAllowed}) {
+            final currentAllowedIds = category.allowedPromptIds ?? [];
+            final updatedIds = List<String>.from(currentAllowedIds);
+            if (isAllowed && !updatedIds.contains(promptId)) {
+              updatedIds.add(promptId);
+            } else if (!isAllowed) {
+              updatedIds.remove(promptId);
+            }
+            controller.updateAllowedPromptIds(updatedIds);
+          },
+          isLoading: false,
+        );
       },
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
-        ),
+      loading: () => const CategoryPromptSelection(
+        prompts: [],
+        allowedPromptIds: [],
+        onPromptToggled: _dummyPromptToggle,
+        isLoading: true,
       ),
-      error: (error, _) => _buildErrorState(error),
+      error: (error, _) => CategoryPromptSelection(
+        prompts: const [],
+        allowedPromptIds: const [],
+        onPromptToggled: _dummyPromptToggle,
+        isLoading: false,
+        error: error.toString(),
+      ),
     );
   }
 
-  Widget _buildEmptyPromptsState() {
-    return EmptyStateWidget(
-      icon: Icons.psychology_outlined,
-      title: context.messages.noPromptsAvailable,
-      description: context.messages.createPromptsFirst,
-    );
-  }
-
-  Widget _buildPromptCheckboxList(
-    CategoryDefinition category,
-    List<AiConfigPrompt> prompts,
-  ) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-    // When allowedPromptIds is null or empty, no prompts are allowed
-    // When it has values, only those specific prompts are allowed
-    final allowedPromptIds = category.allowedPromptIds ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.messages.selectAllowedPrompts,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: prompts.map((prompt) {
-              // Check if this prompt is in the allowed list
-              final isAllowed = allowedPromptIds.contains(prompt.id);
-
-              return CheckboxListTile(
-                title: Text(prompt.name),
-                subtitle: prompt.description != null
-                    ? Text(
-                        prompt.description!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    : null,
-                value: isAllowed,
-                onChanged: (value) {
-                  // Get current allowed IDs from the actual category state
-                  final currentAllowedIds = category.allowedPromptIds ?? [];
-                  final updatedIds = List<String>.from(currentAllowedIds);
-
-                  if ((value ?? false) && !updatedIds.contains(prompt.id)) {
-                    updatedIds.add(prompt.id);
-                  } else if (value == false) {
-                    updatedIds.remove(prompt.id);
-                  }
-                  controller.updateAllowedPromptIds(updatedIds);
-                },
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
+  static void _dummyPromptToggle(String promptId, {required bool isAllowed}) {}
 
   Widget _buildAutomaticPromptSettings(CategoryDefinition category) {
-    return Column(
-      children: [
-        _buildAutomaticPromptSection(
-          category,
-          AiResponseType.audioTranscription,
-          context.messages.audioRecordings,
-          Icons.mic_outlined,
-        ),
-        const SizedBox(height: 16),
-        _buildAutomaticPromptSection(
-          category,
-          AiResponseType.imageAnalysis,
-          context.messages.images,
-          Icons.image_outlined,
-        ),
-        const SizedBox(height: 16),
-        _buildAutomaticPromptSection(
-          category,
-          AiResponseType.taskSummary,
-          context.messages.taskSummaries,
-          Icons.summarize_outlined,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAutomaticPromptSection(
-    CategoryDefinition category,
-    AiResponseType responseType,
-    String title,
-    IconData icon,
-  ) {
     final promptsAsync = ref.watch(
       aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
     );
@@ -727,95 +517,82 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).dividerColor),
-        borderRadius: BorderRadius.circular(8),
+    return promptsAsync.when(
+      data: (prompts) {
+        final promptList = prompts.whereType<AiConfigPrompt>().toList();
+
+        // Build configs for each response type
+        final configs = [
+          _buildAutomaticPromptConfig(
+            category,
+            promptList,
+            AiResponseType.audioTranscription,
+            context.messages.audioRecordings,
+            Icons.mic_outlined,
+          ),
+          _buildAutomaticPromptConfig(
+            category,
+            promptList,
+            AiResponseType.imageAnalysis,
+            context.messages.images,
+            Icons.image_outlined,
+          ),
+          _buildAutomaticPromptConfig(
+            category,
+            promptList,
+            AiResponseType.taskSummary,
+            context.messages.taskSummaries,
+            Icons.summarize_outlined,
+          ),
+        ];
+
+        return CategoryAutomaticPrompts(
+          configs: configs,
+          onPromptChanged: controller.updateAutomaticPrompts,
+          isLoading: false,
+        );
+      },
+      loading: () => const CategoryAutomaticPrompts(
+        configs: [],
+        onPromptChanged: _dummyAutomaticPromptChanged,
+        isLoading: true,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          promptsAsync.when(
-            data: (prompts) {
-              final validPrompts = prompts
-                  .whereType<AiConfigPrompt>()
-                  .where((p) =>
-                      !p.archived &&
-                      p.aiResponseType == responseType &&
-                      category.allowedPromptIds != null &&
-                      category.allowedPromptIds!.contains(p.id))
-                  .toList()
-                ..sort((a, b) => a.name.compareTo(b.name));
-
-              if (validPrompts.isEmpty) {
-                return Text(
-                  context.messages.noPromptsForType,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).disabledColor,
-                      ),
-                );
-              }
-
-              final selectedPromptIds =
-                  category.automaticPrompts?[responseType] ?? [];
-
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: validPrompts.map((prompt) {
-                  final isSelected = selectedPromptIds.contains(prompt.id);
-
-                  return FilterChip(
-                    label: Text(prompt.name),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        // Only allow one selection - replace any existing selection
-                        controller.updateAutomaticPrompts(
-                          responseType,
-                          [prompt.id],
-                        );
-                      } else {
-                        // Deselecting - clear the selection
-                        controller.updateAutomaticPrompts(
-                          responseType,
-                          [],
-                        );
-                      }
-                    },
-                  );
-                }).toList(),
-              );
-            },
-            loading: () => const LinearProgressIndicator(),
-            error: (_, __) => Text(
-              context.messages.errorLoadingPrompts,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
+      error: (error, _) => CategoryAutomaticPrompts(
+        configs: const [],
+        onPromptChanged: _dummyAutomaticPromptChanged,
+        isLoading: false,
+        error: error.toString(),
       ),
     );
   }
 
-  Widget _buildErrorState(Object error) {
-    return ErrorStateWidget(
-      error: error.toString(),
-      title: context.messages.errorLoadingPrompts,
+  static void _dummyAutomaticPromptChanged(
+      AiResponseType responseType, List<String> selectedPromptIds) {}
+
+  AutomaticPromptConfig _buildAutomaticPromptConfig(
+    CategoryDefinition category,
+    List<AiConfigPrompt> allPrompts,
+    AiResponseType responseType,
+    String title,
+    IconData icon,
+  ) {
+    final validPrompts = allPrompts
+        .where((p) =>
+            !p.archived &&
+            p.aiResponseType == responseType &&
+            category.allowedPromptIds != null &&
+            category.allowedPromptIds!.contains(p.id))
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    final selectedPromptIds = category.automaticPrompts?[responseType] ?? [];
+
+    return AutomaticPromptConfig(
+      responseType: responseType,
+      title: title,
+      icon: icon,
+      availablePrompts: validPrompts,
+      selectedPromptIds: selectedPromptIds,
     );
   }
 

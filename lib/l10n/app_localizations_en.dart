@@ -1471,7 +1471,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Private categories are not synced across devices';
+      'Hide this category when private mode is enabled';
 
   @override
   String get activeLabel => 'Active';

@@ -521,7 +521,7 @@
   "selectColor": "Select Color",
   "selectButton": "Select",
   "privateLabel": "Private",
-  "categoryPrivateDescription": "Private categories are not synced across devices",
+  "categoryPrivateDescription": "Hide this category when private mode is enabled",
   "activeLabel": "Active",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",
   "favoriteLabel": "Favorite",
