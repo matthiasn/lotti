@@ -596,6 +596,12 @@ The system includes comprehensive test coverage:
 - ✅ UI shows correct suggestions after re-run
 - ✅ All existing functionality remains unbroken
 
+## Category-Based AI Settings
+
+The AI system integrates with the Categories feature to provide fine-grained control over which AI prompts are available for different types of content. Categories can specify allowed prompts and configure automatic prompt execution.
+
+For detailed information about category-based AI settings, see the [Categories Feature README](../categories/README.md#ai-powered-category-settings).
+
 ## Security Considerations
 
 - API keys are stored locally in the encrypted database
