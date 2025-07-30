@@ -1,3 +1,4 @@
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
+import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -17,6 +19,7 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
@@ -488,29 +491,70 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
+    
+    final languageCode = category.defaultLanguageCode;
+    final language = languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
 
-    return DropdownButtonFormField<String?>(
-      value: category.defaultLanguageCode,
-      decoration: InputDecoration(
-        labelText: context.messages.defaultLanguage,
-        hintText: context.messages.selectLanguage,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+    return InkWell(
+      onTap: () => _showLanguageSelector(context, controller, languageCode),
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: context.messages.defaultLanguage,
+          hintText: context.messages.selectLanguage,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          prefixIcon: const Icon(Icons.translate),
         ),
-        prefixIcon: const Icon(Icons.translate),
+        child: Row(
+          children: [
+            if (language != null) ...[
+              CountryFlag.fromLanguageCode(
+                language.code,
+                height: 20,
+                width: 30,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  language.localizedName(context),
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ] else
+              Expanded(
+                child: Text(
+                  context.messages.noDefaultLanguage,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).hintColor,
+                  ),
+                ),
+              ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
       ),
-      items: [
-        DropdownMenuItem<String?>(
-          child: Text(context.messages.noDefaultLanguage),
-        ),
-        ...SupportedLanguage.values.map((lang) {
-          return DropdownMenuItem<String?>(
-            value: lang.code,
-            child: Text(lang.localizedName(context)),
-          );
-        }),
-      ],
-      onChanged: controller.updateDefaultLanguage,
+    );
+  }
+  
+  Future<void> _showLanguageSelector(
+    BuildContext context,
+    CategoryDetailsController controller,
+    String? currentLanguageCode,
+  ) async {
+    await ModalUtils.showSinglePageModal<void>(
+      context: context,
+      title: context.messages.defaultLanguage,
+      builder: (BuildContext context) {
+        return LanguageSelectionModalContent(
+          initialLanguageCode: currentLanguageCode,
+          onLanguageSelected: (language) {
+            controller.updateDefaultLanguage(language?.code);
+            Navigator.pop(context);
+          },
+        );
+      },
     );
   }
 
