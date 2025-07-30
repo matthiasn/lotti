@@ -19,6 +19,7 @@ mixin _$CategoryDetailsState {
   CategoryDefinition? get category => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
   bool get isSaving => throw _privateConstructorUsedError;
+  bool get hasChanges => throw _privateConstructorUsedError;
   String? get errorMessage => throw _privateConstructorUsedError;
 
   /// Create a copy of CategoryDetailsState
@@ -38,6 +39,7 @@ abstract class $CategoryDetailsStateCopyWith<$Res> {
       {CategoryDefinition? category,
       bool isLoading,
       bool isSaving,
+      bool hasChanges,
       String? errorMessage});
 }
 
@@ -60,6 +62,7 @@ class _$CategoryDetailsStateCopyWithImpl<$Res,
     Object? category = freezed,
     Object? isLoading = null,
     Object? isSaving = null,
+    Object? hasChanges = null,
     Object? errorMessage = freezed,
   }) {
     return _then(_value.copyWith(
@@ -74,6 +77,10 @@ class _$CategoryDetailsStateCopyWithImpl<$Res,
       isSaving: null == isSaving
           ? _value.isSaving
           : isSaving // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasChanges: null == hasChanges
+          ? _value.hasChanges
+          : hasChanges // ignore: cast_nullable_to_non_nullable
               as bool,
       errorMessage: freezed == errorMessage
           ? _value.errorMessage
@@ -95,6 +102,7 @@ abstract class _$$CategoryDetailsStateImplCopyWith<$Res>
       {CategoryDefinition? category,
       bool isLoading,
       bool isSaving,
+      bool hasChanges,
       String? errorMessage});
 }
 
@@ -114,6 +122,7 @@ class __$$CategoryDetailsStateImplCopyWithImpl<$Res>
     Object? category = freezed,
     Object? isLoading = null,
     Object? isSaving = null,
+    Object? hasChanges = null,
     Object? errorMessage = freezed,
   }) {
     return _then(_$CategoryDetailsStateImpl(
@@ -128,6 +137,10 @@ class __$$CategoryDetailsStateImplCopyWithImpl<$Res>
       isSaving: null == isSaving
           ? _value.isSaving
           : isSaving // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasChanges: null == hasChanges
+          ? _value.hasChanges
+          : hasChanges // ignore: cast_nullable_to_non_nullable
               as bool,
       errorMessage: freezed == errorMessage
           ? _value.errorMessage
@@ -144,6 +157,7 @@ class _$CategoryDetailsStateImpl implements _CategoryDetailsState {
       {required this.category,
       required this.isLoading,
       required this.isSaving,
+      required this.hasChanges,
       this.errorMessage});
 
   @override
@@ -153,11 +167,13 @@ class _$CategoryDetailsStateImpl implements _CategoryDetailsState {
   @override
   final bool isSaving;
   @override
+  final bool hasChanges;
+  @override
   final String? errorMessage;
 
   @override
   String toString() {
-    return 'CategoryDetailsState(category: $category, isLoading: $isLoading, isSaving: $isSaving, errorMessage: $errorMessage)';
+    return 'CategoryDetailsState(category: $category, isLoading: $isLoading, isSaving: $isSaving, hasChanges: $hasChanges, errorMessage: $errorMessage)';
   }
 
   @override
@@ -170,6 +186,8 @@ class _$CategoryDetailsStateImpl implements _CategoryDetailsState {
                 other.isLoading == isLoading) &&
             (identical(other.isSaving, isSaving) ||
                 other.isSaving == isSaving) &&
+            (identical(other.hasChanges, hasChanges) ||
+                other.hasChanges == hasChanges) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage));
   }
@@ -180,6 +198,7 @@ class _$CategoryDetailsStateImpl implements _CategoryDetailsState {
       const DeepCollectionEquality().hash(category),
       isLoading,
       isSaving,
+      hasChanges,
       errorMessage);
 
   /// Create a copy of CategoryDetailsState
@@ -198,6 +217,7 @@ abstract class _CategoryDetailsState implements CategoryDetailsState {
       {required final CategoryDefinition? category,
       required final bool isLoading,
       required final bool isSaving,
+      required final bool hasChanges,
       final String? errorMessage}) = _$CategoryDetailsStateImpl;
 
   @override
@@ -206,6 +226,8 @@ abstract class _CategoryDetailsState implements CategoryDetailsState {
   bool get isLoading;
   @override
   bool get isSaving;
+  @override
+  bool get hasChanges;
   @override
   String? get errorMessage;
 

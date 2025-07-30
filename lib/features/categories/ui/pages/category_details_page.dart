@@ -70,6 +70,19 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       _nameController.text = category.name;
       _selectedColor = colorFromCssHex(category.color);
       _hasInitialized = true;
+
+      // Initialize the controller with current values after the frame is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(categoryDetailsControllerProvider(widget.categoryId!)
+                  .notifier)
+              .updateFormField(
+                name: category.name,
+                color: category.color,
+              );
+        }
+      });
     }
   }
 
@@ -213,10 +226,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
-    await controller.updateBasicSettings(
-      name: _nameController.text.trim(),
-      color: _selectedColor != null ? colorToCssHex(_selectedColor!) : null,
-    );
+    await controller.saveChanges();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -354,11 +364,16 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildNameField() {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
     return LottiTextField(
       controller: _nameController,
       labelText: context.messages.settingsCategoriesNameLabel,
       hintText: context.messages.enterCategoryName,
       prefixIcon: Icons.category_outlined,
+      onChanged: (value) => controller.updateFormField(name: value),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return context.messages.categoryNameRequired;
@@ -420,6 +435,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   void _showColorPicker() {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
     showDialog<Color>(
       context: context,
       builder: (context) => AlertDialog(
@@ -431,6 +450,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               setState(() {
                 _selectedColor = color;
               });
+              controller.updateFormField(color: colorToCssHex(color));
             },
             enableAlpha: false,
             labelTypes: const [],
@@ -464,7 +484,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           title: context.messages.privateLabel,
           subtitle: context.messages.categoryPrivateDescription,
           value: category.private,
-          onChanged: (value) => controller.updateBasicSettings(private: value),
+          onChanged: (value) => controller.updateFormField(private: value),
           icon: Icons.lock_outline,
         ),
         const SizedBox(height: 8),
@@ -472,7 +492,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           title: context.messages.activeLabel,
           subtitle: context.messages.categoryActiveDescription,
           value: category.active,
-          onChanged: (value) => controller.updateBasicSettings(active: value),
+          onChanged: (value) => controller.updateFormField(active: value),
           icon: Icons.visibility_outlined,
         ),
         const SizedBox(height: 8),
@@ -480,7 +500,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           title: context.messages.favoriteLabel,
           subtitle: context.messages.categoryFavoriteDescription,
           value: category.favorite ?? false,
-          onChanged: (value) => controller.updateBasicSettings(favorite: value),
+          onChanged: (value) => controller.updateFormField(favorite: value),
           icon: Icons.star_outline,
         ),
       ],
@@ -491,9 +511,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
-    
+
     final languageCode = category.defaultLanguageCode;
-    final language = languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
+    final language =
+        languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
 
     return InkWell(
       onTap: () => _showLanguageSelector(context, controller, languageCode),
@@ -527,8 +548,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                 child: Text(
                   context.messages.noDefaultLanguage,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).hintColor,
-                  ),
+                        color: Theme.of(context).hintColor,
+                      ),
                 ),
               ),
             const Icon(Icons.arrow_drop_down),
@@ -537,7 +558,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       ),
     );
   }
-  
+
   Future<void> _showLanguageSelector(
     BuildContext context,
     CategoryDetailsController controller,
@@ -550,7 +571,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         return LanguageSelectionModalContent(
           initialLanguageCode: currentLanguageCode,
           onLanguageSelected: (language) {
-            controller.updateDefaultLanguage(language?.code);
+            controller.updateFormField(defaultLanguageCode: language?.code);
             Navigator.pop(context);
           },
         );
@@ -602,6 +623,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
+    // When allowedPromptIds is empty, no prompts are allowed
+    // When it has values, only those specific prompts are allowed
     final allowedPromptIds = category.allowedPromptIds ?? [];
 
     return Column(
@@ -619,8 +642,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           ),
           child: Column(
             children: prompts.map((prompt) {
-              final isAllowed = allowedPromptIds.isEmpty ||
-                  allowedPromptIds.contains(prompt.id);
+              // Check if this prompt is in the allowed list
+              final isAllowed = allowedPromptIds.contains(prompt.id);
 
               return CheckboxListTile(
                 title: Text(prompt.name),
@@ -633,15 +656,16 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                     : null,
                 value: isAllowed,
                 onChanged: (value) {
-                  final updatedIds = List<String>.from(allowedPromptIds);
+                  // Get current allowed IDs from the actual category state
+                  final currentAllowedIds = category.allowedPromptIds ?? [];
+                  final updatedIds = List<String>.from(currentAllowedIds);
+
                   if ((value ?? false) && !updatedIds.contains(prompt.id)) {
                     updatedIds.add(prompt.id);
                   } else if (value == false) {
                     updatedIds.remove(prompt.id);
                   }
-                  controller.updateAllowedPromptIds(
-                    updatedIds.isEmpty ? [] : updatedIds,
-                  );
+                  controller.updateAllowedPromptIds(updatedIds);
                 },
               );
             }).toList(),
@@ -720,7 +744,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   .where((p) =>
                       !p.archived &&
                       p.aiResponseType == responseType &&
-                      ((category.allowedPromptIds?.isEmpty ?? true) ||
+                      (category.allowedPromptIds == null ||
                           category.allowedPromptIds!.contains(p.id)))
                   .toList()
                 ..sort((a, b) => a.name.compareTo(b.name));
@@ -794,7 +818,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           label: context.messages.cancelButton,
         ),
         LottiPrimaryButton(
-          onPressed: state.isSaving ? null : _handleSave,
+          onPressed: state.isSaving || !state.hasChanges ? null : _handleSave,
           label: context.messages.saveButton,
         ),
       ],

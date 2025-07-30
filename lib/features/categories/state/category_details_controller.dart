@@ -14,6 +14,7 @@ class CategoryDetailsState with _$CategoryDetailsState {
     required CategoryDefinition? category,
     required bool isLoading,
     required bool isSaving,
+    required bool hasChanges,
     String? errorMessage,
   }) = _CategoryDetailsState;
 
@@ -21,6 +22,7 @@ class CategoryDetailsState with _$CategoryDetailsState {
         category: null,
         isLoading: true,
         isSaving: false,
+        hasChanges: false,
       );
 }
 
@@ -46,13 +48,31 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
   final String _categoryId;
   StreamSubscription<CategoryDefinition?>? _subscription;
 
+  // Track the original category to detect changes
+  CategoryDefinition? _originalCategory;
+
+  // Track form field values
+  String? _currentName;
+  String? _currentColor;
+
+  // Track current values that can be changed without saving
+  CategoryDefinition? _pendingCategory;
+
   void _loadCategory() {
     _subscription = _repository.watchCategory(_categoryId).listen(
       (category) {
         if (mounted) {
+          // Store original category when first loaded
+          if (_originalCategory == null && category != null) {
+            _originalCategory = category;
+            _pendingCategory = category;
+            _currentName = category.name;
+            _currentColor = category.color;
+          }
           state = state.copyWith(
             category: category,
             isLoading: false,
+            hasChanges: _hasChanges(category),
           );
         }
       },
@@ -73,18 +93,96 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     super.dispose();
   }
 
-  Future<void> updateBasicSettings({
+  bool _hasChanges(CategoryDefinition? current) {
+    if (current == null ||
+        _originalCategory == null ||
+        _pendingCategory == null) return false;
+
+    // Check if any fields have changed from the original
+    return _currentName != _originalCategory!.name ||
+        _currentColor != _originalCategory!.color ||
+        _pendingCategory!.private != _originalCategory!.private ||
+        _pendingCategory!.active != _originalCategory!.active ||
+        _pendingCategory!.favorite != _originalCategory!.favorite ||
+        _pendingCategory!.defaultLanguageCode !=
+            _originalCategory!.defaultLanguageCode ||
+        _hasListChanges(_pendingCategory!.allowedPromptIds,
+            _originalCategory!.allowedPromptIds) ||
+        _hasMapChanges(_pendingCategory!.automaticPrompts,
+            _originalCategory!.automaticPrompts);
+  }
+
+  bool _hasListChanges(List<String>? current, List<String>? original) {
+    if (current == null && original == null) return false;
+    if (current == null || original == null) return true;
+    if (current.length != original.length) return true;
+
+    final currentSet = current.toSet();
+    final originalSet = original.toSet();
+    return !currentSet.containsAll(originalSet) ||
+        !originalSet.containsAll(currentSet);
+  }
+
+  bool _hasMapChanges(
+    Map<AiResponseType, List<String>>? current,
+    Map<AiResponseType, List<String>>? original,
+  ) {
+    if (current == null && original == null) return false;
+    if (current == null || original == null) return true;
+    if (current.length != original.length) return true;
+
+    for (final key in current.keys) {
+      if (!original.containsKey(key)) return true;
+      if (_hasListChanges(current[key], original[key])) return true;
+    }
+
+    return false;
+  }
+
+  void updateFormField({
     String? name,
     String? color,
     bool? private,
     bool? active,
     bool? favorite,
-  }) async {
-    final category = state.category;
-    if (category == null) return;
+    String? defaultLanguageCode,
+  }) {
+    if (name != null) _currentName = name;
+    if (color != null) _currentColor = color;
 
-    // Validate name if provided
-    if (name != null && name.trim().isEmpty) {
+    final current = state.category;
+    if (current != null && _pendingCategory != null) {
+      // Update pending category with new values
+      _pendingCategory = _pendingCategory!.copyWith(
+        private: private ?? _pendingCategory!.private,
+        active: active ?? _pendingCategory!.active,
+        favorite: favorite ?? _pendingCategory!.favorite,
+        defaultLanguageCode:
+            defaultLanguageCode ?? _pendingCategory!.defaultLanguageCode,
+      );
+
+      // Also update the displayed category so UI reflects changes
+      final displayCategory = current.copyWith(
+        name: _currentName ?? current.name,
+        color: _currentColor ?? current.color,
+        private: private ?? current.private,
+        active: active ?? current.active,
+        favorite: favorite ?? current.favorite,
+        defaultLanguageCode: defaultLanguageCode ?? current.defaultLanguageCode,
+      );
+
+      state = state.copyWith(
+        category: displayCategory,
+        hasChanges: _hasChanges(current),
+      );
+    }
+  }
+
+  Future<void> saveChanges() async {
+    if (_pendingCategory == null || !state.hasChanges) return;
+
+    // Validate name
+    if (_currentName == null || _currentName!.trim().isEmpty) {
       state = state.copyWith(
         errorMessage: 'Category name cannot be empty',
         isSaving: false,
@@ -95,77 +193,74 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
-      final updated = category.copyWith(
-        name: name ?? category.name,
-        color: color ?? category.color,
-        private: private ?? category.private,
-        active: active ?? category.active,
-        favorite: favorite ?? category.favorite,
+      final updated = _pendingCategory!.copyWith(
+        name: _currentName!,
+        color: _currentColor,
       );
 
       await _repository.updateCategory(updated);
-      state = state.copyWith(isSaving: false);
+      // Reset the original category and form values after successful save
+      _originalCategory = updated;
+      _pendingCategory = updated;
+      _currentName = updated.name;
+      _currentColor = updated.color;
+      state = state.copyWith(isSaving: false, hasChanges: false);
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'Failed to update category. Please try again.',
       );
     }
+  }
+
+  Future<void> updateBasicSettings({
+    String? name,
+    String? color,
+    bool? private,
+    bool? active,
+    bool? favorite,
+  }) async {
+    // This method is kept for backward compatibility but now just updates form fields
+    updateFormField(
+      name: name,
+      color: color,
+      private: private,
+      active: active,
+      favorite: favorite,
+    );
   }
 
   Future<void> updateDefaultLanguage(String? languageCode) async {
-    final category = state.category;
-    if (category == null) return;
-
-    state = state.copyWith(isSaving: true, errorMessage: null);
-
-    try {
-      final updated = category.copyWith(
-        defaultLanguageCode: languageCode,
-      );
-
-      await _repository.updateCategory(updated);
-      state = state.copyWith(isSaving: false);
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to update category. Please try again.',
-      );
-    }
+    // This method is kept for backward compatibility but now just updates form fields
+    updateFormField(defaultLanguageCode: languageCode);
   }
 
-  Future<void> updateAllowedPromptIds(List<String> promptIds) async {
-    final category = state.category;
-    if (category == null) return;
-
-    state = state.copyWith(isSaving: true, errorMessage: null);
-
-    try {
-      final updated = category.copyWith(
+  void updateAllowedPromptIds(List<String> promptIds) {
+    final current = state.category;
+    if (current != null && _pendingCategory != null) {
+      _pendingCategory = _pendingCategory!.copyWith(
         allowedPromptIds: promptIds.isEmpty ? null : promptIds,
       );
 
-      await _repository.updateCategory(updated);
-      state = state.copyWith(isSaving: false);
-    } catch (e) {
+      // Update displayed category
+      final displayCategory = current.copyWith(
+        allowedPromptIds: promptIds.isEmpty ? null : promptIds,
+      );
+
       state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to update category. Please try again.',
+        category: displayCategory,
+        hasChanges: _hasChanges(current),
       );
     }
   }
 
-  Future<void> updateAutomaticPrompts(
+  void updateAutomaticPrompts(
     AiResponseType responseType,
     List<String> promptIds,
-  ) async {
-    final category = state.category;
-    if (category == null) return;
-
-    state = state.copyWith(isSaving: true, errorMessage: null);
-
-    try {
-      final currentPrompts = category.automaticPrompts ?? {};
+  ) {
+    final current = state.category;
+    if (current != null && _pendingCategory != null) {
+      final currentPrompts = _pendingCategory!.automaticPrompts ?? {};
       final updatedPrompts =
           Map<AiResponseType, List<String>>.from(currentPrompts);
 
@@ -175,16 +270,18 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
         updatedPrompts[responseType] = promptIds;
       }
 
-      final updated = category.copyWith(
+      _pendingCategory = _pendingCategory!.copyWith(
         automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
       );
 
-      await _repository.updateCategory(updated);
-      state = state.copyWith(isSaving: false);
-    } catch (e) {
+      // Update displayed category
+      final displayCategory = current.copyWith(
+        automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
+      );
+
       state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to update category. Please try again.',
+        category: displayCategory,
+        hasChanges: _hasChanges(current),
       );
     }
   }
