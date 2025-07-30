@@ -86,7 +86,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: () async {
-                  final repository = ref.read(categoriesRepositoryProvider);
+                  final repository = ref.read(categoryRepositoryProvider);
                   final category = await repository.createCategory(
                     name: _nameController.text,
                     color: colorToCssHex(_pickerColor),

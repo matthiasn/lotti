@@ -9,13 +9,13 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
-class MockCategoriesRepository extends Mock implements CategoriesRepository {}
+class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 void main() {
-  late MockCategoriesRepository mockRepository;
+  late MockCategoryRepository mockRepository;
 
   setUp(() {
-    mockRepository = MockCategoriesRepository();
+    mockRepository = MockCategoryRepository();
     registerFallbackValue(FakeCategoryDefinition());
   });
 
@@ -26,7 +26,7 @@ void main() {
   }) {
     return ProviderScope(
       overrides: [
-        categoriesRepositoryProvider.overrideWithValue(mockRepository),
+        categoryRepositoryProvider.overrideWithValue(mockRepository),
       ],
       child: WidgetTestBench(
         child: CategoryCreateModal(

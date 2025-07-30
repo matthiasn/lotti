@@ -115,8 +115,7 @@ void main() {
 
       // Test cancel button tap
       final cancelButton = find.byWidgetPredicate(
-        (widget) =>
-            widget is LottiTertiaryButton && widget.label == 'Cancel',
+        (widget) => widget is LottiTertiaryButton && widget.label == 'Cancel',
       );
       await tester.tap(cancelButton);
       expect(cancelCalled, isTrue);
@@ -189,7 +188,8 @@ void main() {
       // Save button should exist and be enabled (showSaveButton = true)
       // but onPressed should be null
       final saveButton = find.byWidgetPredicate(
-        (widget) => widget is LottiPrimaryButton && widget.icon == Icons.save_rounded,
+        (widget) =>
+            widget is LottiPrimaryButton && widget.icon == Icons.save_rounded,
       );
       expect(saveButton, findsOneWidget);
 

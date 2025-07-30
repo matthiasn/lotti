@@ -11,11 +11,11 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 void main() {
   group('CategoriesRepository', () {
     late MockPersistenceLogic mockPersistenceLogic;
-    late CategoriesRepository repository;
+    late CategoryRepository repository;
 
     setUp(() {
       mockPersistenceLogic = MockPersistenceLogic();
-      repository = CategoriesRepository(mockPersistenceLogic);
+      repository = CategoryRepository(mockPersistenceLogic);
       registerFallbackValue(FakeCategoryDefinition());
     });
 

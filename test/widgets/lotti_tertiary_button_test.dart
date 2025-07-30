@@ -132,7 +132,8 @@ void main() {
 
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final theme = Theme.of(tester.element(find.byType(TextButton)));
-      expect(button.style?.foregroundColor?.resolve({}), equals(theme.colorScheme.error));
+      expect(button.style?.foregroundColor?.resolve({}),
+          equals(theme.colorScheme.error));
     });
 
     testWidgets('renders with primary color when not destructive',
@@ -150,7 +151,8 @@ void main() {
 
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final theme = Theme.of(tester.element(find.byType(TextButton)));
-      expect(button.style?.foregroundColor?.resolve({}), equals(theme.colorScheme.primary));
+      expect(button.style?.foregroundColor?.resolve({}),
+          equals(theme.colorScheme.primary));
     });
 
     testWidgets('renders with disabled color when disabled',
