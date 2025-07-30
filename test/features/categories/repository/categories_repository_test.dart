@@ -80,6 +80,7 @@ void main() {
       String? defaultLanguageCode,
       List<String>? allowedPromptIds,
       Map<AiResponseType, List<String>>? automaticPrompts,
+      DateTime? deletedAt,
     }) {
       return CategoryDefinition(
         id: id ?? const Uuid().v4(),
@@ -94,6 +95,7 @@ void main() {
         defaultLanguageCode: defaultLanguageCode,
         allowedPromptIds: allowedPromptIds,
         automaticPrompts: automaticPrompts,
+        deletedAt: deletedAt,
       );
     }
 
@@ -319,6 +321,126 @@ void main() {
             captured.defaultLanguageCode, equals(category.defaultLanguageCode));
         expect(captured.allowedPromptIds, equals(category.allowedPromptIds));
         expect(captured.automaticPrompts, equals(category.automaticPrompts));
+      });
+    });
+
+    group('deleteCategory', () {
+      test('successfully soft deletes category by setting deletedAt timestamp',
+          () async {
+        const categoryId = 'test-id-123';
+        final existingCategory = createTestCategory(
+          id: categoryId,
+          name: 'Category to Delete',
+        );
+
+        // Mock category exists
+        when(() => mockEntitiesCacheService.getCategoryById(categoryId))
+            .thenReturn(existingCategory);
+
+        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
+            .thenAnswer((_) async => 1);
+
+        await repository.deleteCategory(categoryId);
+
+        // Verify upsertEntityDefinition was called with the deleted category
+        final captured = verify(
+                () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
+            .captured
+            .single as CategoryDefinition;
+
+        // Verify the category has deletedAt set
+        expect(captured.id, equals(categoryId));
+        expect(captured.name, equals('Category to Delete'));
+        expect(captured.deletedAt, isNotNull);
+        expect(captured.deletedAt?.difference(DateTime.now()).inSeconds.abs(),
+            lessThan(5)); // Within 5 seconds
+        expect(captured.updatedAt, isNotNull);
+        expect(captured.updatedAt.difference(DateTime.now()).inSeconds.abs(),
+            lessThan(5)); // Within 5 seconds
+      });
+
+      test('does nothing when category ID does not exist', () async {
+        const nonExistentId = 'non-existent-id';
+
+        // Mock category doesn't exist
+        when(() => mockEntitiesCacheService.getCategoryById(nonExistentId))
+            .thenReturn(null);
+
+        await repository.deleteCategory(nonExistentId);
+
+        // Verify that upsertEntityDefinition was never called
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
+      });
+
+      test('propagates errors from persistence logic during deletion',
+          () async {
+        const categoryId = 'test-id-456';
+        final existingCategory = createTestCategory(
+          id: categoryId,
+          name: 'Category with Error',
+        );
+        final error = Exception('Delete error');
+
+        // Mock category exists
+        when(() => mockEntitiesCacheService.getCategoryById(categoryId))
+            .thenReturn(existingCategory);
+
+        // Mock persistence logic throws error
+        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
+            .thenThrow(error);
+
+        expect(
+          () => repository.deleteCategory(categoryId),
+          throwsA(error),
+        );
+      });
+
+      test('preserves other category properties when soft deleting', () async {
+        const categoryId = 'test-id-789';
+        final existingCategory = createTestCategory(
+          id: categoryId,
+          name: 'Category with Properties',
+          color: '#FF0000',
+          private: true,
+          active: false,
+          favorite: true,
+          defaultLanguageCode: 'en',
+          allowedPromptIds: ['prompt1', 'prompt2'],
+          automaticPrompts: {
+            AiResponseType.taskSummary: ['prompt1'],
+          },
+        );
+
+        // Mock category exists
+        when(() => mockEntitiesCacheService.getCategoryById(categoryId))
+            .thenReturn(existingCategory);
+
+        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
+            .thenAnswer((_) async => 1);
+
+        await repository.deleteCategory(categoryId);
+
+        // Verify all properties are preserved except deletedAt and updatedAt
+        final captured = verify(
+                () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
+            .captured
+            .single as CategoryDefinition;
+
+        expect(captured.id, equals(categoryId));
+        expect(captured.name, equals('Category with Properties'));
+        expect(captured.color, equals('#FF0000'));
+        expect(captured.private, isTrue);
+        expect(captured.active, isFalse);
+        expect(captured.favorite, isTrue);
+        expect(captured.defaultLanguageCode, equals('en'));
+        expect(captured.allowedPromptIds, equals(['prompt1', 'prompt2']));
+        expect(
+            captured.automaticPrompts,
+            equals({
+              AiResponseType.taskSummary: ['prompt1']
+            }));
+        expect(captured.deletedAt, isNotNull);
+        expect(captured.updatedAt, isNotNull);
       });
     });
 
