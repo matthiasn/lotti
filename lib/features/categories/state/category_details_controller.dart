@@ -96,7 +96,9 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
   bool _hasChanges(CategoryDefinition? current) {
     if (current == null ||
         _originalCategory == null ||
-        _pendingCategory == null) return false;
+        _pendingCategory == null) {
+      return false;
+    }
 
     // Check if any fields have changed from the original
     return _currentName != _originalCategory!.name ||

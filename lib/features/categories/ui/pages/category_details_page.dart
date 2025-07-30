@@ -771,16 +771,19 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                     label: Text(prompt.name),
                     selected: isSelected,
                     onSelected: (selected) {
-                      final updatedIds = List<String>.from(selectedPromptIds);
                       if (selected) {
-                        updatedIds.add(prompt.id);
+                        // Only allow one selection - replace any existing selection
+                        controller.updateAutomaticPrompts(
+                          responseType,
+                          [prompt.id],
+                        );
                       } else {
-                        updatedIds.remove(prompt.id);
+                        // Deselecting - clear the selection
+                        controller.updateAutomaticPrompts(
+                          responseType,
+                          [],
+                        );
                       }
-                      controller.updateAutomaticPrompts(
-                        responseType,
-                        updatedIds,
-                      );
                     },
                   );
                 }).toList(),
