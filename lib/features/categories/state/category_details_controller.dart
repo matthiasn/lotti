@@ -51,11 +51,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
   // Track the original category to detect changes
   CategoryDefinition? _originalCategory;
 
-  // Track form field values
-  String? _currentName;
-  String? _currentColor;
-
-  // Track current values that can be changed without saving
+  // Track all pending changes in a single object
   CategoryDefinition? _pendingCategory;
 
   void _loadCategory() {
@@ -66,8 +62,6 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
           if (_originalCategory == null && category != null) {
             _originalCategory = category;
             _pendingCategory = category;
-            _currentName = category.name;
-            _currentColor = category.color;
           }
           state = state.copyWith(
             category: category,
@@ -101,8 +95,8 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     }
 
     // Check if any fields have changed from the original
-    return _currentName != _originalCategory!.name ||
-        _currentColor != _originalCategory!.color ||
+    return _pendingCategory!.name != _originalCategory!.name ||
+        _pendingCategory!.color != _originalCategory!.color ||
         _pendingCategory!.private != _originalCategory!.private ||
         _pendingCategory!.active != _originalCategory!.active ||
         _pendingCategory!.favorite != _originalCategory!.favorite ||
@@ -149,42 +143,31 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     bool? favorite,
     String? defaultLanguageCode,
   }) {
-    if (name != null) _currentName = name;
-    if (color != null) _currentColor = color;
+    if (_pendingCategory == null) return;
 
-    final current = state.category;
-    if (current != null && _pendingCategory != null) {
-      // Update pending category with new values
-      _pendingCategory = _pendingCategory!.copyWith(
-        private: private ?? _pendingCategory!.private,
-        active: active ?? _pendingCategory!.active,
-        favorite: favorite ?? _pendingCategory!.favorite,
-        defaultLanguageCode:
-            defaultLanguageCode ?? _pendingCategory!.defaultLanguageCode,
-      );
+    // Update pending category with all new values
+    _pendingCategory = _pendingCategory!.copyWith(
+      name: name ?? _pendingCategory!.name,
+      color: color ?? _pendingCategory!.color,
+      private: private ?? _pendingCategory!.private,
+      active: active ?? _pendingCategory!.active,
+      favorite: favorite ?? _pendingCategory!.favorite,
+      defaultLanguageCode:
+          defaultLanguageCode ?? _pendingCategory!.defaultLanguageCode,
+    );
 
-      // Also update the displayed category so UI reflects changes
-      final displayCategory = current.copyWith(
-        name: _currentName ?? current.name,
-        color: _currentColor ?? current.color,
-        private: private ?? current.private,
-        active: active ?? current.active,
-        favorite: favorite ?? current.favorite,
-        defaultLanguageCode: defaultLanguageCode ?? current.defaultLanguageCode,
-      );
-
-      state = state.copyWith(
-        category: displayCategory,
-        hasChanges: _hasChanges(current),
-      );
-    }
+    // Update the displayed category to reflect pending changes
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
   }
 
   Future<void> saveChanges() async {
     if (_pendingCategory == null || !state.hasChanges) return;
 
     // Validate name
-    if (_currentName == null || _currentName!.trim().isEmpty) {
+    if (_pendingCategory!.name.trim().isEmpty) {
       state = state.copyWith(
         errorMessage: 'Category name cannot be empty',
         isSaving: false,
@@ -195,17 +178,9 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
-      final updated = _pendingCategory!.copyWith(
-        name: _currentName!,
-        color: _currentColor,
-      );
-
-      await _repository.updateCategory(updated);
-      // Reset the original category and form values after successful save
-      _originalCategory = updated;
-      _pendingCategory = updated;
-      _currentName = updated.name;
-      _currentColor = updated.color;
+      await _repository.updateCategory(_pendingCategory!);
+      // Reset the original category after successful save
+      _originalCategory = _pendingCategory;
       state = state.copyWith(isSaving: false, hasChanges: false);
     } catch (e) {
       state = state.copyWith(
@@ -238,54 +213,42 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
   }
 
   void updateAllowedPromptIds(List<String> promptIds) {
-    final current = state.category;
-    if (current != null && _pendingCategory != null) {
-      _pendingCategory = _pendingCategory!.copyWith(
-        allowedPromptIds: promptIds.isEmpty ? null : promptIds,
-      );
+    if (_pendingCategory == null) return;
 
-      // Update displayed category
-      final displayCategory = current.copyWith(
-        allowedPromptIds: promptIds.isEmpty ? null : promptIds,
-      );
+    _pendingCategory = _pendingCategory!.copyWith(
+      allowedPromptIds: promptIds.isEmpty ? null : promptIds,
+    );
 
-      state = state.copyWith(
-        category: displayCategory,
-        hasChanges: _hasChanges(current),
-      );
-    }
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
   }
 
   void updateAutomaticPrompts(
     AiResponseType responseType,
     List<String> promptIds,
   ) {
-    final current = state.category;
-    if (current != null && _pendingCategory != null) {
-      final currentPrompts = _pendingCategory!.automaticPrompts ?? {};
-      final updatedPrompts =
-          Map<AiResponseType, List<String>>.from(currentPrompts);
+    if (_pendingCategory == null) return;
 
-      if (promptIds.isEmpty) {
-        updatedPrompts.remove(responseType);
-      } else {
-        updatedPrompts[responseType] = promptIds;
-      }
+    final currentPrompts = _pendingCategory!.automaticPrompts ?? {};
+    final updatedPrompts =
+        Map<AiResponseType, List<String>>.from(currentPrompts);
 
-      _pendingCategory = _pendingCategory!.copyWith(
-        automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
-      );
-
-      // Update displayed category
-      final displayCategory = current.copyWith(
-        automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
-      );
-
-      state = state.copyWith(
-        category: displayCategory,
-        hasChanges: _hasChanges(current),
-      );
+    if (promptIds.isEmpty) {
+      updatedPrompts.remove(responseType);
+    } else {
+      updatedPrompts[responseType] = promptIds;
     }
+
+    _pendingCategory = _pendingCategory!.copyWith(
+      automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
+    );
+
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
   }
 
   Future<void> deleteCategory() async {

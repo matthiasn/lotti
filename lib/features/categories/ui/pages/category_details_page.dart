@@ -621,7 +621,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(context.messages.categoryDeleteQuestion),
+        title: Text(context.messages.categoryDeleteTitle),
         content: Text(context.messages.categoryDeleteConfirmation),
         actions: [
           TextButton(
