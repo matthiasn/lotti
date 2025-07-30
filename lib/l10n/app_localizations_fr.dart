@@ -1419,6 +1419,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCategoriesTitle => 'Catégories';
 
   @override
+  String get settingsCategoriesAddTooltip => 'Add Category';
+
+  @override
+  String get settingsCategoriesEmptyState => 'No categories found';
+
+  @override
+  String get settingsCategoriesEmptyStateHint =>
+      'Create a category to organize your entries';
+
+  @override
+  String get settingsCategoriesErrorLoading => 'Error loading categories';
+
+  @override
+  String get settingsCategoriesHasDefaultLanguage => 'Default language';
+
+  @override
+  String get settingsCategoriesHasAiSettings => 'AI settings';
+
+  @override
+  String get settingsCategoriesHasAutomaticPrompts => 'Automatic AI';
+
+  @override
   String get settingsConflictsResolutionTitle =>
       'Résolution des conflits de synchronisation';
 

@@ -19,12 +19,13 @@ class CategoryDetailsState with _$CategoryDetailsState {
         category: null,
         isLoading: true,
         isSaving: false,
-        errorMessage: null,
       );
 }
 
-final categoryDetailsControllerProvider = StateNotifierProvider.family<
-    CategoryDetailsController, CategoryDetailsState, String>(
+final AutoDisposeStateNotifierProviderFamily<CategoryDetailsController,
+        CategoryDetailsState, String> categoryDetailsControllerProvider =
+    StateNotifierProvider.autoDispose
+        .family<CategoryDetailsController, CategoryDetailsState, String>(
   (ref, categoryId) => CategoryDetailsController(
     ref.watch(categoryRepositoryProvider),
     categoryId,
@@ -52,7 +53,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
           );
         }
       },
-      onError: (error) {
+      onError: (Object error) {
         if (mounted) {
           state = state.copyWith(
             isLoading: false,

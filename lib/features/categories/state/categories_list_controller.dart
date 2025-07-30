@@ -30,7 +30,7 @@ class CategoriesListController
           state = AsyncValue.data(categories);
         }
       },
-      onError: (error, stackTrace) {
+      onError: (Object error, StackTrace stackTrace) {
         if (mounted) {
           state = AsyncValue.error(error, stackTrace);
         }

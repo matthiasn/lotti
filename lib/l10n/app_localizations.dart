@@ -2679,6 +2679,48 @@ abstract class AppLocalizations {
   /// **'Categories'**
   String get settingsCategoriesTitle;
 
+  /// No description provided for @settingsCategoriesAddTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Category'**
+  String get settingsCategoriesAddTooltip;
+
+  /// No description provided for @settingsCategoriesEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories found'**
+  String get settingsCategoriesEmptyState;
+
+  /// No description provided for @settingsCategoriesEmptyStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a category to organize your entries'**
+  String get settingsCategoriesEmptyStateHint;
+
+  /// No description provided for @settingsCategoriesErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading categories'**
+  String get settingsCategoriesErrorLoading;
+
+  /// No description provided for @settingsCategoriesHasDefaultLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Default language'**
+  String get settingsCategoriesHasDefaultLanguage;
+
+  /// No description provided for @settingsCategoriesHasAiSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings'**
+  String get settingsCategoriesHasAiSettings;
+
+  /// No description provided for @settingsCategoriesHasAutomaticPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic AI'**
+  String get settingsCategoriesHasAutomaticPrompts;
+
   /// No description provided for @settingsConflictsResolutionTitle.
   ///
   /// In en, this message translates to:
