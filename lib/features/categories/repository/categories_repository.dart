@@ -4,6 +4,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:uuid/uuid.dart';
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
@@ -25,13 +26,8 @@ class CategoryRepository {
   }
 
   Future<CategoryDefinition?> getCategoryById(String id) async {
-    final categories = await getIt<JournalDb>().allCategoryDefinitions().get();
-    final mapped = categoryDefinitionsStreamMapper(categories);
-    try {
-      return mapped.firstWhere((cat) => cat.id == id);
-    } catch (_) {
-      return null;
-    }
+    // Use the cached version for efficient synchronous access
+    return getIt<EntitiesCacheService>().getCategoryById(id);
   }
 
   Future<List<CategoryDefinition>> getAllCategories() async {

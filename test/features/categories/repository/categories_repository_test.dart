@@ -7,12 +7,15 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
+
+class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
@@ -24,11 +27,13 @@ void main() {
   group('CategoryRepository', () {
     late MockPersistenceLogic mockPersistenceLogic;
     late MockJournalDb mockJournalDb;
+    late MockEntitiesCacheService mockEntitiesCacheService;
     late CategoryRepository repository;
 
     setUp(() {
       mockPersistenceLogic = MockPersistenceLogic();
       mockJournalDb = MockJournalDb();
+      mockEntitiesCacheService = MockEntitiesCacheService();
 
       // Reset getIt and register mocks
       if (getIt.isRegistered<PersistenceLogic>()) {
@@ -37,10 +42,14 @@ void main() {
       if (getIt.isRegistered<JournalDb>()) {
         getIt.unregister<JournalDb>();
       }
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        getIt.unregister<EntitiesCacheService>();
+      }
 
       getIt
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<JournalDb>(mockJournalDb);
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
 
       repository = CategoryRepository(mockPersistenceLogic);
     });
@@ -51,6 +60,9 @@ void main() {
       }
       if (getIt.isRegistered<JournalDb>()) {
         getIt.unregister<JournalDb>();
+      }
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        getIt.unregister<EntitiesCacheService>();
       }
     });
 
@@ -223,6 +235,33 @@ void main() {
         expect(result1.id, isNotEmpty);
         expect(result2.id, isNotEmpty);
         expect(result1.id, isNot(equals(result2.id)));
+      });
+    });
+
+    group('getCategoryById', () {
+      test('returns category from cache service', () async {
+        final category = createTestCategory();
+
+        when(() => mockEntitiesCacheService.getCategoryById(category.id))
+            .thenReturn(category);
+
+        final result = await repository.getCategoryById(category.id);
+
+        expect(result, equals(category));
+        verify(() => mockEntitiesCacheService.getCategoryById(category.id))
+            .called(1);
+      });
+
+      test('returns null when category not found in cache', () async {
+        when(() => mockEntitiesCacheService.getCategoryById('non-existent-id'))
+            .thenReturn(null);
+
+        final result = await repository.getCategoryById('non-existent-id');
+
+        expect(result, isNull);
+        verify(() =>
+                mockEntitiesCacheService.getCategoryById('non-existent-id'))
+            .called(1);
       });
     });
 

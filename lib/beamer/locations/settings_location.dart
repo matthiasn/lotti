@@ -45,6 +45,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/categories',
         '/settings/categories/:categoryId',
         '/settings/categories/create',
+        // TODO: Consider removing the old categories routes and renaming categories2
+        // to categories once the migration is complete
         '/settings/categories2',
         '/settings/categories2/create',
         '/settings/categories2/:categoryId',

@@ -623,7 +623,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
-    // When allowedPromptIds is empty, no prompts are allowed
+    // When allowedPromptIds is null or empty, no prompts are allowed
     // When it has values, only those specific prompts are allowed
     final allowedPromptIds = category.allowedPromptIds ?? [];
 
@@ -744,8 +744,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   .where((p) =>
                       !p.archived &&
                       p.aiResponseType == responseType &&
-                      (category.allowedPromptIds == null ||
-                          category.allowedPromptIds!.contains(p.id)))
+                      category.allowedPromptIds != null &&
+                      category.allowedPromptIds!.contains(p.id))
                   .toList()
                 ..sort((a, b) => a.name.compareTo(b.name));
 

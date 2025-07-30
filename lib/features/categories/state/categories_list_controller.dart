@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -21,10 +23,11 @@ class CategoriesListController
   }
 
   final CategoryRepository _repository;
+  StreamSubscription<List<CategoryDefinition>>? _subscription;
 
   void _loadCategories() {
     state = const AsyncValue.loading();
-    _repository.watchCategories().listen(
+    _subscription = _repository.watchCategories().listen(
       (categories) {
         if (mounted) {
           state = AsyncValue.data(categories);
@@ -36,6 +39,12 @@ class CategoriesListController
         }
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> deleteCategory(String id) async {
