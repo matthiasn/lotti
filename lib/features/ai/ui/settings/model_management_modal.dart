@@ -7,7 +7,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 // Updated show method to use proper WoltModal pattern with sticky action bar
@@ -149,37 +149,25 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Padding(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            bottom: 30,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(
-                height: ModalTheme.buttonHeight,
-                child: LottiSecondaryButton(
-                  label: context.messages.cancelButton,
-                  onPressed: () => Navigator.pop(context),
-                ),
+              LottiTertiaryButton(
+                label: context.messages.cancelButton,
+                onPressed: () => Navigator.pop(context),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: ModalTheme.buttonHeight,
-                  child: LottiPrimaryButton(
-                    onPressed: (selectedIds.isNotEmpty &&
-                            defaultId.isNotEmpty &&
-                            selectedIds.contains(defaultId))
-                        ? () {
-                            onSave(selectedIds.toList(), defaultId);
-                            Navigator.of(context).pop();
-                          }
-                        : null,
-                    label: context.messages.saveButtonLabel,
-                    icon: Icons.save_rounded,
-                  ),
-                ),
+              LottiPrimaryButton(
+                onPressed: (selectedIds.isNotEmpty &&
+                        defaultId.isNotEmpty &&
+                        selectedIds.contains(defaultId))
+                    ? () {
+                        onSave(selectedIds.toList(), defaultId);
+                        Navigator.of(context).pop();
+                      }
+                    : null,
+                label: context.messages.saveButtonLabel,
+                icon: Icons.save_rounded,
               ),
             ],
           ),
