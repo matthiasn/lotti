@@ -1002,7 +1002,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryDeleteQuestion.
   ///
   /// In en, this message translates to:
-  /// **'Delete Category?'**
+  /// **'Do you want to delete this category?'**
   String get categoryDeleteQuestion;
 
   /// No description provided for @categorySearchPlaceholder.
@@ -2894,6 +2894,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error loading prompts'**
   String get errorLoadingPrompts;
+
+  /// No description provided for @categoryDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Category?'**
+  String get categoryDeleteTitle;
 
   /// No description provided for @categoryDeleteConfirmation.
   ///

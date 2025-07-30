@@ -25,6 +25,21 @@ void beamToNamed(String path, {Object? data}) {
   // Stub implementation for tests
 }
 
+// Helper method to find an enabled LottiPrimaryButton
+LottiPrimaryButton? findEnabledPrimaryButton(WidgetTester tester) {
+  final saveButtons = tester.widgetList<LottiPrimaryButton>(
+    find.byType(LottiPrimaryButton),
+  );
+
+  for (final button in saveButtons) {
+    if (button.onPressed != null) {
+      return button;
+    }
+  }
+
+  return null;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeCategoryDefinition());
@@ -298,19 +313,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Check save button is enabled - there might be multiple buttons
-        final saveButtons = find.byType(LottiPrimaryButton);
-        expect(saveButtons, findsAtLeastNWidgets(1));
-
-        // Find the save button (should be the last one in the bottom bar)
-        var foundEnabledSaveButton = false;
-        for (var i = 0; i < saveButtons.evaluate().length; i++) {
-          final button = tester.widget<LottiPrimaryButton>(saveButtons.at(i));
-          if (button.onPressed != null) {
-            foundEnabledSaveButton = true;
-            break;
-          }
-        }
-        expect(foundEnabledSaveButton, isTrue);
+        final enabledButton = findEnabledPrimaryButton(tester);
+        expect(enabledButton, isNotNull);
 
         await streamController.close();
       });
@@ -345,16 +349,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Save button should now be enabled
-        final saveButtons = find.byType(LottiPrimaryButton);
-        var foundEnabledSaveButton = false;
-        for (var i = 0; i < saveButtons.evaluate().length; i++) {
-          final button = tester.widget<LottiPrimaryButton>(saveButtons.at(i));
-          if (button.onPressed != null) {
-            foundEnabledSaveButton = true;
-            break;
-          }
-        }
-        expect(foundEnabledSaveButton, isTrue);
+        final enabledButton = findEnabledPrimaryButton(tester);
+        expect(enabledButton, isNotNull);
 
         await streamController.close();
       });
@@ -679,6 +675,37 @@ void main() {
         expect(find.text('Category name cannot be empty'), findsOneWidget);
 
         await streamController.close();
+      });
+
+      testWidgets('create mode renders without null errors', (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoryDetailsPage(), // No categoryId = create mode
+          ),
+        );
+
+        // Should display create mode UI without errors
+        // Use partial text matching since we don't know exact translations
+        expect(find.byType(CategoryDetailsPage), findsOneWidget);
+        expect(find.byType(LottiFormSection),
+            findsOneWidget); // Basic Settings section
+        expect(find.byType(TextField), findsOneWidget); // Name field
+        expect(find.byIcon(Icons.palette_outlined),
+            findsOneWidget); // Color picker icon
+
+        // Should be able to enter name
+        await tester.enterText(find.byType(TextField), 'New Category');
+        expect(find.text('New Category'), findsOneWidget);
+
+        // Should be able to open color picker
+        await tester.tap(find.byIcon(Icons.palette_outlined));
+        await tester.pumpAndSettle();
+
+        // Color picker dialog should open
+        expect(find.byType(AlertDialog), findsOneWidget);
       });
 
       testWidgets('saves category with updated values', (tester) async {

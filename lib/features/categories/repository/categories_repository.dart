@@ -8,30 +8,40 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:uuid/uuid.dart';
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
-  return CategoryRepository(getIt<PersistenceLogic>());
+  return CategoryRepository(
+    getIt<PersistenceLogic>(),
+    getIt<JournalDb>(),
+    getIt<EntitiesCacheService>(),
+  );
 });
 
 class CategoryRepository {
-  CategoryRepository(this._persistenceLogic);
+  CategoryRepository(
+    this._persistenceLogic,
+    this._journalDb,
+    this._entitiesCacheService,
+  );
 
   final PersistenceLogic _persistenceLogic;
+  final JournalDb _journalDb;
+  final EntitiesCacheService _entitiesCacheService;
   final _uuid = const Uuid();
 
   Stream<List<CategoryDefinition>> watchCategories() {
-    return getIt<JournalDb>().watchCategories();
+    return _journalDb.watchCategories();
   }
 
   Stream<CategoryDefinition?> watchCategory(String id) {
-    return getIt<JournalDb>().watchCategoryById(id);
+    return _journalDb.watchCategoryById(id);
   }
 
   Future<CategoryDefinition?> getCategoryById(String id) async {
     // Use the cached version for efficient synchronous access
-    return getIt<EntitiesCacheService>().getCategoryById(id);
+    return _entitiesCacheService.getCategoryById(id);
   }
 
   Future<List<CategoryDefinition>> getAllCategories() async {
-    final categories = await getIt<JournalDb>().allCategoryDefinitions().get();
+    final categories = await _journalDb.allCategoryDefinitions().get();
     return categoryDefinitionsStreamMapper(categories);
   }
 

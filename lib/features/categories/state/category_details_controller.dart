@@ -297,7 +297,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: 'Failed to update category. Please try again.',
+        errorMessage: 'Failed to delete category. Please try again.',
       );
     }
   }

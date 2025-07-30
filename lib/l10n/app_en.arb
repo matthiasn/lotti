@@ -537,7 +537,7 @@
   "taskSummaries": "Task Summaries",
   "noPromptsForType": "No prompts available for this type",
   "errorLoadingPrompts": "Error loading prompts",
-  "categoryDeleteQuestion": "Delete Category?",
+  "categoryDeleteTitle": "Delete Category?",
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorized.",
   "deleteButton": "Delete",
   "saveButton": "Save",

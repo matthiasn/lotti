@@ -51,7 +51,11 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
 
-      repository = CategoryRepository(mockPersistenceLogic);
+      repository = CategoryRepository(
+        mockPersistenceLogic,
+        mockJournalDb,
+        mockEntitiesCacheService,
+      );
     });
 
     tearDown(() {

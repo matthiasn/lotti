@@ -364,16 +364,24 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildNameField() {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
+    // In create mode, we don't have a controller yet
+    final isCreateMode = widget.categoryId == null;
 
     return LottiTextField(
       controller: _nameController,
       labelText: context.messages.settingsCategoriesNameLabel,
       hintText: context.messages.enterCategoryName,
       prefixIcon: Icons.category_outlined,
-      onChanged: (value) => controller.updateFormField(name: value),
+      onChanged: isCreateMode
+          ? null // In create mode, we handle name via TextEditingController
+          : (value) {
+              ref
+                  .read(
+                    categoryDetailsControllerProvider(widget.categoryId!)
+                        .notifier,
+                  )
+                  .updateFormField(name: value);
+            },
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return context.messages.categoryNameRequired;
@@ -435,10 +443,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   void _showColorPicker() {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
     showDialog<Color>(
       context: context,
       builder: (context) => AlertDialog(
@@ -450,7 +454,15 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               setState(() {
                 _selectedColor = color;
               });
-              controller.updateFormField(color: colorToCssHex(color));
+              // Only update controller in edit mode
+              if (!widget.isCreateMode) {
+                ref
+                    .read(
+                      categoryDetailsControllerProvider(widget.categoryId!)
+                          .notifier,
+                    )
+                    .updateFormField(color: colorToCssHex(color));
+              }
             },
             enableAlpha: false,
             labelTypes: const [],

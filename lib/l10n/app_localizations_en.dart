@@ -503,7 +503,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryDeleteConfirm => 'YES, DELETE THIS CATEGORY';
 
   @override
-  String get categoryDeleteQuestion => 'Delete Category?';
+  String get categoryDeleteQuestion => 'Do you want to delete this category?';
 
   @override
   String get categorySearchPlaceholder => 'Search categories...';
@@ -1520,6 +1520,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorLoadingPrompts => 'Error loading prompts';
+
+  @override
+  String get categoryDeleteTitle => 'Delete Category?';
 
   @override
   String get categoryDeleteConfirmation =>

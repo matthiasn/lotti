@@ -745,7 +745,7 @@ void main() {
       );
 
       expect(state.errorMessage,
-          equals('Failed to update category. Please try again.'));
+          equals('Failed to delete category. Please try again.'));
       expect(state.isSaving, isFalse);
 
       subscription.close();

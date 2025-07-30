@@ -1526,6 +1526,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get errorLoadingPrompts => 'Error loading prompts';
 
   @override
+  String get categoryDeleteTitle => 'Delete Category?';
+
+  @override
   String get categoryDeleteConfirmation =>
       'This action cannot be undone. All entries in this category will remain but will no longer be categorized.';
 
