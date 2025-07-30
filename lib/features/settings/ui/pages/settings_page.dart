@@ -34,6 +34,12 @@ class SettingsPage extends StatelessWidget {
             onTap: () => context.beamToNamed('/settings/categories'),
           ),
           AnimatedModernSettingsCardWithIcon(
+            title: '${context.messages.settingsCategoriesTitle} (New)',
+            subtitle: 'Categories with AI settings',
+            icon: Icons.category_rounded,
+            onTap: () => context.beamToNamed('/settings/categories2'),
+          ),
+          AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsTagsTitle,
             subtitle: 'Tag and label your entries',
             icon: Icons.label_rounded,

@@ -7,8 +7,10 @@ import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -25,13 +27,15 @@ import 'package:lotti/widgets/lotti_tertiary_button.dart';
 /// - Automatic prompt configuration
 class CategoryDetailsPage extends ConsumerStatefulWidget {
   const CategoryDetailsPage({
-    required this.categoryId,
+    this.categoryId,
     super.key,
   });
 
-  final String categoryId;
+  final String? categoryId;
 
   static const String routeName = '/settings/categories/details';
+
+  bool get isCreateMode => categoryId == null;
 
   @override
   ConsumerState<CategoryDetailsPage> createState() =>
@@ -63,9 +67,159 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
   }
 
+  Widget _buildCreateMode(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
+            _handleCreate,
+      },
+      child: Scaffold(
+        backgroundColor: context.colorScheme.surface,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 100,
+              pinned: true,
+              backgroundColor: context.colorScheme.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.all(16),
+                title: Text(
+                  context.messages.createCategoryTitle,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: context.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Basic Settings Section
+                  LottiFormSection(
+                    title: context.messages.basicSettings,
+                    icon: Icons.settings_outlined,
+                    children: [
+                      _buildNameField(),
+                      const SizedBox(height: 16),
+                      _buildColorPicker(),
+                      const SizedBox(height: 16),
+                      _buildCreateModeSwitchTiles(),
+                    ],
+                  ),
+                  const SizedBox(height: 80), // Space for bottom bar
+                ]),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: _buildCreateModeBottomBar(),
+      ),
+    );
+  }
+
+  Future<void> _handleCreate() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.categoryNameRequired),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    final repository = ref.read(categoryRepositoryProvider);
+    try {
+      final newCategory = await repository.createCategory(
+        name: name,
+        color: _selectedColor != null
+            ? colorToCssHex(_selectedColor!)
+            : colorToCssHex(Colors.blue),
+      );
+
+      if (mounted) {
+        // Navigate to the edit page for the newly created category
+        beamToNamed('/settings/categories2/${newCategory.id}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating category: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildCreateModeSwitchTiles() {
+    return Column(
+      children: [
+        LottiSwitchField(
+          title: context.messages.privateLabel,
+          subtitle: context.messages.categoryPrivateDescription,
+          value: false,
+          onChanged: null, // Will be set after creation
+          icon: Icons.lock_outline,
+          enabled: false,
+        ),
+        const SizedBox(height: 8),
+        LottiSwitchField(
+          title: context.messages.activeLabel,
+          subtitle: context.messages.categoryActiveDescription,
+          value: true,
+          onChanged: null, // Will be set after creation
+          icon: Icons.visibility_outlined,
+          enabled: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCreateModeBottomBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          LottiSecondaryButton(
+            onPressed: () => Navigator.of(context).pop(),
+            label: context.messages.cancelButton,
+          ),
+          const SizedBox(width: 12),
+          LottiPrimaryButton(
+            onPressed: _handleCreate,
+            label: context.messages.createButton,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleSave() async {
+    if (widget.isCreateMode) {
+      return _handleCreate();
+    }
+
     final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId).notifier,
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
     await controller.updateBasicSettings(
@@ -85,8 +239,14 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // For create mode, we don't need the controller yet
+    if (widget.isCreateMode) {
+      return _buildCreateMode(context);
+    }
+
+    // For edit mode, watch the category details
     final state =
-        ref.watch(categoryDetailsControllerProvider(widget.categoryId));
+        ref.watch(categoryDetailsControllerProvider(widget.categoryId!));
     final category = state.category;
 
     if (category == null && !state.isLoading) {
@@ -314,7 +474,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
   Widget _buildSwitchTiles(CategoryDefinition category) {
     final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId).notifier,
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
     return Column(
@@ -348,7 +508,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
   Widget _buildLanguageDropdown(CategoryDefinition category) {
     final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId).notifier,
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
     return DropdownButtonFormField<String?>(
@@ -449,7 +609,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     List<AiConfigPrompt> prompts,
   ) {
     final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId).notifier,
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
     final allowedPromptIds = category.allowedPromptIds ?? [];
 
@@ -537,7 +697,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
     );
     final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId).notifier,
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
     return Container(
@@ -714,7 +874,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             onPressed: () async {
               Navigator.of(context).pop();
               final controller = ref.read(
-                categoryDetailsControllerProvider(widget.categoryId).notifier,
+                categoryDetailsControllerProvider(widget.categoryId!).notifier,
               );
               await controller.deleteCategory();
               if (context.mounted) {

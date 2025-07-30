@@ -2913,6 +2913,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get saveButton;
 
+  /// No description provided for @createButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createButton;
+
   /// No description provided for @settingsConflictsResolutionTitle.
   ///
   /// In en, this message translates to:

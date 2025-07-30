@@ -541,6 +541,7 @@
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorized.",
   "deleteButton": "Delete",
   "saveButton": "Save",
+  "createButton": "Create",
   "settingsConflictsResolutionTitle": "Sync Conflict Resolution",
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardDetailsLabel": "Dashboard Details",

@@ -1,6 +1,10 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
+    as new_categories;
+import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
+    as new_category_details;
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/conflicts_page.dart';
@@ -41,6 +45,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/categories',
         '/settings/categories/:categoryId',
         '/settings/categories/create',
+        '/settings/categories2',
+        '/settings/categories2/create',
+        '/settings/categories2/:categoryId',
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
@@ -106,6 +113,31 @@ class SettingsLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: const ValueKey('settings-categories-create'),
           child: CreateCategoryPage(),
+        ),
+
+      // New Categories Implementation (Riverpod)
+      if (pathContains('categories2') &&
+          !pathContains('create') &&
+          !pathContainsKey('categoryId'))
+        const BeamPage(
+          key: ValueKey('settings-categories2'),
+          child: new_categories.CategoriesListPage(),
+        ),
+
+      if (pathContains('categories2/create'))
+        const BeamPage(
+          key: ValueKey('settings-categories2-create'),
+          child: new_category_details.CategoryDetailsPage(),
+        ),
+
+      if (pathContains('categories2') && pathContainsKey('categoryId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-categories2-${state.pathParameters['categoryId']}',
+          ),
+          child: new_category_details.CategoryDetailsPage(
+            categoryId: state.pathParameters['categoryId'],
+          ),
         ),
 
       // Tags

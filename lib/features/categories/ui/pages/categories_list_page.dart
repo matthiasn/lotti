@@ -29,7 +29,7 @@ class CategoriesListPage extends ConsumerWidget {
         error: (error, stack) => _buildErrorState(context, error),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => beamToNamed('/settings/categories/create'),
+        onPressed: () => beamToNamed('/settings/categories2/create'),
         tooltip: context.messages.settingsCategoriesAddTooltip,
         child: const Icon(Icons.add),
       ),
@@ -128,7 +128,7 @@ class CategoriesListPage extends ConsumerWidget {
     BuildContext context,
     CategoryDefinition category,
   ) {
-    beamToNamed('/settings/categories/${category.id}');
+    beamToNamed('/settings/categories2/${category.id}');
   }
 }
 

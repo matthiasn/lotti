@@ -1541,6 +1541,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get saveButton => 'Save';
 
   @override
+  String get createButton => 'Create';
+
+  @override
   String get settingsConflictsResolutionTitle =>
       'Resolución de Conflictos de Sincronización';
 

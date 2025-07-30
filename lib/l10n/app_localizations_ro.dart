@@ -1536,6 +1536,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get saveButton => 'Save';
 
   @override
+  String get createButton => 'Create';
+
+  @override
   String get settingsConflictsResolutionTitle =>
       'Rezolvarea Conflictelor de Sincronizare';
 
