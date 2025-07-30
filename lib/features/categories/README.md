@@ -223,3 +223,84 @@ The feature uses Riverpod for state management with:
 2. **AI System**: Categories control AI prompt availability and automation
 3. **Task Management**: Tasks can be categorized for better organization
 4. **Search**: Categories are searchable and filterable
+
+## Implementation Plan - Next Steps
+
+This section outlines the detailed implementation plan for completing the category-based AI features.
+
+### Phase 1: Add Category Filtering to AI Popup Menu
+
+**Location**: `/lib/features/ai/ui/unified_ai_popup_menu.dart`
+
+- Update UnifiedAiPopUpMenu to be category-aware
+- Pass current entry's category to prompt filtering logic
+- Modify `_buildAvailablePrompts` to respect category's `allowedPromptIds`
+- Handle three cases:
+  - `null`: Show all prompts (default behavior)
+  - `[]`: Hide AI button entirely
+  - `['id1', 'id2']`: Show only specified prompts
+- Add comprehensive tests for filtering behavior
+
+### Phase 2: Create Automatic Prompt Execution Service
+
+**Location**: `/lib/features/ai/services/automatic_prompt_execution_service.dart`
+
+- Create service for queue management and execution
+- Implement state controller for tracking status
+- Add database fields for execution tracking
+- Handle errors and retries gracefully
+- Support cancellation and priority management
+
+### Phase 3: Add Automatic Prompt Triggers
+
+**Audio Transcription** (Update `UnifiedAiInferenceRepository`):
+- Check category's automatic audio prompts after transcription
+- Queue prompts via AutomaticPromptExecutionService
+- Show processing indicator
+
+**Image Analysis** (Update image attachment flow):
+- Check category's automatic image prompts
+- Queue for execution when images attached
+- Handle multiple images efficiently
+
+**Task Summary** (Update task handlers):
+- Define "significant update" criteria
+- Implement debouncing mechanism
+- Check category's automatic task prompts
+
+### Phase 4: Link AI Responses to Source Entries
+
+- Add `sourceEntryId` field to AI response model
+- Update database schema for relationships
+- Show linked responses in entry detail view
+- Enable bidirectional navigation
+- Display response metadata
+
+### Phase 5: Add Processing Status Indicators
+
+**Widget**: `/lib/features/ai/ui/widgets/automatic_processing_indicator.dart`
+
+- Animated processing indicator
+- Queue position display
+- Cancel functionality
+- Error state handling
+- Integration in entry lists and details
+
+### Phase 6: Testing and Polish
+
+- Unit tests for all services
+- Widget tests for UI components
+- Integration tests for automatic flows
+- Performance testing with queued prompts
+- Error recovery mechanisms
+- User preference settings
+- Rate limiting and quota management
+
+### Implementation Priority
+
+1. Category filtering (can be done independently)
+2. Automatic execution service (foundation for triggers)
+3. Triggers (requires service)
+4. Response linking (can parallel with triggers)
+5. Status indicators (requires service and triggers)
+6. Testing and polish (after features complete)
