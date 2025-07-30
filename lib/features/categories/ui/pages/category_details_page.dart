@@ -17,6 +17,9 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/ui/empty_state_widget.dart';
+import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
 /// Category Details Page with AI Settings
 ///
@@ -151,7 +154,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating category: $e'),
+            content: const Text('Error creating category. Please try again.'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -184,32 +187,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildCreateModeBottomBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          LottiSecondaryButton(
-            onPressed: () => Navigator.of(context).pop(),
-            label: context.messages.cancelButton,
-          ),
-          const SizedBox(width: 12),
-          LottiPrimaryButton(
-            onPressed: _handleCreate,
-            label: context.messages.createButton,
-          ),
-        ],
-      ),
+    return FormBottomBar(
+      rightButtons: [
+        LottiSecondaryButton(
+          onPressed: () => Navigator.of(context).pop(),
+          label: context.messages.cancelButton,
+        ),
+        LottiPrimaryButton(
+          onPressed: _handleCreate,
+          label: context.messages.createButton,
+        ),
+      ],
     );
   }
 
@@ -294,19 +282,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   ),
                   if (state.errorMessage != null)
                     SliverToBoxAdapter(
-                      child: Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          state.errorMessage!,
-                          style: TextStyle(
-                            color: context.colorScheme.onErrorContainer,
-                          ),
-                        ),
+                      child: ErrorStateWidget(
+                        error: state.errorMessage!,
+                        mode: ErrorDisplayMode.inline,
                       ),
                     ),
                   SliverPadding(
@@ -566,41 +544,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildEmptyPromptsState() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.psychology_outlined,
-            size: 48,
-            color: Theme.of(context).disabledColor,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.messages.noPromptsAvailable,
-            style: Theme.of(context).textTheme.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.messages.createPromptsFirst,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).disabledColor,
-                ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return EmptyStateWidget(
+      icon: Icons.psychology_outlined,
+      title: context.messages.noPromptsAvailable,
+      description: context.messages.createPromptsFirst,
     );
   }
 
@@ -783,79 +730,30 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildErrorState(Object error) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color:
-            Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.messages.errorLoadingPrompts,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error.toString(),
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return ErrorStateWidget(
+      error: error.toString(),
+      title: context.messages.errorLoadingPrompts,
     );
   }
 
   Widget _buildBottomBar(CategoryDetailsState state) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
+    return FormBottomBar(
+      leftButton: LottiTertiaryButton(
+        onPressed: state.isSaving ? null : _showDeleteDialog,
+        icon: Icons.delete_outline,
+        label: context.messages.deleteButton,
+        isDestructive: true,
       ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          LottiTertiaryButton(
-            onPressed: state.isSaving ? null : _showDeleteDialog,
-            icon: Icons.delete_outline,
-            label: context.messages.deleteButton,
-            isDestructive: true,
-          ),
-          Row(
-            children: [
-              LottiSecondaryButton(
-                onPressed: () => Navigator.of(context).pop(),
-                label: context.messages.cancelButton,
-              ),
-              const SizedBox(width: 12),
-              LottiPrimaryButton(
-                onPressed: state.isSaving ? null : _handleSave,
-                label: context.messages.saveButton,
-              ),
-            ],
-          ),
-        ],
-      ),
+      rightButtons: [
+        LottiSecondaryButton(
+          onPressed: () => Navigator.of(context).pop(),
+          label: context.messages.cancelButton,
+        ),
+        LottiPrimaryButton(
+          onPressed: state.isSaving ? null : _handleSave,
+          label: context.messages.saveButton,
+        ),
+      ],
     );
   }
 

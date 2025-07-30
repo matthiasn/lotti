@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -42,9 +44,10 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
 
   final CategoryRepository _repository;
   final String _categoryId;
+  StreamSubscription<CategoryDefinition?>? _subscription;
 
   void _loadCategory() {
-    _repository.watchCategory(_categoryId).listen(
+    _subscription = _repository.watchCategory(_categoryId).listen(
       (category) {
         if (mounted) {
           state = state.copyWith(
@@ -57,11 +60,17 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
         if (mounted) {
           state = state.copyWith(
             isLoading: false,
-            errorMessage: error.toString(),
+            errorMessage: 'Failed to load category data.',
           );
         }
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> updateBasicSettings({
@@ -73,6 +82,15 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
   }) async {
     final category = state.category;
     if (category == null) return;
+
+    // Validate name if provided
+    if (name != null && name.trim().isEmpty) {
+      state = state.copyWith(
+        errorMessage: 'Category name cannot be empty',
+        isSaving: false,
+      );
+      return;
+    }
 
     state = state.copyWith(isSaving: true, errorMessage: null);
 
@@ -90,7 +108,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: e.toString(),
+        errorMessage: 'Failed to update category. Please try again.',
       );
     }
   }
@@ -111,7 +129,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: e.toString(),
+        errorMessage: 'Failed to update category. Please try again.',
       );
     }
   }
@@ -132,7 +150,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: e.toString(),
+        errorMessage: 'Failed to update category. Please try again.',
       );
     }
   }
@@ -166,7 +184,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: e.toString(),
+        errorMessage: 'Failed to update category. Please try again.',
       );
     }
   }
@@ -180,7 +198,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     } catch (e) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: e.toString(),
+        errorMessage: 'Failed to update category. Please try again.',
       );
     }
   }
