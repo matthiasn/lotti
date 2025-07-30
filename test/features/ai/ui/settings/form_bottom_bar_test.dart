@@ -3,8 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_form_button.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 
 void main() {
   group('FormBottomBar', () {
@@ -47,9 +48,9 @@ void main() {
       // Save button should be disabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is AiFormButton &&
+            widget is LottiPrimaryButton &&
             widget.icon == Icons.save_rounded &&
-            widget.enabled == false,
+            widget.onPressed == null,
       );
       expect(saveButton, findsOneWidget);
     });
@@ -69,19 +70,17 @@ void main() {
       // Should show error icon
       expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
 
-      // Error text is localized, so we just verify the icon is shown
-
       // Save button should be disabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is AiFormButton &&
+            widget is LottiPrimaryButton &&
             widget.label == 'Save' &&
-            widget.enabled == false,
+            widget.onPressed == null,
       );
       expect(saveButton, findsOneWidget);
     });
 
-    testWidgets('enables save button when form is valid and dirty',
+    testWidgets('shows save button when form is valid and dirty',
         (tester) async {
       var saveCalled = false;
       var cancelCalled = false;
@@ -104,9 +103,9 @@ void main() {
       // Save button should be enabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is AiFormButton &&
+            widget is LottiPrimaryButton &&
             widget.label == 'Save' &&
-            widget.enabled == true,
+            widget.onPressed != null,
       );
       expect(saveButton, findsOneWidget);
 
@@ -117,7 +116,7 @@ void main() {
       // Test cancel button tap
       final cancelButton = find.byWidgetPredicate(
         (widget) =>
-            widget is AiFormButton && widget.style == AiButtonStyle.text,
+            widget is LottiTertiaryButton && widget.label == 'Cancel',
       );
       await tester.tap(cancelButton);
       expect(cancelCalled, isTrue);
@@ -136,12 +135,12 @@ void main() {
         ),
       );
 
-      // Save button should show loading state
+      // Save button should show loading state (disabled when loading)
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is AiFormButton &&
+            widget is LottiPrimaryButton &&
             widget.label == 'Save' &&
-            widget.isLoading == true,
+            widget.onPressed == null,
       );
       expect(saveButton, findsOneWidget);
     });
@@ -190,12 +189,12 @@ void main() {
       // Save button should exist and be enabled (showSaveButton = true)
       // but onPressed should be null
       final saveButton = find.byWidgetPredicate(
-        (widget) => widget is AiFormButton && widget.icon == Icons.save_rounded,
+        (widget) => widget is LottiPrimaryButton && widget.icon == Icons.save_rounded,
       );
       expect(saveButton, findsOneWidget);
 
       // Verify the button's onPressed is null
-      final button = tester.widget<AiFormButton>(saveButton);
+      final button = tester.widget<LottiPrimaryButton>(saveButton);
       expect(button.onPressed, isNull);
     });
   });

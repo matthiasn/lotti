@@ -178,16 +178,6 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
                         : null,
                     label: context.messages.saveButtonLabel,
                     icon: Icons.save_rounded,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.colorScheme.primary,
-                      disabledBackgroundColor:
-                          context.colorScheme.surfaceContainerHighest,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      elevation: 0,
-                    ),
                   ),
                 ),
               ),

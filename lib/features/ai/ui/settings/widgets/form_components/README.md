@@ -59,26 +59,6 @@ AiTextField(
 - Password/obscure text support
 - Read-only mode for display fields
 
-#### `AiFormButton`
-A styled button component with multiple style variants.
-
-**Usage:**
-```dart
-AiFormButton(
-  label: 'Save Configuration',
-  onPressed: handleSave,
-  icon: Icons.save_rounded,
-  style: AiButtonStyle.primary,
-  enabled: isFormValid,
-  fullWidth: true,
-)
-```
-
-**Styles:**
-- `primary`: Blue background, white text (for primary actions)
-- `secondary`: Transparent background with border (for secondary actions)
-- `danger`: Red styling (for destructive actions)
-
 #### `AiSwitchField`
 A toggle switch with label and description.
 
@@ -105,6 +85,32 @@ AiDropdownField<String>(
   items: availableModels,
   onChanged: (value) => handleModelChange(value),
   prefixIcon: Icons.model_training_rounded,
+)
+```
+
+### Button Components
+
+For buttons, use the standardized Lotti button components:
+
+- **`LottiPrimaryButton`**: For primary actions (save, create, etc.)
+- **`LottiSecondaryButton`**: For secondary actions (cancel, back, etc.)
+- **`LottiTertiaryButton`**: For text-only buttons (dismiss, etc.)
+
+**Usage:**
+```dart
+Row(
+  children: [
+    LottiTertiaryButton(
+      label: 'Cancel',
+      onPressed: onCancel,
+    ),
+    const SizedBox(width: 12),
+    LottiPrimaryButton(
+      label: 'Save',
+      onPressed: onSave,
+      icon: Icons.save_rounded,
+    ),
+  ],
 )
 ```
 
@@ -150,16 +156,16 @@ Column(
     Row(
       children: [
         Expanded(
-          child: AiFormButton(
+          child: LottiTertiaryButton(
             label: 'Cancel',
-            style: AiButtonStyle.secondary,
+            onPressed: onCancel,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: AiFormButton(
+          child: LottiPrimaryButton(
             label: 'Save',
-            style: AiButtonStyle.primary,
+            onPressed: onSave,
           ),
         ),
       ],
@@ -179,6 +185,7 @@ These components work seamlessly with the selection modals in the parent directo
 4. **Enable/disable save buttons** based on form validity
 5. **Show validation errors** immediately when users interact with fields
 6. **Use consistent spacing**: 20px between fields, 32px between sections
+7. **Use standardized button components** for consistency across the app
 
 ## Testing
 

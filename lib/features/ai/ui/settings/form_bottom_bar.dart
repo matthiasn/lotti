@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:glass_kit/glass_kit.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_form_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/lotti_tertiary_button.dart';
 
 class FormBottomBar extends StatelessWidget {
   const FormBottomBar({
@@ -79,18 +80,15 @@ class FormBottomBar extends StatelessWidget {
               ],
 
               // Buttons
-              AiFormButton(
+              LottiTertiaryButton(
                 label: context.messages.aiFormCancel,
                 onPressed: onCancel,
-                style: AiButtonStyle.text,
               ),
               const SizedBox(width: 20),
-              AiFormButton(
+              LottiPrimaryButton(
                 label: context.messages.saveLabel,
-                onPressed: showSaveButton ? onSave : null,
+                onPressed: showSaveButton && !isLoading ? onSave : null,
                 icon: Icons.save_rounded,
-                enabled: showSaveButton && !isLoading,
-                isLoading: isLoading,
               ),
             ],
           ),
