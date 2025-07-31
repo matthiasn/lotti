@@ -11,9 +11,6 @@ import 'package:lotti/features/settings/ui/pages/advanced/conflicts_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/categories/categories_page.dart';
-import 'package:lotti/features/settings/ui/pages/categories/category_create_page.dart';
-import 'package:lotti/features/settings/ui/pages/categories/category_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
@@ -45,11 +42,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/categories',
         '/settings/categories/:categoryId',
         '/settings/categories/create',
-        // TODO: Consider removing the old categories routes and renaming categories2
-        // to categories once the migration is complete
-        '/settings/categories2',
-        '/settings/categories2/create',
-        '/settings/categories2/:categoryId',
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
@@ -92,50 +84,25 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AiSettingsPage(),
         ),
 
-      // Categories
-      if (pathContains('categories'))
-        const BeamPage(
-          key: ValueKey('settings-categories'),
-          child: CategoriesPage(),
-        ),
-
-      if (pathContains('categories') &&
-          !pathContains('create') &&
-          pathContainsKey('categoryId'))
-        BeamPage(
-          key: ValueKey(
-            'settings-categories-${state.pathParameters['categoryId']}',
-          ),
-          child: EditCategoryPage(
-            categoryId: state.pathParameters['categoryId']!,
-          ),
-        ),
-
-      if (pathContains('categories/create'))
-        BeamPage(
-          key: const ValueKey('settings-categories-create'),
-          child: CreateCategoryPage(),
-        ),
-
       // New Categories Implementation (Riverpod)
-      if (pathContains('categories2') &&
+      if (pathContains('categories') &&
           !pathContains('create') &&
           !pathContainsKey('categoryId'))
         const BeamPage(
-          key: ValueKey('settings-categories2'),
+          key: ValueKey('settings-categories'),
           child: new_categories.CategoriesListPage(),
         ),
 
-      if (pathContains('categories2/create'))
+      if (pathContains('categories/create'))
         const BeamPage(
-          key: ValueKey('settings-categories2-create'),
+          key: ValueKey('settings-categories-create'),
           child: new_category_details.CategoryDetailsPage(),
         ),
 
-      if (pathContains('categories2') && pathContainsKey('categoryId'))
+      if (pathContains('categories') && pathContainsKey('categoryId'))
         BeamPage(
           key: ValueKey(
-            'settings-categories2-${state.pathParameters['categoryId']}',
+            'settings-categories-${state.pathParameters['categoryId']}',
           ),
           child: new_category_details.CategoryDetailsPage(
             categoryId: state.pathParameters['categoryId'],
