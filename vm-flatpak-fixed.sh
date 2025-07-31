@@ -90,14 +90,9 @@ modules:
           - type: file
             path: com.matthiasnehlsen.lotti.metainfo.xml
           - type: file
-            path: app_icon_1024.png
+            path: ../assets/icon/app_icon_1024.png
+            dest-filename: app_icon_1024.png
 EOF
-
-# Copy required files to the flatpak directory
-echo "Copying required files..."
-cp flatpak/com.matthiasnehlsen.lotti.desktop flatpak/
-cp flatpak/com.matthiasnehlsen.lotti.metainfo.xml flatpak/
-cp assets/icon/app_icon_1024.png flatpak/
 
 # Build the Flatpak
 echo "Building Flatpak with fixed manifest..."
