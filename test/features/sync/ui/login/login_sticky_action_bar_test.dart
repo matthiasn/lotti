@@ -5,7 +5,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/login/login_sticky_action_bar.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 

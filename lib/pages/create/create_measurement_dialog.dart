@@ -10,6 +10,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/form_utils.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/create/suggest_measurement.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 
@@ -116,18 +117,13 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             measurementTime: measurementTime,
           ),
         if (dirty && validate())
-          TextButton(
+          LottiTertiaryButton(
             key: const Key('measurement_save'),
             onPressed: () => saveMeasurement(
               measurableDataType: dataType,
               measurementTime: measurementTime,
             ),
-            child: Text(
-              context.messages.addMeasurementSaveButton,
-              style: saveButtonStyle(
-                Theme.of(context),
-              ),
-            ),
+            label: context.messages.addMeasurementSaveButton,
           )
         else
           const SizedBox.shrink(),

@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class CategoryCreateModal extends ConsumerStatefulWidget {
   const CategoryCreateModal({
@@ -79,12 +80,12 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
+              LottiTertiaryButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(context.messages.cancelButton),
+                label: context.messages.cancelButton,
               ),
               const SizedBox(width: 8),
-              TextButton(
+              LottiTertiaryButton(
                 onPressed: () async {
                   final repository = ref.read(categoryRepositoryProvider);
                   final category = await repository.createCategory(
@@ -96,7 +97,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     Navigator.pop(context);
                   }
                 },
-                child: Text(context.messages.saveLabel),
+                label: context.messages.saveLabel,
               ),
             ],
           ),

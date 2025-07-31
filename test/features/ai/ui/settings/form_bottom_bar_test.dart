@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 void main() {
   group('FormBottomBar', () {

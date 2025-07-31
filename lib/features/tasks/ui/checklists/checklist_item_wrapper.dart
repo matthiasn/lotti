@@ -5,7 +5,7 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class ChecklistItemWrapper extends ConsumerWidget {

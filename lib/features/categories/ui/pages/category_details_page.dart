@@ -18,10 +18,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
-import 'package:lotti/widgets/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
@@ -624,11 +624,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         title: Text(context.messages.categoryDeleteTitle),
         content: Text(context.messages.categoryDeleteConfirmation),
         actions: [
-          TextButton(
+          LottiTertiaryButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.messages.cancelButton),
+            label: context.messages.cancelButton,
           ),
-          TextButton(
+          LottiTertiaryButton(
             onPressed: () async {
               Navigator.of(context).pop();
               final controller = ref.read(
@@ -639,10 +639,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                 Navigator.of(context).pop();
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: Text(context.messages.categoryDeleteConfirm),
+            label: context.messages.categoryDeleteConfirm,
+            isDestructive: true,
           ),
         ],
       ),

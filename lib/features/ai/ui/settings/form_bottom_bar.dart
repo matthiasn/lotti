@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class FormBottomBar extends StatelessWidget {
   const FormBottomBar({

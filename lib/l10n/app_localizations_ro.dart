@@ -659,6 +659,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictsUnresolved => 'nerezolvat';
 
   @override
+  String get conflictsResolveLocalVersion => 'Resolve with local version';
+
+  @override
+  String get conflictsResolveRemoteVersion => 'Resolve with remote version';
+
+  @override
+  String get conflictsCopyTextFromSync => 'Copy Text from Sync';
+
+  @override
   String get createCategoryTitle => 'Creați categorie:';
 
   @override

@@ -6,8 +6,8 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 

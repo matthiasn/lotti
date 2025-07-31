@@ -5,7 +5,7 @@ import 'package:lotti/features/tasks/ui/checklists/progress_indicator.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ChecklistWidget extends StatefulWidget {

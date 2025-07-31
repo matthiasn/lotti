@@ -16,6 +16,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});
@@ -206,14 +207,13 @@ class ConflictDetailRoute extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        TextButton(
+                        LottiTertiaryButton(
                           onPressed: () => beamToNamed(
                             '/settings/advanced/conflicts/${conflict.id}/edit',
                           ),
-                          child: const Text('Edit'),
+                          label: context.messages.editMenuTitle,
                         ),
-                        TextButton(
-                          clipBehavior: Clip.antiAlias,
+                        LottiTertiaryButton(
                           onPressed: () {
                             getIt<PersistenceLogic>().updateJournalEntity(
                               localWithResolvedVectorClock,
@@ -221,10 +221,7 @@ class ConflictDetailRoute extends StatelessWidget {
                             );
                             settingsBeamerDelegate.beamBack();
                           },
-                          child: const Text(
-                            'Resolve with local version',
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          label: context.messages.conflictsResolveLocalVersion,
                         ),
                       ],
                     ),
@@ -241,8 +238,7 @@ class ConflictDetailRoute extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        TextButton(
-                          clipBehavior: Clip.antiAlias,
+                        LottiTertiaryButton(
                           onPressed: () {
                             getIt<PersistenceLogic>().updateJournalEntity(
                               remoteWithResolvedVectorClock,
@@ -250,17 +246,14 @@ class ConflictDetailRoute extends StatelessWidget {
                             );
                             settingsBeamerDelegate.beamBack();
                           },
-                          child: const Text(
-                            'Resolve with remote version',
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          label: context.messages.conflictsResolveRemoteVersion,
                         ),
                       ],
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        TextButton(
+                        LottiTertiaryButton(
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(
@@ -268,7 +261,7 @@ class ConflictDetailRoute extends StatelessWidget {
                               ),
                             );
                           },
-                          child: const Text('Copy Text from Sync'),
+                          label: context.messages.conflictsCopyTextFromSync,
                         ),
                       ],
                     ),

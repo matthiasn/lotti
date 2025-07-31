@@ -11,7 +11,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:lotti/widgets/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 

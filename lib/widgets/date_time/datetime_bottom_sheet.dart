@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 class DateTimeBottomSheet extends StatefulWidget {
   const DateTimeBottomSheet(

@@ -9,7 +9,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 // Create a proper test controller that extends the actual controller
 class TestAiConfigByTypeController extends AiConfigByTypeController {
