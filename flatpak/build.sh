@@ -30,18 +30,18 @@ if ! command -v flatpak-builder &> /dev/null; then
 fi
 
 # Create temporary manifest with substituted variables
-readonly TEMP_MANIFEST="flatpak/com.matthiasnehlsen.lotti.generated.yml"
-readonly TEMP_METAINFO="flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml"
+readonly TEMP_MANIFEST="com.matthiasnehlsen.lotti.generated.yml"
+readonly TEMP_METAINFO="com.matthiasnehlsen.lotti.generated.metainfo.xml"
 
 # Set up cleanup trap
-trap 'rm -f "$TEMP_MANIFEST" "$TEMP_METAINFO"' EXIT
+trap 'rm -f "$TEMP_MANIFEST" "$TEMP_METAINFO" ../com.matthiasnehlsen.lotti.desktop ../com.matthiasnehlsen.lotti.generated.metainfo.xml' EXIT
 
 echo "Generating manifest and metainfo files..."
 
 # Generate manifest
 if ! sed -e "s|{{LOTTI_REPO_URL}}|${LOTTI_REPO_URL}|g" \
         -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
-        flatpak/com.matthiasnehlsen.lotti.yml > "${TEMP_MANIFEST}"; then
+        com.matthiasnehlsen.lotti.yml > "${TEMP_MANIFEST}"; then
     echo "Error: Failed to generate manifest file"
     exit 1
 fi
@@ -49,10 +49,15 @@ fi
 # Generate metainfo
 if ! sed -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
         -e "s|{{LOTTI_RELEASE_DATE}}|${LOTTI_RELEASE_DATE}|g" \
-        flatpak/com.matthiasnehlsen.lotti.metainfo.xml > "${TEMP_METAINFO}"; then
+        com.matthiasnehlsen.lotti.metainfo.xml > "${TEMP_METAINFO}"; then
     echo "Error: Failed to generate metainfo file"
     exit 1
 fi
+
+# Copy required files to the correct location for the build
+echo "Copying required files..."
+cp com.matthiasnehlsen.lotti.desktop ../com.matthiasnehlsen.lotti.desktop
+cp "${TEMP_METAINFO}" ../com.matthiasnehlsen.lotti.generated.metainfo.xml
 
 # Build the Flatpak
 echo "Starting Flatpak build..."
@@ -78,4 +83,4 @@ echo "  LOTTI_REPO_URL=${LOTTI_REPO_URL}"
 echo "  LOTTI_VERSION=${LOTTI_VERSION}"
 echo "  LOTTI_RELEASE_DATE=${LOTTI_RELEASE_DATE}"
 
-# Note: temporary files will be cleaned up by the EXIT trap 
+# Note: temporary files will be cleaned up by the EXIT trap

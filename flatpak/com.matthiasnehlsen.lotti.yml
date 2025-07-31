@@ -39,6 +39,6 @@ modules:
             done
         sources:
           - type: file
-            path: flatpak/com.matthiasnehlsen.lotti.desktop
+            path: com.matthiasnehlsen.lotti.desktop
           - type: file
-            path: flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml 
+            path: com.matthiasnehlsen.lotti.generated.metainfo.xml 
