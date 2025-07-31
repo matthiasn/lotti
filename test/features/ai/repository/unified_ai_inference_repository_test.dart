@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -48,6 +49,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockRef extends Mock implements Ref {}
+
+class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class MockDirectory extends Mock implements Directory {}
 
@@ -102,6 +105,7 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
   late MockDirectory mockDirectory;
+  late MockCategoryRepository mockCategoryRepo;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -130,6 +134,7 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
     mockDirectory = MockDirectory();
+    mockCategoryRepo = MockCategoryRepository();
 
     // Set up GetIt
     if (getIt.isRegistered<JournalDb>()) {
@@ -160,6 +165,8 @@ void main() {
         .thenReturn(mockJournalRepo);
     when(() => mockRef.read(checklistRepositoryProvider))
         .thenReturn(mockChecklistRepo);
+    when(() => mockRef.read(categoryRepositoryProvider))
+        .thenReturn(mockCategoryRepo);
 
     repository = UnifiedAiInferenceRepository(mockRef)
 
@@ -553,6 +560,194 @@ void main() {
 
         expect(resultWithoutTask.length, 1);
         expect(resultWithoutTask.first.id, 'audio-prompt');
+      });
+
+      test('filters prompts based on category allowedPromptIds', () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final allowedPrompt = _createPrompt(
+          id: 'allowed-prompt',
+          name: 'Allowed Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final notAllowedPrompt = _createPrompt(
+          id: 'not-allowed-prompt',
+          name: 'Not Allowed Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Test Category',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+          allowedPromptIds: ['allowed-prompt'], // Only allow one prompt
+        );
+
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => category);
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [allowedPrompt, notAllowedPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'allowed-prompt');
+      });
+
+      test('returns no prompts when category has null allowedPromptIds',
+          () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Test Category',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+          // allowedPromptIds: null, // No prompts allowed (default)
+        );
+
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => category);
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.isEmpty, true);
+      });
+
+      test('returns no prompts when category has empty allowedPromptIds',
+          () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Test Category',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+          allowedPromptIds: [], // Empty list - no prompts allowed
+        );
+
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => category);
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.isEmpty, true);
+      });
+
+      test('returns all matching prompts when entity has no category',
+          () async {
+        final taskEntity = Task(
+          meta: _createMetadata(), // No categoryId
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt1 = _createPrompt(
+          id: 'task-prompt-1',
+          name: 'Task Summary 1',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final taskPrompt2 = _createPrompt(
+          id: 'task-prompt-2',
+          name: 'Task Summary 2',
+          requiredInputData: [InputDataType.task],
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt1, taskPrompt2]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        expect(result.length, 2);
+        expect(result.map((p) => p.id).toSet(),
+            {'task-prompt-1', 'task-prompt-2'});
       });
     });
 
@@ -5082,13 +5277,14 @@ Take into account the following task context:
 }
 
 // Helper methods to create test objects
-Metadata _createMetadata({String? id}) {
+Metadata _createMetadata({String? id, String? categoryId}) {
   return Metadata(
     id: id ?? 'test-id',
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
     dateFrom: DateTime.now(),
     dateTo: DateTime.now(),
+    categoryId: categoryId,
   );
 }
 
