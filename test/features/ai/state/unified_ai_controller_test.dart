@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -486,6 +489,182 @@ void main() {
 
       // runInference should have been called twice
       expect(runInferenceCallCount, 2);
+    });
+  });
+
+  group('categoryChanges provider', () {
+    test('returns stream of category changes', () async {
+      const categoryId = 'test-category';
+      final categoryChangesStream = StreamController<CategoryDefinition>();
+
+      final testCategory = CategoryDefinition(
+        id: categoryId,
+        name: 'Test Category',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCategoryRepository.watchCategory(categoryId))
+          .thenAnswer((_) => categoryChangesStream.stream);
+
+      // Start listening to the provider
+      final subscription = container.listen(
+        categoryChangesProvider(categoryId),
+        (previous, next) {},
+      );
+
+      // Verify watchCategory was called
+      verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
+
+      // Emit a change
+      categoryChangesStream.add(testCategory);
+
+      // Clean up
+      await categoryChangesStream.close();
+      subscription.close();
+    });
+  });
+
+  group('availablePrompts with category', () {
+    test('watches for category changes when entity has categoryId', () async {
+      const categoryId = 'test-category';
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: categoryId, // Entity has a category
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final expectedPrompts = [
+        AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ),
+      ];
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value(expectedPrompts));
+
+      // Mock category watching with an immediate value
+      final testCategory = CategoryDefinition(
+        id: categoryId,
+        name: 'Test Category',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCategoryRepository.watchCategory(categoryId))
+          .thenAnswer((_) => Stream.value(testCategory));
+
+      when(() => mockRepository.getActivePromptsForContext(entity: taskEntity))
+          .thenAnswer((_) async => expectedPrompts);
+
+      // Track if categoryChangesProvider was accessed
+      var categoryChangesProviderAccessed = false;
+      container.listen(
+        categoryChangesProvider(categoryId),
+        (previous, next) {
+          categoryChangesProviderAccessed = true;
+        },
+        fireImmediately: true,
+      );
+
+      // Read the provider
+      final prompts = await container.read(
+        availablePromptsProvider(entity: taskEntity).future,
+      );
+
+      expect(prompts, expectedPrompts);
+
+      // Verify that categoryChangesProvider was accessed (which triggers category watching)
+      expect(categoryChangesProviderAccessed, true);
+      verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
+    });
+
+    test('does not watch category when entity has no categoryId', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          // No categoryId
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final expectedPrompts = [
+        AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ),
+      ];
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value(expectedPrompts));
+
+      when(() => mockRepository.getActivePromptsForContext(entity: taskEntity))
+          .thenAnswer((_) async => expectedPrompts);
+
+      // Read the provider
+      final prompts = await container.read(
+        availablePromptsProvider(entity: taskEntity).future,
+      );
+
+      expect(prompts, expectedPrompts);
+
+      // Verify that category watching was NOT triggered
+      verifyNever(() => mockCategoryRepository.watchCategory(any()));
     });
   });
 }

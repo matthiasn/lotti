@@ -749,6 +749,98 @@ void main() {
         expect(result.map((p) => p.id).toSet(),
             {'task-prompt-1', 'task-prompt-2'});
       });
+
+      test('returns all prompts when category not found', () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        // Category not found - returns null
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => null);
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        // Should return all matching prompts when category not found
+        expect(result.length, 1);
+        expect(result.first.id, 'task-prompt');
+      });
+
+      test('filters out prompt when not in allowedPromptIds', () async {
+        const categoryId = 'category-1';
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: categoryId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final allowedPrompt = _createPrompt(
+          id: 'allowed-prompt',
+          name: 'Allowed Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final notAllowedPrompt = _createPrompt(
+          id: 'not-allowed-prompt',
+          name: 'Not Allowed Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Test Category',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+          allowedPromptIds: ['allowed-prompt'], // Only one prompt allowed
+        );
+
+        when(() => mockCategoryRepo.getCategoryById(categoryId))
+            .thenAnswer((_) async => category);
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [allowedPrompt, notAllowedPrompt]);
+
+        final result = await repository.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        // Should only return the allowed prompt
+        expect(result.length, 1);
+        expect(result.first.id, 'allowed-prompt');
+      });
     });
 
     group('runInference', () {
