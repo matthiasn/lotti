@@ -45,15 +45,13 @@ fi
 
 echo "✓ All required files found"
 
-# Get the latest available tag
-echo "Getting latest available tag..."
-LATEST_TAG=$(git tag --sort=-version:refname | head -1)
-echo "Using tag: $LATEST_TAG"
+# Use main branch instead of tags
+echo "Using main branch for build..."
 
 # Create a fixed manifest that works in the VM
 echo "Creating fixed manifest..."
 
-cat > flatpak/com.matthiasnehlsen.lotti.fixed.yml << EOF
+cat > flatpak/com.matthiasnehlsen.lotti.fixed.yml << 'EOF'
 app-id: com.matthiasnehlsen.lotti
 runtime: org.gnome.Platform
 runtime-version: '45'
@@ -78,7 +76,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/matthiasn/lotti.git
-        tag: $LATEST_TAG
+        branch: main
     modules:
       - name: flutter-common
         buildsystem: simple
@@ -87,7 +85,7 @@ modules:
           - install -D com.matthiasnehlsen.lotti.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
           - |
             for size in 1024 512 256 128 64 48 32 16; do
-              install -D app_icon_1024.png /app/share/icons/hicolor/\${size}x\${size}/apps/com.matthiasnehlsen.lotti.png
+              install -D app_icon_1024.png /app/share/icons/hicolor/${size}x${size}/apps/com.matthiasnehlsen.lotti.png
             done
         sources:
           - type: file
