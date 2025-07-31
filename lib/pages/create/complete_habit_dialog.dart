@@ -251,20 +251,23 @@ class _HabitDialogState extends State<HabitDialog> {
                                   key: const Key('habit_fail'),
                                   onPressed: () =>
                                       saveHabit(HabitCompletionType.fail),
-                                  label: context.messages.completeHabitFailButton,
+                                  label:
+                                      context.messages.completeHabitFailButton,
                                 ),
                                 LottiTertiaryButton(
                                   key: const Key('habit_skip'),
                                   onPressed: () =>
                                       saveHabit(HabitCompletionType.skip),
-                                  label: context.messages.completeHabitSkipButton,
+                                  label:
+                                      context.messages.completeHabitSkipButton,
                                 ),
                                 LottiTertiaryButton(
                                   key: const Key('habit_save'),
                                   onPressed: () => saveHabit(
                                     HabitCompletionType.success,
                                   ),
-                                  label: context.messages.completeHabitSuccessButton,
+                                  label: context
+                                      .messages.completeHabitSuccessButton,
                                 ).animate(autoPlay: true).shimmer(
                                       delay: 1.seconds,
                                       duration: .7.seconds,

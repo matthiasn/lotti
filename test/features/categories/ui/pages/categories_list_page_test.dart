@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -81,6 +86,216 @@ void main() {
       });
     });
 
+    group('Search Functionality', () {
+      testWidgets('displays search bar', (tester) async {
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value([]),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LottiSearchBar), findsOneWidget);
+        expect(find.text('Search categories...'), findsOneWidget);
+      });
+
+      testWidgets('filters categories based on search query', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Personal'),
+          CategoryTestUtils.createTestCategory(name: 'Archive'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // All categories should be visible initially
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Personal'), findsOneWidget);
+        expect(find.text('Archive'), findsOneWidget);
+
+        // Enter search query
+        await tester.enterText(find.byType(TextField), 'work');
+        await tester.pump();
+
+        // Only 'Work' category should be visible
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Personal'), findsNothing);
+        expect(find.text('Archive'), findsNothing);
+      });
+
+      testWidgets('shows no results message when search has no matches',
+          (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Personal'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Enter search query with no matches
+        await tester.enterText(find.byType(TextField), 'xyz');
+        await tester.pump();
+
+        expect(find.text('No categories found'), findsOneWidget);
+        expect(find.text('Try adjusting your search'), findsOneWidget);
+        expect(find.byIcon(Icons.search_off), findsOneWidget);
+      });
+
+      testWidgets('clears search when clear button is tapped', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Personal'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Enter search query
+        await tester.enterText(find.byType(TextField), 'work');
+        await tester.pump();
+
+        // Only one category should be visible
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Personal'), findsNothing);
+
+        // Tap clear button
+        await tester.tap(find.byIcon(Icons.clear_rounded));
+        await tester.pump();
+
+        // All categories should be visible again
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Personal'), findsOneWidget);
+      });
+
+      testWidgets('search is case insensitive', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'PERSONAL'),
+          CategoryTestUtils.createTestCategory(name: 'archive'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Search for 'WORK' should find 'Work'
+        await tester.enterText(find.byType(TextField), 'WORK');
+        await tester.pump();
+        expect(find.text('Work'), findsOneWidget);
+
+        // Clear and search for 'personal' should find 'PERSONAL'
+        await tester.enterText(find.byType(TextField), 'personal');
+        await tester.pump();
+        expect(find.text('PERSONAL'), findsOneWidget);
+      });
+    });
+
+    group('Modern Base Card', () {
+      testWidgets('uses ModernBaseCard for category items', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ModernBaseCard), findsOneWidget);
+      });
+
+      testWidgets('ModernBaseCard is tappable', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final card = tester.widget<ModernBaseCard>(find.byType(ModernBaseCard));
+        expect(card.onTap, isNotNull);
+      });
+    });
+
     group('Categories List Display', () {
       testWidgets('displays categories in alphabetical order', (tester) async {
         final categories = [
@@ -104,9 +319,12 @@ void main() {
 
         await tester.pumpAndSettle();
 
+        // Find all ModernBaseCards
+        final cards = find.byType(ModernBaseCard);
+        expect(cards, findsNWidgets(3));
+
         // Find all ListTiles
         final listTiles = find.byType(ListTile);
-        expect(listTiles, findsNWidgets(3));
 
         // Verify order - categories should be sorted alphabetically
         final firstTile = tester.widget<ListTile>(listTiles.at(0));
@@ -142,8 +360,8 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Check for CircleAvatar with first letter
-        expect(find.byType(CircleAvatar), findsOneWidget);
+        // Check for circular container with first letter
+        expect(find.byType(ModernBaseCard), findsOneWidget);
         expect(find.text('T'), findsOneWidget); // First letter of 'Test'
       });
 
@@ -251,13 +469,13 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Verify the ListTile exists and is tappable
-        final listTile = find.byType(ListTile);
-        expect(listTile, findsOneWidget);
+        // Verify the ModernBaseCard exists and is tappable
+        final card = find.byType(ModernBaseCard);
+        expect(card, findsOneWidget);
 
-        // The ListTile should have an onTap callback
-        final tile = tester.widget<ListTile>(listTile);
-        expect(tile.onTap, isNotNull);
+        // The ModernBaseCard should have an onTap callback
+        final cardWidget = tester.widget<ModernBaseCard>(card);
+        expect(cardWidget.onTap, isNotNull);
       });
 
       testWidgets('FAB exists and is tappable', (tester) async {
@@ -310,7 +528,8 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Should display all 3 categories
+        // Should display all 3 categories with ModernBaseCard
+        expect(find.byType(ModernBaseCard), findsNWidgets(3));
         expect(find.byType(ListTile), findsNWidgets(3));
 
         // Check that they're sorted alphabetically
@@ -418,6 +637,256 @@ void main() {
         expect(tile0?.data, 'ALPHA');
         expect(tile1?.data, 'Beta');
         expect(tile2?.data, 'zebra');
+      });
+
+      testWidgets('handles search with partial matches', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Development'),
+          CategoryTestUtils.createTestCategory(name: 'Developer Tools'),
+          CategoryTestUtils.createTestCategory(name: 'Production'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Search for 'dev' should find both Development and Developer Tools
+        await tester.enterText(find.byType(TextField), 'dev');
+        await tester.pump();
+
+        expect(find.byType(ModernBaseCard), findsNWidgets(2));
+        expect(find.text('Development'), findsOneWidget);
+        expect(find.text('Developer Tools'), findsOneWidget);
+        expect(find.text('Production'), findsNothing);
+      });
+
+      testWidgets('search state persists when categories update',
+          (tester) async {
+        final categoriesController =
+            StreamController<List<CategoryDefinition>>();
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => categoriesController.stream,
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        // Initial categories
+        categoriesController.add([
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Personal'),
+        ]);
+        await tester.pumpAndSettle();
+
+        // Set search query
+        await tester.enterText(find.byType(TextField), 'work');
+        await tester.pump();
+        expect(find.byType(ModernBaseCard), findsOneWidget);
+
+        // Update categories (add new one)
+        categoriesController.add([
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Personal'),
+          CategoryTestUtils.createTestCategory(name: 'Workspace'),
+        ]);
+        await tester.pumpAndSettle();
+
+        // Search query should still be applied
+        expect(find.byType(ModernBaseCard),
+            findsNWidgets(2)); // Work and Workspace
+
+        await categoriesController.close();
+      });
+
+      testWidgets('handles whitespace in search queries', (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'My Work'),
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Search with leading/trailing spaces - current implementation doesn't trim
+        await tester.enterText(find.byType(TextField), '  work  ');
+        await tester.pump();
+
+        // With current implementation, spaces are not trimmed, so no matches
+        expect(find.byType(ModernBaseCard), findsNothing);
+
+        // But searching without spaces works
+        await tester.enterText(find.byType(TextField), 'work');
+        await tester.pump();
+        expect(find.byType(ModernBaseCard), findsNWidgets(2));
+      });
+
+      testWidgets('displays all state icons correctly together',
+          (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(
+            name: 'Complex Category',
+            private: true,
+            active: false,
+            defaultLanguageCode: 'en',
+            allowedPromptIds: ['prompt1'],
+            automaticPrompts: {
+              AiResponseType.audioTranscription: ['prompt2'],
+            },
+          ),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should show both private and inactive icons
+        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+
+        // Should have subtitle with all features
+        final tile = tester.widget<ListTile>(find.byType(ListTile));
+        expect(tile.subtitle, isNotNull);
+      });
+
+      testWidgets('scroll behavior with many categories', (tester) async {
+        final manyCategories = List.generate(
+          50,
+          (i) => CategoryTestUtils.createTestCategory(name: 'Category $i'),
+        );
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(manyCategories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should be scrollable
+        expect(find.byType(ListView), findsOneWidget);
+
+        // Verify first few are visible
+        expect(find.text('Category 0'), findsOneWidget);
+        expect(find.text('Category 1'), findsOneWidget);
+
+        // Scroll down
+        await tester.drag(find.byType(ListView), const Offset(0, -500));
+        await tester.pumpAndSettle();
+
+        // Later items should now be visible
+        expect(find.text('Category 0'), findsNothing); // Scrolled away
+      });
+
+      testWidgets('search performance with many categories', (tester) async {
+        final manyCategories = List.generate(
+          100,
+          (i) => CategoryTestUtils.createTestCategory(name: 'Category $i'),
+        );
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(manyCategories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Search for specific number
+        await tester.enterText(find.byType(TextField), '42');
+        await tester.pump();
+
+        // Should find only one category
+        expect(find.byType(ModernBaseCard), findsOneWidget);
+        expect(find.text('Category 42'), findsOneWidget);
+      });
+
+      testWidgets('ModernBaseCard tap interaction with search active',
+          (tester) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Personal'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Apply search filter
+        await tester.enterText(find.byType(TextField), 'work');
+        await tester.pump();
+
+        // Verify card is still tappable after search
+        final card = find.byType(ModernBaseCard);
+        expect(card, findsOneWidget);
+
+        final cardWidget = tester.widget<ModernBaseCard>(card);
+        expect(cardWidget.onTap, isNotNull);
       });
     });
   });

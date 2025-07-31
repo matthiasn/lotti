@@ -5,17 +5,33 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/search/index.dart';
 
 /// Categories list page using Riverpod for state management
 ///
 /// This page displays all categories and allows navigation to individual
 /// category details pages. It follows the same UI patterns as the AI Settings
 /// pages for consistency.
-class CategoriesListPage extends ConsumerWidget {
+class CategoriesListPage extends ConsumerStatefulWidget {
   const CategoriesListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoriesListPage> createState() => _CategoriesListPageState();
+}
+
+class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesStreamProvider);
 
     return Scaffold(
@@ -24,7 +40,7 @@ class CategoriesListPage extends ConsumerWidget {
         elevation: 0,
       ),
       body: categoriesAsync.when(
-        data: (categories) => _buildCategoriesList(context, categories),
+        data: (categories) => _buildContent(context, categories),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildErrorState(context, error),
       ),
@@ -36,6 +52,36 @@ class CategoriesListPage extends ConsumerWidget {
     );
   }
 
+  Widget _buildContent(
+    BuildContext context,
+    List<CategoryDefinition> categories,
+  ) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: LottiSearchBar(
+            controller: _searchController,
+            hintText: 'Search categories...',
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
+            onClear: () {
+              setState(() {
+                _searchQuery = '';
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: _buildCategoriesList(context, categories),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCategoriesList(
     BuildContext context,
     List<CategoryDefinition> categories,
@@ -44,17 +90,55 @@ class CategoriesListPage extends ConsumerWidget {
       return _buildEmptyState(context);
     }
 
-    // Sort categories by name
-    final sortedCategories = List<CategoryDefinition>.from(categories)
+    // Filter categories based on search query
+    final filteredCategories = categories.where((category) {
+      if (_searchQuery.isEmpty) return true;
+      return category.name.toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    // Sort filtered categories by name
+    final sortedCategories = List<CategoryDefinition>.from(filteredCategories)
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
+    if (sortedCategories.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 64,
+                color: Theme.of(context).disabledColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No categories found',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).disabledColor,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try adjusting your search',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).disabledColor,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
       itemCount: sortedCategories.length,
       itemBuilder: (context, index) {
         final category = sortedCategories[index];
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: _CategoryListTile(
             category: category,
             onTap: () => _navigateToCategoryDetails(context, category),
@@ -144,24 +228,36 @@ class _CategoryListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
+    return ModernBaseCard(
+      onTap: onTap,
+      padding: EdgeInsets.zero,
       child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: colorFromCssHex(
-            category.color,
-            substitute: Theme.of(context).colorScheme.primary,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: colorFromCssHex(
+              category.color,
+              substitute: Theme.of(context).colorScheme.primary,
+            ),
+            shape: BoxShape.circle,
           ),
-          child: Text(
-            category.name.isNotEmpty ? category.name[0].toUpperCase() : '?',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          child: Center(
+            child: Text(
+              category.name.isNotEmpty ? category.name[0].toUpperCase() : '?',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
           ),
         ),
-        title: Text(category.name),
+        title: Text(
+          category.name,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         subtitle: _buildSubtitle(context),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -169,17 +265,20 @@ class _CategoryListTile extends StatelessWidget {
             if (category.private)
               Icon(
                 Icons.lock_outline,
-                size: 16,
-                color: Theme.of(context).disabledColor,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             if (!category.active)
               Icon(
                 Icons.visibility_off_outlined,
-                size: 16,
-                color: Theme.of(context).disabledColor,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right),
+            Icon(
+              Icons.chevron_right,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
