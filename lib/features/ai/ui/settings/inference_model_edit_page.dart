@@ -13,7 +13,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.d
 import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 class InferenceModelEditPage extends ConsumerStatefulWidget {
   const InferenceModelEditPage({

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 void main() {
   group('ConfigErrorState', () {

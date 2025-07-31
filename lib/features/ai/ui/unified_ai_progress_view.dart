@@ -11,7 +11,9 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -398,9 +400,9 @@ class OllamaModelInstallDialogState
       ),
       actions: [
         if (!_isInstalling) ...[
-          TextButton(
+          LottiTertiaryButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            label: context.messages.cancelButton,
           ),
           ElevatedButton(
             onPressed: _installModel,

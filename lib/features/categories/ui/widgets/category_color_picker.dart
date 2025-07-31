@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// A color picker widget for selecting category colors.
 ///
@@ -88,16 +89,16 @@ class CategoryColorPicker extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(
+          LottiTertiaryButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(context.messages.cancelButton),
+            label: context.messages.cancelButton,
           ),
-          TextButton(
+          LottiTertiaryButton(
             onPressed: () {
               onColorChanged(pickedColor);
               Navigator.of(dialogContext).pop();
             },
-            child: Text(context.messages.selectButton),
+            label: context.messages.selectButton,
           ),
         ],
       ),

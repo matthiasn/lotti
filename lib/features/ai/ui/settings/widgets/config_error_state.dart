@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 /// A reusable error state widget for configuration lists
 ///

@@ -54,19 +54,25 @@ class LottiPrimaryButton extends StatelessWidget {
       iconWidget = Icon(icon, size: 20);
     }
 
-    if (iconWidget != null) {
-      return FilledButton.icon(
-        onPressed: onPressed,
-        icon: iconWidget,
-        label: labelWidget,
-        style: effectiveStyle,
-      );
-    } else {
-      return FilledButton(
-        onPressed: onPressed,
-        style: effectiveStyle,
-        child: labelWidget,
+    final button = iconWidget != null
+        ? FilledButton.icon(
+            onPressed: onPressed,
+            icon: iconWidget,
+            label: labelWidget,
+            style: effectiveStyle,
+          )
+        : FilledButton(
+            onPressed: onPressed,
+            style: effectiveStyle,
+            child: labelWidget,
+          );
+
+    if (semanticsLabel != null) {
+      return Semantics(
+        label: semanticsLabel,
+        child: button,
       );
     }
+    return button;
   }
 }

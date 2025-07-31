@@ -11,10 +11,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -247,41 +247,24 @@ class _HabitDialogState extends State<HabitDialog> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                TextButton(
+                                LottiTertiaryButton(
                                   key: const Key('habit_fail'),
                                   onPressed: () =>
                                       saveHabit(HabitCompletionType.fail),
-                                  child: Text(
-                                    context.messages.completeHabitFailButton,
-                                    style: failButtonStyle(),
-                                  ),
+                                  label: context.messages.completeHabitFailButton,
                                 ),
-                                TextButton(
+                                LottiTertiaryButton(
                                   key: const Key('habit_skip'),
                                   onPressed: () =>
                                       saveHabit(HabitCompletionType.skip),
-                                  child: Text(
-                                    context.messages.completeHabitSkipButton,
-                                    style: saveButtonStyle(Theme.of(context))
-                                        .copyWith(
-                                      color: habitSkipColor
-                                          .desaturate(40)
-                                          .withAlpha(204),
-                                    ),
-                                  ),
+                                  label: context.messages.completeHabitSkipButton,
                                 ),
-                                TextButton(
+                                LottiTertiaryButton(
                                   key: const Key('habit_save'),
                                   onPressed: () => saveHabit(
                                     HabitCompletionType.success,
                                   ),
-                                  child: Text(
-                                    context.messages.completeHabitSuccessButton,
-                                    style: saveButtonStyle(Theme.of(context))
-                                        .copyWith(
-                                      color: successColor,
-                                    ),
-                                  ),
+                                  label: context.messages.completeHabitSuccessButton,
                                 ).animate(autoPlay: true).shimmer(
                                       delay: 1.seconds,
                                       duration: .7.seconds,

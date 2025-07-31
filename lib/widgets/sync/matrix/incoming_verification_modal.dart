@@ -4,7 +4,7 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/encryption.dart';
@@ -73,9 +73,9 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                 ),
                 const SizedBox(height: 20),
                 if (!isDone && emojis == null)
-                  RoundedFilledButton(
+                  LottiPrimaryButton(
                     onPressed: runner?.acceptVerification,
-                    labelText: 'Verify Session',
+                    label: 'Verify Session',
                   ),
                 if (!isDone && emojis != null) ...[
                   Text(
@@ -90,19 +90,21 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      RoundedFilledButton(
+                      LottiPrimaryButton(
                         key: const Key('matrix_cancel_verification'),
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
                         onPressed: () async {
                           closeModal();
                         },
-                        labelText: context
+                        label: context
                             .messages.settingsMatrixCancelVerificationLabel,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
-                      RoundedFilledButton(
+                      LottiPrimaryButton(
                         onPressed: runner?.acceptEmojiVerification,
-                        labelText: 'They match',
+                        label: 'They match',
                       ),
                     ],
                   ),
@@ -125,12 +127,12 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      RoundedFilledButton(
+                      LottiPrimaryButton(
                         onPressed: () {
                           runner?.stopTimer();
                           pop();
                         },
-                        labelText: context
+                        label: context
                             .messages.settingsMatrixVerificationSuccessConfirm,
                       ),
                     ],

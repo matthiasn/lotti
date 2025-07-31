@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// shows a confirmation modal with customizable message and action labels.

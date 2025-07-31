@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class DurationBottomSheet extends StatefulWidget {
   const DurationBottomSheet(this.initial, {super.key});
@@ -35,17 +36,17 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextButton(
+              LottiTertiaryButton(
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text(context.messages.cancelButton),
+                label: context.messages.cancelButton,
               ),
-              TextButton(
+              LottiTertiaryButton(
                 onPressed: () {
                   Navigator.pop(context, duration);
                 },
-                child: Text(context.messages.doneButton),
+                label: context.messages.doneButton,
               ),
             ],
           ),

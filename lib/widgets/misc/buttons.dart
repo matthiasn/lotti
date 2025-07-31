@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/lotti_secondary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 class RoundedButton extends StatelessWidget {
   const RoundedButton(

@@ -4,9 +4,11 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Service that handles stylish delete operations for AI configurations
 ///
@@ -272,16 +274,13 @@ class AiConfigDeleteService {
               ],
             ),
             actions: [
-              TextButton(
+              LottiTertiaryButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-                ),
+                label: context.messages.cancelButton,
               ),
               LottiPrimaryButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                label: 'Delete',
+                label: context.messages.deleteButton,
                 icon: Icons.delete_forever_outlined,
                 isDestructive: true,
               ),

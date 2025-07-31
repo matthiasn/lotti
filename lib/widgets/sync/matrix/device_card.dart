@@ -3,7 +3,7 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
@@ -60,7 +60,7 @@ class _DeviceCardState extends State<DeviceCard> {
               ),
             ),
             const SizedBox(height: 10),
-            RoundedFilledButton(
+            LottiPrimaryButton(
               onPressed: () async {
                 await showModalBottomSheet<void>(
                   context: context,
@@ -71,7 +71,7 @@ class _DeviceCardState extends State<DeviceCard> {
                 );
                 widget.refreshListCallback();
               },
-              labelText: context.messages.settingsMatrixVerifyLabel,
+              label: context.messages.settingsMatrixVerifyLabel,
             ),
             const SizedBox(height: 10),
           ],
