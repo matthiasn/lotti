@@ -108,6 +108,9 @@ class EntityDefinition with _$EntityDefinition {
     String? color,
     String? categoryId,
     DateTime? deletedAt,
+    String? defaultLanguageCode,
+    List<String>? allowedPromptIds,
+    Map<AiResponseType, List<String>>? automaticPrompts,
   }) = CategoryDefinition;
 
   const factory EntityDefinition.habit({

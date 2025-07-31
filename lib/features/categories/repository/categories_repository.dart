@@ -1,18 +1,49 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:uuid/uuid.dart';
 
-final categoriesRepositoryProvider = Provider<CategoriesRepository>((ref) {
-  return CategoriesRepository(getIt<PersistenceLogic>());
+final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
+  return CategoryRepository(
+    getIt<PersistenceLogic>(),
+    getIt<JournalDb>(),
+    getIt<EntitiesCacheService>(),
+  );
 });
 
-class CategoriesRepository {
-  CategoriesRepository(this._persistenceLogic);
+class CategoryRepository {
+  CategoryRepository(
+    this._persistenceLogic,
+    this._journalDb,
+    this._entitiesCacheService,
+  );
 
   final PersistenceLogic _persistenceLogic;
+  final JournalDb _journalDb;
+  final EntitiesCacheService _entitiesCacheService;
   final _uuid = const Uuid();
+
+  Stream<List<CategoryDefinition>> watchCategories() {
+    return _journalDb.watchCategories();
+  }
+
+  Stream<CategoryDefinition?> watchCategory(String id) {
+    return _journalDb.watchCategoryById(id);
+  }
+
+  Future<CategoryDefinition?> getCategoryById(String id) async {
+    // Use the cached version for efficient synchronous access
+    return _entitiesCacheService.getCategoryById(id);
+  }
+
+  Future<List<CategoryDefinition>> getAllCategories() async {
+    final categories = await _journalDb.allCategoryDefinitions().get();
+    return categoryDefinitionsStreamMapper(categories);
+  }
 
   Future<CategoryDefinition> createCategory({
     required String name,
@@ -28,10 +59,32 @@ class CategoriesRepository {
       updatedAt: now,
       vectorClock: null,
       private: false,
-      active: true, // The persistence logic will handle the vector clock
+      active: true,
     );
 
     await _persistenceLogic.upsertEntityDefinition(category);
     return category;
+  }
+
+  Future<CategoryDefinition> updateCategory(
+    CategoryDefinition category,
+  ) async {
+    final updated = category.copyWith(
+      updatedAt: DateTime.now(),
+    );
+
+    await _persistenceLogic.upsertEntityDefinition(updated);
+    return updated;
+  }
+
+  Future<void> deleteCategory(String id) async {
+    final category = await getCategoryById(id);
+    if (category != null) {
+      final deleted = category.copyWith(
+        deletedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await _persistenceLogic.upsertEntityDefinition(deleted);
+    }
   }
 }

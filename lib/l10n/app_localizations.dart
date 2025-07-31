@@ -2679,6 +2679,252 @@ abstract class AppLocalizations {
   /// **'Categories'**
   String get settingsCategoriesTitle;
 
+  /// No description provided for @settingsCategoriesAddTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Category'**
+  String get settingsCategoriesAddTooltip;
+
+  /// No description provided for @settingsCategoriesEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories found'**
+  String get settingsCategoriesEmptyState;
+
+  /// No description provided for @settingsCategoriesEmptyStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a category to organize your entries'**
+  String get settingsCategoriesEmptyStateHint;
+
+  /// No description provided for @settingsCategoriesErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading categories'**
+  String get settingsCategoriesErrorLoading;
+
+  /// No description provided for @settingsCategoriesHasDefaultLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Default language'**
+  String get settingsCategoriesHasDefaultLanguage;
+
+  /// No description provided for @settingsCategoriesHasAiSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings'**
+  String get settingsCategoriesHasAiSettings;
+
+  /// No description provided for @settingsCategoriesHasAutomaticPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic AI'**
+  String get settingsCategoriesHasAutomaticPrompts;
+
+  /// No description provided for @categoryNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Category not found'**
+  String get categoryNotFound;
+
+  /// No description provided for @saveSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved successfully'**
+  String get saveSuccessful;
+
+  /// No description provided for @basicSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Settings'**
+  String get basicSettings;
+
+  /// No description provided for @categoryDefaultLanguageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a default language for tasks in this category'**
+  String get categoryDefaultLanguageDescription;
+
+  /// No description provided for @aiModelSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Model Settings'**
+  String get aiModelSettings;
+
+  /// No description provided for @categoryAiModelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Control which AI prompts can be used with this category'**
+  String get categoryAiModelDescription;
+
+  /// No description provided for @automaticPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic Prompts'**
+  String get automaticPrompts;
+
+  /// No description provided for @categoryAutomaticPromptsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure prompts that run automatically for different content types'**
+  String get categoryAutomaticPromptsDescription;
+
+  /// No description provided for @enterCategoryName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter category name'**
+  String get enterCategoryName;
+
+  /// No description provided for @categoryNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name is required'**
+  String get categoryNameRequired;
+
+  /// No description provided for @selectColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Color'**
+  String get selectColor;
+
+  /// No description provided for @selectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get selectButton;
+
+  /// No description provided for @privateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get privateLabel;
+
+  /// No description provided for @categoryPrivateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide this category when private mode is enabled'**
+  String get categoryPrivateDescription;
+
+  /// No description provided for @activeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeLabel;
+
+  /// No description provided for @categoryActiveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive categories won\'t appear in selection lists'**
+  String get categoryActiveDescription;
+
+  /// No description provided for @favoriteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite'**
+  String get favoriteLabel;
+
+  /// No description provided for @categoryFavoriteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this category as a favorite'**
+  String get categoryFavoriteDescription;
+
+  /// No description provided for @defaultLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Language'**
+  String get defaultLanguage;
+
+  /// No description provided for @selectLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Language'**
+  String get selectLanguage;
+
+  /// No description provided for @noDefaultLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'No default language'**
+  String get noDefaultLanguage;
+
+  /// No description provided for @noPromptsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No prompts available'**
+  String get noPromptsAvailable;
+
+  /// No description provided for @createPromptsFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Create AI prompts first to configure them here'**
+  String get createPromptsFirst;
+
+  /// No description provided for @selectAllowedPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Select which prompts are allowed for this category'**
+  String get selectAllowedPrompts;
+
+  /// No description provided for @audioRecordings.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio Recordings'**
+  String get audioRecordings;
+
+  /// No description provided for @images.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get images;
+
+  /// No description provided for @taskSummaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Summaries'**
+  String get taskSummaries;
+
+  /// No description provided for @noPromptsForType.
+  ///
+  /// In en, this message translates to:
+  /// **'No prompts available for this type'**
+  String get noPromptsForType;
+
+  /// No description provided for @errorLoadingPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading prompts'**
+  String get errorLoadingPrompts;
+
+  /// No description provided for @categoryDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Category?'**
+  String get categoryDeleteTitle;
+
+  /// No description provided for @categoryDeleteConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. All entries in this category will remain but will no longer be categorized.'**
+  String get categoryDeleteConfirmation;
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteButton;
+
+  /// No description provided for @saveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButton;
+
+  /// No description provided for @createButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createButton;
+
   /// No description provided for @settingsConflictsResolutionTitle.
   ///
   /// In en, this message translates to:

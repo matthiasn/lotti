@@ -257,6 +257,15 @@ _$CategoryDefinitionImpl _$$CategoryDefinitionImplFromJson(
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
+      defaultLanguageCode: json['defaultLanguageCode'] as String?,
+      allowedPromptIds: (json['allowedPromptIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      automaticPrompts:
+          (json['automaticPrompts'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry($enumDecode(_$AiResponseTypeEnumMap, k),
+            (e as List<dynamic>).map((e) => e as String).toList()),
+      ),
       $type: json['runtimeType'] as String?,
     );
 
@@ -274,8 +283,19 @@ Map<String, dynamic> _$$CategoryDefinitionImplToJson(
       'color': instance.color,
       'categoryId': instance.categoryId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
+      'defaultLanguageCode': instance.defaultLanguageCode,
+      'allowedPromptIds': instance.allowedPromptIds,
+      'automaticPrompts': instance.automaticPrompts
+          ?.map((k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e)),
       'runtimeType': instance.$type,
     };
+
+const _$AiResponseTypeEnumMap = {
+  AiResponseType.actionItemSuggestions: 'ActionItemSuggestions',
+  AiResponseType.taskSummary: 'TaskSummary',
+  AiResponseType.imageAnalysis: 'ImageAnalysis',
+  AiResponseType.audioTranscription: 'AudioTranscription',
+};
 
 _$HabitDefinitionImpl _$$HabitDefinitionImplFromJson(
         Map<String, dynamic> json) =>
@@ -433,13 +453,6 @@ Map<String, dynamic> _$$AiResponseDataImplToJson(
       'type': _$AiResponseTypeEnumMap[instance.type],
       'temperature': instance.temperature,
     };
-
-const _$AiResponseTypeEnumMap = {
-  AiResponseType.actionItemSuggestions: 'ActionItemSuggestions',
-  AiResponseType.taskSummary: 'TaskSummary',
-  AiResponseType.imageAnalysis: 'ImageAnalysis',
-  AiResponseType.audioTranscription: 'AudioTranscription',
-};
 
 _$WorkoutDataImpl _$$WorkoutDataImplFromJson(Map<String, dynamic> json) =>
     _$WorkoutDataImpl(

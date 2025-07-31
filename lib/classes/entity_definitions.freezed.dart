@@ -2642,7 +2642,10 @@ mixin _$EntityDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -2711,7 +2714,10 @@ mixin _$EntityDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -2780,7 +2786,10 @@ mixin _$EntityDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -3182,7 +3191,10 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -3267,7 +3279,10 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -3352,7 +3367,10 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -3524,7 +3542,10 @@ abstract class _$$CategoryDefinitionImplCopyWith<$Res>
       bool? favorite,
       String? color,
       String? categoryId,
-      DateTime? deletedAt});
+      DateTime? deletedAt,
+      String? defaultLanguageCode,
+      List<String>? allowedPromptIds,
+      Map<AiResponseType, List<String>>? automaticPrompts});
 }
 
 /// @nodoc
@@ -3551,6 +3572,9 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
     Object? color = freezed,
     Object? categoryId = freezed,
     Object? deletedAt = freezed,
+    Object? defaultLanguageCode = freezed,
+    Object? allowedPromptIds = freezed,
+    Object? automaticPrompts = freezed,
   }) {
     return _then(_$CategoryDefinitionImpl(
       id: null == id
@@ -3597,6 +3621,18 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
           ? _value.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      defaultLanguageCode: freezed == defaultLanguageCode
+          ? _value.defaultLanguageCode
+          : defaultLanguageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      allowedPromptIds: freezed == allowedPromptIds
+          ? _value._allowedPromptIds
+          : allowedPromptIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      automaticPrompts: freezed == automaticPrompts
+          ? _value._automaticPrompts
+          : automaticPrompts // ignore: cast_nullable_to_non_nullable
+              as Map<AiResponseType, List<String>>?,
     ));
   }
 }
@@ -3616,8 +3652,13 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
       this.color,
       this.categoryId,
       this.deletedAt,
+      this.defaultLanguageCode,
+      final List<String>? allowedPromptIds,
+      final Map<AiResponseType, List<String>>? automaticPrompts,
       final String? $type})
-      : $type = $type ?? 'categoryDefinition';
+      : _allowedPromptIds = allowedPromptIds,
+        _automaticPrompts = automaticPrompts,
+        $type = $type ?? 'categoryDefinition';
 
   factory _$CategoryDefinitionImpl.fromJson(Map<String, dynamic> json) =>
       _$$CategoryDefinitionImplFromJson(json);
@@ -3644,13 +3685,35 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
   final String? categoryId;
   @override
   final DateTime? deletedAt;
+  @override
+  final String? defaultLanguageCode;
+  final List<String>? _allowedPromptIds;
+  @override
+  List<String>? get allowedPromptIds {
+    final value = _allowedPromptIds;
+    if (value == null) return null;
+    if (_allowedPromptIds is EqualUnmodifiableListView)
+      return _allowedPromptIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  final Map<AiResponseType, List<String>>? _automaticPrompts;
+  @override
+  Map<AiResponseType, List<String>>? get automaticPrompts {
+    final value = _automaticPrompts;
+    if (value == null) return null;
+    if (_automaticPrompts is EqualUnmodifiableMapView) return _automaticPrompts;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt)';
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts)';
   }
 
   @override
@@ -3674,13 +3737,33 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             (identical(other.categoryId, categoryId) ||
                 other.categoryId == categoryId) &&
             (identical(other.deletedAt, deletedAt) ||
-                other.deletedAt == deletedAt));
+                other.deletedAt == deletedAt) &&
+            (identical(other.defaultLanguageCode, defaultLanguageCode) ||
+                other.defaultLanguageCode == defaultLanguageCode) &&
+            const DeepCollectionEquality()
+                .equals(other._allowedPromptIds, _allowedPromptIds) &&
+            const DeepCollectionEquality()
+                .equals(other._automaticPrompts, _automaticPrompts));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
-      vectorClock, private, active, favorite, color, categoryId, deletedAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      createdAt,
+      updatedAt,
+      name,
+      vectorClock,
+      private,
+      active,
+      favorite,
+      color,
+      categoryId,
+      deletedAt,
+      defaultLanguageCode,
+      const DeepCollectionEquality().hash(_allowedPromptIds),
+      const DeepCollectionEquality().hash(_automaticPrompts));
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
@@ -3720,7 +3803,10 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -3760,8 +3846,21 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             String? categoryId)
         dashboard,
   }) {
-    return categoryDefinition(id, createdAt, updatedAt, name, vectorClock,
-        private, active, favorite, color, categoryId, deletedAt);
+    return categoryDefinition(
+        id,
+        createdAt,
+        updatedAt,
+        name,
+        vectorClock,
+        private,
+        active,
+        favorite,
+        color,
+        categoryId,
+        deletedAt,
+        defaultLanguageCode,
+        allowedPromptIds,
+        automaticPrompts);
   }
 
   @override
@@ -3793,7 +3892,10 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -3833,8 +3935,21 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             String? categoryId)?
         dashboard,
   }) {
-    return categoryDefinition?.call(id, createdAt, updatedAt, name, vectorClock,
-        private, active, favorite, color, categoryId, deletedAt);
+    return categoryDefinition?.call(
+        id,
+        createdAt,
+        updatedAt,
+        name,
+        vectorClock,
+        private,
+        active,
+        favorite,
+        color,
+        categoryId,
+        deletedAt,
+        defaultLanguageCode,
+        allowedPromptIds,
+        automaticPrompts);
   }
 
   @override
@@ -3866,7 +3981,10 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -3908,8 +4026,21 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
     required TResult orElse(),
   }) {
     if (categoryDefinition != null) {
-      return categoryDefinition(id, createdAt, updatedAt, name, vectorClock,
-          private, active, favorite, color, categoryId, deletedAt);
+      return categoryDefinition(
+          id,
+          createdAt,
+          updatedAt,
+          name,
+          vectorClock,
+          private,
+          active,
+          favorite,
+          color,
+          categoryId,
+          deletedAt,
+          defaultLanguageCode,
+          allowedPromptIds,
+          automaticPrompts);
     }
     return orElse();
   }
@@ -3961,17 +4092,21 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
 
 abstract class CategoryDefinition implements EntityDefinition {
   const factory CategoryDefinition(
-      {required final String id,
-      required final DateTime createdAt,
-      required final DateTime updatedAt,
-      required final String name,
-      required final VectorClock? vectorClock,
-      required final bool private,
-      required final bool active,
-      final bool? favorite,
-      final String? color,
-      final String? categoryId,
-      final DateTime? deletedAt}) = _$CategoryDefinitionImpl;
+          {required final String id,
+          required final DateTime createdAt,
+          required final DateTime updatedAt,
+          required final String name,
+          required final VectorClock? vectorClock,
+          required final bool private,
+          required final bool active,
+          final bool? favorite,
+          final String? color,
+          final String? categoryId,
+          final DateTime? deletedAt,
+          final String? defaultLanguageCode,
+          final List<String>? allowedPromptIds,
+          final Map<AiResponseType, List<String>>? automaticPrompts}) =
+      _$CategoryDefinitionImpl;
 
   factory CategoryDefinition.fromJson(Map<String, dynamic> json) =
       _$CategoryDefinitionImpl.fromJson;
@@ -3994,6 +4129,9 @@ abstract class CategoryDefinition implements EntityDefinition {
   String? get categoryId;
   @override
   DateTime? get deletedAt;
+  String? get defaultLanguageCode;
+  List<String>? get allowedPromptIds;
+  Map<AiResponseType, List<String>>? get automaticPrompts;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
@@ -4340,7 +4478,10 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -4430,7 +4571,10 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -4520,7 +4664,10 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -4968,7 +5115,10 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -5055,7 +5205,10 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -5142,7 +5295,10 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             bool? favorite,
             String? color,
             String? categoryId,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? defaultLanguageCode,
+            List<String>? allowedPromptIds,
+            Map<AiResponseType, List<String>>? automaticPrompts)?
         categoryDefinition,
     TResult Function(
             String id,

@@ -1410,6 +1410,138 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesTitle => 'Kategorien';
 
   @override
+  String get settingsCategoriesAddTooltip => 'Add Category';
+
+  @override
+  String get settingsCategoriesEmptyState => 'No categories found';
+
+  @override
+  String get settingsCategoriesEmptyStateHint =>
+      'Create a category to organize your entries';
+
+  @override
+  String get settingsCategoriesErrorLoading => 'Error loading categories';
+
+  @override
+  String get settingsCategoriesHasDefaultLanguage => 'Default language';
+
+  @override
+  String get settingsCategoriesHasAiSettings => 'AI settings';
+
+  @override
+  String get settingsCategoriesHasAutomaticPrompts => 'Automatic AI';
+
+  @override
+  String get categoryNotFound => 'Category not found';
+
+  @override
+  String get saveSuccessful => 'Saved successfully';
+
+  @override
+  String get basicSettings => 'Basic Settings';
+
+  @override
+  String get categoryDefaultLanguageDescription =>
+      'Set a default language for tasks in this category';
+
+  @override
+  String get aiModelSettings => 'AI Model Settings';
+
+  @override
+  String get categoryAiModelDescription =>
+      'Control which AI prompts can be used with this category';
+
+  @override
+  String get automaticPrompts => 'Automatic Prompts';
+
+  @override
+  String get categoryAutomaticPromptsDescription =>
+      'Configure prompts that run automatically for different content types';
+
+  @override
+  String get enterCategoryName => 'Enter category name';
+
+  @override
+  String get categoryNameRequired => 'Category name is required';
+
+  @override
+  String get selectColor => 'Select Color';
+
+  @override
+  String get selectButton => 'Select';
+
+  @override
+  String get privateLabel => 'Private';
+
+  @override
+  String get categoryPrivateDescription =>
+      'Hide this category when private mode is enabled';
+
+  @override
+  String get activeLabel => 'Active';
+
+  @override
+  String get categoryActiveDescription =>
+      'Inactive categories won\'t appear in selection lists';
+
+  @override
+  String get favoriteLabel => 'Favorite';
+
+  @override
+  String get categoryFavoriteDescription => 'Mark this category as a favorite';
+
+  @override
+  String get defaultLanguage => 'Default Language';
+
+  @override
+  String get selectLanguage => 'Select Language';
+
+  @override
+  String get noDefaultLanguage => 'No default language';
+
+  @override
+  String get noPromptsAvailable => 'No prompts available';
+
+  @override
+  String get createPromptsFirst =>
+      'Create AI prompts first to configure them here';
+
+  @override
+  String get selectAllowedPrompts =>
+      'Select which prompts are allowed for this category';
+
+  @override
+  String get audioRecordings => 'Audio Recordings';
+
+  @override
+  String get images => 'Images';
+
+  @override
+  String get taskSummaries => 'Task Summaries';
+
+  @override
+  String get noPromptsForType => 'No prompts available for this type';
+
+  @override
+  String get errorLoadingPrompts => 'Error loading prompts';
+
+  @override
+  String get categoryDeleteTitle => 'Delete Category?';
+
+  @override
+  String get categoryDeleteConfirmation =>
+      'This action cannot be undone. All entries in this category will remain but will no longer be categorized.';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get saveButton => 'Save';
+
+  @override
+  String get createButton => 'Create';
+
+  @override
   String get settingsConflictsResolutionTitle =>
       'Lösung von Synchronisierungskonflikten';
 

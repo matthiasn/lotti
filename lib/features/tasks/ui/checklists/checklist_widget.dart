@@ -152,7 +152,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                               onPressed: () => Navigator.of(context).pop(false),
                             ),
                             LottiTertiaryButton(
-                              label: context.messages.checklistItemDeleteConfirm,
+                              label:
+                                  context.messages.checklistItemDeleteConfirm,
                               onPressed: () => Navigator.of(context).pop(true),
                             ),
                           ],
