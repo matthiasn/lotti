@@ -54,8 +54,8 @@ Each category can specify which AI prompts are available when viewing entries in
 
 ```dart
 class CategoryDefinition {
-  // null = all prompts allowed (default)
-  // [] = no prompts allowed
+  // null = no prompts allowed (secure by default)
+  // [] = no prompts allowed (explicit)
   // ['prompt-id-1', 'prompt-id-2'] = only specified prompts allowed
   final List<String>? allowedPromptIds;
 }
@@ -63,8 +63,8 @@ class CategoryDefinition {
 
 **Use Cases:**
 - **Work Category**: Only allow professional prompts (task summaries, action items)
-- **Personal Category**: Allow all prompts including creative ones
-- **Sensitive Category**: Disable all AI processing for privacy
+- **Personal Category**: Allow specific personal prompts (journaling, reflection)
+- **Sensitive Category**: Disable all AI processing for privacy (null or [])
 - **Project Category**: Focus on specific project-related prompts
 
 ### Automatic Prompt Execution (Coming Soon)
@@ -142,7 +142,13 @@ final projectCategory = CategoryDefinition(
   id: 'project-456',
   name: 'App Development',
   color: Colors.green,
-  allowedPromptIds: null, // All prompts allowed
+  allowedPromptIds: [
+    'task-summary',
+    'action-item-suggestions',
+    'extract-code',
+    'ui-feedback',
+    // ... other allowed prompts
+  ],
   automaticPrompts: {
     'audioTranscription': [
       'task-summary',
@@ -165,7 +171,7 @@ final privateCategory = CategoryDefinition(
   name: 'Personal Thoughts',
   color: Colors.purple,
   isPrivate: true, // Hidden in private mode
-  allowedPromptIds: [], // No AI prompts allowed
+  allowedPromptIds: [], // No AI prompts allowed (same as null)
   automaticPrompts: {}, // No automatic processing
 );
 ```
@@ -236,8 +242,8 @@ This section outlines the detailed implementation plan for completing the catego
 - Pass current entry's category to prompt filtering logic
 - Modify `_buildAvailablePrompts` to respect category's `allowedPromptIds`
 - Handle three cases:
-  - `null`: Show all prompts (default behavior)
-  - `[]`: Hide AI button entirely
+  - `null`: Hide AI button entirely (no prompts allowed)
+  - `[]`: Hide AI button entirely (no prompts allowed)
   - `['id1', 'id2']`: Show only specified prompts
 - Add comprehensive tests for filtering behavior
 

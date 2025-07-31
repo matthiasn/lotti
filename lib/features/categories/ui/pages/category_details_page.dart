@@ -52,8 +52,8 @@ class CategoryDetailsPage extends ConsumerStatefulWidget {
 
 class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   late TextEditingController _nameController;
-  Color? _selectedColor;
-  bool _hasInitialized = false;
+  String? _lastSyncedName;
+  Color? _selectedColor; // Only used in create mode
 
   @override
   void initState() {
@@ -67,11 +67,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     super.dispose();
   }
 
-  void _initializeForm(CategoryDefinition category) {
-    if (!_hasInitialized) {
+  void _syncFormWithCategory(CategoryDefinition category) {
+    // Update name controller only if the name has changed externally
+    if (_lastSyncedName != category.name) {
+      _lastSyncedName = category.name;
       _nameController.text = category.name;
-      _selectedColor = colorFromCssHex(category.color);
-      _hasInitialized = true;
 
       // Initialize the controller with current values after the frame is built
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -264,7 +264,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
 
     if (category != null) {
-      _initializeForm(category);
+      _syncFormWithCategory(category);
     }
 
     return CallbackShortcuts(
@@ -385,20 +385,33 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildColorPicker() {
+    if (widget.isCreateMode) {
+      // For create mode, we need local state since there's no category yet
+      return CategoryColorPicker(
+        selectedColor: _selectedColor,
+        onColorChanged: (color) {
+          setState(() {
+            _selectedColor = color;
+          });
+        },
+      );
+    }
+
+    // For edit mode, derive color from category state
+    final state =
+        ref.watch(categoryDetailsControllerProvider(widget.categoryId!));
+    final category = state.category;
+    final selectedColor =
+        category != null ? colorFromCssHex(category.color) : null;
+
     return CategoryColorPicker(
-      selectedColor: _selectedColor,
+      selectedColor: selectedColor,
       onColorChanged: (color) {
-        setState(() {
-          _selectedColor = color;
-        });
-        // Only update controller in edit mode
-        if (!widget.isCreateMode) {
-          ref
-              .read(
-                categoryDetailsControllerProvider(widget.categoryId!).notifier,
-              )
-              .updateFormField(color: colorToCssHex(color));
-        }
+        ref
+            .read(
+              categoryDetailsControllerProvider(widget.categoryId!).notifier,
+            )
+            .updateFormField(color: colorToCssHex(color));
       },
     );
   }

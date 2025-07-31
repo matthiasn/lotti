@@ -20,7 +20,6 @@ import 'package:lotti/widgets/lotti_primary_button.dart';
 import 'package:lotti/widgets/lotti_secondary_button.dart';
 import 'package:lotti/widgets/lotti_tertiary_button.dart';
 
-
 class PromptEditPage extends ConsumerStatefulWidget {
   const PromptEditPage({
     this.configId,
@@ -355,8 +354,6 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
       aiResponseType:
           formState.aiResponseType.value ?? AiResponseType.taskSummary,
     );
-
-
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
