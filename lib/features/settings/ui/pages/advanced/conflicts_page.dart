@@ -221,7 +221,7 @@ class ConflictDetailRoute extends StatelessWidget {
                             );
                             settingsBeamerDelegate.beamBack();
                           },
-                          label: 'Resolve with local version',
+                          label: context.messages.conflictsResolveLocalVersion,
                         ),
                       ],
                     ),
@@ -246,7 +246,7 @@ class ConflictDetailRoute extends StatelessWidget {
                             );
                             settingsBeamerDelegate.beamBack();
                           },
-                          label: 'Resolve with remote version',
+                          label: context.messages.conflictsResolveRemoteVersion,
                         ),
                       ],
                     ),
@@ -261,7 +261,7 @@ class ConflictDetailRoute extends StatelessWidget {
                               ),
                             );
                           },
-                          label: 'Copy Text from Sync',
+                          label: context.messages.conflictsCopyTextFromSync,
                         ),
                       ],
                     ),

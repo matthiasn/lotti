@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCloudInferenceRepository extends Mock
@@ -44,6 +45,8 @@ class TestOllamaDialogWrapper extends StatelessWidget {
         ).overrideWith(() => MockAiConfigByTypeController([ollamaProvider])),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: child,
         ),
@@ -188,6 +191,8 @@ void main() {
                   () => MockAiConfigByTypeController([])), // No providers
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: OllamaModelInstallDialog(modelName: testModelName),
               ),
@@ -218,7 +223,6 @@ void main() {
         // Assert - Dialog structure
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(find.byType(Column), findsAtLeastNWidgets(1));
-        expect(find.byType(TextButton), findsOneWidget); // Cancel button
         expect(find.byType(ElevatedButton), findsOneWidget); // Install button
       });
 

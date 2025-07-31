@@ -1275,6 +1275,24 @@ abstract class AppLocalizations {
   /// **'unresolved'**
   String get conflictsUnresolved;
 
+  /// No description provided for @conflictsResolveLocalVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve with local version'**
+  String get conflictsResolveLocalVersion;
+
+  /// No description provided for @conflictsResolveRemoteVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve with remote version'**
+  String get conflictsResolveRemoteVersion;
+
+  /// No description provided for @conflictsCopyTextFromSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Text from Sync'**
+  String get conflictsCopyTextFromSync;
+
   /// No description provided for @createCategoryTitle.
   ///
   /// In en, this message translates to:

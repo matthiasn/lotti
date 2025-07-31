@@ -97,10 +97,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                         },
                         label: context
                             .messages.settingsMatrixCancelVerificationLabel,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          foregroundColor: Colors.white,
-                        ),
+                        isDestructive: true,
                       ),
                       LottiPrimaryButton(
                         onPressed: runner?.acceptEmojiVerification,

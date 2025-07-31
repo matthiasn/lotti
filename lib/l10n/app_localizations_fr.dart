@@ -662,6 +662,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get conflictsUnresolved => 'non résolu';
 
   @override
+  String get conflictsResolveLocalVersion => 'Resolve with local version';
+
+  @override
+  String get conflictsResolveRemoteVersion => 'Resolve with remote version';
+
+  @override
+  String get conflictsCopyTextFromSync => 'Copy Text from Sync';
+
+  @override
   String get createCategoryTitle => 'Créer une catégorie :';
 
   @override

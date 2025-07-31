@@ -67,12 +67,6 @@ class LottiPrimaryButton extends StatelessWidget {
             child: labelWidget,
           );
 
-    if (semanticsLabel != null) {
-      return Semantics(
-        label: semanticsLabel,
-        child: button,
-      );
-    }
     return button;
   }
 }
