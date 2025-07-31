@@ -120,6 +120,18 @@ const List<KnownModel> nebiusModels = [
     isReasoningModel: true,
     description: 'Advanced reasoning model for complex tasks',
   ),
+  KnownModel(
+    providerModelId: 'Qwen/Qwen3-235B-A22B',
+    name: 'Qwen3 235B A22B',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Qwen3 is the latest generation of large language models in Qwen '
+        'series, offering a comprehensive suite of dense and mixture-of-experts '
+        '(MoE) models.',
+  ),
 ];
 
 /// Ollama models - Local models for privacy-focused processing
@@ -161,13 +173,26 @@ const List<KnownModel> ollamaModels = [
         'Requires approximately 8GB RAM while maintaining good performance.',
   ),
   KnownModel(
-    providerModelId: 'deepseek-r1:14b',
-    name: 'DeepSeek R1 14B',
+    providerModelId: 'deepseek-r1:8b',
+    name: 'DeepSeek R1 8B',
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: true,
+    supportsFunctionCalling: true,
     description: 'Local reasoning model for complex analysis tasks. '
-        'Requires approximately 14GB RAM and provides advanced reasoning capabilities.',
+        'Provides advanced reasoning capabilities.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3:8b',
+    name: 'Qwen3 8B',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Qwen3 is the latest generation of large language models in Qwen '
+        'series, offering a comprehensive suite of dense and mixture-of-experts '
+        '(MoE) models.',
   ),
 ];
 
