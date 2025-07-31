@@ -8,6 +8,8 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../test_utils.dart';
+
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 void main() {
@@ -17,25 +19,6 @@ void main() {
     setUp(() {
       mockRepository = MockCategoryRepository();
     });
-
-    CategoryDefinition createTestCategory({
-      String? id,
-      String name = 'Test Category',
-      String? color,
-      bool private = false,
-      bool active = true,
-    }) {
-      return CategoryDefinition(
-        id: id ?? const Uuid().v4(),
-        name: name,
-        color: color ?? '#0000FF',
-        private: private,
-        active: active,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-      );
-    }
 
     test('initial state is loading', () {
       when(() => mockRepository.watchCategories()).thenAnswer(
@@ -56,8 +39,8 @@ void main() {
 
     test('loads categories from repository', () async {
       final categories = [
-        createTestCategory(name: 'Category 1'),
-        createTestCategory(name: 'Category 2'),
+        CategoryTestUtils.createTestCategory(name: 'Category 1'),
+        CategoryTestUtils.createTestCategory(name: 'Category 2'),
       ];
       final completer = Completer<void>();
 
@@ -126,10 +109,12 @@ void main() {
     });
 
     test('updates state when categories change', () async {
-      final categories1 = [createTestCategory(name: 'Category 1')];
+      final categories1 = [
+        CategoryTestUtils.createTestCategory(name: 'Category 1')
+      ];
       final categories2 = [
-        createTestCategory(name: 'Category 1'),
-        createTestCategory(name: 'Category 2'),
+        CategoryTestUtils.createTestCategory(name: 'Category 1'),
+        CategoryTestUtils.createTestCategory(name: 'Category 2'),
       ];
 
       final streamController =
@@ -176,7 +161,7 @@ void main() {
 
     test('deletes category successfully', () async {
       final categoryId = const Uuid().v4();
-      final categories = [createTestCategory(id: categoryId)];
+      final categories = [CategoryTestUtils.createTestCategory(id: categoryId)];
 
       when(() => mockRepository.watchCategories()).thenAnswer(
         (_) => Stream.value(categories),
@@ -204,7 +189,7 @@ void main() {
 
     test('handles delete error', () async {
       final categoryId = const Uuid().v4();
-      final categories = [createTestCategory(id: categoryId)];
+      final categories = [CategoryTestUtils.createTestCategory(id: categoryId)];
       final deleteError = Exception('Delete failed');
       final completer = Completer<void>();
 
@@ -262,15 +247,8 @@ void main() {
 
     test('provides categories stream from repository', () async {
       final categories = [
-        CategoryDefinition(
-          id: const Uuid().v4(),
-          name: 'Test Category',
+        CategoryTestUtils.createTestCategory(
           color: '#FF0000',
-          private: false,
-          active: true,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
         ),
       ];
 

@@ -11,6 +11,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../test_utils.dart';
+
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -70,39 +72,12 @@ void main() {
       }
     });
 
-    CategoryDefinition createTestCategory({
-      String? id,
-      String name = 'Test Category',
-      String? color,
-      bool private = false,
-      bool active = true,
-      bool? favorite,
-      String? defaultLanguageCode,
-      List<String>? allowedPromptIds,
-      Map<AiResponseType, List<String>>? automaticPrompts,
-      DateTime? deletedAt,
-    }) {
-      return CategoryDefinition(
-        id: id ?? const Uuid().v4(),
-        name: name,
-        color: color ?? '#0000FF',
-        private: private,
-        active: active,
-        favorite: favorite,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        defaultLanguageCode: defaultLanguageCode,
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-        deletedAt: deletedAt,
-      );
-    }
-
     group('watchCategories', () {
       test('emits categories from database', () async {
-        final category1 = createTestCategory(name: 'Category 1');
-        final category2 = createTestCategory(name: 'Category 2');
+        final category1 =
+            CategoryTestUtils.createTestCategory(name: 'Category 1');
+        final category2 =
+            CategoryTestUtils.createTestCategory(name: 'Category 2');
         final categories = [category1, category2];
 
         when(() => mockJournalDb.watchCategories()).thenAnswer(
@@ -116,9 +91,12 @@ void main() {
       });
 
       test('emits updated categories when database changes', () async {
-        final category1 = createTestCategory(name: 'Category 1');
-        final category2 = createTestCategory(name: 'Category 2');
-        final category3 = createTestCategory(name: 'Category 3');
+        final category1 =
+            CategoryTestUtils.createTestCategory(name: 'Category 1');
+        final category2 =
+            CategoryTestUtils.createTestCategory(name: 'Category 2');
+        final category3 =
+            CategoryTestUtils.createTestCategory(name: 'Category 3');
 
         final controller = StreamController<List<CategoryDefinition>>();
         when(() => mockJournalDb.watchCategories()).thenAnswer(
@@ -144,7 +122,7 @@ void main() {
 
     group('watchCategory', () {
       test('emits specific category from database', () async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockJournalDb.watchCategoryById(category.id)).thenAnswer(
           (_) => Stream.value(category),
@@ -169,8 +147,10 @@ void main() {
 
       test('emits updated category when it changes', () async {
         final categoryId = const Uuid().v4();
-        final category1 = createTestCategory(id: categoryId, name: 'Original');
-        final category2 = createTestCategory(id: categoryId, name: 'Updated');
+        final category1 = CategoryTestUtils.createTestCategory(
+            id: categoryId, name: 'Original');
+        final category2 = CategoryTestUtils.createTestCategory(
+            id: categoryId, name: 'Updated');
 
         final controller = StreamController<CategoryDefinition?>();
         when(() => mockJournalDb.watchCategoryById(categoryId)).thenAnswer(
@@ -246,7 +226,7 @@ void main() {
 
     group('getCategoryById', () {
       test('returns category from cache service', () async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockEntitiesCacheService.getCategoryById(category.id))
             .thenReturn(category);
@@ -273,7 +253,8 @@ void main() {
 
     group('updateCategory', () {
       test('updates category via persistence logic', () async {
-        final category = createTestCategory(name: 'Updated Category');
+        final category =
+            CategoryTestUtils.createTestCategory(name: 'Updated Category');
 
         when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
             .thenAnswer((_) async => 1);
@@ -288,7 +269,7 @@ void main() {
       });
 
       test('preserves all fields during update', () async {
-        final category = createTestCategory(
+        final category = CategoryTestUtils.createTestCategory(
           name: 'Test',
           color: '#123456',
           private: true,
@@ -328,7 +309,7 @@ void main() {
       test('successfully soft deletes category by setting deletedAt timestamp',
           () async {
         const categoryId = 'test-id-123';
-        final existingCategory = createTestCategory(
+        final existingCategory = CategoryTestUtils.createTestCategory(
           id: categoryId,
           name: 'Category to Delete',
         );
@@ -375,7 +356,7 @@ void main() {
       test('propagates errors from persistence logic during deletion',
           () async {
         const categoryId = 'test-id-456';
-        final existingCategory = createTestCategory(
+        final existingCategory = CategoryTestUtils.createTestCategory(
           id: categoryId,
           name: 'Category with Error',
         );
@@ -397,7 +378,7 @@ void main() {
 
       test('preserves other category properties when soft deleting', () async {
         const categoryId = 'test-id-789';
-        final existingCategory = createTestCategory(
+        final existingCategory = CategoryTestUtils.createTestCategory(
           id: categoryId,
           name: 'Category with Properties',
           color: '#FF0000',
@@ -470,7 +451,7 @@ void main() {
 
       test('updateCategory propagates errors from persistence logic', () async {
         final error = Exception('Update error');
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
         when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
             .thenThrow(error);
 

@@ -9,6 +9,8 @@ import 'package:lotti/features/categories/state/category_details_controller.dart
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../test_utils.dart';
+
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
@@ -26,33 +28,6 @@ void main() {
       mockRepository = MockCategoryRepository();
       testCategoryId = const Uuid().v4();
     });
-
-    CategoryDefinition createTestCategory({
-      String? id,
-      String name = 'Test Category',
-      String? color,
-      bool private = false,
-      bool active = true,
-      bool? favorite,
-      String? defaultLanguageCode,
-      List<String>? allowedPromptIds,
-      Map<AiResponseType, List<String>>? automaticPrompts,
-    }) {
-      return CategoryDefinition(
-        id: id ?? testCategoryId,
-        name: name,
-        color: color ?? '#0000FF',
-        private: private,
-        active: active,
-        favorite: favorite,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        defaultLanguageCode: defaultLanguageCode,
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-    }
 
     test('initial state is loading', () {
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -81,7 +56,7 @@ void main() {
     });
 
     test('loads category from repository', () async {
-      final category = createTestCategory();
+      final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -170,7 +145,7 @@ void main() {
     });
 
     test('detects changes in form fields', () async {
-      final category = createTestCategory();
+      final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -279,7 +254,7 @@ void main() {
     });
 
     test('no changes when setting same values', () async {
-      final category = createTestCategory(
+      final category = CategoryTestUtils.createTestCategory(
         name: 'Test',
         color: '#FF0000',
         private: true,
@@ -333,7 +308,8 @@ void main() {
     });
 
     test('updates allowed prompt IDs', () async {
-      final category = createTestCategory(allowedPromptIds: ['prompt1']);
+      final category =
+          CategoryTestUtils.createTestCategory(allowedPromptIds: ['prompt1']);
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -389,7 +365,7 @@ void main() {
     });
 
     test('updates automatic prompts', () async {
-      final category = createTestCategory();
+      final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -457,7 +433,7 @@ void main() {
     });
 
     test('saves changes successfully', () async {
-      final category = createTestCategory(name: 'Original');
+      final category = CategoryTestUtils.createTestCategory(name: 'Original');
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -512,7 +488,7 @@ void main() {
     });
 
     test('validates name is not empty', () async {
-      final category = createTestCategory(name: 'Original');
+      final category = CategoryTestUtils.createTestCategory(name: 'Original');
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -562,7 +538,7 @@ void main() {
     });
 
     test('handles save error', () async {
-      final category = createTestCategory(name: 'Original');
+      final category = CategoryTestUtils.createTestCategory(name: 'Original');
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -613,7 +589,7 @@ void main() {
     });
 
     test('does nothing when no changes', () async {
-      final category = createTestCategory();
+      final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -653,7 +629,7 @@ void main() {
     });
 
     test('deletes category successfully', () async {
-      final category = createTestCategory();
+      final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -703,7 +679,7 @@ void main() {
     });
 
     test('handles delete error', () async {
-      final category = createTestCategory();
+      final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -751,6 +727,78 @@ void main() {
       subscription.close();
     });
 
+    test('handles external updates correctly', () async {
+      final streamController =
+          StreamController<CategoryDefinition?>.broadcast();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => streamController.stream,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+
+      // Subscribe to state changes to ensure they're processed
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (previous, next) {},
+      );
+
+      // Initial category
+      final category = CategoryTestUtils.createTestCategory(
+        id: testCategoryId,
+        name: 'Original',
+        updatedAt: DateTime(2024),
+      );
+      streamController.add(category);
+
+      // Wait for initial load to complete
+      await pumpEventQueue();
+
+      // Make local changes
+      container
+          .read(
+            categoryDetailsControllerProvider(testCategoryId).notifier,
+          )
+          .updateFormField(name: 'Modified');
+
+      expect(
+        container
+            .read(categoryDetailsControllerProvider(testCategoryId))
+            .hasChanges,
+        isTrue,
+      );
+
+      // Simulate external update
+      final externalUpdate = CategoryTestUtils.createTestCategory(
+        id: testCategoryId,
+        name: 'External Update',
+        updatedAt: DateTime(2024, 1, 2), // Newer timestamp
+      );
+      streamController.add(externalUpdate);
+
+      // Wait for update to process
+      await pumpEventQueue();
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+
+      // Should show warning about external update
+      expect(state.errorMessage, contains('updated by another user'));
+      // Changes should be reset
+      expect(state.hasChanges, isFalse);
+      // Category should reflect external update
+      expect(state.category?.name, 'External Update');
+
+      subscription.close();
+      container.dispose();
+      await streamController.close();
+    });
+
     test('disposes stream subscription', () async {
       final streamController =
           StreamController<CategoryDefinition?>.broadcast();
@@ -768,7 +816,7 @@ void main() {
         );
 
       // Add a value to ensure subscription is active
-      streamController.add(createTestCategory());
+      streamController.add(CategoryTestUtils.createTestCategory());
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Dispose the controller

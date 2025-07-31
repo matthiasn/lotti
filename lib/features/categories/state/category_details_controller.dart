@@ -62,11 +62,31 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
           if (_originalCategory == null && category != null) {
             _originalCategory = category;
             _pendingCategory = category;
+          } else if (category != null && _originalCategory != null) {
+            // Handle external updates - check if the category was updated externally
+            final isExternalUpdate =
+                category.updatedAt != _originalCategory!.updatedAt;
+
+            if (isExternalUpdate) {
+              // External update detected
+              if (state.hasChanges) {
+                // User has unsaved changes - show warning
+                state = state.copyWith(
+                  errorMessage:
+                      'Category was updated by another user. Your changes will be discarded.',
+                );
+              }
+
+              // Reset to the new external state
+              _originalCategory = category;
+              _pendingCategory = category;
+            }
           }
+
           state = state.copyWith(
-            category: category,
+            category: state.hasChanges ? _pendingCategory : category,
             isLoading: false,
-            hasChanges: _hasChanges(category),
+            hasChanges: _hasChanges(_pendingCategory),
           );
         }
       },
@@ -190,13 +210,13 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     }
   }
 
-  Future<void> updateBasicSettings({
+  void updateBasicSettings({
     String? name,
     String? color,
     bool? private,
     bool? active,
     bool? favorite,
-  }) async {
+  }) {
     // This method is kept for backward compatibility but now just updates form fields
     updateFormField(
       name: name,
@@ -207,7 +227,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     );
   }
 
-  Future<void> updateDefaultLanguage(String? languageCode) async {
+  void updateDefaultLanguage(String? languageCode) {
     // This method is kept for backward compatibility but now just updates form fields
     updateFormField(defaultLanguageCode: languageCode);
   }

@@ -76,12 +76,14 @@ class CategoryDefinition {
   final Map<String, List<String>>? automaticPrompts;
   // Example:
   // {
-  //   'audioTranscription': ['task-summary', 'action-items'],
-  //   'imageAnalysis': ['extract-text'],
-  //   'taskSummary': ['weekly-report']
+  //   'audioTranscription': ['task-summary'],      // Currently limited to 1 prompt
+  //   'imageAnalysis': ['extract-text'],           // Future: may support multiple
+  //   'taskSummary': ['weekly-report']             // prompts running in sequence
   // }
 }
 ```
+
+**Note**: Version 1 implementation limits automatic execution to a single prompt per response type. The data model uses `List<String>` to support future expansion where multiple prompts could be executed in sequence (e.g., first extract text, then summarize).
 
 **Automatic Triggers:**
 1. **Audio Transcription**: After transcribing audio, automatically run specified prompts
@@ -150,14 +152,9 @@ final projectCategory = CategoryDefinition(
     // ... other allowed prompts
   ],
   automaticPrompts: {
-    'audioTranscription': [
-      'task-summary',
-      'action-item-suggestions'
-    ],
-    'imageAnalysis': [
-      'extract-code',
-      'ui-feedback'
-    ],
+    'audioTranscription': ['task-summary'],   // Single prompt per type (v1)
+    'imageAnalysis': ['extract-code'],        // Future versions may support
+    // multiple prompts in sequence
   },
 );
 ```

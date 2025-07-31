@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
@@ -8,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../test_helper.dart';
+import '../../test_utils.dart';
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
@@ -18,33 +18,6 @@ void main() {
     setUp(() {
       mockRepository = MockCategoryRepository();
     });
-
-    CategoryDefinition createTestCategory({
-      String? id,
-      String name = 'Test Category',
-      String? color,
-      bool private = false,
-      bool active = true,
-      bool? favorite,
-      String? defaultLanguageCode,
-      List<String>? allowedPromptIds,
-      Map<AiResponseType, List<String>>? automaticPrompts,
-    }) {
-      return CategoryDefinition(
-        id: id ?? const Uuid().v4(),
-        name: name,
-        color: color ?? '#0000FF',
-        private: private,
-        active: active,
-        favorite: favorite,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        defaultLanguageCode: defaultLanguageCode,
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-    }
 
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {
@@ -111,9 +84,9 @@ void main() {
     group('Categories List Display', () {
       testWidgets('displays categories in alphabetical order', (tester) async {
         final categories = [
-          createTestCategory(name: 'Zebra'),
-          createTestCategory(name: 'Alpha'),
-          createTestCategory(name: 'Beta'),
+          CategoryTestUtils.createTestCategory(name: 'Zebra'),
+          CategoryTestUtils.createTestCategory(name: 'Alpha'),
+          CategoryTestUtils.createTestCategory(name: 'Beta'),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -151,7 +124,7 @@ void main() {
 
       testWidgets('displays category with color avatar', (tester) async {
         final categories = [
-          createTestCategory(name: 'Test', color: '#FF0000'),
+          CategoryTestUtils.createTestCategory(name: 'Test', color: '#FF0000'),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -176,7 +149,8 @@ void main() {
 
       testWidgets('displays private category icon', (tester) async {
         final categories = [
-          createTestCategory(name: 'Private Category', private: true),
+          CategoryTestUtils.createTestCategory(
+              name: 'Private Category', private: true),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -199,7 +173,8 @@ void main() {
 
       testWidgets('displays inactive category icon', (tester) async {
         final categories = [
-          createTestCategory(name: 'Inactive Category', active: false),
+          CategoryTestUtils.createTestCategory(
+              name: 'Inactive Category', active: false),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -223,7 +198,7 @@ void main() {
       testWidgets('displays category with AI settings subtitle',
           (tester) async {
         final categories = [
-          createTestCategory(
+          CategoryTestUtils.createTestCategory(
             name: 'AI Category',
             allowedPromptIds: ['prompt1', 'prompt2'],
             defaultLanguageCode: 'en',
@@ -258,7 +233,7 @@ void main() {
       testWidgets('displays category tile as tappable', (tester) async {
         final categoryId = const Uuid().v4();
         final categories = [
-          createTestCategory(id: categoryId),
+          CategoryTestUtils.createTestCategory(id: categoryId),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -314,9 +289,10 @@ void main() {
     group('Multiple Categories', () {
       testWidgets('displays multiple categories correctly', (tester) async {
         final categories = [
-          createTestCategory(name: 'Work', private: true),
-          createTestCategory(name: 'Personal', defaultLanguageCode: 'en'),
-          createTestCategory(name: 'Archived', active: false),
+          CategoryTestUtils.createTestCategory(name: 'Work', private: true),
+          CategoryTestUtils.createTestCategory(
+              name: 'Personal', defaultLanguageCode: 'en'),
+          CategoryTestUtils.createTestCategory(name: 'Archived', active: false),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -356,7 +332,7 @@ void main() {
 
       testWidgets('handles categories with automatic prompts', (tester) async {
         final categories = [
-          createTestCategory(
+          CategoryTestUtils.createTestCategory(
             name: 'AI Enhanced',
             automaticPrompts: {
               AiResponseType.audioTranscription: ['prompt1'],
@@ -389,7 +365,7 @@ void main() {
     group('Edge Cases', () {
       testWidgets('handles category with empty name', (tester) async {
         final categories = [
-          createTestCategory(name: ''),
+          CategoryTestUtils.createTestCategory(name: ''),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -413,9 +389,9 @@ void main() {
 
       testWidgets('handles mixed case sorting correctly', (tester) async {
         final categories = [
-          createTestCategory(name: 'zebra'),
-          createTestCategory(name: 'ALPHA'),
-          createTestCategory(name: 'Beta'),
+          CategoryTestUtils.createTestCategory(name: 'zebra'),
+          CategoryTestUtils.createTestCategory(name: 'ALPHA'),
+          CategoryTestUtils.createTestCategory(name: 'Beta'),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(

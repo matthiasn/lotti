@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../test_helper.dart';
+import '../../test_utils.dart';
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
@@ -119,33 +120,6 @@ void main() {
       testCategoryId = const Uuid().v4();
     });
 
-    CategoryDefinition createTestCategory({
-      String? id,
-      String name = 'Test Category',
-      String? color,
-      bool private = false,
-      bool active = true,
-      bool? favorite,
-      String? defaultLanguageCode,
-      List<String>? allowedPromptIds,
-      Map<AiResponseType, List<String>>? automaticPrompts,
-    }) {
-      return CategoryDefinition(
-        id: id ?? testCategoryId,
-        name: name,
-        color: color ?? '#0000FF',
-        private: private,
-        active: active,
-        favorite: favorite,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        defaultLanguageCode: defaultLanguageCode,
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-    }
-
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -219,7 +193,7 @@ void main() {
 
     group('Form Display and Elements', () {
       testWidgets('displays all form sections when loaded', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -243,7 +217,7 @@ void main() {
       });
 
       testWidgets('displays all basic form fields', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -270,7 +244,7 @@ void main() {
       });
 
       testWidgets('displays bottom bar with all buttons', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -297,7 +271,8 @@ void main() {
       });
 
       testWidgets('displays category name in form', (tester) async {
-        final category = createTestCategory(name: 'My Test Category');
+        final category =
+            CategoryTestUtils.createTestCategory(name: 'My Test Category');
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -325,7 +300,7 @@ void main() {
     group('Form Interactions', () {
       testWidgets('save button is disabled initially when no changes',
           (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -351,7 +326,7 @@ void main() {
           (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category = createTestCategory(name: 'Original');
+        final category = CategoryTestUtils.createTestCategory(name: 'Original');
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -387,7 +362,7 @@ void main() {
       testWidgets('toggle switches trigger state changes', (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -421,7 +396,7 @@ void main() {
       });
 
       testWidgets('cancel button navigates back', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
         var navigatedBack = false;
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -459,7 +434,7 @@ void main() {
 
     group('Delete Functionality', () {
       testWidgets('delete button opens confirmation dialog', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -487,7 +462,7 @@ void main() {
       });
 
       testWidgets('cancel delete dismisses dialog', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -523,7 +498,8 @@ void main() {
       testWidgets('state changes are reflected in UI', (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category = createTestCategory(name: 'Initial Name');
+        final category =
+            CategoryTestUtils.createTestCategory(name: 'Initial Name');
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -557,7 +533,7 @@ void main() {
 
       testWidgets('controller state updates trigger UI rebuilds',
           (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -579,7 +555,7 @@ void main() {
       });
 
       testWidgets('dispose does not throw errors', (tester) async {
-        final category = createTestCategory();
+        final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -622,7 +598,7 @@ void main() {
       testWidgets('shows error for empty name on save', (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category = createTestCategory(name: 'Test');
+        final category = CategoryTestUtils.createTestCategory(name: 'Test');
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -704,7 +680,7 @@ void main() {
       testWidgets('saves category with updated values', (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category = createTestCategory(name: 'Test');
+        final category = CategoryTestUtils.createTestCategory(name: 'Test');
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,

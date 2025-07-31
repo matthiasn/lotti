@@ -31,6 +31,10 @@ typedef AutomaticPromptChanged = void Function(
 /// This widget displays sections for each response type (audio, image, task summary)
 /// and allows users to select which prompts should run automatically.
 /// It's designed to be independent of Riverpod for better testability.
+///
+/// Note: Currently limited to single prompt selection per response type for v1.
+/// The data model supports multiple prompts (`List<String>`) to allow future
+/// expansion for running multiple prompts in sequence.
 class CategoryAutomaticPrompts extends StatelessWidget {
   const CategoryAutomaticPrompts({
     required this.configs,
@@ -123,7 +127,10 @@ class CategoryAutomaticPrompts extends StatelessWidget {
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) {
-                      // Only allow one selection - replace any existing selection
+                      // Currently only allow one selection per response type
+                      // This is intentional for v1 - we replace any existing selection
+                      // The data model supports multiple prompts (List<String>) for future flexibility
+                      // when we may want to run multiple prompts in sequence
                       onPromptChanged(config.responseType, [prompt.id]);
                     } else {
                       // Deselecting - clear the selection

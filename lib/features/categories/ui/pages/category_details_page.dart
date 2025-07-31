@@ -72,19 +72,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     if (_lastSyncedName != category.name) {
       _lastSyncedName = category.name;
       _nameController.text = category.name;
-
-      // Initialize the controller with current values after the frame is built
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref
-              .read(categoryDetailsControllerProvider(widget.categoryId!)
-                  .notifier)
-              .updateFormField(
-                name: category.name,
-                color: category.color,
-              );
-        }
-      });
     }
   }
 
