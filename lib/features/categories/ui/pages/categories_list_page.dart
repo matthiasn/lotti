@@ -65,7 +65,7 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
             hintText: 'Search categories...',
             onChanged: (value) {
               setState(() {
-                _searchQuery = value.toLowerCase();
+                _searchQuery = value.trim().toLowerCase();
               });
             },
             onClear: () {
@@ -90,14 +90,11 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
       return _buildEmptyState(context);
     }
 
-    // Filter categories based on search query
-    final filteredCategories = categories.where((category) {
+    // Filter and sort categories in a single chain
+    final sortedCategories = categories.where((category) {
       if (_searchQuery.isEmpty) return true;
       return category.name.toLowerCase().contains(_searchQuery);
-    }).toList();
-
-    // Sort filtered categories by name
-    final sortedCategories = List<CategoryDefinition>.from(filteredCategories)
+    }).toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     if (sortedCategories.isEmpty) {

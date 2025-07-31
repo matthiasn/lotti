@@ -720,6 +720,7 @@ void main() {
         final categories = [
           CategoryTestUtils.createTestCategory(name: 'My Work'),
           CategoryTestUtils.createTestCategory(name: 'Work'),
+          CategoryTestUtils.createTestCategory(name: 'Workspace'),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -737,17 +738,29 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Search with leading/trailing spaces - current implementation doesn't trim
+        // Search with leading/trailing spaces should be trimmed
         await tester.enterText(find.byType(TextField), '  work  ');
         await tester.pump();
 
-        // With current implementation, spaces are not trimmed, so no matches
-        expect(find.byType(ModernBaseCard), findsNothing);
+        // All categories containing "work" should be found
+        expect(find.byType(ModernBaseCard), findsNWidgets(3));
+        expect(find.text('My Work'), findsOneWidget);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Workspace'), findsOneWidget);
 
-        // But searching without spaces works
-        await tester.enterText(find.byType(TextField), 'work');
+        // Test with tabs and multiple spaces
+        await tester.enterText(find.byType(TextField), '\t  work\n  ');
         await tester.pump();
-        expect(find.byType(ModernBaseCard), findsNWidgets(2));
+
+        // Should still find all work-related categories
+        expect(find.byType(ModernBaseCard), findsNWidgets(3));
+
+        // Test empty string with only whitespace
+        await tester.enterText(find.byType(TextField), '   \t\n  ');
+        await tester.pump();
+
+        // Should show all categories (empty search after trim)
+        expect(find.byType(ModernBaseCard), findsNWidgets(3));
       });
 
       testWidgets('displays all state icons correctly together',
