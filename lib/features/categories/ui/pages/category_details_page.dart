@@ -153,7 +153,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
       if (mounted) {
         // Navigate to the edit page for the newly created category
-        beamToNamed('/settings/categories2/${newCategory.id}');
+        beamToNamed('/settings/categories/${newCategory.id}');
       }
     } catch (e) {
       if (mounted) {
