@@ -121,18 +121,11 @@ Future<List<AiConfigPrompt>> availablePrompts(
     aiConfigByTypeControllerProvider(configType: AiConfigType.prompt).future,
   );
 
-  // If the entity has a category, create a provider to watch that specific category
+  // If the entity has a category, watch for changes to that specific category
   final categoryId = entity.meta.categoryId;
   if (categoryId != null) {
-    // Create a family provider that watches the specific category
-    final categoryStreamProvider =
-        StreamProvider.family<void, String>((ref, id) {
-      final categoryRepo = ref.watch(categoryRepositoryProvider);
-      return categoryRepo.watchCategory(id).map((_) {});
-    });
-
     // Watch the category - this will trigger rebuilds when the category changes
-    await ref.watch(categoryStreamProvider(categoryId).future);
+    await ref.watch(categoryChangesProvider(categoryId).future);
   }
 
   final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
@@ -149,6 +142,13 @@ Future<bool> hasAvailablePrompts(
     availablePromptsProvider(entity: entity).future,
   );
   return prompts.isNotEmpty;
+}
+
+/// Provider to watch category changes
+@riverpod
+Stream<void> categoryChanges(Ref ref, String categoryId) {
+  final categoryRepo = ref.watch(categoryRepositoryProvider);
+  return categoryRepo.watchCategory(categoryId).map((_) {});
 }
 
 /// Provider to trigger a new inference run by invalidating the controller

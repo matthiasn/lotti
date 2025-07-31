@@ -122,8 +122,7 @@ class UnifiedAiInferenceRepository {
 
       if (category != null) {
         // If allowedPromptIds is null or empty, no prompts are allowed
-        if (category.allowedPromptIds == null ||
-            category.allowedPromptIds!.isEmpty) {
+        if (category.allowedPromptIds?.isEmpty ?? true) {
           return false;
         }
 
@@ -585,6 +584,8 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
+    final isGemini =
+        provider.inferenceProviderType == InferenceProviderType.gemini;
 
     if (audioBase64 != null) {
       // Include checklist completion tools if processing audio linked to a task with function calling support
@@ -593,8 +594,6 @@ class UnifiedAiInferenceRepository {
 
       // Check if this is audio linked to a task
       Task? linkedTask;
-      final isGemini =
-          provider.inferenceProviderType == InferenceProviderType.gemini;
 
       if (entity is JournalAudio &&
           model.supportsFunctionCalling &&
@@ -643,8 +642,6 @@ class UnifiedAiInferenceRepository {
 
       // Check if this is image linked to a task
       Task? linkedTask;
-      final isGemini =
-          provider.inferenceProviderType == InferenceProviderType.gemini;
 
       if (entity is JournalImage &&
           model.supportsFunctionCalling &&
