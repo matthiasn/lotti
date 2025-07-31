@@ -588,11 +588,17 @@ class UnifiedAiInferenceRepository {
 
     if (audioBase64 != null) {
       // Include checklist completion tools if processing audio linked to a task with function calling support
+      // BUT: Skip tools for Gemini models as they misinterpret having tools as being unable to transcribe
       List<ChatCompletionTool>? tools;
 
       // Check if this is audio linked to a task
       Task? linkedTask;
-      if (entity is JournalAudio && model.supportsFunctionCalling) {
+      final isGemini =
+          provider.inferenceProviderType == InferenceProviderType.gemini;
+
+      if (entity is JournalAudio &&
+          model.supportsFunctionCalling &&
+          !isGemini) {
         linkedTask = await _getTaskForEntity(entity);
 
         if (linkedTask != null) {
@@ -602,13 +608,20 @@ class UnifiedAiInferenceRepository {
             name: 'UnifiedAiInferenceRepository',
           );
         }
-      } else if (entity is Task && model.supportsFunctionCalling) {
+      } else if (entity is Task && model.supportsFunctionCalling && !isGemini) {
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
           'Including checklist completion and task tools for audio transcription of task ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
+      if (isGemini && (entity is JournalAudio || entity is Task)) {
+        developer.log(
+          'Skipping function tools for Gemini audio transcription to avoid capability confusion',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -625,11 +638,17 @@ class UnifiedAiInferenceRepository {
       );
     } else if (images.isNotEmpty) {
       // Include checklist completion tools if processing image linked to a task with function calling support
+      // BUT: Skip tools for Gemini models in certain cases where it causes confusion
       List<ChatCompletionTool>? tools;
 
       // Check if this is image linked to a task
       Task? linkedTask;
-      if (entity is JournalImage && model.supportsFunctionCalling) {
+      final isGemini =
+          provider.inferenceProviderType == InferenceProviderType.gemini;
+
+      if (entity is JournalImage &&
+          model.supportsFunctionCalling &&
+          !isGemini) {
         linkedTask = await _getTaskForEntity(entity);
 
         if (linkedTask != null) {
@@ -639,13 +658,20 @@ class UnifiedAiInferenceRepository {
             name: 'UnifiedAiInferenceRepository',
           );
         }
-      } else if (entity is Task && model.supportsFunctionCalling) {
+      } else if (entity is Task && model.supportsFunctionCalling && !isGemini) {
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
           'Including checklist completion and task tools for image analysis of task ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
+      if (isGemini && (entity is JournalImage || entity is Task)) {
+        developer.log(
+          'Skipping function tools for Gemini image analysis to avoid capability confusion',
           name: 'UnifiedAiInferenceRepository',
         );
       }

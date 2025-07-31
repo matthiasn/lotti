@@ -3,11 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +19,10 @@ class MockUnifiedAiInferenceRepository extends Mock
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockCategoryRepository extends Mock implements CategoryRepository {}
+
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
@@ -24,6 +30,8 @@ void main() {
   final containersToDispose = <ProviderContainer>[];
   late MockUnifiedAiInferenceRepository mockRepository;
   late MockLoggingService mockLoggingService;
+  late MockAiConfigRepository mockAiConfigRepository;
+  late MockCategoryRepository mockCategoryRepository;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -35,6 +43,8 @@ void main() {
   setUp(() {
     mockRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
+    mockAiConfigRepository = MockAiConfigRepository();
+    mockCategoryRepository = MockCategoryRepository();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -42,9 +52,20 @@ void main() {
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
+    if (getIt.isRegistered<AiConfigRepository>()) {
+      getIt.unregister<AiConfigRepository>();
+    }
+    getIt.registerSingleton<AiConfigRepository>(mockAiConfigRepository);
+
+    // Set up default mock behavior for AI config repository
+    when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+        .thenAnswer((_) => Stream.value([]));
+
     container = ProviderContainer(
       overrides: [
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+        categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
       ],
     );
 
@@ -295,6 +316,10 @@ void main() {
         ),
       ];
 
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value(expectedPrompts));
+
       when(
         () => mockRepository.getActivePromptsForContext(
           entity: taskEntity,
@@ -337,26 +362,28 @@ void main() {
         ),
       );
 
+      final availablePrompt = AiConfigPrompt(
+        id: 'prompt-1',
+        name: 'Test',
+        systemMessage: 'System',
+        userMessage: 'User',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value([availablePrompt]));
+
       when(
         () => mockRepository.getActivePromptsForContext(
           entity: taskEntity,
         ),
-      ).thenAnswer(
-        (_) async => [
-          AiConfigPrompt(
-            id: 'prompt-1',
-            name: 'Test',
-            systemMessage: 'System',
-            userMessage: 'User',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
-            createdAt: DateTime.now(),
-            useReasoning: false,
-            requiredInputData: [],
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-        ],
-      );
+      ).thenAnswer((_) async => [availablePrompt]);
 
       final hasPrompts = await container.read(
         hasAvailablePromptsProvider(entity: taskEntity).future,
@@ -375,6 +402,10 @@ void main() {
           dateTo: DateTime.now(),
         ),
       );
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value([]));
 
       when(
         () => mockRepository.getActivePromptsForContext(

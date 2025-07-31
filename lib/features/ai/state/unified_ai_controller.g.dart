@@ -6,7 +6,7 @@ part of 'unified_ai_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$availablePromptsHash() => r'f271f0a0edaa6656c1869b14333787b23abab93c';
+String _$availablePromptsHash() => r'460586d736d16ac2ee3236a60054f1e3e538fd05';
 
 /// Copied from Dart SDK
 class _SystemHash {
