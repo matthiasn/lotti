@@ -65,12 +65,27 @@ class CloudInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
+    AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with tools: ${tools?.length ?? 0}',
       name: 'CloudInferenceRepository',
     );
+
+    // For Ollama, call the API directly
+    if (provider != null && provider.inferenceProviderType == InferenceProviderType.ollama) {
+      return _generateTextWithOllama(
+        prompt: prompt,
+        model: model,
+        temperature: temperature,
+        systemMessage: systemMessage,
+        maxCompletionTokens: maxCompletionTokens,
+        provider: provider,
+        tools: tools,
+      );
+    }
+
     final client = overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
@@ -199,22 +214,14 @@ class CloudInferenceRepository {
     int? maxCompletionTokens,
   }) {
     // Validate inputs
-    if (prompt.isEmpty) {
-      throw Exception('Prompt cannot be empty');
-    }
-    if (model.isEmpty) {
-      throw Exception('Model cannot be empty');
-    }
+    _validateOllamaRequest(
+      prompt: prompt,
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+    );
     if (images.isEmpty) {
       throw Exception('At least one image is required');
-    }
-    if (temperature < ollamaMinTemperature ||
-        temperature > ollamaMaxTemperature) {
-      throw Exception(
-          'Temperature must be between $ollamaMinTemperature and $ollamaMaxTemperature');
-    }
-    if (maxCompletionTokens != null && maxCompletionTokens <= 0) {
-      throw Exception('maxCompletionTokens must be positive');
     }
 
     return Stream.fromFuture(
@@ -280,7 +287,7 @@ class CloudInferenceRepository {
                 : DateTime.now().millisecondsSinceEpoch ~/ 1000;
             // Create a mock stream response to match the expected format
             return CreateChatCompletionStreamResponse(
-              id: 'ollama-${DateTime.now().millisecondsSinceEpoch}',
+              id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
               choices: [
                 ChatCompletionStreamResponseChoice(
                   delta: ChatCompletionStreamResponseDelta(
@@ -298,6 +305,134 @@ class CloudInferenceRepository {
           context: 'Ollama generation',
           timeoutErrorMessage:
               'Request timed out after ${images.isNotEmpty ? ollamaImageAnalysisTimeoutSeconds : ollamaDefaultTimeoutSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+          networkErrorMessage:
+              'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
+        );
+      }(),
+    ).asBroadcastStream();
+  }
+
+  /// Validate Ollama request parameters
+  void _validateOllamaRequest({
+    required String prompt,
+    required String model,
+    required double temperature,
+    int? maxCompletionTokens,
+  }) {
+    if (prompt.isEmpty) {
+      throw Exception('Prompt cannot be empty');
+    }
+    if (model.isEmpty) {
+      throw Exception('Model cannot be empty');
+    }
+    if (temperature < ollamaMinTemperature ||
+        temperature > ollamaMaxTemperature) {
+      throw Exception(
+          'Temperature must be between $ollamaMinTemperature and $ollamaMaxTemperature');
+    }
+    if (maxCompletionTokens != null && maxCompletionTokens <= 0) {
+      throw Exception('maxCompletionTokens must be positive');
+    }
+  }
+
+  /// Generate text using Ollama's API
+  ///
+  /// This method handles the specific requirements for Ollama text generation:
+  /// - Validates input parameters
+  /// - Makes direct HTTP calls to Ollama's /api/generate endpoint
+  /// - Handles Ollama-specific response format
+  /// - Provides comprehensive error handling
+  /// - Note: Ollama doesn't support function calling tools, so the tools parameter is ignored
+  Stream<CreateChatCompletionStreamResponse> _generateTextWithOllama({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+  }) {
+    // Validate inputs
+    _validateOllamaRequest(
+      prompt: prompt,
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+    );
+
+    return Stream.fromFuture(
+      () async {
+        return _retryWithExponentialBackoff(
+          operation: () async {
+            final response = await _httpClient
+                .post(
+                  Uri.parse('${provider.baseUrl}$ollamaGenerateEndpoint'),
+                  headers: {
+                    'Content-Type': ollamaContentType,
+                  },
+                  body: jsonEncode({
+                    'model': model,
+                    'prompt': systemMessage != null ? '$systemMessage\n\n$prompt' : prompt,
+                    'stream': false,
+                    'options': {
+                      'temperature': temperature,
+                      if (maxCompletionTokens != null)
+                        'num_predict': maxCompletionTokens,
+                    }
+                  }),
+                )
+                .timeout(const Duration(seconds: ollamaDefaultTimeoutSeconds));
+
+            if (response.statusCode != httpStatusOk) {
+              final responseBody = response.body;
+              // Check if this is a model not found error
+              if (response.statusCode == httpStatusNotFound &&
+                  responseBody.contains('not found') &&
+                  responseBody.contains('model')) {
+                throw ModelNotInstalledException(model);
+              }
+              developer.log(
+                'Ollama API error: HTTP ${response.statusCode}',
+                name: 'CloudInferenceRepository',
+              );
+              throw Exception(
+                  'Ollama API request failed with status ${response.statusCode}. Please check your Ollama installation and try again.');
+            }
+
+            final result = jsonDecode(response.body) as Map<String, dynamic>;
+            // Validate response structure
+            if (!result.containsKey('response')) {
+              throw Exception(
+                  'Invalid response format: missing "response" field');
+            }
+            final ollamaResponse = result['response'] as String?;
+            if (ollamaResponse == null) {
+              throw Exception('Invalid response format: "response" is null');
+            }
+            final created = result['created_at'] as String?;
+            final timestamp = created != null
+                ? DateTime.parse(created).millisecondsSinceEpoch ~/ 1000
+                : DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            // Create a mock stream response to match the expected format
+            return CreateChatCompletionStreamResponse(
+              id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: ollamaResponse,
+                  ),
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: timestamp,
+            );
+          },
+          maxRetries: 3,
+          baseDelay: const Duration(seconds: 2),
+          context: 'Ollama text generation',
+          timeoutErrorMessage:
+              'Request timed out after $ollamaDefaultTimeoutSeconds seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
           networkErrorMessage:
               'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
         );

@@ -936,6 +936,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -975,6 +976,7 @@ void main() {
             baseUrl: 'https://api.example.com',
             apiKey: 'test-api-key',
             systemMessage: 'System message',
+            provider: provider,
           ),
         ).called(1);
       });
@@ -1063,13 +1065,14 @@ void main() {
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -1101,13 +1104,14 @@ void main() {
 
           verify(
             () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
               any(),
               model: 'gpt-4-vision',
               temperature: 0.6,
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).called(1);
 
@@ -1190,12 +1194,13 @@ void main() {
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -1231,12 +1236,13 @@ void main() {
 
           verify(
             () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
               any(),
               model: 'whisper-1',
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).called(1);
 
@@ -1318,6 +1324,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -1460,6 +1467,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenThrow(Exception('Failed to build prompt'));
 
@@ -1556,6 +1564,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -1719,6 +1728,7 @@ Some task summary content...''';
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
           ),
         ).thenAnswer((_) => mockStream);
@@ -1826,12 +1836,13 @@ Some task summary content...''';
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -1890,12 +1901,13 @@ Some task summary content...''';
 
           verify(
             () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
               any(),
               model: 'whisper-1',
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).called(1);
 
@@ -1985,6 +1997,7 @@ Remaining steps:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2091,6 +2104,7 @@ Achieved results:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2190,6 +2204,7 @@ Remaining steps:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2299,12 +2314,13 @@ Remaining steps:
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2449,13 +2465,14 @@ Remaining steps:
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2500,13 +2517,14 @@ Remaining steps:
 
           verify(
             () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
               any(),
               model: 'gpt-4-vision',
               temperature: 0.6,
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).called(1);
         } finally {
@@ -2587,13 +2605,14 @@ Remaining steps:
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2706,12 +2725,13 @@ Remaining steps:
         ]);
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2825,6 +2845,7 @@ Remaining steps:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2971,13 +2992,14 @@ If the image IS relevant:
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3012,13 +3034,14 @@ If the image IS relevant:
           // Verify the prompt was built with task context
           final captured = verify(
             () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
               captureAny(),
               model: 'gpt-4-vision',
               temperature: 0.6,
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).captured;
 
@@ -3123,13 +3146,14 @@ Extract ONLY information from the image that is relevant to this task. Be concis
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             images: any(named: 'images'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3156,13 +3180,14 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           // Verify the prompt was built without task context
           final captured = verify(
             () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
               captureAny(),
               model: 'gpt-4-vision',
               temperature: 0.6,
               images: any(named: 'images'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).captured;
 
@@ -3288,12 +3313,13 @@ be consulted to ensure accuracy.''',
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3319,12 +3345,13 @@ be consulted to ensure accuracy.''',
           // Verify the prompt was built with task context
           final captured = verify(
             () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
               captureAny(),
               model: 'whisper-1',
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).captured;
 
@@ -3420,12 +3447,13 @@ Take into account the following task context:
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3443,12 +3471,13 @@ Take into account the following task context:
           // Verify the prompt was built without task context replacement
           final captured = verify(
             () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
               captureAny(),
               model: 'whisper-1',
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
-              provider: any(named: 'provider'),
             ),
           ).captured;
 
@@ -3564,6 +3593,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
         ),
       ).thenAnswer((_) => mockStream);
 
@@ -3632,6 +3662,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
         ),
       ).thenAnswer((_) => mockStream);
 
@@ -3699,6 +3730,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
         ),
       ).thenAnswer((_) => mockStream);
 
@@ -3780,6 +3812,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
           )).thenAnswer((_) => Stream.value(
             CreateChatCompletionStreamResponse(
@@ -3900,13 +3933,14 @@ Take into account the following task context:
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             images: any(named: 'images'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4031,12 +4065,13 @@ Take into account the following task context:
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4161,13 +4196,14 @@ Take into account the following task context:
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             images: any(named: 'images'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4290,12 +4326,13 @@ Take into account the following task context:
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            
             any(),
             model: any(named: 'model'),
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4428,6 +4465,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
             tools: any(named: 'tools'),
           ),
         ).thenAnswer((_) => streamController.stream);
@@ -4522,6 +4560,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
             tools: any(named: 'tools'),
           ),
         ).thenAnswer((_) => streamController.stream);
@@ -4636,6 +4675,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);
@@ -4751,6 +4791,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);
@@ -4888,6 +4929,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);
@@ -5019,6 +5061,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);
@@ -5137,6 +5180,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);
@@ -5235,6 +5279,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);
@@ -5340,6 +5385,7 @@ Take into account the following task context:
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
           systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           tools: any(named: 'tools'),
         ),
       ).thenAnswer((_) => streamController.stream);

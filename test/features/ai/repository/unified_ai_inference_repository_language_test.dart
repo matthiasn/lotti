@@ -231,6 +231,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
             tools: captureAny(named: 'tools'),
           )).thenAnswer((invocation) {
         capturedTools.add(invocation.namedArguments[const Symbol('tools')]
@@ -324,6 +325,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
             tools: any(named: 'tools'),
           )).thenAnswer((_) => Stream.fromIterable([
             const CreateChatCompletionStreamResponse(
@@ -436,6 +438,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
             tools: any(named: 'tools'),
           )).thenAnswer((_) => Stream.fromIterable([
             const CreateChatCompletionStreamResponse(
@@ -529,6 +532,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: captureAny(named: 'systemMessage'),
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
             tools: any(named: 'tools'),
           )).thenAnswer((invocation) {
         capturedSystemMessage =
