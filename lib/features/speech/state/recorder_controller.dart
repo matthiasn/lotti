@@ -158,18 +158,13 @@ class AudioRecorderController extends _$AudioRecorderController {
         } else {
           _audioNote = await _recorderRepository.startRecording();
           if (_audioNote != null) {
-            // Create a new state with reset preferences
-            state = AudioRecorderState(
+            // Update state to recording, reset inference preferences for new recording
+            state = state.copyWith(
               status: AudioRecorderStatus.recording,
               linkedId: linkedId,
               // Reset inference preferences for new recording (null by default)
-              // Copy other fields from current state
-              progress: state.progress,
-              vu: state.vu,
-              dBFS: state.dBFS,
-              showIndicator: state.showIndicator,
-              modalVisible: state.modalVisible,
-              language: state.language,
+              enableSpeechRecognition: null,
+              enableTaskSummary: null,
             );
           }
         }
