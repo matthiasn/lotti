@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -27,6 +28,8 @@ class MockAudioRecorderRepository extends Mock
 class MockAmplitude extends Mock implements Amplitude {}
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
+
+class MockUnifiedAiController extends Mock implements UnifiedAiController {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

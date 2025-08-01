@@ -92,10 +92,6 @@ void main() {
       expect(find.text('Audio'), findsOneWidget);
       expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
     });
-
-    // NOTE: This test is removed because AudioRecordingModal has complex
-    // dependencies that are difficult to mock properly in unit tests.
-    // Consider integration tests for testing the full audio recording flow.
   });
 
   // ModernCreateTimerItem requires GetIt services and EntryController

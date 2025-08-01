@@ -3,9 +3,7 @@ import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -321,101 +319,13 @@ class AudioRecorderController extends _$AudioRecorderController {
     required bool isLinkedToTask,
     String? linkedTaskId,
   }) async {
-    try {
-      final categoryRepo = ref.read(categoryRepositoryProvider);
-      final category = await categoryRepo.getCategoryById(categoryId);
-
-      if (category?.automaticPrompts != null) {
-        // Determine if speech recognition should be triggered
-        final hasAutomaticTranscription = category!.automaticPrompts!
-                .containsKey(AiResponseType.audioTranscription) &&
-            category.automaticPrompts![AiResponseType.audioTranscription]!
-                .isNotEmpty;
-        final shouldTriggerTranscription =
-            state.enableSpeechRecognition ?? hasAutomaticTranscription;
-
-        // Determine if task summary should be triggered
-        final hasAutomaticTaskSummary = category.automaticPrompts!
-                .containsKey(AiResponseType.taskSummary) &&
-            category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
-        final shouldTriggerTaskSummary = isLinkedToTask &&
-            (state.enableTaskSummary ?? hasAutomaticTaskSummary);
-
-        // Trigger audio transcription if enabled
-        Future<void>? transcriptionFuture;
-        if (shouldTriggerTranscription && hasAutomaticTranscription) {
-          final transcriptionPromptIds =
-              category.automaticPrompts![AiResponseType.audioTranscription]!;
-          final promptId = transcriptionPromptIds.first;
-
-          _loggingService.captureEvent(
-            'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
-            domain: 'recorder_controller',
-            subDomain: '_triggerAutomaticPrompts',
-          );
-
-          // Store the transcription future so we can wait for it if needed
-          transcriptionFuture = ref.read(
-            triggerNewInferenceProvider(
-              entityId: entryId,
-              promptId: promptId,
-              linkedEntityId: linkedTaskId,
-            ).future,
-          );
-
-          // If task summary is not needed, we can await the transcription here
-          // Otherwise, we'll wait for it before triggering task summary
-          if (!shouldTriggerTaskSummary || linkedTaskId == null) {
-            await transcriptionFuture;
-          }
-        }
-
-        // Trigger task summary if enabled and linked to task
-        if (shouldTriggerTaskSummary &&
-            linkedTaskId != null &&
-            hasAutomaticTaskSummary) {
-          final taskSummaryPromptIds =
-              category.automaticPrompts![AiResponseType.taskSummary]!;
-          final promptId = taskSummaryPromptIds.first;
-
-          _loggingService.captureEvent(
-            'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null})',
-            domain: 'recorder_controller',
-            subDomain: '_triggerAutomaticPrompts',
-          );
-
-          // If transcription was triggered, wait for it to complete
-          // This ensures the task summary includes the transcribed content
-          if (transcriptionFuture != null) {
-            _loggingService.captureEvent(
-              'Waiting for transcription to complete before task summary',
-              domain: 'recorder_controller',
-              subDomain: '_triggerAutomaticPrompts',
-            );
-            await transcriptionFuture;
-            _loggingService.captureEvent(
-              'Transcription completed, now triggering task summary',
-              domain: 'recorder_controller',
-              subDomain: '_triggerAutomaticPrompts',
-            );
-          }
-
-          // Trigger task summary on the task entity, not the audio entry
-          await ref.read(
-            triggerNewInferenceProvider(
-              entityId: linkedTaskId,
-              promptId: promptId,
-            ).future,
-          );
-        }
-      }
-    } catch (exception, stackTrace) {
-      _loggingService.captureException(
-        exception,
-        domain: 'recorder_controller',
-        subDomain: '_triggerAutomaticPrompts',
-        stackTrace: stackTrace,
-      );
-    }
+    final trigger = ref.read(automaticPromptTriggerProvider);
+    await trigger.triggerAutomaticPrompts(
+      entryId,
+      categoryId,
+      state,
+      isLinkedToTask: isLinkedToTask,
+      linkedTaskId: linkedTaskId,
+    );
   }
 }
