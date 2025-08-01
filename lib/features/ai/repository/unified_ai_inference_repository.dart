@@ -584,46 +584,14 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
-    final isGemini =
-        provider.inferenceProviderType == InferenceProviderType.gemini;
 
     if (audioBase64 != null) {
-      // Include checklist completion tools if processing audio linked to a task with function calling support
-      // BUT: Skip tools for Gemini models as they misinterpret having tools as being unable to transcribe
-      List<ChatCompletionTool>? tools;
-
-      // Check if this is audio linked to a task
-      Task? linkedTask;
-
-      if (entity is JournalAudio &&
-          model.supportsFunctionCalling &&
-          !isGemini) {
-        linkedTask = await _getTaskForEntity(entity);
-
-        if (linkedTask != null) {
-          tools = ChecklistCompletionFunctions.getTools();
-          developer.log(
-            'Including checklist completion tools for audio transcription linked to task ${linkedTask.id}',
-            name: 'UnifiedAiInferenceRepository',
-          );
-        }
-      } else if (entity is Task && model.supportsFunctionCalling && !isGemini) {
-        tools = [
-          ...ChecklistCompletionFunctions.getTools(),
-          ...TaskFunctions.getTools(),
-        ];
-        developer.log(
-          'Including checklist completion and task tools for audio transcription of task ${entity.id}',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
-
-      if (isGemini && (entity is JournalAudio || entity is Task)) {
-        developer.log(
-          'Skipping function tools for Gemini audio transcription to avoid capability confusion',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
+      // No function calling tools for audio transcription tasks
+      // This prevents models from getting confused about their capabilities
+      developer.log(
+        'Processing audio transcription without function calling tools',
+        name: 'UnifiedAiInferenceRepository',
+      );
 
       return cloudRepo.generateWithAudio(
         prompt,
@@ -633,45 +601,14 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
-        tools: tools,
       );
     } else if (images.isNotEmpty) {
-      // Include checklist completion tools if processing image linked to a task with function calling support
-      // BUT: Skip tools for Gemini models in certain cases where it causes confusion
-      List<ChatCompletionTool>? tools;
-
-      // Check if this is image linked to a task
-      Task? linkedTask;
-
-      if (entity is JournalImage &&
-          model.supportsFunctionCalling &&
-          !isGemini) {
-        linkedTask = await _getTaskForEntity(entity);
-
-        if (linkedTask != null) {
-          tools = ChecklistCompletionFunctions.getTools();
-          developer.log(
-            'Including checklist completion tools for image analysis linked to task ${linkedTask.id}',
-            name: 'UnifiedAiInferenceRepository',
-          );
-        }
-      } else if (entity is Task && model.supportsFunctionCalling && !isGemini) {
-        tools = [
-          ...ChecklistCompletionFunctions.getTools(),
-          ...TaskFunctions.getTools(),
-        ];
-        developer.log(
-          'Including checklist completion and task tools for image analysis of task ${entity.id}',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
-
-      if (isGemini && (entity is JournalImage || entity is Task)) {
-        developer.log(
-          'Skipping function tools for Gemini image analysis to avoid capability confusion',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
+      // No function calling tools for image analysis tasks
+      // This prevents models from getting confused about their capabilities
+      developer.log(
+        'Processing image analysis without function calling tools',
+        name: 'UnifiedAiInferenceRepository',
+      );
 
       return cloudRepo.generateWithImages(
         prompt,
@@ -682,7 +619,6 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
-        tools: tools,
       );
     } else {
       // Include checklist completion and task tools if processing a task with function calling support

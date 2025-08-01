@@ -31,7 +31,6 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/platform.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -88,8 +87,8 @@ Future<void> _checkAndRemoveActionItemSuggestions() async {
   // Check if we've already run this maintenance task
   final hasRun = await settingsDb.itemByKey(settingsKey);
 
-  // TODO(matthiasn): run on iOS after some time has passed
-  if (isDesktop && (hasRun == null || hasRun != 'true')) {
+  // TODO(matthiasn): remove after some time
+  if (hasRun == null || hasRun != 'true') {
     try {
       // Run the maintenance task
       await maintenance.removeActionItemSuggestions();
