@@ -327,49 +327,35 @@ class AudioRecorderController extends _$AudioRecorderController {
 
       if (category?.automaticPrompts != null) {
         // Determine if speech recognition should be triggered
-        var shouldTriggerTranscription = false;
-        if (state.enableSpeechRecognition != null) {
-          // User explicitly set the checkbox
-          shouldTriggerTranscription = state.enableSpeechRecognition!;
-        } else {
-          // Use category default
-          final transcriptionPromptIds =
-              category!.automaticPrompts![AiResponseType.audioTranscription];
-          shouldTriggerTranscription = transcriptionPromptIds != null &&
-              transcriptionPromptIds.isNotEmpty;
-        }
+        final hasAutomaticTranscription = category!.automaticPrompts!
+                .containsKey(AiResponseType.audioTranscription) &&
+            category.automaticPrompts![AiResponseType.audioTranscription]!
+                .isNotEmpty;
+        final shouldTriggerTranscription =
+            state.enableSpeechRecognition ?? hasAutomaticTranscription;
 
         // Determine if task summary should be triggered
-        var shouldTriggerTaskSummary = false;
-        if (isLinkedToTask && state.enableTaskSummary != null) {
-          // User explicitly set the checkbox
-          shouldTriggerTaskSummary = state.enableTaskSummary!;
-        } else if (isLinkedToTask) {
-          // Use category default
-          final taskSummaryPromptIds =
-              category!.automaticPrompts![AiResponseType.taskSummary];
-          shouldTriggerTaskSummary =
-              taskSummaryPromptIds != null && taskSummaryPromptIds.isNotEmpty;
-        }
+        final hasAutomaticTaskSummary = category.automaticPrompts!
+                .containsKey(AiResponseType.taskSummary) &&
+            category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
+        final shouldTriggerTaskSummary = isLinkedToTask &&
+            (state.enableTaskSummary ?? hasAutomaticTaskSummary);
 
         // Trigger audio transcription if enabled
         Future<void>? transcriptionFuture;
-        if (shouldTriggerTranscription) {
+        if (shouldTriggerTranscription && hasAutomaticTranscription) {
           final transcriptionPromptIds =
-              category!.automaticPrompts![AiResponseType.audioTranscription];
+              category.automaticPrompts![AiResponseType.audioTranscription]!;
+          final promptId = transcriptionPromptIds.first;
 
-          if (transcriptionPromptIds != null &&
-              transcriptionPromptIds.isNotEmpty) {
-            final promptId = transcriptionPromptIds.first;
+          _loggingService.captureEvent(
+            'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
+            domain: 'recorder_controller',
+            subDomain: '_triggerAutomaticPrompts',
+          );
 
-            _loggingService.captureEvent(
-              'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
-              domain: 'recorder_controller',
-              subDomain: '_triggerAutomaticPrompts',
-            );
-
-            // Store the transcription future so we can wait for it if needed
-            transcriptionFuture = ref.read(
+          // Store the transcription future so we can wait for it if needed
+          transcriptionFuture = ref.read(
               triggerNewInferenceProvider(
                 entityId: entryId,
                 promptId: promptId,
@@ -377,21 +363,18 @@ class AudioRecorderController extends _$AudioRecorderController {
               ).future,
             );
 
-            // If task summary is not needed, we can await the transcription here
-            // Otherwise, we'll wait for it before triggering task summary
-            if (!shouldTriggerTaskSummary || linkedTaskId == null) {
-              await transcriptionFuture;
-            }
+          // If task summary is not needed, we can await the transcription here
+          // Otherwise, we'll wait for it before triggering task summary
+          if (!shouldTriggerTaskSummary || linkedTaskId == null) {
+            await transcriptionFuture;
           }
         }
 
         // Trigger task summary if enabled and linked to task
-        if (shouldTriggerTaskSummary && linkedTaskId != null) {
+        if (shouldTriggerTaskSummary && linkedTaskId != null && hasAutomaticTaskSummary) {
           final taskSummaryPromptIds =
-              category!.automaticPrompts![AiResponseType.taskSummary];
-
-          if (taskSummaryPromptIds != null && taskSummaryPromptIds.isNotEmpty) {
-            final promptId = taskSummaryPromptIds.first;
+              category.automaticPrompts![AiResponseType.taskSummary]!;
+          final promptId = taskSummaryPromptIds.first;
 
             _loggingService.captureEvent(
               'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null})',
@@ -422,7 +405,6 @@ class AudioRecorderController extends _$AudioRecorderController {
                 promptId: promptId,
               ).future,
             );
-          }
         }
       }
     } catch (exception, stackTrace) {

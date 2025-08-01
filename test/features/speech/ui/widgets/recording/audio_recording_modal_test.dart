@@ -256,64 +256,6 @@ void main() {
       expect(find.text('RECORD'), findsNothing);
     });
 
-    // Language selector tests removed - feature no longer exists
-    // testWidgets('displays language selector with correct options',
-    //     (tester) async {
-    //   final state = AudioRecorderState(
-    //     status: AudioRecorderStatus.initializing,
-    //     vu: 0,
-    //     dBFS: -60,
-    //     progress: Duration.zero,
-    //     showIndicator: false,
-    //     modalVisible: false,
-    //     language: '',
-    //   );
-
-    //   await tester.pumpWidget(makeTestableWidget(state: state));
-    //   await tester.pumpAndSettle();
-
-    //   // Should show "Auto" for empty language
-    //   expect(find.text('Auto'), findsOneWidget);
-
-    //   // Tap language selector
-    //   await tester.tap(find.byIcon(Icons.language));
-    //   await tester.pumpAndSettle();
-
-    //   // Should show language options
-    //   expect(find.text('Auto-detect'), findsOneWidget);
-    //   expect(find.text('English'), findsOneWidget);
-    //   expect(find.text('Deutsch'), findsOneWidget);
-    // });
-
-    // Skip test - language selector removed
-    // testWidgets('language selector has same height as record button',
-    //     (tester) async {
-    //   await tester.pumpWidget(makeTestableWidget());
-    //   await tester.pumpAndSettle();
-
-    //   // Find the language selector container
-    //   final languageSelector = find
-    //       .ancestor(
-    //         of: find.byIcon(Icons.language),
-    //         matching: find.byType(Container),
-    //       )
-    //       .first;
-
-    //   final recordButton = find
-    //       .ancestor(
-    //         of: find.text('RECORD'),
-    //         matching: find.byType(Container),
-    //       )
-    //       .first;
-
-    //   final languageSelectorBox = tester.getSize(languageSelector);
-    //   final recordButtonBox = tester.getSize(recordButton);
-
-    //   // Both should have height of 48
-    //   expect(languageSelectorBox.height, 48);
-    //   expect(recordButtonBox.height, 48);
-    // });
-
     testWidgets('stop button shows recording indicator', (tester) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,

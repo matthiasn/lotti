@@ -635,7 +635,6 @@ void main() {
         )
 
         // Listen to inference status for linked entity
-        // ignore_for_fi
         ..listen(
           inferenceStatusControllerProvider(
             id: 'linked-task-id',
