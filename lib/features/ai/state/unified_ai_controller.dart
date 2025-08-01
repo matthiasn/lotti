@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -114,6 +115,19 @@ Future<List<AiConfigPrompt>> availablePrompts(
   Ref ref, {
   required JournalEntity entity,
 }) async {
+  // Watch for changes in AI prompt configurations
+  // This will trigger a rebuild when any prompt configuration changes
+  await ref.watch(
+    aiConfigByTypeControllerProvider(configType: AiConfigType.prompt).future,
+  );
+
+  // If the entity has a category, watch for changes to that specific category
+  final categoryId = entity.meta.categoryId;
+  if (categoryId != null) {
+    // Watch the category - this will trigger rebuilds when the category changes
+    await ref.watch(categoryChangesProvider(categoryId).future);
+  }
+
   final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
   return repository.getActivePromptsForContext(entity: entity);
 }
@@ -128,6 +142,13 @@ Future<bool> hasAvailablePrompts(
     availablePromptsProvider(entity: entity).future,
   );
   return prompts.isNotEmpty;
+}
+
+/// Provider to watch category changes
+@riverpod
+Stream<void> categoryChanges(Ref ref, String categoryId) {
+  final categoryRepo = ref.watch(categoryRepositoryProvider);
+  return categoryRepo.watchCategory(categoryId).map((_) {});
 }
 
 /// Provider to trigger a new inference run by invalidating the controller

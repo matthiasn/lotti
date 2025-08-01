@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
@@ -113,6 +114,25 @@ class UnifiedAiInferenceRepository {
     AiConfigPrompt prompt,
     JournalEntity entity,
   ) async {
+    // First check category restrictions
+    final categoryId = entity.meta.categoryId;
+    if (categoryId != null) {
+      final categoryRepo = ref.read(categoryRepositoryProvider);
+      final category = await categoryRepo.getCategoryById(categoryId);
+
+      if (category != null) {
+        // If allowedPromptIds is null or empty, no prompts are allowed
+        if (category.allowedPromptIds?.isEmpty ?? true) {
+          return false;
+        }
+
+        // Check if this prompt is in the allowed list
+        if (!category.allowedPromptIds!.contains(prompt.id)) {
+          return false;
+        }
+      }
+    }
+
     // Check if prompt requires specific input data types
     final hasTask = prompt.requiredInputData.contains(InputDataType.task);
     final hasImages = prompt.requiredInputData.contains(InputDataType.images);
@@ -564,14 +584,20 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
+    final isGemini =
+        provider.inferenceProviderType == InferenceProviderType.gemini;
 
     if (audioBase64 != null) {
       // Include checklist completion tools if processing audio linked to a task with function calling support
+      // BUT: Skip tools for Gemini models as they misinterpret having tools as being unable to transcribe
       List<ChatCompletionTool>? tools;
 
       // Check if this is audio linked to a task
       Task? linkedTask;
-      if (entity is JournalAudio && model.supportsFunctionCalling) {
+
+      if (entity is JournalAudio &&
+          model.supportsFunctionCalling &&
+          !isGemini) {
         linkedTask = await _getTaskForEntity(entity);
 
         if (linkedTask != null) {
@@ -581,13 +607,20 @@ class UnifiedAiInferenceRepository {
             name: 'UnifiedAiInferenceRepository',
           );
         }
-      } else if (entity is Task && model.supportsFunctionCalling) {
+      } else if (entity is Task && model.supportsFunctionCalling && !isGemini) {
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
           'Including checklist completion and task tools for audio transcription of task ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
+      if (isGemini && (entity is JournalAudio || entity is Task)) {
+        developer.log(
+          'Skipping function tools for Gemini audio transcription to avoid capability confusion',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -604,11 +637,15 @@ class UnifiedAiInferenceRepository {
       );
     } else if (images.isNotEmpty) {
       // Include checklist completion tools if processing image linked to a task with function calling support
+      // BUT: Skip tools for Gemini models in certain cases where it causes confusion
       List<ChatCompletionTool>? tools;
 
       // Check if this is image linked to a task
       Task? linkedTask;
-      if (entity is JournalImage && model.supportsFunctionCalling) {
+
+      if (entity is JournalImage &&
+          model.supportsFunctionCalling &&
+          !isGemini) {
         linkedTask = await _getTaskForEntity(entity);
 
         if (linkedTask != null) {
@@ -618,13 +655,20 @@ class UnifiedAiInferenceRepository {
             name: 'UnifiedAiInferenceRepository',
           );
         }
-      } else if (entity is Task && model.supportsFunctionCalling) {
+      } else if (entity is Task && model.supportsFunctionCalling && !isGemini) {
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
           'Including checklist completion and task tools for image analysis of task ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+
+      if (isGemini && (entity is JournalImage || entity is Task)) {
+        developer.log(
+          'Skipping function tools for Gemini image analysis to avoid capability confusion',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -775,7 +819,7 @@ class UnifiedAiInferenceRepository {
                   data: data,
                   start: start,
                   linkedId: entity.id,
-                  categoryId: entity is Task ? entity.categoryId : null,
+                  categoryId: entity.meta.categoryId,
                 );
         developer.log(
           'createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}',

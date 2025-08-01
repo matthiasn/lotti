@@ -6,7 +6,7 @@ part of 'unified_ai_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$availablePromptsHash() => r'f271f0a0edaa6656c1869b14333787b23abab93c';
+String _$availablePromptsHash() => r'3ffb0436dc35e26a799f5fce382e0f4b5a90ad83';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -314,6 +314,148 @@ class _HasAvailablePromptsProviderElement
 
   @override
   JournalEntity get entity => (origin as HasAvailablePromptsProvider).entity;
+}
+
+String _$categoryChangesHash() => r'4369114da64f35988884fe3bf5cce6b09393d2ae';
+
+/// Provider to watch category changes
+///
+/// Copied from [categoryChanges].
+@ProviderFor(categoryChanges)
+const categoryChangesProvider = CategoryChangesFamily();
+
+/// Provider to watch category changes
+///
+/// Copied from [categoryChanges].
+class CategoryChangesFamily extends Family<AsyncValue<void>> {
+  /// Provider to watch category changes
+  ///
+  /// Copied from [categoryChanges].
+  const CategoryChangesFamily();
+
+  /// Provider to watch category changes
+  ///
+  /// Copied from [categoryChanges].
+  CategoryChangesProvider call(
+    String categoryId,
+  ) {
+    return CategoryChangesProvider(
+      categoryId,
+    );
+  }
+
+  @override
+  CategoryChangesProvider getProviderOverride(
+    covariant CategoryChangesProvider provider,
+  ) {
+    return call(
+      provider.categoryId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'categoryChangesProvider';
+}
+
+/// Provider to watch category changes
+///
+/// Copied from [categoryChanges].
+class CategoryChangesProvider extends AutoDisposeStreamProvider<void> {
+  /// Provider to watch category changes
+  ///
+  /// Copied from [categoryChanges].
+  CategoryChangesProvider(
+    String categoryId,
+  ) : this._internal(
+          (ref) => categoryChanges(
+            ref as CategoryChangesRef,
+            categoryId,
+          ),
+          from: categoryChangesProvider,
+          name: r'categoryChangesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$categoryChangesHash,
+          dependencies: CategoryChangesFamily._dependencies,
+          allTransitiveDependencies:
+              CategoryChangesFamily._allTransitiveDependencies,
+          categoryId: categoryId,
+        );
+
+  CategoryChangesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.categoryId,
+  }) : super.internal();
+
+  final String categoryId;
+
+  @override
+  Override overrideWith(
+    Stream<void> Function(CategoryChangesRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: CategoryChangesProvider._internal(
+        (ref) => create(ref as CategoryChangesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        categoryId: categoryId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<void> createElement() {
+    return _CategoryChangesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CategoryChangesProvider && other.categoryId == categoryId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, categoryId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin CategoryChangesRef on AutoDisposeStreamProviderRef<void> {
+  /// The parameter `categoryId` of this provider.
+  String get categoryId;
+}
+
+class _CategoryChangesProviderElement
+    extends AutoDisposeStreamProviderElement<void> with CategoryChangesRef {
+  _CategoryChangesProviderElement(super.provider);
+
+  @override
+  String get categoryId => (origin as CategoryChangesProvider).categoryId;
 }
 
 String _$triggerNewInferenceHash() =>

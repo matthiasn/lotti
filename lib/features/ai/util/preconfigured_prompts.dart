@@ -244,7 +244,8 @@ const audioTranscriptionPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content. 
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
+Your PRIMARY RESPONSIBILITY is to provide accurate, well-formatted transcriptions of audio recordings.
+You MUST transcribe the audio content provided to you.''',
   userMessage: '''
 Please transcribe the provided audio file(s). 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
@@ -262,15 +263,21 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content. 
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
+Your PRIMARY RESPONSIBILITY is to provide accurate, well-formatted transcriptions of audio recordings.
 
-When transcribing audio in the context of a task:
+IMPORTANT: Your main job is AUDIO TRANSCRIPTION. You MUST transcribe the audio content first and foremost.
+
+Additionally, when transcribing audio in the context of a task, you may also:
 1. Listen for evidence that existing UNCHECKED checklist items have been completed (e.g., "I finished...", 
    "I've completed...", "That's done"). Use the suggest_checklist_completion function to notify the user.
    - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
    - Do NOT suggest completion for items that are already marked as complete
 2. Listen for new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", 
-   "We should..."). Use the add_checklist_item function to add these new items.''',
+   "We should..."). Use the add_checklist_item function to add these new items.
+
+REMEMBER: The functions are OPTIONAL helpers. Your response MUST ALWAYS include the full audio transcription, 
+regardless of whether you use any functions. If you cannot transcribe the audio, explain why, but do NOT 
+say you don't have the ability to transcribe - you DO have this ability.''',
   userMessage: '''
 Please transcribe the provided audio. 
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 

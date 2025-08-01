@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +22,10 @@ class MockUnifiedAiInferenceRepository extends Mock
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockCategoryRepository extends Mock implements CategoryRepository {}
+
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
@@ -24,6 +33,8 @@ void main() {
   final containersToDispose = <ProviderContainer>[];
   late MockUnifiedAiInferenceRepository mockRepository;
   late MockLoggingService mockLoggingService;
+  late MockAiConfigRepository mockAiConfigRepository;
+  late MockCategoryRepository mockCategoryRepository;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -35,6 +46,8 @@ void main() {
   setUp(() {
     mockRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
+    mockAiConfigRepository = MockAiConfigRepository();
+    mockCategoryRepository = MockCategoryRepository();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -42,9 +55,20 @@ void main() {
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
+    if (getIt.isRegistered<AiConfigRepository>()) {
+      getIt.unregister<AiConfigRepository>();
+    }
+    getIt.registerSingleton<AiConfigRepository>(mockAiConfigRepository);
+
+    // Set up default mock behavior for AI config repository
+    when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+        .thenAnswer((_) => Stream.value([]));
+
     container = ProviderContainer(
       overrides: [
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+        categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
       ],
     );
 
@@ -295,6 +319,10 @@ void main() {
         ),
       ];
 
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value(expectedPrompts));
+
       when(
         () => mockRepository.getActivePromptsForContext(
           entity: taskEntity,
@@ -337,26 +365,28 @@ void main() {
         ),
       );
 
+      final availablePrompt = AiConfigPrompt(
+        id: 'prompt-1',
+        name: 'Test',
+        systemMessage: 'System',
+        userMessage: 'User',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [],
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value([availablePrompt]));
+
       when(
         () => mockRepository.getActivePromptsForContext(
           entity: taskEntity,
         ),
-      ).thenAnswer(
-        (_) async => [
-          AiConfigPrompt(
-            id: 'prompt-1',
-            name: 'Test',
-            systemMessage: 'System',
-            userMessage: 'User',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
-            createdAt: DateTime.now(),
-            useReasoning: false,
-            requiredInputData: [],
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-        ],
-      );
+      ).thenAnswer((_) async => [availablePrompt]);
 
       final hasPrompts = await container.read(
         hasAvailablePromptsProvider(entity: taskEntity).future,
@@ -375,6 +405,10 @@ void main() {
           dateTo: DateTime.now(),
         ),
       );
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value([]));
 
       when(
         () => mockRepository.getActivePromptsForContext(
@@ -455,6 +489,182 @@ void main() {
 
       // runInference should have been called twice
       expect(runInferenceCallCount, 2);
+    });
+  });
+
+  group('categoryChanges provider', () {
+    test('returns stream of category changes', () async {
+      const categoryId = 'test-category';
+      final categoryChangesStream = StreamController<CategoryDefinition>();
+
+      final testCategory = CategoryDefinition(
+        id: categoryId,
+        name: 'Test Category',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCategoryRepository.watchCategory(categoryId))
+          .thenAnswer((_) => categoryChangesStream.stream);
+
+      // Start listening to the provider
+      final subscription = container.listen(
+        categoryChangesProvider(categoryId),
+        (previous, next) {},
+      );
+
+      // Verify watchCategory was called
+      verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
+
+      // Emit a change
+      categoryChangesStream.add(testCategory);
+
+      // Clean up
+      await categoryChangesStream.close();
+      subscription.close();
+    });
+  });
+
+  group('availablePrompts with category', () {
+    test('watches for category changes when entity has categoryId', () async {
+      const categoryId = 'test-category';
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: categoryId, // Entity has a category
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final expectedPrompts = [
+        AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ),
+      ];
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value(expectedPrompts));
+
+      // Mock category watching with an immediate value
+      final testCategory = CategoryDefinition(
+        id: categoryId,
+        name: 'Test Category',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCategoryRepository.watchCategory(categoryId))
+          .thenAnswer((_) => Stream.value(testCategory));
+
+      when(() => mockRepository.getActivePromptsForContext(entity: taskEntity))
+          .thenAnswer((_) async => expectedPrompts);
+
+      // Track if categoryChangesProvider was accessed
+      var categoryChangesProviderAccessed = false;
+      container.listen(
+        categoryChangesProvider(categoryId),
+        (previous, next) {
+          categoryChangesProviderAccessed = true;
+        },
+        fireImmediately: true,
+      );
+
+      // Read the provider
+      final prompts = await container.read(
+        availablePromptsProvider(entity: taskEntity).future,
+      );
+
+      expect(prompts, expectedPrompts);
+
+      // Verify that categoryChangesProvider was accessed (which triggers category watching)
+      expect(categoryChangesProviderAccessed, true);
+      verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
+    });
+
+    test('does not watch category when entity has no categoryId', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          // No categoryId
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final expectedPrompts = [
+        AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ),
+      ];
+
+      // Mock the AI config stream
+      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) => Stream.value(expectedPrompts));
+
+      when(() => mockRepository.getActivePromptsForContext(entity: taskEntity))
+          .thenAnswer((_) async => expectedPrompts);
+
+      // Read the provider
+      final prompts = await container.read(
+        availablePromptsProvider(entity: taskEntity).future,
+      );
+
+      expect(prompts, expectedPrompts);
+
+      // Verify that category watching was NOT triggered
+      verifyNever(() => mockCategoryRepository.watchCategory(any()));
     });
   });
 }
