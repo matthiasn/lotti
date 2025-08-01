@@ -356,12 +356,12 @@ class AudioRecorderController extends _$AudioRecorderController {
 
           // Store the transcription future so we can wait for it if needed
           transcriptionFuture = ref.read(
-              triggerNewInferenceProvider(
-                entityId: entryId,
-                promptId: promptId,
-                linkedEntityId: linkedTaskId,
-              ).future,
-            );
+            triggerNewInferenceProvider(
+              entityId: entryId,
+              promptId: promptId,
+              linkedEntityId: linkedTaskId,
+            ).future,
+          );
 
           // If task summary is not needed, we can await the transcription here
           // Otherwise, we'll wait for it before triggering task summary
@@ -371,40 +371,42 @@ class AudioRecorderController extends _$AudioRecorderController {
         }
 
         // Trigger task summary if enabled and linked to task
-        if (shouldTriggerTaskSummary && linkedTaskId != null && hasAutomaticTaskSummary) {
+        if (shouldTriggerTaskSummary &&
+            linkedTaskId != null &&
+            hasAutomaticTaskSummary) {
           final taskSummaryPromptIds =
               category.automaticPrompts![AiResponseType.taskSummary]!;
           final promptId = taskSummaryPromptIds.first;
 
+          _loggingService.captureEvent(
+            'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null})',
+            domain: 'recorder_controller',
+            subDomain: '_triggerAutomaticPrompts',
+          );
+
+          // If transcription was triggered, wait for it to complete
+          // This ensures the task summary includes the transcribed content
+          if (transcriptionFuture != null) {
             _loggingService.captureEvent(
-              'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null})',
+              'Waiting for transcription to complete before task summary',
               domain: 'recorder_controller',
               subDomain: '_triggerAutomaticPrompts',
             );
-
-            // If transcription was triggered, wait for it to complete
-            // This ensures the task summary includes the transcribed content
-            if (transcriptionFuture != null) {
-              _loggingService.captureEvent(
-                'Waiting for transcription to complete before task summary',
-                domain: 'recorder_controller',
-                subDomain: '_triggerAutomaticPrompts',
-              );
-              await transcriptionFuture;
-              _loggingService.captureEvent(
-                'Transcription completed, now triggering task summary',
-                domain: 'recorder_controller',
-                subDomain: '_triggerAutomaticPrompts',
-              );
-            }
-
-            // Trigger task summary on the task entity, not the audio entry
-            await ref.read(
-              triggerNewInferenceProvider(
-                entityId: linkedTaskId,
-                promptId: promptId,
-              ).future,
+            await transcriptionFuture;
+            _loggingService.captureEvent(
+              'Transcription completed, now triggering task summary',
+              domain: 'recorder_controller',
+              subDomain: '_triggerAutomaticPrompts',
             );
+          }
+
+          // Trigger task summary on the task entity, not the audio entry
+          await ref.read(
+            triggerNewInferenceProvider(
+              entityId: linkedTaskId,
+              promptId: promptId,
+            ).future,
+          );
         }
       }
     } catch (exception, stackTrace) {

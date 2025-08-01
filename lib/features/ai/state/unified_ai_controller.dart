@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
@@ -24,6 +25,119 @@ class UnifiedAiController extends _$UnifiedAiController {
     return '';
   }
 
+  // Helper method to update inference status for both entities
+  void _updateInferenceStatus(
+    InferenceStatus status,
+    AiResponseType responseType, {
+    String? linkedEntityId,
+  }) {
+    ref
+        .read(
+          inferenceStatusControllerProvider(
+            id: entityId,
+            aiResponseType: responseType,
+          ).notifier,
+        )
+        .setStatus(status);
+
+    if (linkedEntityId != null) {
+      ref
+          .read(
+            inferenceStatusControllerProvider(
+              id: linkedEntityId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .setStatus(status);
+    }
+  }
+
+  // Helper method to start active inference for both entities
+  void _startActiveInference(
+    String promptId,
+    AiResponseType responseType, {
+    String? linkedEntityId,
+  }) {
+    ref
+        .read(
+          activeInferenceControllerProvider(
+            entityId: entityId,
+            aiResponseType: responseType,
+          ).notifier,
+        )
+        .startInference(
+          promptId: promptId,
+          linkedEntityId: linkedEntityId,
+        );
+
+    if (linkedEntityId != null) {
+      ref
+          .read(
+            activeInferenceControllerProvider(
+              entityId: linkedEntityId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .startInference(
+            promptId: promptId,
+            linkedEntityId: entityId,
+          );
+    }
+  }
+
+  // Helper method to update progress for both entities
+  void _updateActiveInferenceProgress(
+    String progress,
+    AiResponseType responseType, {
+    String? linkedEntityId,
+  }) {
+    ref
+        .read(
+          activeInferenceControllerProvider(
+            entityId: entityId,
+            aiResponseType: responseType,
+          ).notifier,
+        )
+        .updateProgress(progress);
+
+    if (linkedEntityId != null) {
+      ref
+          .read(
+            activeInferenceControllerProvider(
+              entityId: linkedEntityId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .updateProgress(progress);
+    }
+  }
+
+  // Helper method to clear active inference for both entities
+  void _clearActiveInference(
+    AiResponseType responseType, {
+    String? linkedEntityId,
+  }) {
+    ref
+        .read(
+          activeInferenceControllerProvider(
+            entityId: entityId,
+            aiResponseType: responseType,
+          ).notifier,
+        )
+        .clearInference();
+
+    if (linkedEntityId != null) {
+      ref
+          .read(
+            activeInferenceControllerProvider(
+              entityId: linkedEntityId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .clearInference();
+    }
+  }
+
   Future<void> runInference({String? linkedEntityId}) async {
     final loggingService = getIt<LoggingService>()
       ..captureEvent(
@@ -41,57 +155,21 @@ class UnifiedAiController extends _$UnifiedAiController {
       final promptConfig = config;
 
       // Reset the inference status to idle before starting
-      ref
-          .read(
-            inferenceStatusControllerProvider(
-              id: entityId,
-              aiResponseType: promptConfig.aiResponseType,
-            ).notifier,
-          )
-          .setStatus(InferenceStatus.idle);
-
-      // Also update linked entity status if provided
-      if (linkedEntityId != null) {
-        ref
-            .read(
-              inferenceStatusControllerProvider(
-                id: linkedEntityId,
-                aiResponseType: promptConfig.aiResponseType,
-              ).notifier,
-            )
-            .setStatus(InferenceStatus.idle);
-      }
+      _updateInferenceStatus(
+        InferenceStatus.idle,
+        promptConfig.aiResponseType,
+        linkedEntityId: linkedEntityId,
+      );
 
       // Clear any previous progress message
       state = '';
 
       // Start tracking this inference
-      ref
-          .read(
-            activeInferenceControllerProvider(
-              entityId: entityId,
-              aiResponseType: promptConfig.aiResponseType,
-            ).notifier,
-          )
-          .startInference(
-            promptId: promptId,
-            linkedEntityId: linkedEntityId,
-          );
-
-      // Also track for linked entity if provided
-      if (linkedEntityId != null) {
-        ref
-            .read(
-              activeInferenceControllerProvider(
-                entityId: linkedEntityId,
-                aiResponseType: promptConfig.aiResponseType,
-              ).notifier,
-            )
-            .startInference(
-              promptId: promptId,
-              linkedEntityId: entityId,
-            );
-      }
+      _startActiveInference(
+        promptId,
+        promptConfig.aiResponseType,
+        linkedEntityId: linkedEntityId,
+      );
 
       await ref.read(unifiedAiInferenceRepositoryProvider).runInference(
             entityId: entityId,
@@ -99,71 +177,27 @@ class UnifiedAiController extends _$UnifiedAiController {
             onProgress: (progress) {
               state = progress;
 
-              // Update active inference progress
-              ref
-                  .read(
-                    activeInferenceControllerProvider(
-                      entityId: entityId,
-                      aiResponseType: promptConfig.aiResponseType,
-                    ).notifier,
-                  )
-                  .updateProgress(progress);
-
-              // Also update linked entity progress if provided
-              if (linkedEntityId != null) {
-                ref
-                    .read(
-                      activeInferenceControllerProvider(
-                        entityId: linkedEntityId,
-                        aiResponseType: promptConfig.aiResponseType,
-                      ).notifier,
-                    )
-                    .updateProgress(progress);
-              }
+              // Update active inference progress for both entities
+              _updateActiveInferenceProgress(
+                progress,
+                promptConfig.aiResponseType,
+                linkedEntityId: linkedEntityId,
+              );
             },
             onStatusChange: (status) {
-              ref
-                  .read(
-                    inferenceStatusControllerProvider(
-                      id: entityId,
-                      aiResponseType: promptConfig.aiResponseType,
-                    ).notifier,
-                  )
-                  .setStatus(status);
-
-              // Also update linked entity status if provided
-              if (linkedEntityId != null) {
-                ref
-                    .read(
-                      inferenceStatusControllerProvider(
-                        id: linkedEntityId,
-                        aiResponseType: promptConfig.aiResponseType,
-                      ).notifier,
-                    )
-                    .setStatus(status);
-              }
+              // Update status for both entities
+              _updateInferenceStatus(
+                status,
+                promptConfig.aiResponseType,
+                linkedEntityId: linkedEntityId,
+              );
 
               // Clear active inference when done
               if (status != InferenceStatus.running) {
-                ref
-                    .read(
-                      activeInferenceControllerProvider(
-                        entityId: entityId,
-                        aiResponseType: promptConfig.aiResponseType,
-                      ).notifier,
-                    )
-                    .clearInference();
-
-                if (linkedEntityId != null) {
-                  ref
-                      .read(
-                        activeInferenceControllerProvider(
-                          entityId: linkedEntityId,
-                          aiResponseType: promptConfig.aiResponseType,
-                        ).notifier,
-                      )
-                      .clearInference();
-                }
+                _clearActiveInference(
+                  promptConfig.aiResponseType,
+                  linkedEntityId: linkedEntityId,
+                );
               }
             },
           );
