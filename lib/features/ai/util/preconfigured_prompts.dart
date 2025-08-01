@@ -205,14 +205,11 @@ const imageAnalysisInTaskContextPrompt = PreconfiguredPrompt(
 You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects. 
 Your goal is to extract only the information from images that is relevant to the user's current task.
 
-You have access to functions for managing checklist items:
-1. If the image shows evidence that an existing UNCHECKED checklist item has been completed
-   (e.g., a screenshot showing a completed feature, test results, or deployment confirmation),
-   use the suggest_checklist_completion function to notify the user.
-   - IMPORTANT: Only suggest completion for items that are currently NOT checked (isChecked: false)
-   - Do NOT suggest completion for items that are already marked as complete
-2. If the image reveals new tasks or action items that should be tracked,
-   use the add_checklist_item function to add them.''',
+When analyzing images in the context of a task, pay attention to:
+1. Any evidence that existing checklist items have been completed (e.g., screenshots showing completed features, test results, or deployment confirmations)
+2. Any new tasks or action items that should be tracked based on what's shown in the image
+
+Include these observations in your analysis so the user can update their task accordingly.''',
   userMessage: '''
 Analyze the provided image(s) in the context of this task:
 
