@@ -687,8 +687,6 @@ void main() {
         );
       });
 
-
-
       test('sends correct request body', () async {
         // Arrange
         const prompt = 'Generate a summary';
@@ -716,7 +714,7 @@ void main() {
           maxCompletionTokens: maxCompletionTokens,
           provider: ollamaProvider,
         );
-        
+
         // Consume the stream to trigger the HTTP call
         await stream.first;
 
@@ -729,7 +727,8 @@ void main() {
           ),
         ).captured;
 
-        final body = jsonDecode(captured.first as String) as Map<String, dynamic>;
+        final body =
+            jsonDecode(captured.first as String) as Map<String, dynamic>;
         expect(body['model'], modelName);
         expect(body['prompt'], prompt);
         expect(body['stream'], false);
@@ -766,7 +765,7 @@ void main() {
           systemMessage: systemMessage,
           provider: ollamaProvider,
         );
-        
+
         // Consume the stream to trigger the HTTP call
         await stream.first;
 
@@ -779,7 +778,8 @@ void main() {
           ),
         ).captured;
 
-        final body = jsonDecode(captured.first as String) as Map<String, dynamic>;
+        final body =
+            jsonDecode(captured.first as String) as Map<String, dynamic>;
         expect(body['prompt'], expectedPrompt);
       });
     });

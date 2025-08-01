@@ -861,8 +861,7 @@ void main() {
             _createDelayedStream(['Hello, this is the transcription.']);
 
         when(() => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               audioBase64: any(named: 'audioBase64'),
@@ -959,8 +958,7 @@ void main() {
         final mockStream = _createDelayedStream(['Transcription text']);
 
         when(() => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               audioBase64: any(named: 'audioBase64'),
@@ -1062,8 +1060,7 @@ void main() {
             _createDelayedStream(['This image shows a beautiful sunset.']);
 
         when(() => mockCloudInferenceRepo.generateWithImages(
-            provider: any(named: 'provider'),
-            
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
@@ -1158,8 +1155,7 @@ void main() {
             _createDelayedStream(['AI generated image description.']);
 
         when(() => mockCloudInferenceRepo.generateWithImages(
-            provider: any(named: 'provider'),
-            
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
@@ -1250,8 +1246,7 @@ void main() {
         final mockStream = _createDelayedStream(['Image analysis result']);
 
         when(() => mockCloudInferenceRepo.generateWithImages(
-            provider: any(named: 'provider'),
-            
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),

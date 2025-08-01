@@ -74,7 +74,8 @@ class CloudInferenceRepository {
     );
 
     // For Ollama, call the API directly
-    if (provider != null && provider.inferenceProviderType == InferenceProviderType.ollama) {
+    if (provider != null &&
+        provider.inferenceProviderType == InferenceProviderType.ollama) {
       return _generateTextWithOllama(
         prompt: prompt,
         model: model,
