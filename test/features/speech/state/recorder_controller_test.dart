@@ -971,7 +971,7 @@ void main() {
             isFalse);
 
         // Act with null
-        controller.setEnableSpeechRecognition();
+        controller.setEnableSpeechRecognition(enable: null);
 
         // Assert
         expect(
@@ -1004,7 +1004,7 @@ void main() {
             isFalse);
 
         // Act with null
-        controller.setEnableTaskSummary();
+        controller.setEnableTaskSummary(enable: null);
 
         // Assert
         expect(

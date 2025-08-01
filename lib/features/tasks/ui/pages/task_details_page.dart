@@ -125,6 +125,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
               child: AiRunningAnimationWrapperCard(
                 entryId: widget.taskId,
                 height: 50,
+                isInteractive: true,
                 responseTypes: const {
                   AiResponseType.taskSummary,
                   AiResponseType.imageAnalysis,

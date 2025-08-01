@@ -428,8 +428,10 @@ class _AudioRecordingModalContentState
           if (hasTranscriptionPrompts)
             InkWell(
               onTap: () {
+                // Toggle based on the current visual state of the checkbox
+                final currentValue = state.enableSpeechRecognition ?? true;
                 controller.setEnableSpeechRecognition(
-                  enable: state.enableSpeechRecognition != true,
+                  enable: !currentValue,
                 );
               },
               borderRadius: BorderRadius.circular(8),
@@ -485,8 +487,10 @@ class _AudioRecordingModalContentState
             const SizedBox(height: 8),
             InkWell(
               onTap: () {
+                // Toggle based on the current visual state of the checkbox
+                final currentValue = state.enableTaskSummary ?? true;
                 controller.setEnableTaskSummary(
-                  enable: state.enableTaskSummary != true,
+                  enable: !currentValue,
                 );
               },
               borderRadius: BorderRadius.circular(8),

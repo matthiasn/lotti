@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -35,6 +37,19 @@ void main() {
       getIt.unregister<AudioPlayerCubit>();
     }
     getIt.registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
+
+    // Set up default mock behavior for AudioPlayerCubit
+    when(() => mockAudioPlayerCubit.state).thenReturn(
+      AudioPlayerState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: Duration.zero,
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
+        speed: 1,
+        showTranscriptsList: false,
+      ),
+    );
+    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
 
     // Set up default mock behavior
     when(() => mockRecorderRepo.amplitudeStream)
@@ -75,7 +90,7 @@ void main() {
       expect(state.enableSpeechRecognition, false);
 
       // Set to null (use category default)
-      controller.setEnableSpeechRecognition();
+      controller.setEnableSpeechRecognition(enable: null);
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableSpeechRecognition, null);
     });
@@ -95,7 +110,7 @@ void main() {
       expect(state.enableTaskSummary, false);
 
       // Set to null (use category default)
-      controller.setEnableTaskSummary();
+      controller.setEnableTaskSummary(enable: null);
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableTaskSummary, null);
     });
@@ -126,7 +141,7 @@ void main() {
       expect(state.enableTaskSummary, true);
     });
 
-    test('checkbox states reset on stop', () async {
+    test('checkbox states are preserved on stop', () async {
       final controller =
           container.read(audioRecorderControllerProvider.notifier);
 
@@ -142,8 +157,42 @@ void main() {
       // Mock stop recording behavior
       when(() => mockRecorderRepo.stopRecording()).thenAnswer((_) async {});
 
-      // Stop recording (this should reset checkboxes to null)
+      // Stop recording (checkbox states should be preserved)
       await controller.stop();
+
+      state = container.read(audioRecorderControllerProvider);
+      expect(state.enableSpeechRecognition, true);
+      expect(state.enableTaskSummary, false);
+    });
+
+    test('checkbox states reset when starting new recording', () async {
+      final controller =
+          container.read(audioRecorderControllerProvider.notifier);
+
+      // Set checkbox states
+      controller
+        ..setEnableSpeechRecognition(enable: true)
+        ..setEnableTaskSummary(enable: false);
+
+      var state = container.read(audioRecorderControllerProvider);
+      expect(state.enableSpeechRecognition, true);
+      expect(state.enableTaskSummary, false);
+
+      // Mock start recording behavior
+      when(() => mockRecorderRepo.hasPermission())
+          .thenAnswer((_) async => true);
+      when(() => mockRecorderRepo.isRecording()).thenAnswer((_) async => false);
+      when(() => mockRecorderRepo.isPaused()).thenAnswer((_) async => false);
+      when(() => mockRecorderRepo.startRecording())
+          .thenAnswer((_) async => AudioNote(
+                createdAt: DateTime.now(),
+                audioFile: 'test.aac',
+                audioDirectory: '/test',
+                duration: Duration.zero,
+              ));
+
+      // Start new recording (checkbox states should reset to null)
+      await controller.record();
 
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableSpeechRecognition, null);

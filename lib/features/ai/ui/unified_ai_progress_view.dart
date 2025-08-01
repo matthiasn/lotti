@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
@@ -22,11 +24,13 @@ class UnifiedAiProgressContent extends ConsumerStatefulWidget {
   const UnifiedAiProgressContent({
     required this.entityId,
     required this.promptId,
+    this.showExisting = false,
     super.key,
   });
 
   final String entityId;
   final String promptId;
+  final bool showExisting;
 
   @override
   ConsumerState<UnifiedAiProgressContent> createState() =>
@@ -51,22 +55,71 @@ class _UnifiedAiProgressContentState
   }
 
   bool _hasTriggeredInference = false;
+  StreamSubscription<String>? _progressSubscription;
+  String _streamProgress = '';
 
   @override
   void initState() {
     super.initState();
-    // Trigger inference after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasTriggeredInference) {
-        _hasTriggeredInference = true;
-        ref.read(
-          triggerNewInferenceProvider(
-            entityId: widget.entityId,
-            promptId: widget.promptId,
-          ).future,
-        );
+    // Only trigger inference if not showing existing
+    if (!widget.showExisting) {
+      // Trigger inference after first frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_hasTriggeredInference) {
+          _hasTriggeredInference = true;
+          ref.read(
+            triggerNewInferenceProvider(
+              entityId: widget.entityId,
+              promptId: widget.promptId,
+            ).future,
+          );
+        }
+      });
+    } else {
+      // If showing existing, subscribe to the progress stream
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _subscribeToExistingInference();
+      });
+    }
+  }
+
+  Future<void> _subscribeToExistingInference() async {
+    // Get the prompt config to find the right response type
+    final config = await ref.read(
+      aiConfigByIdProvider(widget.promptId).future,
+    );
+
+    if (config != null && config is AiConfigPrompt) {
+      final activeInference = ref.read(
+        activeInferenceControllerProvider(
+          entityId: widget.entityId,
+          aiResponseType: config.aiResponseType,
+        ),
+      );
+
+      if (activeInference != null) {
+        // Subscribe to the progress stream
+        _progressSubscription =
+            activeInference.progressStream.listen((progress) {
+          if (mounted) {
+            setState(() {
+              _streamProgress = progress;
+            });
+          }
+        });
+
+        // Set initial progress
+        setState(() {
+          _streamProgress = activeInference.progressText;
+        });
       }
-    });
+    }
+  }
+
+  @override
+  void dispose() {
+    _progressSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -89,12 +142,16 @@ class _UnifiedAiProgressContentState
         }
 
         final promptConfig = config;
-        final state = ref.watch(
-          unifiedAiControllerProvider(
-            entityId: widget.entityId,
-            promptId: widget.promptId,
-          ),
-        );
+
+        // Use stream progress if showing existing, otherwise use controller state
+        final state = widget.showExisting
+            ? _streamProgress
+            : ref.watch(
+                unifiedAiControllerProvider(
+                  entityId: widget.entityId,
+                  promptId: widget.promptId,
+                ),
+              );
 
         final inferenceStatus = ref.watch(
           inferenceStatusControllerProvider(
@@ -253,6 +310,7 @@ class UnifiedAiProgressUtils {
     required String entityId,
     VoidCallback? onTapBack,
     ScrollController? scrollController,
+    bool showExisting = false,
   }) {
     return ModalUtils.sliverModalSheetPage(
       context: context,
@@ -272,6 +330,7 @@ class UnifiedAiProgressUtils {
           child: UnifiedAiProgressContent(
             entityId: entityId,
             promptId: prompt.id,
+            showExisting: showExisting,
           ),
         ),
       ],

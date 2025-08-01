@@ -160,9 +160,18 @@ class AudioRecorderController extends _$AudioRecorderController {
         } else {
           _audioNote = await _recorderRepository.startRecording();
           if (_audioNote != null) {
-            state = state.copyWith(
+            // Create a new state with reset preferences
+            state = AudioRecorderState(
               status: AudioRecorderStatus.recording,
               linkedId: linkedId,
+              // Reset inference preferences for new recording (null by default)
+              // Copy other fields from current state
+              progress: state.progress,
+              vu: state.vu,
+              dBFS: state.dBFS,
+              showIndicator: state.showIndicator,
+              modalVisible: state.modalVisible,
+              language: state.language,
             );
           }
         }
@@ -195,6 +204,11 @@ class AudioRecorderController extends _$AudioRecorderController {
       await _recorderRepository.stopRecording();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       _dbfsBuffer.clear(); // Clear the buffer when stopping
+
+      // Preserve the inference preferences before resetting state
+      final enableSpeechRecognition = state.enableSpeechRecognition;
+      final enableTaskSummary = state.enableTaskSummary;
+
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         dBFS: -160,
@@ -203,6 +217,9 @@ class AudioRecorderController extends _$AudioRecorderController {
         showIndicator: false,
         modalVisible: false,
         language: '',
+        // Preserve the inference preferences
+        enableSpeechRecognition: enableSpeechRecognition,
+        enableTaskSummary: enableTaskSummary,
       );
       if (_audioNote != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
@@ -287,13 +304,13 @@ class AudioRecorderController extends _$AudioRecorderController {
 
   /// Sets whether to enable speech recognition for the recording.
   /// If null, uses category default settings.
-  void setEnableSpeechRecognition({bool? enable}) {
+  void setEnableSpeechRecognition({required bool? enable}) {
     state = state.copyWith(enableSpeechRecognition: enable);
   }
 
   /// Sets whether to enable task summary for the recording.
   /// If null, uses category default settings.
-  void setEnableTaskSummary({bool? enable}) {
+  void setEnableTaskSummary({required bool? enable}) {
     state = state.copyWith(enableTaskSummary: enable);
   }
 

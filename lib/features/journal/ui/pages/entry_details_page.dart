@@ -114,6 +114,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
               child: AiRunningAnimationWrapperCard(
                 entryId: widget.itemId,
                 height: 50,
+                isInteractive: true,
                 responseTypes: const {
                   AiResponseType.taskSummary,
                   AiResponseType.imageAnalysis,

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
@@ -64,11 +65,61 @@ class UnifiedAiController extends _$UnifiedAiController {
       // Clear any previous progress message
       state = '';
 
+      // Start tracking this inference
+      ref
+          .read(
+            activeInferenceControllerProvider(
+              entityId: entityId,
+              aiResponseType: promptConfig.aiResponseType,
+            ).notifier,
+          )
+          .startInference(
+            promptId: promptId,
+            linkedEntityId: linkedEntityId,
+          );
+
+      // Also track for linked entity if provided
+      if (linkedEntityId != null) {
+        ref
+            .read(
+              activeInferenceControllerProvider(
+                entityId: linkedEntityId,
+                aiResponseType: promptConfig.aiResponseType,
+              ).notifier,
+            )
+            .startInference(
+              promptId: promptId,
+              linkedEntityId: entityId,
+            );
+      }
+
       await ref.read(unifiedAiInferenceRepositoryProvider).runInference(
             entityId: entityId,
             promptConfig: promptConfig,
             onProgress: (progress) {
               state = progress;
+
+              // Update active inference progress
+              ref
+                  .read(
+                    activeInferenceControllerProvider(
+                      entityId: entityId,
+                      aiResponseType: promptConfig.aiResponseType,
+                    ).notifier,
+                  )
+                  .updateProgress(progress);
+
+              // Also update linked entity progress if provided
+              if (linkedEntityId != null) {
+                ref
+                    .read(
+                      activeInferenceControllerProvider(
+                        entityId: linkedEntityId,
+                        aiResponseType: promptConfig.aiResponseType,
+                      ).notifier,
+                    )
+                    .updateProgress(progress);
+              }
             },
             onStatusChange: (status) {
               ref
@@ -90,6 +141,29 @@ class UnifiedAiController extends _$UnifiedAiController {
                       ).notifier,
                     )
                     .setStatus(status);
+              }
+
+              // Clear active inference when done
+              if (status != InferenceStatus.running) {
+                ref
+                    .read(
+                      activeInferenceControllerProvider(
+                        entityId: entityId,
+                        aiResponseType: promptConfig.aiResponseType,
+                      ).notifier,
+                    )
+                    .clearInference();
+
+                if (linkedEntityId != null) {
+                  ref
+                      .read(
+                        activeInferenceControllerProvider(
+                          entityId: linkedEntityId,
+                          aiResponseType: promptConfig.aiResponseType,
+                        ).notifier,
+                      )
+                      .clearInference();
+                }
               }
             },
           );
