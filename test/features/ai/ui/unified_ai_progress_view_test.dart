@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
@@ -114,23 +115,30 @@ void main() {
   Widget buildTestWidget(
     Widget child, {
     List<Override> overrides = const [],
+    void Function(ProviderContainer)? onContainerCreated,
   }) {
     return ProviderScope(
       overrides: [
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
         ...overrides,
       ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: child,
-        ),
+      parent: ProviderContainer(),
+      child: Builder(
+        builder: (context) {
+          onContainerCreated?.call(ProviderScope.containerOf(context));
+          return MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: child,
+            ),
+          );
+        },
       ),
     );
   }
@@ -253,6 +261,7 @@ void main() {
     testWidgets('displays progress text when inference runs successfully',
         (tester) async {
       // Arrange
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -264,7 +273,18 @@ void main() {
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -298,6 +318,7 @@ void main() {
         onStatusChange(InferenceStatus.idle);
       });
 
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -309,10 +330,21 @@ void main() {
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
       );
 
       // Wait for initial build
+      await tester.pump();
+
+      // Trigger inference
+      final future = container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
+      );
+
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -322,6 +354,9 @@ void main() {
       // Wait for processing
       await tester.pump(const Duration(milliseconds: 150));
       expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
+
+      // Wait for inference to complete
+      await future;
 
       // Wait for completion
       await tester.pumpAndSettle();
@@ -346,6 +381,7 @@ void main() {
         throw Exception('Test error');
       });
 
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -357,7 +393,18 @@ void main() {
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -388,6 +435,7 @@ void main() {
         aiResponseType: AiResponseType.imageAnalysis,
       ) as AiConfigPrompt;
 
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -399,7 +447,18 @@ void main() {
               (ref) => Future.value(imageAnalysisPrompt),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: 'image-prompt',
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -461,6 +520,7 @@ void main() {
         onStatusChange(InferenceStatus.idle);
       });
 
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -472,7 +532,18 @@ void main() {
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -534,6 +605,7 @@ void main() {
     testWidgets('shows final result when inference is complete',
         (tester) async {
       // Arrange
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -545,7 +617,18 @@ void main() {
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -585,6 +668,7 @@ void main() {
         }
       });
 
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -596,7 +680,18 @@ void main() {
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference (first attempt will fail)
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -640,18 +735,31 @@ void main() {
         onStatusChange(InferenceStatus.error);
       });
 
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
+            autoTriggerInference: false,
           ),
           overrides: [
             aiConfigByIdProvider(testPromptId).overrideWith(
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -662,18 +770,31 @@ void main() {
 
     testWidgets('padding is correctly applied', (tester) async {
       // Arrange
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
+            autoTriggerInference: false,
           ),
           overrides: [
             aiConfigByIdProvider(testPromptId).overrideWith(
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -699,18 +820,31 @@ void main() {
 
     testWidgets('displays text content properly', (tester) async {
       // Arrange
+      late ProviderContainer container;
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
             entityId: testEntityId,
             promptId: testPromptId,
+            autoTriggerInference: false,
           ),
           overrides: [
             aiConfigByIdProvider(testPromptId).overrideWith(
               (ref) => Future.value(testPromptConfig),
             ),
           ],
+          onContainerCreated: (c) => container = c,
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();
@@ -726,14 +860,14 @@ void main() {
       expect(padding, findsWidgets);
 
       // Find the Container with constraints within UnifiedAiProgressContent
-      final container = find.descendant(
+      final containerFinder = find.descendant(
         of: find.byType(UnifiedAiProgressContent),
         matching: find.byType(Container),
       );
-      expect(container, findsOneWidget);
+      expect(containerFinder, findsOneWidget);
 
       // Verify the container has the expected constraints
-      final containerWidget = tester.widget<Container>(container);
+      final containerWidget = tester.widget<Container>(containerFinder);
       expect(containerWidget.constraints, isNotNull);
       expect(containerWidget.constraints!.minWidth, 600);
     });
@@ -781,6 +915,7 @@ void main() {
       });
 
       // Override providers for the test
+      late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -789,20 +924,37 @@ void main() {
             aiConfigByIdProvider(testPromptId)
                 .overrideWith((ref) => Future.value(testPromptConfig)),
           ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: [Locale('en', '')],
-            home: UnifiedAiProgressContent(
-              entityId: testEntityId,
-              promptId: testPromptId,
-            ),
+          parent: ProviderContainer(),
+          child: Builder(
+            builder: (context) {
+              container = ProviderScope.containerOf(context);
+              return const MaterialApp(
+                localizationsDelegates: [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: [Locale('en', '')],
+                home: UnifiedAiProgressContent(
+                  entityId: testEntityId,
+                  promptId: testPromptId,
+                  autoTriggerInference: false,
+                ),
+              );
+            },
           ),
         ),
+      );
+
+      await tester.pump();
+
+      // Trigger inference
+      await container.read(
+        triggerNewInferenceProvider(
+          entityId: testEntityId,
+          promptId: testPromptId,
+        ).future,
       );
 
       await tester.pumpAndSettle();

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
@@ -173,6 +175,12 @@ class _AudioRecordingModalContentState
                 ),
               ],
             ),
+
+            // Automatic prompt options
+            if (widget.categoryId != null) ...[
+              const SizedBox(height: 20),
+              _buildAutomaticPromptOptions(context, controller, state, theme),
+            ],
           ],
         ),
       ],
@@ -355,6 +363,181 @@ class _AudioRecordingModalContentState
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAutomaticPromptOptions(
+    BuildContext context,
+    AudioRecorderController controller,
+    AudioRecorderState state,
+    ThemeData theme,
+  ) {
+    if (widget.categoryId == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Get category to check if automatic prompts are configured
+    final categoryDetailsState = ref.watch(
+      categoryDetailsControllerProvider(widget.categoryId!),
+    );
+
+    final category = categoryDetailsState.category;
+
+    if (category == null || category.automaticPrompts == null) {
+      return const SizedBox.shrink();
+    }
+
+    final hasTranscriptionPrompts = category.automaticPrompts!
+            .containsKey(AiResponseType.audioTranscription) &&
+        category
+            .automaticPrompts![AiResponseType.audioTranscription]!.isNotEmpty;
+
+    final hasTaskSummaryPrompts =
+        category.automaticPrompts!.containsKey(AiResponseType.taskSummary) &&
+            category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
+
+    if (!hasTranscriptionPrompts && !hasTaskSummaryPrompts) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Automatic Processing',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Speech recognition checkbox
+          if (hasTranscriptionPrompts)
+            InkWell(
+              onTap: () {
+                controller.setEnableSpeechRecognition(
+                  enable: state.enableSpeechRecognition != true,
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: state.enableSpeechRecognition ?? true,
+                        onChanged: (value) {
+                          controller.setEnableSpeechRecognition(enable: value);
+                        },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Speech Recognition',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            state.enableSpeechRecognition == null
+                                ? 'Using category default'
+                                : state.enableSpeechRecognition!
+                                    ? 'Enabled'
+                                    : 'Disabled',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Task summary checkbox (only show if linked to task)
+          if (widget.linkedId != null && hasTaskSummaryPrompts) ...[
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () {
+                controller.setEnableTaskSummary(
+                  enable: state.enableTaskSummary != true,
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: state.enableTaskSummary ?? true,
+                        onChanged: (value) {
+                          controller.setEnableTaskSummary(enable: value);
+                        },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Task Summary',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            state.enableTaskSummary == null
+                                ? 'Using category default'
+                                : state.enableTaskSummary!
+                                    ? 'Enabled'
+                                    : 'Disabled',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

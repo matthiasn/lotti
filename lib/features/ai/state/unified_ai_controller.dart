@@ -20,18 +20,13 @@ class UnifiedAiController extends _$UnifiedAiController {
     required String entityId,
     required String promptId,
   }) {
-    // Start inference immediately
-    Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
-      runInference();
-    });
-
     return '';
   }
 
-  Future<void> runInference() async {
+  Future<void> runInference({String? linkedEntityId}) async {
     final loggingService = getIt<LoggingService>()
       ..captureEvent(
-        'Starting unified AI inference for $entityId',
+        'Starting unified AI inference for $entityId (linked: $linkedEntityId)',
         subDomain: 'runInference',
         domain: 'UnifiedAiController',
       );
@@ -54,6 +49,18 @@ class UnifiedAiController extends _$UnifiedAiController {
           )
           .setStatus(InferenceStatus.idle);
 
+      // Also update linked entity status if provided
+      if (linkedEntityId != null) {
+        ref
+            .read(
+              inferenceStatusControllerProvider(
+                id: linkedEntityId,
+                aiResponseType: promptConfig.aiResponseType,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.idle);
+      }
+
       // Clear any previous progress message
       state = '';
 
@@ -72,6 +79,18 @@ class UnifiedAiController extends _$UnifiedAiController {
                     ).notifier,
                   )
                   .setStatus(status);
+
+              // Also update linked entity status if provided
+              if (linkedEntityId != null) {
+                ref
+                    .read(
+                      inferenceStatusControllerProvider(
+                        id: linkedEntityId,
+                        aiResponseType: promptConfig.aiResponseType,
+                      ).notifier,
+                    )
+                    .setStatus(status);
+              }
             },
           );
     } catch (e, stackTrace) {
@@ -94,6 +113,18 @@ class UnifiedAiController extends _$UnifiedAiController {
                 ).notifier,
               )
               .setStatus(InferenceStatus.error);
+
+          // Also update linked entity status if provided
+          if (linkedEntityId != null) {
+            ref
+                .read(
+                  inferenceStatusControllerProvider(
+                    id: linkedEntityId,
+                    aiResponseType: config.aiResponseType,
+                  ).notifier,
+                )
+                .setStatus(InferenceStatus.error);
+          }
         }
       } catch (_) {
         // Ignore errors when setting status
@@ -151,18 +182,22 @@ Stream<void> categoryChanges(Ref ref, String categoryId) {
   return categoryRepo.watchCategory(categoryId).map((_) {});
 }
 
-/// Provider to trigger a new inference run by invalidating the controller
+/// Provider to trigger a new inference run
 @riverpod
 Future<void> triggerNewInference(
   Ref ref, {
   required String entityId,
   required String promptId,
+  String? linkedEntityId,
 }) async {
-  // Invalidate the controller to force a new instance and trigger inference
-  ref.invalidate(
+  // Get the controller instance (this will create it if it doesn't exist)
+  final controller = ref.read(
     unifiedAiControllerProvider(
       entityId: entityId,
       promptId: promptId,
-    ),
+    ).notifier,
   );
+
+  // Wait for the inference to complete, passing the linked entity ID
+  await controller.runInference(linkedEntityId: linkedEntityId);
 }

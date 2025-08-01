@@ -99,9 +99,9 @@ class CategoryDefinition {
 - [x] Data persistence and model updates
 
 #### Phase 2: Prompt Filtering 🚧
-- [ ] Filter AI popup menu based on category's allowed prompts
-- [ ] Hide restricted prompts from the UI
-- [ ] Show informative message when no prompts are allowed
+- [x] Filter AI popup menu based on category's allowed prompts
+- [x] Hide restricted prompts from the UI
+- [x] Show informative message when no prompts are allowed
 
 #### Phase 3: Automatic Execution 🚧
 - [ ] Create background service for automatic prompt execution

@@ -459,33 +459,35 @@ class _CategoryChangesProviderElement
 }
 
 String _$triggerNewInferenceHash() =>
-    r'a0aac25a770cf5fe0a1633ee9c9f6ad3e415b673';
+    r'27e353c2a746eb739424aea5f762d3247384e523';
 
-/// Provider to trigger a new inference run by invalidating the controller
+/// Provider to trigger a new inference run
 ///
 /// Copied from [triggerNewInference].
 @ProviderFor(triggerNewInference)
 const triggerNewInferenceProvider = TriggerNewInferenceFamily();
 
-/// Provider to trigger a new inference run by invalidating the controller
+/// Provider to trigger a new inference run
 ///
 /// Copied from [triggerNewInference].
 class TriggerNewInferenceFamily extends Family<AsyncValue<void>> {
-  /// Provider to trigger a new inference run by invalidating the controller
+  /// Provider to trigger a new inference run
   ///
   /// Copied from [triggerNewInference].
   const TriggerNewInferenceFamily();
 
-  /// Provider to trigger a new inference run by invalidating the controller
+  /// Provider to trigger a new inference run
   ///
   /// Copied from [triggerNewInference].
   TriggerNewInferenceProvider call({
     required String entityId,
     required String promptId,
+    String? linkedEntityId,
   }) {
     return TriggerNewInferenceProvider(
       entityId: entityId,
       promptId: promptId,
+      linkedEntityId: linkedEntityId,
     );
   }
 
@@ -496,6 +498,7 @@ class TriggerNewInferenceFamily extends Family<AsyncValue<void>> {
     return call(
       entityId: provider.entityId,
       promptId: provider.promptId,
+      linkedEntityId: provider.linkedEntityId,
     );
   }
 
@@ -514,21 +517,23 @@ class TriggerNewInferenceFamily extends Family<AsyncValue<void>> {
   String? get name => r'triggerNewInferenceProvider';
 }
 
-/// Provider to trigger a new inference run by invalidating the controller
+/// Provider to trigger a new inference run
 ///
 /// Copied from [triggerNewInference].
 class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
-  /// Provider to trigger a new inference run by invalidating the controller
+  /// Provider to trigger a new inference run
   ///
   /// Copied from [triggerNewInference].
   TriggerNewInferenceProvider({
     required String entityId,
     required String promptId,
+    String? linkedEntityId,
   }) : this._internal(
           (ref) => triggerNewInference(
             ref as TriggerNewInferenceRef,
             entityId: entityId,
             promptId: promptId,
+            linkedEntityId: linkedEntityId,
           ),
           from: triggerNewInferenceProvider,
           name: r'triggerNewInferenceProvider',
@@ -541,6 +546,7 @@ class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
               TriggerNewInferenceFamily._allTransitiveDependencies,
           entityId: entityId,
           promptId: promptId,
+          linkedEntityId: linkedEntityId,
         );
 
   TriggerNewInferenceProvider._internal(
@@ -552,10 +558,12 @@ class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
     required super.from,
     required this.entityId,
     required this.promptId,
+    required this.linkedEntityId,
   }) : super.internal();
 
   final String entityId;
   final String promptId;
+  final String? linkedEntityId;
 
   @override
   Override overrideWith(
@@ -572,6 +580,7 @@ class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
         debugGetCreateSourceHash: null,
         entityId: entityId,
         promptId: promptId,
+        linkedEntityId: linkedEntityId,
       ),
     );
   }
@@ -585,7 +594,8 @@ class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
   bool operator ==(Object other) {
     return other is TriggerNewInferenceProvider &&
         other.entityId == entityId &&
-        other.promptId == promptId;
+        other.promptId == promptId &&
+        other.linkedEntityId == linkedEntityId;
   }
 
   @override
@@ -593,6 +603,7 @@ class TriggerNewInferenceProvider extends AutoDisposeFutureProvider<void> {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, entityId.hashCode);
     hash = _SystemHash.combine(hash, promptId.hashCode);
+    hash = _SystemHash.combine(hash, linkedEntityId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -606,6 +617,9 @@ mixin TriggerNewInferenceRef on AutoDisposeFutureProviderRef<void> {
 
   /// The parameter `promptId` of this provider.
   String get promptId;
+
+  /// The parameter `linkedEntityId` of this provider.
+  String? get linkedEntityId;
 }
 
 class _TriggerNewInferenceProviderElement
@@ -616,10 +630,13 @@ class _TriggerNewInferenceProviderElement
   String get entityId => (origin as TriggerNewInferenceProvider).entityId;
   @override
   String get promptId => (origin as TriggerNewInferenceProvider).promptId;
+  @override
+  String? get linkedEntityId =>
+      (origin as TriggerNewInferenceProvider).linkedEntityId;
 }
 
 String _$unifiedAiControllerHash() =>
-    r'c8b41efe764cdb1219912f1d0a8858297041da9b';
+    r'838534cc53e8e99395c272865e81f75b62be46bf';
 
 abstract class _$UnifiedAiController
     extends BuildlessAutoDisposeNotifier<String> {

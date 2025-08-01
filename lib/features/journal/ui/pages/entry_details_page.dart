@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
@@ -106,6 +108,18 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
                   ),
                 ),
               ],
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AiRunningAnimationWrapperCard(
+                entryId: widget.itemId,
+                height: 50,
+                responseTypes: const {
+                  AiResponseType.taskSummary,
+                  AiResponseType.imageAnalysis,
+                  AiResponseType.audioTranscription,
+                },
+              ),
             ),
           ],
         ),

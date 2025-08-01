@@ -41,13 +41,32 @@ class _UnifiedAiProgressContentState
   );
 
   void _handleRetry() {
-    // Invalidate the provider to trigger retry
-    ref.invalidate(
-      unifiedAiControllerProvider(
+    // Trigger a new inference run
+    ref.read(
+      triggerNewInferenceProvider(
         entityId: widget.entityId,
         promptId: widget.promptId,
-      ),
+      ).future,
     );
+  }
+
+  bool _hasTriggeredInference = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Trigger inference after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasTriggeredInference) {
+        _hasTriggeredInference = true;
+        ref.read(
+          triggerNewInferenceProvider(
+            entityId: widget.entityId,
+            promptId: widget.promptId,
+          ).future,
+        );
+      }
+    });
   }
 
   @override
@@ -88,8 +107,8 @@ class _UnifiedAiProgressContentState
         final isRunning = inferenceStatus == InferenceStatus.running;
 
         // Show progress indicator if running
-        if (isRunning) {
-          // Show only the animation, no text
+        if (isRunning && state.isEmpty) {
+          // Show only the animation when no progress text yet
           return Center(
             child: AiRunningAnimationWrapper(
               entryId: widget.entityId,
@@ -138,12 +157,12 @@ class _UnifiedAiProgressContentState
                     // Check if widget is still mounted before proceeding
                     if (!mounted) return;
 
-                    // Invalidate the provider to re-trigger inference
-                    ref.invalidate(
-                      unifiedAiControllerProvider(
+                    // Trigger a new inference run
+                    await ref.read(
+                      triggerNewInferenceProvider(
                         entityId: widget.entityId,
                         promptId: widget.promptId,
-                      ),
+                      ).future,
                     );
 
                     // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context

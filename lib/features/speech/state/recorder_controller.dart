@@ -3,6 +3,9 @@ import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -208,9 +211,25 @@ class AudioRecorderController extends _$AudioRecorderController {
           linkedId: _linkedId,
           categoryId: _categoryId,
         );
+        final wasLinkedToTask = _linkedId != null;
+        final linkedTaskId = _linkedId;
         _linkedId = null;
         final entryId = journalAudio?.meta.id;
         _audioNote = null; // Reset audio note after processing
+
+        // Trigger automatic prompts in the background if configured for the category
+        if (entryId != null && _categoryId != null) {
+          // Don't await - let it run in the background so the modal can close immediately
+          unawaited(
+            _triggerAutomaticPrompts(
+              entryId,
+              _categoryId!,
+              isLinkedToTask: wasLinkedToTask,
+              linkedTaskId: linkedTaskId,
+            ),
+          );
+        }
+
         return entryId;
       }
     } catch (exception, stackTrace) {
@@ -263,6 +282,139 @@ class AudioRecorderController extends _$AudioRecorderController {
   void setCategoryId(String? categoryId) {
     if (categoryId != _categoryId) {
       _categoryId = categoryId;
+    }
+  }
+
+  /// Sets whether to enable speech recognition for the recording.
+  /// If null, uses category default settings.
+  void setEnableSpeechRecognition({bool? enable}) {
+    state = state.copyWith(enableSpeechRecognition: enable);
+  }
+
+  /// Sets whether to enable task summary for the recording.
+  /// If null, uses category default settings.
+  void setEnableTaskSummary({bool? enable}) {
+    state = state.copyWith(enableTaskSummary: enable);
+  }
+
+  /// Triggers automatic prompts based on category settings and user preferences
+  Future<void> _triggerAutomaticPrompts(
+    String entryId,
+    String categoryId, {
+    required bool isLinkedToTask,
+    String? linkedTaskId,
+  }) async {
+    try {
+      final categoryRepo = ref.read(categoryRepositoryProvider);
+      final category = await categoryRepo.getCategoryById(categoryId);
+
+      if (category?.automaticPrompts != null) {
+        // Determine if speech recognition should be triggered
+        var shouldTriggerTranscription = false;
+        if (state.enableSpeechRecognition != null) {
+          // User explicitly set the checkbox
+          shouldTriggerTranscription = state.enableSpeechRecognition!;
+        } else {
+          // Use category default
+          final transcriptionPromptIds =
+              category!.automaticPrompts![AiResponseType.audioTranscription];
+          shouldTriggerTranscription = transcriptionPromptIds != null &&
+              transcriptionPromptIds.isNotEmpty;
+        }
+
+        // Determine if task summary should be triggered
+        var shouldTriggerTaskSummary = false;
+        if (isLinkedToTask && state.enableTaskSummary != null) {
+          // User explicitly set the checkbox
+          shouldTriggerTaskSummary = state.enableTaskSummary!;
+        } else if (isLinkedToTask) {
+          // Use category default
+          final taskSummaryPromptIds =
+              category!.automaticPrompts![AiResponseType.taskSummary];
+          shouldTriggerTaskSummary =
+              taskSummaryPromptIds != null && taskSummaryPromptIds.isNotEmpty;
+        }
+
+        // Trigger audio transcription if enabled
+        Future<void>? transcriptionFuture;
+        if (shouldTriggerTranscription) {
+          final transcriptionPromptIds =
+              category!.automaticPrompts![AiResponseType.audioTranscription];
+
+          if (transcriptionPromptIds != null &&
+              transcriptionPromptIds.isNotEmpty) {
+            final promptId = transcriptionPromptIds.first;
+
+            _loggingService.captureEvent(
+              'Triggering audio transcription (user preference: ${state.enableSpeechRecognition})',
+              domain: 'recorder_controller',
+              subDomain: '_triggerAutomaticPrompts',
+            );
+
+            // Store the transcription future so we can wait for it if needed
+            transcriptionFuture = ref.read(
+              triggerNewInferenceProvider(
+                entityId: entryId,
+                promptId: promptId,
+                linkedEntityId: linkedTaskId,
+              ).future,
+            );
+
+            // If task summary is not needed, we can await the transcription here
+            // Otherwise, we'll wait for it before triggering task summary
+            if (!shouldTriggerTaskSummary || linkedTaskId == null) {
+              await transcriptionFuture;
+            }
+          }
+        }
+
+        // Trigger task summary if enabled and linked to task
+        if (shouldTriggerTaskSummary && linkedTaskId != null) {
+          final taskSummaryPromptIds =
+              category!.automaticPrompts![AiResponseType.taskSummary];
+
+          if (taskSummaryPromptIds != null && taskSummaryPromptIds.isNotEmpty) {
+            final promptId = taskSummaryPromptIds.first;
+
+            _loggingService.captureEvent(
+              'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null})',
+              domain: 'recorder_controller',
+              subDomain: '_triggerAutomaticPrompts',
+            );
+
+            // If transcription was triggered, wait for it to complete
+            // This ensures the task summary includes the transcribed content
+            if (transcriptionFuture != null) {
+              _loggingService.captureEvent(
+                'Waiting for transcription to complete before task summary',
+                domain: 'recorder_controller',
+                subDomain: '_triggerAutomaticPrompts',
+              );
+              await transcriptionFuture;
+              _loggingService.captureEvent(
+                'Transcription completed, now triggering task summary',
+                domain: 'recorder_controller',
+                subDomain: '_triggerAutomaticPrompts',
+              );
+            }
+
+            // Trigger task summary on the task entity, not the audio entry
+            await ref.read(
+              triggerNewInferenceProvider(
+                entityId: linkedTaskId,
+                promptId: promptId,
+              ).future,
+            );
+          }
+        }
+      }
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: 'recorder_controller',
+        subDomain: '_triggerAutomaticPrompts',
+        stackTrace: stackTrace,
+      );
     }
   }
 }

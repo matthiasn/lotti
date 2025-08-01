@@ -10,6 +10,8 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -80,17 +82,23 @@ void main() {
     late MockNavService mockNavService;
     late MockAudioRecorderRepository mockRecorderRepository;
     late MockLoggingService mockLoggingService;
+    late MockPersistenceLogic mockPersistenceLogic;
+    late MockEntitiesCacheService mockEntitiesCacheService;
 
     setUp(() {
       mockJournalDb = MockJournalDb();
       mockNavService = MockNavService();
       mockRecorderRepository = MockAudioRecorderRepository();
       mockLoggingService = MockLoggingService();
+      mockPersistenceLogic = MockPersistenceLogic();
+      mockEntitiesCacheService = MockEntitiesCacheService();
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<LoggingService>(mockLoggingService);
+        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
 
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => false);
@@ -98,6 +106,12 @@ void main() {
       when(() => mockRecorderRepository.amplitudeStream)
           .thenAnswer((_) => const Stream<Amplitude>.empty());
       when(() => mockRecorderRepository.dispose()).thenAnswer((_) async {});
+
+      // Mock category related methods
+      when(() => mockJournalDb.watchCategoryById(any()))
+          .thenAnswer((_) => Stream.value(null));
+      when(() => mockEntitiesCacheService.getCategoryById(any()))
+          .thenReturn(null);
     });
 
     tearDown(getIt.reset);
