@@ -623,6 +623,167 @@ void main() {
       });
     });
 
+    group('_generateTextWithOllama', () {
+      test('generates text response successfully', () async {
+        // Arrange
+        const prompt = 'Generate a summary';
+        const expectedResponse = 'This is a test response';
+
+        when(() => mockHttpClient.post(
+              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).thenAnswer(
+          (_) async => http.Response(
+            '{"response": "$expectedResponse", "created_at": "2023-01-01T00:00:00Z"}',
+            httpStatusOk,
+          ),
+        );
+
+        // Act
+        final stream = repository.generate(
+          prompt,
+          model: modelName,
+          temperature: 0.7,
+          baseUrl: baseUrl,
+          apiKey: '',
+          provider: ollamaProvider,
+        );
+
+        // Assert
+        final response = await stream.first;
+        expect(response.choices.first.delta?.content, expectedResponse);
+      });
+
+      test('throws ModelNotInstalledException when model not found', () async {
+        // Arrange
+        const prompt = 'Generate a summary';
+
+        // Mock generate call with model not found error
+        when(() => mockHttpClient.post(
+              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).thenAnswer(
+          (_) async => http.Response(
+            '{"error": "model not found"}',
+            httpStatusNotFound,
+          ),
+        );
+
+        // Act & Assert
+        final stream = repository.generate(
+          prompt,
+          model: modelName,
+          temperature: 0.7,
+          baseUrl: baseUrl,
+          apiKey: '',
+          provider: ollamaProvider,
+        );
+
+        expect(
+          () => stream.first,
+          throwsA(isA<ModelNotInstalledException>()),
+        );
+      });
+
+      test('sends correct request body', () async {
+        // Arrange
+        const prompt = 'Generate a summary';
+        const temperature = 0.7;
+        const maxCompletionTokens = 1000;
+
+        when(() => mockHttpClient.post(
+              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).thenAnswer(
+          (_) async => http.Response(
+            '{"response": "Test response", "created_at": "2023-01-01T00:00:00Z"}',
+            httpStatusOk,
+          ),
+        );
+
+        // Act
+        final stream = repository.generate(
+          prompt,
+          model: modelName,
+          temperature: temperature,
+          baseUrl: baseUrl,
+          apiKey: '',
+          maxCompletionTokens: maxCompletionTokens,
+          provider: ollamaProvider,
+        );
+
+        // Consume the stream to trigger the HTTP call
+        await stream.first;
+
+        // Assert
+        final captured = verify(
+          () => mockHttpClient.post(
+            Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured;
+
+        final body =
+            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        expect(body['model'], modelName);
+        expect(body['prompt'], prompt);
+        expect(body['stream'], false);
+        expect((body['options'] as Map<String, dynamic>)['temperature'],
+            temperature);
+        expect((body['options'] as Map<String, dynamic>)['num_predict'],
+            maxCompletionTokens);
+      });
+
+      test('includes system message in prompt when provided', () async {
+        // Arrange
+        const prompt = 'Generate a summary';
+        const systemMessage = 'You are a helpful assistant.';
+        const expectedPrompt = '$systemMessage\n\n$prompt';
+
+        when(() => mockHttpClient.post(
+              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).thenAnswer(
+          (_) async => http.Response(
+            '{"response": "Test response", "created_at": "2023-01-01T00:00:00Z"}',
+            httpStatusOk,
+          ),
+        );
+
+        // Act
+        final stream = repository.generate(
+          prompt,
+          model: modelName,
+          temperature: 0.7,
+          baseUrl: baseUrl,
+          apiKey: '',
+          systemMessage: systemMessage,
+          provider: ollamaProvider,
+        );
+
+        // Consume the stream to trigger the HTTP call
+        await stream.first;
+
+        // Assert
+        final captured = verify(
+          () => mockHttpClient.post(
+            Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured;
+
+        final body =
+            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        expect(body['prompt'], expectedPrompt);
+      });
+    });
+
     group('OllamaPullProgress', () {
       test('progressPercentage formats correctly', () {
         const progress = OllamaPullProgress(

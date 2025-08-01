@@ -251,6 +251,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       // Execute: Start AI inference and simulate concurrent user modification
@@ -371,6 +372,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       await repository.runInference(
@@ -449,6 +451,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       await repository.runInference(
@@ -530,6 +533,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       await repository.runInference(
@@ -615,6 +619,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       // Execute: AI should handle multiple rapid task changes gracefully
@@ -694,6 +699,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       // Execute: Should handle type mismatch gracefully
@@ -761,6 +767,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
           )).thenAnswer((_) => mockStream);
 
       // Execute: Should handle null gracefully
@@ -854,12 +861,12 @@ void main() {
             _createDelayedStream(['Hello, this is the transcription.']);
 
         when(() => mockCloudInferenceRepo.generateWithAudio(
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               audioBase64: any(named: 'audioBase64'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
-              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -951,12 +958,12 @@ void main() {
         final mockStream = _createDelayedStream(['Transcription text']);
 
         when(() => mockCloudInferenceRepo.generateWithAudio(
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               audioBase64: any(named: 'audioBase64'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
-              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1053,13 +1060,13 @@ void main() {
             _createDelayedStream(['This image shows a beautiful sunset.']);
 
         when(() => mockCloudInferenceRepo.generateWithImages(
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
-              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1148,13 +1155,13 @@ void main() {
             _createDelayedStream(['AI generated image description.']);
 
         when(() => mockCloudInferenceRepo.generateWithImages(
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
-              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1239,13 +1246,13 @@ void main() {
         final mockStream = _createDelayedStream(['Image analysis result']);
 
         when(() => mockCloudInferenceRepo.generateWithImages(
+              provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
-              provider: any(named: 'provider'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(

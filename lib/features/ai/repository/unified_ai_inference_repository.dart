@@ -711,6 +711,7 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         systemMessage: systemMessage,
         maxCompletionTokens: model.maxCompletionTokens,
+        provider: provider,
         tools: tools,
       );
     }

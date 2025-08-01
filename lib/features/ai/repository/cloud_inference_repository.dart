@@ -65,12 +65,28 @@ class CloudInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
+    AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with tools: ${tools?.length ?? 0}',
       name: 'CloudInferenceRepository',
     );
+
+    // For Ollama, call the API directly
+    if (provider != null &&
+        provider.inferenceProviderType == InferenceProviderType.ollama) {
+      return _generateTextWithOllama(
+        prompt: prompt,
+        model: model,
+        temperature: temperature,
+        systemMessage: systemMessage,
+        maxCompletionTokens: maxCompletionTokens,
+        provider: provider,
+        tools: tools,
+      );
+    }
+
     final client = overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
@@ -183,70 +199,34 @@ class CloudInferenceRepository {
     return res.asBroadcastStream();
   }
 
-  /// Generate image analysis using Ollama's API
+  /// Shared helper method for making Ollama API requests
   ///
-  /// This method handles the specific requirements for Ollama image analysis:
-  /// - Validates input parameters
-  /// - Makes direct HTTP calls to Ollama's /api/generate endpoint
-  /// - Handles Ollama-specific response format
-  /// - Provides comprehensive error handling
-  Stream<CreateChatCompletionStreamResponse> _generateWithOllama({
-    required String prompt,
-    required String model,
-    required double temperature,
-    required List<String> images,
+  /// This method handles the common logic for making requests to Ollama's API:
+  /// - Making HTTP requests with retry logic
+  /// - Handling response parsing and validation
+  /// - Creating standardized stream responses
+  /// - Error handling and timeout management
+  Stream<CreateChatCompletionStreamResponse> _streamOllamaGenerateRequest({
+    required Map<String, dynamic> requestBody,
+    required Duration timeout,
+    required String retryContext,
+    required String timeoutErrorMessage,
     required AiConfigInferenceProvider provider,
-    int? maxCompletionTokens,
+    String? model,
   }) {
-    // Validate inputs
-    if (prompt.isEmpty) {
-      throw Exception('Prompt cannot be empty');
-    }
-    if (model.isEmpty) {
-      throw Exception('Model cannot be empty');
-    }
-    if (images.isEmpty) {
-      throw Exception('At least one image is required');
-    }
-    if (temperature < ollamaMinTemperature ||
-        temperature > ollamaMaxTemperature) {
-      throw Exception(
-          'Temperature must be between $ollamaMinTemperature and $ollamaMaxTemperature');
-    }
-    if (maxCompletionTokens != null && maxCompletionTokens <= 0) {
-      throw Exception('maxCompletionTokens must be positive');
-    }
-
     return Stream.fromFuture(
       () async {
         return _retryWithExponentialBackoff(
           operation: () async {
-            // Warm up the model if this is an image analysis request
-            if (images.isNotEmpty) {
-              await warmUpModel(model, provider.baseUrl);
-            }
             final response = await _httpClient
                 .post(
                   Uri.parse('${provider.baseUrl}$ollamaGenerateEndpoint'),
                   headers: {
                     'Content-Type': ollamaContentType,
                   },
-                  body: jsonEncode({
-                    'model': model,
-                    'prompt': prompt,
-                    'images': images,
-                    'stream': false,
-                    'options': {
-                      'temperature': temperature,
-                      if (maxCompletionTokens != null)
-                        'num_predict': maxCompletionTokens,
-                    }
-                  }),
+                  body: jsonEncode(requestBody),
                 )
-                .timeout(Duration(
-                    seconds: images.isNotEmpty
-                        ? ollamaImageAnalysisTimeoutSeconds
-                        : ollamaDefaultTimeoutSeconds));
+                .timeout(timeout);
 
             if (response.statusCode != httpStatusOk) {
               final responseBody = response.body;
@@ -254,7 +234,7 @@ class CloudInferenceRepository {
               if (response.statusCode == httpStatusNotFound &&
                   responseBody.contains('not found') &&
                   responseBody.contains('model')) {
-                throw ModelNotInstalledException(model);
+                throw ModelNotInstalledException(model ?? 'unknown');
               }
               developer.log(
                 'Ollama API error: HTTP ${response.statusCode}',
@@ -280,7 +260,7 @@ class CloudInferenceRepository {
                 : DateTime.now().millisecondsSinceEpoch ~/ 1000;
             // Create a mock stream response to match the expected format
             return CreateChatCompletionStreamResponse(
-              id: 'ollama-${DateTime.now().millisecondsSinceEpoch}',
+              id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
               choices: [
                 ChatCompletionStreamResponseChoice(
                   delta: ChatCompletionStreamResponseDelta(
@@ -295,14 +275,140 @@ class CloudInferenceRepository {
           },
           maxRetries: 3,
           baseDelay: const Duration(seconds: 2),
-          context: 'Ollama generation',
-          timeoutErrorMessage:
-              'Request timed out after ${images.isNotEmpty ? ollamaImageAnalysisTimeoutSeconds : ollamaDefaultTimeoutSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+          context: retryContext,
+          timeoutErrorMessage: timeoutErrorMessage,
           networkErrorMessage:
               'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
         );
       }(),
     ).asBroadcastStream();
+  }
+
+  /// Generate image analysis using Ollama's API
+  ///
+  /// This method handles the specific requirements for Ollama image analysis:
+  /// - Validates input parameters
+  /// - Makes direct HTTP calls to Ollama's /api/generate endpoint
+  /// - Handles Ollama-specific response format
+  /// - Provides comprehensive error handling
+  Stream<CreateChatCompletionStreamResponse> _generateWithOllama({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required List<String> images,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+  }) {
+    // Validate inputs
+    _validateOllamaRequest(
+      prompt: prompt,
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+    );
+    if (images.isEmpty) {
+      throw Exception('At least one image is required');
+    }
+
+    // Warm up the model if this is an image analysis request
+    if (images.isNotEmpty) {
+      warmUpModel(model, provider.baseUrl);
+    }
+
+    final requestBody = {
+      'model': model,
+      'prompt': prompt,
+      'images': images,
+      'stream': false,
+      'options': {
+        'temperature': temperature,
+        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
+      }
+    };
+
+    final timeout = Duration(
+        seconds: images.isNotEmpty
+            ? ollamaImageAnalysisTimeoutSeconds
+            : ollamaDefaultTimeoutSeconds);
+
+    return _streamOllamaGenerateRequest(
+      requestBody: requestBody,
+      timeout: timeout,
+      retryContext: 'Ollama generation',
+      timeoutErrorMessage:
+          'Request timed out after ${timeout.inSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+      provider: provider,
+      model: model,
+    );
+  }
+
+  /// Validate Ollama request parameters
+  void _validateOllamaRequest({
+    required String prompt,
+    required String model,
+    required double temperature,
+    int? maxCompletionTokens,
+  }) {
+    if (prompt.isEmpty) {
+      throw Exception('Prompt cannot be empty');
+    }
+    if (model.isEmpty) {
+      throw Exception('Model cannot be empty');
+    }
+    if (temperature < ollamaMinTemperature ||
+        temperature > ollamaMaxTemperature) {
+      throw Exception(
+          'Temperature must be between $ollamaMinTemperature and $ollamaMaxTemperature');
+    }
+    if (maxCompletionTokens != null && maxCompletionTokens <= 0) {
+      throw Exception('maxCompletionTokens must be positive');
+    }
+  }
+
+  /// Generate text using Ollama's API
+  ///
+  /// This method handles the specific requirements for Ollama text generation:
+  /// - Validates input parameters
+  /// - Makes direct HTTP calls to Ollama's /api/generate endpoint
+  /// - Handles Ollama-specific response format
+  /// - Provides comprehensive error handling
+  /// - Note: Ollama doesn't support function calling tools, so the tools parameter is ignored
+  Stream<CreateChatCompletionStreamResponse> _generateTextWithOllama({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+  }) {
+    // Validate inputs
+    _validateOllamaRequest(
+      prompt: prompt,
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+    );
+
+    final requestBody = {
+      'model': model,
+      'prompt': systemMessage != null ? '$systemMessage\n\n$prompt' : prompt,
+      'stream': false,
+      'options': {
+        'temperature': temperature,
+        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
+      }
+    };
+
+    return _streamOllamaGenerateRequest(
+      requestBody: requestBody,
+      timeout: const Duration(seconds: ollamaDefaultTimeoutSeconds),
+      retryContext: 'Ollama text generation',
+      timeoutErrorMessage:
+          'Request timed out after $ollamaDefaultTimeoutSeconds seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+      provider: provider,
+      model: model,
+    );
   }
 
   /// Helper for retrying an async operation with exponential backoff on TimeoutException and SocketException

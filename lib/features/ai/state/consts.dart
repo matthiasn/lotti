@@ -15,6 +15,7 @@ const ollamaMaxTemperature = 2.0;
 const ollamaMinTemperature = 0.0;
 const ollamaContentType = 'application/json';
 const ollamaGenerateEndpoint = '/api/generate';
+const ollamaResponseIdPrefix = 'ollama-';
 
 // HTTP status codes
 const httpStatusOk = 200;
