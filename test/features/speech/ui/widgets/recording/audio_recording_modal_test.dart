@@ -256,61 +256,63 @@ void main() {
       expect(find.text('RECORD'), findsNothing);
     });
 
-    testWidgets('displays language selector with correct options',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.initializing,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: false,
-        language: '',
-      );
+    // Language selector tests removed - feature no longer exists
+    // testWidgets('displays language selector with correct options',
+    //     (tester) async {
+    //   final state = AudioRecorderState(
+    //     status: AudioRecorderStatus.initializing,
+    //     vu: 0,
+    //     dBFS: -60,
+    //     progress: Duration.zero,
+    //     showIndicator: false,
+    //     modalVisible: false,
+    //     language: '',
+    //   );
 
-      await tester.pumpWidget(makeTestableWidget(state: state));
-      await tester.pumpAndSettle();
+    //   await tester.pumpWidget(makeTestableWidget(state: state));
+    //   await tester.pumpAndSettle();
 
-      // Should show "Auto" for empty language
-      expect(find.text('Auto'), findsOneWidget);
+    //   // Should show "Auto" for empty language
+    //   expect(find.text('Auto'), findsOneWidget);
 
-      // Tap language selector
-      await tester.tap(find.byIcon(Icons.language));
-      await tester.pumpAndSettle();
+    //   // Tap language selector
+    //   await tester.tap(find.byIcon(Icons.language));
+    //   await tester.pumpAndSettle();
 
-      // Should show language options
-      expect(find.text('Auto-detect'), findsOneWidget);
-      expect(find.text('English'), findsOneWidget);
-      expect(find.text('Deutsch'), findsOneWidget);
-    });
+    //   // Should show language options
+    //   expect(find.text('Auto-detect'), findsOneWidget);
+    //   expect(find.text('English'), findsOneWidget);
+    //   expect(find.text('Deutsch'), findsOneWidget);
+    // });
 
-    testWidgets('language selector has same height as record button',
-        (tester) async {
-      await tester.pumpWidget(makeTestableWidget());
-      await tester.pumpAndSettle();
+    // Skip test - language selector removed
+    // testWidgets('language selector has same height as record button',
+    //     (tester) async {
+    //   await tester.pumpWidget(makeTestableWidget());
+    //   await tester.pumpAndSettle();
 
-      // Find the language selector container
-      final languageSelector = find
-          .ancestor(
-            of: find.byIcon(Icons.language),
-            matching: find.byType(Container),
-          )
-          .first;
+    //   // Find the language selector container
+    //   final languageSelector = find
+    //       .ancestor(
+    //         of: find.byIcon(Icons.language),
+    //         matching: find.byType(Container),
+    //       )
+    //       .first;
 
-      final recordButton = find
-          .ancestor(
-            of: find.text('RECORD'),
-            matching: find.byType(Container),
-          )
-          .first;
+    //   final recordButton = find
+    //       .ancestor(
+    //         of: find.text('RECORD'),
+    //         matching: find.byType(Container),
+    //       )
+    //       .first;
 
-      final languageSelectorBox = tester.getSize(languageSelector);
-      final recordButtonBox = tester.getSize(recordButton);
+    //   final languageSelectorBox = tester.getSize(languageSelector);
+    //   final recordButtonBox = tester.getSize(recordButton);
 
-      // Both should have height of 48
-      expect(languageSelectorBox.height, 48);
-      expect(recordButtonBox.height, 48);
-    });
+    //   // Both should have height of 48
+    //   expect(languageSelectorBox.height, 48);
+    //   expect(recordButtonBox.height, 48);
+    // });
 
     testWidgets('stop button shows recording indicator', (tester) async {
       final state = AudioRecorderState(
@@ -548,123 +550,6 @@ void main() {
 
       // Verify navigation was NOT called
       expect(navigationCalled, false);
-    });
-  });
-
-  group('Language Selection Tests', () {
-    late MockJournalDb mockJournalDb;
-    late MockNavService mockNavService;
-    late MockAudioRecorderRepository mockRecorderRepository;
-    late MockLoggingService mockLoggingService;
-
-    setUp(() {
-      mockJournalDb = MockJournalDb();
-      mockNavService = MockNavService();
-      mockRecorderRepository = MockAudioRecorderRepository();
-      mockLoggingService = MockLoggingService();
-
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<LoggingService>(mockLoggingService);
-
-      when(() => mockJournalDb.getConfigFlag(any()))
-          .thenAnswer((_) async => false);
-      when(() => mockNavService.beamBack()).thenReturn(null);
-      when(() => mockRecorderRepository.amplitudeStream)
-          .thenAnswer((_) => const Stream<Amplitude>.empty());
-      when(() => mockRecorderRepository.dispose()).thenAnswer((_) async {});
-    });
-
-    tearDown(getIt.reset);
-
-    Widget makeTestableWidget({AudioRecorderState? state}) {
-      final testState = state ??
-          AudioRecorderState(
-            status: AudioRecorderStatus.initializing,
-            vu: 0,
-            dBFS: -60,
-            progress: Duration.zero,
-            showIndicator: false,
-            modalVisible: false,
-            language: 'de',
-          );
-
-      return ProviderScope(
-        overrides: [
-          audioRecorderRepositoryProvider
-              .overrideWithValue(mockRecorderRepository),
-          audioRecorderControllerProvider.overrideWith(() {
-            return TestAudioRecorderController(testState);
-          }),
-        ],
-        child: makeTestableWidgetWithScaffold(
-          const AudioRecordingModalContent(),
-        ),
-      );
-    }
-
-    testWidgets('language selector shows current language correctly',
-        (tester) async {
-      await tester.pumpWidget(makeTestableWidget());
-      await tester.pumpAndSettle();
-
-      // Should show "Deutsch" for 'de' language
-      expect(find.text('Deutsch'), findsOneWidget);
-    });
-
-    testWidgets('tapping language selector calls setLanguage with correct code',
-        (tester) async {
-      TestAudioRecorderController? controller;
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider
-                .overrideWithValue(mockRecorderRepository),
-            audioRecorderControllerProvider.overrideWith(() {
-              controller = TestAudioRecorderController(
-                AudioRecorderState(
-                  status: AudioRecorderStatus.initializing,
-                  vu: 0,
-                  dBFS: -60,
-                  progress: Duration.zero,
-                  showIndicator: false,
-                  modalVisible: false,
-                  language: '',
-                ),
-              );
-              return controller!;
-            }),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const AudioRecordingModalContent(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Open language selector
-      await tester.tap(find.byIcon(Icons.language));
-      await tester.pumpAndSettle();
-
-      // Select English
-      await tester.tap(find.text('English'));
-      await tester.pumpAndSettle();
-
-      // Verify setLanguage was called with 'en'
-      expect(controller!.state.language, 'en');
-
-      // Open language selector again
-      await tester.tap(find.byIcon(Icons.language));
-      await tester.pumpAndSettle();
-
-      // Select Deutsch
-      await tester.tap(find.text('Deutsch'));
-      await tester.pumpAndSettle();
-
-      // Verify setLanguage was called with 'de'
-      expect(controller!.state.language, 'de');
     });
   });
 

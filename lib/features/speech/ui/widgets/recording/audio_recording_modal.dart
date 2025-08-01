@@ -9,6 +9,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart'
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 
 class AudioRecordingModal {
   static Future<void> show(
@@ -31,6 +32,7 @@ class AudioRecordingModal {
         context: context,
         hasTopBarLayer: false,
         showCloseButton: false,
+        padding: ModalUtils.defaultPadding.copyWith(bottom: 20),
         builder: (BuildContext _) {
           return AudioRecordingModalContent(
             linkedId: linkedId,
@@ -114,58 +116,6 @@ class _AudioRecordingModalContentState
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Language selector - compact
-                Container(
-                  height: 48, // Same height as record/stop button
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(24), // Same radius
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(24),
-                      onTap: () => _showLanguageMenu(
-                          context, controller, state.language ?? ''),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.language,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _getLanguageDisplay(state.language ?? ''),
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.keyboard_arrow_down,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 20),
                 // Record/Stop button
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
@@ -178,7 +128,7 @@ class _AudioRecordingModalContentState
 
             // Automatic prompt options
             if (widget.categoryId != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               _buildAutomaticPromptOptions(context, controller, state, theme),
             ],
           ],
@@ -286,87 +236,6 @@ class _AudioRecordingModalContentState
     );
   }
 
-  String _getLanguageDisplay(String language) {
-    switch (language) {
-      case 'en':
-        return 'English';
-      case 'de':
-        return 'Deutsch';
-      default:
-        return 'Auto';
-    }
-  }
-
-  void _showLanguageMenu(BuildContext context,
-      AudioRecorderController controller, String currentLanguage) {
-    final theme = Theme.of(context);
-    final button = context.findRenderObject()! as RenderBox;
-    final overlay =
-        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
-    final position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<String>(
-      context: context,
-      position: position,
-      color: theme.colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.5),
-        ),
-      ),
-      elevation: 8,
-      items: [
-        _buildMenuItem(
-            '', 'Auto-detect', currentLanguage == '', theme.colorScheme),
-        _buildMenuItem(
-            'en', 'English', currentLanguage == 'en', theme.colorScheme),
-        _buildMenuItem(
-            'de', 'Deutsch', currentLanguage == 'de', theme.colorScheme),
-      ],
-    ).then((String? value) {
-      if (value != null) {
-        controller.setLanguage(value);
-      }
-    });
-  }
-
-  PopupMenuItem<String> _buildMenuItem(
-      String value, String label, bool isSelected, ColorScheme colorScheme) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-            const Spacer(),
-            if (isSelected)
-              Icon(
-                Icons.check,
-                color: colorScheme.primary,
-                size: 16,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAutomaticPromptOptions(
     BuildContext context,
     AudioRecorderController controller,
@@ -388,157 +257,63 @@ class _AudioRecordingModalContentState
       return const SizedBox.shrink();
     }
 
-    final hasTranscriptionPrompts = category.automaticPrompts!
+    final hasAutomaticTranscriptionPrompts = category.automaticPrompts!
             .containsKey(AiResponseType.audioTranscription) &&
         category
             .automaticPrompts![AiResponseType.audioTranscription]!.isNotEmpty;
 
-    final hasTaskSummaryPrompts =
+    final hasAutomaticTaskSummaryPrompts =
         category.automaticPrompts!.containsKey(AiResponseType.taskSummary) &&
             category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
 
-    if (!hasTranscriptionPrompts && !hasTaskSummaryPrompts) {
+    // Always show the section to display warnings or checkboxes
+    // Only hide if not linked to task and no ASR prompts
+    if (!hasAutomaticTranscriptionPrompts && widget.linkedId == null) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
         children: [
-          Text(
-            'Automatic Processing',
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+          // Speech recognition option
+          LottiAnimatedCheckbox(
+            label: 'Speech Recognition',
+            value: state.enableSpeechRecognition ?? true,
+            enabled: hasAutomaticTranscriptionPrompts,
+            subtitle: hasAutomaticTranscriptionPrompts
+                ? null
+                : 'No prompt configured',
+            disabledIcon: Icons.mic_off_outlined,
+            onChanged: hasAutomaticTranscriptionPrompts
+                ? (value) {
+                    controller.setEnableSpeechRecognition(enable: value);
+                  }
+                : null,
           ),
-          const SizedBox(height: 12),
 
-          // Speech recognition checkbox
-          if (hasTranscriptionPrompts)
-            InkWell(
-              onTap: () {
-                // Toggle based on the current visual state of the checkbox
-                final currentValue = state.enableSpeechRecognition ?? true;
-                controller.setEnableSpeechRecognition(
-                  enable: !currentValue,
-                );
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: Checkbox(
-                        value: state.enableSpeechRecognition ?? true,
-                        onChanged: (value) {
-                          controller.setEnableSpeechRecognition(enable: value);
-                        },
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Speech Recognition',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            state.enableSpeechRecognition == null
-                                ? 'Using category default'
-                                : state.enableSpeechRecognition!
-                                    ? 'Enabled'
-                                    : 'Disabled',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Task summary checkbox (only show if linked to task)
-          if (widget.linkedId != null && hasTaskSummaryPrompts) ...[
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () {
-                // Toggle based on the current visual state of the checkbox
-                final currentValue = state.enableTaskSummary ?? true;
-                controller.setEnableTaskSummary(
-                  enable: !currentValue,
-                );
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: Checkbox(
-                        value: state.enableTaskSummary ?? true,
-                        onChanged: (value) {
-                          controller.setEnableTaskSummary(enable: value);
-                        },
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Task Summary',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            state.enableTaskSummary == null
-                                ? 'Using category default'
-                                : state.enableTaskSummary!
-                                    ? 'Enabled'
-                                    : 'Disabled',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          // Task summary option (only show if linked to task AND speech recognition will run)
+          // It doesn't make sense to offer task summary when there's no transcription to update the task context
+          // Speech recognition will run if:
+          // - It's explicitly enabled (true), OR
+          // - It's not set (null) AND there are automatic transcription prompts configured
+          if (widget.linkedId != null &&
+              (state.enableSpeechRecognition ??
+                  hasAutomaticTranscriptionPrompts)) ...[
+            const SizedBox(height: 4),
+            LottiAnimatedCheckbox(
+              label: 'Task Summary',
+              value: state.enableTaskSummary ?? true,
+              enabled: hasAutomaticTaskSummaryPrompts,
+              subtitle: hasAutomaticTaskSummaryPrompts
+                  ? null
+                  : 'No prompt configured',
+              disabledIcon: Icons.summarize_outlined,
+              onChanged: hasAutomaticTaskSummaryPrompts
+                  ? (value) {
+                      controller.setEnableTaskSummary(enable: value);
+                    }
+                  : null,
             ),
           ],
         ],

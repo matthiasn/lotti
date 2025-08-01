@@ -26,6 +26,7 @@ class SaveButton extends ConsumerWidget {
           ref.read(provider.notifier).save();
           FocusManager.instance.primaryFocus?.unfocus();
         },
+        isDestructive: true,
         label: context.messages.saveLabel,
       ),
     );

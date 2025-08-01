@@ -67,7 +67,7 @@ class CategoryDefinition {
 - **Sensitive Category**: Disable all AI processing for privacy (null or [])
 - **Project Category**: Focus on specific project-related prompts
 
-### Automatic Prompt Execution (Coming Soon)
+### Automatic Prompt Execution
 
 Categories can configure prompts to run automatically when specific content is added:
 
@@ -86,9 +86,17 @@ class CategoryDefinition {
 **Note**: Version 1 implementation limits automatic execution to a single prompt per response type. The data model uses `List<String>` to support future expansion where multiple prompts could be executed in sequence (e.g., first extract text, then summarize).
 
 **Automatic Triggers:**
-1. **Audio Transcription**: After transcribing audio, automatically run specified prompts
-2. **Image Analysis**: When images are attached, automatically analyze them
-3. **Task Summary**: Periodically generate summaries for tasks in the category
+1. **Audio Transcription**: ✅ After transcribing audio, automatically runs configured prompts
+2. **Task Summary (Audio-linked)**: ✅ After audio transcription completes for tasks, automatically generates summary
+3. **Image Analysis**: 🚧 When images are attached, automatically analyze them (planned)
+4. **Periodic Task Summary**: 🚧 Periodically generate summaries for tasks in the category (planned)
+
+**Current Capabilities:**
+- Audio recordings trigger automatic transcription when configured in category
+- Task summaries run automatically after transcription for audio linked to tasks
+- Users can control automatic execution via checkboxes in recording modal
+- Manual task summary can be triggered from AI popup menu on any task
+- Warning messages appear when no automatic prompt is configured
 
 ### Implementation Roadmap
 
@@ -98,14 +106,17 @@ class CategoryDefinition {
 - [x] Automatic prompts configuration
 - [x] Data persistence and model updates
 
-#### Phase 2: Prompt Filtering 🚧
+#### Phase 2: Prompt Filtering ✅
 - [x] Filter AI popup menu based on category's allowed prompts
 - [x] Hide restricted prompts from the UI
 - [x] Show informative message when no prompts are allowed
 
 #### Phase 3: Automatic Execution 🚧
-- [ ] Create background service for automatic prompt execution
-- [ ] Implement triggers for each response type
+- [x] Implement triggers for audio transcription response type
+- [x] Implement triggers for task summary (after audio transcription)
+- [ ] Create background service for queue management
+- [ ] Implement triggers for image analysis
+- [ ] Implement periodic/scheduled task summary triggers
 - [ ] Add queue management for multiple automatic prompts
 - [ ] Link generated responses to source entries
 
