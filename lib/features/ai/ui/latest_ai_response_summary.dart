@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
@@ -10,7 +11,7 @@ import 'package:lotti/themes/theme.dart';
 
 /// A wrapper widget for AiResponseSummary that automatically fetches
 /// the latest AI response using LatestSummaryController.
-class LatestAiResponseSummary extends ConsumerWidget {
+class LatestAiResponseSummary extends ConsumerStatefulWidget {
   const LatestAiResponseSummary({
     required this.id,
     required this.aiResponseType,
@@ -21,18 +22,28 @@ class LatestAiResponseSummary extends ConsumerWidget {
   final AiResponseType aiResponseType;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LatestAiResponseSummary> createState() =>
+      _LatestAiResponseSummaryState();
+}
+
+class _LatestAiResponseSummaryState
+    extends ConsumerState<LatestAiResponseSummary>
+    with SingleTickerProviderStateMixin {
+  AiResponseEntry? _previousResponse;
+
+  @override
+  Widget build(BuildContext context) {
     final latestSummaryAsync = ref.watch(
       latestSummaryControllerProvider(
-        id: id,
-        aiResponseType: aiResponseType,
+        id: widget.id,
+        aiResponseType: widget.aiResponseType,
       ),
     );
 
     final inferenceStatus = ref.watch(
       inferenceStatusControllerProvider(
-        id: id,
-        aiResponseType: aiResponseType,
+        id: widget.id,
+        aiResponseType: widget.aiResponseType,
       ),
     );
 
@@ -43,7 +54,7 @@ class LatestAiResponseSummary extends ConsumerWidget {
         context: context,
         ref: ref,
         promptId: promptId,
-        entityId: id,
+        entityId: widget.id,
       );
     }
 
@@ -67,23 +78,36 @@ class LatestAiResponseSummary extends ConsumerWidget {
         ),
       ),
       data: (aiResponse) {
-        if (aiResponse == null) {
+        // Update previous response when we get a new one and it's not running
+        if (!isRunning &&
+            aiResponse != null &&
+            aiResponse != _previousResponse) {
+          _previousResponse = aiResponse;
+        }
+
+        // Use the current response if available, otherwise use the previous one
+        final displayResponse = aiResponse ?? _previousResponse;
+
+        if (displayResponse == null) {
           return const SizedBox.shrink();
         }
 
-        final promptId = aiResponse.data.promptId;
+        final promptId = displayResponse.data.promptId;
 
         return Column(
           children: [
-            if (isRunning)
-              Row(
-                children: [
-                  Text(
-                    context.messages.aiTaskSummaryRunning,
-                    style: context.textTheme.titleSmall?.copyWith(
-                      color: context.colorScheme.outline,
-                    ),
+            // Header with title and spinner/refresh button
+            Row(
+              children: [
+                Text(
+                  isRunning
+                      ? context.messages.aiTaskSummaryRunning
+                      : context.messages.aiTaskSummaryTitle,
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.outline,
                   ),
+                ),
+                if (isRunning)
                   IconButton(
                     onPressed: promptId != null
                         ? () => showThoughtsModal(promptId)
@@ -94,41 +118,46 @@ class LatestAiResponseSummary extends ConsumerWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-                ],
-              ),
-            if (!isRunning)
-              Row(
-                children: [
-                  Text(
-                    context.messages.aiTaskSummaryTitle,
-                    style: context.textTheme.titleSmall?.copyWith(
+                if (!isRunning && promptId != null) ...[
+                  IconButton(
+                    icon: Icon(
+                      Icons.refresh,
                       color: context.colorScheme.outline,
                     ),
+                    onPressed: () => showThoughtsModal(promptId),
                   ),
-                  if (promptId != null) ...[
-                    IconButton(
-                      icon: Icon(
-                        Icons.refresh,
-                        color: context.colorScheme.outline,
-                      ),
-                      onPressed: () => showThoughtsModal(promptId),
+                  if (isOutdated)
+                    // ignore: dead_code
+                    Text(
+                      context.messages.checklistSuggestionsOutdated,
+                      style: context.textTheme.titleSmall
+                          ?.copyWith(color: Colors.red),
                     ),
-                    if (isOutdated)
-                      // ignore: dead_code
-                      Text(
-                        context.messages.checklistSuggestionsOutdated,
-                        style: context.textTheme.titleSmall
-                            ?.copyWith(color: Colors.red),
-                      ),
-                  ],
                 ],
+              ],
+            ),
+            // Animated content with fade transition and size animation
+            AnimatedSize(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOut,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 600),
+                switchInCurve: Curves.easeInOut,
+                switchOutCurve: Curves.easeInOut,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                child: AiResponseSummary(
+                  displayResponse,
+                  key: ValueKey(displayResponse.meta.id),
+                  linkedFromId: widget.id,
+                  fadeOut: false,
+                ),
               ),
-            if (!isRunning)
-              AiResponseSummary(
-                aiResponse,
-                linkedFromId: id,
-                fadeOut: false,
-              ),
+            ),
             const SizedBox(height: 10),
           ],
         );

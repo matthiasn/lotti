@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/index.dart';
@@ -56,50 +55,26 @@ class UnifiedAiModal {
     required WidgetRef ref,
     ScrollController? scrollController,
   }) async {
-    final pageIndexNotifier = ValueNotifier(0);
-
-    final promptsAsync = await ref.read(
-      availablePromptsProvider(entity: journalEntity).future,
-    );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    final initialModalPage = ModalUtils.modalSheetPage(
+    return ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: context.messages.aiAssistantTitle,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: UnifiedAiPromptsList(
+      builder: (modalSheetContext) => UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
         onPromptSelected: (prompt, index) {
-          pageIndexNotifier.value = index + 1;
+          // Trigger inference in the background
+          ref.read(
+            triggerNewInferenceProvider(
+              entityId: journalEntity.id,
+              promptId: prompt.id,
+              linkedEntityId: linkedFromId,
+            ).future,
+          );
+          // Close the modal
+          Navigator.of(modalSheetContext).pop();
         },
       ),
-    );
-
-    final promptSliverPages = promptsAsync.asMap().entries.map((entry) {
-      final prompt = entry.value;
-
-      return UnifiedAiProgressUtils.progressPage(
-        context: context,
-        prompt: prompt,
-        entityId: journalEntity.id,
-        onTapBack: () => pageIndexNotifier.value = 0,
-        scrollController: scrollController,
-      );
-    }).toList();
-
-    return ModalUtils.showMultiPageModal<void>(
-      context: context,
-      pageListBuilder: (modalSheetContext) {
-        return [
-          initialModalPage,
-          ...promptSliverPages,
-        ];
-      },
-      pageIndexNotifier: pageIndexNotifier,
+      title: context.messages.aiAssistantTitle,
+      padding: const EdgeInsets.symmetric(vertical: 20),
     );
   }
 }

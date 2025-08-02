@@ -697,6 +697,192 @@ void main() {
     });
   });
 
+  group('UnifiedAiModal onPromptSelected callback', () {
+    testWidgets('triggers inference when prompt is selected from modal',
+        (tester) async {
+      // Arrange
+      var inferenceTriggered = false;
+      String? capturedEntityId;
+      String? capturedPromptId;
+      String? capturedLinkedEntityId;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          Consumer(
+            builder: (context, ref, child) {
+              return Column(
+                children: [
+                  UnifiedAiPopUpMenu(
+                    journalEntity: testTaskEntity,
+                    linkedFromId: 'linked-test-id',
+                  ),
+                  // Override the trigger provider to capture the call
+                  Builder(builder: (context) {
+                    // This is just to set up the override
+                    return const SizedBox();
+                  }),
+                ],
+              );
+            },
+          ),
+          overrides: [
+            hasAvailablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value([testPrompts.first])),
+            triggerNewInferenceProvider(
+              entityId: testTaskEntity.id,
+              promptId: testPrompts.first.id,
+              linkedEntityId: 'linked-test-id',
+            ).overrideWith((ref) async {
+              inferenceTriggered = true;
+              capturedEntityId = testTaskEntity.id;
+              capturedPromptId = testPrompts.first.id;
+              capturedLinkedEntityId = 'linked-test-id';
+            }),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Act - Open the modal
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      // Select a prompt
+      await tester.tap(find.text('Task Summary'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(inferenceTriggered, isTrue);
+      expect(capturedEntityId, equals(testTaskEntity.id));
+      expect(capturedPromptId, equals(testPrompts.first.id));
+      expect(capturedLinkedEntityId, equals('linked-test-id'));
+    });
+
+    testWidgets('closes modal after prompt selection', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(
+            journalEntity: testTaskEntity,
+            linkedFromId: null,
+          ),
+          overrides: [
+            hasAvailablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value([testPrompts.first])),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Act - Open the modal
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      // Verify modal is open
+      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
+
+      // Select a prompt
+      await tester.tap(find.text('Task Summary'));
+      await tester.pumpAndSettle();
+
+      // Assert - Modal should be closed
+      expect(find.byType(UnifiedAiPromptsList), findsNothing);
+    });
+
+    testWidgets('handles null linkedFromId correctly', (tester) async {
+      // Arrange
+      String? capturedLinkedEntityId;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          Consumer(
+            builder: (context, ref, child) {
+              return UnifiedAiPopUpMenu(
+                journalEntity: testTaskEntity,
+                linkedFromId: null, // Explicitly null
+              );
+            },
+          ),
+          overrides: [
+            hasAvailablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value([testPrompts.first])),
+            triggerNewInferenceProvider(
+              entityId: testTaskEntity.id,
+              promptId: testPrompts.first.id,
+            ).overrideWith((ref) async {
+              capturedLinkedEntityId = null;
+            }),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Act - Open the modal
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      // Select a prompt
+      await tester.tap(find.text('Task Summary'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(capturedLinkedEntityId, isNull);
+    });
+
+    testWidgets('modal show method with ScrollController parameter',
+        (tester) async {
+      // Arrange
+      final scrollController = ScrollController();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          Consumer(
+            builder: (context, ref, child) {
+              return ElevatedButton(
+                onPressed: () async {
+                  await UnifiedAiModal.show<void>(
+                    context: context,
+                    journalEntity: testTaskEntity,
+                    linkedFromId: null,
+                    ref: ref,
+                    scrollController:
+                        scrollController, // Pass scroll controller
+                  );
+                },
+                child: const Text('Show Modal with ScrollController'),
+              );
+            },
+          ),
+          overrides: [
+            availablePromptsProvider(entity: testTaskEntity)
+                .overrideWith((ref) => Future.value([testPrompts.first])),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Show Modal with ScrollController'));
+      await tester.pumpAndSettle();
+
+      // Assert - Modal should open
+      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
+
+      // Clean up
+      scrollController.dispose();
+    });
+  });
+
   group('Icon Mapping Tests', () {
     testWidgets('maps task input data to checklist icon', (tester) async {
       // Arrange

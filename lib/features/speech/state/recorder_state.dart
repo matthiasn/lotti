@@ -50,5 +50,13 @@ class AudioRecorderState with _$AudioRecorderState {
 
     /// Optional ID to link recording to existing journal entry.
     String? linkedId,
+
+    /// Whether to trigger speech recognition after recording.
+    /// If null, uses category default settings.
+    bool? enableSpeechRecognition,
+
+    /// Whether to trigger task summary after recording (if linked to task).
+    /// If null, uses category default settings.
+    bool? enableTaskSummary,
   }) = _AudioRecorderState;
 }

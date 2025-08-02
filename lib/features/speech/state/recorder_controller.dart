@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -157,9 +158,13 @@ class AudioRecorderController extends _$AudioRecorderController {
         } else {
           _audioNote = await _recorderRepository.startRecording();
           if (_audioNote != null) {
+            // Update state to recording, reset inference preferences for new recording
             state = state.copyWith(
               status: AudioRecorderStatus.recording,
               linkedId: linkedId,
+              // Reset inference preferences for new recording (null by default)
+              enableSpeechRecognition: null,
+              enableTaskSummary: null,
             );
           }
         }
@@ -192,6 +197,11 @@ class AudioRecorderController extends _$AudioRecorderController {
       await _recorderRepository.stopRecording();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       _dbfsBuffer.clear(); // Clear the buffer when stopping
+
+      // Preserve the inference preferences before resetting state
+      final enableSpeechRecognition = state.enableSpeechRecognition;
+      final enableTaskSummary = state.enableTaskSummary;
+
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         dBFS: -160,
@@ -200,6 +210,9 @@ class AudioRecorderController extends _$AudioRecorderController {
         showIndicator: false,
         modalVisible: false,
         language: '',
+        // Preserve the inference preferences
+        enableSpeechRecognition: enableSpeechRecognition,
+        enableTaskSummary: enableTaskSummary,
       );
       if (_audioNote != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
@@ -208,9 +221,25 @@ class AudioRecorderController extends _$AudioRecorderController {
           linkedId: _linkedId,
           categoryId: _categoryId,
         );
+        final wasLinkedToTask = _linkedId != null;
+        final linkedTaskId = _linkedId;
         _linkedId = null;
         final entryId = journalAudio?.meta.id;
         _audioNote = null; // Reset audio note after processing
+
+        // Trigger automatic prompts in the background if configured for the category
+        if (entryId != null && _categoryId != null) {
+          // Don't await - let it run in the background so the modal can close immediately
+          unawaited(
+            _triggerAutomaticPrompts(
+              entryId,
+              _categoryId!,
+              isLinkedToTask: wasLinkedToTask,
+              linkedTaskId: linkedTaskId,
+            ),
+          );
+        }
+
         return entryId;
       }
     } catch (exception, stackTrace) {
@@ -264,5 +293,34 @@ class AudioRecorderController extends _$AudioRecorderController {
     if (categoryId != _categoryId) {
       _categoryId = categoryId;
     }
+  }
+
+  /// Sets whether to enable speech recognition for the recording.
+  /// If null, uses category default settings.
+  void setEnableSpeechRecognition({required bool? enable}) {
+    state = state.copyWith(enableSpeechRecognition: enable);
+  }
+
+  /// Sets whether to enable task summary for the recording.
+  /// If null, uses category default settings.
+  void setEnableTaskSummary({required bool? enable}) {
+    state = state.copyWith(enableTaskSummary: enable);
+  }
+
+  /// Triggers automatic prompts based on category settings and user preferences
+  Future<void> _triggerAutomaticPrompts(
+    String entryId,
+    String categoryId, {
+    required bool isLinkedToTask,
+    String? linkedTaskId,
+  }) async {
+    final trigger = ref.read(automaticPromptTriggerProvider);
+    await trigger.triggerAutomaticPrompts(
+      entryId,
+      categoryId,
+      state,
+      isLinkedToTask: isLinkedToTask,
+      linkedTaskId: linkedTaskId,
+    );
   }
 }

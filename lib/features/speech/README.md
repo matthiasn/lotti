@@ -128,6 +128,7 @@ For detailed documentation of UI components, see [recording/README.md](ui/widget
 8. **Recording Stop**: User taps stop button
 9. **Entry Creation**: Audio file is saved and journal entry created
 10. **Transcription**: If enabled, ASR service processes the audio
+11. **Linked Entity Support**: If recording is linked to a task, both entities track the transcription progress
 
 ## Testing
 
@@ -170,6 +171,23 @@ All errors are logged through `LoggingService` with appropriate domain tags for 
 - Amplitude stream is properly disposed to prevent memory leaks
 - File operations use async methods to avoid blocking UI
 - Modal visibility state prevents unnecessary widget rebuilds
+
+## Linked Entity Transcription
+
+When an audio recording is linked to another entity (e.g., a task), the speech feature integrates with the AI system to provide context-aware transcription:
+
+### Features
+- **Task Context**: When linked to a task, the transcription uses task context for better accuracy with names and concepts
+- **Dual Progress Tracking**: Both the audio entry and the linked task show transcription progress indicators
+- **Automatic Inference**: The AI system automatically triggers transcription when an audio entry is created with a linked entity
+- **Visual Indicators**: Both entities display inference animations during transcription
+
+### Implementation
+The speech feature coordinates with the AI system's linked entity tracking:
+- Creates audio entry with `linkedId` parameter
+- AI system creates active inference entries for both entities
+- Both entities receive status updates (running, complete, error)
+- UI components on both entities show appropriate indicators
 
 ## Future Enhancements
 

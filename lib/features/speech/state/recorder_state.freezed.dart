@@ -42,6 +42,14 @@ mixin _$AudioRecorderState {
   /// Optional ID to link recording to existing journal entry.
   String? get linkedId => throw _privateConstructorUsedError;
 
+  /// Whether to trigger speech recognition after recording.
+  /// If null, uses category default settings.
+  bool? get enableSpeechRecognition => throw _privateConstructorUsedError;
+
+  /// Whether to trigger task summary after recording (if linked to task).
+  /// If null, uses category default settings.
+  bool? get enableTaskSummary => throw _privateConstructorUsedError;
+
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -63,7 +71,9 @@ abstract class $AudioRecorderStateCopyWith<$Res> {
       bool showIndicator,
       bool modalVisible,
       String? language,
-      String? linkedId});
+      String? linkedId,
+      bool? enableSpeechRecognition,
+      bool? enableTaskSummary});
 }
 
 /// @nodoc
@@ -89,6 +99,8 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
     Object? modalVisible = null,
     Object? language = freezed,
     Object? linkedId = freezed,
+    Object? enableSpeechRecognition = freezed,
+    Object? enableTaskSummary = freezed,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -123,6 +135,14 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
           ? _value.linkedId
           : linkedId // ignore: cast_nullable_to_non_nullable
               as String?,
+      enableSpeechRecognition: freezed == enableSpeechRecognition
+          ? _value.enableSpeechRecognition
+          : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      enableTaskSummary: freezed == enableTaskSummary
+          ? _value.enableTaskSummary
+          : enableTaskSummary // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ) as $Val);
   }
 }
@@ -143,7 +163,9 @@ abstract class _$$AudioRecorderStateImplCopyWith<$Res>
       bool showIndicator,
       bool modalVisible,
       String? language,
-      String? linkedId});
+      String? linkedId,
+      bool? enableSpeechRecognition,
+      bool? enableTaskSummary});
 }
 
 /// @nodoc
@@ -167,6 +189,8 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
     Object? modalVisible = null,
     Object? language = freezed,
     Object? linkedId = freezed,
+    Object? enableSpeechRecognition = freezed,
+    Object? enableTaskSummary = freezed,
   }) {
     return _then(_$AudioRecorderStateImpl(
       status: null == status
@@ -201,6 +225,14 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
           ? _value.linkedId
           : linkedId // ignore: cast_nullable_to_non_nullable
               as String?,
+      enableSpeechRecognition: freezed == enableSpeechRecognition
+          ? _value.enableSpeechRecognition
+          : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      enableTaskSummary: freezed == enableTaskSummary
+          ? _value.enableTaskSummary
+          : enableTaskSummary // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ));
   }
 }
@@ -216,7 +248,9 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
       required this.showIndicator,
       required this.modalVisible,
       required this.language,
-      this.linkedId});
+      this.linkedId,
+      this.enableSpeechRecognition,
+      this.enableTaskSummary});
 
   /// Current status of the recorder.
   @override
@@ -252,9 +286,19 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   @override
   final String? linkedId;
 
+  /// Whether to trigger speech recognition after recording.
+  /// If null, uses category default settings.
+  @override
+  final bool? enableSpeechRecognition;
+
+  /// Whether to trigger task summary after recording (if linked to task).
+  /// If null, uses category default settings.
+  @override
+  final bool? enableTaskSummary;
+
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary)';
   }
 
   @override
@@ -274,12 +318,27 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
             (identical(other.language, language) ||
                 other.language == language) &&
             (identical(other.linkedId, linkedId) ||
-                other.linkedId == linkedId));
+                other.linkedId == linkedId) &&
+            (identical(
+                    other.enableSpeechRecognition, enableSpeechRecognition) ||
+                other.enableSpeechRecognition == enableSpeechRecognition) &&
+            (identical(other.enableTaskSummary, enableTaskSummary) ||
+                other.enableTaskSummary == enableTaskSummary));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status, progress, vu, dBFS,
-      showIndicator, modalVisible, language, linkedId);
+  int get hashCode => Object.hash(
+      runtimeType,
+      status,
+      progress,
+      vu,
+      dBFS,
+      showIndicator,
+      modalVisible,
+      language,
+      linkedId,
+      enableSpeechRecognition,
+      enableTaskSummary);
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
@@ -300,7 +359,9 @@ abstract class _AudioRecorderState implements AudioRecorderState {
       required final bool showIndicator,
       required final bool modalVisible,
       required final String? language,
-      final String? linkedId}) = _$AudioRecorderStateImpl;
+      final String? linkedId,
+      final bool? enableSpeechRecognition,
+      final bool? enableTaskSummary}) = _$AudioRecorderStateImpl;
 
   /// Current status of the recorder.
   @override
@@ -335,6 +396,16 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   /// Optional ID to link recording to existing journal entry.
   @override
   String? get linkedId;
+
+  /// Whether to trigger speech recognition after recording.
+  /// If null, uses category default settings.
+  @override
+  bool? get enableSpeechRecognition;
+
+  /// Whether to trigger task summary after recording (if linked to task).
+  /// If null, uses category default settings.
+  @override
+  bool? get enableTaskSummary;
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.

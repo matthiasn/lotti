@@ -62,25 +62,6 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
           if (_originalCategory == null && category != null) {
             _originalCategory = category;
             _pendingCategory = category;
-          } else if (category != null && _originalCategory != null) {
-            // Handle external updates - check if the category was updated externally
-            final isExternalUpdate =
-                category.updatedAt != _originalCategory!.updatedAt;
-
-            if (isExternalUpdate) {
-              // External update detected
-              if (state.hasChanges) {
-                // User has unsaved changes - show warning
-                state = state.copyWith(
-                  errorMessage:
-                      'Category was updated by another user. Your changes will be discarded.',
-                );
-              }
-
-              // Reset to the new external state
-              _originalCategory = category;
-              _pendingCategory = category;
-            }
           }
 
           state = state.copyWith(
