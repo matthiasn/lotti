@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -397,7 +398,12 @@ void main() {
     });
 
     group('Integration scenarios', () {
-      test('should log transcription trigger when category has it configured',
+      // These tests now properly override the triggerNewInferenceProvider
+      // instead of using try-catch blocks, based on Gemini feedback.
+      // This provides more robust and deterministic testing by directly
+      // verifying that the inference is triggered with the correct parameters.
+
+      test('should trigger transcription when category has it configured',
           () async {
         // Arrange
         const categoryId = 'test-category';
@@ -415,11 +421,27 @@ void main() {
         when(() => mockCategoryRepository.getCategoryById(categoryId))
             .thenAnswer((_) async => category);
 
-        // We can't easily mock the triggerNewInferenceProvider since it requires
-        // complex Riverpod setup. Instead, we test that the correct logging happens
-        // which indicates the trigger would be called.
+        var inferenceTriggered = false;
+        String? capturedEntityId;
+        String? capturedPromptId;
 
-        final trigger = container.read(automaticPromptTriggerProvider);
+        // Override the triggerNewInferenceProvider for this specific test
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider
+                .overrideWithValue(mockCategoryRepository),
+            triggerNewInferenceProvider(
+              entityId: entryId,
+              promptId: promptId,
+            ).overrideWith((ref) async {
+              inferenceTriggered = true;
+              capturedEntityId = entryId;
+              capturedPromptId = promptId;
+            }),
+          ],
+        );
+
+        final trigger = testContainer.read(automaticPromptTriggerProvider);
 
         final state = AudioRecorderState(
           status: AudioRecorderStatus.stopped,
@@ -432,27 +454,30 @@ void main() {
         );
 
         // Act
-        try {
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: false,
-          );
-        } catch (_) {
-          // Expected to fail when trying to read triggerNewInferenceProvider
-          // but we can still verify the logging happened
-        }
+        await trigger.triggerAutomaticPrompts(
+          entryId,
+          categoryId,
+          state,
+          isLinkedToTask: false,
+        );
 
         // Assert
+        expect(inferenceTriggered, isTrue);
+        expect(capturedEntityId, equals(entryId));
+        expect(capturedPromptId, equals(promptId));
+
+        // Also verify logging
         verify(() => mockLoggingService.captureEvent(
               'Triggering audio transcription (user preference: null)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             )).called(1);
+
+        // Clean up
+        testContainer.dispose();
       });
 
-      test('should log task summary trigger for linked tasks', () async {
+      test('should trigger task summary for linked tasks', () async {
         // Arrange
         const categoryId = 'test-category';
         const entryId = 'test-entry';
@@ -470,7 +495,28 @@ void main() {
         when(() => mockCategoryRepository.getCategoryById(categoryId))
             .thenAnswer((_) async => category);
 
-        final trigger = container.read(automaticPromptTriggerProvider);
+        var inferenceTriggered = false;
+        String? capturedEntityId;
+        String? capturedPromptId;
+
+        // Override the triggerNewInferenceProvider for this specific test
+        // Note: Task summary is triggered WITHOUT linkedEntityId parameter
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider
+                .overrideWithValue(mockCategoryRepository),
+            triggerNewInferenceProvider(
+              entityId: taskId,
+              promptId: taskSummaryPromptId,
+            ).overrideWith((ref) async {
+              inferenceTriggered = true;
+              capturedEntityId = taskId;
+              capturedPromptId = taskSummaryPromptId;
+            }),
+          ],
+        );
+
+        final trigger = testContainer.read(automaticPromptTriggerProvider);
 
         final state = AudioRecorderState(
           status: AudioRecorderStatus.stopped,
@@ -484,25 +530,28 @@ void main() {
         );
 
         // Act
-        try {
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          );
-        } catch (_) {
-          // Expected to fail when trying to read triggerNewInferenceProvider
-          // but we can still verify the logging happened
-        }
+        await trigger.triggerAutomaticPrompts(
+          entryId,
+          categoryId,
+          state,
+          isLinkedToTask: true,
+          linkedTaskId: taskId,
+        );
 
         // Assert
+        expect(inferenceTriggered, isTrue);
+        expect(capturedEntityId, equals(taskId));
+        expect(capturedPromptId, equals(taskSummaryPromptId));
+
+        // Also verify logging
         verify(() => mockLoggingService.captureEvent(
               'Triggering task summary for task $taskId (user preference: null, transcription pending: false)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             )).called(1);
+
+        // Clean up
+        testContainer.dispose();
       });
     });
   });

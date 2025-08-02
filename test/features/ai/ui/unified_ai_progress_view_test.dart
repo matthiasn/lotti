@@ -531,6 +531,59 @@ void main() {
     });
   });
 
+  group('OllamaModelInstallDialog', () {
+    testWidgets('displays model not installed message', (tester) async {
+      const modelName = 'llama2';
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const OllamaModelInstallDialog(
+            modelName: modelName,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify dialog title
+      expect(find.text('Model Not Installed'), findsOneWidget);
+
+      // Verify model name is displayed
+      expect(find.textContaining('The model "llama2" is not installed'),
+          findsOneWidget);
+
+      // Verify command is displayed
+      expect(find.text('ollama pull llama2'), findsOneWidget);
+
+      // Verify buttons
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Install'), findsOneWidget);
+    });
+
+    testWidgets('cancel button closes dialog', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute(
+              builder: (_) => const OllamaModelInstallDialog(
+                modelName: 'test-model',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap cancel
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Dialog should be closed
+      expect(find.byType(OllamaModelInstallDialog), findsNothing);
+    });
+  });
+
   group('UnifiedAiProgressUtils', () {
     testWidgets('progressPage creates valid modal page', (tester) async {
       final prompt = AiConfig.prompt(
