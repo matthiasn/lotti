@@ -180,7 +180,6 @@ void main() {
       test('returns correct sequence with all types enabled', () {
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: activePrompts,
-          entity: testEntity,
         );
 
         expect(sequence, [
@@ -194,7 +193,6 @@ void main() {
       test('excludes transcription when disabled', () {
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: activePrompts,
-          entity: testEntity,
           includeTranscription: false,
         );
 
@@ -208,7 +206,6 @@ void main() {
       test('excludes checklist updates when disabled', () {
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: activePrompts,
-          entity: testEntity,
           includeChecklistUpdates: false,
         );
 
@@ -222,7 +219,6 @@ void main() {
       test('excludes task summary when disabled', () {
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: activePrompts,
-          entity: testEntity,
           includeTaskSummary: false,
         );
 
@@ -230,6 +226,19 @@ void main() {
           AiResponseType.audioTranscription,
           AiResponseType.checklistUpdates,
           AiResponseType.imageAnalysis,
+        ]);
+      });
+
+      test('excludes image analysis when disabled', () {
+        final sequence = SequentialInferenceRunner.determineInferenceSequence(
+          activePrompts: activePrompts,
+          includeImageAnalysis: false,
+        );
+
+        expect(sequence, [
+          AiResponseType.audioTranscription,
+          AiResponseType.checklistUpdates,
+          AiResponseType.taskSummary,
         ]);
       });
 
@@ -247,7 +256,6 @@ void main() {
 
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: limitedPrompts,
-          entity: testEntity,
         );
 
         expect(sequence, [
@@ -259,7 +267,6 @@ void main() {
       test('returns empty sequence when no prompts available', () {
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: [],
-          entity: testEntity,
         );
 
         expect(sequence, isEmpty);
@@ -284,7 +291,6 @@ void main() {
 
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: reversedPrompts,
-          entity: testEntity,
         );
 
         // Should still be in the correct order
@@ -388,7 +394,6 @@ void main() {
 
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: duplicatePrompts,
-          entity: testEntity,
         );
 
         // Should only include one instance of each type
@@ -431,7 +436,6 @@ void main() {
 
         final sequence = SequentialInferenceRunner.determineInferenceSequence(
           activePrompts: largePromptList,
-          entity: testEntity,
         );
 
         stopwatch.stop();

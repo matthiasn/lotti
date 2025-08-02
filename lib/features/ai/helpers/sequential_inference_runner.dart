@@ -79,13 +79,13 @@ class SequentialInferenceRunner {
   }
 
   /// Determines the sequence of response types to run based on
-  /// available prompts and entity type
+  /// available prompts
   static List<AiResponseType> determineInferenceSequence({
     required List<AiConfigPrompt> activePrompts,
-    required JournalEntity entity,
     bool includeTranscription = true,
     bool includeChecklistUpdates = true,
     bool includeTaskSummary = true,
+    bool includeImageAnalysis = true,
   }) {
     final sequence = <AiResponseType>[];
     final availableTypes = activePrompts.map((p) => p.aiResponseType).toSet();
@@ -102,14 +102,15 @@ class SequentialInferenceRunner {
       sequence.add(AiResponseType.checklistUpdates);
     }
 
-    // Add task summary last if available and requested
+    // Add task summary third if available and requested
     if (includeTaskSummary &&
         availableTypes.contains(AiResponseType.taskSummary)) {
       sequence.add(AiResponseType.taskSummary);
     }
 
-    // Add image analysis if available
-    if (availableTypes.contains(AiResponseType.imageAnalysis)) {
+    // Add image analysis fourth if available and requested
+    if (includeImageAnalysis &&
+        availableTypes.contains(AiResponseType.imageAnalysis)) {
       sequence.add(AiResponseType.imageAnalysis);
     }
 
