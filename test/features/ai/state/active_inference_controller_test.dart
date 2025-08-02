@@ -171,5 +171,68 @@ void main() {
       expect(activeInference!.entityId, equals(entityId));
       expect(activeInference.promptId, equals(promptId));
     });
+
+    test('ActiveInferenceByEntity should find inference for linked entity', () {
+      const audioEntityId = 'audio-123';
+      const taskEntityId = 'task-456';
+      const promptId = 'asr-prompt';
+      const responseType = AiResponseType.audioTranscription;
+
+      // Initially no active inference for either entity
+      expect(
+        container.read(activeInferenceByEntityProvider(audioEntityId)),
+        isNull,
+      );
+      expect(
+        container.read(activeInferenceByEntityProvider(taskEntityId)),
+        isNull,
+      );
+
+      // Simulate what unified_ai_controller does: start inference for BOTH entities
+      // This mimics the _startActiveInference helper method behavior
+
+      // 1. Start for primary entity (audio)
+      container
+          .read(
+            activeInferenceControllerProvider(
+              entityId: audioEntityId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .startInference(
+            promptId: promptId,
+            linkedEntityId: taskEntityId,
+          );
+
+      // 2. Also start for linked entity (task) - this is what makes it work!
+      container
+          .read(
+            activeInferenceControllerProvider(
+              entityId: taskEntityId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .startInference(
+            promptId: promptId,
+            linkedEntityId: audioEntityId,
+          );
+
+      // Now BOTH entities should find the active inference
+      final audioInference = container.read(
+        activeInferenceByEntityProvider(audioEntityId),
+      );
+      expect(audioInference, isNotNull);
+      expect(audioInference!.entityId, equals(audioEntityId));
+      expect(audioInference.linkedEntityId, equals(taskEntityId));
+      expect(audioInference.aiResponseType, equals(responseType));
+
+      final taskInference = container.read(
+        activeInferenceByEntityProvider(taskEntityId),
+      );
+      expect(taskInference, isNotNull);
+      expect(taskInference!.entityId, equals(taskEntityId));
+      expect(taskInference.linkedEntityId, equals(audioEntityId));
+      expect(taskInference.aiResponseType, equals(responseType));
+    });
   });
 }

@@ -112,9 +112,10 @@ class ActiveInferenceByEntity extends _$ActiveInferenceByEntity {
         return activeInference;
       }
 
-      // Also check if this entity is linked to another entity's inference
-      // by watching other entities that might have this as a linked entity
-      // This would require a more complex tracking mechanism
+      // Note: Linked entities are already handled because when an inference
+      // starts with a linkedEntityId, the unified_ai_controller creates
+      // active inference entries for BOTH the primary and linked entities.
+      // So this provider will find the inference for linked entities too.
     }
 
     return null;
