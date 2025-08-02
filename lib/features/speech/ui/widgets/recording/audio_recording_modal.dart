@@ -262,6 +262,10 @@ class _AudioRecordingModalContentState
         category
             .automaticPrompts![AiResponseType.audioTranscription]!.isNotEmpty;
 
+    final hasAutomaticChecklistPrompts = category.automaticPrompts!
+            .containsKey(AiResponseType.checklistUpdates) &&
+        category.automaticPrompts![AiResponseType.checklistUpdates]!.isNotEmpty;
+
     final hasAutomaticTaskSummaryPrompts =
         category.automaticPrompts!.containsKey(AiResponseType.taskSummary) &&
             category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
@@ -291,6 +295,30 @@ class _AudioRecordingModalContentState
                   }
                 : null,
           ),
+
+          // Checklist updates option (only show if linked to task AND speech recognition will run)
+          // It doesn't make sense to offer checklist updates when there's no transcription to update the task context
+          // Speech recognition will run if:
+          // - It's explicitly enabled (true), OR
+          // - It's not set (null) AND there are automatic transcription prompts configured
+          if (widget.linkedId != null &&
+              (state.enableSpeechRecognition ??
+                  hasAutomaticTranscriptionPrompts)) ...[
+            const SizedBox(height: 4),
+            LottiAnimatedCheckbox(
+              label: 'Checklist Updates',
+              value: state.enableChecklistUpdates ?? true,
+              enabled: hasAutomaticChecklistPrompts,
+              subtitle:
+                  hasAutomaticChecklistPrompts ? null : 'No prompt configured',
+              disabledIcon: Icons.checklist_rtl_outlined,
+              onChanged: hasAutomaticChecklistPrompts
+                  ? (value) {
+                      controller.setEnableChecklistUpdates(enable: value);
+                    }
+                  : null,
+            ),
+          ],
 
           // Task summary option (only show if linked to task AND speech recognition will run)
           // It doesn't make sense to offer task summary when there's no transcription to update the task context

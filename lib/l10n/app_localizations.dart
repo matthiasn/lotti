@@ -807,6 +807,12 @@ abstract class AppLocalizations {
   /// **'Audio Transcription'**
   String get aiResponseTypeAudioTranscription;
 
+  /// No description provided for @aiResponseTypeChecklistUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist Updates'**
+  String get aiResponseTypeChecklistUpdates;
+
   /// No description provided for @aiResponseTypeImageAnalysis.
   ///
   /// In en, this message translates to:
@@ -2888,6 +2894,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Audio Recordings'**
   String get audioRecordings;
+
+  /// No description provided for @checklistUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist Updates'**
+  String get checklistUpdates;
 
   /// No description provided for @images.
   ///

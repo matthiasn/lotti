@@ -614,8 +614,8 @@ extension AiResponseTypeTestDisplay on AiResponseType {
         return l10nParam.aiResponseTypeImageAnalysis;
       case AiResponseType.audioTranscription:
         return l10nParam.aiResponseTypeAudioTranscription;
-      // Add cases for other types if they were in the original incorrect list
-      // and have corresponding l10n keys. Based on consts.dart, these are all.
+      case AiResponseType.checklistUpdates:
+        return l10nParam.aiResponseTypeChecklistUpdates;
     }
   }
 }

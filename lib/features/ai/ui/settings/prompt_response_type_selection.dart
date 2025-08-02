@@ -179,6 +179,8 @@ class _ResponseTypeSelectionModalState
         return Icons.image_search_rounded;
       case AiResponseType.audioTranscription:
         return Icons.transcribe_rounded;
+      case AiResponseType.checklistUpdates:
+        return Icons.checklist_rtl_rounded;
     }
   }
 }

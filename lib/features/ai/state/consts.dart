@@ -6,6 +6,7 @@ const actionItemSuggestionsConst = 'ActionItemSuggestions';
 const taskSummaryConst = 'TaskSummary';
 const imageAnalysisConst = 'ImageAnalysis';
 const audioTranscriptionConst = 'AudioTranscription';
+const checklistUpdatesConst = 'ChecklistUpdates';
 
 // Ollama API constants
 const ollamaDefaultTimeoutSeconds = 120; // 2 minutes for regular requests
@@ -36,6 +37,8 @@ enum AiResponseType {
   imageAnalysis,
   @JsonValue(audioTranscriptionConst)
   audioTranscription,
+  @JsonValue(checklistUpdatesConst)
+  checklistUpdates,
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
@@ -51,6 +54,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return l10n.aiResponseTypeImageAnalysis;
       case AiResponseType.audioTranscription:
         return l10n.aiResponseTypeAudioTranscription;
+      case AiResponseType.checklistUpdates:
+        return l10n.aiResponseTypeChecklistUpdates;
     }
   }
 
@@ -66,6 +71,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return Icons.image_outlined;
       case AiResponseType.audioTranscription:
         return Icons.mic_outlined;
+      case AiResponseType.checklistUpdates:
+        return Icons.checklist_rtl_outlined;
     }
   }
 }
