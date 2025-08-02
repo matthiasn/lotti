@@ -196,6 +196,16 @@ class UnifiedAiInferenceRepository {
       name: 'UnifiedAiInferenceRepository',
     );
 
+    // Fetch all prompts once before the loop to improve performance
+    final allPrompts = await ref
+        .read(aiConfigRepositoryProvider)
+        .getConfigsByType(AiConfigType.prompt);
+
+    final activePrompts = allPrompts
+        .whereType<AiConfigPrompt>()
+        .where((p) => !p.archived)
+        .toList();
+
     for (final responseType in responseTypes) {
       try {
         // Get fresh entity state before each inference
@@ -209,15 +219,9 @@ class UnifiedAiInferenceRepository {
           break;
         }
 
-        // Find a prompt for this response type
-        final allPrompts = await ref
-            .read(aiConfigRepositoryProvider)
-            .getConfigsByType(AiConfigType.prompt);
-
-        final matchingPrompt = allPrompts
-            .whereType<AiConfigPrompt>()
-            .where((p) => !p.archived && p.aiResponseType == responseType)
-            .firstOrNull;
+        // Find a prompt for this response type from the pre-fetched list
+        final matchingPrompt = activePrompts
+            .firstWhereOrNull((p) => p.aiResponseType == responseType);
 
         if (matchingPrompt == null) {
           developer.log(
@@ -241,13 +245,14 @@ class UnifiedAiInferenceRepository {
           onProgress(progressMessage);
         }
 
-        // Run the inference and wait for completion
+        // Run the inference and wait for completion, passing the entity to avoid redundant fetch
         await _runInferenceInternal(
           entityId: entityId,
           promptConfig: matchingPrompt,
           onProgress: onProgress,
           onStatusChange: onStatusChange,
           isRerun: false,
+          entity: entity, // Pass the entity we already fetched
         );
 
         developer.log(
@@ -278,15 +283,15 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required bool isRerun,
+    JournalEntity? entity, // Optional entity to avoid redundant fetches
   }) async {
     final start = DateTime.now();
 
     try {
       onStatusChange(InferenceStatus.running);
 
-      // Get the entity
-      final entity =
-          await ref.read(aiInputRepositoryProvider).getEntity(entityId);
+      // Get the entity if not provided
+      entity ??= await ref.read(aiInputRepositoryProvider).getEntity(entityId);
       if (entity == null) {
         throw Exception('Entity not found: $entityId');
       }
@@ -838,6 +843,7 @@ class UnifiedAiInferenceRepository {
           onProgress: onProgress,
           onStatusChange: onStatusChange,
           isRerun: true,
+          entity: entity, // Pass the entity to avoid redundant fetch
         );
         return; // Exit early to avoid duplicate processing
       }
