@@ -147,6 +147,7 @@ class Maintenance {
   }
 
   Future<void> removeActionItemSuggestions({
+    required bool triggeredAtAppStart,
     void Function(double)? onProgress,
   }) async {
     // Create backup before running destructive operation
@@ -170,6 +171,11 @@ class Maintenance {
 
     final persistenceLogic = getIt<PersistenceLogic>();
     final entryCount = await _db.getJournalCount();
+
+    if (triggeredAtAppStart && entryCount > 10000) {
+      return;
+    }
+
     const pageSize = 100;
     final pages = (entryCount / pageSize).ceil();
     var processed = 0;

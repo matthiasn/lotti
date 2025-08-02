@@ -91,7 +91,7 @@ Future<void> _checkAndRemoveActionItemSuggestions() async {
   if (hasRun == null || hasRun != 'true') {
     try {
       // Run the maintenance task
-      await maintenance.removeActionItemSuggestions();
+      await maintenance.removeActionItemSuggestions(triggeredAtAppStart: true);
 
       // Mark as completed
       await settingsDb.saveSettingsItem(settingsKey, 'true');

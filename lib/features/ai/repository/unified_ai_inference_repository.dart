@@ -15,7 +15,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
-import 'package:lotti/features/ai/helpers/sequential_inference_runner.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -181,72 +180,6 @@ class UnifiedAiInferenceRepository {
       onProgress: onProgress,
       onStatusChange: onStatusChange,
       isRerun: false,
-    );
-  }
-
-  /// Run multiple inferences sequentially for a given entity
-  /// This is used for chaining prompts like: transcription → checklist updates → summary
-  Future<void> runSequentialInferences({
-    required String entityId,
-    required List<AiResponseType> responseTypes,
-    required void Function(String) onProgress,
-    required void Function(InferenceStatus) onStatusChange,
-  }) async {
-    developer.log(
-      'Starting sequential inferences for entity $entityId with types: $responseTypes',
-      name: 'UnifiedAiInferenceRepository',
-    );
-
-    // Fetch all prompts once before the loop to improve performance
-    final allPrompts = await ref
-        .read(aiConfigRepositoryProvider)
-        .getConfigsByType(AiConfigType.prompt);
-
-    final activePrompts = allPrompts
-        .whereType<AiConfigPrompt>()
-        .where((p) => !p.archived)
-        .toList();
-
-    for (final responseType in responseTypes) {
-      // Get fresh entity state before each inference
-      final entity =
-          await ref.read(aiInputRepositoryProvider).getEntity(entityId);
-      if (entity == null) {
-        developer.log(
-          'Entity $entityId not found, stopping sequential inference',
-          name: 'UnifiedAiInferenceRepository',
-        );
-        break;
-      }
-
-      // Use the helper to run a single inference step
-      final success = await SequentialInferenceRunner.runSingleInferenceStep(
-        responseType: responseType,
-        activePrompts: activePrompts,
-        entityId: entityId,
-        entity: entity,
-        runInference: (entityId, promptConfig, {entity}) async {
-          await _runInferenceInternal(
-            entityId: entityId,
-            promptConfig: promptConfig,
-            onProgress: onProgress,
-            onStatusChange: onStatusChange,
-            isRerun: false,
-            entity: entity,
-          );
-        },
-        onProgress: onProgress,
-      );
-
-      if (!success) {
-        // Continue with next inference even if one fails
-        continue;
-      }
-    }
-
-    developer.log(
-      'Completed all sequential inferences for entity $entityId',
-      name: 'UnifiedAiInferenceRepository',
     );
   }
 
