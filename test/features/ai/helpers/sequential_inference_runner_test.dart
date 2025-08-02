@@ -62,7 +62,6 @@ void main() {
           activePrompts: activePrompts,
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => testEntity,
           runInference: (entityId, promptConfig, {entity}) async {
             inferenceLog.add('Ran inference: ${promptConfig.id}');
           },
@@ -82,7 +81,6 @@ void main() {
           activePrompts: emptyPrompts,
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => testEntity,
           runInference: (entityId, promptConfig, {entity}) async {
             inferenceLog.add('Ran inference: ${promptConfig.id}');
           },
@@ -101,7 +99,6 @@ void main() {
           activePrompts: activePrompts,
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => testEntity,
           runInference: (entityId, promptConfig, {entity}) async {
             throw Exception('Inference failed');
           },
@@ -128,7 +125,6 @@ void main() {
             activePrompts: activePrompts,
             entityId: 'test-entity',
             entity: testEntity,
-            getEntity: (_) async => testEntity,
             runInference: (entityId, promptConfig, {entity}) async {},
             onProgress: (message) => progressMessages.add(message),
           );
@@ -155,7 +151,6 @@ void main() {
           activePrompts: promptWithActionItems,
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => testEntity,
           runInference: (entityId, promptConfig, {entity}) async {},
           onProgress: (message) => progressMessages.add(message),
         );
@@ -171,7 +166,6 @@ void main() {
           activePrompts: activePrompts,
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => testEntity,
           runInference: (entityId, promptConfig, {entity}) async {
             capturedEntity = entity;
           },
@@ -354,7 +348,6 @@ void main() {
           activePrompts: activePrompts,
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => null,
           runInference: (entityId, promptConfig, {entity}) async {
             inferenceLog.add('Ran inference');
           },
@@ -371,7 +364,6 @@ void main() {
           activePrompts: [],
           entityId: 'test-entity',
           entity: testEntity,
-          getEntity: (_) async => testEntity,
           runInference: (entityId, promptConfig, {entity}) async {
             inferenceLog.add('Should not be called');
           },
@@ -406,24 +398,22 @@ void main() {
     });
 
     group('Performance and optimization', () {
-      test('does not call getEntity unnecessarily', () async {
-        var getEntityCallCount = 0;
+      test('passes entity directly without redundant fetching', () async {
+        JournalEntity? capturedEntity;
 
         await SequentialInferenceRunner.runSingleInferenceStep(
           responseType: AiResponseType.taskSummary,
           activePrompts: activePrompts,
           entityId: 'test-entity',
           entity: testEntity, // Entity is provided
-          getEntity: (_) async {
-            getEntityCallCount++;
-            return testEntity;
+          runInference: (entityId, promptConfig, {entity}) async {
+            capturedEntity = entity;
           },
-          runInference: (entityId, promptConfig, {entity}) async {},
           onProgress: (_) {},
         );
 
-        // getEntity should not be called since entity was provided
-        expect(getEntityCallCount, 0);
+        // Entity should be passed through correctly
+        expect(capturedEntity, equals(testEntity));
       });
 
       test('efficiently filters prompts without multiple iterations', () {

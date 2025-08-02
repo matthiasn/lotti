@@ -17,7 +17,6 @@ class SequentialInferenceRunner {
     required List<AiConfigPrompt> activePrompts,
     required String entityId,
     required JournalEntity entity,
-    required Future<JournalEntity?> Function(String) getEntity,
     required Future<void> Function(
       String entityId,
       AiConfigPrompt promptConfig, {

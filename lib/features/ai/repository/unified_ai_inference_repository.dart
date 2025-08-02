@@ -225,7 +225,6 @@ class UnifiedAiInferenceRepository {
         activePrompts: activePrompts,
         entityId: entityId,
         entity: entity,
-        getEntity: (id) => ref.read(aiInputRepositoryProvider).getEntity(id),
         runInference: (entityId, promptConfig, {entity}) async {
           await _runInferenceInternal(
             entityId: entityId,
