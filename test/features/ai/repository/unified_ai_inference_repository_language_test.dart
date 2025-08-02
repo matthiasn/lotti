@@ -179,7 +179,7 @@ void main() {
   }
 
   group('Language detection and setting', () {
-    test('includes task language tools for task summaries', () async {
+    test('task summaries do not include function tools', () async {
       final taskEntity = Task(
         meta: createMetadata(),
         data: TaskData(
@@ -222,6 +222,94 @@ void main() {
           .thenAnswer((_) async => '{"title": "Test Task"}');
 
       // Setup mock to capture the tools argument
+      final capturedTools = <List<ChatCompletionTool>?>[];
+      when(() => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
+            tools: captureAny(named: 'tools'),
+          )).thenAnswer((invocation) {
+        capturedTools.add(invocation.namedArguments[const Symbol('tools')]
+            as List<ChatCompletionTool>?);
+        return Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                delta:
+                    ChatCompletionStreamResponseDelta(content: 'Test response'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            created: 0,
+            model: 'test-model',
+          ),
+        ]);
+      });
+
+      await repository.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify that task summaries don't include any tools
+      expect(capturedTools, hasLength(1));
+      expect(capturedTools.first, isNull);
+    });
+
+    test('checklist updates include task language and checklist tools',
+        () async {
+      final taskEntity = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      final promptConfig = createPrompt(
+        id: 'prompt-1',
+        name: 'Checklist Updates',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.checklistUpdates,
+      );
+
+      final model = createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"title": "Test Task"}');
+
+      // Setup mock to capture the tools argument
       final capturedTools = <List<ChatCompletionTool>>[];
       when(() => mockCloudInferenceRepo.generate(
             any(),
@@ -241,8 +329,7 @@ void main() {
             id: 'response-1',
             choices: [
               ChatCompletionStreamResponseChoice(
-                delta:
-                    ChatCompletionStreamResponseDelta(content: 'Test response'),
+                delta: ChatCompletionStreamResponseDelta(content: ''),
                 finishReason: ChatCompletionFinishReason.stop,
                 index: 0,
               ),
@@ -270,7 +357,8 @@ void main() {
       expect(toolNames, contains('add_checklist_item'));
     });
 
-    test('handles set_task_language function call', () async {
+    test('handles set_task_language function call in checklist updates',
+        () async {
       final taskEntity = Task(
         meta: createMetadata(),
         data: TaskData(
@@ -288,8 +376,9 @@ void main() {
 
       final promptConfig = createPrompt(
         id: 'prompt-1',
-        name: 'Task Summary',
+        name: 'Checklist Updates',
         requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.checklistUpdates,
       );
 
       final model = createModel(
@@ -358,7 +447,7 @@ void main() {
               choices: [
                 ChatCompletionStreamResponseChoice(
                   delta: ChatCompletionStreamResponseDelta(
-                      content: 'Task summary in German...'),
+                      content: ''), // No text content for checklist updates
                   finishReason: ChatCompletionFinishReason.stop,
                   index: 0,
                 ),
@@ -376,11 +465,20 @@ void main() {
       );
 
       // Verify task was updated with language
-      final capturedEntity = verify(() => mockJournalRepo.updateJournalEntity(
+      final captured = verify(() => mockJournalRepo.updateJournalEntity(
             captureAny(),
-          )).captured.single as Task;
+          )).captured;
 
-      expect(capturedEntity.data.languageCode, equals('de'));
+      // Find the Task entity with language update
+      final taskUpdates = captured.whereType<Task>();
+      expect(taskUpdates, isNotEmpty);
+
+      final updatedTask = taskUpdates.firstWhere(
+        (task) => task.data.languageCode == 'de',
+        orElse: () => throw Exception('No task with German language found'),
+      );
+
+      expect(updatedTask.data.languageCode, equals('de'));
     });
 
     test('does not override existing language preference', () async {
@@ -402,8 +500,9 @@ void main() {
 
       final promptConfig = createPrompt(
         id: 'prompt-1',
-        name: 'Task Summary',
+        name: 'Checklist Updates',
         requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.checklistUpdates,
       );
 
       final model = createModel(
@@ -479,7 +578,8 @@ void main() {
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
     });
 
-    test('includes language preference in system message', () async {
+    test('includes language preference in system message for task summaries',
+        () async {
       final taskEntity = Task(
         meta: createMetadata(),
         data: TaskData(

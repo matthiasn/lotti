@@ -165,6 +165,7 @@ class AudioRecorderController extends _$AudioRecorderController {
               // Reset inference preferences for new recording (null by default)
               enableSpeechRecognition: null,
               enableTaskSummary: null,
+              enableChecklistUpdates: null,
             );
           }
         }

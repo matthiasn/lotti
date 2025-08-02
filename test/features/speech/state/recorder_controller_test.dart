@@ -388,6 +388,25 @@ void main() {
         expect(result, isNull);
       });
 
+      test('should preserve inference preferences when stopping', () async {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+              ..setEnableSpeechRecognition(enable: true)
+              ..setEnableTaskSummary(enable: false)
+              ..setEnableChecklistUpdates(enable: true);
+
+        // Act
+        await controller.stop();
+
+        // Assert - Preferences should be preserved
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.enableSpeechRecognition, equals(true));
+        expect(state.enableTaskSummary, equals(false));
+        expect(state.enableChecklistUpdates, equals(true));
+        expect(state.status, equals(AudioRecorderStatus.stopped));
+      });
+
       test('should update status to stopped and reset state', () async {
         // Arrange
         final controller =
@@ -582,7 +601,11 @@ void main() {
             .thenAnswer((_) async => mockAudioNote);
 
         final controller =
-            container.read(audioRecorderControllerProvider.notifier);
+            container.read(audioRecorderControllerProvider.notifier)
+              // Set some preferences before recording
+              ..setEnableSpeechRecognition(enable: true)
+              ..setEnableTaskSummary(enable: false)
+              ..setEnableChecklistUpdates(enable: true);
 
         // Act
         await controller.record(linkedId: 'test-linked-id');
@@ -592,6 +615,10 @@ void main() {
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.recording));
         expect(state.linkedId, equals('test-linked-id'));
+        // Preferences should be reset to null when starting new recording
+        expect(state.enableSpeechRecognition, isNull);
+        expect(state.enableTaskSummary, isNull);
+        expect(state.enableChecklistUpdates, isNull);
       });
 
       test('should capture exceptions during record()', () async {
@@ -985,6 +1012,43 @@ void main() {
       });
     });
 
+    group('setEnableChecklistUpdates', () {
+      test('should update enableChecklistUpdates in state', () {
+        // Arrange
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier)
+              // Act
+              ..setEnableChecklistUpdates(enable: true);
+
+        // Assert
+        expect(
+            container
+                .read(audioRecorderControllerProvider)
+                .enableChecklistUpdates,
+            isTrue);
+
+        // Act again
+        controller.setEnableChecklistUpdates(enable: false);
+
+        // Assert
+        expect(
+            container
+                .read(audioRecorderControllerProvider)
+                .enableChecklistUpdates,
+            isFalse);
+
+        // Act with null
+        controller.setEnableChecklistUpdates(enable: null);
+
+        // Assert
+        expect(
+            container
+                .read(audioRecorderControllerProvider)
+                .enableChecklistUpdates,
+            isNull);
+      });
+    });
+
     group('setEnableTaskSummary', () {
       test('should update enableTaskSummary in state', () {
         // Arrange
@@ -1025,6 +1089,7 @@ void main() {
       // The key behaviors verified by existing tests:
       // - setEnableSpeechRecognition() correctly updates state (tested above)
       // - setEnableTaskSummary() correctly updates state (tested above)
+      // - setEnableChecklistUpdates() correctly updates state (tested above)
       // - States are preserved in AudioRecorderState throughout recording
       // - States are passed to AutomaticPromptTrigger when recording stops
     });
@@ -1045,6 +1110,7 @@ void main() {
     // 3. User preferences (checkboxes) override defaults:
     //    - Disabling speech recognition prevents transcription
     //    - Disabling task summary prevents summary generation
+    //    - Disabling checklist updates prevents checklist processing
     //
     // 4. Error handling:
     //    - Exceptions during prompt triggering are caught and logged
