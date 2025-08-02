@@ -571,49 +571,26 @@ void main() {
       expect(find.text('Task Summary'), findsNothing);
     });
 
-    testWidgets(
-        'shows speech recognition checkbox when category has transcription prompts',
-        (tester) async {
-      // This test would require mocking the categoryDetailsControllerProvider
-      // which is complex in unit tests. The checkbox visibility logic
-      // is tested through integration tests.
-      expect(true, isTrue);
-    });
-
-    testWidgets('shows task summary checkbox only when linked to task',
-        (tester) async {
-      // This test would require mocking the categoryDetailsControllerProvider
-      // The checkbox visibility logic for task summary is tested through integration tests.
-      expect(true, isTrue);
-    });
-
-    testWidgets('speech recognition checkbox changes state when tapped',
-        (tester) async {
-      // This test would require setting up the category provider with automatic prompts
-      // The interaction is tested through integration tests.
-      expect(true, isTrue);
-    });
-
-    testWidgets('task summary checkbox changes state when tapped',
-        (tester) async {
-      // This test would require setting up the category provider with automatic prompts
-      // and linkedId. The interaction is tested through integration tests.
-      expect(true, isTrue);
-    });
-
-    testWidgets('checkboxes show disabled state when no prompts configured',
-        (tester) async {
-      // This test would require mocking category without automatic prompts
-      // The disabled state rendering is tested through integration tests.
-      expect(true, isTrue);
-    });
-
-    testWidgets('checkboxes preserve state across widget rebuilds',
-        (tester) async {
-      // This test would verify that checkbox states are properly maintained
-      // in the AudioRecorderState when the widget rebuilds.
-      expect(true, isTrue);
-    });
+    // NOTE: The checkbox visibility and interaction tests have been removed
+    // because they require complex mocking of categoryDetailsControllerProvider
+    // and its dependencies. These scenarios are covered by:
+    //
+    // 1. Integration tests that test the full recording flow with real category data
+    // 2. Unit tests in recorder_controller_test.dart that verify the state management
+    //    for enableSpeechRecognition and enableTaskSummary
+    //
+    // The controller tests ensure that:
+    // - setEnableSpeechRecognition() correctly updates the state
+    // - setEnableTaskSummary() correctly updates the state
+    // - The state is preserved across recording lifecycle
+    //
+    // The integration tests ensure that:
+    // - Checkboxes appear when category has automatic prompts configured
+    // - Checkboxes are hidden when no automatic prompts are configured
+    // - Checkbox interaction triggers the correct AI prompts after recording
+    //
+    // Adding mock-based tests here would provide minimal additional value
+    // while making the test suite more brittle and harder to maintain.
   });
 
   group('Utility Method Tests', () {
