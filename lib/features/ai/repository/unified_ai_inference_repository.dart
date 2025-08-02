@@ -15,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
+import 'package:lotti/features/ai/helpers/sequential_inference_runner.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -207,64 +208,38 @@ class UnifiedAiInferenceRepository {
         .toList();
 
     for (final responseType in responseTypes) {
-      try {
-        // Get fresh entity state before each inference
-        final entity =
-            await ref.read(aiInputRepositoryProvider).getEntity(entityId);
-        if (entity == null) {
-          developer.log(
-            'Entity $entityId not found, stopping sequential inference',
-            name: 'UnifiedAiInferenceRepository',
-          );
-          break;
-        }
-
-        // Find a prompt for this response type from the pre-fetched list
-        final matchingPrompt = activePrompts
-            .firstWhereOrNull((p) => p.aiResponseType == responseType);
-
-        if (matchingPrompt == null) {
-          developer.log(
-            'No active prompt found for response type $responseType, skipping',
-            name: 'UnifiedAiInferenceRepository',
-          );
-          continue;
-        }
-
-        // Update progress message based on response type
-        final progressMessage = switch (responseType) {
-          AiResponseType.audioTranscription => 'Transcribing audio...',
-          AiResponseType.checklistUpdates => 'Updating checklists...',
-          AiResponseType.taskSummary => 'Generating summary...',
-          AiResponseType.imageAnalysis => 'Analyzing image...',
-          // ignore: deprecated_member_use_from_same_package
-          AiResponseType.actionItemSuggestions => '',
-        };
-
-        if (progressMessage.isNotEmpty) {
-          onProgress(progressMessage);
-        }
-
-        // Run the inference and wait for completion, passing the entity to avoid redundant fetch
-        await _runInferenceInternal(
-          entityId: entityId,
-          promptConfig: matchingPrompt,
-          onProgress: onProgress,
-          onStatusChange: onStatusChange,
-          isRerun: false,
-          entity: entity, // Pass the entity we already fetched
-        );
-
+      // Get fresh entity state before each inference
+      final entity =
+          await ref.read(aiInputRepositoryProvider).getEntity(entityId);
+      if (entity == null) {
         developer.log(
-          'Completed inference for response type $responseType',
+          'Entity $entityId not found, stopping sequential inference',
           name: 'UnifiedAiInferenceRepository',
         );
-      } catch (e) {
-        developer.log(
-          'Error in sequential inference for type $responseType: $e',
-          name: 'UnifiedAiInferenceRepository',
-          error: e,
-        );
+        break;
+      }
+
+      // Use the helper to run a single inference step
+      final success = await SequentialInferenceRunner.runSingleInferenceStep(
+        responseType: responseType,
+        activePrompts: activePrompts,
+        entityId: entityId,
+        entity: entity,
+        getEntity: (id) => ref.read(aiInputRepositoryProvider).getEntity(id),
+        runInference: (entityId, promptConfig, {entity}) async {
+          await _runInferenceInternal(
+            entityId: entityId,
+            promptConfig: promptConfig,
+            onProgress: onProgress,
+            onStatusChange: onStatusChange,
+            isRerun: false,
+            entity: entity,
+          );
+        },
+        onProgress: onProgress,
+      );
+
+      if (!success) {
         // Continue with next inference even if one fails
         continue;
       }
