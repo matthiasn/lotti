@@ -152,6 +152,9 @@ dependency_overrides:
       path: record_linux
 
   rxdart: ^0.28.0
+  
+  # Force newer version of flutter_secure_storage_linux to fix C++ compilation issues
+  flutter_secure_storage_linux: ^2.0.1
 
 dev_dependencies:
   analyzer: ^7.3.0
