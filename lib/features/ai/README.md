@@ -35,8 +35,13 @@ The AI feature consists of several key components:
 
 #### State Management (`state/`)
 - **`unified_ai_controller.dart`**: Main controller orchestrating AI operations
+  - Uses helper methods (`_updateInferenceStatus`, `_startActiveInference`, etc.) for consistent state updates
+  - Handles both primary and linked entity status updates symmetrically
 - **`inference_status_controller.dart`**: Tracks inference progress and status
 - **`latest_summary_controller.dart`**: Manages the latest AI response for a task
+- **`active_inference_controller.dart`**: Tracks active inferences with linked entity support
+  - **Dual-Entry System**: Creates symmetric entries for both primary and linked entities
+  - **ActiveInferenceByEntity**: Finds active inferences for any entity (primary or linked)
 
 ## How Task Summaries Work
 
@@ -323,12 +328,16 @@ Models define:
 
 ### Response Display
 - **`ai_response_summary.dart`**: Renders AI responses with markdown support (filters H1 titles for task summaries)
-- **`latest_ai_response_summary.dart`**: Shows the most recent AI response for a task
+- **`latest_ai_response_summary.dart`**: Shows the most recent AI response for a task with animated transitions
+  - **Animated Transitions**: When regenerating summaries, keeps the old summary visible while showing a spinner in the header
+  - **Smooth Animation**: Uses `AnimatedSize` and `AnimatedSwitcher` for fade and size transitions between old and new summaries
+  - **State Preservation**: Previous response is cached to maintain UI continuity during regeneration
 - **`ai_response_summary_modal.dart`**: Full-screen view of AI responses
 
 ### Progress Indicators
-- **`unified_ai_progress_view.dart`**: Shows inference progress
+- **`unified_ai_progress_view.dart`**: Shows inference progress with real-time updates
 - **`ai_running_animation.dart`**: Animated indicator during processing
+- **`active_inference_controller.dart`**: Tracks active inferences across primary and linked entities
 
 ## Usage Example
 
@@ -352,6 +361,56 @@ LatestAiResponseSummary(
   aiResponseType: AiResponseType.taskSummary,
 )
 ```
+
+## Linked Entity Inference Tracking
+
+The AI system supports running inferences on entities that are linked to other entities (e.g., audio transcription for an audio entry linked to a task). The system ensures both entities are aware of the running inference.
+
+### How It Works
+
+When an inference starts with a linked entity, the system creates **two symmetric active inference entries**:
+
+1. **Primary Entity Entry**: For the main entity (e.g., audio) with `linkedEntityId` pointing to the linked entity (e.g., task)
+2. **Linked Entity Entry**: For the linked entity with `linkedEntityId` pointing back to the primary entity
+
+This dual-entry approach ensures:
+- Both entities can track the inference status independently
+- UI components can show inference indicators for both entities
+- Status updates (running, error, complete) propagate to both entities
+- Progress updates are visible from both entity perspectives
+
+### Implementation
+
+The `UnifiedAiController` uses helper methods to maintain consistency:
+
+```dart
+// Start inference for both entities
+void _startActiveInference(promptId, responseType, {linkedEntityId}) {
+  // Create entry for primary entity
+  activeInferenceController(entityId).startInference(promptId, linkedEntityId);
+  
+  // Also create entry for linked entity
+  if (linkedEntityId != null) {
+    activeInferenceController(linkedEntityId).startInference(promptId, entityId);
+  }
+}
+
+// Update status for both entities
+void _updateInferenceStatus(status, responseType, {linkedEntityId}) {
+  inferenceStatusController(entityId).setStatus(status);
+  
+  if (linkedEntityId != null) {
+    inferenceStatusController(linkedEntityId).setStatus(status);
+  }
+}
+```
+
+### Benefits
+
+- **No Central Registry Needed**: Each entity tracks its own involvement
+- **Symmetric Design**: Both entities are treated equally
+- **Simple Lookups**: Direct provider access without searching
+- **Consistent Updates**: All operations (start, update, clear) follow the same pattern
 
 ## Common Questions
 
