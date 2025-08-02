@@ -1,196 +1,594 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:mocktail/mocktail.dart';
 
-import '../../../test_helper.dart';
+class MockLoggingService extends Mock implements LoggingService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
+class MockJournalRepository extends Mock implements JournalRepository {}
 
 void main() {
-  group('LatestAiResponseSummary', () {
-    const testId = 'test-id';
-    const testAiResponseType = AiResponseType.taskSummary;
+  late MockLoggingService mockLoggingService;
+  late MockUpdateNotifications mockUpdateNotifications;
+  late MockJournalRepository mockJournalRepository;
+  late StreamController<Set<String>> updateStreamController;
 
-    testWidgets('widget builds correctly without provider setup',
+  setUpAll(() {
+    registerFallbackValue(StackTrace.current);
+  });
+
+  setUp(() {
+    mockLoggingService = MockLoggingService();
+    mockUpdateNotifications = MockUpdateNotifications();
+    mockJournalRepository = MockJournalRepository();
+    updateStreamController = StreamController<Set<String>>.broadcast();
+
+    // Register mocks in GetIt
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
+
+    getIt
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+
+    // Setup mock behaviors
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => updateStreamController.stream);
+
+    when(
+      () => mockLoggingService.captureEvent(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+  });
+
+  tearDown(() {
+    updateStreamController.close();
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
+  });
+
+  Widget buildTestWidget(
+    Widget child, {
+    List<Override> overrides = const [],
+  }) {
+    return ProviderScope(
+      overrides: overrides,
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: child,
+        ),
+      ),
+    );
+  }
+
+  group('LatestAiResponseSummary Animation Tests', () {
+    const testId = 'test-entity-1';
+    const testResponseType = AiResponseType.taskSummary;
+    late AiResponseEntry testResponse1;
+    late AiResponseEntry testResponse2;
+
+    setUp(() {
+      final now = DateTime.now();
+      testResponse1 = AiResponseEntry(
+        meta: Metadata(
+          id: 'response-1',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System message',
+          prompt: 'User prompt',
+          thoughts: '',
+          response: 'This is the first summary',
+          type: AiResponseType.taskSummary,
+          promptId: 'prompt-1',
+        ),
+      );
+
+      testResponse2 = AiResponseEntry(
+        meta: Metadata(
+          id: 'response-2',
+          createdAt: now.add(const Duration(minutes: 1)),
+          updatedAt: now.add(const Duration(minutes: 1)),
+          dateFrom: now.add(const Duration(minutes: 1)),
+          dateTo: now.add(const Duration(minutes: 1)),
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System message',
+          prompt: 'User prompt',
+          thoughts: '',
+          response:
+              'This is the updated summary with more content to test size animation',
+          type: AiResponseType.taskSummary,
+          promptId: 'prompt-1',
+        ),
+      );
+    });
+
+    testWidgets('keeps old summary visible while generating new one',
         (tester) async {
+      // Setup mock to return the test response
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: WidgetTestBench(
-            child: LatestAiResponseSummary(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
               id: testId,
-              aiResponseType: testAiResponseType,
+              aiResponseType: testResponseType,
             ),
           ),
         ),
       );
 
-      // Widget should be created, even without providers set up
-      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
-    });
+      await tester.pumpAndSettle();
 
-    testWidgets('widget accepts all AI response types', (tester) async {
-      const responseTypes = [
-        AiResponseType.taskSummary,
-        AiResponseType.imageAnalysis,
-        // ignore: deprecated_member_use_from_same_package
-        AiResponseType.actionItemSuggestions,
-        AiResponseType.audioTranscription,
-      ];
+      // Verify initial summary is shown
+      expect(find.byType(AiResponseSummary), findsOneWidget);
+      expect(find.text('This is the first summary'), findsOneWidget);
 
-      for (final responseType in responseTypes) {
-        await tester.pumpWidget(
-          ProviderScope(
-            child: WidgetTestBench(
-              child: LatestAiResponseSummary(
-                id: testId,
-                aiResponseType: responseType,
-              ),
-            ),
-          ),
-        );
-
-        expect(find.byType(LatestAiResponseSummary), findsOneWidget);
-
-        // Reset for next iteration
-        await tester.binding.delayed(Duration.zero);
-      }
-    });
-
-    testWidgets('widget has correct required parameters', (tester) async {
-      // Test that the widget requires both id and aiResponseType parameters
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: WidgetTestBench(
-            child: LatestAiResponseSummary(
-              id: 'custom-test-id',
-              aiResponseType: AiResponseType.imageAnalysis,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
-    });
-
-    testWidgets('widget is a ConsumerWidget', (tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: WidgetTestBench(
-            child: LatestAiResponseSummary(
+      // Start running inference
+      container
+          .read(
+            inferenceStatusControllerProvider(
               id: testId,
-              aiResponseType: testAiResponseType,
+              aiResponseType: testResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      await tester.pump();
+
+      // Verify old summary is still visible with spinner in header
+      expect(find.byType(AiResponseSummary), findsOneWidget);
+      expect(find.text('This is the first summary'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      container.dispose();
+    });
+
+    testWidgets('has AnimatedSize and AnimatedSwitcher widgets',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify both animation widgets are present
+      expect(find.byType(AnimatedSize), findsOneWidget);
+      expect(find.byType(AnimatedSwitcher), findsOneWidget);
+      expect(find.byType(AiResponseSummary), findsOneWidget);
+    });
+
+    testWidgets('AnimatedSize wraps AnimatedSwitcher correctly',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify AnimatedSize contains AnimatedSwitcher
+      final animatedSize = tester.widget<AnimatedSize>(
+        find.byType(AnimatedSize),
+      );
+
+      // Check AnimatedSize configuration
+      expect(animatedSize.duration, const Duration(milliseconds: 600));
+      expect(animatedSize.curve, Curves.easeInOut);
+
+      // Verify AnimatedSwitcher is a child of AnimatedSize
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedSize),
+          matching: find.byType(AnimatedSwitcher),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('transitions between summaries with size and fade animation',
+        (tester) async {
+      // Start with first response
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify initial summary
+      expect(find.text('This is the first summary'), findsOneWidget);
+
+      // Update mock to return new response
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse2]);
+
+      // Trigger update by sending notification
+      updateStreamController.add({aiResponseNotification, testId});
+
+      // Wait a bit for the stream to process
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Complete the animation
+      await tester.pumpAndSettle();
+
+      // Verify new summary is shown
+      expect(
+        find.text(
+            'This is the updated summary with more content to test size animation'),
+        findsOneWidget,
+      );
+
+      // Verify AnimatedSize is still present
+      expect(find.byType(AnimatedSize), findsOneWidget);
+    });
+
+    testWidgets('shows spinner in header while running', (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
             ),
           ),
         ),
       );
 
-      // The widget should extend ConsumerWidget as indicated in the source
-      final widget = tester.widget(find.byType(LatestAiResponseSummary));
-      expect(widget, isA<ConsumerWidget>());
+      await tester.pumpAndSettle();
+
+      // Set status to running after widget is built
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: testResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      await tester.pump();
+
+      // Verify spinner is shown in header
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Verify the spinner is inside an IconButton
+      final iconButton = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byType(CircularProgressIndicator),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(iconButton, isNotNull);
+
+      container.dispose();
     });
 
-    testWidgets('widget builds with different IDs', (tester) async {
-      final testIds = [
-        'id-1',
-        'id-2',
-        'id-3',
-        'very-long-test-id-with-many-chars'
-      ];
+    testWidgets('shows refresh button when not running', (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
 
-      for (final id in testIds) {
-        await tester.pumpWidget(
-          ProviderScope(
-            child: WidgetTestBench(
-              child: LatestAiResponseSummary(
-                id: id,
-                aiResponseType: testAiResponseType,
-              ),
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify refresh button is shown
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('handles null response gracefully', (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show nothing when response is null
+      expect(find.byType(SizedBox), findsWidgets);
+      expect(find.byType(AiResponseSummary), findsNothing);
+      expect(find.byType(AnimatedSize), findsNothing);
+      expect(find.byType(AnimatedSwitcher), findsNothing);
+    });
+
+    testWidgets('AnimatedSwitcher uses only FadeTransition', (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the AnimatedSwitcher and verify its configuration
+      final animatedSwitcher = tester.widget<AnimatedSwitcher>(
+        find.byType(AnimatedSwitcher),
+      );
+
+      expect(animatedSwitcher.duration, const Duration(milliseconds: 600));
+      expect(animatedSwitcher.switchInCurve, Curves.easeInOut);
+      expect(animatedSwitcher.switchOutCurve, Curves.easeInOut);
+
+      // Verify the transition builder creates only FadeTransition (no SizeTransition)
+      final testChild = Container();
+      const testAnimation = AlwaysStoppedAnimation<double>(1);
+      final transitionWidget = animatedSwitcher.transitionBuilder(
+        testChild,
+        testAnimation,
+      );
+
+      expect(transitionWidget, isA<FadeTransition>());
+      final fadeTransition = transitionWidget as FadeTransition;
+      // Verify it doesn't wrap with SizeTransition anymore
+      expect(fadeTransition.child, isNot(isA<SizeTransition>()));
+      expect(fadeTransition.child, same(testChild));
+    });
+
+    testWidgets('preserves state during inference', (tester) async {
+      // Initial state with first response
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse1]);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
             ),
           ),
-        );
+        ),
+      );
 
-        expect(find.byType(LatestAiResponseSummary), findsOneWidget);
+      await tester.pumpAndSettle();
 
-        // Reset for next iteration
-        await tester.binding.delayed(Duration.zero);
-      }
+      // Verify initial state
+      expect(find.text('This is the first summary'), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+
+      // Start inference (simulating regeneration)
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: testResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      await tester.pump();
+
+      // During inference, old summary should still be visible
+      expect(find.text('This is the first summary'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.refresh),
+          findsNothing); // Refresh hidden during run
+
+      // Complete inference with new response
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse2]);
+
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: testResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
+
+      // Trigger update
+      updateStreamController.add({aiResponseNotification, testId});
+
+      await tester.pumpAndSettle();
+
+      // New summary should be shown
+      expect(
+        find.text(
+            'This is the updated summary with more content to test size animation'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      container.dispose();
     });
 
-    group('widget structure tests', () {
-      testWidgets('widget has proper constructor', (tester) async {
-        // This test verifies that the widget constructor accepts the correct parameters
-        // and has the expected structure as seen in the source code
-        const widget = LatestAiResponseSummary(
-          id: testId,
-          aiResponseType: testAiResponseType,
-        );
+    testWidgets('loading state shows CircularProgressIndicator',
+        (tester) async {
+      // Create a completer to control when the future completes
+      final completer = Completer<List<JournalEntity>>();
 
-        expect(widget.id, equals(testId));
-        expect(widget.aiResponseType, equals(testAiResponseType));
-        expect(widget.key, isNull); // key is optional
-      });
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) => completer.future);
 
-      testWidgets('widget accepts optional key parameter', (tester) async {
-        const testKey = Key('test-key');
-        const widget = LatestAiResponseSummary(
-          key: testKey,
-          id: testId,
-          aiResponseType: testAiResponseType,
-        );
-
-        expect(widget.key, equals(testKey));
-        expect(widget.id, equals(testId));
-        expect(widget.aiResponseType, equals(testAiResponseType));
-      });
-    });
-
-    group('code structure verification', () {
-      testWidgets('widget contains expected method signatures based on source',
-          (tester) async {
-        // This test verifies that the widget builds without errors,
-        // confirming that the internal structure matches what we expect
-        // from reading the source code
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: WidgetTestBench(
-              child: LatestAiResponseSummary(
-                id: testId,
-                aiResponseType: testAiResponseType,
-              ),
-            ),
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
           ),
-        );
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
 
-        // The widget builds successfully, confirming:
-        // 1. It properly extends ConsumerWidget
-        // 2. It has a build method that accepts BuildContext and WidgetRef
-        // 3. It watches the required providers (latestSummaryControllerProvider, inferenceStatusControllerProvider)
-        // 4. It has a showThoughtsModal function defined locally
-        // 5. The widget structure matches expected patterns
-        expect(find.byType(LatestAiResponseSummary), findsOneWidget);
-      });
+      await tester.pump();
 
-      testWidgets('widget handles provider watching correctly', (tester) async {
-        // Test that the widget can be built multiple times without issues
-        // This indirectly tests that provider watching is set up correctly
-        for (var i = 0; i < 3; i++) {
-          await tester.pumpWidget(
-            ProviderScope(
-              child: WidgetTestBench(
-                child: LatestAiResponseSummary(
-                  id: '$testId-$i',
-                  aiResponseType: testAiResponseType,
-                ),
-              ),
-            ),
-          );
+      // Should show loading indicator
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(AnimatedSize), findsNothing);
+      expect(find.byType(AnimatedSwitcher), findsNothing);
 
-          expect(find.byType(LatestAiResponseSummary), findsOneWidget);
+      // Complete the future to clean up
+      completer.complete([]);
+      await tester.pump();
+    });
 
-          // Rebuild with different parameters
-          await tester.pumpWidget(Container());
-        }
-      });
+    testWidgets('error state shows error message', (tester) async {
+      const errorMessage = 'Failed to load summary';
+
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenThrow(errorMessage);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show error message
+      expect(
+          find.text('Error loading AI summary: $errorMessage'), findsOneWidget);
+      expect(find.byType(AnimatedSize), findsNothing);
+      expect(find.byType(AnimatedSwitcher), findsNothing);
     });
   });
 }
