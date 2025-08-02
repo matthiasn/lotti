@@ -50,6 +50,10 @@ mixin _$AudioRecorderState {
   /// If null, uses category default settings.
   bool? get enableTaskSummary => throw _privateConstructorUsedError;
 
+  /// Whether to trigger checklist updates after recording (if linked to task).
+  /// If null, uses category default settings.
+  bool? get enableChecklistUpdates => throw _privateConstructorUsedError;
+
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -73,7 +77,8 @@ abstract class $AudioRecorderStateCopyWith<$Res> {
       String? language,
       String? linkedId,
       bool? enableSpeechRecognition,
-      bool? enableTaskSummary});
+      bool? enableTaskSummary,
+      bool? enableChecklistUpdates});
 }
 
 /// @nodoc
@@ -101,6 +106,7 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
     Object? linkedId = freezed,
     Object? enableSpeechRecognition = freezed,
     Object? enableTaskSummary = freezed,
+    Object? enableChecklistUpdates = freezed,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -143,6 +149,10 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
           ? _value.enableTaskSummary
           : enableTaskSummary // ignore: cast_nullable_to_non_nullable
               as bool?,
+      enableChecklistUpdates: freezed == enableChecklistUpdates
+          ? _value.enableChecklistUpdates
+          : enableChecklistUpdates // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ) as $Val);
   }
 }
@@ -165,7 +175,8 @@ abstract class _$$AudioRecorderStateImplCopyWith<$Res>
       String? language,
       String? linkedId,
       bool? enableSpeechRecognition,
-      bool? enableTaskSummary});
+      bool? enableTaskSummary,
+      bool? enableChecklistUpdates});
 }
 
 /// @nodoc
@@ -191,6 +202,7 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
     Object? linkedId = freezed,
     Object? enableSpeechRecognition = freezed,
     Object? enableTaskSummary = freezed,
+    Object? enableChecklistUpdates = freezed,
   }) {
     return _then(_$AudioRecorderStateImpl(
       status: null == status
@@ -233,6 +245,10 @@ class __$$AudioRecorderStateImplCopyWithImpl<$Res>
           ? _value.enableTaskSummary
           : enableTaskSummary // ignore: cast_nullable_to_non_nullable
               as bool?,
+      enableChecklistUpdates: freezed == enableChecklistUpdates
+          ? _value.enableChecklistUpdates
+          : enableChecklistUpdates // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ));
   }
 }
@@ -250,7 +266,8 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
       required this.language,
       this.linkedId,
       this.enableSpeechRecognition,
-      this.enableTaskSummary});
+      this.enableTaskSummary,
+      this.enableChecklistUpdates});
 
   /// Current status of the recorder.
   @override
@@ -296,9 +313,14 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
   @override
   final bool? enableTaskSummary;
 
+  /// Whether to trigger checklist updates after recording (if linked to task).
+  /// If null, uses category default settings.
+  @override
+  final bool? enableChecklistUpdates;
+
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates)';
   }
 
   @override
@@ -323,7 +345,9 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
                     other.enableSpeechRecognition, enableSpeechRecognition) ||
                 other.enableSpeechRecognition == enableSpeechRecognition) &&
             (identical(other.enableTaskSummary, enableTaskSummary) ||
-                other.enableTaskSummary == enableTaskSummary));
+                other.enableTaskSummary == enableTaskSummary) &&
+            (identical(other.enableChecklistUpdates, enableChecklistUpdates) ||
+                other.enableChecklistUpdates == enableChecklistUpdates));
   }
 
   @override
@@ -338,7 +362,8 @@ class _$AudioRecorderStateImpl implements _AudioRecorderState {
       language,
       linkedId,
       enableSpeechRecognition,
-      enableTaskSummary);
+      enableTaskSummary,
+      enableChecklistUpdates);
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.
@@ -361,7 +386,8 @@ abstract class _AudioRecorderState implements AudioRecorderState {
       required final String? language,
       final String? linkedId,
       final bool? enableSpeechRecognition,
-      final bool? enableTaskSummary}) = _$AudioRecorderStateImpl;
+      final bool? enableTaskSummary,
+      final bool? enableChecklistUpdates}) = _$AudioRecorderStateImpl;
 
   /// Current status of the recorder.
   @override
@@ -406,6 +432,11 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   /// If null, uses category default settings.
   @override
   bool? get enableTaskSummary;
+
+  /// Whether to trigger checklist updates after recording (if linked to task).
+  /// If null, uses category default settings.
+  @override
+  bool? get enableChecklistUpdates;
 
   /// Create a copy of AudioRecorderState
   /// with the given fields replaced by the non-null parameter values.

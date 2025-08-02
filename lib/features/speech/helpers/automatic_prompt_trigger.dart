@@ -27,9 +27,14 @@ class AutomaticPromptTrigger {
   /// - Triggers if user preference is true, OR
   /// - Triggers if user preference is null AND category has automatic transcription configured
   ///
-  /// For task summary:
+  /// For checklist updates:
   /// - Only triggers if linked to a task
   /// - Waits for transcription to complete first (if transcription is triggered)
+  /// - Triggered if category has automatic checklist updates configured
+  ///
+  /// For task summary:
+  /// - Only triggers if linked to a task
+  /// - Waits for transcription and checklist updates to complete first
   /// - Uses same preference logic as transcription
   Future<void> triggerAutomaticPrompts(
     String entryId,
@@ -49,6 +54,14 @@ class AutomaticPromptTrigger {
                 .isNotEmpty;
         final shouldTriggerTranscription =
             state.enableSpeechRecognition ?? hasAutomaticTranscription;
+
+        // Determine if checklist updates should be triggered
+        final hasAutomaticChecklistUpdates = category.automaticPrompts!
+                .containsKey(AiResponseType.checklistUpdates) &&
+            category
+                .automaticPrompts![AiResponseType.checklistUpdates]!.isNotEmpty;
+        final shouldTriggerChecklistUpdates = isLinkedToTask &&
+            (state.enableChecklistUpdates ?? hasAutomaticChecklistUpdates);
 
         // Determine if task summary should be triggered
         final hasAutomaticTaskSummary = category.automaticPrompts!
@@ -79,10 +92,55 @@ class AutomaticPromptTrigger {
             ).future,
           );
 
-          // If task summary is not needed, we can await the transcription here
-          // Otherwise, we'll wait for it before triggering task summary
-          if (!shouldTriggerTaskSummary || linkedTaskId == null) {
+          // If neither checklist updates nor task summary is needed, await transcription
+          // Otherwise, we'll wait for it before triggering the next steps
+          if (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary ||
+              linkedTaskId == null) {
             await transcriptionFuture;
+          }
+        }
+
+        // Trigger checklist updates if enabled and linked to task
+        Future<void>? checklistUpdatesFuture;
+        if (shouldTriggerChecklistUpdates &&
+            linkedTaskId != null &&
+            hasAutomaticChecklistUpdates) {
+          final checklistUpdatesPromptIds =
+              category.automaticPrompts![AiResponseType.checklistUpdates]!;
+          final promptId = checklistUpdatesPromptIds.first;
+
+          loggingService.captureEvent(
+            'Triggering checklist updates for task $linkedTaskId (transcription pending: ${transcriptionFuture != null})',
+            domain: 'automatic_prompt_trigger',
+            subDomain: 'triggerAutomaticPrompts',
+          );
+
+          // If transcription was triggered, wait for it to complete
+          if (transcriptionFuture != null) {
+            loggingService.captureEvent(
+              'Waiting for transcription to complete before checklist updates',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+            await transcriptionFuture;
+            loggingService.captureEvent(
+              'Transcription completed, now triggering checklist updates',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+          }
+
+          // Trigger checklist updates on the task entity
+          checklistUpdatesFuture = ref.read(
+            triggerNewInferenceProvider(
+              entityId: linkedTaskId,
+              promptId: promptId,
+            ).future,
+          );
+
+          // If task summary is not needed, await checklist updates
+          if (!shouldTriggerTaskSummary) {
+            await checklistUpdatesFuture;
           }
         }
 
@@ -95,14 +153,14 @@ class AutomaticPromptTrigger {
           final promptId = taskSummaryPromptIds.first;
 
           loggingService.captureEvent(
-            'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null})',
+            'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null}, checklist updates pending: ${checklistUpdatesFuture != null})',
             domain: 'automatic_prompt_trigger',
             subDomain: 'triggerAutomaticPrompts',
           );
 
-          // If transcription was triggered, wait for it to complete
-          // This ensures the task summary includes the transcribed content
-          if (transcriptionFuture != null) {
+          // Wait for any pending operations to complete
+          // This ensures the task summary includes all updates
+          if (transcriptionFuture != null && checklistUpdatesFuture == null) {
             loggingService.captureEvent(
               'Waiting for transcription to complete before task summary',
               domain: 'automatic_prompt_trigger',
@@ -111,6 +169,18 @@ class AutomaticPromptTrigger {
             await transcriptionFuture;
             loggingService.captureEvent(
               'Transcription completed, now triggering task summary',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+          } else if (checklistUpdatesFuture != null) {
+            loggingService.captureEvent(
+              'Waiting for checklist updates to complete before task summary',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+            await checklistUpdatesFuture;
+            loggingService.captureEvent(
+              'Checklist updates completed, now triggering task summary',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );

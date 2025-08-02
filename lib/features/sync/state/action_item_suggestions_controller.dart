@@ -43,6 +43,7 @@ class ActionItemSuggestionsController
 
     try {
       await _maintenance.removeActionItemSuggestions(
+        triggeredAtAppStart: false,
         onProgress: (progress) {
           state = state.copyWith(progress: progress);
         },

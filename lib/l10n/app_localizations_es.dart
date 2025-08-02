@@ -403,6 +403,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiResponseTypeAudioTranscription => 'Audio Transcription';
 
   @override
+  String get aiResponseTypeChecklistUpdates => 'Checklist Updates';
+
+  @override
   String get aiResponseTypeImageAnalysis => 'Image Analysis';
 
   @override
@@ -1526,6 +1529,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get audioRecordings => 'Audio Recordings';
+
+  @override
+  String get checklistUpdates => 'Checklist Updates';
 
   @override
   String get images => 'Images';

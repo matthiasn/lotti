@@ -2,38 +2,88 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
-  group('Task Summary Language Generation', () {
-    test('prompt instructs AI to continue generating after function calls', () {
-      // Check system message
+  group('Task Summary and Checklist Updates Separation', () {
+    test('task summary prompt does not include function call instructions', () {
+      // Task summary should focus only on generating text summaries
       expect(
         taskSummaryPrompt.systemMessage,
-        contains(
-            'You MUST generate BOTH function calls AND the complete task summary in ONE response'),
+        isNot(contains('function')),
       );
       expect(
         taskSummaryPrompt.systemMessage,
-        contains(
-            'DO NOT stop after calling functions - continue with the full summary immediately'),
+        isNot(contains('set_task_language')),
+      );
+      expect(
+        taskSummaryPrompt.userMessage,
+        isNot(contains('function')),
       );
 
-      // Check user message
+      // Should still handle language preference for output
       expect(
-        taskSummaryPrompt.userMessage,
-        contains(
-            'You MUST generate the ENTIRE task summary regardless of any function calls you make'),
+        taskSummaryPrompt.systemMessage,
+        contains('Generate the summary in the language'),
       );
       expect(
         taskSummaryPrompt.userMessage,
-        contains(
-            'Function calls (like set_task_language) are side effects - you must still provide the full summary!'),
+        contains('Generate the summary in the language specified'),
       );
     });
 
-    test('prompt handles existing language preference correctly', () {
+    test('checklist updates prompt only handles function calls', () {
+      // Check that checklist updates is function-only
       expect(
-        taskSummaryPrompt.systemMessage,
+        checklistUpdatesPrompt.systemMessage,
+        contains('ONLY processes task updates through function calls'),
+      );
+      expect(
+        checklistUpdatesPrompt.systemMessage,
+        contains('You should NOT generate any text response'),
+      );
+      expect(
+        checklistUpdatesPrompt.systemMessage,
+        contains('ONLY output function calls, no other text'),
+      );
+    });
+
+    test('checklist updates prompt includes language detection function', () {
+      expect(
+        checklistUpdatesPrompt.systemMessage,
+        contains('set_task_language'),
+      );
+      expect(
+        checklistUpdatesPrompt.systemMessage,
         contains('ONLY use if languageCode is null in the task data'),
       );
+    });
+
+    test('checklist updates prompt includes checklist completion functions',
+        () {
+      expect(
+        checklistUpdatesPrompt.systemMessage,
+        contains('suggest_checklist_completion'),
+      );
+      expect(
+        checklistUpdatesPrompt.systemMessage,
+        contains('add_checklist_item'),
+      );
+    });
+
+    test('prompts have clear separation of concerns', () {
+      // Task summary focuses on text generation
+      expect(
+        taskSummaryPrompt.description,
+        contains('comprehensive summary'),
+      );
+
+      // Checklist updates focuses on function calls
+      expect(
+        checklistUpdatesPrompt.description,
+        contains('Process task updates through function calls'),
+      );
+
+      // They are distinct prompts
+      expect(taskSummaryPrompt.name, equals('Task Summary'));
+      expect(checklistUpdatesPrompt.name, equals('Checklist Updates'));
     });
   });
 }

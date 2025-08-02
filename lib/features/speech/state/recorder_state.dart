@@ -58,5 +58,9 @@ class AudioRecorderState with _$AudioRecorderState {
     /// Whether to trigger task summary after recording (if linked to task).
     /// If null, uses category default settings.
     bool? enableTaskSummary,
+
+    /// Whether to trigger checklist updates after recording (if linked to task).
+    /// If null, uses category default settings.
+    bool? enableChecklistUpdates,
   }) = _AudioRecorderState;
 }

@@ -190,15 +190,15 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required bool isRerun,
+    JournalEntity? entity, // Optional entity to avoid redundant fetches
   }) async {
     final start = DateTime.now();
 
     try {
       onStatusChange(InferenceStatus.running);
 
-      // Get the entity
-      final entity =
-          await ref.read(aiInputRepositoryProvider).getEntity(entityId);
+      // Get the entity if not provided
+      entity ??= await ref.read(aiInputRepositoryProvider).getEntity(entityId);
       if (entity == null) {
         throw Exception('Entity not found: $entityId');
       }
@@ -260,6 +260,7 @@ class UnifiedAiInferenceRepository {
         temperature: 0.6,
         systemMessage: systemMessage,
         entity: entity,
+        promptConfig: promptConfig,
       );
 
       // Process the stream and accumulate tool calls
@@ -582,6 +583,7 @@ class UnifiedAiInferenceRepository {
     required String? audioBase64,
     required double temperature,
     required JournalEntity entity,
+    required AiConfigPrompt promptConfig,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
 
@@ -621,9 +623,32 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
       );
     } else {
-      // Include checklist completion and task tools if processing a task with function calling support
+      // Determine tools based on response type and entity
       List<ChatCompletionTool>? tools;
-      if (entity is Task && model.supportsFunctionCalling) {
+
+      // For checklistUpdates response type, always include function tools regardless of entity type
+      // This is because checklist updates can be triggered from various contexts
+      if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
+          model.supportsFunctionCalling) {
+        tools = [
+          ...ChecklistCompletionFunctions.getTools(),
+          ...TaskFunctions.getTools(),
+        ];
+        developer.log(
+          'Including checklist and task tools for checklistUpdates response type',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+      // For task summary, no longer include function tools (they're handled separately now)
+      else if (promptConfig.aiResponseType == AiResponseType.taskSummary) {
+        tools = null;
+        developer.log(
+          'Task summary processing without function tools (functions handled separately)',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      }
+      // Legacy behavior for other cases (should not happen in practice)
+      else if (entity is Task && model.supportsFunctionCalling) {
         tools = [
           ...ChecklistCompletionFunctions.getTools(),
           ...TaskFunctions.getTools(),
@@ -725,6 +750,7 @@ class UnifiedAiInferenceRepository {
           onProgress: onProgress,
           onStatusChange: onStatusChange,
           isRerun: true,
+          entity: entity, // Pass the entity to avoid redundant fetch
         );
         return; // Exit early to avoid duplicate processing
       }
@@ -747,9 +773,11 @@ class UnifiedAiInferenceRepository {
       type: promptConfig.aiResponseType,
     );
 
-    // Save the AI response entry
+    // Save the AI response entry (except for checklist updates which are function-only)
     AiResponseEntry? aiResponseEntry;
-    if (entity is! JournalAudio && entity is! JournalImage) {
+    if (entity is! JournalAudio &&
+        entity is! JournalImage &&
+        promptConfig.aiResponseType != AiResponseType.checklistUpdates) {
       try {
         aiResponseEntry =
             await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
@@ -769,6 +797,11 @@ class UnifiedAiInferenceRepository {
           error: e,
         );
       }
+    } else if (promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      developer.log(
+        'Skipping AI response entry creation for checklistUpdates (function-only response)',
+        name: 'UnifiedAiInferenceRepository',
+      );
     }
 
     // Handle special post-processing
@@ -803,6 +836,13 @@ class UnifiedAiInferenceRepository {
     final journalRepo = ref.read(journalRepositoryProvider);
 
     switch (promptConfig.aiResponseType) {
+      case AiResponseType.checklistUpdates:
+        // For checklist updates, we only process function calls, no text response
+        // The function calls have already been processed at this point
+        developer.log(
+          'Checklist updates completed (function calls only, no text response to save)',
+          name: 'UnifiedAiInferenceRepository',
+        );
       case AiResponseType.imageAnalysis:
         if (entity is JournalImage) {
           // Get current image state to avoid overwriting concurrent changes

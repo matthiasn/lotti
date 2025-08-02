@@ -165,6 +165,7 @@ class AudioRecorderController extends _$AudioRecorderController {
               // Reset inference preferences for new recording (null by default)
               enableSpeechRecognition: null,
               enableTaskSummary: null,
+              enableChecklistUpdates: null,
             );
           }
         }
@@ -201,6 +202,7 @@ class AudioRecorderController extends _$AudioRecorderController {
       // Preserve the inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
       final enableTaskSummary = state.enableTaskSummary;
+      final enableChecklistUpdates = state.enableChecklistUpdates;
 
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
@@ -213,6 +215,7 @@ class AudioRecorderController extends _$AudioRecorderController {
         // Preserve the inference preferences
         enableSpeechRecognition: enableSpeechRecognition,
         enableTaskSummary: enableTaskSummary,
+        enableChecklistUpdates: enableChecklistUpdates,
       );
       if (_audioNote != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
@@ -305,6 +308,12 @@ class AudioRecorderController extends _$AudioRecorderController {
   /// If null, uses category default settings.
   void setEnableTaskSummary({required bool? enable}) {
     state = state.copyWith(enableTaskSummary: enable);
+  }
+
+  /// Sets whether to enable checklist updates for the recording.
+  /// If null, uses category default settings.
+  void setEnableChecklistUpdates({required bool? enable}) {
+    state = state.copyWith(enableChecklistUpdates: enable);
   }
 
   /// Triggers automatic prompts based on category settings and user preferences

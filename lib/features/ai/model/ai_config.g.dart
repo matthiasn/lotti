@@ -164,4 +164,5 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.taskSummary: 'TaskSummary',
   AiResponseType.imageAnalysis: 'ImageAnalysis',
   AiResponseType.audioTranscription: 'AudioTranscription',
+  AiResponseType.checklistUpdates: 'ChecklistUpdates',
 };
