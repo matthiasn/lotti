@@ -213,26 +213,11 @@ class UnifiedAiController extends _$UnifiedAiController {
       try {
         final config = await ref.read(aiConfigByIdProvider(promptId).future);
         if (config != null && config is AiConfigPrompt) {
-          ref
-              .read(
-                inferenceStatusControllerProvider(
-                  id: entityId,
-                  aiResponseType: config.aiResponseType,
-                ).notifier,
-              )
-              .setStatus(InferenceStatus.error);
-
-          // Also update linked entity status if provided
-          if (linkedEntityId != null) {
-            ref
-                .read(
-                  inferenceStatusControllerProvider(
-                    id: linkedEntityId,
-                    aiResponseType: config.aiResponseType,
-                  ).notifier,
-                )
-                .setStatus(InferenceStatus.error);
-          }
+          _updateInferenceStatus(
+            InferenceStatus.error,
+            config.aiResponseType,
+            linkedEntityId: linkedEntityId,
+          );
         }
       } catch (_) {
         // Ignore errors when setting status
