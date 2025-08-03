@@ -91,6 +91,7 @@ static void my_application_activate(GApplication* application) {
   // Set the icon name for desktop integration fallback
   gtk_window_set_icon_name(window, ICON_THEME_NAME);
 
+  gtk_window_set_icon_from_file(window, "assets/icon/app_icon_1024.png", NULL);
   gtk_window_set_default_size(window, 1280, 720);
   gtk_widget_show(GTK_WIDGET(window));
 
