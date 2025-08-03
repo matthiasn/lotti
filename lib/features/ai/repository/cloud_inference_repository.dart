@@ -369,10 +369,10 @@ class CloudInferenceRepository {
   ///
   /// This method handles the specific requirements for Ollama text generation:
   /// - Validates input parameters
-  /// - Makes direct HTTP calls to Ollama's /api/generate endpoint
+  /// - Uses /api/chat endpoint when tools are provided (for function calling support)
+  /// - Uses /api/generate endpoint for regular text generation
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
-  /// - Note: Ollama doesn't support function calling tools, so the tools parameter is ignored
   Stream<CreateChatCompletionStreamResponse> _generateTextWithOllama({
     required String prompt,
     required String model,
@@ -389,6 +389,19 @@ class CloudInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
     );
+
+    // Use chat endpoint if tools are provided, otherwise use generate endpoint
+    if (tools != null && tools.isNotEmpty) {
+      return _generateTextWithOllamaChat(
+        prompt: prompt,
+        model: model,
+        temperature: temperature,
+        systemMessage: systemMessage,
+        provider: provider,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+      );
+    }
 
     final requestBody = {
       'model': model,
@@ -409,6 +422,226 @@ class CloudInferenceRepository {
       provider: provider,
       model: model,
     );
+  }
+
+  /// Generate text using Ollama's chat API with function calling support
+  ///
+  /// This method uses the /api/chat endpoint which supports tool calling
+  /// for models that have function calling capabilities.
+  Stream<CreateChatCompletionStreamResponse> _generateTextWithOllamaChat({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    required List<ChatCompletionTool> tools,
+    required String? systemMessage,
+    int? maxCompletionTokens,
+  }) {
+    // Convert tools to Ollama format
+    final ollamaTools = tools
+        .map((tool) => {
+              'type': 'function',
+              'function': {
+                'name': tool.function.name,
+                'description': tool.function.description,
+                'parameters': tool.function.parameters ?? {},
+              },
+            })
+        .toList();
+
+    developer.log(
+      'Preparing Ollama chat request for model: $model with ${tools.length} tools: ${tools.map((t) => t.function.name).join(', ')}',
+      name: 'CloudInferenceRepository',
+    );
+
+    // Build messages array
+    final messages = <Map<String, dynamic>>[];
+    if (systemMessage != null) {
+      messages.add({
+        'role': 'system',
+        'content': systemMessage,
+      });
+    }
+    messages.add({
+      'role': 'user',
+      'content': prompt,
+    });
+
+    final requestBody = {
+      'model': model,
+      'messages': messages,
+      'stream': true, // Use streaming for chat endpoint
+      'tools': ollamaTools,
+      'options': {
+        'temperature': temperature,
+        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
+      }
+    };
+
+    return _streamOllamaChatRequest(
+      requestBody: requestBody,
+      timeout: const Duration(seconds: ollamaDefaultTimeoutSeconds),
+      retryContext: 'Ollama chat with tools',
+      timeoutErrorMessage:
+          'Request timed out after $ollamaDefaultTimeoutSeconds seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
+      provider: provider,
+      model: model,
+    );
+  }
+
+  /// Stream Ollama chat API responses (supports function calling)
+  Stream<CreateChatCompletionStreamResponse> _streamOllamaChatRequest({
+    required Map<String, dynamic> requestBody,
+    required Duration timeout,
+    required String retryContext,
+    required String timeoutErrorMessage,
+    required AiConfigInferenceProvider provider,
+    String? model,
+  }) async* {
+    var attempt = 0;
+    const maxRetries = 3;
+    const baseDelay = Duration(seconds: 2);
+
+    while (true) {
+      attempt++;
+      try {
+        final request = await _httpClient
+            .send(
+              http.Request('POST', Uri.parse('${provider.baseUrl}/api/chat'))
+                ..headers['Content-Type'] = ollamaContentType
+                ..body = jsonEncode(requestBody),
+            )
+            .timeout(timeout);
+
+        if (request.statusCode != httpStatusOk) {
+          final responseBody = await request.stream.bytesToString();
+          if (request.statusCode == httpStatusNotFound &&
+              responseBody.contains('not found') &&
+              responseBody.contains('model')) {
+            throw ModelNotInstalledException(model ?? 'unknown');
+          }
+          developer.log(
+            'Ollama chat API error: Status ${request.statusCode}, Body: $responseBody',
+            name: 'CloudInferenceRepository',
+          );
+          developer.log(
+            'Request body was: ${jsonEncode(requestBody)}',
+            name: 'CloudInferenceRepository',
+          );
+          throw Exception(
+              'Ollama chat API request failed with status ${request.statusCode}: $responseBody');
+        }
+
+        // Process streaming response
+        await for (final chunk in request.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())) {
+          if (chunk.isEmpty) continue;
+
+          try {
+            final json = jsonDecode(chunk) as Map<String, dynamic>;
+
+            // Check if this is a tool call response
+            if (json['message'] != null) {
+              final message = json['message'] as Map<String, dynamic>;
+
+              if (message['tool_calls'] != null) {
+                final toolCalls = message['tool_calls'] as List<dynamic>;
+
+                // Convert Ollama tool calls to OpenAI format
+                // We need to create a response that mimics OpenAI's streaming format
+                // Since Ollama returns complete tool calls, we'll convert them to the expected format
+                final toolCallsList = <dynamic>[];
+                for (var i = 0; i < toolCalls.length; i++) {
+                  final toolCall = toolCalls[i] as Map<String, dynamic>;
+                  final functionCall =
+                      toolCall['function'] as Map<String, dynamic>;
+
+                  // Create a dynamic object that matches the expected structure
+                  toolCallsList.add({
+                    'index': i,
+                    'id': toolCall['id'] ??
+                        'tool-${DateTime.now().millisecondsSinceEpoch}-$i',
+                    'type': 'function',
+                    'function': {
+                      'name': functionCall['name'],
+                      'arguments': jsonEncode(functionCall['arguments']),
+                    },
+                  });
+                }
+
+                // Create the response with tool calls
+                // We'll emit this as a single chunk containing all tool calls
+                yield CreateChatCompletionStreamResponse(
+                  id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      delta: ChatCompletionStreamResponseDelta.fromJson({
+                        'tool_calls': toolCallsList,
+                      }),
+                      index: 0,
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                );
+              } else if (message['content'] != null) {
+                // Regular content response
+                yield CreateChatCompletionStreamResponse(
+                  id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      delta: ChatCompletionStreamResponseDelta(
+                        content: message['content'] as String,
+                      ),
+                      index: 0,
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                );
+              }
+            }
+
+            // Check if done
+            if (json['done'] == true) {
+              break;
+            }
+          } catch (e) {
+            developer.log(
+              'Error parsing Ollama chat response chunk: $chunk',
+              error: e,
+              name: 'CloudInferenceRepository',
+            );
+          }
+        }
+
+        // If we get here, the request succeeded
+        break;
+      } catch (e) {
+        if (e is TimeoutException || e is SocketException) {
+          if (attempt >= maxRetries) {
+            if (e is TimeoutException) {
+              throw Exception(timeoutErrorMessage);
+            } else {
+              throw Exception(
+                  'Network error during $retryContext. Please check your connection and that the Ollama server is running.');
+            }
+          }
+          final reason = e is TimeoutException ? 'Timeout' : 'Network error';
+          developer.log(
+              ' [33m$reason during $retryContext, retrying (attempt $attempt)... [0m',
+              name: 'CloudInferenceRepository');
+          await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
+          continue;
+        }
+        if (e.toString().contains('not found') &&
+            e.toString().contains('model')) {
+          throw ModelNotInstalledException(model ?? 'unknown');
+        }
+        rethrow;
+      }
+    }
   }
 
   /// Helper for retrying an async operation with exponential backoff on TimeoutException and SocketException
