@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -397,16 +398,31 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ) as AiConfigInferenceProvider;
 
-        // Only mock the generate call
+        // Mock both warmUpModel call and generate call
+        // The OllamaInferenceRepository will make both calls
         when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'),
             )).thenAnswer((invocation) async {
-          return http.Response(
-            '{"response": "Analyze this image", "created_at": "2024-01-01T00:00:00Z"}',
-            httpStatusOk,
-          );
+          final uri = invocation.positionalArguments[0] as Uri;
+          final body = invocation.namedArguments[#body] as String;
+          final requestBody = jsonDecode(body) as Map<String, dynamic>;
+
+          // Check if this is the warmUpModel call or the generateWithImages call
+          if (requestBody['prompt'] == 'Hello') {
+            // This is warmUpModel
+            return http.Response(
+              '{"response": "Hello", "created_at": "2024-01-01T00:00:00Z"}',
+              httpStatusOk,
+            );
+          } else {
+            // This is generateWithImages
+            return http.Response(
+              '{"response": "Analyze this image", "created_at": "2024-01-01T00:00:00Z"}',
+              httpStatusOk,
+            );
+          }
         });
 
         // Act
@@ -425,14 +441,29 @@ void main() {
         expect(response.choices, hasLength(1));
         expect(response.choices.first.delta?.content, 'Analyze this image');
 
-        // Verify generate request
+        // Verify both warmUpModel and generate request were made
         final captured = verify(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              captureAny(),
               headers: captureAny(named: 'headers'),
               body: captureAny(named: 'body'),
             )).captured;
 
-        final body = jsonDecode(captured[1] as String) as Map<String, dynamic>;
+        // Should have 2 calls (warmUpModel and generateWithImages), each with 3 captures (uri, headers, body)
+        expect(captured.length, greaterThanOrEqualTo(6));
+
+        // Find the generateWithImages call (the one with images in the body)
+        String? generateBody;
+        for (int i = 2; i < captured.length; i += 3) {
+          final bodyStr = captured[i] as String;
+          final body = jsonDecode(bodyStr) as Map<String, dynamic>;
+          if (body.containsKey('images')) {
+            generateBody = bodyStr;
+            break;
+          }
+        }
+
+        expect(generateBody, isNotNull);
+        final body = jsonDecode(generateBody!) as Map<String, dynamic>;
         expect(body['model'], modelName);
         expect(body['prompt'], prompt);
         expect(body['images'], images);
