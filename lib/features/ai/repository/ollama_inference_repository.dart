@@ -46,45 +46,23 @@ class OllamaInferenceRepository {
       maxCompletionTokens: maxCompletionTokens,
     );
 
-    // Use chat endpoint if tools are provided, otherwise use generate endpoint
-    if (tools != null && tools.isNotEmpty) {
-      return _generateTextWithChat(
-        prompt: prompt,
-        model: model,
-        temperature: temperature,
-        systemMessage: systemMessage,
-        provider: provider,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-      );
-    }
-
-    final requestBody = {
-      'model': model,
-      'prompt': systemMessage != null ? '$systemMessage\n\n$prompt' : prompt,
-      'stream': false,
-      'options': {
-        'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
-      }
-    };
-
-    return _streamGenerateRequest(
-      requestBody: requestBody,
-      timeout: const Duration(seconds: ollamaDefaultTimeoutSeconds),
-      retryContext: 'Ollama text generation',
-      timeoutErrorMessage:
-          'Request timed out after $ollamaDefaultTimeoutSeconds seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
-      provider: provider,
+    // Always use chat endpoint for consistency
+    return _generateTextWithChat(
+      prompt: prompt,
       model: model,
+      temperature: temperature,
+      systemMessage: systemMessage,
+      provider: provider,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
     );
   }
 
-  /// Generate image analysis using Ollama's API
+  /// Generate image analysis using Ollama's chat API
   ///
   /// This method handles the specific requirements for Ollama image analysis:
   /// - Validates input parameters
-  /// - Makes direct HTTP calls to Ollama's /api/generate endpoint
+  /// - Uses the unified /api/chat endpoint with image support
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
   Stream<CreateChatCompletionStreamResponse> generateWithImages({
@@ -111,11 +89,19 @@ class OllamaInferenceRepository {
       warmUpModel(model, provider.baseUrl);
     }
 
+    // Build messages with images for chat endpoint
+    final messages = [
+      {
+        'role': 'user',
+        'content': prompt,
+        'images': images,
+      }
+    ];
+
     final requestBody = {
       'model': model,
-      'prompt': prompt,
-      'images': images,
-      'stream': false,
+      'messages': messages,
+      'stream': true, // Use streaming for consistency
       'options': {
         'temperature': temperature,
         if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
@@ -127,10 +113,10 @@ class OllamaInferenceRepository {
             ? ollamaImageAnalysisTimeoutSeconds
             : ollamaDefaultTimeoutSeconds);
 
-    return _streamGenerateRequest(
+    return _streamChatRequest(
       requestBody: requestBody,
       timeout: timeout,
-      retryContext: 'Ollama generation',
+      retryContext: 'Ollama image analysis',
       timeoutErrorMessage:
           'Request timed out after ${timeout.inSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
       provider: provider,
@@ -138,33 +124,35 @@ class OllamaInferenceRepository {
     );
   }
 
-  /// Generate text using Ollama's chat API with function calling support
+  /// Generate text using Ollama's unified chat API
   ///
-  /// This method uses the /api/chat endpoint which supports tool calling
-  /// for models that have function calling capabilities.
+  /// This method uses the /api/chat endpoint for all text generation,
+  /// with optional tool support for models that have function calling capabilities.
   Stream<CreateChatCompletionStreamResponse> _generateTextWithChat({
     required String prompt,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
-    required List<ChatCompletionTool> tools,
-    required String? systemMessage,
+    List<ChatCompletionTool>? tools,
+    String? systemMessage,
     int? maxCompletionTokens,
   }) {
-    // Convert tools to Ollama format
-    final ollamaTools = tools
-        .map((tool) => {
-              'type': 'function',
-              'function': {
-                'name': tool.function.name,
-                'description': tool.function.description,
-                'parameters': tool.function.parameters ?? {},
-              },
-            })
-        .toList();
+    // Convert tools to Ollama format if provided
+    final ollamaTools = tools != null && tools.isNotEmpty
+        ? tools
+            .map((tool) => {
+                  'type': 'function',
+                  'function': {
+                    'name': tool.function.name,
+                    'description': tool.function.description,
+                    'parameters': tool.function.parameters ?? {},
+                  },
+                })
+            .toList()
+        : null;
 
     developer.log(
-      'Preparing Ollama chat request for model: $model with ${tools.length} tools: ${tools.map((t) => t.function.name).join(', ')}',
+      'Preparing Ollama chat request for model: $model${ollamaTools != null ? ' with ${tools!.length} tools: ${tools.map((t) => t.function.name).join(', ')}' : ''}',
       name: 'OllamaInferenceRepository',
     );
 
@@ -365,83 +353,6 @@ class OllamaInferenceRepository {
   /// - Handling response parsing and validation
   /// - Creating standardized stream responses
   /// - Error handling and timeout management
-  Stream<CreateChatCompletionStreamResponse> _streamGenerateRequest({
-    required Map<String, dynamic> requestBody,
-    required Duration timeout,
-    required String retryContext,
-    required String timeoutErrorMessage,
-    required AiConfigInferenceProvider provider,
-    String? model,
-  }) {
-    return Stream.fromFuture(
-      () async {
-        return _retryWithExponentialBackoff(
-          operation: () async {
-            final response = await _httpClient
-                .post(
-                  Uri.parse('${provider.baseUrl}$ollamaGenerateEndpoint'),
-                  headers: {
-                    'Content-Type': ollamaContentType,
-                  },
-                  body: jsonEncode(requestBody),
-                )
-                .timeout(timeout);
-
-            if (response.statusCode != httpStatusOk) {
-              final responseBody = response.body;
-              // Check if this is a model not found error
-              if (response.statusCode == httpStatusNotFound &&
-                  responseBody.contains('not found') &&
-                  responseBody.contains('model')) {
-                throw ModelNotInstalledException(model ?? 'unknown');
-              }
-              developer.log(
-                'Ollama API error: HTTP ${response.statusCode}',
-                name: 'OllamaInferenceRepository',
-              );
-              throw Exception(
-                  'Ollama API request failed with status ${response.statusCode}. Please check your Ollama installation and try again.');
-            }
-
-            final result = jsonDecode(response.body) as Map<String, dynamic>;
-            // Validate response structure
-            if (!result.containsKey('response')) {
-              throw Exception(
-                  'Invalid response format: missing "response" field');
-            }
-            final ollamaResponse = result['response'] as String?;
-            if (ollamaResponse == null) {
-              throw Exception('Invalid response format: "response" is null');
-            }
-            final created = result['created_at'] as String?;
-            final timestamp = created != null
-                ? DateTime.parse(created).millisecondsSinceEpoch ~/ 1000
-                : DateTime.now().millisecondsSinceEpoch ~/ 1000;
-            // Create a mock stream response to match the expected format
-            return CreateChatCompletionStreamResponse(
-              id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: ollamaResponse,
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: timestamp,
-            );
-          },
-          maxRetries: 3,
-          baseDelay: const Duration(seconds: 2),
-          context: retryContext,
-          timeoutErrorMessage: timeoutErrorMessage,
-          networkErrorMessage:
-              'Network error during Ollama generation. Please check your connection and that the Ollama server is running.',
-        );
-      }(),
-    ).asBroadcastStream();
-  }
 
   /// Helper for retrying an async operation with exponential backoff on TimeoutException and SocketException
   Future<T> _retryWithExponentialBackoff<T>({
@@ -696,13 +607,15 @@ class OllamaInferenceRepository {
 
       final response = await _httpClient
           .post(
-            Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+            Uri.parse('$baseUrl$ollamaChatEndpoint'),
             headers: {
               'Content-Type': ollamaContentType,
             },
             body: jsonEncode({
               'model': modelName,
-              'prompt': 'Hello',
+              'messages': [
+                {'role': 'user', 'content': 'Hello'}
+              ],
               'stream': false,
             }),
           )

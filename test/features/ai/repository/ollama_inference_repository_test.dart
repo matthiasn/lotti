@@ -39,7 +39,7 @@ void main() {
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
-      test('should use /api/generate endpoint when no tools provided',
+      test('should use /api/chat endpoint even when no tools provided',
           () async {
         // Arrange
         const prompt = 'Test prompt';
@@ -47,19 +47,17 @@ void main() {
         const temperature = 0.7;
         const systemMessage = 'System message';
 
-        final response = http.Response(
-          jsonEncode({
-            'response': 'Test response',
-            'created_at': DateTime.now().toIso8601String(),
-          }),
-          200,
-        );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                    '{"message":{"content":"Test response"},"done":true}\n'),
+              ),
+            ));
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => response);
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateText(
@@ -76,14 +74,10 @@ void main() {
         expect(result.choices.first.delta?.content, equals('Test response'));
 
         // Verify the correct endpoint was called
-        final captured = verify(() => mockHttpClient.post(
-              captureAny(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).captured;
-
-        final uri = captured[0] as Uri;
-        expect(uri.toString(), contains('/api/generate'));
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured[0] as http.Request;
+        expect(request.url.toString(), contains('/api/chat'));
       });
 
       test('should use /api/chat endpoint when tools are provided', () async {
@@ -203,22 +197,20 @@ void main() {
         const temperature = 0.7;
 
         var attempts = 0;
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async {
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
           attempts++;
           if (attempts < 3) {
             throw TimeoutException('Request timeout');
           }
-          return http.Response(
-            jsonEncode({
-              'response': 'Success after retry',
-              'created_at': DateTime.now().toIso8601String(),
-            }),
-            200,
-          );
+          final mockResponse = MockStreamedResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+                Stream.value(
+                  utf8.encode(
+                      '{"message":{"content":"Success after retry"},"done":true}\n'),
+                ),
+              ));
+          return mockResponse;
         });
 
         // Act
@@ -246,14 +238,16 @@ void main() {
         const model = 'nonexistent-model';
         const temperature = 0.7;
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'model "nonexistent-model" not found',
-              404,
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(404);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode('model "nonexistent-model" not found\n'),
+              ),
             ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act & Assert
         expect(
@@ -326,19 +320,28 @@ void main() {
         const temperature = 0.7;
         final images = ['base64encodedimage'];
 
-        final response = http.Response(
-          jsonEncode({
-            'response': 'This is an image description',
-            'created_at': DateTime.now().toIso8601String(),
-          }),
-          200,
-        );
-
+        // Mock warmUpModel
         when(() => mockHttpClient.post(
               any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'),
-            )).thenAnswer((_) async => response);
+            )).thenAnswer((_) async => http.Response(
+              '{"response": "Hello"}',
+              200,
+            ));
+
+        // Mock generateWithImages stream response
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                    '{"message":{"content":"This is an image description"},"done":true}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateWithImages(
@@ -355,35 +358,26 @@ void main() {
         expect(result.choices.first.delta?.content,
             equals('This is an image description'));
 
-        // Verify request body contains images
-        // Note: generateWithImages calls warmUpModel first, which also posts
-        // So we need to check all captured calls
-        final allCalls = verify(() => mockHttpClient.post(
-              captureAny(),
+        // Verify warmUpModel was called
+        verify(() => mockHttpClient.post(
+              any(),
               headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
+              body: any(named: 'body'),
+            )).called(1);
 
-        // Should have 2 calls: warmUpModel and generateWithImages
-        expect(allCalls.length, greaterThanOrEqualTo(2));
+        // Verify streaming request was made for generateWithImages
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        expect(captured.length, 1);
 
-        // Find the actual generate call (should be the last one)
-        Uri? generateUri;
-        String? generateBody;
-        for (var i = 0; i < allCalls.length; i += 2) {
-          final uri = allCalls[i] as Uri;
-          final body = allCalls[i + 1] as String;
-          if (uri.toString().contains('/api/generate')) {
-            generateUri = uri;
-            generateBody = body;
-          }
-        }
+        final request = captured[0] as http.Request;
+        expect(request.url.toString(), contains('/api/chat'));
 
-        expect(generateUri, isNotNull);
-        expect(generateBody, isNotNull);
-
-        final requestBody = jsonDecode(generateBody!) as Map<String, dynamic>;
-        expect(requestBody['images'], equals(images));
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(requestBody['messages'], isA<List<dynamic>>());
+        final messages = requestBody['messages'] as List<dynamic>;
+        expect(messages.length, 1);
+        expect((messages[0] as Map<String, dynamic>)['images'], equals(images));
       });
 
       test('should throw exception for empty images list', () {

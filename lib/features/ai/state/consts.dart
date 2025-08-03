@@ -9,13 +9,13 @@ const audioTranscriptionConst = 'AudioTranscription';
 const checklistUpdatesConst = 'ChecklistUpdates';
 
 // Ollama API constants
+const ollamaChatEndpoint = '/api/chat';
 const ollamaDefaultTimeoutSeconds = 120; // 2 minutes for regular requests
 const ollamaImageAnalysisTimeoutSeconds =
     900; // 15 minutes for image analysis (large models can be very slow)
 const ollamaMaxTemperature = 2.0;
 const ollamaMinTemperature = 0.0;
 const ollamaContentType = 'application/json';
-const ollamaGenerateEndpoint = '/api/generate';
 const ollamaResponseIdPrefix = 'ollama-';
 
 // HTTP status codes
