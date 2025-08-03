@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/features/ai/model/inference_error.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -248,7 +249,7 @@ void main() {
     group('installModel', () {
       test('emits progress updates during installation', () async {
         // Arrange
-        final streamedResponse = MockStreamedResponse();
+        final streamedResponse = MockInstallProgressResponse();
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => streamedResponse,
         );
@@ -277,9 +278,15 @@ void main() {
 
       test('throws exception when installation fails', () async {
         // Arrange
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode)
+            .thenReturn(httpStatusInternalServerError);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(utf8.encode('{"error": "installation failed"}\n')),
+            ));
+
         when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async =>
-              MockStreamedResponse(statusCode: httpStatusInternalServerError),
+          (_) async => mockResponse,
         );
 
         // Act & Assert
@@ -305,7 +312,7 @@ void main() {
 
       test('skips malformed JSON lines', () async {
         // Arrange
-        final streamedResponse = MockStreamedResponse();
+        final streamedResponse = MockInstallProgressResponse();
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => streamedResponse,
         );
@@ -345,7 +352,9 @@ void main() {
         expect(headers['Content-Type'], ollamaContentType);
         expect(jsonDecode(body), {
           'model': modelName,
-          'prompt': 'Hello',
+          'messages': [
+            {'role': 'user', 'content': 'Hello'}
+          ],
           'stream': false,
         });
       });
@@ -397,17 +406,32 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         ) as AiConfigInferenceProvider;
 
-        // Only mock the generate call
+        // Mock both warmUpModel call and generate call
+        // The OllamaInferenceRepository will make both calls
         when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
+              any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'),
             )).thenAnswer((invocation) async {
+          // This is warmUpModel (still uses post for now)
           return http.Response(
-            '{"response": "Analyze this image", "created_at": "2024-01-01T00:00:00Z"}',
+            '{"response": "Hello", "created_at": "2024-01-01T00:00:00Z"}',
             httpStatusOk,
           );
         });
+
+        // Mock streaming response for generateWithImages
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                    '{"message":{"content":"Analyze this image"},"done":true}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateWithImages(
@@ -425,18 +449,31 @@ void main() {
         expect(response.choices, hasLength(1));
         expect(response.choices.first.delta?.content, 'Analyze this image');
 
-        // Verify generate request
-        final captured = verify(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: captureAny(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
+        // Verify warmUpModel was called
+        verify(() => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            )).called(1);
 
-        final body = jsonDecode(captured[1] as String) as Map<String, dynamic>;
+        // Verify streaming request was made for generateWithImages
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        expect(captured.length, 1);
+
+        final request = captured[0] as http.Request;
+        expect(request.url.toString(), contains('/api/chat'));
+
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['model'], modelName);
-        expect(body['prompt'], prompt);
-        expect(body['images'], images);
-        expect(body['stream'], false);
+        expect(body['messages'], isA<List<dynamic>>());
+        final messages = body['messages'] as List<dynamic>;
+        expect(messages.length, 1);
+        final message = messages[0] as Map<String, dynamic>;
+        expect(message['role'], 'user');
+        expect(message['content'], prompt);
+        expect(message['images'], images);
+        expect(body['stream'], true);
         expect((body['options'] as Map<String, dynamic>)['temperature'],
             temperature);
       });
@@ -454,16 +491,16 @@ void main() {
         );
 
         // Mock generate call with model not found error
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer(
-          (_) async => http.Response(
-            '{"error": "model not found"}',
-            httpStatusNotFound,
-          ),
-        );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(404);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode('{"error": "model not found"}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act & Assert
         final stream = repository.generateWithImages(
@@ -570,17 +607,19 @@ void main() {
           (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
         );
 
-        // Mock generate call with timeout
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(seconds: 2));
-            return http.Response('{"response": "result"}', httpStatusOk);
-          },
-        );
+        // Mock generate call with delayed response
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              () async* {
+                await Future<void>.delayed(const Duration(milliseconds: 100));
+                yield utf8
+                    .encode('{"message":{"content":"result"},"done":true}\n');
+              }(),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act & Assert - should not throw due to timeout handling
         final result = await repository
@@ -629,16 +668,17 @@ void main() {
         const prompt = 'Generate a summary';
         const expectedResponse = 'This is a test response';
 
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer(
-          (_) async => http.Response(
-            '{"response": "$expectedResponse", "created_at": "2023-01-01T00:00:00Z"}',
-            httpStatusOk,
-          ),
-        );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                    '{"message":{"content":"$expectedResponse"},"done":true}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generate(
@@ -660,16 +700,16 @@ void main() {
         const prompt = 'Generate a summary';
 
         // Mock generate call with model not found error
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer(
-          (_) async => http.Response(
-            '{"error": "model not found"}',
-            httpStatusNotFound,
-          ),
-        );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(404);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode('{"error": "model not found"}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act & Assert
         final stream = repository.generate(
@@ -693,16 +733,17 @@ void main() {
         const temperature = 0.7;
         const maxCompletionTokens = 1000;
 
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer(
-          (_) async => http.Response(
-            '{"response": "Test response", "created_at": "2023-01-01T00:00:00Z"}',
-            httpStatusOk,
-          ),
-        );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                    '{"message":{"content":"Test response"},"done":true}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generate(
@@ -719,41 +760,43 @@ void main() {
         await stream.first;
 
         // Assert
-        final captured = verify(
-          () => mockHttpClient.post(
-            Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-            headers: any(named: 'headers'),
-            body: captureAny(named: 'body'),
-          ),
-        ).captured;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured[0] as http.Request;
 
-        final body =
-            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        expect(request.url.toString(), contains('/api/chat'));
+
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['model'], modelName);
-        expect(body['prompt'], prompt);
-        expect(body['stream'], false);
+        expect(body['messages'], isA<List<dynamic>>());
+        final messages = body['messages'] as List<dynamic>;
+        expect(messages.length, 1);
+        final message = messages[0] as Map<String, dynamic>;
+        expect(message['role'], 'user');
+        expect(message['content'], prompt);
+        expect(body['stream'], true);
         expect((body['options'] as Map<String, dynamic>)['temperature'],
             temperature);
         expect((body['options'] as Map<String, dynamic>)['num_predict'],
             maxCompletionTokens);
       });
 
-      test('includes system message in prompt when provided', () async {
+      test('includes system message in messages when provided', () async {
         // Arrange
         const prompt = 'Generate a summary';
         const systemMessage = 'You are a helpful assistant.';
-        const expectedPrompt = '$systemMessage\n\n$prompt';
 
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer(
-          (_) async => http.Response(
-            '{"response": "Test response", "created_at": "2023-01-01T00:00:00Z"}',
-            httpStatusOk,
-          ),
-        );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                    '{"message":{"content":"Test response"},"done":true}\n'),
+              ),
+            ));
+
+        when(() => mockHttpClient.send(any()))
+            .thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generate(
@@ -770,17 +813,20 @@ void main() {
         await stream.first;
 
         // Assert
-        final captured = verify(
-          () => mockHttpClient.post(
-            Uri.parse('$baseUrl$ollamaGenerateEndpoint'),
-            headers: any(named: 'headers'),
-            body: captureAny(named: 'body'),
-          ),
-        ).captured;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured[0] as http.Request;
 
-        final body =
-            jsonDecode(captured.first as String) as Map<String, dynamic>;
-        expect(body['prompt'], expectedPrompt);
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['messages'], isA<List<dynamic>>());
+        final messages = body['messages'] as List<dynamic>;
+        expect(messages.length, 2);
+        final systemMsg = messages[0] as Map<String, dynamic>;
+        final userMsg = messages[1] as Map<String, dynamic>;
+        expect(systemMsg['role'], 'system');
+        expect(systemMsg['content'], systemMessage);
+        expect(userMsg['role'], 'user');
+        expect(userMsg['content'], prompt);
       });
     });
 
@@ -830,8 +876,13 @@ void main() {
   });
 }
 
-class MockStreamedResponse extends Mock implements http.StreamedResponse {
-  MockStreamedResponse({this.statusCode = httpStatusOk});
+// Simple mock for general use
+class MockStreamedResponse extends Mock implements http.StreamedResponse {}
+
+// Special mock with hardcoded stream for installation progress tests
+class MockInstallProgressResponse extends Mock
+    implements http.StreamedResponse {
+  MockInstallProgressResponse({this.statusCode = httpStatusOk});
 
   @override
   final int statusCode;

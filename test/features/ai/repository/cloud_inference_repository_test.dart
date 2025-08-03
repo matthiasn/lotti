@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1100,7 +1101,8 @@ void main() {
       // Should throw an exception for invalid JSON
       expect(
         stream.first,
-        throwsA(isA<FormatException>()),
+        throwsA(isA<
+            WhisperTranscriptionException>()), // WhisperTranscriptionException wraps the FormatException
       );
     });
 
@@ -1143,7 +1145,8 @@ void main() {
       // Should throw an exception for missing text field
       expect(
         stream.first,
-        throwsA(isA<TypeError>()),
+        throwsA(isA<
+            WhisperTranscriptionException>()), // WhisperTranscriptionException is thrown instead of TypeError
       );
     });
 
