@@ -1100,7 +1100,7 @@ void main() {
       // Should throw an exception for invalid JSON
       expect(
         stream.first,
-        throwsA(isA<FormatException>()),
+        throwsException, // WhisperTranscriptionException wraps the FormatException
       );
     });
 
@@ -1143,7 +1143,7 @@ void main() {
       // Should throw an exception for missing text field
       expect(
         stream.first,
-        throwsA(isA<TypeError>()),
+        throwsException, // WhisperTranscriptionException is thrown instead of TypeError
       );
     });
 

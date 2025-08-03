@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -13,12 +13,12 @@ part 'cloud_inference_repository.g.dart';
 
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client(),
-        _ollamaRepository = OllamaInferenceRepository(httpClient: httpClient);
+      : _ollamaRepository = OllamaInferenceRepository(httpClient: httpClient),
+        _whisperRepository = WhisperInferenceRepository(httpClient: httpClient);
 
   final Ref ref;
-  final http.Client _httpClient;
   final OllamaInferenceRepository _ollamaRepository;
+  final WhisperInferenceRepository _whisperRepository;
 
   /// Filters out Anthropic ping messages from the stream
   Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
@@ -236,55 +236,15 @@ class CloudInferenceRepository {
           apiKey: apiKey,
         );
 
-    // For Whisper, we need to handle the audio transcription using our Python server
+    // For Whisper, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
-      // Whisper uses our Python server that calls OpenAI's API
-      // Create a stream that performs the async operation
-      return Stream.fromFuture(
-        () async {
-          try {
-            final response = await _httpClient.post(
-              Uri.parse('$baseUrl/v1/audio/transcriptions'),
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: jsonEncode({
-                'model': model,
-                'audio': audioBase64,
-              }),
-            );
-
-            if (response.statusCode != 200) {
-              developer.log(
-                  'Failed to transcribe audio: HTTP ${response.statusCode}',
-                  name: 'CloudInferenceRepository');
-              throw Exception(
-                  'Failed to transcribe audio. Please check your audio file and try again.');
-            }
-
-            final result = jsonDecode(response.body) as Map<String, dynamic>;
-            final text = result['text'] as String;
-
-            // Create a mock stream response to match the expected format
-            return CreateChatCompletionStreamResponse(
-              id: 'whisper-${DateTime.now().millisecondsSinceEpoch}',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: text,
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            );
-          } catch (e) {
-            // Re-throw the exception to be handled by the stream
-            rethrow;
-          }
-        }(),
-      ).asBroadcastStream();
+      return _whisperRepository.transcribeAudio(
+        prompt: prompt,
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        maxCompletionTokens: maxCompletionTokens,
+      );
     }
 
     // For other providers, use the standard OpenAI-compatible format

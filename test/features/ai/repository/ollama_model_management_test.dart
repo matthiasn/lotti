@@ -405,7 +405,6 @@ void main() {
               headers: any(named: 'headers'),
               body: any(named: 'body'),
             )).thenAnswer((invocation) async {
-          final uri = invocation.positionalArguments[0] as Uri;
           final body = invocation.namedArguments[#body] as String;
           final requestBody = jsonDecode(body) as Map<String, dynamic>;
 
@@ -453,7 +452,7 @@ void main() {
 
         // Find the generateWithImages call (the one with images in the body)
         String? generateBody;
-        for (int i = 2; i < captured.length; i += 3) {
+        for (var i = 2; i < captured.length; i += 3) {
           final bodyStr = captured[i] as String;
           final body = jsonDecode(bodyStr) as Map<String, dynamic>;
           if (body.containsKey('images')) {

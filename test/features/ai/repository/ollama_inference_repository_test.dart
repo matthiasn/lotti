@@ -370,7 +370,7 @@ void main() {
         // Find the actual generate call (should be the last one)
         Uri? generateUri;
         String? generateBody;
-        for (int i = 0; i < allCalls.length; i += 2) {
+        for (var i = 0; i < allCalls.length; i += 2) {
           final uri = allCalls[i] as Uri;
           final body = allCalls[i + 1] as String;
           if (uri.toString().contains('/api/generate')) {
@@ -503,7 +503,7 @@ void main() {
 
         when(() => mockHttpClient.get(any()))
             .thenAnswer((_) async => http.Response(
-                  jsonEncode({'models': []}),
+                  jsonEncode({'models': <Map<String, dynamic>>[]}),
                   200,
                 ));
 
