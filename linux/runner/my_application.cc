@@ -91,6 +91,13 @@ static void my_application_activate(GApplication* application) {
   // Set the icon name for desktop integration fallback
   gtk_window_set_icon_name(window, ICON_THEME_NAME);
 
+  // Additional attempt for Kubuntu compatibility - some distributions may need an extra attempt
+  // with the development path even after the comprehensive icon loading above
+  g_autoptr(GError) error = NULL;
+  if (!gtk_window_set_icon_from_file(window, ICON_DEVELOPMENT_PATH, &error)) {
+    g_debug("Final icon loading attempt failed: %s", error ? error->message : "Unknown error");
+  }
+
   gtk_window_set_default_size(window, 1280, 720);
   gtk_widget_show(GTK_WIDGET(window));
 
