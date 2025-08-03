@@ -200,154 +200,136 @@ class OllamaInferenceRepository {
     required AiConfigInferenceProvider provider,
     String? model,
   }) async* {
-    var attempt = 0;
-    const maxRetries = 3;
-    const baseDelay = Duration(seconds: 2);
-
-    while (true) {
-      attempt++;
-      try {
-        final request = await _httpClient
+    try {
+      final request = await _retryWithExponentialBackoff(
+        operation: () => _httpClient
             .send(
               http.Request('POST', Uri.parse('${provider.baseUrl}/api/chat'))
                 ..headers['Content-Type'] = ollamaContentType
                 ..body = jsonEncode(requestBody),
             )
-            .timeout(timeout);
+            .timeout(timeout),
+        maxRetries: 3,
+        baseDelay: const Duration(seconds: 2),
+        context: retryContext,
+        timeoutErrorMessage: timeoutErrorMessage,
+        networkErrorMessage:
+            'Network error during $retryContext. Please check your connection and that the Ollama server is running.',
+      );
 
-        if (request.statusCode != httpStatusOk) {
-          final responseBody = await request.stream.bytesToString();
-          if (request.statusCode == httpStatusNotFound &&
-              responseBody.contains('not found') &&
-              responseBody.contains('model')) {
-            throw ModelNotInstalledException(model ?? 'unknown');
-          }
-          developer.log(
-            'Ollama chat API error: Status ${request.statusCode}, Body: $responseBody',
-            name: 'OllamaInferenceRepository',
-          );
-          developer.log(
-            'Request body was: ${jsonEncode(requestBody)}',
-            name: 'OllamaInferenceRepository',
-          );
-          throw Exception(
-              'Ollama chat API request failed with status ${request.statusCode}: $responseBody');
-        }
-
-        // Process streaming response
-        await for (final chunk in request.stream
-            .transform(utf8.decoder)
-            .transform(const LineSplitter())) {
-          if (chunk.isEmpty) continue;
-
-          try {
-            final json = jsonDecode(chunk) as Map<String, dynamic>;
-
-            // Check if this is a tool call response
-            if (json['message'] != null) {
-              final message = json['message'] as Map<String, dynamic>;
-
-              if (message['tool_calls'] != null) {
-                final toolCalls = message['tool_calls'] as List<dynamic>;
-
-                // Convert Ollama tool calls to OpenAI format
-                // We need to create a response that mimics OpenAI's streaming format
-                // Since Ollama returns complete tool calls, we'll convert them to the expected format
-                final toolCallsList = <dynamic>[];
-                for (var i = 0; i < toolCalls.length; i++) {
-                  final toolCall = toolCalls[i] as Map<String, dynamic>;
-                  final functionCall =
-                      toolCall['function'] as Map<String, dynamic>;
-
-                  // Create a dynamic object that matches the expected structure
-                  // Check if arguments are already a string (JSON-encoded) or need encoding
-                  final arguments = functionCall['arguments'];
-                  final argumentsStr =
-                      arguments is String ? arguments : jsonEncode(arguments);
-
-                  toolCallsList.add({
-                    'index': i,
-                    'id': toolCall['id'] ??
-                        'tool-${DateTime.now().millisecondsSinceEpoch}-$i',
-                    'type': 'function',
-                    'function': {
-                      'name': functionCall['name'],
-                      'arguments': argumentsStr,
-                    },
-                  });
-                }
-
-                // Create the response with tool calls
-                // We'll emit this as a single chunk containing all tool calls
-                yield CreateChatCompletionStreamResponse(
-                  id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
-                  choices: [
-                    ChatCompletionStreamResponseChoice(
-                      delta: ChatCompletionStreamResponseDelta.fromJson({
-                        'tool_calls': toolCallsList,
-                      }),
-                      index: 0,
-                    ),
-                  ],
-                  object: 'chat.completion.chunk',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                );
-              } else if (message['content'] != null) {
-                // Regular content response
-                yield CreateChatCompletionStreamResponse(
-                  id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
-                  choices: [
-                    ChatCompletionStreamResponseChoice(
-                      delta: ChatCompletionStreamResponseDelta(
-                        content: message['content'] as String,
-                      ),
-                      index: 0,
-                    ),
-                  ],
-                  object: 'chat.completion.chunk',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                );
-              }
-            }
-
-            // Check if done
-            if (json['done'] == true) {
-              break;
-            }
-          } catch (e) {
-            developer.log(
-              'Error parsing Ollama chat response chunk: $chunk',
-              error: e,
-              name: 'OllamaInferenceRepository',
-            );
-          }
-        }
-
-        // If we get here, the request succeeded
-        break;
-      } catch (e) {
-        if (e is TimeoutException || e is SocketException) {
-          if (attempt >= maxRetries) {
-            if (e is TimeoutException) {
-              throw Exception(timeoutErrorMessage);
-            } else {
-              throw Exception(
-                  'Network error during $retryContext. Please check your connection and that the Ollama server is running.');
-            }
-          }
-          final reason = e is TimeoutException ? 'Timeout' : 'Network error';
-          developer.log(
-              ' [33m$reason during $retryContext, retrying (attempt $attempt)... [0m',
-              name: 'OllamaInferenceRepository');
-          await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
-          continue;
-        }
-        if (e.toString().contains('not found') &&
-            e.toString().contains('model')) {
+      if (request.statusCode != httpStatusOk) {
+        final responseBody = await request.stream.bytesToString();
+        if (request.statusCode == httpStatusNotFound &&
+            responseBody.contains('not found') &&
+            responseBody.contains('model')) {
           throw ModelNotInstalledException(model ?? 'unknown');
         }
-        rethrow;
+        developer.log(
+          'Ollama chat API error: Status ${request.statusCode}, Body: $responseBody',
+          name: 'OllamaInferenceRepository',
+        );
+        developer.log(
+          'Request body was: ${jsonEncode(requestBody)}',
+          name: 'OllamaInferenceRepository',
+        );
+        throw Exception(
+            'Ollama chat API request failed with status ${request.statusCode}: $responseBody');
       }
+
+      // Process streaming response
+      await for (final chunk in request.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        if (chunk.isEmpty) continue;
+
+        try {
+          final json = jsonDecode(chunk) as Map<String, dynamic>;
+
+          // Check if this is a tool call response
+          if (json['message'] != null) {
+            final message = json['message'] as Map<String, dynamic>;
+
+            if (message['tool_calls'] != null) {
+              final toolCalls = message['tool_calls'] as List<dynamic>;
+
+              // Convert Ollama tool calls to OpenAI format
+              // We need to create a response that mimics OpenAI's streaming format
+              // Since Ollama returns complete tool calls, we'll convert them to the expected format
+              final toolCallsList = <dynamic>[];
+              for (var i = 0; i < toolCalls.length; i++) {
+                final toolCall = toolCalls[i] as Map<String, dynamic>;
+                final functionCall =
+                    toolCall['function'] as Map<String, dynamic>;
+
+                // Create a dynamic object that matches the expected structure
+                // Check if arguments are already a string (JSON-encoded) or need encoding
+                final arguments = functionCall['arguments'];
+                final argumentsStr =
+                    arguments is String ? arguments : jsonEncode(arguments);
+
+                toolCallsList.add({
+                  'index': i,
+                  'id': toolCall['id'] ??
+                      'tool-${DateTime.now().millisecondsSinceEpoch}-$i',
+                  'type': 'function',
+                  'function': {
+                    'name': functionCall['name'],
+                    'arguments': argumentsStr,
+                  },
+                });
+              }
+
+              // Create the response with tool calls
+              // We'll emit this as a single chunk containing all tool calls
+              yield CreateChatCompletionStreamResponse(
+                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta.fromJson({
+                      'tool_calls': toolCallsList,
+                    }),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              );
+            } else if (message['content'] != null) {
+              // Regular content response
+              yield CreateChatCompletionStreamResponse(
+                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: message['content'] as String,
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              );
+            }
+          }
+
+          // Check if done
+          if (json['done'] == true) {
+            break;
+          }
+        } catch (e) {
+          developer.log(
+            'Error parsing Ollama chat response chunk: $chunk',
+            error: e,
+            name: 'OllamaInferenceRepository',
+          );
+        }
+      }
+    } catch (e) {
+      if (e.toString().contains('not found') &&
+          e.toString().contains('model')) {
+        throw ModelNotInstalledException(model ?? 'unknown');
+      }
+      rethrow;
     }
   }
 
@@ -490,114 +472,82 @@ class OllamaInferenceRepository {
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(
       String modelName, String baseUrl) async* {
-    const maxRetries = 3;
     const installTimeout = Duration(minutes: 10); // 10 minutes for large models
-    const baseDelay = Duration(seconds: 2);
-    var attempt = 0;
-    while (true) {
-      attempt++;
-      try {
-        final request = http.Request(
-          'POST',
-          Uri.parse('$baseUrl/api/pull'),
-        );
-        request.headers['Content-Type'] = ollamaContentType;
-        request.body = jsonEncode({'name': modelName});
 
-        // Use a timeout for the entire send operation
-        final streamedResponse = await _retryWithExponentialBackoff(
-          operation: () async {
-            return _httpClient.send(request).timeout(installTimeout);
-          },
-          maxRetries: maxRetries,
-          baseDelay: baseDelay,
-          context: 'model installation',
-          timeoutErrorMessage:
-              'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
-          networkErrorMessage:
-              'Network error during model installation. Please check your connection and that the Ollama server is running.',
-        );
+    final request = http.Request(
+      'POST',
+      Uri.parse('$baseUrl/api/pull'),
+    );
+    request.headers['Content-Type'] = ollamaContentType;
+    request.body = jsonEncode({'name': modelName});
 
-        if (streamedResponse.statusCode != httpStatusOk) {
-          developer.log(
-            'Model installation failed: HTTP ${streamedResponse.statusCode}',
-            name: 'OllamaInferenceRepository',
-          );
-          throw Exception(
-              'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.');
-        }
+    // Use a timeout for the entire send operation
+    final streamedResponse = await _retryWithExponentialBackoff(
+      operation: () async {
+        return _httpClient.send(request).timeout(installTimeout);
+      },
+      maxRetries: 3,
+      baseDelay: const Duration(seconds: 2),
+      context: 'model installation',
+      timeoutErrorMessage:
+          'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
+      networkErrorMessage:
+          'Network error during model installation. Please check your connection and that the Ollama server is running.',
+    );
 
-        await for (final chunk
-            in streamedResponse.stream.transform(utf8.decoder)) {
-          final lines =
-              chunk.split('\n').where((line) => line.trim().isNotEmpty);
+    if (streamedResponse.statusCode != httpStatusOk) {
+      developer.log(
+        'Model installation failed: HTTP ${streamedResponse.statusCode}',
+        name: 'OllamaInferenceRepository',
+      );
+      throw Exception(
+          'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.');
+    }
 
-          for (final line in lines) {
-            Map<String, dynamic> data;
-            try {
-              data = jsonDecode(line) as Map<String, dynamic>;
-            } catch (e) {
-              // Skip malformed JSON lines
-              continue;
-            }
+    await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+      final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
 
-            if (data.containsKey('error')) {
-              final errorMessage = data['error'] as String;
-              developer.log(
-                'Model installation error: $errorMessage',
-                name: 'OllamaInferenceRepository',
-              );
-              // Provide more specific error messages
-              if (errorMessage.contains('not found')) {
-                throw Exception('Model installation failed: Model not found.');
-              } else if (errorMessage.contains('disk full')) {
-                throw Exception(
-                    'Model installation failed: Disk is full. Please free up space and try again.');
-              } else if (errorMessage.contains('connection refused')) {
-                throw Exception(
-                    'Model installation failed: Connection refused. Is the Ollama server running?');
-              } else {
-                throw Exception(
-                    'Model installation failed. Please check your Ollama installation and try again.');
-              }
-            }
-
-            final status =
-                data['status'] is String ? data['status'] as String : '';
-            final total = data['total'] is int ? data['total'] as int : 0;
-            final completed =
-                data['completed'] is int ? data['completed'] as int : 0;
-
-            yield OllamaPullProgress(
-              status: status,
-              total: total,
-              completed: completed,
-              progress: total > 0 ? (completed / total) : 0.0,
-            );
-          }
-        }
-        // If we reach here, installation succeeded
-        break;
-      } on Exception catch (e) {
-        if (e is TimeoutException || e is SocketException) {
-          if (attempt >= maxRetries) {
-            if (e is TimeoutException) {
-              throw Exception(
-                  'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.');
-            } else {
-              throw Exception(
-                  'Network error during model installation. Please check your connection and that the Ollama server is running.');
-            }
-          }
-          final reason = e is TimeoutException ? 'Timeout' : 'Network error';
-          developer.log(
-              '$reason during model installation, retrying (attempt $attempt)...',
-              name: 'OllamaInferenceRepository');
-          await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
+      for (final line in lines) {
+        Map<String, dynamic> data;
+        try {
+          data = jsonDecode(line) as Map<String, dynamic>;
+        } catch (e) {
+          // Skip malformed JSON lines
           continue;
         }
-        // For all other errors, do not retry. Rethrow to preserve the original error.
-        rethrow;
+
+        if (data.containsKey('error')) {
+          final errorMessage = data['error'] as String;
+          developer.log(
+            'Model installation error: $errorMessage',
+            name: 'OllamaInferenceRepository',
+          );
+          // Provide more specific error messages
+          if (errorMessage.contains('not found')) {
+            throw Exception('Model installation failed: Model not found.');
+          } else if (errorMessage.contains('disk full')) {
+            throw Exception(
+                'Model installation failed: Disk is full. Please free up space and try again.');
+          } else if (errorMessage.contains('connection refused')) {
+            throw Exception(
+                'Model installation failed: Connection refused. Is the Ollama server running?');
+          } else {
+            throw Exception(
+                'Model installation failed. Please check your Ollama installation and try again.');
+          }
+        }
+
+        final status = data['status'] is String ? data['status'] as String : '';
+        final total = data['total'] is int ? data['total'] as int : 0;
+        final completed =
+            data['completed'] is int ? data['completed'] as int : 0;
+
+        yield OllamaPullProgress(
+          status: status,
+          total: total,
+          completed: completed,
+          progress: total > 0 ? (completed / total) : 0.0,
+        );
       }
     }
   }
