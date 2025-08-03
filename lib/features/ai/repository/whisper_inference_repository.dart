@@ -19,31 +19,26 @@ class WhisperInferenceRepository {
   /// This method sends audio data to a local Whisper server for transcription.
   ///
   /// Args:
-  ///   prompt: The text prompt (not used by Whisper but included for consistency)
   ///   model: The Whisper model to use (e.g., 'whisper-1')
   ///   audioBase64: Base64 encoded audio data
   ///   baseUrl: The base URL of the local Whisper server
-  ///   maxCompletionTokens: Not used by Whisper but accepted for consistency
+  ///   prompt: Optional text prompt for context (not used by Whisper)
+  ///   maxCompletionTokens: Optional token limit (not used by Whisper)
   ///
   /// Returns:
   ///   Stream of chat completion responses containing the transcribed text
   ///
   /// Throws:
-  ///   Exception if transcription fails or response is invalid
+  ///   ArgumentError if required parameters are empty
+  ///   WhisperTranscriptionException if transcription fails
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
-    required String prompt,
     required String model,
     required String audioBase64,
     required String baseUrl,
-    int? maxCompletionTokens,
+    String? prompt, // Made optional since it's not used
+    int? maxCompletionTokens, // Already optional, not used
   }) {
-    // Validate inputs
-    if (audioBase64.isEmpty) {
-      developer.log(
-        'Warning: Empty audio data provided to Whisper',
-        name: 'WhisperInferenceRepository',
-      );
-    }
+    // Validate required inputs consistently
     if (model.isEmpty) {
       throw ArgumentError('Model name cannot be empty');
     }
@@ -56,13 +51,9 @@ class WhisperInferenceRepository {
       () async {
         try {
           developer.log(
-            'Sending audio transcription request to local Whisper server',
+            'Sending audio transcription request to local Whisper server - '
+            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}',
             name: 'WhisperInferenceRepository',
-            error: {
-              'baseUrl': baseUrl,
-              'model': model,
-              'audioLength': audioBase64.length,
-            },
           );
 
           final response = await _httpClient.post(
@@ -106,11 +97,8 @@ class WhisperInferenceRepository {
           final text = result['text'] as String;
 
           developer.log(
-            'Successfully transcribed audio',
+            'Successfully transcribed audio - transcriptionLength: ${text.length}',
             name: 'WhisperInferenceRepository',
-            error: {
-              'transcriptionLength': text.length,
-            },
           );
 
           // Create a mock stream response to match the expected format

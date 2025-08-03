@@ -260,6 +260,11 @@ class OllamaInferenceRepository {
                       toolCall['function'] as Map<String, dynamic>;
 
                   // Create a dynamic object that matches the expected structure
+                  // Check if arguments are already a string (JSON-encoded) or need encoding
+                  final arguments = functionCall['arguments'];
+                  final argumentsStr =
+                      arguments is String ? arguments : jsonEncode(arguments);
+
                   toolCallsList.add({
                     'index': i,
                     'id': toolCall['id'] ??
@@ -267,7 +272,7 @@ class OllamaInferenceRepository {
                     'type': 'function',
                     'function': {
                       'name': functionCall['name'],
-                      'arguments': jsonEncode(functionCall['arguments']),
+                      'arguments': argumentsStr,
                     },
                   });
                 }

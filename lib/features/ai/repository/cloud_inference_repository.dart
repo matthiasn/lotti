@@ -239,10 +239,10 @@ class CloudInferenceRepository {
     // For Whisper, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
       return _whisperRepository.transcribeAudio(
-        prompt: prompt,
         model: model,
         audioBase64: audioBase64,
         baseUrl: baseUrl,
+        prompt: prompt, // Optional parameter
         maxCompletionTokens: maxCompletionTokens,
       );
     }

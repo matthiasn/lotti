@@ -51,10 +51,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         final response = await stream.first;
@@ -119,10 +119,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
@@ -151,10 +151,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
@@ -184,10 +184,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
@@ -244,10 +244,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
           maxCompletionTokens: maxCompletionTokens,
         );
 
@@ -268,10 +268,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
@@ -347,10 +347,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         final response = await stream.first;
@@ -374,10 +374,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         final response = await stream.first;
@@ -436,10 +436,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
@@ -465,10 +465,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
@@ -494,10 +494,10 @@ void main() {
 
         // Act
         final stream = repository.transcribeAudio(
-          prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
+          prompt: prompt,
         );
 
         // Assert
