@@ -151,8 +151,11 @@ class OllamaInferenceRepository {
             .toList()
         : null;
 
+    final toolsLog = ollamaTools != null && tools != null
+        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
+        : '';
     developer.log(
-      'Preparing Ollama chat request for model: $model${ollamaTools != null ? ' with ${tools!.length} tools: ${tools.map((t) => t.function.name).join(', ')}' : ''}',
+      'Preparing Ollama chat request for model: $model$toolsLog',
       name: 'OllamaInferenceRepository',
     );
 
@@ -325,6 +328,9 @@ class OllamaInferenceRepository {
         }
       }
     } catch (e) {
+      if (e is ModelNotInstalledException) {
+        rethrow;
+      }
       if (e.toString().contains('not found') &&
           e.toString().contains('model')) {
         throw ModelNotInstalledException(model ?? 'unknown');

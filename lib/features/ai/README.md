@@ -213,7 +213,7 @@ The system supports four AI response types:
    - Extracts potential action items from logs
    - Response is parsed as JSON array
    - Items not already in task are suggested
-   - **Automatic Checklist Creation with Smart Re-run** - If no checklists exist for the task
+   - **Automatic Checklist Creation with Smart Re-run** - If no checklists exist for the task, automatically creates a checklist with all AI suggestions, then re-runs the prompt to show updated suggestions (typically empty since items are now in the checklist)
 
 3. **Image Analysis** (`AiResponseType.imageAnalysis`)
    - Analyzes attached images in task context
