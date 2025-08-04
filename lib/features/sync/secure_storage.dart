@@ -17,6 +17,9 @@ class SecureStorage {
         iOptions: IOSOptions(
           accountName: info.packageName,
         ),
+        mOptions: MacOsOptions(
+          accountName: info.packageName,
+        ),
       );
       if (fromSecureStorage != null) {
         _state[key] = fromSecureStorage;
@@ -42,6 +45,9 @@ class SecureStorage {
       iOptions: IOSOptions(
         accountName: info.packageName,
       ),
+      mOptions: MacOsOptions(
+        accountName: info.packageName,
+      ),
     );
   }
 
@@ -58,6 +64,9 @@ class SecureStorage {
     await _storage.delete(
       key: key,
       iOptions: IOSOptions(
+        accountName: info.packageName,
+      ),
+      mOptions: MacOsOptions(
         accountName: info.packageName,
       ),
     );
