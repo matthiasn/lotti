@@ -40,6 +40,10 @@ echo "Script directory: $SCRIPT_DIR"
 mkdir -p ~/.local/share/applications
 mkdir -p ~/.local/share/icons/hicolor
 
+# Create KDE-specific directories for better compatibility
+mkdir -p ~/.kde/share/applications 2>/dev/null || true
+mkdir -p ~/.config/autostart 2>/dev/null || true
+
 # Copy desktop file to user applications directory
 echo "Installing desktop file..."
 DESKTOP_FILE="$SCRIPT_DIR/com.matthiasnehlsen.lotti.desktop"
@@ -72,6 +76,13 @@ if [ -f "$DESKTOP_FILE" ]; then
         rm -f "$TEMP_DESKTOP"
         exit 1
     }
+    
+    # Also copy to KDE-specific locations for better compatibility
+    if [ -d ~/.kde/share/applications ]; then
+        cp "$TEMP_DESKTOP" ~/.kde/share/applications/ 2>/dev/null || true
+        echo "Desktop file also copied to ~/.kde/share/applications/"
+    fi
+    
     rm -f "$TEMP_DESKTOP"
     echo "Desktop file installed to ~/.local/share/applications/"
 else
@@ -120,6 +131,18 @@ if command -v gtk-update-icon-cache &> /dev/null; then
     echo "Icon cache updated"
 else
     echo "Warning: gtk-update-icon-cache not found, icons may not appear immediately"
+fi
+
+# Update KDE icon cache (for Kubuntu/KDE Plasma)
+echo "Updating KDE icon cache..."
+if command -v kbuildsycoca5 &> /dev/null; then
+    kbuildsycoca5 --noincremental
+    echo "KDE icon cache updated (kbuildsycoca5)"
+elif command -v kbuildsycoca4 &> /dev/null; then
+    kbuildsycoca4 --noincremental
+    echo "KDE icon cache updated (kbuildsycoca4)"
+else
+    echo "Info: KDE icon cache update not available (not running KDE)"
 fi
 
 echo ""

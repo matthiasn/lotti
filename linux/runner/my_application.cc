@@ -18,6 +18,8 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 static const gchar* const ICON_PRODUCTION_PATH = "data/flutter_assets/assets/icon/app_icon_1024.png";
 static const gchar* const ICON_DEVELOPMENT_PATH = "assets/icon/app_icon_1024.png";
 static const gchar* const ICON_ALTERNATIVE_PATH = "../assets/icon/app_icon_1024.png";
+static const gchar* const ICON_BUNDLE_PATH = "data/flutter_assets/assets/icon/app_icon_1024.png";
+static const gchar* const ICON_RELATIVE_PATH = "../../../assets/icon/app_icon_1024.png";
 static const gchar* const ICON_THEME_NAME = "com.matthiasnehlsen.lotti";
 static const gchar* const APP_TITLE = "Lotti";
 static const gchar* const WINDOW_NAME = "lotti";
@@ -61,9 +63,11 @@ static void my_application_activate(GApplication* application) {
 
   // Try multiple icon paths to work in both development and production environments
   const gchar* const icon_paths[] = {
+    ICON_BUNDLE_PATH,       // Bundle path (when running from build directory)
     ICON_PRODUCTION_PATH,   // Production path
     ICON_DEVELOPMENT_PATH,  // Development path  
     ICON_ALTERNATIVE_PATH,  // Alternative dev path
+    ICON_RELATIVE_PATH,     // Relative path from build directory
     NULL
   };
   
@@ -72,14 +76,10 @@ static void my_application_activate(GApplication* application) {
     g_autoptr(GError) error = NULL;
     if (gtk_window_set_icon_from_file(window, icon_paths[i], &error)) {
       icon_loaded = TRUE;
-#ifdef DEBUG
-      g_debug("Successfully loaded icon from: %s", icon_paths[i]);
-#endif
+      g_print("Successfully loaded icon from: %s\n", icon_paths[i]);
     } else {
-#ifdef DEBUG
-      g_debug("Failed to load icon from %s: %s", icon_paths[i], 
+      g_print("Failed to load icon from %s: %s\n", icon_paths[i], 
               error ? error->message : "Unknown error");
-#endif
       // Error is automatically freed by g_autoptr
     }
   }
