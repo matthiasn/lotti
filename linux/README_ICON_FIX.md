@@ -190,7 +190,7 @@ If you're using Kubuntu or any KDE Plasma environment, you may encounter additio
    kbuildsycoca4 --noincremental
    ```
 
-3. **KDE-specific directories**: Ensure desktop file is in KDE locations
+2. **KDE-specific directories**: Ensure desktop file is in KDE locations
    ```bash
    # Copy to KDE-specific locations
    mkdir -p ~/.kde/share/applications
