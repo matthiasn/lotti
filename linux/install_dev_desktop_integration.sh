@@ -42,7 +42,6 @@ mkdir -p ~/.local/share/icons/hicolor
 
 # Create KDE-specific directories for better compatibility
 mkdir -p ~/.kde/share/applications 2>/dev/null || true
-mkdir -p ~/.config/autostart 2>/dev/null || true
 
 # Copy desktop file to user applications directory
 echo "Installing desktop file..."
