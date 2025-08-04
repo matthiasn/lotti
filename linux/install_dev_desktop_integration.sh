@@ -79,8 +79,9 @@ if [ -f "$DESKTOP_FILE" ]; then
     
     # Also copy to KDE-specific locations for better compatibility
     if [ -d ~/.kde/share/applications ]; then
-        cp "$TEMP_DESKTOP" ~/.kde/share/applications/com.matthiasnehlsen.lotti.desktop 2>/dev/null || true
-        echo "Desktop file also copied to ~/.kde/share/applications/"
+        if cp "$TEMP_DESKTOP" ~/.kde/share/applications/com.matthiasnehlsen.lotti.desktop 2>/dev/null; then
+            echo "Desktop file also copied to ~/.kde/share/applications/"
+        fi
     fi
     
     rm -f "$TEMP_DESKTOP"
