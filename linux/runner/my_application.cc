@@ -51,6 +51,22 @@ static gchar* get_icon_path_relative_to_exe(const gchar* relative_path) {
   return icon_path;
 }
 
+// Helper function to try loading an icon
+static gboolean try_load_icon(GtkWindow* window, const gchar* icon_path, const gchar* debug_id) {
+  g_autoptr(GError) error = NULL;
+  if (gtk_window_set_icon_from_file(window, icon_path, &error)) {
+#ifdef DEBUG
+    g_debug("Successfully loaded icon from %s: %s", debug_id, icon_path);
+#endif
+    return TRUE;
+  } else {
+#ifdef DEBUG
+    g_debug("Failed to load icon from %s: %s", debug_id, error ? error->message : "Unknown error");
+#endif
+    return FALSE;
+  }
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
@@ -102,19 +118,7 @@ static void my_application_activate(GApplication* application) {
   
   // Try executable-relative paths first
   for (gsize i = 0; exe_relative_paths[i] != NULL && !icon_loaded; i++) {
-    g_autoptr(GError) error = NULL;
-    if (gtk_window_set_icon_from_file(window, exe_relative_paths[i], &error)) {
-      icon_loaded = TRUE;
-#ifdef DEBUG
-      g_debug("Successfully loaded icon from: %s", exe_relative_paths[i]);
-#endif
-    } else {
-#ifdef DEBUG
-      g_debug("Failed to load icon from %s: %s", exe_relative_paths[i], 
-              error ? error->message : "Unknown error");
-#endif
-      // Error is automatically freed by g_autoptr
-    }
+    icon_loaded = try_load_icon(window, exe_relative_paths[i], "executable-relative");
     g_free(exe_relative_paths[i]);
     exe_relative_paths[i] = NULL;  // Prevent potential double-free issues
   }
@@ -130,19 +134,7 @@ static void my_application_activate(GApplication* application) {
     };
     
     for (gsize i = 0; fallback_paths[i] != NULL && !icon_loaded; i++) {
-      g_autoptr(GError) error = NULL;
-      if (gtk_window_set_icon_from_file(window, fallback_paths[i], &error)) {
-        icon_loaded = TRUE;
-#ifdef DEBUG
-        g_debug("Successfully loaded icon from fallback path: %s", fallback_paths[i]);
-#endif
-      } else {
-#ifdef DEBUG
-        g_debug("Failed to load icon from fallback path %s: %s", fallback_paths[i], 
-                error ? error->message : "Unknown error");
-#endif
-        // Error is automatically freed by g_autoptr
-      }
+      icon_loaded = try_load_icon(window, fallback_paths[i], "fallback");
     }
   }
   
