@@ -6,8 +6,6 @@
 #endif
 
 #include <glib/gstdio.h>
-#include <unistd.h>
-#include <libgen.h>
 
 #include "flutter/generated_plugin_registrant.h"
 
