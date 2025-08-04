@@ -41,6 +41,9 @@ echo "Generating manifest and metainfo files..."
 # Generate manifest
 if ! sed -e "s|{{LOTTI_REPO_URL}}|${LOTTI_REPO_URL}|g" \
         -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
+        -e "s|flatpak/com.matthiasnehlsen.lotti.desktop|com.matthiasnehlsen.lotti.desktop|g" \
+        -e "s|flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml|com.matthiasnehlsen.lotti.generated.metainfo.xml|g" \
+        -e "s|install -D flatpak/|install -D |g" \
         flatpak/com.matthiasnehlsen.lotti.yml > "${TEMP_MANIFEST}"; then
     echo "Error: Failed to generate manifest file"
     exit 1
