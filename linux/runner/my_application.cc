@@ -116,6 +116,7 @@ static void my_application_activate(GApplication* application) {
       // Error is automatically freed by g_autoptr
     }
     g_free(exe_relative_paths[i]);
+    exe_relative_paths[i] = NULL;  // Prevent potential double-free issues
   }
   
   // Fallback to hardcoded paths if executable-relative paths failed
