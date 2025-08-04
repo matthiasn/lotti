@@ -18,7 +18,6 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 static const gchar* const ICON_PRODUCTION_PATH = "data/flutter_assets/assets/icon/app_icon_1024.png";
 static const gchar* const ICON_DEVELOPMENT_PATH = "assets/icon/app_icon_1024.png";
 static const gchar* const ICON_ALTERNATIVE_PATH = "../assets/icon/app_icon_1024.png";
-static const gchar* const ICON_BUNDLE_PATH = "data/flutter_assets/assets/icon/app_icon_1024.png";
 static const gchar* const ICON_RELATIVE_PATH = "../../../assets/icon/app_icon_1024.png";
 static const gchar* const ICON_THEME_NAME = "com.matthiasnehlsen.lotti";
 static const gchar* const APP_TITLE = "Lotti";
@@ -63,8 +62,7 @@ static void my_application_activate(GApplication* application) {
 
   // Try multiple icon paths to work in both development and production environments
   const gchar* const icon_paths[] = {
-    ICON_BUNDLE_PATH,       // Bundle path (when running from build directory)
-    ICON_PRODUCTION_PATH,   // Production path
+    ICON_PRODUCTION_PATH,   // Production path (when running from build directory)
     ICON_DEVELOPMENT_PATH,  // Development path  
     ICON_ALTERNATIVE_PATH,  // Alternative dev path
     ICON_RELATIVE_PATH,     // Relative path from build directory
