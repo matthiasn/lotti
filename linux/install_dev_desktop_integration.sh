@@ -71,7 +71,7 @@ if [ -f "$DESKTOP_FILE" ]; then
         exit 1
     }
     
-    cp "$TEMP_DESKTOP" ~/.local/share/applications/ || {
+    cp "$TEMP_DESKTOP" ~/.local/share/applications/com.matthiasnehlsen.lotti.desktop || {
         echo "Error: Failed to install desktop file"
         rm -f "$TEMP_DESKTOP"
         exit 1
@@ -79,7 +79,7 @@ if [ -f "$DESKTOP_FILE" ]; then
     
     # Also copy to KDE-specific locations for better compatibility
     if [ -d ~/.kde/share/applications ]; then
-        cp "$TEMP_DESKTOP" ~/.kde/share/applications/ 2>/dev/null || true
+        cp "$TEMP_DESKTOP" ~/.kde/share/applications/com.matthiasnehlsen.lotti.desktop 2>/dev/null || true
         echo "Desktop file also copied to ~/.kde/share/applications/"
     fi
     
