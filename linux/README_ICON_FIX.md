@@ -182,17 +182,7 @@ If you're using Kubuntu or any KDE Plasma environment, you may encounter additio
 
 ### KDE-Specific Issues
 
-1. **Desktop file not created properly**: The installation script may create temporary files instead of the proper desktop file
-   ```bash
-   # Check if desktop file exists
-   ls -la ~/.local/share/applications/com.matthiasnehlsen.lotti.desktop
-   
-   # If missing, manually create it from temporary files
-   cp ~/.local/share/applications/tmp.* ~/.local/share/applications/com.matthiasnehlsen.lotti.desktop
-   chmod 644 ~/.local/share/applications/com.matthiasnehlsen.lotti.desktop
-   ```
-
-2. **KDE icon cache not updated**: KDE uses a different icon caching system
+1. **KDE icon cache not updated**: KDE uses a different icon caching system
    ```bash
    # Update KDE icon cache
    kbuildsycoca5 --noincremental
