@@ -190,11 +190,11 @@ If you're using Kubuntu or any KDE Plasma environment, you may encounter additio
    kbuildsycoca4 --noincremental
    ```
 
-2. **KDE-specific directories**: The installation script automatically copies the desktop file to legacy KDE locations if they exist
+2. **KDE-specific directories**: The installation script ensures the necessary KDE-specific application directory exists and copies the desktop file there for better integration
    ```bash
    # The script automatically handles this - no manual action needed
-   # It only copies to ~/.kde/share/applications if the directory already exists
-   # This is the correct approach for legacy KDE compatibility
+   # It creates ~/.kde/share/applications if it doesn't exist
+   # This ensures compatibility with legacy KDE environments
    ```
 
 ### KDE Debugging Steps
