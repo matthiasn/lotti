@@ -74,10 +74,14 @@ static void my_application_activate(GApplication* application) {
     g_autoptr(GError) error = NULL;
     if (gtk_window_set_icon_from_file(window, icon_paths[i], &error)) {
       icon_loaded = TRUE;
-      g_print("Successfully loaded icon from: %s\n", icon_paths[i]);
+#ifdef DEBUG
+      g_debug("Successfully loaded icon from: %s", icon_paths[i]);
+#endif
     } else {
-      g_print("Failed to load icon from %s: %s\n", icon_paths[i], 
+#ifdef DEBUG
+      g_debug("Failed to load icon from %s: %s", icon_paths[i], 
               error ? error->message : "Unknown error");
+#endif
       // Error is automatically freed by g_autoptr
     }
   }
