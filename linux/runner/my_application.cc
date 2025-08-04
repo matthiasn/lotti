@@ -105,18 +105,18 @@ static void my_application_activate(GApplication* application) {
   // Try multiple icon paths to work in both development and production environments
   gboolean icon_loaded = FALSE;
   
-  // Try paths relative to executable location (most robust)
-  const gchar* const relative_paths_to_try[] = {
-    ICON_PRODUCTION_PATH,
-    ICON_DEVELOPMENT_PATH,
-    ICON_ALTERNATIVE_PATH,
-    ICON_RELATIVE_PATH,
+  // Define icon paths once to avoid duplication
+  const gchar* const icon_paths_to_try[] = {
+    ICON_PRODUCTION_PATH,    // Production path
+    ICON_DEVELOPMENT_PATH,   // Development path
+    ICON_ALTERNATIVE_PATH,   // Alternative dev path
+    ICON_RELATIVE_PATH,      // Relative path from build directory
     NULL
   };
   
   // Try executable-relative paths first
-  for (gsize i = 0; relative_paths_to_try[i] != NULL && !icon_loaded; i++) {
-    gchar* icon_path = get_icon_path_relative_to_exe(relative_paths_to_try[i]);
+  for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
+    gchar* icon_path = get_icon_path_relative_to_exe(icon_paths_to_try[i]);
     if (icon_path != NULL) {
       icon_loaded = try_load_icon(window, icon_path, "executable-relative");
       g_free(icon_path);
@@ -125,16 +125,8 @@ static void my_application_activate(GApplication* application) {
   
   // Fallback to hardcoded paths if executable-relative paths failed
   if (!icon_loaded) {
-    const gchar* const fallback_paths[] = {
-      ICON_PRODUCTION_PATH,   // Production path
-      ICON_DEVELOPMENT_PATH,  // Development path  
-      ICON_ALTERNATIVE_PATH,  // Alternative dev path
-      ICON_RELATIVE_PATH,     // Relative path from build directory
-      NULL
-    };
-    
-    for (gsize i = 0; fallback_paths[i] != NULL && !icon_loaded; i++) {
-      icon_loaded = try_load_icon(window, fallback_paths[i], "fallback");
+    for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
+      icon_loaded = try_load_icon(window, icon_paths_to_try[i], "fallback");
     }
   }
   
