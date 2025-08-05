@@ -18,10 +18,13 @@ finish-args:
   # Removed --socket=gpg-agent (not needed unless app specifically uses GPG)
 modules:
   - name: lotti
-    buildsystem: flutter
+    buildsystem: simple
     build-options:
       strip: true
       no-debuginfo: true
+    build-commands:
+      - flutter build linux --release
+      - cp -r build/linux/x64/release/bundle/* /app/
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
