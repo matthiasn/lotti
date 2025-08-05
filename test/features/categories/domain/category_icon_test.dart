@@ -102,6 +102,31 @@ void main() {
         expect(CategoryIconExtension.suggestFromName('diary'), equals(CategoryIcon.journal));
       });
 
+      test('should use word boundaries for keyword matching to avoid false matches', () {
+        // Test that partial matches within words are avoided using "run" keyword
+        expect(CategoryIconExtension.suggestFromName('prune'), isNull); // Should NOT match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('brunette'), isNull); // Should NOT match "run" keyword  
+        expect(CategoryIconExtension.suggestFromName('trunk'), isNull); // Should NOT match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('overrun'), isNull); // Should NOT match "run" keyword
+        
+        // Test that exact word matches still work for "run" keyword
+        expect(CategoryIconExtension.suggestFromName('run'), equals(CategoryIcon.running)); // Should match "run" keyword
+        expect(CategoryIconExtension.suggestFromName('I want to run'), equals(CategoryIcon.running)); // Should match "run" as whole word
+        expect(CategoryIconExtension.suggestFromName('run fast'), equals(CategoryIcon.running)); // Should match "run" as whole word
+        
+        // Test other keywords don't have false matches using "book" keyword
+        expect(CategoryIconExtension.suggestFromName('handbook'), isNull); // Should NOT match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('notebook'), isNull); // Should NOT match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('facebook'), isNull); // Should NOT match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('book'), equals(CategoryIcon.reading)); // Should match "book" keyword
+        expect(CategoryIconExtension.suggestFromName('read a book'), equals(CategoryIcon.reading)); // Should match "book" as whole word
+        
+        // Test other keyword false matches using "gym" keyword
+        expect(CategoryIconExtension.suggestFromName('gymnasium'), isNull); // Should NOT match "gym" keyword
+        expect(CategoryIconExtension.suggestFromName('gymkhana'), isNull); // Should NOT match "gym" keyword  
+        expect(CategoryIconExtension.suggestFromName('gym'), equals(CategoryIcon.fitness)); // Should match "gym" keyword
+      });
+
       test('should handle whitespace in input', () {
         expect(CategoryIconExtension.suggestFromName('  gym  '), equals(CategoryIcon.fitness));
         expect(CategoryIconExtension.suggestFromName('\tfitness\n'), equals(CategoryIcon.fitness));

@@ -510,7 +510,9 @@ extension CategoryIconExtension on CategoryIcon {
     };
 
     for (final entry in keywordMappings.entries) {
-      if (lowercaseName.contains(entry.key)) {
+      // Use word boundary regex to avoid partial matches (e.g. "run" in "prune")
+      final regex = RegExp(r'\b' + RegExp.escape(entry.key) + r'\b');
+      if (regex.hasMatch(lowercaseName)) {
         return entry.value;
       }
     }
