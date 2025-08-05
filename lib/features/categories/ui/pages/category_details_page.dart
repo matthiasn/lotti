@@ -703,20 +703,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       context: context,
       builder: (context) => CategoryIconPicker(
         selectedIcon: selectedIcon,
-        onIconSelected: (icon) {
-          if (widget.isCreateMode) {
-            setState(() {
-              _selectedIcon = icon;
-            });
-          } else {
-            ref
-                .read(
-                  categoryDetailsControllerProvider(widget.categoryId!)
-                      .notifier,
-                )
-                .updateFormField(icon: icon);
-          }
-        },
       ),
     );
 

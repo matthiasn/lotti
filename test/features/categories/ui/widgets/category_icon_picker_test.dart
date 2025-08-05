@@ -115,52 +115,29 @@ void main() {
       expect((decoration.color!.a * 255.0).round() & 0xff, greaterThan(0));
     });
 
-    testWidgets('should call onIconSelected when icon is tapped',
-        (tester) async {
-      CategoryIcon? selectedIcon;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(
-              onIconSelected: (icon) {
-                selectedIcon = icon;
-              },
-            ),
-          ),
-        ),
-      );
-
-      // Tap on the fitness icon
-      await tester.tap(find.byIcon(Icons.fitness_center));
-      await tester.pump();
-
-      expect(selectedIcon, equals(CategoryIcon.fitness));
-    });
-
     testWidgets('should return selected icon when tapped', (tester) async {
       CategoryIcon? result;
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: ElevatedButton(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
                 onPressed: () async {
                   result = await showDialog<CategoryIcon>(
                     context: context,
-                    builder: (_) => const CategoryIconPicker(),
+                    builder: (context) => const CategoryIconPicker(),
                   );
                 },
-                child: const Text('Open Picker'),
+                child: const Text('Show Picker'),
               ),
             ),
           ),
         ),
       );
 
-      // Open the dialog
-      await tester.tap(find.text('Open Picker'));
+      // Open the picker
+      await tester.tap(find.text('Show Picker'));
       await tester.pumpAndSettle();
 
       // Tap on the fitness icon
@@ -169,6 +146,8 @@ void main() {
 
       expect(result, equals(CategoryIcon.fitness));
     });
+
+
 
     testWidgets('should display icon names', (tester) async {
       await tester.pumpWidget(
@@ -244,21 +223,6 @@ void main() {
       expect(find.byType(CategoryIconPicker), findsOneWidget);
     });
 
-    testWidgets('should handle null onIconSelected callback', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
-        ),
-      );
 
-      // Should render without errors
-      expect(find.byType(CategoryIconPicker), findsOneWidget);
-
-      // Tapping should not cause errors
-      await tester.tap(find.byIcon(Icons.fitness_center));
-      await tester.pump();
-    });
   });
 }

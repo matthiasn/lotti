@@ -13,7 +13,6 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 ///   context: context,
 ///   builder: (context) => CategoryIconPicker(
 ///     selectedIcon: currentIcon,
-///     onIconSelected: (icon) => print('Selected: $icon'),
 ///   ),
 /// );
 /// ```
@@ -21,14 +20,10 @@ class CategoryIconPicker extends StatelessWidget {
   const CategoryIconPicker({
     super.key,
     this.selectedIcon,
-    this.onIconSelected,
   });
 
   /// The currently selected icon (will be highlighted if provided)
   final CategoryIcon? selectedIcon;
-  
-  /// Callback called when an icon is selected. If null, selection has no effect.
-  final ValueChanged<CategoryIcon>? onIconSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -74,15 +69,14 @@ class CategoryIconPicker extends StatelessWidget {
                   
                   return InkWell(
                     onTap: () {
-                      onIconSelected?.call(icon);
                       Navigator.of(context).pop(icon);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected 
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 
-                              CategoryIconConstants.selectedBackgroundAlpha) 
+                          ? Theme.of(context).colorScheme.primary.withValues(
+                              alpha: CategoryIconConstants.selectedBackgroundAlpha) 
                           : Colors.transparent,
                         border: Border.all(
                           color: isSelected 
