@@ -66,9 +66,32 @@ void main() {
         expect(CategoryIconExtension.suggestFromName('YOGA'), equals(CategoryIcon.yoga));
       });
 
-      test('should find partial matches in display names', () {
+      test('should find word-boundary matches in display names', () {
         expect(CategoryIconExtension.suggestFromName('Heart'), equals(CategoryIcon.heartHealth));
         expect(CategoryIconExtension.suggestFromName('Computer'), equals(CategoryIcon.computer));
+        expect(CategoryIconExtension.suggestFromName('Health'), equals(CategoryIcon.heartHealth));
+      });
+
+      test('should not match partial words incorrectly', () {
+        // This test ensures we fixed the bug where "art" would match "Heart Health"
+        expect(CategoryIconExtension.suggestFromName('art'), equals(CategoryIcon.art));
+        expect(CategoryIconExtension.suggestFromName('art'), isNot(equals(CategoryIcon.heartHealth)));
+        
+        // Other examples of avoiding false matches
+        expect(CategoryIconExtension.suggestFromName('men'), isNot(equals(CategoryIcon.mentalHealth)));
+        expect(CategoryIconExtension.suggestFromName('car'), equals(CategoryIcon.car));
+        expect(CategoryIconExtension.suggestFromName('car'), isNot(equals(CategoryIcon.medical))); // "care" partial match
+      });
+
+      test('should match complete words and reasonable prefixes', () {
+        // Complete word matches
+        expect(CategoryIconExtension.suggestFromName('mental'), equals(CategoryIcon.mentalHealth));
+        expect(CategoryIconExtension.suggestFromName('heart'), equals(CategoryIcon.heartHealth));
+        
+        // Reasonable prefix matches (4+ characters and at least 60% of target word)
+        expect(CategoryIconExtension.suggestFromName('men'), isNull); // Too short, should not match "mental"
+        expect(CategoryIconExtension.suggestFromName('ment'), equals(CategoryIcon.mentalHealth)); // Should match "mental" (4 chars, 67% of "mental")
+        expect(CategoryIconExtension.suggestFromName('heal'), equals(CategoryIcon.heartHealth)); // Should match "health" (4 chars, 67% of "health")
       });
 
       test('should find keyword mappings', () {

@@ -416,11 +416,30 @@ extension CategoryIconExtension on CategoryIcon {
       }
     }
 
-    // Check for partial matches in display names
+    // Check for word-boundary matches in display names
+    final nameWords = lowercaseName.split(RegExp(r'\s+'));
     for (final icon in CategoryIcon.values) {
-      if (icon.displayName.toLowerCase().contains(lowercaseName) ||
-          lowercaseName.contains(icon.displayName.toLowerCase())) {
-        return icon;
+      final displayWords = icon.displayName.toLowerCase().split(RegExp(r'\s+'));
+      
+      // Check if any complete word from the category name matches any complete word from the display name
+      for (final nameWord in nameWords) {
+        if (nameWord.isNotEmpty) {
+          for (final displayWord in displayWords) {
+            // Exact word match
+            if (displayWord == nameWord) {
+              return icon;
+            }
+            // Prefix match: require at least 4 characters and must be at least 60% of the target word
+            if (nameWord.length >= 4 && displayWord.startsWith(nameWord) && 
+                nameWord.length >= (displayWord.length * 0.6)) {
+              return icon;
+            }
+            if (displayWord.length >= 4 && nameWord.startsWith(displayWord) && 
+                displayWord.length >= (nameWord.length * 0.6)) {
+              return icon;
+            }
+          }
+        }
       }
     }
 
