@@ -117,6 +117,15 @@ void main() {
         // it should return the exact match
         expect(CategoryIconExtension.suggestFromName('work'), equals(CategoryIcon.work));
       });
+
+      test('should prioritize exact display name matches over word matches', () {
+        // Test that exact display name matches are found before word-boundary matches
+        // This ensures "Work" matches CategoryIcon.work (display: "Work") 
+        // before any other icons that might contain "work" as a word
+        expect(CategoryIconExtension.suggestFromName('Work'), equals(CategoryIcon.work));
+        expect(CategoryIconExtension.suggestFromName('Art'), equals(CategoryIcon.art));
+        expect(CategoryIconExtension.suggestFromName('Music'), equals(CategoryIcon.music));
+      });
     });
 
     group('JSON serialization', () {

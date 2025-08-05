@@ -416,6 +416,13 @@ extension CategoryIconExtension on CategoryIcon {
       }
     }
 
+    // Check for exact display name match
+    for (final icon in CategoryIcon.values) {
+      if (icon.displayName.toLowerCase() == lowercaseName) {
+        return icon;
+      }
+    }
+
     // Check for word-boundary matches in display names
     final nameWords = lowercaseName.split(RegExp(r'\s+'));
     for (final icon in CategoryIcon.values) {
