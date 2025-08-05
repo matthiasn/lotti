@@ -523,9 +523,9 @@ extension CategoryIconExtension on CategoryIcon {
     } catch (e) {
       // Log the error in debug mode for troubleshooting
       assert(() {
-        // Only log in debug mode to avoid print statements in production
+        debugPrint('${CategoryIconStrings.invalidIconWarning}"$json"');
         return true;
-      }(), '${CategoryIconStrings.invalidIconWarning}"$json"');
+      }(), 'Invalid CategoryIcon name: "$json"');
       return null;
     }
   }
