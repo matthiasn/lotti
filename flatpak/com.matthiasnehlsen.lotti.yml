@@ -38,8 +38,8 @@ modules:
         build-commands:
           - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
           - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
-          # Install icon to 256x256 directory - this is a standard size that should work
-          - install -D app_icon_1024.png /app/share/icons/hicolor/256x256/apps/com.matthiasnehlsen.lotti.png
+          # Skip icon installation for now to avoid validation errors
+          # TODO: Create properly sized icons (16x16, 32x32, 48x48, 64x64, 128x128, 256x256) later
         sources:
           - type: file
             path: com.matthiasnehlsen.lotti.desktop
