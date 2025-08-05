@@ -159,6 +159,11 @@ enum CategoryIcon {
 
 /// Extension to map CategoryIcon enum values to their corresponding IconData
 extension CategoryIconExtension on CategoryIcon {
+  /// Static map for O(1) lookup of CategoryIcon by name
+  /// Initialized once to avoid repeated iteration through enum values
+  static final Map<String, CategoryIcon> _byName = 
+      Map.fromEntries(CategoryIcon.values.map((e) => MapEntry(e.name, e)));
+
   IconData get iconData {
     switch (this) {
       // Health & Wellness Icons
@@ -525,17 +530,21 @@ extension CategoryIconExtension on CategoryIcon {
 
   /// Convert string to CategoryIcon for deserialization
   /// Returns null if [json] is null, empty, or not a valid CategoryIcon name
+  /// Uses O(1) map lookup for efficient performance
   static CategoryIcon? fromJson(String? json) {
     if (json == null || json.trim().isEmpty) return null;
-    try {
-      return CategoryIcon.values.firstWhere((e) => e.name == json.trim());
-    } catch (e) {
+
+    final trimmedJson = json.trim();
+    final icon = _byName[trimmedJson];
+    
+    if (icon == null) {
       // Log the error in debug mode for troubleshooting
       assert(() {
-        debugPrint('${CategoryIconStrings.invalidIconWarning}"$json"');
+        debugPrint('${CategoryIconStrings.invalidIconWarning}"$trimmedJson"');
         return true;
-      }(), 'Invalid CategoryIcon name: "$json"');
-      return null;
+      }(), 'Invalid CategoryIcon name: "$trimmedJson"');
     }
+    
+    return icon;
   }
 }

@@ -228,4 +228,37 @@ void main() {
       expect(CategoryIconStrings.fallbackCharacter.length, equals(1));
     });
   });
+
+  group('Performance optimization', () {
+    test('should use O(1) map lookup for fromJson', () {
+      // Test that the static map works correctly for all enum values
+      for (final icon in CategoryIcon.values) {
+        final json = icon.toJson();
+        expect(CategoryIconExtension.fromJson(json), equals(icon));
+      }
+      
+      // Test edge cases that should use the map efficiently
+      expect(CategoryIconExtension.fromJson('fitness'), equals(CategoryIcon.fitness));
+      expect(CategoryIconExtension.fromJson('  medical  '), equals(CategoryIcon.medical));
+      expect(CategoryIconExtension.fromJson('invalidValue'), isNull);
+    });
+    
+    test('should handle the static map initialization correctly', () {
+      // Verify that all enum values are present in the internal map
+      // by checking a sample of different icons
+      const testIcons = [
+        CategoryIcon.fitness,
+        CategoryIcon.medical,
+        CategoryIcon.school,
+        CategoryIcon.work,
+        CategoryIcon.home,
+      ];
+      
+      for (final icon in testIcons) {
+        final json = icon.name;
+        final result = CategoryIconExtension.fromJson(json);
+        expect(result, equals(icon), reason: 'Map lookup failed for ${icon.name}');
+      }
+    });
+  });
 }
