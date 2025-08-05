@@ -120,7 +120,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                       const SizedBox(height: 16),
                       _buildColorPicker(),
                       const SizedBox(height: 16),
-                      _buildCreateModeIconPicker(),
+                      _buildIconPicker(),
                       const SizedBox(height: 16),
                       _buildCreateModeSwitchTiles(),
                     ],
@@ -311,7 +311,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                             const SizedBox(height: 16),
                             _buildColorPicker(),
                             const SizedBox(height: 16),
-                            if (category != null) _buildIconPicker(category),
+                            if (category != null) _buildIconPicker(category: category),
                             const SizedBox(height: 16),
                             _buildSwitchTiles(category!),
                           ],
@@ -614,55 +614,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     );
   }
 
-  Widget _buildIconPicker(CategoryDefinition category) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          CategoryIconStrings.iconLabel,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () => _showIconPicker(category.icon),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                CategoryIconDisplay(
-                  category: category,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category.icon?.displayName ?? CategoryIconStrings.chooseIconText,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      Text(
-                        CategoryIconStrings.iconSelectionHint,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios, size: 16),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildIconPicker({CategoryDefinition? category}) {
+    final isCreateMode = category == null;
+    final icon = isCreateMode ? _selectedIcon : category.icon;
+    final color = isCreateMode 
+        ? (_selectedColor ?? Colors.blue) 
+        : colorFromCssHex(category.color, substitute: Colors.blue);
+    final iconDisplayName = icon?.displayName ?? CategoryIconStrings.chooseIconText;
+    final hintText = isCreateMode 
+        ? CategoryIconStrings.createModeIconHint 
+        : CategoryIconStrings.iconSelectionHint;
 
-  Widget _buildCreateModeIconPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -672,7 +634,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: () => _showIconPicker(null),
+          onTap: () => _showIconPicker(isCreateMode ? null : category.icon),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -682,41 +644,46 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _selectedColor ?? Colors.blue,
-                      width: 2,
+                if (isCreateMode)
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color,
+                        width: 2,
+                      ),
                     ),
+                    child: Center(
+                      child: icon != null
+                          ? Icon(
+                              icon.iconData,
+                              color: color,
+                              size: 28,
+                            )
+                          : const Icon(
+                              Icons.category,
+                              color: Colors.grey,
+                              size: 28,
+                            ),
+                    ),
+                  )
+                else
+                  CategoryIconDisplay(
+                    category: category,
                   ),
-                  child: Center(
-                    child: _selectedIcon != null
-                        ? Icon(
-                            _selectedIcon!.iconData,
-                            color: _selectedColor ?? Colors.blue,
-                            size: 28,
-                          )
-                        : const Icon(
-                            Icons.category,
-                            color: Colors.grey,
-                            size: 28,
-                          ),
-                  ),
-                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _selectedIcon?.displayName ?? CategoryIconStrings.chooseIconText,
+                        iconDisplayName,
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       Text(
-                        CategoryIconStrings.createModeIconHint,
+                        hintText,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
