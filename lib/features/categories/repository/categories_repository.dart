@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -48,6 +49,7 @@ class CategoryRepository {
   Future<CategoryDefinition> createCategory({
     required String name,
     required String color,
+    CategoryIcon? icon,
   }) async {
     final now = DateTime.now();
 
@@ -60,6 +62,7 @@ class CategoryRepository {
       vectorClock: null,
       private: false,
       active: true,
+      icon: icon,
     );
 
     await _persistenceLogic.upsertEntityDefinition(category);

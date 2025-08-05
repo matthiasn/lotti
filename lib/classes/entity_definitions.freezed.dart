@@ -2645,7 +2645,8 @@ mixin _$EntityDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -2717,7 +2718,8 @@ mixin _$EntityDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -2789,7 +2791,8 @@ mixin _$EntityDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -3194,7 +3197,8 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -3282,7 +3286,8 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -3370,7 +3375,8 @@ class _$MeasurableDataTypeImpl implements MeasurableDataType {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -3545,7 +3551,8 @@ abstract class _$$CategoryDefinitionImplCopyWith<$Res>
       DateTime? deletedAt,
       String? defaultLanguageCode,
       List<String>? allowedPromptIds,
-      Map<AiResponseType, List<String>>? automaticPrompts});
+      Map<AiResponseType, List<String>>? automaticPrompts,
+      @CategoryIconConverter() CategoryIcon? icon});
 }
 
 /// @nodoc
@@ -3575,6 +3582,7 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
     Object? defaultLanguageCode = freezed,
     Object? allowedPromptIds = freezed,
     Object? automaticPrompts = freezed,
+    Object? icon = freezed,
   }) {
     return _then(_$CategoryDefinitionImpl(
       id: null == id
@@ -3633,6 +3641,10 @@ class __$$CategoryDefinitionImplCopyWithImpl<$Res>
           ? _value._automaticPrompts
           : automaticPrompts // ignore: cast_nullable_to_non_nullable
               as Map<AiResponseType, List<String>>?,
+      icon: freezed == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as CategoryIcon?,
     ));
   }
 }
@@ -3655,6 +3667,7 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
       this.defaultLanguageCode,
       final List<String>? allowedPromptIds,
       final Map<AiResponseType, List<String>>? automaticPrompts,
+      @CategoryIconConverter() this.icon,
       final String? $type})
       : _allowedPromptIds = allowedPromptIds,
         _automaticPrompts = automaticPrompts,
@@ -3708,12 +3721,16 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
     return EqualUnmodifiableMapView(value);
   }
 
+  @override
+  @CategoryIconConverter()
+  final CategoryIcon? icon;
+
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts)';
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon)';
   }
 
   @override
@@ -3743,7 +3760,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             const DeepCollectionEquality()
                 .equals(other._allowedPromptIds, _allowedPromptIds) &&
             const DeepCollectionEquality()
-                .equals(other._automaticPrompts, _automaticPrompts));
+                .equals(other._automaticPrompts, _automaticPrompts) &&
+            (identical(other.icon, icon) || other.icon == icon));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3763,7 +3781,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
       deletedAt,
       defaultLanguageCode,
       const DeepCollectionEquality().hash(_allowedPromptIds),
-      const DeepCollectionEquality().hash(_automaticPrompts));
+      const DeepCollectionEquality().hash(_automaticPrompts),
+      icon);
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
@@ -3806,7 +3825,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -3860,7 +3880,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
         deletedAt,
         defaultLanguageCode,
         allowedPromptIds,
-        automaticPrompts);
+        automaticPrompts,
+        icon);
   }
 
   @override
@@ -3895,7 +3916,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -3949,7 +3971,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
         deletedAt,
         defaultLanguageCode,
         allowedPromptIds,
-        automaticPrompts);
+        automaticPrompts,
+        icon);
   }
 
   @override
@@ -3984,7 +4007,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -4040,7 +4064,8 @@ class _$CategoryDefinitionImpl implements CategoryDefinition {
           deletedAt,
           defaultLanguageCode,
           allowedPromptIds,
-          automaticPrompts);
+          automaticPrompts,
+          icon);
     }
     return orElse();
   }
@@ -4105,7 +4130,8 @@ abstract class CategoryDefinition implements EntityDefinition {
           final DateTime? deletedAt,
           final String? defaultLanguageCode,
           final List<String>? allowedPromptIds,
-          final Map<AiResponseType, List<String>>? automaticPrompts}) =
+          final Map<AiResponseType, List<String>>? automaticPrompts,
+          @CategoryIconConverter() final CategoryIcon? icon}) =
       _$CategoryDefinitionImpl;
 
   factory CategoryDefinition.fromJson(Map<String, dynamic> json) =
@@ -4132,6 +4158,8 @@ abstract class CategoryDefinition implements EntityDefinition {
   String? get defaultLanguageCode;
   List<String>? get allowedPromptIds;
   Map<AiResponseType, List<String>>? get automaticPrompts;
+  @CategoryIconConverter()
+  CategoryIcon? get icon;
 
   /// Create a copy of EntityDefinition
   /// with the given fields replaced by the non-null parameter values.
@@ -4481,7 +4509,8 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -4574,7 +4603,8 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -4667,7 +4697,8 @@ class _$HabitDefinitionImpl implements HabitDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -5118,7 +5149,8 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -5208,7 +5240,8 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -5298,7 +5331,8 @@ class _$DashboardDefinitionImpl implements DashboardDefinition {
             DateTime? deletedAt,
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
-            Map<AiResponseType, List<String>>? automaticPrompts)?
+            Map<AiResponseType, List<String>>? automaticPrompts,
+            @CategoryIconConverter() CategoryIcon? icon)?
         categoryDefinition,
     TResult Function(
             String id,

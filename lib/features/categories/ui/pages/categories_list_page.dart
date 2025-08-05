@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/search/index.dart';
 
@@ -230,26 +230,8 @@ class _CategoryListTile extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: colorFromCssHex(
-              category.color,
-              substitute: Theme.of(context).colorScheme.primary,
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              category.name.isNotEmpty ? category.name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
+        leading: CategoryIconDisplay(
+          category: category,
         ),
         title: Text(
           category.name,

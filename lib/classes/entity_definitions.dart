@@ -1,10 +1,25 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'entity_definitions.freezed.dart';
 part 'entity_definitions.g.dart';
+
+/// Custom JSON converter for CategoryIcon enum.
+/// 
+/// Handles serialization and deserialization of CategoryIcon values to/from JSON strings.
+/// Returns null for invalid inputs and logs warnings in debug mode for troubleshooting.
+class CategoryIconConverter implements JsonConverter<CategoryIcon?, String?> {
+  const CategoryIconConverter();
+
+  @override
+  CategoryIcon? fromJson(String? json) => CategoryIconExtension.fromJson(json);
+
+  @override
+  String? toJson(CategoryIcon? icon) => icon?.toJson();
+}
 
 enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 
@@ -111,6 +126,7 @@ class EntityDefinition with _$EntityDefinition {
     String? defaultLanguageCode,
     List<String>? allowedPromptIds,
     Map<AiResponseType, List<String>>? automaticPrompts,
+    @CategoryIconConverter() CategoryIcon? icon,
   }) = CategoryDefinition;
 
   const factory EntityDefinition.habit({

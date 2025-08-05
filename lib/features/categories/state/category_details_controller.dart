@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 
 part 'category_details_controller.freezed.dart';
@@ -101,6 +102,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
         _pendingCategory!.private != _originalCategory!.private ||
         _pendingCategory!.active != _originalCategory!.active ||
         _pendingCategory!.favorite != _originalCategory!.favorite ||
+        _pendingCategory!.icon != _originalCategory!.icon ||
         _pendingCategory!.defaultLanguageCode !=
             _originalCategory!.defaultLanguageCode ||
         _hasListChanges(_pendingCategory!.allowedPromptIds,
@@ -143,6 +145,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
     bool? active,
     bool? favorite,
     String? defaultLanguageCode,
+    CategoryIcon? icon,
   }) {
     if (_pendingCategory == null) return;
 
@@ -155,6 +158,7 @@ class CategoryDetailsController extends StateNotifier<CategoryDetailsState> {
       favorite: favorite ?? _pendingCategory!.favorite,
       defaultLanguageCode:
           defaultLanguageCode ?? _pendingCategory!.defaultLanguageCode,
+      icon: icon ?? _pendingCategory!.icon,
     );
 
     // Update the displayed category to reflect pending changes
