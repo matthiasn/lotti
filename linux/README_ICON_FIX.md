@@ -51,6 +51,8 @@ The Lotti Flutter app was showing a generic gear/settings icon in the Ubuntu sid
 
 ### For Development Environment (Android Studio + Ubuntu VM)
 
+**Note for Kubuntu/KDE Plasma users**: If you're using Kubuntu or any KDE Plasma environment, see the [Kubuntu Troubleshooting](#kubuntu-troubleshooting) section below.
+
 1. **Build the Linux app first**:
    ```bash
    flutter build linux
@@ -174,9 +176,59 @@ If running in VirtualBox Ubuntu VM:
 - [ ] Icon persists when app is minimized/restored
 - [ ] Desktop file appears in application menus (if applicable)
 
+## Kubuntu Troubleshooting
+
+If you're using Kubuntu or any KDE Plasma environment, you may encounter additional issues:
+
+### KDE-Specific Issues
+
+1. **KDE icon cache not updated**: KDE uses a different icon caching system
+   ```bash
+   # Update KDE icon cache
+   kbuildsycoca5 --noincremental
+   # Or for older KDE versions
+   kbuildsycoca4 --noincremental
+   ```
+
+2. **KDE-specific directories**: The installation script ensures the necessary KDE-specific application directory exists and copies the desktop file there for better integration
+   ```bash
+   # The script automatically handles this - no manual action needed
+   # It creates ~/.kde/share/applications if it doesn't exist
+   # This ensures compatibility with legacy KDE environments
+   ```
+
+### KDE Debugging Steps
+
+1. **Check desktop environment**:
+   ```bash
+   echo $XDG_CURRENT_DESKTOP
+   echo $DESKTOP_SESSION
+   ```
+
+2. **Verify KDE integration**:
+   ```bash
+   # Check if app appears in KDE application menu
+   ls ~/.local/share/applications/ | grep lotti
+   ```
+
+3. **Force KDE cache refresh**:
+   ```bash
+   kbuildsycoca5 --noincremental
+   # Then restart KDE or log out/in
+   ```
+
+### KDE-Specific Testing Checklist
+
+- [ ] Desktop file exists in `~/.local/share/applications/`
+- [ ] Desktop file also exists in `~/.kde/share/applications/` (if directory exists)
+- [ ] KDE icon cache updated with `kbuildsycoca5 --noincremental`
+- [ ] App appears in KDE application menu
+- [ ] Icon shows in KDE taskbar/dock when app is running
+
 ## Notes
 
 - This solution works for both development (Android Studio) and production environments
-- The fix is compatible with different Ubuntu desktop environments (GNOME, Unity, etc.)
+- The fix is compatible with different Ubuntu desktop environments (GNOME, Unity, KDE Plasma, etc.)
 - Icons are generated from the existing `assets/icon/app_icon_1024.png`
-- The solution follows Linux desktop integration best practices 
+- The solution follows Linux desktop integration best practices
+- KDE Plasma requires additional cache management compared to GNOME 

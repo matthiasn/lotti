@@ -5,6 +5,8 @@
 #include <gdk/gdkx.h>
 #endif
 
+#include <glib/gstdio.h>
+
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication {
@@ -18,9 +20,50 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 static const gchar* const ICON_PRODUCTION_PATH = "data/flutter_assets/assets/icon/app_icon_1024.png";
 static const gchar* const ICON_DEVELOPMENT_PATH = "assets/icon/app_icon_1024.png";
 static const gchar* const ICON_ALTERNATIVE_PATH = "../assets/icon/app_icon_1024.png";
+static const gchar* const ICON_RELATIVE_PATH = "../../../assets/icon/app_icon_1024.png";
 static const gchar* const ICON_THEME_NAME = "com.matthiasnehlsen.lotti";
 static const gchar* const APP_TITLE = "Lotti";
 static const gchar* const WINDOW_NAME = "lotti";
+
+// Helper function to get executable directory
+static gchar* get_executable_dir() {
+  gchar* exe_path = g_file_read_link("/proc/self/exe", NULL);
+  if (!exe_path) {
+    return NULL;
+  }
+  
+  gchar* dir = g_path_get_dirname(exe_path);
+  g_free(exe_path);
+  return dir;
+}
+
+// Helper function to construct icon path relative to executable
+static gchar* get_icon_path_relative_to_exe(const gchar* relative_path) {
+  gchar* exe_dir = get_executable_dir();
+  if (!exe_dir) {
+    return NULL;
+  }
+  
+  gchar* icon_path = g_build_filename(exe_dir, relative_path, NULL);
+  g_free(exe_dir);
+  return icon_path;
+}
+
+// Helper function to try loading an icon
+static gboolean try_load_icon(GtkWindow* window, const gchar* icon_path, const gchar* debug_id) {
+  g_autoptr(GError) error = NULL;
+  if (gtk_window_set_icon_from_file(window, icon_path, &error)) {
+#ifdef DEBUG
+    g_debug("Successfully loaded icon from %s: %s", debug_id, icon_path);
+#endif
+    return TRUE;
+  } else {
+#ifdef DEBUG
+    g_debug("Failed to load icon from %s: %s", debug_id, error ? error->message : "Unknown error");
+#endif
+    return FALSE;
+  }
+}
 
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
@@ -60,27 +103,30 @@ static void my_application_activate(GApplication* application) {
   }
 
   // Try multiple icon paths to work in both development and production environments
-  const gchar* const icon_paths[] = {
-    ICON_PRODUCTION_PATH,   // Production path
-    ICON_DEVELOPMENT_PATH,  // Development path  
-    ICON_ALTERNATIVE_PATH,  // Alternative dev path
+  gboolean icon_loaded = FALSE;
+  
+  // Define icon paths once to avoid duplication
+  const gchar* const icon_paths_to_try[] = {
+    ICON_PRODUCTION_PATH,    // Production path
+    ICON_DEVELOPMENT_PATH,   // Development path
+    ICON_ALTERNATIVE_PATH,   // Alternative dev path
+    ICON_RELATIVE_PATH,      // Relative path from build directory
     NULL
   };
   
-  gboolean icon_loaded = FALSE;
-  for (gsize i = 0; icon_paths[i] != NULL && !icon_loaded; i++) {
-    g_autoptr(GError) error = NULL;
-    if (gtk_window_set_icon_from_file(window, icon_paths[i], &error)) {
-      icon_loaded = TRUE;
-#ifdef DEBUG
-      g_debug("Successfully loaded icon from: %s", icon_paths[i]);
-#endif
-    } else {
-#ifdef DEBUG
-      g_debug("Failed to load icon from %s: %s", icon_paths[i], 
-              error ? error->message : "Unknown error");
-#endif
-      // Error is automatically freed by g_autoptr
+  // Try executable-relative paths first
+  for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
+    gchar* icon_path = get_icon_path_relative_to_exe(icon_paths_to_try[i]);
+    if (icon_path != NULL) {
+      icon_loaded = try_load_icon(window, icon_path, "executable-relative");
+      g_free(icon_path);
+    }
+  }
+  
+  // Fallback to hardcoded paths if executable-relative paths failed
+  if (!icon_loaded) {
+    for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
+      icon_loaded = try_load_icon(window, icon_paths_to_try[i], "fallback");
     }
   }
   
