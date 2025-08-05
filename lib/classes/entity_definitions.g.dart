@@ -266,6 +266,7 @@ _$CategoryDefinitionImpl _$$CategoryDefinitionImplFromJson(
         (k, e) => MapEntry($enumDecode(_$AiResponseTypeEnumMap, k),
             (e as List<dynamic>).map((e) => e as String).toList()),
       ),
+      icon: const CategoryIconConverter().fromJson(json['icon'] as String?),
       $type: json['runtimeType'] as String?,
     );
 
@@ -287,6 +288,7 @@ Map<String, dynamic> _$$CategoryDefinitionImplToJson(
       'allowedPromptIds': instance.allowedPromptIds,
       'automaticPrompts': instance.automaticPrompts
           ?.map((k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e)),
+      'icon': const CategoryIconConverter().toJson(instance.icon),
       'runtimeType': instance.$type,
     };
 

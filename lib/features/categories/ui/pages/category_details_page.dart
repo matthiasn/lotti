@@ -5,10 +5,13 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_automatic_prompts.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.dart';
@@ -54,6 +57,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   late TextEditingController _nameController;
   String? _lastSyncedName;
   Color? _selectedColor; // Only used in create mode
+  CategoryIcon? _selectedIcon; // Only used in create mode
 
   @override
   void initState() {
@@ -116,6 +120,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                       const SizedBox(height: 16),
                       _buildColorPicker(),
                       const SizedBox(height: 16),
+                      _buildCreateModeIconPicker(),
+                      const SizedBox(height: 16),
                       _buildCreateModeSwitchTiles(),
                     ],
                   ),
@@ -149,6 +155,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         color: _selectedColor != null
             ? colorToCssHex(_selectedColor!)
             : colorToCssHex(Colors.blue),
+        icon: _selectedIcon,
       );
 
       if (mounted) {
@@ -174,7 +181,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           title: context.messages.privateLabel,
           subtitle: context.messages.categoryPrivateDescription,
           value: false,
-          onChanged: null, // Will be set after creation
+          onChanged: null,
+          // Will be set after creation
           icon: Icons.lock_outline,
           enabled: false,
         ),
@@ -183,7 +191,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           title: context.messages.activeLabel,
           subtitle: context.messages.categoryActiveDescription,
           value: true,
-          onChanged: null, // Will be set after creation
+          onChanged: null,
+          // Will be set after creation
           icon: Icons.visibility_outlined,
           enabled: false,
         ),
@@ -301,6 +310,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                             _buildNameField(),
                             const SizedBox(height: 16),
                             _buildColorPicker(),
+                            const SizedBox(height: 16),
+                            if (category != null) _buildIconPicker(category),
                             const SizedBox(height: 16),
                             _buildSwitchTiles(category!),
                           ],
@@ -601,6 +612,160 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       availablePrompts: validPrompts,
       selectedPromptIds: selectedPromptIds,
     );
+  }
+
+  Widget _buildIconPicker(CategoryDefinition category) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          CategoryIconStrings.iconLabel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () => _showIconPicker(category.icon),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                CategoryIconDisplay(
+                  category: category,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.icon?.displayName ?? CategoryIconStrings.chooseIconText,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      Text(
+                        CategoryIconStrings.iconSelectionHint,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCreateModeIconPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          CategoryIconStrings.iconLabel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () => _showIconPicker(null),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _selectedColor ?? Colors.blue,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: _selectedIcon != null
+                        ? Icon(
+                            _selectedIcon!.iconData,
+                            color: _selectedColor ?? Colors.blue,
+                            size: 28,
+                          )
+                        : const Icon(
+                            Icons.category,
+                            color: Colors.grey,
+                            size: 28,
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _selectedIcon?.displayName ?? CategoryIconStrings.chooseIconText,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      Text(
+                        CategoryIconStrings.createModeIconHint,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showIconPicker(CategoryIcon? selectedIcon) async {
+    final result = await showDialog<CategoryIcon>(
+      context: context,
+      builder: (context) => CategoryIconPicker(
+        selectedIcon: selectedIcon,
+        onIconSelected: (icon) {
+          if (widget.isCreateMode) {
+            setState(() {
+              _selectedIcon = icon;
+            });
+          } else {
+            ref
+                .read(
+                  categoryDetailsControllerProvider(widget.categoryId!)
+                      .notifier,
+                )
+                .updateFormField(icon: icon);
+          }
+        },
+      ),
+    );
+
+    if (result != null) {
+      if (widget.isCreateMode) {
+        setState(() {
+          _selectedIcon = result;
+        });
+      } else {
+        ref
+            .read(
+              categoryDetailsControllerProvider(widget.categoryId!).notifier,
+            )
+            .updateFormField(icon: result);
+      }
+    }
   }
 
   Widget _buildBottomBar(CategoryDetailsState state) {

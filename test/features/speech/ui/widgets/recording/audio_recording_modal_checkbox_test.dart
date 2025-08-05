@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -69,6 +70,9 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
         if (includeChecklistPrompts)
           AiResponseType.checklistUpdates: ['checklist-prompt'],
       };
+
+  @override
+  CategoryIcon? get icon => null;
 }
 
 void main() {

@@ -384,8 +384,12 @@ void main() {
         final switches = find.byType(Switch);
         expect(switches, findsNWidgets(3)); // Private, Active, Favorite
 
+        // Scroll to ensure the switch is visible before tapping
+        await tester.ensureVisible(switches.first);
+        await tester.pumpAndSettle();
+
         // Tap the first switch (Private)
-        await tester.tap(switches.first);
+        await tester.tap(switches.first, warnIfMissed: false);
         await tester.pumpAndSettle();
 
         // Save button should now be enabled
