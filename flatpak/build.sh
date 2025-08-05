@@ -67,6 +67,39 @@ if ! cp assets/icon/app_icon_1024.png flatpak/app_icon_1024.png; then
 fi
 echo "Icon file copied successfully to flatpak/app_icon_1024.png"
 
+# Build Flutter app if it doesn't exist
+if [ ! -d "build/linux/x64/release/bundle" ]; then
+    echo "Flutter app not built. Building now..."
+    if ! flutter build linux --release; then
+        echo "Error: Failed to build Flutter app"
+        exit 1
+    fi
+    echo "Flutter app built successfully"
+else
+    echo "Flutter app already built, skipping build"
+fi
+
+# Copy built app to project root for Flatpak build
+echo "Copying built app to project root..."
+if ! cp -r build/linux/x64/release/bundle/* .; then
+    echo "Error: Failed to copy built app to project root"
+    exit 1
+fi
+echo "Built app copied to project root"
+echo "Files in project root:"
+ls -la
+
+# Check if lotti executable exists
+if [ ! -f "lotti" ]; then
+    echo "Error: lotti executable not found after copy"
+    echo "Contents of build/linux/x64/release/bundle/:"
+    ls -la build/linux/x64/release/bundle/
+    exit 1
+fi
+
+# Built files are now included as sources in the Flatpak manifest
+echo "Built files are ready for Flatpak packaging"
+
 
 
 # Build the Flatpak

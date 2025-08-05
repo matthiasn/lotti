@@ -2,7 +2,7 @@ app-id: com.matthiasnehlsen.lotti
 runtime: org.gnome.Platform
 runtime-version: '45'
 sdk: org.gnome.Sdk
-command: lotti
+command: /app/lotti
 finish-args:
   - --share=network
   - --share=ipc
@@ -23,13 +23,24 @@ modules:
       strip: true
       no-debuginfo: true
     build-commands:
-      - echo "Building Flutter app..."
-      - flutter build linux --release
-      - cp -r build/linux/x64/release/bundle/* /app/
+      - echo "Installing pre-built Flutter app..."
+      - ls -la
+      - cp lotti /app/
+      - find lib -type f -exec cp --parents {} /app/ \;
+      - find data -type f -exec cp --parents {} /app/ \;
+      - find share -type f -exec cp --parents {} /app/ \;
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
         commit: {{LOTTI_VERSION}}
+      - type: file
+        path: ../lotti
+      - type: file
+        path: ../lib
+      - type: file
+        path: ../data
+      - type: file
+        path: ../share
     modules:
       - name: flutter-common
         buildsystem: simple
