@@ -5,7 +5,7 @@ set -e
 
 # Default values
 readonly LOTTI_REPO_URL=${LOTTI_REPO_URL:-"https://github.com/matthiasn/lotti.git"}
-readonly LOTTI_VERSION=${LOTTI_VERSION:-"v0.9.645"}
+readonly LOTTI_VERSION=${LOTTI_VERSION:-$(git rev-parse HEAD)}
 readonly LOTTI_RELEASE_DATE=${LOTTI_RELEASE_DATE:-"2025-01-26"}
 
 echo "Building Lotti Flatpak..."
@@ -32,9 +32,9 @@ fi
 # Create temporary manifest with substituted variables
 readonly TEMP_MANIFEST="flatpak/com.matthiasnehlsen.lotti.generated.yml"
 readonly TEMP_METAINFO="flatpak/com.matthiasnehlsen.lotti.generated.metainfo.xml"
-
+readonly TEMP_DESKTOP="com.matthiasnehlsen.lotti.desktop"
 # Set up cleanup trap
-trap 'rm -f "$TEMP_MANIFEST" "$TEMP_METAINFO"' EXIT
+trap 'rm -f "$TEMP_MANIFEST" "$TEMP_METAINFO" "$TEMP_DESKTOP" flatpak/app_icon_1024.png' EXIT
 
 echo "Generating manifest and metainfo files..."
 
@@ -53,6 +53,21 @@ if ! sed -e "s|{{LOTTI_VERSION}}|${LOTTI_VERSION}|g" \
     echo "Error: Failed to generate metainfo file"
     exit 1
 fi
+
+# Copy desktop file to project root
+if ! cp flatpak/com.matthiasnehlsen.lotti.desktop "${TEMP_DESKTOP}"; then
+    echo "Error: Failed to copy desktop file"
+    exit 1
+fi
+
+# Copy icon file to flatpak directory for build
+if ! cp assets/icon/app_icon_1024.png flatpak/app_icon_1024.png; then
+    echo "Error: Failed to copy icon file"
+    exit 1
+fi
+echo "Icon file copied successfully to flatpak/app_icon_1024.png"
+
+
 
 # Build the Flatpak
 echo "Starting Flatpak build..."

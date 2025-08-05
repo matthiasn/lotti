@@ -25,20 +25,22 @@ modules:
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
-        tag: {{LOTTI_VERSION}}
+        commit: {{LOTTI_VERSION}}
     modules:
       - name: flutter-common
         buildsystem: simple
         build-commands:
-          - install -D flatpak/com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
+          - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
           - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
           # Install icons - using 1024px source for all sizes (TODO: Create properly sized icons for better quality)
           - |
             for size in 1024 512 256 128 64 48 32 16; do
-              install -D assets/icon/app_icon_1024.png /app/share/icons/hicolor/${size}x${size}/apps/com.matthiasnehlsen.lotti.png
+              install -D app_icon_1024.png /app/share/icons/hicolor/${size}x${size}/apps/com.matthiasnehlsen.lotti.png
             done
         sources:
           - type: file
-            path: flatpak/com.matthiasnehlsen.lotti.desktop
+            path: com.matthiasnehlsen.lotti.desktop
           - type: file
-            path: com.matthiasnehlsen.lotti.generated.metainfo.xml 
+            path: com.matthiasnehlsen.lotti.generated.metainfo.xml
+          - type: file
+            path: app_icon_1024.png 
