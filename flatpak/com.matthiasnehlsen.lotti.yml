@@ -1,7 +1,7 @@
 app-id: com.matthiasnehlsen.lotti
-runtime: org.freedesktop.Platform
-runtime-version: '23.08'
-sdk: org.freedesktop.Sdk
+runtime: org.gnome.Platform
+runtime-version: '45'
+sdk: org.gnome.Sdk
 command: lotti
 finish-args:
   - --share=network
@@ -23,7 +23,9 @@ modules:
       strip: true
       no-debuginfo: true
     build-commands:
-      - cp -r * /app/
+      - echo "Building Flutter app..."
+      - flutter build linux --release
+      - cp -r build/linux/x64/release/bundle/* /app/
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
