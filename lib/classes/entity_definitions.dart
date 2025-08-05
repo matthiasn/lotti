@@ -15,17 +15,10 @@ class CategoryIconConverter implements JsonConverter<CategoryIcon?, String?> {
   const CategoryIconConverter();
 
   @override
-  CategoryIcon? fromJson(String? json) {
-    if (json == null) return null;
-    try {
-      return CategoryIcon.values.firstWhere((e) => e.name == json);
-    } catch (e) {
-      return null;
-    }
-  }
+  CategoryIcon? fromJson(String? json) => CategoryIconExtension.fromJson(json);
 
   @override
-  String? toJson(CategoryIcon? icon) => icon?.name;
+  String? toJson(CategoryIcon? icon) => icon?.toJson();
 }
 
 enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
