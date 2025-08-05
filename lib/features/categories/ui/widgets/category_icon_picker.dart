@@ -81,8 +81,8 @@ class CategoryIconPicker extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected 
-                          ? Theme.of(context).colorScheme.primary.withValues(
-                              alpha: CategoryIconConstants.selectedBackgroundAlpha) 
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 
+                              CategoryIconConstants.selectedBackgroundAlpha) 
                           : Colors.transparent,
                         border: Border.all(
                           color: isSelected 
