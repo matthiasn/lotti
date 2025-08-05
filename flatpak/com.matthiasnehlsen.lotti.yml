@@ -26,21 +26,12 @@ modules:
       - echo "Installing pre-built Flutter app..."
       - ls -la
       - cp lotti /app/
-      - find lib -type f -exec cp --parents {} /app/ \;
-      - find data -type f -exec cp --parents {} /app/ \;
-      - find share -type f -exec cp --parents {} /app/ \;
     sources:
       - type: git
         url: {{LOTTI_REPO_URL}}
         commit: {{LOTTI_VERSION}}
       - type: file
         path: ../lotti
-      - type: file
-        path: ../lib
-      - type: file
-        path: ../data
-      - type: file
-        path: ../share
     modules:
       - name: flutter-common
         buildsystem: simple
