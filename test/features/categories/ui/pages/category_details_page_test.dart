@@ -389,7 +389,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the first switch (Private)
-        await tester.tap(switches.first, warnIfMissed: false);
+        await tester.tap(switches.first);
         await tester.pumpAndSettle();
 
         // Save button should now be enabled
