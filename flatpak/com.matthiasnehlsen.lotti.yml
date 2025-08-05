@@ -38,8 +38,8 @@ modules:
         build-commands:
           - install -D com.matthiasnehlsen.lotti.desktop /app/share/applications/com.matthiasnehlsen.lotti.desktop
           - install -D com.matthiasnehlsen.lotti.generated.metainfo.xml /app/share/metainfo/com.matthiasnehlsen.lotti.metainfo.xml
-          # Install icon only for 1024px size - desktop environment will handle scaling
-          - install -D app_icon_1024.png /app/share/icons/hicolor/1024x1024/apps/com.matthiasnehlsen.lotti.png
+          # Install icon to scalable directory - this is the standard location for vector/scalable icons
+          - install -D app_icon_1024.png /app/share/icons/hicolor/scalable/apps/com.matthiasnehlsen.lotti.png
         sources:
           - type: file
             path: com.matthiasnehlsen.lotti.desktop
