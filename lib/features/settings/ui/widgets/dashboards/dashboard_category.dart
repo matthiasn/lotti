@@ -82,26 +82,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             semanticsLabel: 'Select category',
             themeData: Theme.of(context),
           ).copyWith(
-            icon: category != null
-                ? CategoryIconCompact(
-                    category.id,
-                  )
-                : Container(
-                    width: CategoryIconConstants.iconSizeSmall,
-                    height: CategoryIconConstants.iconSizeSmall,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.colorScheme.outline.withAlpha(
-                        CategoryIconConstants.fallbackIconAlpha.toInt(),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.category_outlined,
-                      size: CategoryIconConstants.iconSizeSmall *
-                          CategoryIconConstants.fallbackIconSizeMultiplier,
-                      color: context.colorScheme.outline,
-                    ),
-                  ),
+            icon: CategoryIconCompact(category?.id),
             suffixIcon: categoryUndefined
                 ? null
                 : GestureDetector(
