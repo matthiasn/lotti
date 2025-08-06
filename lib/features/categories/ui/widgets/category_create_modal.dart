@@ -102,7 +102,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                 onPressed: () => Navigator.pop(context),
                 label: context.messages.cancelButton,
               ),
-              const SizedBox(width: CategoryIconConstants.buttonSpacing),
+              const SizedBox(width: CategoryIconConstants.smallSectionSpacing),
               LottiTertiaryButton(
                 onPressed: () async {
                   final categoryName = _nameController.text.trim();
