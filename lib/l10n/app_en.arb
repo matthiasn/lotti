@@ -258,6 +258,7 @@
   "conflictsResolveRemoteVersion": "Resolve with remote version",
   "conflictsCopyTextFromSync": "Copy Text from Sync",
   "createCategoryTitle": "Create Category:",
+  "categoryCreationError": "Failed to create category. Please try again.",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "dashboardActiveLabel": "Active:",

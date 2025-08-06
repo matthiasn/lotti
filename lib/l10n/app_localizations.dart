@@ -1305,6 +1305,12 @@ abstract class AppLocalizations {
   /// **'Create Category:'**
   String get createCategoryTitle;
 
+  /// No description provided for @categoryCreationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create category. Please try again.'**
+  String get categoryCreationError;
+
   /// No description provided for @createEntryLabel.
   ///
   /// In en, this message translates to:

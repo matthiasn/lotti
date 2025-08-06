@@ -676,6 +676,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createCategoryTitle => 'Crear categoría:';
 
   @override
+  String get categoryCreationError =>
+      'Failed to create category. Please try again.';
+
+  @override
   String get createEntryLabel => 'Crear nueva entrada';
 
   @override
