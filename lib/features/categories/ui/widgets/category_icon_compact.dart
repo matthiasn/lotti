@@ -33,7 +33,10 @@ class CategoryIconCompact extends StatelessWidget {
       return _buildFallbackIcon(context);
     }
 
-    return _buildCategoryIcon(context, category);
+    return _CategoryIconRenderer(
+      category: category,
+      size: size,
+    );
   }
 
   /// Builds fallback icon when category is not found
@@ -54,54 +57,6 @@ class CategoryIconCompact extends StatelessWidget {
       ),
     );
   }
-
-  /// Builds the actual category icon
-  Widget _buildCategoryIcon(BuildContext context, CategoryDefinition category) {
-    final categoryColor = colorFromCssHex(
-      category.color,
-      substitute: Theme.of(context).colorScheme.primary,
-    );
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Center(
-        child: category.icon != null
-            ? Icon(
-                category.icon!.iconData,
-                color: categoryColor,
-                size: size * CategoryIconConstants.iconSizeMultiplier,
-              )
-            : _buildTextFallback(categoryColor, category.name),
-      ),
-    );
-  }
-
-  /// Builds text fallback when no icon is set
-  Widget _buildTextFallback(Color categoryColor, String categoryName) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: categoryColor,
-      ),
-      child: Center(
-        child: Text(
-          categoryName.isNotEmpty 
-              ? categoryName[0].toUpperCase() 
-              : CategoryIconStrings.fallbackCharacter,
-          style: TextStyle(
-            color: categoryColor.computeLuminance() > CategoryIconConstants.luminanceThreshold 
-                ? Colors.black 
-                : Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: size * CategoryIconConstants.textSizeMultiplier,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Widget that displays category icon from a CategoryDefinition object.
@@ -113,6 +68,31 @@ class CategoryIconCompactFromDefinition extends StatelessWidget {
     this.category, {
     super.key,
     this.size = CategoryIconConstants.iconSizeSmall,
+  });
+
+  /// The category to display an icon for
+  final CategoryDefinition category;
+  
+  /// The size of the icon display (both width and height)
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CategoryIconRenderer(
+      category: category,
+      size: size,
+    );
+  }
+}
+
+/// Shared widget for rendering category icons to eliminate code duplication.
+/// 
+/// This widget handles the common rendering logic for both CategoryIconCompact
+/// and CategoryIconCompactFromDefinition widgets.
+class _CategoryIconRenderer extends StatelessWidget {
+  const _CategoryIconRenderer({
+    required this.category,
+    required this.size,
   });
 
   /// The category to display an icon for
@@ -148,9 +128,10 @@ class CategoryIconCompactFromDefinition extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-      ).copyWith(color: categoryColor),
+        color: categoryColor,
+      ),
       child: Center(
         child: Text(
           categoryName.isNotEmpty 
