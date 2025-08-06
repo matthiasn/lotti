@@ -68,15 +68,20 @@ class _LatestAiResponseSummaryState
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (error, stackTrace) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'Failed to load AI summary. Please try again.',
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+      error: (error, stackTrace) {
+        // Log the actual error for debugging
+        debugPrint('Error loading AI summary: $error\n$stackTrace');
+        
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Failed to load AI summary. Please try again.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
-        ),
-      ),
+        );
+      },
       data: (aiResponse) {
         // Update previous response when we get a new one and it's not running
         if (!isRunning &&
