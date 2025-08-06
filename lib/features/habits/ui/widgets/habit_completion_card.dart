@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
@@ -187,7 +188,10 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
               ),
             ],
           ),
-          leading: CategoryColorIcon(habitDefinition.categoryId),
+          leading: CategoryIconCompact(
+          habitDefinition.categoryId,
+          size: CategoryIconConstants.iconSizeMedium,
+        ),
           trailing: IconButton(
             padding: EdgeInsets.zero,
             onPressed: onTapAdd,

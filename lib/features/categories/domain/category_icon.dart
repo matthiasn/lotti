@@ -35,8 +35,24 @@ class CategoryIconConstants {
   /// Default category icon display size
   static const double defaultIconSize = 48;
   
-  /// Alpha value for selected state background
+  /// Icon sizes for different contexts - Single source of truth
+  /// Large icons for prominent displays (category details, large cards)
+  static const double iconSizeLarge = 32;
+  
+  /// Medium icons for list items, cards with text (task definition)
+  static const double iconSizeMedium = 24;
+  
+  /// Small icons for compact lists, inline displays (journal entries)
+  static const double iconSizeSmall = 20;
+  
+  /// Extra small icons for dense interfaces
+  static const double iconSizeExtraSmall = 16;
+  
+  /// Alpha values and other constants
   static const double selectedBackgroundAlpha = 0.1;
+  static const double fallbackIconAlpha = 51;
+  static const double fallbackIconSizeMultiplier = 0.6;
+  static const double luminanceThreshold = 0.5;
   
   /// Selected border width in picker
   static const double selectedBorderWidth = 2;

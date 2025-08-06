@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -54,7 +54,7 @@ class CategoryField extends StatelessWidget {
         semanticsLabel: 'Select category',
         themeData: Theme.of(context),
       ).copyWith(
-        icon: CategoryColorIcon(categoryId),
+        icon: CategoryIconCompact(categoryId),
         suffixIcon: categoryUndefined
             ? null
             : GestureDetector(

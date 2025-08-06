@@ -3,7 +3,8 @@ import 'package:flutter_rating/flutter_rating.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
@@ -121,7 +122,10 @@ class ModernJournalCard extends StatelessWidget {
                   ),
                   if (_shouldShowCategoryIcon()) ...[
                     const SizedBox(width: 8),
-                    CategoryColorIcon(item.meta.categoryId, size: 16),
+                    CategoryIconCompact(
+                      item.meta.categoryId, 
+                      size: CategoryIconConstants.iconSizeMedium,
+                    ),
                   ],
                   const Spacer(),
                   _buildStatusIndicators(context),

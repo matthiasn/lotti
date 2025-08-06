@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 typedef CategoryIdCallback = Future<bool> Function(String?);
@@ -22,10 +22,6 @@ class TaskCategoryWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final category = this.category;
-
-    final color = category != null
-        ? colorFromCssHex(category.color)
-        : context.colorScheme.outline.withAlpha(51);
 
     void onTap() {
       ModalUtils.showSinglePageModal<void>(
@@ -60,10 +56,29 @@ class TaskCategoryWidget extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ColorIcon(
-                  color,
-                  size: 12,
-                ),
+                if (category != null)
+                  CategoryIconDisplay(
+                    category: category,
+                    size: CategoryIconConstants.iconSizeMedium,
+                    showBorder: false,
+                  )
+                else
+                  Container(
+                    width: CategoryIconConstants.iconSizeMedium,
+                    height: CategoryIconConstants.iconSizeMedium,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.colorScheme.outline.withAlpha(
+                        CategoryIconConstants.fallbackIconAlpha.toInt(),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.category_outlined,
+                      size: CategoryIconConstants.iconSizeMedium *
+                          CategoryIconConstants.fallbackIconSizeMultiplier,
+                      color: context.colorScheme.outline,
+                    ),
+                  ),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Text(

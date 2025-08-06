@@ -2,12 +2,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class SelectDashboardCategoryWidget extends StatelessWidget {
@@ -54,7 +54,10 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       title: category.name,
-                      leading: CategoryColorIcon(category.id),
+                      leading: CategoryIconCompact(
+                        category.id,
+                        size: CategoryIconConstants.iconSizeMedium,
+                      ),
                     ),
                   ),
                 ],
@@ -79,11 +82,26 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             semanticsLabel: 'Select category',
             themeData: Theme.of(context),
           ).copyWith(
-            icon: ColorIcon(
-              category != null
-                  ? colorFromCssHex(category.color)
-                  : context.colorScheme.outline.withAlpha(51),
-            ),
+            icon: category != null
+                ? CategoryIconCompact(
+                    category.id,
+                  )
+                : Container(
+                    width: CategoryIconConstants.iconSizeSmall,
+                    height: CategoryIconConstants.iconSizeSmall,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.colorScheme.outline.withAlpha(
+                        CategoryIconConstants.fallbackIconAlpha.toInt(),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.category_outlined,
+                      size: CategoryIconConstants.iconSizeSmall *
+                          CategoryIconConstants.fallbackIconSizeMultiplier,
+                      color: context.colorScheme.outline,
+                    ),
+                  ),
             suffixIcon: categoryUndefined
                 ? null
                 : GestureDetector(
