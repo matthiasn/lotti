@@ -105,18 +105,21 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
               const SizedBox(width: CategoryIconConstants.smallSectionSpacing),
               LottiTertiaryButton(
                 onPressed: () async {
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  final messages = context.messages;
+                  final theme = Theme.of(context);
+
                   final categoryName = _nameController.text.trim();
 
                   // Validate input
                   if (categoryName.isEmpty) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.messages.categoryNameRequired),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                      );
-                    }
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(messages.categoryNameRequired),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
                     return;
                   }
 
@@ -128,21 +131,17 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                       icon: _selectedIcon,
                     );
                     widget.onCategoryCreated(category);
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                    }
+                    navigator.pop();
                   } catch (e, s) {
                     // Log the actual error with stack trace for debugging
                     debugPrint('Error creating category: $e\n$s');
 
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.messages.categoryCreationError),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                      );
-                    }
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(messages.categoryCreationError),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
                   }
                 },
                 label: context.messages.saveLabel,

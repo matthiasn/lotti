@@ -339,7 +339,7 @@ class _ModelManagementContentState
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  context.messages.aiConfigFailedToLoadModels(error.toString()),
+                  'Failed to load models. Please try again.',
                   textAlign: TextAlign.center,
                   style: context.textTheme.bodyLarge?.copyWith(
                     color: context.colorScheme.error,
