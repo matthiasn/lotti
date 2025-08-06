@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -39,9 +39,8 @@ class CategorySelectionIconButton extends ConsumerWidget {
           },
         );
       },
-      icon: CategoryColorIcon(
+      icon: CategoryIconCompact(
         entry.categoryId,
-        size: 16,
       ),
     );
   }

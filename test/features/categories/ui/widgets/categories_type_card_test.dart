@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -51,7 +51,7 @@ void main() {
     expect(find.text('Test Category'), findsOneWidget);
 
     // Verify color icon is present
-    expect(find.byType(ColorIcon), findsOneWidget);
+    expect(find.byType(CategoryIconCompact), findsOneWidget);
 
     // Verify private icon is shown
     expect(
@@ -99,7 +99,7 @@ void main() {
     expect(find.text('Test Category'), findsOneWidget);
 
     // Verify color icon is present
-    expect(find.byType(ColorIcon), findsOneWidget);
+    expect(find.byType(CategoryIconCompact), findsOneWidget);
 
     // Verify private icon is not shown
     expect(
@@ -138,12 +138,12 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: CategoryColorIcon('test-category-id'),
+          body: CategoryIconCompact('test-category-id'),
         ),
       ),
     );
 
-    expect(find.byType(ColorIcon), findsOneWidget);
+    expect(find.byType(CategoryIconCompact), findsOneWidget);
     verify(() => mockEntitiesCacheService.getCategoryById(categoryId))
         .called(1);
   });

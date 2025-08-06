@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/get_it.dart';
@@ -54,9 +55,9 @@ class HabitSummary extends StatelessWidget {
                   if (showIcon)
                     Padding(
                       padding: const EdgeInsets.only(right: 5),
-                      child: CategoryColorIcon(
+                      child: CategoryIconCompact(
                         habitDefinition.categoryId,
-                        size: 30,
+                        size: CategoryIconConstants.iconSizeLarge,
                       ),
                     ),
                   Flexible(

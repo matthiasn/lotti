@@ -2,7 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
@@ -125,7 +126,10 @@ class ModernJournalImageCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              CategoryColorIcon(item.meta.categoryId, size: 16),
+              CategoryIconCompact(
+                item.meta.categoryId,
+                size: CategoryIconConstants.iconSizeMedium,
+              ),
             ],
           ),
         ),

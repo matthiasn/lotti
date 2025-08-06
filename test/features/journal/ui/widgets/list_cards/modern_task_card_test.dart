@@ -5,7 +5,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
@@ -165,7 +165,7 @@ void main() {
       expect(find.byType(ModernBaseCard), findsOneWidget);
       expect(find.byType(ModernCardContent), findsOneWidget);
       expect(find.byType(ModernIconContainer), findsOneWidget);
-      expect(find.byType(CategoryColorIcon), findsOneWidget);
+      expect(find.byType(CategoryIconCompact), findsOneWidget);
       expect(find.byType(TimeRecordingIcon), findsOneWidget);
       expect(find.byType(CompactTaskProgress), findsOneWidget);
       expect(find.byType(ModernStatusChip), findsOneWidget);
@@ -391,7 +391,7 @@ void main() {
 
       // Should still render without errors
       expect(find.byType(ModernTaskCard), findsOneWidget);
-      expect(find.byType(CategoryColorIcon), findsOneWidget);
+      expect(find.byType(CategoryIconCompact), findsOneWidget);
     });
 
     testWidgets('long task title is handled properly',

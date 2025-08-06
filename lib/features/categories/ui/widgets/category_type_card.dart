@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -27,7 +28,10 @@ class CategoryTypeCard extends StatelessWidget {
       child: SettingsCard(
         onTap: onTap,
         title: categoryDefinition.name,
-        leading: CategoryColorIcon(categoryDefinition.id),
+        leading: CategoryIconCompact(
+          categoryDefinition.id, 
+          size: CategoryIconConstants.iconSizeMedium,
+        ),
         backgroundColor: selected
             ? context.colorScheme.outline.withAlpha(55)
             : Colors.transparent,

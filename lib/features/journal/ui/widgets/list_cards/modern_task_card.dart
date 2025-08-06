@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -32,7 +33,10 @@ class ModernTaskCard extends StatelessWidget {
         title: task.data.title,
         maxTitleLines: 3,
         leading: ModernIconContainer(
-          child: CategoryColorIcon(task.meta.categoryId),
+                        child: CategoryIconCompact(
+                          task.meta.categoryId, 
+                          size: CategoryIconConstants.iconSizeLarge,
+                        ),
         ),
         subtitleWidget: _buildSubtitleRow(context),
         trailing: TimeRecordingIcon(

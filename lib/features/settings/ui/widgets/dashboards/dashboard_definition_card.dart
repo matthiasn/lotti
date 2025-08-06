@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -19,7 +20,10 @@ class DashboardDefinitionCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/dashboards/${dashboard.id}',
       title: dashboard.name,
-      leading: CategoryColorIcon(dashboard.categoryId),
+              leading: CategoryIconCompact(
+                dashboard.categoryId, 
+                size: CategoryIconConstants.iconSizeMedium,
+              ),
       subtitle: description.isNotEmpty ? Text(description) : null,
       trailing: Visibility(
         visible: dashboard.private,

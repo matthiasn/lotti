@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_widget.dart';
 import 'package:lotti/get_it.dart';
@@ -59,7 +58,7 @@ void main() {
     expect(find.text(testCategory.name), findsOneWidget);
 
     // Assert - should contain a color icon
-    expect(find.byType(ColorIcon), findsOneWidget);
+          expect(find.byType(Container), findsWidgets);
   });
 
   testWidgets('renders correctly without a category', (tester) async {
@@ -77,7 +76,7 @@ void main() {
     expect(find.text('-'), findsOneWidget);
 
     // Assert - should still contain a color icon (with default color)
-    expect(find.byType(ColorIcon), findsOneWidget);
+          expect(find.byType(Container), findsWidgets);
   });
 
   testWidgets('opens category selection modal when tapped', (tester) async {

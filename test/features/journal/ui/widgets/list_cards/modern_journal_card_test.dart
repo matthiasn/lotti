@@ -16,7 +16,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
@@ -411,7 +411,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(CategoryColorIcon), findsOneWidget);
+      expect(find.byType(CategoryIconCompact), findsOneWidget);
     });
 
     testWidgets('displays tags widget', (tester) async {
