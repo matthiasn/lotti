@@ -292,7 +292,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify error handling - should not crash and should show error message
-      expect(find.text('Search failed: Exception: Database error'),
+      expect(find.text('Search failed. Please try again.'),
           findsOneWidget);
     });
   });

@@ -586,7 +586,7 @@ void main() {
 
       // Should show error message
       expect(
-          find.text('Error loading AI summary: $errorMessage'), findsOneWidget);
+          find.text('Failed to load AI summary. Please try again.'), findsOneWidget);
       expect(find.byType(AnimatedSize), findsNothing);
       expect(find.byType(AnimatedSwitcher), findsNothing);
     });

@@ -131,14 +131,14 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     if (context.mounted) {
                       Navigator.pop(context);
                     }
-                  } catch (e) {
-                    // Log the actual error for debugging
-                    debugPrint('Error creating category: $e');
+                  } catch (e, s) {
+                    // Log the actual error with stack trace for debugging
+                    debugPrint('Error creating category: $e\n$s');
                     
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('Failed to create category. Please try again.'),
+                          content: Text(context.messages.categoryCreationError ?? 'Failed to create category. Please try again.'),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
